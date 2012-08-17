@@ -1,0 +1,11 @@
+--- CollisionDetection.cpp.old	2010-09-30 20:41:21.000000000 -0700
++++ CollisionDetection.cpp	2010-09-30 20:43:52.000000000 -0700
+@@ -1218,7 +1218,7 @@
+     Vector3&                normal) {
+ 
+     if (collisionLocationForMovingPointFixedAABox(origin, dir, box, location, Inside, normal)) {
+-        return (location - origin).magnitude();
++        return sqrt((location - origin).squaredMagnitude() / dir.squaredMagnitude());
+     } else {
+         return (float)finf();
+     }

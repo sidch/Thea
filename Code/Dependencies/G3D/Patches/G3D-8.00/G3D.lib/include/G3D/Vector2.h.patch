@@ -1,0 +1,11 @@
+--- Vector2.h.old	2010-09-22 23:07:31.000000000 -0700
++++ Vector2.h	2010-09-22 23:07:49.000000000 -0700
+@@ -159,7 +159,7 @@
+      Make this vector have unit length and return the old length.
+      If the vector length was less than tolerance, do not normalize.
+      */
+-    float unitize(float fTolerance = 1e-06);
++    float unitize(float fTolerance = 1e-30);
+ 
+     Vector2 min(const Vector2& v) const;
+     Vector2 max(const Vector2& v) const;

@@ -1,0 +1,482 @@
+#===============================================================================================================================
+#
+# Build script for the Thea tests.
+#
+# Copyright (C) Siddhartha Chaudhuri, 2009
+#
+#===============================================================================================================================
+
+PROJECT(TheaTests)
+
+# Set the minimum required CMake version
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+
+# See cmake --help-policy CMP0003 for details on this one
+IF(COMMAND CMAKE_POLICY)
+  CMAKE_POLICY(SET CMP0003 NEW)
+ENDIF(COMMAND CMAKE_POLICY)
+
+# If you don't want the full compiler output, remove the following line
+SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+# Avoid having to repeat condition after ELSE and ENDIF statements
+SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
+
+# Postfix for debug builds
+SET(CMAKE_DEBUG_POSTFIX "d")
+
+# Project root path
+GET_FILENAME_COMPONENT(ProjectRoot ../.. ABSOLUTE)
+
+# Path for build products
+SET(OutputRoot ${ProjectRoot}/Build/Output)
+
+# Path to put executables in
+SET(EXECUTABLE_OUTPUT_PATH ${OutputRoot}/bin)
+
+# Path to put libraries in
+SET(LIBRARY_OUTPUT_PATH ${OutputRoot}/lib)
+
+# Path for customized CMake modules
+IF(NOT CMAKE_MODULE_PATH)
+  SET(CMAKE_MODULE_PATH ${ProjectRoot}/Build/Common/CMake/Modules)
+ENDIF()
+GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
+
+# Path to root folder for source code
+SET(SourceRoot ${ProjectRoot}/Source)
+
+# Path to folder with installations of the dependencies
+IF(NOT THEA_INSTALLATIONS_ROOT)
+  SET(THEA_INSTALLATIONS_ROOT ${CMAKE_INSTALL_PREFIX})
+ENDIF()
+SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
+
+# Locate dependencies
+SET(Thea_FIND_ALL TRUE)
+INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
+
+# Dependency: OpenGL
+FIND_PACKAGE(OpenGL REQUIRED)
+IF(NOT OPENGL_GLU_FOUND)
+  MESSAGE(FATAL_ERROR "GLU was not found")
+ENDIF()
+SET(OpenGL_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
+SET(OpenGL_CFLAGS )
+SET(OpenGL_LIBRARIES    ${OPENGL_LIBRARIES})
+SET(OpenGL_LIBRARY_DIRS )
+SET(OpenGL_LDFLAGS )
+IF(APPLE)
+  ADD_DEFINITIONS(-DTHEA_GL_USE_FRAMEWORK)
+ENDIF()
+MESSAGE(STATUS "Found OpenGL: headers at ${OpenGL_INCLUDE_DIRS}, libraries at ${OpenGL_LIBRARIES}")
+
+# Dependency: GLUT
+FIND_PACKAGE(GLUT REQUIRED)
+IF(NOT GLUT_FOUND)
+  MESSAGE(FATAL_ERROR "GLUT not found")
+ENDIF()
+MESSAGE(STATUS "Found GLUT: headers at ${GLUT_INCLUDE_DIR}, libraries at ${GLUT_LIBRARIES}")
+
+# Definitions, compiler switches etc.
+IF(CMAKE_COMPILER_IS_GNUCXX)
+  IF(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
+    ADD_DEFINITIONS(${CGAL_DEBUG_CFLAGS} -Wall -g2 -fno-strict-aliasing)
+  ELSE()
+    ADD_DEFINITIONS(${CGAL_RELEASE_CFLAGS} -Wall -O2 -fno-strict-aliasing -DNDEBUG)
+  ENDIF()
+ELSEIF(MSVC)
+  IF(NOT CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
+    ADD_DEFINITIONS(/O2)
+  ENDIF()
+ENDIF()
+
+# Shared library flags
+ADD_DEFINITIONS(-DTHEA_DLL -DTHEA_DLL_IMPORTS)
+
+# Include directories
+INCLUDE_DIRECTORIES(BEFORE
+                    ${SourceRoot}
+                    ${Boost_INCLUDE_DIRS}
+                    ${GLUT_INCLUDE_DIR}
+                    ${OpenGL_INCLUDE_DIRS}
+                    ${G3D_INCLUDE_DIRS}
+                    ${CGAL_INCLUDE_DIRS}
+                    ${Lib3ds_INCLUDE_DIRS}
+                    ${CLUTO_INCLUDE_DIRS})
+
+# Link directories
+LINK_DIRECTORIES(${OutputRoot}/lib)
+
+#===========================================================
+# TestARPACK
+#===========================================================
+
+IF(NOT APPLE)
+
+# Source file lists
+SET(TheaTestARPACKSources
+      ${SourceRoot}/Test/TestARPACK.cpp)
+
+# Libraries to link to
+SET(TheaTestARPACKLibraries
+      Thea
+      TheaPluginARPACK
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestARPACK ${TheaTestARPACKSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestARPACK ${TheaTestARPACKLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestARPACK "${TheaTestARPACKLibraries}")
+ENDIF()
+
+ENDIF(NOT APPLE)
+
+#===========================================================
+# TestCSPARSE
+#===========================================================
+
+# Source file lists
+SET(TheaTestCSPARSESources
+      ${SourceRoot}/Test/TestCSPARSE.cpp)
+
+# Libraries to link to
+SET(TheaTestCSPARSELibraries
+      Thea
+      TheaPluginCSPARSE
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestCSPARSE ${TheaTestCSPARSESources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestCSPARSE ${TheaTestCSPARSELibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestCSPARSE "${TheaTestCSPARSELibraries}")
+ENDIF()
+
+#===========================================================
+# TestDisplayMesh
+#===========================================================
+
+# Source file lists
+SET(TheaTestDisplayMeshSources
+      ${SourceRoot}/Test/TestDisplayMesh.cpp)
+
+# Libraries to link to
+SET(TheaTestDisplayMeshLibraries
+      Thea
+      TheaPluginGL
+      ${G3D_LIBRARIES}
+      ${GLUT_LIBRARIES}
+      ${OpenGL_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestDisplayMesh ${TheaTestDisplayMeshSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestDisplayMesh ${TheaTestDisplayMeshLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestDisplayMesh "${TheaTestDisplayMeshLibraries}")
+ENDIF()
+
+#===========================================================
+# TestGL
+#===========================================================
+
+# Source file lists
+SET(TheaTestGLSources
+      ${SourceRoot}/Test/TestGL.cpp)
+
+# Libraries to link to
+SET(TheaTestGLLibraries
+      Thea
+      TheaPluginGL
+      ${G3D_LIBRARIES}
+      ${GLUT_LIBRARIES}
+      ${OpenGL_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestGL ${TheaTestGLSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestGL ${TheaTestGLLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestGL "${TheaTestGLLibraries}")
+ENDIF()
+
+#===========================================================
+# TestKDTree3
+#===========================================================
+
+# Source file lists
+SET(TheaTestKDTree3Sources
+      ${SourceRoot}/Test/TestKDTree3.cpp)
+
+# Libraries to link to
+SET(TheaTestKDTree3Libraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestKDTree3 ${TheaTestKDTree3Sources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestKDTree3 ${TheaTestKDTree3Libraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestKDTree3 "${TheaTestKDTree3Libraries}")
+ENDIF()
+
+#===========================================================
+# TestLaplaceBeltrami
+#===========================================================
+
+# Source file lists
+SET(TheaTestLaplaceBeltramiSources
+      ${SourceRoot}/Test/TestLaplaceBeltrami.cpp)
+
+# Libraries to link to
+SET(TheaTestLaplaceBeltramiLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestLaplaceBeltrami ${TheaTestLaplaceBeltramiSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestLaplaceBeltrami ${TheaTestLaplaceBeltramiLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestLaplaceBeltrami "${TheaTestLaplaceBeltramiLibraries}")
+ENDIF()
+
+#===========================================================
+# TestMath
+#===========================================================
+
+# Source file lists
+SET(TheaTestMathSources
+      ${SourceRoot}/Test/TestMath.cpp)
+
+# Libraries to link to
+SET(TheaTestMathLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestMath ${TheaTestMathSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestMath ${TheaTestMathLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestMath "${TheaTestMathLibraries}")
+ENDIF()
+
+#===========================================================
+# TestMetrics
+#===========================================================
+
+# Source file lists
+SET(TheaTestMetricsSources
+      ${SourceRoot}/Test/TestMetrics.cpp)
+
+# Libraries to link to
+SET(TheaTestMetricsLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestMetrics ${TheaTestMetricsSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestMetrics ${TheaTestMetricsLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestMetrics "${TheaTestMetricsLibraries}")
+ENDIF()
+
+#===========================================================
+# TestMesh
+#===========================================================
+
+# Source file lists
+SET(TheaTestMeshSources
+      ${SourceRoot}/Test/TestMesh.cpp)
+
+# Libraries to link to
+SET(TheaTestMeshLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestMesh ${TheaTestMeshSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestMesh ${TheaTestMeshLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestMesh "${TheaTestMeshLibraries}")
+ENDIF()
+
+#===========================================================
+# TestOPTPP
+#===========================================================
+
+# Source file lists
+SET(TheaTestOPTPPSources
+      ${SourceRoot}/Test/TestOPTPP.cpp)
+
+# Libraries to link to
+SET(TheaTestOPTPPLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestOPTPP ${TheaTestOPTPPSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestOPTPP ${TheaTestOPTPPLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestOPTPP "${TheaTestOPTPPLibraries}")
+ENDIF()
+
+#===========================================================
+# TestPCA
+#===========================================================
+
+# Source file lists
+SET(TheaTestPCASources
+      ${SourceRoot}/Test/TestPCA.cpp)
+
+# Libraries to link to
+SET(TheaTestPCALibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestPCA ${TheaTestPCASources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestPCA ${TheaTestPCALibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestPCA "${TheaTestPCALibraries}")
+ENDIF()
+
+#===========================================================
+# TestPyramidMatch
+#===========================================================
+
+# Source file lists
+SET(TheaTestPyramidMatchSources
+      ${SourceRoot}/Test/TestPyramidMatch.cpp)
+
+# Libraries to link to
+SET(TheaTestPyramidMatchLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestPyramidMatch ${TheaTestPyramidMatchSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestPyramidMatch ${TheaTestPyramidMatchLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestPyramidMatch "${TheaTestPyramidMatchLibraries}")
+ENDIF()
+
+#===========================================================
+# TestZernike
+#===========================================================
+
+# Source file lists
+SET(TheaTestZernikeSources
+      ${SourceRoot}/Test/TestZernike.cpp)
+
+# Libraries to link to
+SET(TheaTestZernikeLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestZernike ${TheaTestZernikeSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestZernike ${TheaTestZernikeLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestZernike "${TheaTestZernikeLibraries}")
+ENDIF()
+
+#===========================================================
+# Target for all tests
+#===========================================================
+
+SET(TheaTestsDependencies
+      TheaTestCSPARSE
+      TheaTestDisplayMesh
+      TheaTestGL
+      TheaTestKDTree3
+      TheaTestMath
+      TheaTestMesh
+      TheaTestMetrics
+      TheaTestOPTPP
+      TheaTestPCA
+      TheaTestPyramidMatch
+      TheaTestZernike)
+
+IF(NOT APPLE)
+  SET(TheaTestsDependencies ${TheaTestsDependencies} TheaTestARPACK)
+ENDIF()
+
+ADD_CUSTOM_TARGET(TheaTests DEPENDS ${TheaTestsDependencies})

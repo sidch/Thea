@@ -1,0 +1,36 @@
+--- debugAssert.h.old	2010-08-08 00:03:18.000000000 -0700
++++ debugAssert.h	2010-08-08 00:04:44.000000000 -0700
+@@ -36,12 +36,17 @@
+ #   pragma warning (disable : 4127)
+ #endif
+ 
++// SC: We don't want to pull in an X dependency
++#define G3D_DEBUG_NOGUI
++
+ #ifdef G3D_LINUX
++  #ifndef G3D_DEBUG_NOGUI
+     // Needed so we can define a global display
+     // pointer for debugAssert.
+     #include <X11/Xlib.h>
+     #include <X11/Xutil.h>
+     #include <X11/Xatom.h>
++  #endif
+ #endif
+ 
+ 
+@@ -178,6 +183,7 @@
+ namespace G3D {  namespace _internal {
+ 
+ #ifdef G3D_LINUX
++  #ifndef G3D_DEBUG_NOGUI
+     /**
+      A pointer to the X11 display.  Initially NULL.  If set to a
+      non-null value (e.g. by SDLWindow), debugAssert attempts to use
+@@ -193,6 +199,7 @@
+      fails.
+      */
+     extern Window        x11Window;
++  #endif
+ #endif
+ 
+ /**

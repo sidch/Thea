@@ -1,0 +1,11 @@
+--- Vector3.h.old	2010-09-22 23:07:28.000000000 -0700
++++ Vector3.h	2010-09-22 23:08:14.000000000 -0700
+@@ -268,7 +268,7 @@
+ 	
+     float __fastcall dot(const Vector3& rkVector) const;
+     
+-    float unitize(float tolerance = 1e-06);
++    float unitize(float tolerance = 1e-30);
+ 
+     /** Cross product.  Note that two cross products in a row
+         can be computed more cheaply: v1 x (v2 x v3) = (v1 dot v3) v2  - (v1 dot v2) v3.
