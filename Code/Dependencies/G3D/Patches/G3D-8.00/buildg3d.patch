@@ -1,0 +1,40 @@
+--- tmp/G3D/buildg3d	2010-08-07 15:15:52.000000000 -0700
++++ G3D/buildg3d	2012-07-31 13:16:56.000000000 -0700
+@@ -346,26 +346,29 @@
+     x = 0
+ 
+     if windows:
+-        x = VC9('VC9/G3D.sln', ['jpeg.lib', 'png.lib', 'zlib.lib', 'zip.lib', 'mongoose.lib', 'G3D.lib', 'GLG3D.lib']);
++        # x = VC9('VC9/G3D.sln', ['jpeg.lib', 'png.lib', 'zlib.lib', 'zip.lib', 'mongoose.lib', 'G3D.lib', 'GLG3D.lib']);
++        x = VC9('VC9/G3D.sln', ['jpeg.lib', 'png.lib', 'zlib.lib', 'zip.lib', 'mongoose.lib', 'G3D.lib']);
+              
+     else:
+     
+-        if (osx and not os.path.exists('/usr/X11/include/png.h')) or (ice.utils.shell("locate libpng.a") == ''):
+-            if x == 0: x = runicompile('png.lib')
++        # if (osx and not os.path.exists('/usr/X11/include/png.h')) or (ice.utils.shell("locate libpng.a") == ''):
++        if x == 0: x = runicompile('png.lib')
+ 
+         if osx or (ice.utils.shell("locate libjpeg.a") == ''):
+             if x == 0: x = runicompile('jpeg.lib')
+     
+-        if osx or (ice.utils.shell("locate libzip.a") == ''):
+-            if x == 0: x = runicompile('zip.lib')
++        #
++        # if osx or (ice.utils.shell("locate libzip.a") == ''):
++        #
++        if x == 0: x = runicompile('zip.lib')
+          
+-        if x == 0: x = buildNativeFFmpeg()
++        # if x == 0: x = buildNativeFFmpeg()
+ 
+-        if x == 0: x = runicompile('mongoose.lib')
++        # if x == 0: x = runicompile('mongoose.lib')
+ 
+         if x == 0: x = runicompile('G3D.lib')
+ 
+-        if x == 0: x = runicompile('GLG3D.lib')
++        # if x == 0: x = runicompile('GLG3D.lib')
+ 
+          
+     return x

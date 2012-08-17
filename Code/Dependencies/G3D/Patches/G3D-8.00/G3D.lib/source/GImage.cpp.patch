@@ -1,0 +1,11 @@
+--- tmp/G3D/G3D.lib/source/GImage.cpp	2010-04-20 00:22:48.000000000 -0700
++++ G3D/G3D.lib/source/GImage.cpp	2012-07-31 13:20:51.000000000 -0700
+@@ -20,7 +20,7 @@
+ #ifdef G3D_LINUX
+ #    include <png.h>
+ #else
+-#    include "png.h"
++#    include "../../png.lib/include/png.h"
+ #endif
+ 
+ #include <sys/stat.h>

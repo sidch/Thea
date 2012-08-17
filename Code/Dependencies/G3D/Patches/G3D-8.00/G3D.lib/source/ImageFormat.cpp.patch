@@ -1,0 +1,11 @@
+--- ImageFormat.cpp.old	2010-08-08 04:31:35.000000000 -0700
++++ ImageFormat.cpp	2010-08-08 04:28:40.000000000 -0700
+@@ -7,7 +7,7 @@
+  @edited  2010-03-30
+  */
+ 
+-#include "GLG3D/glheaders.h"
++#include "../../GLG3D.lib/include/GLG3D/glheaders.h"
+ #include "G3D/ImageFormat.h"
+ 
+ namespace G3D {

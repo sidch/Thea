@@ -1,0 +1,54 @@
+# Searches for an installation of the ARPACK++ library. On success, it sets the following variables:
+#
+#   ARPACKPP_FOUND         Set to true to indicate the library was found
+#   ARPACKPP_INCLUDE_DIRS  Location of ARPACK++ header files
+#   ARPACKPP_LIBRARIES     Location of the optional ARPACK++ linkable library, if it exists (with full path)
+#
+# To specify an additional directory to search, set ARPACKPP_ROOT.
+#
+# Copyright (C) Siddhartha Chaudhuri, 2009
+#
+
+SET(ARPACKPP_FOUND FALSE)
+
+# Look for the ARPACKPP header, first in the user-specified location and then in the system locations
+SET(ARPACKPP_INCLUDE_DOC "The directory containing the ARPACK++ header file arseig.h")
+FIND_PATH(ARPACKPP_INCLUDE_DIRS NAMES arseig.h PATHS ${ARPACKPP_ROOT} ${ARPACKPP_ROOT}/include PATH_SUFFIXES "" "arpack++"
+          DOC ${ARPACKPP_INCLUDE_DOC} NO_DEFAULT_PATH)
+IF(NOT ARPACKPP_INCLUDE_DIRS)  # now look in system locations
+  FIND_PATH(ARPACKPP_INCLUDE_DIRS NAMES arseig.h PATH_SUFFIXES "" "arpack++" DOC ${ARPACKPP_INCLUDE_DOC})
+ENDIF(NOT ARPACKPP_INCLUDE_DIRS)
+
+IF(ARPACKPP_INCLUDE_DIRS)
+  SET(ARPACKPP_FOUND TRUE)
+ENDIF(ARPACKPP_INCLUDE_DIRS)
+
+IF(ARPACKPP_INCLUDE_DIRS)
+  SET(ARPACKPP_LIBRARY_DIRS ${ARPACKPP_INCLUDE_DIRS})
+
+  IF("${ARPACKPP_LIBRARY_DIRS}" MATCHES "/include$")
+    # Strip off the trailing "/include" in the path.
+    GET_FILENAME_COMPONENT(ARPACKPP_LIBRARY_DIRS ${ARPACKPP_LIBRARY_DIRS} PATH)
+  ENDIF("${ARPACKPP_LIBRARY_DIRS}" MATCHES "/include$")
+
+  IF(EXISTS "${ARPACKPP_LIBRARY_DIRS}/lib")
+    SET(ARPACKPP_LIBRARY_DIRS ${ARPACKPP_LIBRARY_DIRS}/lib)
+  ENDIF(EXISTS "${ARPACKPP_LIBRARY_DIRS}/lib")
+
+  # Find ARPACKPP library
+  FIND_LIBRARY(ARPACKPP_LIBRARIES NAMES superlu libsuperlu ARPACKPP libARPACKPP PATHS ${ARPACKPP_LIBRARY_DIRS} NO_DEFAULT_PATH)
+ENDIF(ARPACKPP_INCLUDE_DIRS)
+
+IF(ARPACKPP_FOUND)
+  IF(NOT ARPACKPP_FIND_QUIETLY)
+    IF(ARPACKPP_LIBRARIES)
+      MESSAGE(STATUS "Found ARPACK++: headers at ${ARPACKPP_INCLUDE_DIRS}, libraries at ${ARPACKPP_LIBRARIES}")
+    ELSE(ARPACKPP_LIBRARIES)
+      MESSAGE(STATUS "Found ARPACK++: headers at ${ARPACKPP_INCLUDE_DIRS}")
+    ENDIF(ARPACKPP_LIBRARIES)
+  ENDIF(NOT ARPACKPP_FIND_QUIETLY)
+ELSE(ARPACKPP_FOUND)
+  IF(ARPACKPP_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "ARPACK++ not found")
+  ENDIF(ARPACKPP_FIND_REQUIRED)
+ENDIF(ARPACKPP_FOUND)

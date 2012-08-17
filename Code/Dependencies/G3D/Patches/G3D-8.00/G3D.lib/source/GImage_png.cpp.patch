@@ -1,0 +1,11 @@
+--- tmp/G3D/G3D.lib/source/GImage_png.cpp	2010-04-19 21:41:43.000000000 -0700
++++ G3D/G3D.lib/source/GImage_png.cpp	2012-07-31 13:21:31.000000000 -0700
+@@ -9,7 +9,7 @@
+ #include "G3D/BinaryInput.h"
+ #include "G3D/BinaryOutput.h"
+ #include "G3D/Log.h"
+-#include <png.h>
++#include "../../png.lib/include/png.h"
+ 
+ namespace G3D {
+ 

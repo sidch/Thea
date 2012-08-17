@@ -1,0 +1,53 @@
+# Searches for an installation of the Breakpad library. On success, it sets the following variables:
+#
+#   BREAKPAD_FOUND              Set to true to indicate the library was found
+#   BREAKPAD_INCLUDE_DIRS       The directory containing the main BREAKPAD header files
+#   BREAKPAD_LIBRARIES          The libraries needed to use BREAKPAD
+#
+# To specify an additional directory to search, set BREAKPAD_ROOT.
+#
+# Copyright (C) Ewen Cheslack-Postava, 2008
+#
+
+# Look for the Breakpad headers, first in the user-specified location and then in the system locations
+SET(BREAKPAD_INCLUDE_DOC "The directory containing the Breakpad header files")
+IF(WIN32)
+  FIND_PATH(BREAKPAD_INCLUDE_DIRS NAMES client/windows/handler/exception_handler.h PATHS ${BREAKPAD_ROOT} ${BREAKPADL_ROOT} DOC ${BREAKPAD_INCLUDE_DOC} NO_DEFAULT_PATH)
+  SET(BREAKPAD_BASE ${BREAKPAD_INCLUDE_DIRS})
+  IF(NOT BREAKPAD_INCLUDE_DIRS)  # now look in system locations
+    FIND_PATH(BREAKPAD_INCLUDE_DIRS NAMES client/windows/handler/exception_handler.h DOC ${BREAKPAD_INCLUDE_DOC})
+  ENDIF(NOT BREAKPAD_INCLUDE_DIRS)
+ENDIF()
+
+SET(BREAKPAD_FOUND FALSE)
+
+IF(BREAKPAD_INCLUDE_DIRS)
+
+  IF(WIN32)
+    FIND_LIBRARY(BREAKPAD_DEBUG_LIBRARY NAMES exception_handler PATHS ${BREAKPAD_BASE}/client/windows/debug NO_DEFAULT_PATH)
+    FIND_LIBRARY(BREAKPAD_RELEASE_LIBRARY NAMES exception_handler PATHS ${BREAKPAD_BASE}/client/windows/release NO_DEFAULT_PATH)
+
+    SET(BREAKPAD_LIBRARIES)
+    IF(BREAKPAD_DEBUG_LIBRARY AND BREAKPAD_RELEASE_LIBRARY)
+      SET(BREAKPAD_LIBRARIES debug ${BREAKPAD_DEBUG_LIBRARY} optimized ${BREAKPAD_RELEASE_LIBRARY})
+    ELSEIF(BREAKPAD_DEBUG_LIBRARY)
+      SET(BREAKPAD_LIBRARIES ${BREAKPAD_DEBUG_LIBRARY})
+    ELSEIF(BREAKPAD_RELEASE_LIBRARY)
+      SET(BREAKPAD_LIBRARIES ${BREAKPAD_RELEASE_LIBRARY})
+    ENDIF(BREAKPAD_DEBUG_LIBRARY AND BREAKPAD_RELEASE_LIBRARY)
+  ENDIF()
+
+  IF(BREAKPAD_LIBRARIES)
+    SET(BREAKPAD_FOUND TRUE)
+  ENDIF(BREAKPAD_LIBRARIES)
+ENDIF(BREAKPAD_INCLUDE_DIRS)
+
+IF(BREAKPAD_FOUND)
+  IF(NOT BREAKPAD_FIND_QUIETLY)
+    MESSAGE(STATUS "Found breakpad: headers at ${BREAKPAD_INCLUDE_DIRS}, libraries at ${BREAKPAD_LIBRARIES}")
+  ENDIF(NOT BREAKPAD_FIND_QUIETLY)
+ELSE(BREAKPAD_FOUND)
+  IF(BREAKPAD_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "breakpad not found")
+  ENDIF(BREAKPAD_FIND_REQUIRED)
+ENDIF(BREAKPAD_FOUND)

@@ -1,0 +1,13 @@
+--- ../../../../tmp/G3D/G3D.lib/include/G3D/platform.h	2010-07-17 06:03:43.000000000 -0700
++++ platform.h	2011-03-12 01:16:21.000000000 -0800
+@@ -57,7 +57,9 @@
+ #elif defined(__linux__)
+     #define G3D_LINUX
+ #elif defined(__APPLE__)
+-    #define G3D_OSX
++    // For 64-bit OS X compilation, pretend this is Linux to eliminate all Carbon dependencies
++    #define  G3D_LINUX
++    // #define G3D_OSX
+ 
+    // Prevent OS X fp.h header from being included; it defines
+    // pi as a constant, which creates a conflict with G3D

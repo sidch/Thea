@@ -1,0 +1,42 @@
+--- G3D.lib/source/debugAssert.cpp.old	2007-08-18 22:49:14.000000000 -0700
++++ G3D.lib/source/debugAssert.cpp	2009-02-27 02:23:17.000000000 -0800
+@@ -35,13 +35,15 @@
+ ConsolePrintHook _consolePrintHook;
+ AssertionHook _debugHook = _handleDebugAssert_;
+ AssertionHook _failureHook = _handleErrorCheck_;
+ 
+ #ifdef G3D_LINUX
++  #ifndef G3D_DEBUG_NOGUI
+     Display*      x11Display = NULL;
+     Window        x11Window  = 0;
+ #endif
++#endif
+ 
+ 
+ #ifdef G3D_WIN32
+ static void postToClipboard(const char *text) {
+     if (OpenClipboard(NULL)) {
+@@ -256,10 +258,11 @@
+         // Allow the cursor full access to the screen
+         GetClipCursor(&oldCursorRect);
+         ClipCursor(NULL);
+         
+     #elif defined(G3D_LINUX)
++      #ifndef G3D_DEBUG_NOGUI
+         if (x11Display != NULL) {
+             XUngrabPointer(x11Display, CurrentTime);
+             XUngrabKeyboard(x11Display, CurrentTime);
+             if (x11Window != 0) {
+                 //XUndefineCursor(x11Display, x11Window);
+@@ -270,10 +273,11 @@
+             }
+             XSync(x11Display, false);           
+             XAllowEvents(x11Display, AsyncPointer, CurrentTime);
+             XFlush(x11Display);
+         }
++      #endif
+     #elif defined(G3D_OSX)
+         // TODO: OS X
+     #endif
+ }
+ 

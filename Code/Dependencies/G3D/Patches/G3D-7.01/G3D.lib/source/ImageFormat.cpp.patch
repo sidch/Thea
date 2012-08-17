@@ -1,0 +1,14 @@
+--- ImageFormat.cpp.old	2010-04-16 20:48:14.000000000 -0700
++++ ImageFormat.cpp	2010-04-16 20:50:16.000000000 -0700
+@@ -349,9 +349,9 @@
+ static const bool COMP_FORMAT   = true;
+ static const bool UNCOMP_FORMAT = false;
+ 
+-#define DEFINE_TEXTUREFORMAT_METHOD(name, cmpnts, cmprssd, glf, glbf, lb, rb, gb, bb, db, sb, hbpt, pbpt, gldf, opq, fp, code, cs, bp)                    \
++#define DEFINE_TEXTUREFORMAT_METHOD(name, cmpnts, cmprssd, glf, glbf, lb, ab, rb, gb, bb, db, sb, hbpt, pbpt, gldf, opq, fp, code, cs)                    \
+     const ImageFormat* ImageFormat::name() {                                                                                                  \
+-    static const ImageFormat format(cmpnts, cmprssd, glf, glbf, lb, rb, gb, bb, db, sb, hbpt, pbpt, gldf, opq, fp, code, cs, bp);  \
++    static const ImageFormat format(cmpnts, cmprssd, glf, glbf, lb, ab, rb, gb, bb, db, sb, hbpt, pbpt, gldf, opq, fp, code, cs);  \
+     return &format; }
+ 
+ DEFINE_TEXTUREFORMAT_METHOD(L8,         1, UNCOMP_FORMAT,   GL_LUMINANCE8,      GL_LUMINANCE,   8, 0, 0, 0, 0, 0, 0, 8, 8,  GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, CODE_L8, COLOR_SPACE_NONE);

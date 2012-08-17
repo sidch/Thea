@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SCRIPT_DIR=`dirname "$0"`
+
+"${SCRIPT_DIR}/Installations/install" --with-boost --with-cgal --with-lib3ds --with-cluto --with-g3d --with-freeimageplus --with-arpack++ --with-opt++ $@

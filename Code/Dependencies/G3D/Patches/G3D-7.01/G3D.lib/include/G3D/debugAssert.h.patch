@@ -1,0 +1,49 @@
+--- G3D.lib/include/G3D/debugAssert.h.old	2008-09-10 15:11:34.000000000 -0700
++++ G3D.lib/include/G3D/debugAssert.h	2009-02-27 02:35:12.000000000 -0800
+@@ -34,17 +34,22 @@
+ #ifdef _MSC_VER
+ // conditional expression is constant
+ #   pragma warning (disable : 4127)
+ #endif
+ 
++// SC: We don't want to pull in an X dependency
++#define G3D_DEBUG_NOGUI
++
+ #ifdef G3D_LINUX
++  #ifndef G3D_DEBUG_NOGUI
+     // Needed so we can define a global display
+     // pointer for debugAssert.
+     #include <X11/Xlib.h>
+     #include <X11/Xutil.h>
+     #include <X11/Xatom.h>
+ #endif
++#endif
+ 
+ #ifdef G3D_OSX
+     // Need this for DebugStr()
+     #import <CoreServices/CoreServices.h>
+ #endif
+@@ -181,10 +186,11 @@
+ 
+ 
+ namespace G3D {  namespace _internal {
+ 
+ #ifdef G3D_LINUX
++  #ifndef G3D_DEBUG_NOGUI
+     /**
+      A pointer to the X11 display.  Initially NULL.  If set to a
+      non-null value (e.g. by SDLWindow), debugAssert attempts to use
+      this display to release the mouse/input grab when an assertion
+      fails.
+@@ -197,10 +203,11 @@
+      this window to release the mouse/input grab when an assertion
+      fails.
+      */
+     extern Window        x11Window;
+ #endif
++#endif
+ 
+ /**
+  Pops up an assertion dialog or prints an assertion
+ 
+  ignoreAlways      - return result of pressing the ignore button.
