@@ -297,8 +297,11 @@ class /* THEA_API */ MatrixMN<4, 4, T> : public Internal::SquareMatrixN<4, T>
 
 }; // class MatrixMN<4, 4, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API MatrixMN<4, 4, Real>;
+#endif
+
 /** The default 4x4 real matrix class. */
-template class THEA_API MatrixMN<4, 4, Real>;
 typedef MatrixMN<4, 4, Real> Matrix4;
 
 /**

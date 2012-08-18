@@ -103,8 +103,11 @@ class /* THEA_API */ AffineTransformN<2, T> : public Internal::AffineTransformNB
 
 }; // class AffineTransformN<2, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API AffineTransformN<2, Real>;
+#endif
+
 /** The default affine transform class in real 2-space. */
-template class THEA_API AffineTransformN<2, Real>;
 typedef AffineTransformN<2, Real> AffineTransform2;
 
 } // namespace Thea

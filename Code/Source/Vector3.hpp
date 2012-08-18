@@ -241,8 +241,11 @@ class /* THEA_API */ VectorN<3, T> : public Internal::VectorNBase<3, T>
 
 }; // class VectorN<3, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API VectorN<3, Real>;
+#endif
+
 /** The default 3D real vector class. */
-template class THEA_API VectorN<3, Real>;
 typedef VectorN<3, Real> Vector3;
 
 } // namespace Thea

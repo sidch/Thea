@@ -47,8 +47,11 @@
 
 namespace Thea {
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API LineSegmentN<3, Real>;
+#endif
+
 /** The default line segment class in 3-dimensional real space. */
-template class THEA_API LineSegmentN<3, Real>;
 typedef LineSegmentN<3, Real> LineSegment3;
 
 } // namespace Thea

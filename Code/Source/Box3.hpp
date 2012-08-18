@@ -47,8 +47,11 @@
 
 namespace Thea {
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API BoxN<3, Real>;
+#endif
+
 // The default oriented box class in 3-dimensional real space.
-template class THEA_API BoxN<3, Real>;
 typedef BoxN<3, Real> Box3;
 
 } // namespace Thea

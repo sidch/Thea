@@ -620,8 +620,11 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
 
 }; // class MatrixMN<3, 3, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API MatrixMN<3, 3, Real>;
+#endif
+
 /** The default 3x3 real matrix class. */
-template class THEA_API MatrixMN<3, 3, Real>;
 typedef MatrixMN<3, 3, Real> Matrix3;
 
 /**

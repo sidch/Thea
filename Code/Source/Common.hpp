@@ -82,6 +82,12 @@
 #  define debugAssertM(test, msg) {}
 #endif
 
+// Visual Studio requires templates instantiations to be explicitly imported from DLL's to avoid conflicts like
+// http://www.codesynthesis.com/~boris/blog/2010/01/18/dll-export-cxx-templates/
+#ifdef _MSC_VER
+#  define THEA_EXPORT_INSTANTIATION
+#endif
+
 namespace G3D {
 
 typedef uint16 Color1uint16;

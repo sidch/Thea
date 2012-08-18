@@ -47,8 +47,11 @@
 
 namespace Thea {
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API RayN<3, Real>;
+#endif
+
 // The default ray class in 3-dimensional real space.
-template class THEA_API RayN<3, Real>;
 typedef RayN<3, Real> Ray3;
 
 } // namespace Thea

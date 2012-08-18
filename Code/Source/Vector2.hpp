@@ -109,8 +109,11 @@ class /* THEA_API */ VectorN<2, T> : public Internal::VectorNBase<2, T>
 
 }; // class VectorN<2, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API VectorN<2, Real>;
+#endif
+
 /** The default 2D real vector class. */
-template class THEA_API VectorN<2, Real>;
 typedef VectorN<2, Real> Vector2;
 
 } // namespace Thea

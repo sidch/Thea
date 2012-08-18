@@ -47,8 +47,11 @@
 
 namespace Thea {
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API LineN<3, Real>;
+#endif
+
 /** The default straight line class in 3-dimensional real space. */
-template class THEA_API LineN<3, Real>;
 typedef LineN<3, Real> Line3;
 
 } // namespace Thea
