@@ -50,7 +50,10 @@ ENDIF()
 
 ADD_SUBDIRECTORY(Plugins/CSPARSE)
 ADD_SUBDIRECTORY(Plugins/GL)
-ADD_SUBDIRECTORY(Plugins/OPTPP)
+
+IF(NOT WIN32)  # we don't have a prebuilt version of OPT++
+  ADD_SUBDIRECTORY(Plugins/OPTPP)
+ENDIF()
 
 # The tests should not be built by default
 IF(WITH_TESTS)
