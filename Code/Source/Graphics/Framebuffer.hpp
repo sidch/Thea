@@ -54,7 +54,7 @@ class THEA_API Framebuffer : public virtual NamedObject
 {
   public:
     /** Attachment points (enum class). These are guaranteed to be consecutive integers starting from 0. */
-    struct AttachmentPoint
+    struct THEA_API AttachmentPoint
     {
       /** Supported values. */
       enum Value

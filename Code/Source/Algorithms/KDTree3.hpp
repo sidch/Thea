@@ -93,7 +93,7 @@ class /* THEA_API */ KDTree3
 
   public:
     typedef array_size_t ElementIndex;  ///< Index of an element in the kd-tree.
-    using ProximityQueryBaseT::NeighborPair;
+    typedef ProximityQueryBaseT::NeighborPair NeighborPair;  ///< A pair of neighboring elements.
 
   private:
     /**

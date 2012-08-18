@@ -56,7 +56,7 @@ class THEA_API Polygon2
     THEA_DEF_POINTER_TYPES(Polygon2, shared_ptr, weak_ptr)
 
     /** %Options controlling interior triangulation. */
-    struct TriangulationOptions
+    struct THEA_API TriangulationOptions
     {
       Real area_bound;  ///< The maximum area of any output triangle (default -1, indicating no upper bound).
       long max_steiner_points;  /**< The maximum number of Steiner points that can be inserted (default -1, indicating no
@@ -71,7 +71,7 @@ class THEA_API Polygon2
     }; // struct TriangulationOptions
 
     /** A vertex plus an index. */
-    struct IndexedVertex
+    struct THEA_API IndexedVertex
     {
       /** Default constructor. */
       IndexedVertex() {}

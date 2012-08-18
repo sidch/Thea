@@ -70,7 +70,7 @@ class THEA_API LaplaceBeltrami
 {
   public:
     /** The method used to compute the discrete operator (enum class). */
-    struct Method
+    struct THEA_API Method
     {
       /** Supported values. */
       enum Value

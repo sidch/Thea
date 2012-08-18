@@ -143,7 +143,7 @@ class THEA_API DisplayMeshVertex
  * DisplayMeshVertex (e.g. when references are created on the fly as vertices are added to the mesh (adding vertices invalidates
  * previously created DisplayMeshVertex objects), or when memory conservation is important.).
  */
-class DisplayMeshIndexedVertex
+class THEA_API DisplayMeshIndexedVertex
 {
   public:
     /** Constructor. */

@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_RayIntersectableN_hpp__
-#define __Thea_Algorithms_RayIntersectableN_hpp__
+#ifndef __Thea_RayIntersectableN_hpp__
+#define __Thea_RayIntersectableN_hpp__
 
 #include "Common.hpp"
 #include "RayN.hpp"

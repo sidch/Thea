@@ -74,7 +74,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     AxisAlignedBoxT & getLocalAAB() { return aab; }
 
     /** Set the axis-aligned box in the local frame for the box. */
-    void setLocalAAB(AxisAlignedBoxT const & aab_) const { aab = aab_; }
+    void setLocalAAB(AxisAlignedBoxT const & aab_) { aab = aab_; }
 
     /** Get the local frame for the box. */
     CoordinateFrameT const & getLocalFrame() const { return frame; }
@@ -83,7 +83,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     CoordinateFrameT & getLocalFrame() { return frame; }
 
     /** Set the local frame for the box. */
-    void setLocalFrame(CoordinateFrameT const & frame_) const { frame = frame_; }
+    void setLocalFrame(CoordinateFrameT const & frame_) { frame = frame_; }
 
     /** Get the center of the box. */
     VectorT getCenter() const { return frame.pointToWorldSpace(aab.getCenter()); }
@@ -135,7 +135,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     /** Check if the box contains another. */
     bool contains(BoxN const & other) const
     {
-      CoordinateFrameT combined_transform = frame.inverse() * other.frame();
+      CoordinateFrameT combined_transform = frame.inverse() * other.frame;
 
       // FIXME: Currently works only for N < sizeof(unsigned long)
       for (unsigned long i = 0; i < (1 << N); ++i)

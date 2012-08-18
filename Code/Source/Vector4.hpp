@@ -1151,6 +1151,7 @@ class /* THEA_API */ VectorN<4, T> : public Internal::VectorNBase<4, T>
 }; // class VectorN<4, T>
 
 /** The default 4D real vector class. */
+template class THEA_API VectorN<4, Real>;
 typedef VectorN<4, Real> Vector4;
 
 } // namespace Thea

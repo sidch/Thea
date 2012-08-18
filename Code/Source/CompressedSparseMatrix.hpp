@@ -302,6 +302,9 @@ class /* THEA_API */ CompressedRowMatrix : public CompressedSparseMatrix<T, Matr
 
     void resize(long num_rows, long num_cols) { BaseT::resize(num_rows, num_cols); }
 
+    // This is needed to avoid a Visual Studio warning about inheriting via dominance
+    void makeZero() { BaseT::makeZero(); }
+
     /** Get the column index of each logically non-zero entry. */
     TheaArray<Index2DT> const & getColumnIndices() const { return BaseT::indices2; }
 
@@ -374,6 +377,9 @@ class /* THEA_API */ CompressedColumnMatrix : public CompressedSparseMatrix<T, M
     long numColumns() const { return BaseT::size1; }
 
     void resize(long num_rows, long num_cols) { BaseT::resize(num_cols, num_rows); }
+
+    // This is needed to avoid a Visual Studio warning about inheriting via dominance
+    void makeZero() { BaseT::makeZero(); }
 
     /** Get the row index of each logically non-zero entry. */
     TheaArray<Index2DT> const & getRowIndices() const { return BaseT::indices2; }

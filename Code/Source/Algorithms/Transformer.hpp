@@ -121,21 +121,21 @@ struct TransformerImpl<ObjT, TransT, typename boost::enable_if< IsPointN<ObjT, 2
 };
 
 template <typename ObjT, typename TransT>
-struct TransformerImpl<ObjT, TransT, typename boost::enable_if< IsPointN<ObjT, 3> >::type>
+struct THEA_API TransformerImpl<ObjT, TransT, typename boost::enable_if< IsPointN<ObjT, 3> >::type>
 {
   typedef Vector3 Result;
   static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, 3>::getPosition(obj); }
 };
 
 template <typename TransT>
-struct TransformerImpl<Vector4, TransT>
+struct THEA_API TransformerImpl<Vector4, TransT>
 {
   typedef Vector4 Result;
   static Result transform(Vector4 const & v, TransT const & tr) { return tr * v; }
 };
 
 template <>
-struct TransformerImpl<AxisAlignedBox3, RigidTransform3>
+struct THEA_API TransformerImpl<AxisAlignedBox3, RigidTransform3>
 {
   typedef Box3 Result;
   static Result transform(AxisAlignedBox3 const & aabb, RigidTransform3 const & tr)
@@ -143,7 +143,7 @@ struct TransformerImpl<AxisAlignedBox3, RigidTransform3>
 };
 
 template <>
-struct TransformerImpl<Box3, RigidTransform3>
+struct THEA_API TransformerImpl<Box3, RigidTransform3>
 {
   typedef Box3 Result;
   static Result transform(Box3 const & box, RigidTransform3 const & tr)
@@ -153,7 +153,7 @@ struct TransformerImpl<Box3, RigidTransform3>
 };
 
 template <>
-struct TransformerImpl<Ball3, RigidTransform3>
+struct THEA_API TransformerImpl<Ball3, RigidTransform3>
 {
   typedef Ball3 Result;
   static Ball3 transform(Ball3 const & ball, RigidTransform3 const & tr)
@@ -161,7 +161,7 @@ struct TransformerImpl<Ball3, RigidTransform3>
 };
 
 template <typename VertexTripleT, typename TransT>
-struct TransformerImpl< Triangle3<VertexTripleT>, TransT >
+struct THEA_API TransformerImpl< Triangle3<VertexTripleT>, TransT >
 {
   typedef LocalTriangle3 Result;
   static Result transform(Triangle3<VertexTripleT> const & tri, TransT const & tr)

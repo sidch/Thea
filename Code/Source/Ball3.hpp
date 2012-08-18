@@ -48,6 +48,7 @@
 namespace Thea {
 
 /** The default ball class in real 3-space. */
+template class THEA_API BallN<3, Real>;
 typedef BallN<3, Real> Ball3;
 
 } // namespace Thea

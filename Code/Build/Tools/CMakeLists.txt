@@ -55,7 +55,7 @@ INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 # Dependency: Boost
 SET(Boost_USE_STATIC_LIBS      ON)
 SET(Boost_USE_MULTITHREADED    ON)
-# SET(Boost_USE_STATIC_RUNTIME  OFF)
+SET(Boost_USE_STATIC_RUNTIME  OFF)
 INCLUDE(BoostAdditionalVersions)
 IF(EXISTS ${THEA_INSTALLATIONS_ROOT}/installed-boost)
   SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT}/installed-boost)

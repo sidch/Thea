@@ -47,7 +47,7 @@
 namespace Thea {
 
 /** %Matrix format (enum class). */
-struct MatrixFormat
+struct THEA_API MatrixFormat
 {
   /** Supported values. */
   enum Value

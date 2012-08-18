@@ -74,6 +74,9 @@ class /* THEA_API */ ImageMatrix : public AddressableMatrix<T>, public Resizable
 
     void resize(long num_rows, long num_cols) { image->resize(image->getType(), (int)num_cols, (int)num_rows); }
 
+    // This is needed to avoid a Visual Studio warning about inheriting via dominance
+    void makeZero() { AddressableMatrix<T>::makeZero(); }
+
     /** Element access. Use this whenever possible to avoid the virtual function overhead of get(). */
     T const & operator()(long row, long col) const { return ((T const *)image->getScanLine(row))[col]; }
 

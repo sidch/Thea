@@ -13,6 +13,10 @@
 
 // Main includes
 
+#ifndef GLEW_STATIC
+#  define GLEW_STATIC
+#endif
+
 #include "glew.h"
 
 #ifdef THEA_GL_USE_FRAMEWORK

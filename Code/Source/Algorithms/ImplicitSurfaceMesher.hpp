@@ -119,10 +119,10 @@ class THEA_API ImplicitSurfaceMesher
 
   public:
     /** %Options controlling mesh generation by polygonizing the implicit surface. */
-    struct Options
+    struct THEA_API Options
     {
       /** %Options for meshing the implicit surface via the method of Bloomenthal [1994]. */
-      struct Bloomenthal
+      struct THEA_API Bloomenthal
       {
         double cell_size;           ///< Size of the polygonizing cell (negative to select default).
         int max_search_steps;       /**< Limit to how far away we will look for components of the implicit surface (negative to
@@ -145,7 +145,7 @@ class THEA_API ImplicitSurfaceMesher
        *
        * @see http://www.cgal.org/Manual/last/doc_html/cgal_manual/Surface_mesher_ref/Class_Surface_mesh_default_criteria_3.html
        */
-      struct BoissonnatOudot
+      struct THEA_API BoissonnatOudot
       {
         double min_facet_angle;        ///< Minimum facet angle, in radians (negative to select default).
         double min_delaunay_radius;    ///< Minimum radius of surface Delaunay balls (negative to select default).

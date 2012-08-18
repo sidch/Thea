@@ -58,7 +58,7 @@ class THEA_API VARArea : public virtual NamedObject
 {
   public:
     /** How the storage will be used (enum class). */
-    struct Usage
+    struct THEA_API Usage
     {
       /** Supported values. */
       enum Value

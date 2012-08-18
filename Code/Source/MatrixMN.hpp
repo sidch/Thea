@@ -155,7 +155,7 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     }
 
     /** Set a row of the matrix. */
-    void setRow(long r, VectorN<N, T> const & values) const
+    void setRow(long r, VectorN<N, T> const & values)
     {
       for (long j = 0; j < N; ++j)
         m[r][j] = values[j];
@@ -172,7 +172,7 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     }
 
     /** Set a column of the matrix. */
-    void setColumn(long c, VectorN<M, T> const & values) const
+    void setColumn(long c, VectorN<M, T> const & values)
     {
       for (long i = 0; i < M; ++i)
         m[i][c] = values[i];
@@ -195,7 +195,7 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
       MatrixT result;
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          result.m[i][j] = m[i][j] + rhs.m[i];
+          result.m[i][j] = m[i][j] + rhs.m[i][j];
 
       return result;
     }
@@ -304,8 +304,8 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
       return *static_cast<MatrixT *>(this);
     }
 
-    using BaseT::min;
-    using BaseT::max;
+    T const & min() const { return BaseT::min(); }
+    T const & max() const { return BaseT::max(); }
 
     /** Return a matrix containing the component-wise minima of this matrix and another. */
     MatrixT min(MatrixT const & other) const

@@ -54,7 +54,7 @@ class THEA_API Texture : public virtual NamedObject
 {
   public:
     /** %Texture dimensionality (enum class). */
-    struct Dimension
+    struct THEA_API Dimension
     {
       /** Supported values. */
       enum Value
@@ -70,7 +70,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** Wrap modes (enum class). */
-    struct WrapMode
+    struct THEA_API WrapMode
     {
       /** Supported values. */
       enum Value
@@ -84,7 +84,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** Interpolation modes (enum class). */
-    struct InterpolateMode
+    struct THEA_API InterpolateMode
     {
       /** Supported values. */
       enum Value
@@ -100,7 +100,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** Depth read modes, useful for shadow mapping (enum class).*/
-    struct DepthReadMode
+    struct THEA_API DepthReadMode
     {
       /** Supported values. */
       enum Value
@@ -114,7 +114,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** Cube map faces (enum class).*/
-    struct Face
+    struct THEA_API Face
     {
       /** Supported values. */
       enum Value
@@ -131,7 +131,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** %Texture options. */
-    struct Options
+    struct THEA_API Options
     {
       WrapMode         wrapMode;         ///< Texture wrapping mode.
       InterpolateMode  interpolateMode;  ///< Texture interpolation mode.

@@ -101,10 +101,6 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
   ELSE()
     ADD_DEFINITIONS(${CGAL_RELEASE_CFLAGS} -Wall -O2 -fno-strict-aliasing -DNDEBUG)  # -fvisibility=hidden
   ENDIF()
-ELSEIF(MSVC)
-  IF(NOT CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
-    ADD_DEFINITIONS(/O2)
-  ENDIF()
 ENDIF()
 
 # Shared library flags

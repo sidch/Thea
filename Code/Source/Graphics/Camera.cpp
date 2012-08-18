@@ -103,9 +103,9 @@ Camera::updateCachedProjectionTransform() const
   {
     cached_proj_transform = (projection_type == ProjectionType::ORTHOGRAPHIC)
         ? Matrix4::orthogonalProjection(left, right, bottom, top, near_dist, far_dist,
-                                        proj_y_dir == ProjectedYDirection::UP ? 1 : -1)
+                                        proj_y_dir == ProjectedYDirection::UP ? true : false)
         : Matrix4::perspectiveProjection(left, right, bottom, top, near_dist, far_dist,
-                                         proj_y_dir == ProjectedYDirection::UP ? 1 : -1);
+                                         proj_y_dir == ProjectedYDirection::UP ? true : false);
 
     cached_inv_proj_transform = cached_proj_transform.inverse();
 

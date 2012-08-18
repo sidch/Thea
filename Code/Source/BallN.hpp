@@ -57,7 +57,7 @@ namespace Thea {
  * @note A (N - 1)-sphere is the (N - 1)-dimensional surface of a N-dimensional ball.
  */
 template <long N, typename T>
-class THEA_API BallN : public RayIntersectableN<N, T>
+class /* THEA_API */ BallN : public RayIntersectableN<N, T>
 {
   public:
     typedef VectorN<N, T> VectorT;
@@ -146,7 +146,11 @@ class THEA_API BallN : public RayIntersectableN<N, T>
     T squaredDistance(AxisAlignedBoxN<N, T> const & aab) const { T x = distance(aab); return x * x; }
 
     /** Get a bounding box for the ball. */
-    AxisAlignedBoxN<N, T> getBounds() const;
+    AxisAlignedBoxN<N, T> getBounds() const
+    {
+      VectorT half_ext(radius);
+      return AxisAlignedBoxN<N, T>(center - half_ext, center + half_ext);
+    }
 
     /** Get a textual representation of the ball. */
     std::string toString() const

@@ -65,7 +65,7 @@ class THEA_API Camera : public Serializable
     THEA_DEF_POINTER_TYPES(Camera, shared_ptr, weak_ptr)
 
     /** Type of projection used by the camera (enum class). */
-    struct ProjectionType
+    struct THEA_API ProjectionType
     {
       /** Supported values. */
       enum Value
@@ -78,7 +78,7 @@ class THEA_API Camera : public Serializable
     };
 
     /** The direction in which projected Y coordinates increase, relative to the up vector of the camera frame. */
-    struct ProjectedYDirection
+    struct THEA_API ProjectedYDirection
     {
       /** Supported values. */
       enum Value

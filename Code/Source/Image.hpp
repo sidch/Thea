@@ -62,7 +62,7 @@ class THEA_API Image : public Serializable
      * components for the pixel at address <code>unsigned char * p</code> may be accessed as <code>p[Channel::RED]</code>,
      * <code>p[Channel::GREEN]</code> and <code>p[Channel::BLUE]</code>.
      */
-    struct Channel
+    struct THEA_API Channel
     {
       static int const RED;        ///< Index of red channel
       static int const GREEN;      ///< Index of green channel
@@ -74,7 +74,7 @@ class THEA_API Image : public Serializable
      * Different image types (enum class plus extra functions). Note that the channel ordering can be OS dependent, hence access
      * is best achieved using the implementation-specific RED, GREEN, BLUE and ALPHA indices.
      */
-    struct Type
+    struct THEA_API Type
     {
       /** Supported values. */
       enum Value
@@ -371,7 +371,7 @@ class THEA_API CodecJPEG : public ImageCodec
 {
   public:
     /** %Options for JPEG encoding. */
-    struct Options
+    struct THEA_API Options
     {
       int quality;
       bool progressive;

@@ -50,16 +50,16 @@ namespace PyramidInternal {
 // 0.5 of the mean). GAUSSIAN_INTEGRALS[i][0], [i][1] and [i][2] give the integrals over the ranges (-infty, 0], [0, 1] and
 // [1, infty) respectively of the gaussian with mean (i + 0.5) / 10.
 int const NUM_GAUSSIAN_INTEGRAL_BINS = 10;
-Real const GAUSSIAN_INTEGRALS[NUM_GAUSSIAN_INTEGRAL_BINS][3] = { {0.473112, 0.426885, 0.100003},
-                                                                 {0.419823, 0.454411, 0.125766},
-                                                                 {0.367966, 0.476202, 0.155832},
-                                                                 {0.318412, 0.491301, 0.190287},
-                                                                 {0.271912, 0.499026, 0.229062},
-                                                                 {0.229062, 0.499026, 0.271912},
-                                                                 {0.190287, 0.491301, 0.318412},
-                                                                 {0.155832, 0.476202, 0.367966},
-                                                                 {0.125766, 0.454411, 0.419823},
-                                                                 {0.100003, 0.426885, 0.473112} };
+Real const GAUSSIAN_INTEGRALS[NUM_GAUSSIAN_INTEGRAL_BINS][3] = { {0.473112f, 0.426885f, 0.100003f},
+                                                                 {0.419823f, 0.454411f, 0.125766f},
+                                                                 {0.367966f, 0.476202f, 0.155832f},
+                                                                 {0.318412f, 0.491301f, 0.190287f},
+                                                                 {0.271912f, 0.499026f, 0.229062f},
+                                                                 {0.229062f, 0.499026f, 0.271912f},
+                                                                 {0.190287f, 0.491301f, 0.318412f},
+                                                                 {0.155832f, 0.476202f, 0.367966f},
+                                                                 {0.125766f, 0.454411f, 0.419823f},
+                                                                 {0.100003f, 0.426885f, 0.473112f} };
 
 void
 smoothIncrement1D(Real * dst, int dst_size, int index, Real mean, Real value)

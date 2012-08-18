@@ -39,13 +39,23 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_RayIntersectable3_hpp__
-#define __Thea_Algorithms_RayIntersectable3_hpp__
+#ifndef __Thea_RayIntersectable3_hpp__
+#define __Thea_RayIntersectable3_hpp__
 
 #include "Common.hpp"
 #include "RayIntersectableN.hpp"
 
 namespace Thea {
+
+// This is a workaround for the MSVC problem described here:
+//
+// http://www.codesynthesis.com/~boris/blog/2010/01/18/dll-export-cxx-templates/
+//
+// In short, if a DLL has an exported class that inherits from a template instantiation, the instantiation is also exported.
+// If the code linking to the DLL separatedly instantiates the template in the same way, duplicate symbol errors occur. Hence we
+// need to explicitly import the instantiation from the DLL.
+template class THEA_API RayIntersectionN<3, Real>;
+template class THEA_API RayIntersectableN<3, Real>;
 
 // The default ray intersection class in real 3-space.
 typedef RayIntersectionN<3, Real> RayIntersection3;
