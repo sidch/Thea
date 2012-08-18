@@ -511,7 +511,7 @@ cspline(T const & a, T const & da, T const & b, T const & db, S const & s)
  * @param split_ratio The average splitting ratio at a node, expressed as the fraction of elements in the larger child of the
  *   node (0.5 is a perfectly fair split). Must be in the range (0, 1).
  */
-int kdtreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio = 0.5);
+THEA_API int kdtreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio = 0.5);
 
 /**
  * Root of linear equation c0 + c1 * x = 0.

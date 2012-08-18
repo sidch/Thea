@@ -100,6 +100,12 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     }
 
     /** Transform a point from the local space of the coordinate frame to world space. */
+    VectorT operator*(VectorT const & p) const
+    {
+      return this->RigidTransformT::operator*(p);
+    }
+
+    /** Transform a point from the local space of the coordinate frame to world space. */
     VectorT pointToWorldSpace(VectorT const & p) const
     {
       return this->RigidTransformT::operator*(p);

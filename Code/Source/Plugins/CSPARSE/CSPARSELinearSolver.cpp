@@ -251,7 +251,7 @@ CSPARSELinearSolver::solve(Options const & options)
       if (Ap != &A)
         cs_spfree(Ap);
 
-      has_solution = (bool)ok;
+      has_solution = (ok != 0);
       break;
     }
 

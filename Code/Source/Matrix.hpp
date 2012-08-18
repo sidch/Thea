@@ -312,6 +312,9 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     T & getMutable(long row, long col) { return (*this)(row, col); }
     void set(long row, long col, T const & value) { (*this)(row, col) = value; }
 
+    // This is needed to avoid a Visual Studio warning about inheriting via dominance
+    void makeZero() { AddressableBaseT::makeZero(); }
+
     void fill(T const & value)
     {
       if (values)
@@ -565,8 +568,8 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
      */
     template <typename U> void MultMv(U const * v, U * w) const { postmulVector(v, w); }
 
-    using AddressableBaseT::min;
-    using AddressableBaseT::max;
+    T const & min() const { return AddressableBaseT::min(); }
+    T const & max() const { return AddressableBaseT::max(); }
 
     /** Return a matrix containing the component-wise minima of this matrix and another. */
     Matrix min(Matrix const & other) const

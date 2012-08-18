@@ -65,7 +65,7 @@ class THEA_API ProximityQueryStructure3
      * between neighboring elements, the indices of the query and target elements, and the positions of the closest pair of
      * points on them.
      */
-    class NeighborPair
+    class THEA_API NeighborPair
     {
       public:
         /** Default constructor. */

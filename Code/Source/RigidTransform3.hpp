@@ -146,6 +146,7 @@ class /* THEA_API */ RigidTransformN<3, T> : public Internal::RigidTransformNBas
 }; // class RigidTransformN<3, T>
 
 /** The default affine transform class in real 3-space. */
+template class THEA_API RigidTransformN<3, Real>;
 typedef RigidTransformN<3, Real> RigidTransform3;
 
 } // namespace Thea

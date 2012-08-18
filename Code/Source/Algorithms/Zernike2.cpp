@@ -40,6 +40,9 @@
 //============================================================================
 
 #include "Zernike2.hpp"
+
+#ifndef THEA_NO_ZERNIKE
+
 #include "../Math.hpp"
 
 namespace Thea {
@@ -66,7 +69,7 @@ Zernike2::generateBasisLUT() const
   for (int y = 0; y < lut_size; ++y)
     for (int x = 0; x < lut_size; ++x)
     {
-      radius = std::sqrt(Math::square(x - max_radius) + Math::square(y - max_radius));
+      radius = std::sqrt((double)(Math::square(x - max_radius) + Math::square(y - max_radius)));
 
       if(radius < max_radius)
       {
@@ -98,3 +101,5 @@ Zernike2::generateBasisLUT() const
 
 } // namespace Algorithms
 } // namespace Thea
+
+#endif // !defined(THEA_NO_ZERNIKE)

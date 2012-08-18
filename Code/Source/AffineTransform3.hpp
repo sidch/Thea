@@ -166,6 +166,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
 }; // class AffineTransformN<3, T>
 
 /** The default affine transform class in real 3-space. */
+template class THEA_API AffineTransformN<3, Real>;
 typedef AffineTransformN<3, Real> AffineTransform3;
 
 } // namespace Thea

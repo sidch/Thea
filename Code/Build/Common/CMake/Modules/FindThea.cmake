@@ -4,6 +4,8 @@
 #
 #   Thea_FOUND           True if Thea was found, else false
 #   Thea_LIBRARIES       Libraries to link
+#   Thea_LIBRARY_DIRS    Additional directories for libraries. These do not necessarily correspond to Thea_LIBRARIES, and both
+#                        variables must be passed to the linker.
 #   Thea_INCLUDE_DIRS    The directories containing the header files
 #   Thea_CFLAGS          Extra compiler flags
 #   Thea_DEBUG_CFLAGS    Extra compiler flags to be used only in debug builds
@@ -20,6 +22,7 @@
 #
 
 SET(Thea_FOUND FALSE)
+SET(Thea_LIBRARY_DIRS )
 SET(Thea_CFLAGS )
 SET(Thea_LDFLAGS )
 
@@ -102,6 +105,27 @@ IF(Thea_FOUND)
   ENDIF(G3D_FOUND)
 ENDIF(Thea_FOUND)
 
+# Dependency: Boost
+IF(Thea_FOUND)
+  SET(Boost_USE_STATIC_LIBS      ON)
+  SET(Boost_USE_MULTITHREADED    ON)
+  SET(Boost_USE_STATIC_RUNTIME  OFF)
+  INCLUDE(BoostAdditionalVersions)
+  IF(EXISTS ${Thea_ROOT}/installed-boost)
+    SET(BOOST_ROOT ${Thea_ROOT}/installed-boost)
+  ELSE()
+    SET(BOOST_ROOT ${Thea_ROOT})
+  ENDIF()
+  FIND_PACKAGE(Boost)
+  IF(Boost_FOUND)
+    SET(Thea_INCLUDE_DIRS ${Thea_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+    # We'll add the libraries below, after CGAL, which depends on Boost
+  ELSE(Boost_FOUND)
+    MESSAGE(STATUS "Thea: Boost not found")
+    SET(Thea_FOUND FALSE)
+  ENDIF(Boost_FOUND)
+ENDIF(Thea_FOUND)
+
 # Dependency: CGAL
 IF(Thea_FOUND)
   IF(EXISTS ${Thea_ROOT}/installed-cgal)
@@ -115,7 +139,7 @@ IF(Thea_FOUND)
     SET(CGAL_LIBRARIES ${CGAL_LIBRARY} ${CGAL_3RD_PARTY_LIBRARIES})
     IF(NOT CGAL_LIBRARY)
       MESSAGE(STATUS "CGAL libraries will be auto-linked")
-      SET(Thea_LDFLAGS ${Thea_LDFLAGS} ${CGAL_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})
+      SET(Thea_LIBRARY_DIRS ${Thea_LIBRARY_DIRS} ${CGAL_LIBRARY_DIRS} ${Boost_LIBRARY_DIRS})
     ENDIF()
     # -O3 might cause problems with old versions of gcc 4 on OS X
     LIST(REMOVE_ITEM CGAL_RELEASE_CFLAGS "-O3")
@@ -131,25 +155,10 @@ IF(Thea_FOUND)
   ENDIF(CGAL_FOUND)
 ENDIF(Thea_FOUND)
 
-# Dependency: Boost
+# CGAL depends on Boost but the block above also needs access to the Boost library dirs, so we add the libraries here, in the
+# correct sequence
 IF(Thea_FOUND)
-  SET(Boost_USE_STATIC_LIBS      ON)
-  SET(Boost_USE_MULTITHREADED    ON)
-  SET(Boost_USE_STATIC_RUNTIME  OFF)
-  INCLUDE(BoostAdditionalVersions)
-  IF(EXISTS ${Thea_ROOT}/installed-boost)
-    SET(BOOST_ROOT ${Thea_ROOT}/installed-boost)
-  ELSE()
-    SET(BOOST_ROOT ${Thea_ROOT})
-  ENDIF()
-  FIND_PACKAGE(Boost)
-  IF(Boost_FOUND)
-    SET(Thea_LIBRARIES ${Thea_LIBRARIES} ${Boost_LIBRARIES})
-    SET(Thea_INCLUDE_DIRS ${Thea_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-  ELSE(Boost_FOUND)
-    MESSAGE(STATUS "Thea: Boost not found")
-    SET(Thea_FOUND FALSE)
-  ENDIF(Boost_FOUND)
+  SET(Thea_LIBRARIES ${Thea_LIBRARIES} ${Boost_LIBRARIES})
 ENDIF(Thea_FOUND)
 
 # Dependency: Lib3ds
@@ -190,9 +199,12 @@ ENDIF(Thea_FOUND)
 ENDIF(NOT Thea_NO_DEPENDENCIES)
 
 # Remove duplicate entries from lists, else the same dirs and flags can repeat many times
-IF(Thea_LIBRARIES)
-  LIST(REMOVE_DUPLICATES Thea_LIBRARIES)
-ENDIF(Thea_LIBRARIES)
+
+# Don't remove duplicates from Thea_LIBRARIES -- the list includes repetitions of "debug" and "optimized"
+
+IF(Thea_LIBRARY_DIRS)
+  LIST(REMOVE_DUPLICATES Thea_LIBRARY_DIRS)
+ENDIF(Thea_LIBRARY_DIRS)
 
 IF(Thea_INCLUDE_DIRS)
   LIST(REMOVE_DUPLICATES Thea_INCLUDE_DIRS)
@@ -214,6 +226,7 @@ IF(Thea_LDFLAGS)
   LIST(REMOVE_DUPLICATES Thea_LDFLAGS)
 ENDIF(Thea_LDFLAGS)
 
+SET(Thea_LIBRARY_DIRS ${Thea_LIBRARY_DIRS} CACHE STRING "Additional directories for libraries required by Thea")
 SET(Thea_CFLAGS ${Thea_CFLAGS}  CACHE STRING "Extra compiler flags required by Thea")
 SET(Thea_LDFLAGS ${Thea_LDFLAGS} CACHE STRING "Extra linker flags required by Thea")
 

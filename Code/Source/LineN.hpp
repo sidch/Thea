@@ -119,8 +119,8 @@ class /* THEA_DLL_LOCAL */ LineNBase
     {
       // Adapted from Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
 
-      T r = point - other.point;
-      T b = direction.dot(other.dirction);
+      VectorT r = point - other.point;
+      T b = direction.dot(other.direction);
       T f = other.direction.dot(r);
       T denom = 1 - b * b; // always nonnegative
 

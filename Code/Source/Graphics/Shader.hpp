@@ -55,7 +55,7 @@ class THEA_API Shader : public virtual NamedObject
 {
   public:
     /** %Shader module types (enum class). */
-    struct ModuleType
+    struct THEA_API ModuleType
     {
       /** Supported values. */
       enum Value

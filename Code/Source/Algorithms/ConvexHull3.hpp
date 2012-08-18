@@ -59,10 +59,10 @@ class THEA_API ConvexHull3
     THEA_DEF_POINTER_TYPES(ConvexHull3, shared_ptr, weak_ptr)
 
     /** %Options for computing convex hulls. */
-    struct Options
+    struct THEA_API Options
     {
       /** %Options for computing approximate convex hulls. */
-      struct Approx
+      struct THEA_API Approx
       {
         long max_vertices_hint;  ///< Hint for maximum number of vertices on the hull.
         Real skin_width;  ///< Amount to expand the hull by, for a little leeway and robustness.
@@ -76,7 +76,7 @@ class THEA_API ConvexHull3
       };
 
       /** %Options for computing exact convex hulls. */
-      struct Exact
+      struct THEA_API Exact
       {
         /** Constructor. */
         Exact() {}

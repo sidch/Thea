@@ -128,6 +128,7 @@ class /* THEA_API */ CoordinateFrameN<3, T> : public Internal::CoordinateFrameNB
 }; // class CoordinateFrameN<3, T>
 
 /** The default coordinate frame class in real 3-space. */
+template class THEA_API CoordinateFrameN<3, Real>;
 typedef CoordinateFrameN<3, Real> CoordinateFrame3;
 
 } // namespace Thea

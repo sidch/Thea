@@ -84,7 +84,7 @@ class THEA_API Polygon3
     THEA_DEF_POINTER_TYPES(Polygon3, shared_ptr, weak_ptr)
 
     /** A vertex plus an index. */
-    struct IndexedVertex
+    struct THEA_API IndexedVertex
     {
       /** Default constructor. */
       IndexedVertex() {}

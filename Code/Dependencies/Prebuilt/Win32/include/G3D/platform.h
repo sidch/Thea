@@ -57,7 +57,9 @@
 #elif defined(__linux__)
     #define G3D_LINUX
 #elif defined(__APPLE__)
-    #define G3D_OSX
+    // For 64-bit OS X compilation, pretend this is Linux to eliminate all Carbon dependencies
+    #define  G3D_LINUX
+    // #define G3D_OSX
 
    // Prevent OS X fp.h header from being included; it defines
    // pi as a constant, which creates a conflict with G3D

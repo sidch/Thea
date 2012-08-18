@@ -85,6 +85,7 @@ class /* THEA_API */ RigidTransformN<2, T> : public Internal::RigidTransformNBas
 }; // class RigidTransformN<2, T>
 
 /** The default rigid transform class in real 2-space. */
+template class THEA_API RigidTransformN<2, Real>;
 typedef RigidTransformN<2, Real> RigidTransform2;
 
 } // namespace Thea

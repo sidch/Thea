@@ -48,6 +48,7 @@
 namespace Thea {
 
 /** The default straight line class in 2-dimensional real space. */
+template class THEA_API LineN<2, Real>;
 typedef LineN<2, Real> Line2;
 
 } // namespace Thea

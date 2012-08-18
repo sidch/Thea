@@ -75,7 +75,8 @@ class /* THEA_API */ CoordinateFrameN<2, T> : public Internal::CoordinateFrameNB
     void set(VectorT const & eye, VectorT const & center)
     {
       VectorT f = (center - eye).unit();
-      this->setRotation(MatrixT(f[0], -f[1], f[1], f[0]), eye);
+      this->_setRotation(MatrixT(f[0], -f[1], f[1], f[0]));
+      this->setTranslation(eye);
     }
 
   private:
@@ -85,6 +86,7 @@ class /* THEA_API */ CoordinateFrameN<2, T> : public Internal::CoordinateFrameNB
 }; // class CoordinateFrameN<2, T>
 
 /** The default coordinate frame class in real 2-space. */
+template class THEA_API CoordinateFrameN<2, Real>;
 typedef CoordinateFrameN<2, Real> CoordinateFrame2;
 
 } // namespace Thea

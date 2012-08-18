@@ -66,7 +66,7 @@ class THEA_API RenderSystem : public virtual NamedObject
 {
   public:
     /** Basic drawing primitives (enum class). */
-    struct Primitive
+    struct THEA_API Primitive
     {
       /** Supported values. */
       enum Value
@@ -87,7 +87,7 @@ class THEA_API RenderSystem : public virtual NamedObject
     };
 
     /** Matrix-based transformation modes (enum class). */
-    struct MatrixMode
+    struct THEA_API MatrixMode
     {
       /** Supported values. */
       enum Value
@@ -102,7 +102,7 @@ class THEA_API RenderSystem : public virtual NamedObject
     };
 
     /** Depth tests (enum class). */
-    struct DepthTest
+    struct THEA_API DepthTest
     {
       /** Supported values. */
       enum Value
@@ -121,7 +121,7 @@ class THEA_API RenderSystem : public virtual NamedObject
     };
 
     /** Faces to be culled (enum class). */
-    struct CullFace
+    struct THEA_API CullFace
     {
       /** Supported values. */
       enum Value

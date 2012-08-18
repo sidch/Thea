@@ -90,7 +90,7 @@ struct /* THEA_API */ RayIntersectionTesterImpl
  * templates (see http://www.gotw.ca/publications/mill17.htm). Do <b>not</b> try specializing
  * RayIntersectionTester::rayIntersectionTime() or RayIntersectionTester::rayIntersection().
  */
-class /* THEA_API */ RayIntersectionTester
+class THEA_API RayIntersectionTester
 {
   public:
     /**

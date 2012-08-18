@@ -59,7 +59,7 @@ class THEA_API LinearLeastSquares
     THEA_DEF_POINTER_TYPES(LinearLeastSquares, shared_ptr, weak_ptr)
 
     /** The constraints to be imposed on the solution (enum class). */
-    struct Constraint
+    struct THEA_API Constraint
     {
       /** Supported values. */
       enum Value

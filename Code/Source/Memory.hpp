@@ -47,6 +47,7 @@
 #include <boost/shared_array.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/functional/hash.hpp>
 
 namespace Thea {
 
@@ -140,5 +141,23 @@ using boost::swap;
 #endif // THEA_EXTERN_TEMPLATES
 
 } // namespace Thea
+
+namespace boost {
+
+template <class T>
+std::size_t
+hash_value(boost::shared_ptr<T> const & ptr)
+{
+  return boost::hash_value(ptr.get());
+}
+
+template <class T>
+std::size_t
+hash_value(boost::shared_array<T> const & arr)
+{
+  return boost::hash_value(arr.get());
+}
+
+} // namespace boost
 
 #endif

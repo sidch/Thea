@@ -42,6 +42,13 @@
 #ifndef __Thea_Algorithms_Zernike2_hpp__
 #define __Thea_Algorithms_Zernike2_hpp__
 
+// Currently Visual Studio 2010 fails to compile Boost multi_array in Debug mode: https://svn.boost.org/trac/boost/ticket/4874
+#if defined(_MSC_VER) && _MSC_VER >= 1600
+#  define THEA_NO_ZERNIKE
+#endif
+
+#ifndef THEA_NO_ZERNIKE
+
 #include "../Common.hpp"
 #include "../AddressableMatrix.hpp"
 #include "../Array.hpp"
@@ -63,7 +70,7 @@ class THEA_API Zernike2
 {
   public:
     /** %Options for generating Zernike moments. */
-    struct Options
+    struct THEA_API Options
     {
       int angular_steps;  ///< Number of angular steps.
       int radial_steps;   ///< Number of radial steps.
@@ -240,5 +247,7 @@ Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, doubl
 
 } // namespace Algorithms
 } // namespace Thea
+
+#endif // !defined(THEA_NO_ZERNIKE)
 
 #endif
