@@ -150,8 +150,11 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
 
 }; // class AxisAlignedBoxN<3, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API AxisAlignedBoxN<3, Real>;
+#endif
+
 /** The default axis-aligned box class in 3-dimensional real space. */
-template class THEA_API AxisAlignedBoxN<3, Real>;
 typedef AxisAlignedBoxN<3, Real> AxisAlignedBox3;
 
 } // namespace Thea

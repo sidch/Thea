@@ -102,8 +102,11 @@ class /* THEA_API */ HyperplaneN<3, T> : public Internal::HyperplaneNBase<3, T>
 
 }; // class HyperplaneN<3, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API HyperplaneN<3, Real>;
+#endif
+
 /** The default plane class in 3-dimensional real space. */
-template class THEA_API HyperplaneN<3, Real>;
 typedef HyperplaneN<3, Real> Plane3;
 
 } // namespace Thea

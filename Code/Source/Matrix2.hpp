@@ -138,8 +138,11 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
 
 }; // class MatrixMN<2, 2, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API MatrixMN<2, 2, Real>;
+#endif
+
 /** The default 2x2 real matrix class. */
-template class THEA_API MatrixMN<2, 2, Real>;
 typedef MatrixMN<2, 2, Real> Matrix2;
 
 } // namespace Thea

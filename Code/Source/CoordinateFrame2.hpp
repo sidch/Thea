@@ -85,8 +85,11 @@ class /* THEA_API */ CoordinateFrameN<2, T> : public Internal::CoordinateFrameNB
 
 }; // class CoordinateFrameN<2, T>
 
+#ifdef THEA_EXPORT_INSTANTIATION
+  template class THEA_API CoordinateFrameN<2, Real>;
+#endif
+
 /** The default coordinate frame class in real 2-space. */
-template class THEA_API CoordinateFrameN<2, Real>;
 typedef CoordinateFrameN<2, Real> CoordinateFrame2;
 
 } // namespace Thea
