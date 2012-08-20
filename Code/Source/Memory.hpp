@@ -48,6 +48,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/version.hpp>
 
 namespace Thea {
 
@@ -142,22 +143,27 @@ using boost::swap;
 
 } // namespace Thea
 
+// Boost 1.47.0 first defined hash_value for shared pointers
+#if BOOST_VERSION < 104700
+
 namespace boost {
 
 template <class T>
 std::size_t
-hash_value(boost::shared_ptr<T> const & ptr)
+hash_value(shared_ptr<T> const & ptr)
 {
-  return boost::hash_value(ptr.get());
+  return hash_value(ptr.get());
 }
 
 template <class T>
 std::size_t
-hash_value(boost::shared_array<T> const & arr)
+hash_value(shared_array<T> const & arr)
 {
-  return boost::hash_value(arr.get());
+  return hash_value(arr.get());
 }
 
 } // namespace boost
+
+#endif
 
 #endif

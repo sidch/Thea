@@ -155,7 +155,7 @@ ConvexHull3::updateApprox() const
           {
             index = (array_size_t)result.mIndices[i + j];
             debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
-            poly.addVertex(approx_vertices[index], index);
+            poly.addVertex(approx_vertices[index], (long)index);
           }
 
           tri_indices.clear();

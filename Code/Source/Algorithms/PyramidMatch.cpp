@@ -559,8 +559,8 @@ Pyramid2D::deserialize(TextInputStream & input, Codec const & codec)
   for (int i = 0; i < num_levels; ++i)
   {
     Array2D & level = levels[i];
-    level.sx = (array_size_t)input.readNumber();
-    level.sy = (array_size_t)input.readNumber();
+    level.sx = (int)input.readNumber();
+    level.sy = (int)input.readNumber();
 
     if (i == 0)
     {
@@ -660,9 +660,9 @@ Pyramid3D::deserialize(TextInputStream & input, Codec const & codec)
   for (int i = 0; i < num_levels; ++i)
   {
     Array3D & level = levels[i];
-    level.sx = (array_size_t)input.readNumber();
-    level.sy = (array_size_t)input.readNumber();
-    level.sz = (array_size_t)input.readNumber();
+    level.sx = (int)input.readNumber();
+    level.sy = (int)input.readNumber();
+    level.sz = (int)input.readNumber();
 
     if (i == 0)
     {
