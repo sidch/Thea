@@ -64,6 +64,11 @@ class VTN
     array_size_t operator[](std::size_t i) const { return elems[i]; }
     array_size_t & operator[](std::size_t i) { return elems[i]; }
 
+    bool operator==(VTN const & rhs) const
+    {
+      return elems[0] == rhs.elems[0] && elems[1] == rhs.elems[1] && elems[2] == rhs.elems[2];
+    }
+
     friend std::size_t hash_value(VTN const & vtn)
     {
       return boost::hash_range(vtn.elems, vtn.elems + 3);
@@ -530,7 +535,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       {
         Vector3 const & v = vertices[i];
         writeString(format("v %f %f %f\n", v.x(), v.y(), v.z()), output);
-        vertex_indices[DisplayMeshVRef(&mesh, i)] = vertex_index;
+        vertex_indices[DisplayMeshVRef(&mesh, (long)i)] = vertex_index;
       }
 
       if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
