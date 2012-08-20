@@ -83,8 +83,8 @@ GLCaps::getDriverVersion()
   {
     // Mesa includes the driver version in the renderer version e.g., "1.5 Mesa 6.4.2"
     static std::string _glVersion = (char *)glGetString(GL_VERSION);
-    int i = _glVersion.rfind(' ');
-    if (i == (int)std::string::npos)
+    std::size_t i = _glVersion.rfind(' ');
+    if (i == std::string::npos)
       return "Unknown (bad MESA driver string)";
     else
       return _glVersion.substr(i + 1, _glVersion.length() - i);
@@ -110,7 +110,7 @@ GLCaps::getDriverVersion()
                                   installedDriversKey);
 
     // Find and remove the "\Registry\Machine\" part of the key
-    int subKeyIndex = installedDriversKey.find('\\', 1);
+    std::size_t subKeyIndex = installedDriversKey.find('\\', 1);
     subKeyIndex = installedDriversKey.find('\\', subKeyIndex + 1);
 
     installedDriversKey.erase(0, subKeyIndex);

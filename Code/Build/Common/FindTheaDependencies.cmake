@@ -19,7 +19,7 @@ IF(Thea_FIND_ALL)
 ENDIF()
 
 # Dependency: Boost
-IF(Thea_FIND_Boost)
+IF(Thea_FIND_Boost OR Thea_FIND_CGAL)
   SET(Boost_USE_STATIC_LIBS      ON)
   SET(Boost_USE_MULTITHREADED    ON)
   SET(Boost_USE_STATIC_RUNTIME  OFF)

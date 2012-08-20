@@ -32,12 +32,12 @@ void parseCommaSeparated(const std::string s, Array<std::string>& array, bool st
   \sa G3D::findLastSlash, G3D::isSlash
 */
 inline int findSlash(const std::string& f, int start = 0) {
-    int i = f.find('/', start);
-    int j = f.find('\\', start);
+    std::size_t i = f.find('/', start);
+    std::size_t j = f.find('\\', start);
     if (((i != -1) && (i < j)) || (j == -1)) {
-        return i;
+        return (int)i;
     } else {
-        return j;
+        return (int)j;
     }
 }
 
@@ -47,12 +47,12 @@ inline int findSlash(const std::string& f, int start = 0) {
   */
 inline int findLastSlash(const std::string& f, int start = -1) {
     if (start == -1) {
-        start = f.length() - 1;
+        start = (int)f.length() - 1;
     }
 
-    int i = f.rfind('/', start);
-    int j = f.rfind('\\', start);
-    return max(i, j);
+    std::size_t i = f.rfind('/', (std::size_t)start);
+    std::size_t j = f.rfind('\\', (std::size_t)start);
+    return (int)max(i, j);
 }
 
 /**

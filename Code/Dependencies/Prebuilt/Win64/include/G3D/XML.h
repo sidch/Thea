@@ -128,7 +128,7 @@ public:
 
     /** Attribute table size; zero for a TAG */
     int numAttributes() const {
-        return m_attribute.size();
+        return (int)m_attribute.size();
     }
 
     /** Return child \a i.  Children are nested tags and the unquoted

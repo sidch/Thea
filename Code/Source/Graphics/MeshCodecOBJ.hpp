@@ -54,20 +54,24 @@
 #include <sstream>
 #include <utility>
 
-namespace boost {
-
-template <typename T, std::size_t N>
-std::size_t
-hash_value(boost::array<T, N> const & arr)
-{
-  return boost::hash_range(arr.begin(), arr.end());
-}
-
-} // namespace boost
-
 namespace Thea {
 
 namespace CodecOBJInternal {
+
+class VTN
+{
+  public:
+    array_size_t operator[](std::size_t i) const { return elems[i]; }
+    array_size_t & operator[](std::size_t i) { return elems[i]; }
+
+    friend std::size_t hash_value(VTN const & vtn)
+    {
+      return boost::hash_range(vtn.elems, vtn.elems + 3);
+    }
+
+  private:
+    array_size_t elems[3];
+};
 
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
@@ -208,7 +212,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         in = tmp_in.get();
       }
 
-      typedef boost::array<array_size_t, 3> VTN;
+      using CodecOBJInternal::VTN;
       typedef TheaUnorderedMap<VTN, typename Builder::VertexHandle> VTNVertexMap;
       typedef TheaUnorderedMap<long, typename Builder::VertexHandle> IndexVertexMap;
       VTNVertexMap vtn_refs;
