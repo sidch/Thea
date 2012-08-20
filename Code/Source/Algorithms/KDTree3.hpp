@@ -446,7 +446,7 @@ class /* THEA_API */ KDTree3
         if (filters.empty())
         {
           std::copy(begin, end, elems.begin());
-          num_elems = max_new_elems;
+          num_elems = (long)max_new_elems;
         }
         else
         {

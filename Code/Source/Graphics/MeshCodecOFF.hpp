@@ -526,7 +526,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         else
           writeString(format("%f %f %f\n", v.x(), v.y(), v.z()), output);
 
-        vertex_indices[DisplayMeshVRef(&mesh, i)] = vertex_index;
+        vertex_indices[DisplayMeshVRef(&mesh, (long)i)] = vertex_index;
       }
     }
 
