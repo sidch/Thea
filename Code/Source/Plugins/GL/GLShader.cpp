@@ -41,6 +41,7 @@
 
 #include "GLShader.hpp"
 #include "GLCaps.hpp"
+#include <fstream>
 
 namespace Thea {
 namespace Graphics {
@@ -64,7 +65,8 @@ GLShader::~GLShader()
 void
 GLShader::attachModuleFromFile(ModuleType type, std::string const & path)
 {
-  if (!G3D::FileSystem::exists(path))
+  std::ifstream in(path.c_str());
+  if (!in)
     throw Error(getName() + ": Shader module '" + path + "' not found");
 
   std::string source = G3D::readWholeFile(path);
