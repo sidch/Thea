@@ -1,0 +1,131 @@
+--- FileSystem.cpp	2010-06-28 21:09:35.000000000 -0400
++++ FileSystem.fixed.cpp	2012-08-21 05:42:34.000000000 -0400
+@@ -16,6 +16,7 @@
+ #include "G3D/g3dfnmatch.h"
+ #include "G3D/BinaryInput.h"
+ #include "G3D/BinaryOutput.h"
++#include <cmath>
+ 
+ #ifdef G3D_WIN32
+     // Needed for _getcwd
+@@ -247,15 +248,15 @@
+ 
+     // Look at all sub-paths containing periods.
+     // For each, ask if it is a zipfile.
+-    int current = 0;
++    size_t current = 0;
+     current = path.find('.', current);
+ 
+-    while (current != -1) {
++    while (current != std::string::npos) {
+         // xxxxx/foo.zip/yyyyy
+         current = path.find('.', current);
+ 
+         // Look forward for the next slash
+-        int s = findSlash(path, current);
++        int s = findSlash(path, (int)current);
+ 
+         if (s == -1) {
+             // No more slashes
+@@ -520,7 +521,7 @@
+ int64 FileSystem::_size(const std::string& filename) {
+     struct stat64 st;
+     int result = stat64(filename.c_str(), &st);
+-    
++
+     if (result == -1) {
+         std::string zip, contents;
+         if (zipfileExists(filename, zip, contents)) {
+@@ -541,7 +542,7 @@
+             return -1;
+         }
+     }
+-    
++
+     return st.st_size;
+ }
+ 
+@@ -603,7 +604,7 @@
+         for (int i = 0; bufData[i] != '\0'; ++i) {
+             const char* thisString = bufData + i;
+             m_winDrive.append(toLower(thisString));
+-            i += strlen(thisString) + 1;
++            i += (int)strlen(thisString) + 1;
+         }
+     }
+ 
+@@ -663,8 +664,8 @@
+ 
+ 
+ std::string FilePath::ext(const std::string& filename) {
+-    int i = filename.rfind(".");
+-    if (i >= 0) {
++    std::size_t i = filename.rfind(".");
++    if (i != std::string::npos) {
+         return filename.substr(i + 1, filename.length() - i);
+     } else {
+         return "";
+@@ -676,9 +677,9 @@
+     int i = findLastSlash(filename);
+ 
+ #   ifdef G3D_WIN32
+-        int j = filename.rfind(":");
+-        if ((i == -1) && (j >= 0)) {
+-            i = j;
++        size_t j = filename.rfind(":");
++        if ((i == -1) && (j != std::string::npos)) {
++            i = (int)j;
+         }
+ #   endif
+ 
+@@ -692,8 +693,8 @@
+ 
+ std::string FilePath::base(const std::string& path) {
+     std::string filename = baseExt(path);
+-    int i = filename.rfind(".");
+-    if (i == -1) {
++    std::size_t i = filename.rfind(".");
++    if (i == std::string::npos) {
+         // No extension
+         return filename;
+     } else {
+@@ -706,9 +707,9 @@
+     int i = findLastSlash(removeTrailingSlash(path));
+ 
+ #   ifdef G3D_WIN32
+-        int j = path.rfind(":");
+-        if ((i == -1) && (j >= 0)) {
+-            i = j;
++        size_t j = path.rfind(":");
++        if ((i == -1) && (j != std::string::npos)) {
++            i = (int)j;
+         }
+ #   endif
+ 
+@@ -801,7 +802,7 @@
+ 
+         if (i != std::string::npos) {
+             // Make sure it is after the last slash!
+-            size_t j = iMax(f.rfind('/'), f.rfind('\\'));
++            size_t j = std::max(f.rfind('/'), f.rfind('\\'));
+             if ((j == std::string::npos) || (i > j)) {
+                 ext = f.substr(i + 1, f.size() - i - 1);
+                 f = f.substr(0, i);
+@@ -812,7 +813,7 @@
+     // Pull the basename off
+     {
+         // Find the last slash
+-        size_t i = iMax(f.rfind('/'), f.rfind('\\'));
++        size_t i = std::max(f.rfind('/'), f.rfind('\\'));
+         
+         if (i == std::string::npos) {
+             
+@@ -845,7 +846,7 @@
+             j = f.size();
+         }
+ 
+-        cur = iMin(i, j);
++        cur = std::min(i, j);
+ 
+         if (cur == std::string::npos) {
+             cur = f.size();
