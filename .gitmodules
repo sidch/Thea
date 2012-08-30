@@ -1,0 +1,3 @@
+[submodule "Code/Build/Common/CMake"]
+	path = Code/Build/Common/CMake
+	url = https://github.com/sidch/CMake.git
