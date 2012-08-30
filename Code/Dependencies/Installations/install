@@ -552,6 +552,7 @@ if $WITH_G3D ; then
                    patch -N -F 0 G3D.lib/include/G3D/Vector3.h ../Patches/G3D-8.00/G3D.lib/include/G3D/Vector3.h.patch;
                    patch -N -F 0 G3D.lib/source/debugAssert.cpp ../Patches/G3D-8.00/G3D.lib/source/debugAssert.cpp.patch;
                    patch -N -F 0 G3D.lib/source/CollisionDetection.cpp ../Patches/G3D-8.00/G3D.lib/source/CollisionDetection.cpp.patch;
+                   patch -N -F 0 G3D.lib/source/FileSystem.cpp ../Patches/G3D-8.00/G3D.lib/source/FileSystem.cpp.patch;
                    patch -N -F 0 G3D.lib/source/GImage.cpp ../Patches/G3D-8.00/G3D.lib/source/GImage.cpp.patch;
                    patch -N -F 0 G3D.lib/source/GImage_png.cpp ../Patches/G3D-8.00/G3D.lib/source/GImage_png.cpp.patch;
                    patch -N -F 0 G3D.lib/source/ImageFormat.cpp ../Patches/G3D-8.00/G3D.lib/source/ImageFormat.cpp.patch;
