@@ -530,7 +530,7 @@ Model::getSamplesFilename() const
 bool
 Model::saveSamples(QString const & filename_) const
 {
-  std::ofstream out(toStdString(filename_).c_str());
+  std::ofstream out(toStdString(filename_).c_str(), std::ios::binary);
   if (!out)
     return false;
 
