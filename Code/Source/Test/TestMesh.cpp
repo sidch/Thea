@@ -233,7 +233,7 @@ testIMLS(int argc, char * argv[])
   }
 
   // binvox format, see http://www.cs.princeton.edu/~min/binvox/binvox.html
-  ofstream voxout((G3D::FilePath::base(model_path) + ".binvox").c_str());
+  ofstream voxout((G3D::FilePath::base(model_path) + ".binvox").c_str(), ios::binary);
   voxout << "#binvox 1\n"
          << "dim " << NUM_STEPS << ' ' << NUM_STEPS << ' ' << NUM_STEPS << '\n'  // add a border
          << "translate 0 0 0\n"
