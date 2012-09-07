@@ -1,16 +1,20 @@
-Thea Rendering Project, Computer Graphics Lab, Stanford University
+Thea Toolkit, Computer Graphics Lab, Stanford University
+Author: Siddhartha Chaudhuri
 
 COPYRIGHT AND LICENSING INFORMATION
 
-Informally, this project is copyright Stanford University and licensed under
-the BSD license, which permits free distribution and modification in either
-source or binary form as long as certain conditions (below) are met. This
-software is based in part on other products. Their copyright notices follow
-the main copyright notice below.
+Informally: this project is copyright Siddhartha Chaudhuri/Stanford University.
+Most of the toolkit was developed while the author (S.C.) was a PhD student and
+later a postdoc at Stanford -- copyright for the majority of the source code
+therefore belongs to Stanford. Later modifications are copyright the author.
+The toolkit is licensed under the BSD license, which permits free distribution
+and modification in either source or binary form as long as certain conditions
+(below) are met. This software is based in part on other products. Their
+copyright notices follow the main copyright notice below.
 
 ======
 
-Copyright (c) 2009, Stanford University
+Copyright (c) 2012, Siddhartha Chaudhuri/Stanford University
 
 All rights reserved.
 

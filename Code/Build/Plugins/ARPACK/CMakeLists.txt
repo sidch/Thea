@@ -2,7 +2,7 @@
 #
 # Build script for the Thea ARPACK eigensolver plugin.
 #
-# Copyright (C) Siddhartha Chaudhuri, 2010
+# Copyright (C) 2010, Siddhartha Chaudhuri/Stanford University
 #
 #===============================================================================================================================
 

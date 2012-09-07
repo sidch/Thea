@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (c) 2009, Stanford University
+// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
 //
 // All rights reserved.
 //
