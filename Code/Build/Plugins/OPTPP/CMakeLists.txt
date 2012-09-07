@@ -2,7 +2,7 @@
 #
 # Build script for the Thea OPT++ nonlinear optimization plugin.
 #
-# Copyright (C) Siddhartha Chaudhuri, 2011
+# Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
 #
 #===============================================================================================================================
 

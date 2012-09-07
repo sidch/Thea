@@ -2,7 +2,7 @@
 #
 # Build script for the Thea library.
 #
-# Copyright (C) Siddhartha Chaudhuri, 2009
+# Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
 #
 #===============================================================================================================================
 
