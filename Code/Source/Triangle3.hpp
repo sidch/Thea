@@ -141,7 +141,7 @@ THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, 
  * Vector3 [const &] getVertex(int i) const
  * \endcode
  *
- * @note: This class cannot be used directly (it has protected constructors). Use Triangle3 or LocalTriangle3 instead.
+ * @note This class cannot be used directly (it has protected constructors). Use Triangle3 or LocalTriangle3 instead.
  */
 template <typename VertexTripleT = TriangleLocalVertexTriple3>
 class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
