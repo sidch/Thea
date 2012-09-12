@@ -217,6 +217,21 @@ class BoundedSortedArrayN
       return -1;
     }
 
+    /**
+     * Insert a value into the array only if it does not already exist.
+     *
+     * @return The index of the newly inserted element, or negative if the value could not be inserted.
+     *
+     * @todo Make this faster by merging the containment test with the lookup for the insertion position.
+     */
+    int insertUnique(T const & t)
+    {
+      if (contains(t))
+        return -1;
+
+      return insert(t);
+    }
+
     /** Remove the element at the given position from the array. */
     void erase(int i)
     {
