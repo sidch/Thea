@@ -187,8 +187,8 @@ Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & 
   delete [] in.segmentlist;
   delete [] opt_c_str;
 
-  THEA_DEBUG << "Polygon2: " << in.numberofpoints << "vertices triangulated into" << out.numberofpoints << "vertices and"
-             << out.numberoftriangles << "triangles";
+  THEA_DEBUG << "Polygon2: " << in.numberofpoints << " vertices triangulated into " << out.numberofpoints << " vertices and "
+             << out.numberoftriangles << " triangles";
 
   if (out.numberofpoints < 0 || out.numberoftriangles < 0)  // should never happen
     return 0;

@@ -413,7 +413,10 @@ serializeAlignedString(std::string const & s, BinaryOutputStream & output)
   int length = (int)s.length();
   output.writeInt32(length);
   output.writeBytes(s.c_str(), length);
-  output.writeBytes(zero, (4 - (length & 0x03)) & 0x03);  // padding, zero not necessary but let's use it anyway
+
+  int padding = (4 - (length & 0x03)) & 0x03;
+  if (padding > 0)
+    output.writeBytes(zero, padding);  // zero not necessary but let's use it anyway
 }
 
 /**
@@ -429,7 +432,11 @@ deserializeAlignedString(BinaryInputStream & input)
 {
   int length = (int)input.readUInt32();  // string length
   std::string s = input.readString(length);  // string chars
-  input.skip((4 - (length & 0x03)) & 0x03);  // padding
+
+  int padding = (4 - (length & 0x03)) & 0x03;
+  if (padding > 0)
+    input.skip(padding);
+
   return s;
 }
 
