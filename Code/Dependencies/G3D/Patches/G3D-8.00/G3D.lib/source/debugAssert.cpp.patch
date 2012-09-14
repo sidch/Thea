@@ -1,5 +1,5 @@
---- debugAssert.cpp.old	2010-08-07 23:59:57.000000000 -0700
-+++ debugAssert.cpp	2010-08-08 00:01:27.000000000 -0700
+--- G3D.lib/source/debugAssert.cpp	2009-06-03 00:04:17.000000000 -0400
++++ ../../../../../../Downloads/G3D.lib/source/debugAssert.cpp	2012-08-18 01:34:16.000000000 -0400
 @@ -37,8 +37,10 @@
  AssertionHook _failureHook = _handleErrorCheck_;
  
