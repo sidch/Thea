@@ -1,5 +1,5 @@
 --- G3D.lib/source/System.cpp	2010-03-06 00:36:03.000000000 -0500
-+++ /Volumes/BOOTCAMP/Users/sid/Documents/GitHub/Fuse_OldWin/Code/Dependencies/Thea/Code/Dependencies/G3D/G3D//G3D.lib/source/System.cpp	2012-08-19 17:09:35.000000000 -0400
++++ /Users/mixamolaptop3/Downloads/G3D/G3D.lib/source/System.cpp	2012-09-14 03:11:31.000000000 -0400
 @@ -543,7 +543,7 @@
  #endif
  }

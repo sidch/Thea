@@ -1,5 +1,5 @@
 --- G3D.lib/source/FileSystem.cpp	2010-06-28 21:09:35.000000000 -0400
-+++ /Volumes/BOOTCAMP/Users/sid/Documents/GitHub/Fuse_OldWin/Code/Dependencies/Thea/Code/Dependencies/G3D/G3D//G3D.lib/source/FileSystem.cpp	2012-09-13 23:52:15.000000000 -0400
++++ /Users/mixamolaptop3/Downloads/G3D/G3D.lib/source/FileSystem.cpp	2012-09-14 03:13:41.000000000 -0400
 @@ -12,7 +12,12 @@
  #include "G3D/fileutils.h"
  #include <sys/stat.h>
@@ -7,7 +7,7 @@
 -#include "zip.h"
 +#include <cmath>
 +
-+#ifdef G3D_ENABLE_ZIP
++#ifdef G3D_ENABLE_ZLIB
 +#  include "zip.h"
 +#endif
 +
