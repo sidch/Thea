@@ -1,0 +1,78 @@
+--- G3D.lib/source/BinaryInput.cpp	2010-05-21 00:29:06.000000000 -0400
++++ ../../../../../../Downloads/G3D.lib/source/BinaryInput.cpp	2012-08-21 00:59:44.000000000 -0400
+@@ -38,8 +38,12 @@
+ #include "G3D/fileutils.h"
+ #include "G3D/Log.h"
+ #include "G3D/FileSystem.h"
+-#include <zlib.h>
+-#include "zip.h"
++
++#ifdef G3D_ENABLE_ZLIB
++#  include <zlib.h>
++#  include "zip.h"
++#endif
++
+ #include <cstring>
+ 
+ namespace G3D {
+@@ -224,6 +228,7 @@
+     setEndian(dataEndian);
+ 
+     if (compressed) {
++#ifdef G3D_ENABLE_ZLIB
+         // Read the decompressed size from the first 4 bytes
+         m_length = G3D::readUInt32(data, m_swapBytes);
+ 
+@@ -236,7 +241,9 @@
+         m_length = L;
+         m_bufferLength = L;
+         debugAssert(result == Z_OK); (void)result;
+-
++#else
++        throw "No zlib support, can't compress";
++#endif
+     } else {
+     	m_length = dataLen;
+         m_bufferLength = m_length;
+@@ -275,9 +282,9 @@
+ 
+     std::string zipfile;
+     if (FileSystem::inZipfile(m_filename, zipfile)) {
+-        // Load from zipfile
++#ifdef G3D_ENABLE_ZLIB
++		// Load from zipfile
+ //        zipRead(filename, v, s);
+-
+         std::string internalFile = m_filename.substr(zipfile.length() + 1);
+         struct zip* z = zip_open(zipfile.c_str(), ZIP_CHECKCONS, NULL);
+         {
+@@ -303,7 +310,10 @@
+         }
+         m_freeBuffer = true;
+         return;
+-    }
++#else
++        throw "No zlib support, can't open zip files";
++#endif
++	}
+ 
+     // Figure out how big the file is and verify that it exists.
+     m_length = FileSystem::size(m_filename);
+@@ -356,6 +366,7 @@
+ }
+ 
+ void BinaryInput::decompress() {
++#ifdef G3D_ENABLE_ZLIB
+     // Decompress
+     // Use the existing buffer as the source, allocate
+     // a new buffer to use as the destination.
+@@ -382,6 +393,9 @@
+     (void)result;
+     
+     System::alignedFree(tempBuffer);
++#else
++    throw "No zlib support, can't uncompress";
++#endif
+ }
+ 
+ 

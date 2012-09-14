@@ -1,0 +1,208 @@
+--- G3D.lib/source/fileutils.cpp	2010-05-21 00:29:06.000000000 -0400
++++ ../../../../../../Downloads/G3D.lib/source/fileutils.cpp	2012-09-13 20:19:59.000000000 -0400
+@@ -21,7 +21,10 @@
+ 
+ #include <sys/stat.h>
+ #include <sys/types.h>
+-#include "zip.h"
++
++#ifdef G3D_ENABLE_ZLIB
++#  include "zip.h"
++#endif
+ 
+ #ifdef G3D_WIN32
+    // Needed for _getcwd
+@@ -143,6 +146,7 @@
+ void zipRead(const std::string& file,
+              void*& data,
+              size_t& length) {
++#ifdef G3D_ENABLE_ZLIB
+     std::string zip, desiredFile;
+     
+     if (zipfileExists(file, zip, desiredFile)) {
+@@ -167,6 +171,9 @@
+     } else {
+         data = NULL;
+     }
++#else
++    data = NULL;
++#endif
+ }
+ 
+ 
+@@ -178,7 +185,8 @@
+ int64 fileLength(const std::string& filename) {
+     struct _stat st;
+     int result = _stat(filename.c_str(), &st);
+-    
++
++#ifdef G3D_ENABLE_ZLIB
+     if (result == -1) {
+ 		std::string zip, contents;
+ 		if(zipfileExists(filename, zip, contents)){
+@@ -200,6 +208,10 @@
+         return -1;
+ 		}
+     }
++#else
++    if (result == -1)
++      return -1;
++#endif
+ 
+     return st.st_size;
+ }
+@@ -318,6 +330,7 @@
+ 
+ // assumes that zipDir references a .zip file
+ static bool _zip_zipContains(const std::string& zipDir, const std::string& desiredFile){
++#ifdef G3D_ENABLE_ZLIB
+         struct zip *z = zip_open( zipDir.c_str(), ZIP_CHECKCONS, NULL );
+ 	//the last parameter, an int, determines case sensitivity:
+ 	//1 is sensitive, 2 is not, 0 is default
+@@ -327,13 +340,17 @@
+ 		return false;
+ 	}
+ 	return true;
++#else
++  return false;
++#endif
+ }
+ 
+ 
+ // If no zipfile exists, outZipfile and outInternalFile are unchanged
+ bool zipfileExists(const std::string& filename, std::string& outZipfile,
+                    std::string& outInternalFile){
+-   
++
++#ifdef G3D_ENABLE_ZLIB
+     Array<std::string> path;
+     std::string drive, base, ext, zipfile, infile;
+     parseFilename(filename, drive, path, base, ext);
+@@ -395,7 +412,8 @@
+         }
+         
+     }
+-    
++#endif
++
+     // not a valid directory structure ever, 
+     // obviously no .zip was found within the path 
+     return false;
+@@ -502,7 +520,7 @@
+ 
+         if (i != std::string::npos) {
+             // Make sure it is after the last slash!
+-            size_t j = iMax(f.rfind('/'), f.rfind('\\'));
++            size_t j = f.find_last_of("/\\");
+             if ((j == std::string::npos) || (i > j)) {
+                 ext = f.substr(i + 1, f.size() - i - 1);
+                 f = f.substr(0, i);
+@@ -513,7 +531,7 @@
+     // Pull the basename off
+     {
+         // Find the last slash
+-        size_t i = iMax(f.rfind('/'), f.rfind('\\'));
++        size_t i = f.find_last_of("/\\");
+         
+         if (i == std::string::npos) {
+             
+@@ -536,17 +554,7 @@
+         prev = cur;
+         
+         // Allow either slash
+-        size_t i = f.find('/', prev + 1);
+-        size_t j = f.find('\\', prev + 1);
+-        if (i == std::string::npos) {
+-            i = f.size();
+-        }
+-
+-        if (j == std::string::npos) {
+-            j = f.size();
+-        }
+-
+-        cur = iMin(i, j);
++        cur = f.find_first_of("/\\", prev + 1);
+ 
+         if (cur == std::string::npos) {
+             cur = f.size();
+@@ -735,6 +743,7 @@
+                                 Array<std::string>& files,
+                                 bool wantFiles,
+                                 bool includePath){
++#ifdef G3D_ENABLE_ZLIB
+     struct zip *z = zip_open( path.c_str(), ZIP_CHECKCONS, NULL );
+ 
+     Set<std::string> fileSet;
+@@ -750,6 +759,7 @@
+     zip_close( z );
+     
+     fileSet.getMembers(files);
++#endif
+ }
+ 
+ 
+@@ -806,21 +816,21 @@
+ 
+ 
+ std::string filenameBaseExt(const std::string& filename) {
+-    int i = filename.rfind("/");
+-    int j = filename.rfind("\\");
++    std::size_t i = filename.rfind("/");
++    std::size_t j = filename.rfind("\\");
+ 
+-    if ((j > i) && (j >= 0)) {
++    if (j != std::string::npos && (i == std::string::npos || j > i)) {
+         i = j;
+     }
+ 
+ #   ifdef G3D_WIN32
+         j = filename.rfind(":");
+-        if ((i == -1) && (j >= 0)) {
++        if ((i == std::string::npos) && (j != std::string::npos)) {
+             i = j;
+         }
+ #   endif
+ 
+-    if (i == -1) {
++    if (i == std::string::npos) {
+         return filename;
+     } else {
+         return filename.substr(i + 1, filename.length() - i);
+@@ -840,8 +850,8 @@
+ 
+ 
+ std::string filenameExt(const std::string& filename) {
+-    int i = filename.rfind(".");
+-    if (i >= 0) {
++    std::size_t i = filename.rfind(".");
++    if (i != std::string::npos) {
+         return filename.substr(i + 1, filename.length() - i);
+     } else {
+         return "";
+@@ -850,21 +860,21 @@
+ 
+ 
+ std::string filenamePath(const std::string& filename) {
+-    int i = filename.rfind("/");
+-    int j = filename.rfind("\\");
++    std::size_t i = filename.rfind("/");
++    std::size_t j = filename.rfind("\\");
+ 
+-    if ((j > i) && (j >= 0)) {
++    if (j != std::string::npos && (i == std::string::npos || j > i)) {
+         i = j;
+     }
+ 
+ #   ifdef G3D_WIN32
+         j = filename.rfind(":");
+-        if ((i == -1) && (j >= 0)) {
++        if ((i == std::string::npos) && (j != std::string::npos)) {
+             i = j;
+         }
+ #   endif
+ 
+-    if (i == -1) {
++    if (i == std::string::npos) {
+         return "";
+     } else {
+         return filename.substr(0, i+1);

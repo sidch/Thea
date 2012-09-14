@@ -1,6 +1,18 @@
---- ../../../../tmp/G3D/G3D.lib/include/G3D/platform.h	2010-07-17 06:03:43.000000000 -0700
-+++ platform.h	2011-03-12 01:16:21.000000000 -0800
-@@ -57,7 +57,9 @@
+--- G3D.lib/include/G3D/platform.h	2010-07-17 09:03:43.000000000 -0400
++++ ../../../../../../Downloads/G3D.lib/include/G3D/platform.h	2012-08-21 00:47:44.000000000 -0400
+@@ -12,6 +12,11 @@
+ #ifndef G3D_platform_h
+ #define G3D_platform_h
+ 
++// Added by S.C., Aug 2012 to avoid duplicate symbol errors c.f. Qt when compiling on Win64.
++#if !defined(_MSC_VER) || !defined(_M_X64)
++#  define G3D_ENABLE_ZLIB
++#endif
++
+ /**
+  The version number of G3D in the form: MmmBB -> 
+  version M.mm [beta BB]
+@@ -57,7 +62,9 @@
  #elif defined(__linux__)
      #define G3D_LINUX
  #elif defined(__APPLE__)

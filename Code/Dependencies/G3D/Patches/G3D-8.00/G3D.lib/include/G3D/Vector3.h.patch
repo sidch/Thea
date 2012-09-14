@@ -1,5 +1,5 @@
---- Vector3.h.old	2010-09-22 23:07:28.000000000 -0700
-+++ Vector3.h	2010-09-22 23:08:14.000000000 -0700
+--- G3D.lib/include/G3D/Vector3.h	2010-02-26 11:18:00.000000000 -0500
++++ ../../../../../../Downloads/G3D.lib/include/G3D/Vector3.h	2012-08-18 01:34:14.000000000 -0400
 @@ -268,7 +268,7 @@
  	
      float __fastcall dot(const Vector3& rkVector) const;
