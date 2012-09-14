@@ -115,12 +115,12 @@ class BoundedArrayN
     /** Add a new element to the end of array, if it is not full. If the array is full, the operation fails silently. */
     void append(T const & t)
     {
-#ifdef THEA_DEBUG_BUILD
-      THEA_WARNING << "BoundedArrayN: Cannot append element to a full array of size " << N;
-#endif
-
       if (num_elems < N)
         values[num_elems++] = t;
+#ifdef THEA_DEBUG_BUILD
+      else
+        THEA_WARNING << "BoundedArrayN: Cannot append element to a full array of size " << N;
+#endif
     }
 
     /**
