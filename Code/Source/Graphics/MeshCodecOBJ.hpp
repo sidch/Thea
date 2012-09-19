@@ -109,7 +109,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     using BaseT::getName;
 
     /** Read/write options for OBJ codec. */
-    struct Options
+    class Options
     {
       private:
         bool ignore_texcoords;

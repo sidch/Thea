@@ -50,8 +50,8 @@ namespace Algorithms {
 LinearLeastSquares::LinearLeastSquares(long ndim_)
 : ndim(ndim_), num_objectives(0), has_solution(true)
 {
-  alwaysAssertM(ndim > 0, "LinearLeastSquares: Number of dimensions must be positive");
-  solution.resize((array_size_t)ndim, 0);
+  alwaysAssertM(ndim_ > 0, "LinearLeastSquares: Number of dimensions must be positive");
+  solution.resize((array_size_t)ndim_, 0);
 }
 
 void
@@ -134,7 +134,7 @@ LinearLeastSquares::solve(Constraint constraint, double tolerance)
         Matrix<double, MatrixLayout::ROW_MAJOR> a(&a_values[0], num_objectives, ndim);
 
         Matrix<double> pseudo_inverse;
-        has_solution = SVD::pseudoInverse(a, pseudo_inverse);
+        has_solution = SVD::pseudoInverse(a, pseudo_inverse, tolerance);
         if (has_solution)
           pseudo_inverse.postmulVector(&b[0], &solution[0]);
 
