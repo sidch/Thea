@@ -171,6 +171,22 @@ class /* THEA_API */ AddressableMatrix : public virtual BasicMatrix<T>
       return *m;
     }
 
+    /** Get a row of the matrix. \a values must be preallocated with numColumns() elements. */
+    virtual void getRow(long row, T * values) const
+    {
+      long nc = this->numColumns();
+      for (long c = 0; c < nc; ++c)
+        values[c] = get(row, c);
+    }
+
+    /** Get a column of the matrix. \a values must be preallocated with numRows() elements. */
+    virtual void getColumn(long col, T * values) const
+    {
+      long nr = this->numRows();
+      for (long r = 0; r < nr; ++r)
+        values[r] = get(r, col);
+    }
+
     /** Get a string representing the matrix. */
     virtual std::string toString() const
     {

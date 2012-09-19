@@ -1,5 +1,6 @@
 #include "../Algorithms/SVD.hpp"
 #include "../Algorithms/LinearLeastSquares.hpp"
+#include "../Algorithms/LogisticRegression.hpp"
 #include "../Array.hpp"
 #include "../Matrix.hpp"
 #include <iostream>
@@ -9,11 +10,17 @@ using namespace Thea;
 using namespace Algorithms;
 
 bool testSVD();
+bool testLogisticRegression();
 
 int
 main(int argc, char * argv[])
 {
-  if (!testSVD()) return -1;
+  try
+  {
+    if (!testSVD()) return -1;
+    if (!testLogisticRegression()) return -1;
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
   return 0;
 }
@@ -94,8 +101,8 @@ testSVD()
   printMatrix(svd_inv);
 
   // Compute the pseudo-inverse of A directly
-  cout << "\nDirect pseudo-inverse =" << endl;
-  printMatrix((a.transpose() * a).inverse() * a.transpose());
+  // cout << "\nDirect pseudo-inverse =" << endl;
+  // printMatrix((a.transpose() * a).inverse() * a.transpose());
 
   //====================================================================
   // Linear least squares
@@ -123,6 +130,42 @@ testSVD()
          << endl;
   else
     cout << "Non-negative linear least squares problem has no solution" << endl;
+
+  return true;
+}
+
+bool
+testLogisticRegression()
+{
+  LogisticRegression logreg(1);
+  double x, y;
+
+  x = 1900; y = 0.075995; logreg.addObservation(&x, y);
+  x = 1910; y = 0.091972; logreg.addObservation(&x, y);
+  x = 1920; y = 0.105711; logreg.addObservation(&x, y);
+  x = 1930; y = 0.122755; logreg.addObservation(&x, y);
+  x = 1940; y = 0.131699; logreg.addObservation(&x, y);
+  x = 1950; y = 0.150697; logreg.addObservation(&x, y);
+  x = 1960; y = 0.179323; logreg.addObservation(&x, y);
+  x = 1970; y = 0.203212; logreg.addObservation(&x, y);
+  x = 1980; y = 0.226505; logreg.addObservation(&x, y);
+
+  cout << endl;
+
+  if (logreg.solve())
+  {
+    double a = logreg.getSolution()[0];
+    double b = logreg.getSolution()[1];
+
+    double r = b;
+    double t_0 = 1900;
+    double c = std::exp(a + r * t_0);
+
+    cout << "Logistic regression solution: a = " << a << ", b = " << b << endl;
+    cout << "             => equivalently: c = " << c << ", r = " << r << endl;
+  }
+  else
+    cout << "Logistic regression has no solution" << endl;
 
   return true;
 }

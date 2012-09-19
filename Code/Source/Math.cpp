@@ -40,9 +40,17 @@
 //============================================================================
 
 #include "Math.hpp"
+#include "Array.hpp"
+#include <algorithm>
 
 namespace Thea {
 namespace Math {
+
+Real
+rand01()
+{
+  return (Real)G3D::Random::common().uniform(0, 1);
+}
 
 int
 kdtreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
@@ -263,6 +271,23 @@ solveQuartic(double c0, double c1, double c2, double c3, double c4, double * roo
   }
 
   return num_roots;
+}
+
+void
+getRandomSubset(long n, long k, long * subset)
+{
+  TheaArray<long> shuffled((array_size_t)n);
+  for (long i = 0; i < n; ++i)
+    shuffled[(array_size_t)i] = i;
+
+  for (long i = 0; i < k; i++)
+  {
+    long j = (std::rand() % (n - i)) + i;
+    std::swap(shuffled[(array_size_t)i], shuffled[(array_size_t)j]);
+  }
+
+  // std::sort(&shuffled[0], &shuffled[0] + k);
+  std::copy(&shuffled[0], &shuffled[0] + k, subset);
 }
 
 } // namespace Math

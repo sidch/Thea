@@ -100,6 +100,12 @@ class /* THEA_API */ MappedMatrix : public AddressableMatrix<T>, public Resizabl
       }
     }
 
+    /** Check if an element has an explicitly set value. */
+    bool isSet(long row, long col) const
+    {
+      return m.find(IndexPair(row, col)) != m.end();
+    }
+
     /** Element access. Use this whenever possible to avoid the virtual function overhead of get(). */
     T const & operator()(long row, long col) const
     {
