@@ -59,7 +59,7 @@ template <typename T, MatrixLayout::Value L, typename Index2DT, typename Index1D
 template <typename T, typename Index2DT, typename Index1DT> class CompressedRowMatrix;
 template <typename T, typename Index2DT, typename Index1DT> class CompressedColumnMatrix;
 
-/** A standard dense 2D matrix, * either row-major or column-major. */
+/** A standard dense 2D matrix, either row-major or column-major. */
 template <typename T, MatrixLayout::Value L = MatrixLayout::ROW_MAJOR>
 class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatrix<T>
 {
@@ -90,11 +90,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
     /**
      * Constructs this matrix as a wrapper for an existing block of storage. The matrix thus created is <b>not resizable</b>,
-     * and the memory block will <b>not be freed</b> when the Matrix object is destroyed. If the number of columns is omitted or
-     * zero, a square matrix is created.
+     * and the memory block will <b>not be freed</b> when the Matrix object is destroyed.
      */
-    Matrix(T * existing_data, long num_rows_, long num_cols_ = 0)
-    : num_rows(num_rows_), num_cols(num_cols_ ? num_cols_ : num_rows_), values(existing_data), owns_memory(false)
+    Matrix(T * existing_data, long num_rows_, long num_cols_)
+    : num_rows(num_rows_), num_cols(num_cols_), values(existing_data), owns_memory(false)
     {
       alwaysAssertM(num_rows_ >= 0 && num_cols_ >= 0, "Matrix: Dimensions must be non-negative");
     }
@@ -286,6 +285,86 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       resize(num_rows_, num_cols_);
       fill(fill_value);
+    }
+
+    /**
+     * Append a single (uninitialized) row to a row-major matrix. If the matrix is not row-major, or if the matrix does not own
+     * its memory block, an assertion failure occurs.
+     *
+     * @see appendRows()
+     */
+    void appendRow()
+    {
+      appendRows(1);
+    }
+
+    /**
+     * Append one or more (uninitialized) rows to a row-major matrix. If the matrix is not row-major, or if the matrix does not
+     * own its memory block, an assertion failure occurs. \a num_rows_to_append must be non-negative.
+     *
+     * @see appendRow()
+     */
+    void appendRows(long num_rows_to_append)
+    {
+      alwaysAssertM(L == MatrixLayout::ROW_MAJOR, "Matrix: Cannot append row(s) to a matrix that is not row-major");
+      alwaysAssertM(owns_memory, "Matrix: Cannot append row(s) to a matrix that does not own its memory block");
+      alwaysAssertM(num_rows_to_append >= 0, "Matrix: Cannot append a negative number of rows to a matrix");
+
+      if (num_rows_to_append <= 0)
+        return;
+
+      long new_num_rows = num_rows + num_rows_to_append;
+      long new_num_elems = new_num_rows * num_cols;
+      T * new_values = new T[new_num_elems];
+
+      if (!this->isEmpty())
+      {
+        Algorithms::fastCopy(begin(), end(), new_values);
+        delete [] values;
+      }
+
+      values = new_values;
+      num_rows = new_num_rows;
+    }
+
+    /**
+     * Append a single (uninitialized) column to a column-major matrix. If the matrix is not column-major, or if the matrix does
+     * not own its memory block, an assertion failure occurs.
+     *
+     * @see appendColumns()
+     */
+    void appendColumn()
+    {
+      appendColumns(1);
+    }
+
+    /**
+     * Append one or more (uninitialized) columns to a column-major matrix. If the matrix is not column-major, or if the matrix
+     * does not own its memory block, an assertion failure occurs. \a num_cols_to_append must be non-negative.
+     *
+     * @see appendColumn()
+     */
+    void appendColumns(long num_cols_to_append)
+    {
+      alwaysAssertM(L == MatrixLayout::COLUMN_MAJOR, "Matrix: Cannot append column(s) to a matrix that is not column-major");
+      alwaysAssertM(owns_memory, "Matrix: Cannot append column(s) to a matrix that does not own its memory block");
+      alwaysAssertM(num_cols_to_append >= 0, "Matrix: Cannot append a negative number of columns to a matrix");
+
+      if (num_cols_to_append <= 0)
+        return;
+
+      long new_num_cols = num_cols + num_cols_to_append;
+      long new_num_elems = num_rows * new_num_cols;
+      T * new_values = new T[new_num_elems];
+
+      if (!this->isEmpty())
+      {
+        Algorithms::fastCopy(begin(), end(), new_values);
+        delete [] values;
+      }
+
+      values = new_values;
+      num_cols = new_num_cols;
     }
 
     /** Element access. Use this whenever possible to avoid the virtual function overhead of get(). */

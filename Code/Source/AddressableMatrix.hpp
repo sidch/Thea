@@ -179,12 +179,28 @@ class /* THEA_API */ AddressableMatrix : public virtual BasicMatrix<T>
         values[c] = get(row, c);
     }
 
+    /** Set a row of the matrix. \a values must contain numColumns() elements. */
+    virtual void setRow(long row, T const * values)
+    {
+      long nc = this->numColumns();
+      for (long c = 0; c < nc; ++c)
+        set(row, c, values[c]);
+    }
+
     /** Get a column of the matrix. \a values must be preallocated with numRows() elements. */
     virtual void getColumn(long col, T * values) const
     {
       long nr = this->numRows();
       for (long r = 0; r < nr; ++r)
         values[r] = get(r, col);
+    }
+
+    /** Set a column of the matrix. \a values must contain numRows() elements. */
+    virtual void setColumn(long col, T const * values)
+    {
+      long nr = this->numRows();
+      for (long r = 0; r < nr; ++r)
+        set(r, col, values[r]);
     }
 
     /** Get a string representing the matrix. */

@@ -52,6 +52,18 @@ rand01()
   return (Real)G3D::Random::common().uniform(0, 1);
 }
 
+Real
+randInRange(Real lo, Real hi)
+{
+  return (Real)G3D::Random::common().uniform((float)lo, (float)hi);
+}
+
+long
+randIntegerInRange(long lo, long hi)
+{
+  return lo + (std::rand() % (hi - lo + 1));
+}
+
 int
 kdtreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
 {

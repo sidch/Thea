@@ -362,6 +362,15 @@ sign(T const & x)
 /** Get a uniformly distributed random number between 0 and 1, inclusive. */
 Real rand01();
 
+/** Get a uniformly distributed random number from the interval [\a lo, \a hi]. \a hi must be strictly greater than \a lo. */
+Real randInRange(Real lo, Real hi);
+
+/**
+ * Get a uniformly distributed integer from the interval [\a lo, \a hi] (endpoints inclusive). \a hi must be strictly greater
+ * than \a lo.
+ */
+long randIntegerInRange(long lo, long hi);
+
 /** Returns \a a + (\a b - \a a) * \a f. */
 template <typename T, typename S>
 T

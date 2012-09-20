@@ -225,6 +225,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestJointBoost
+#===========================================================
+
+# Source file lists
+SET(TheaTestJointBoostSources
+      ${SourceRoot}/Test/TestJointBoost.cpp)
+
+# Libraries to link to
+SET(TheaTestJointBoostLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestJointBoost ${TheaTestJointBoostSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestJointBoost ${TheaTestJointBoostLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestJointBoost "${TheaTestJointBoostLibraries}")
+ENDIF()
+
+#===========================================================
 # TestKDTree3
 #===========================================================
 
