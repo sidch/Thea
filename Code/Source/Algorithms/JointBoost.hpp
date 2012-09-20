@@ -50,6 +50,12 @@
 namespace Thea {
 namespace Algorithms {
 
+namespace JointBoostInternal {
+
+typedef boost::dynamic_bitset<> SharingSet;
+
+} // namespace JointBoostInternal
+
 /**
  * A boosting classifier using shared features. Based on
  *
@@ -82,25 +88,50 @@ class THEA_API JointBoost
          * Get the values of a particular feature for all training examples. \a feature_index must be in the range
          * 0... numFeatures() - 1.
          */
-        virtual void getSingleFeature(long feature_index, TheaArray<double> & values) const = 0;
+        virtual void getFeature(long feature_index, TheaArray<double> & values) const = 0;
 
         /** Get the class of each training example. */
         virtual void getClasses(TheaArray<long> & classes) const = 0;
 
     }; // class TrainingData
 
-    /** %Options for the classifier. */
+    /**
+     * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter sets the
+     * default value for that parameter.
+     */
     struct Options
     {
-      double feature_sampling_fraction; ///< Fraction of features sampled in a round.
+      long min_boosting_rounds;  /**< Minimum number of boosting rounds that must be performed even if the error reduction
+                                      between successive rounds is below the threshold min_fractional_error_reduction. */
+      long max_boosting_rounds;  ///< Maximum number of boosting rounds. This also limits the maximum number of stumps added.
+      double min_fractional_error_reduction;  /**< Minimum error reduction required for boosting rounds to continue beyond
+                                                   min_boosting_rounds. */
+      double feature_sampling_fraction;  ///< Fraction of features sampled in a round.
+      double max_thresholds_fraction;  /**< Set the maximum number of candidate thresholds generated, as a fraction of the
+                                            number of features. */
       bool force_exhaustive;  ///< Force exhaustive O(2^C) optimization over all possible subsets of classes.
       bool force_greedy;  ///< Force greedy O(C^2) optimization over subsets of classes.
 
       /** Constructor. Sets default options. */
       Options();
 
+      /**
+       * Set the minimum number of boosting rounds that must be performed even if the error reduction between successive rounds
+       * is below the threshold min_fractional_error_reduction.
+       */
+      Options & setMinBoostingRounds(long rounds) { min_boosting_rounds = rounds; return *this; }
+
+      /** Maximum number of boosting rounds. This also limits the maximum number of stumps added. */
+      Options & setMaxBoostingRounds(long rounds) { max_boosting_rounds = rounds; return *this; }
+
+      /** Minimum error reduction required for boosting rounds to continue beyond min_boosting_rounds. */
+      Options & setMinFractionalErrorReduction(double frac) { min_fractional_error_reduction = frac; return *this; }
+
       /** Set the fraction of features sampled in a round. */
       Options & setFeatureSamplingFraction(double frac) { feature_sampling_fraction = frac; return *this; }
+
+      /** Set the maximum number of candidate thresholds generated, as a fraction of the number of features. */
+      Options & setMaxThresholdsFraction(double frac) { max_thresholds_fraction = frac; return *this; }
 
       /** Set if exhaustive O(2^C) optimization over all possible subsets of classes will be forced or not. */
       Options & setForceExhaustive(bool value) { force_exhaustive = value; return *this; }
@@ -144,18 +175,33 @@ class THEA_API JointBoost
      * @param min_error_reduction The minimum (subtractive) reduction in the classification error needed to continue iteration
      *   beyond \a min_rounds rounds. A negative argument chooses a default value.
      */
-    void train(TrainingData const & training_data_, long min_rounds, long max_rounds, double min_error_reduction = -1);
+    void train(TrainingData const & training_data_);
+
+    /**
+     * Predict the most likely class for an object with a given set of features, optionally also returning the probability of
+     * belonging to each class.
+     *
+     * @param features The features of the object. Must contain numFeatures() values.
+     * @param class_probabilities If non-null, used to return the probability of belonging to each class. Must be preallocated
+     *   to numClasses() elements.
+     *
+     * @return The index of the most likely class of the object.
+     */
+    long predict(double const * features, double * class_probabilities = NULL) const;
+
+    /** Print debugging information about this classifier to the console. */
+    void dumpToConsole() const;
 
   private:
     /** A subset of classes encoded as a set of bits, one per class in global set. */
-    typedef boost::dynamic_bitset<> SharingSet;
+    typedef JointBoostInternal::SharingSet SharingSet;
 
     /** Decision stump (weak learner). */
     struct SharedStump
     {
       THEA_DEF_POINTER_TYPES(SharedStump, shared_ptr, weak_ptr)
 
-      long feature_index;   ///< The index of the feature for this stump.
+      long f;               ///< The index of the feature for this stump.
       SharingSet n;         ///< Indices of positive classes for this stump.
       double a;             ///< Regression weight a.
       double b;             ///< Regression weight b.
@@ -163,7 +209,7 @@ class THEA_API JointBoost
       TheaArray<double> k;  ///< Constants for classes not in the sharing set.
 
       /** Evaluate the stump for a given feature and class. */
-      bool operator()(double feature_value, long class_index) const
+      double operator()(double feature_value, long class_index) const
       {
         if (n[(SharingSet::size_type)class_index])
           return feature_value > theta ? a : b;
@@ -177,7 +223,7 @@ class THEA_API JointBoost
     }; // struct SharedStump
 
     /** Optimize a stump, for the current set of weights, by searching over features and subsets of classes. */
-    double optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes, double feature_sampling_fraction);
+    double optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes);
 
     /** Optimize a stump via exhaustive O(2^C) search over all subsets of classes. */
     double optimizeStumpExhaustive(SharedStump & stump, TheaArray<double> const & stump_features,
@@ -194,7 +240,10 @@ class THEA_API JointBoost
     long num_features;  ///< Number of features per object.
     Options options;    ///< Additional options.
 
-    TrainingData const * training_data;  ///< Temporary handle to training data, valid only during training.
+    TrainingData const * training_data;  ///< Cached handle to training data, valid only during training.
+    double feature_sampling_fraction;  ///< Cached fraction of features test per round, valid only during training.
+    double max_thresholds_fraction;  /**< Cached number of candidate thresholds, expressed as a fraction of the number of
+                                          features, valid only during training. */
 
     Matrix<double> weights;  ///< Weights indexed by (class index, object_index).
     TheaArray<SharedStump::Ptr> stumps;  ///< Current set of selected decision stumps.

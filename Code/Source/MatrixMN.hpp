@@ -145,7 +145,9 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     }
 
     using BaseT::getRow;
+    using BaseT::setRow;
     using BaseT::getColumn;
+    using BaseT::setColumn;
 
     /** Get a row of the matrix. */
     VectorN<N, T> getRow(long r) const
