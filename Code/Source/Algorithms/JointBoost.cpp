@@ -45,6 +45,8 @@
 #include <algorithm>
 #include <sstream>
 
+// #define JOINT_BOOST_TEST_ALL_THRESHOLDS
+
 namespace Thea {
 namespace Algorithms {
 
@@ -63,7 +65,8 @@ JointBoost::Options::Options()
   feature_sampling_fraction(-1),
   max_thresholds_fraction(-1),
   force_exhaustive(false),
-  force_greedy(false)
+  force_greedy(false),
+  verbose(true)
 {
 }
 
@@ -72,6 +75,8 @@ JointBoost::JointBoost(long num_classes_, long num_features_, Options const & op
   num_features(num_features_),
   options(options_)
 {
+  alwaysAssertM(num_classes_ >= 2, "JointBoost: At least two classes required");
+  alwaysAssertM(num_features_ >= 1, "JointBoost: At least one feature required");
 }
 
 JointBoost::~JointBoost()
@@ -121,27 +126,42 @@ JointBoost::train(TrainingData const & training_data_)
     max_thresholds_fraction = 1.0;  // test all features as thresholds by default
 
   // Get classes for training data
-  TheaArray<long> stump_classes;
-  training_data->getClasses(stump_classes);
+  TheaArray<long> classes;
+  training_data->getClasses(classes);
 
   // Initialize the weights
-  weights.resize(num_classes, (long)stump_classes.size());
-  weights.fill(1);
+  TheaArray<long> training_weights;
+  training_data->getWeights(training_weights);
+  weights.resize(num_classes, (long)classes.size());
+  if (!training_weights.empty())
+  {
+    for (array_size_t i = 0; i < training_weights.size(); ++i)
+      for (long c = 0; c < num_classes; ++c)
+        weights(c, (long)i) = training_weights[i];
+  }
+  else
+    weights.fill(1);
 
-  THEA_CONSOLE << "JointBoost: Starting training";
-  THEA_CONSOLE << "JointBoost:     -- min_rounds = " << min_rounds;
-  THEA_CONSOLE << "JointBoost:     -- max_rounds = " << max_rounds;
-  THEA_CONSOLE << "JointBoost:     -- min_fractional_error_reduction = " << min_fractional_error_reduction;
-  THEA_CONSOLE << "JointBoost:     -- feature_sampling_fraction = " << feature_sampling_fraction;
-  THEA_CONSOLE << "JointBoost:     -- force_exhaustive = " << options.force_exhaustive;
-  THEA_CONSOLE << "JointBoost:     -- force_greedy = " << options.force_greedy;
+  if (options.verbose)
+  {
+    THEA_CONSOLE << "JointBoost: Starting training (" << num_classes << " classes, " << num_features << " features, "
+                 << training_data_.numExamples() << " examples)";
+    THEA_CONSOLE << "JointBoost:     -- min_rounds = " << min_rounds;
+    THEA_CONSOLE << "JointBoost:     -- max_rounds = " << max_rounds;
+    THEA_CONSOLE << "JointBoost:     -- min_fractional_error_reduction = " << min_fractional_error_reduction;
+    THEA_CONSOLE << "JointBoost:     -- feature_sampling_fraction = " << feature_sampling_fraction;
+    THEA_CONSOLE << "JointBoost:     -- max_thresholds_fraction = " << max_thresholds_fraction;
+    THEA_CONSOLE << "JointBoost:     -- force_exhaustive = " << options.force_exhaustive;
+    THEA_CONSOLE << "JointBoost:     -- force_greedy = " << options.force_greedy;
+    THEA_CONSOLE << "JointBoost:     -- verbose = " << options.verbose;
+  }
 
   // Do several rounds of boosting, adding a new stump (weak learner) in each round
   stumps.clear();
   double error = -1;
   for (long round = 0; round < max_rounds; ++round)
   {
-    THEA_CONSOLE << "JointBoost: Training round " << round;
+    if (options.verbose) THEA_CONSOLE << "JointBoost: Training round " << round;
 
     // Create the stump for this round
     SharedStump::Ptr stump(new SharedStump);
@@ -151,12 +171,12 @@ JointBoost::train(TrainingData const & training_data_)
     for (long c = 0; c < num_classes; ++c)
     {
       double k_numer = 0, k_denom = 0;
-      for (array_size_t i = 0; i < stump_classes.size(); ++i)
+      for (array_size_t i = 0; i < classes.size(); ++i)
       {
-        double w = weights((long)i, stump_classes[i]);
-        int z = (stump_classes[i] == c ? +1 : -1);
+        double w = weights(c, (long)i);
+        int z = (classes[i] == c ? +1 : -1);
 
-        k_numer += w * z;
+        k_numer += (w * z);
         k_denom += w;
       }
 
@@ -164,9 +184,10 @@ JointBoost::train(TrainingData const & training_data_)
     }
 
     // Optimize this stump
-    double round_err = optimizeStump(*stump, stump_classes);
+    double round_err = optimizeStump(*stump, classes);
 
-    THEA_CONSOLE << "JointBoost:     Error in round " << round << " = " << round_err << " with " << stump->toString();
+    if (options.verbose)
+      THEA_CONSOLE << "JointBoost:     Error in round " << round << " = " << round_err << " with " << stump->toString();
 
     if (round_err >= 0)
     {
@@ -189,37 +210,51 @@ JointBoost::train(TrainingData const & training_data_)
       training_data->getFeature(stump->f, stump_features);
 
       for (long c = 0; c < num_classes; ++c)
-        for (array_size_t i = 0; i < stump_classes.size(); ++i)
+        for (array_size_t i = 0; i < classes.size(); ++i)
         {
           // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
 
-          int z = (stump_classes[i] == c ? +1 : -1);
+          int z = (classes[i] == c ? +1 : -1);
           double h = (*stump)(stump_features[i], c);
 
           // THEA_CONSOLE << "      h[i = " << i << ", c = " << c << "] = " << h << ", z = " << z;
 
           weights(c, (long)i) *= std::exp(-z * h);
+
+          // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
         }
     }
   }
 
   training_data = NULL;
 
-  THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error;
+  if (options.verbose)
+    THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error;
 }
 
 double
 JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes)
 {
-  SharedStump test = stump;
-  double min_err = -1;
-  for (long i = 0; i < num_features; ++i)
+  // Select a random fraction of the features
+  TheaArray<long> candidate_features;
+  for (long f = 0; f < num_features; ++f)
   {
     if (feature_sampling_fraction < 1)
-      if (Math::rand01() > feature_sampling_fraction)
-        continue;
+      if (Math::rand01() <= feature_sampling_fraction)
+        candidate_features.push_back(f);
+  }
 
-    test.f = i;
+  if (candidate_features.empty())
+    candidate_features.push_back(Math::randIntegerInRange(0, num_features - 1));
+
+  if (options.verbose && (long)candidate_features.size() < num_features)
+    THEA_CONSOLE << "JointBoost:     Optimizing over " << candidate_features.size() << " randomly selected feature(s)";
+
+  SharedStump test = stump;
+  double min_err = -1;
+  for (array_size_t f = 0; f < candidate_features.size(); ++f)
+  {
+    test.f = candidate_features[f];
 
     // Get feature values
     TheaArray<double> stump_features;
@@ -232,7 +267,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
     else
       err = optimizeStumpGreedy(test, stump_features, stump_classes);
 
-    THEA_CONSOLE << "JointBoost:     Error when splitting on feature " << i << " = " << err;
+    // THEA_CONSOLE << "JointBoost:     Error when splitting on feature " << test.f << " = " << err;
 
     // Did we improve the classification?
     if (err >= 0 && (min_err < 0 || err < min_err))
@@ -251,17 +286,30 @@ JointBoost::optimizeStumpExhaustive(SharedStump & stump, TheaArray<double> const
 {
   // Loop over all possible subsets of classes
   SharedStump test = stump;
-  unsigned long num_subsets = (1L << num_classes);
+  unsigned long num_subsets = (1L << num_classes);  // assume no more classes than an unsigned long can hold
   double min_err = -1;
+  double cum_num_thresholds = 0;
   for (unsigned long subset = 1; subset + 1 < num_subsets; ++subset)
   {
-    test.n = SharingSet(num_classes, subset);
-    double err = fitStump(test, stump_features, stump_classes);
+    test.n = SharingSet((SharingSet::size_type)num_classes, subset);
+
+    // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
+
+    long num_thresholds = 0;
+    double err = fitStump(test, stump_features, stump_classes, &num_thresholds);
     if (err >= 0 && (min_err < 0 || err < min_err))
     {
-      min_err = err;
       stump = test;
+      min_err = err;
     }
+
+    cum_num_thresholds += num_thresholds;
+  }
+
+  if (options.verbose)
+  {
+    THEA_CONSOLE << "JointBoost:     Generated " << cum_num_thresholds / (num_subsets - 2)
+                 << " candidate feature threshold(s) on average";
   }
 
   return min_err;
@@ -271,8 +319,70 @@ double
 JointBoost::optimizeStumpGreedy(SharedStump & stump, TheaArray<double> const & stump_features,
                                 TheaArray<long> const & stump_classes)
 {
-  // TODO
-  return -1;
+  TheaArray<SharedStump> candidate_stumps;
+  TheaArray<double> candidate_errors;
+
+  SharedStump test = stump;
+  SharingSet current_n((SharingSet::size_type)num_classes, 0);  // initially empty
+  double cum_num_thresholds = 0;
+  long num_fitted_stumps = 0;
+  for (long c = 0; c < num_classes - 1; ++c)
+  {
+    // Add the single new class to the current set that jointly gives the minimum error
+    SharedStump best_stump;
+    double min_err = -1;
+    bool min_found = false;
+    for (long c = 0; c < num_classes - 1; ++c)
+    {
+      if (current_n[(SharingSet::size_type)c])
+        continue;
+
+      test.n = current_n;
+      test.n[(SharingSet::size_type)c] = true;
+
+      // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
+
+      long num_thresholds = 0;
+      double err = fitStump(test, stump_features, stump_classes, &num_thresholds);
+      if (err >= 0 && (min_err < 0 || err < min_err))
+      {
+        best_stump = test;
+        min_err = err;
+        min_found = true;
+      }
+
+      cum_num_thresholds += num_thresholds;
+      num_fitted_stumps++;
+    }
+
+    if (!min_found)  // this shouldn't normally happen, it means every attempt to fit gave an error
+      break;
+
+    candidate_stumps.push_back(best_stump);
+    candidate_errors.push_back(min_err);
+
+    // THEA_CONSOLE << "JointBoost:         Greedy search candidate " << best_stump.toString() << " with error " << min_err;
+
+    current_n = best_stump.n;
+  }
+
+  double min_err = -1;
+  for (array_size_t i = 0; i < candidate_stumps.size(); ++i)
+  {
+    if (min_err < 0 || candidate_errors[i] < min_err)
+    {
+      stump = candidate_stumps[i];
+      min_err = candidate_errors[i];
+    }
+  }
+
+  if (options.verbose)
+  {
+    THEA_CONSOLE << "JointBoost:     Generated " << cum_num_thresholds / num_fitted_stumps
+                 << " candidate feature threshold(s) on average";
+  }
+
+  return min_err;
 }
 
 namespace JointBoostInternal {
@@ -321,7 +431,9 @@ splitQuality(Matrix<double> const & weights, TheaArray<long> const & classes, Th
   //   sum { weights[classes[i], i] * accuracy[i] }
   //
   // where accuracy[i] is +1 if example i has a positive class and its feature above the split index, or has a negative class
-  // and is below the split index , and -1 otherwise
+  // and is below the split index, and -1 otherwise.
+  //
+  // As mentioned in getCandidateThresholds(), the absolute value of the split quality is relevant, not its sign.
 
   double quality = 0;
   for (array_size_t i = 0; i < accuracy.size(); ++i)
@@ -334,6 +446,11 @@ void
 getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & weights, TheaArray<double> const & features,
                        TheaArray<long> const & classes, long max_thresholds, TheaArray<double> & thresholds)
 {
+  // A good threshold separates the positive classes from the negative classes. In other words, we want either many positive
+  // examples > theta and many negative examples <= theta, or vice versa. Note that the positive examples need *not* be mostly
+  // on the "positive side of" (greater than) theta -- we just require theta to separate the positive and negative examples
+  // as well as possible. (Hence, the absolute value of splitQuality() is relevant, not its sign.)
+
   // Sort the examples by feature value
   TheaArray<array_size_t> sorted_indices;
   sortIndexed(features, sorted_indices);
@@ -357,11 +474,11 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
     // Start with a random seed
     array_size_t index = (array_size_t)Math::randIntegerInRange(0, (long)sorted_indices.size() - 1);
     array_size_t mapped_index = sorted_indices[index];
-    double feature = features[mapped_index];
+    double threshold = features[mapped_index];
 
     // Measure the classification accuracy (+/-1) per example, and the overall quality of the split
     TheaArray<int> accuracy;
-    getClassificationAccuracy(feature, pos_classes, features, classes, sorted_indices, accuracy);
+    getClassificationAccuracy(threshold, pos_classes, features, classes, sorted_indices, accuracy);
     double quality = splitQuality(weights, classes, accuracy);
 
     // Iteratively try to improve it by moving one step to the right or left
@@ -410,10 +527,18 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
       if (std::fabs(offset_qualities[best_offset]) > std::fabs(quality)
        || (equal_quality[best_offset] && Math::rand01() < 0.5))  // if equal, move with 50% probability
       {
+        // If move left, current example's accuracy is inverted
+        if (best_offset == 0)
+          accuracy[mapped_index] = -accuracy[mapped_index];
+
         // Move to index + offset
         index = (array_size_t)(index + 2 * best_offset - 1);
         mapped_index = sorted_indices[index];
         quality = offset_qualities[best_offset];
+
+        // If move right, offset example's accuracy is inverted
+        if (best_offset == 1)
+          accuracy[mapped_index] = -accuracy[mapped_index];
       }
       else if (!equal_quality[best_offset])
         break;
@@ -430,14 +555,23 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
 } // namespace JointBoostInternal
 
 double
-JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes)
+JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
+                     long * num_generated_thresholds)
 {
   using namespace JointBoostInternal;
 
   // Find good places to cut the features (candidate values of the threshold theta)
   TheaArray<double> thresholds;
+
+#ifdef JOINT_BOOST_TEST_ALL_THRESHOLDS
+  thresholds = stump_features;
+#else
   long max_thresholds = (long)std::ceil(max_thresholds_fraction * stump_features.size());
   getCandidateThresholds(stump.n, weights, stump_features, stump_classes, max_thresholds, thresholds);
+#endif
+
+  if (num_generated_thresholds)
+    *num_generated_thresholds = (long)thresholds.size();
 
   // THEA_CONSOLE << "JointBoost: Generated " << thresholds.size() << " candidate threshold(s) for " << stump.toString();
   // for (array_size_t t = 0; t < thresholds.size(); ++t)
@@ -451,7 +585,7 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
     {
       for (array_size_t i = 0; i < stump_classes.size(); ++i)
       {
-        double w = weights(c, stump_classes[i]);
+        double w = weights(c, (long)i);
         int z = (stump_classes[i] == c ? +1 : -1);
 
         err_k += w * Math::square(z - stump.k[(array_size_t)c]);  // k is precalculated outside this function
@@ -474,7 +608,7 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
       {
         for (array_size_t i = 0; i < stump_classes.size(); ++i)
         {
-          double w = weights((long)i, stump_classes[i]);
+          double w = weights(c, (long)i);
           int z = (stump_classes[i] == c ? +1 : -1);
 
           if (stump_features[i] > theta)
