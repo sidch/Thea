@@ -93,56 +93,72 @@ class THEA_API JointBoost
         /** Get the class of each training example. */
         virtual void getClasses(TheaArray<long> & classes) const = 0;
 
+        /** Get the weight of each training example. If an empty array is returned, all weights are set to 1. */
+        virtual void getWeights(TheaArray<long> & weights) const { weights.clear(); }
+
     }; // class TrainingData
 
     /**
      * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter sets the
      * default value for that parameter.
      */
-    struct Options
+    class Options
     {
-      long min_boosting_rounds;  /**< Minimum number of boosting rounds that must be performed even if the error reduction
-                                      between successive rounds is below the threshold min_fractional_error_reduction. */
-      long max_boosting_rounds;  ///< Maximum number of boosting rounds. This also limits the maximum number of stumps added.
-      double min_fractional_error_reduction;  /**< Minimum error reduction required for boosting rounds to continue beyond
-                                                   min_boosting_rounds. */
-      double feature_sampling_fraction;  ///< Fraction of features sampled in a round.
-      double max_thresholds_fraction;  /**< Set the maximum number of candidate thresholds generated, as a fraction of the
-                                            number of features. */
-      bool force_exhaustive;  ///< Force exhaustive O(2^C) optimization over all possible subsets of classes.
-      bool force_greedy;  ///< Force greedy O(C^2) optimization over subsets of classes.
+      public:
+        /** Constructor. Sets default options. */
+        Options();
 
-      /** Constructor. Sets default options. */
-      Options();
+        /**
+         * Set the minimum number of boosting rounds that must be performed even if the error reduction between successive
+         * rounds is below the threshold min_fractional_error_reduction (default -1).
+         */
+        Options & setMinBoostingRounds(long rounds) { min_boosting_rounds = rounds; return *this; }
 
-      /**
-       * Set the minimum number of boosting rounds that must be performed even if the error reduction between successive rounds
-       * is below the threshold min_fractional_error_reduction.
-       */
-      Options & setMinBoostingRounds(long rounds) { min_boosting_rounds = rounds; return *this; }
+        /** Maximum number of boosting rounds (default -1). This also limits the maximum number of stumps added. */
+        Options & setMaxBoostingRounds(long rounds) { max_boosting_rounds = rounds; return *this; }
 
-      /** Maximum number of boosting rounds. This also limits the maximum number of stumps added. */
-      Options & setMaxBoostingRounds(long rounds) { max_boosting_rounds = rounds; return *this; }
+        /** Minimum error reduction required for boosting rounds to continue beyond min_boosting_rounds (default -1). */
+        Options & setMinFractionalErrorReduction(double frac) { min_fractional_error_reduction = frac; return *this; }
 
-      /** Minimum error reduction required for boosting rounds to continue beyond min_boosting_rounds. */
-      Options & setMinFractionalErrorReduction(double frac) { min_fractional_error_reduction = frac; return *this; }
+        /** Set the fraction of features sampled in a round (default -1). */
+        Options & setFeatureSamplingFraction(double frac) { feature_sampling_fraction = frac; return *this; }
 
-      /** Set the fraction of features sampled in a round. */
-      Options & setFeatureSamplingFraction(double frac) { feature_sampling_fraction = frac; return *this; }
+        /** Set the maximum number of candidate thresholds generated, as a fraction of the number of features (default -1). */
+        Options & setMaxThresholdsFraction(double frac) { max_thresholds_fraction = frac; return *this; }
 
-      /** Set the maximum number of candidate thresholds generated, as a fraction of the number of features. */
-      Options & setMaxThresholdsFraction(double frac) { max_thresholds_fraction = frac; return *this; }
+        /**
+         * Set if exhaustive O(2^C) optimization over all possible subsets of classes will be forced or not (default false).
+         * Currently, this requires that there be no more classes than the number of bits in an unsigned long, minus 1. If you
+         * have a large number of classes, use the greedy optimization instead. The latter is turned on by default when there
+         * are too many classes, or if you call setForceGreedy(true).
+         */
+        Options & setForceExhaustive(bool value) { force_exhaustive = value; return *this; }
 
-      /** Set if exhaustive O(2^C) optimization over all possible subsets of classes will be forced or not. */
-      Options & setForceExhaustive(bool value) { force_exhaustive = value; return *this; }
+        /** Set if greedy O(C^2) optimization over subsets of classes will be forced or not (default false). */
+        Options & setForceGreedy(bool value) { force_greedy = value; return *this; }
 
-      /** Set if greedy O(C^2) optimization over subsets of classes will be forced or not. */
-      Options & setForceGreedy(bool value) { force_greedy = value; return *this; }
+        /** Set whether progress information will be printed to the console or not (default true). */
+        Options & setVerbose(bool value) { verbose = value; return *this; }
 
-      /** Get the set of default options. */
-      static Options const & defaults() { static Options const def; return def; }
+        /** Get the set of default options. */
+        static Options const & defaults() { static Options const def; return def; }
 
-    }; // class Options;
+      private:
+        long min_boosting_rounds;  /**< Minimum number of boosting rounds that must be performed even if the error reduction
+                                        between successive rounds is below the threshold min_fractional_error_reduction. */
+        long max_boosting_rounds;  ///< Maximum number of boosting rounds. This also limits the maximum number of stumps added.
+        double min_fractional_error_reduction;  /**< Minimum error reduction required for boosting rounds to continue beyond
+                                                     min_boosting_rounds. */
+        double feature_sampling_fraction;  ///< Fraction of features sampled in a round.
+        double max_thresholds_fraction;  /**< Set the maximum number of candidate thresholds generated, as a fraction of the
+                                              number of features. */
+        bool force_exhaustive;  ///< Force exhaustive O(2^C) optimization over all possible subsets of classes.
+        bool force_greedy;  ///< Force greedy O(C^2) optimization over subsets of classes.
+        bool verbose;  ///< Print progress information to the console.
+
+        friend class JointBoost;
+
+    }; // class Options
 
     /**
      * Constructor.
@@ -234,7 +250,8 @@ class THEA_API JointBoost
                                TheaArray<long> const & stump_classes);
 
     /** Fit stump parameters a, b and theta, for a particular subset of classes. */
-    double fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes);
+    double fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
+                    long * num_generated_thresholds = NULL);
 
     long num_classes;   ///< Number of object classes.
     long num_features;  ///< Number of features per object.
