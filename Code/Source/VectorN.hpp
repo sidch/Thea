@@ -253,79 +253,27 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
      * Get the minimum component in the vector (according to signed comparison). To compare absolute values, use minAbs()
      * instead.
      */
-    T min() const
-    {
-      T best = (*this)[0];
-      for (long i = 1; i < N; ++i)
-      {
-        if ((*this)[i] < best)
-          best = (*this)[i];
-      }
-
-      return best;
-    }
+    T const & min() const { return (*this)[minAxis()]; }
 
     /**
      * Get the (signed) component with the minimum absolute value.
      *
      * @see min()
      */
-    T minAbs() const
-    {
-      T const * m = &(*this)[0];
-      T best = std::abs(*m);
-      for (long i = 1; i < N; ++i)
-      {
-        T const & e = (*this)[i];
-        T abs_e = std::abs(e);
-        if (!m || abs_e < best)
-        {
-          m = &e;
-          best = abs_e;
-        }
-      }
-
-      return *m;
-    }
+    T const & minAbs() const { return (*this)[minAbsAxis()]; }
 
     /**
      * Get the maximum component in the vector (according to signed comparison). To compare absolute values, use maxAbs()
      * instead.
      */
-    T max() const
-    {
-      T best = (*this)[0];
-      for (long i = 1; i < N; ++i)
-      {
-        if ((*this)[i] > best)
-          best = (*this)[i];
-      }
-
-      return best;
-    }
+    T const & max() const { return (*this)[maxAxis()]; }
 
     /**
      * Get the (signed) component with the maximum absolute value.
      *
      * @see max()
      */
-    T maxAbs() const
-    {
-      T const * m = &(*this)[0];
-      T best = std::abs(*m);
-      for (long i = 1; i < N; ++i)
-      {
-        T const & e = (*this)[i];
-        T abs_e = std::abs(e);
-        if (!m || abs_e > best)
-        {
-          m = &e;
-          best = abs_e;
-        }
-      }
-
-      return *m;
-    }
+    T const & maxAbs() const { return (*this)[maxAbsAxis()]; }
 
     /**
      * Get the index of the axis of the vector with the minimum coordinate (according to signed comparison). To compare absolute
@@ -336,7 +284,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       long min_axis = 0;
       for (long i = 1; i < N; ++i)
       {
-        if ((*this)[i] > (*this)[min_axis])
+        if ((*this)[i] < (*this)[min_axis])
           min_axis = i;
       }
 
