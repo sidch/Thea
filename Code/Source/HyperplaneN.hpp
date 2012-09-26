@@ -242,6 +242,14 @@ class /* THEA_API */ HyperplaneN : public Internal::HyperplaneNBase<N, T>
 
 }; // class HyperplaneN
 
+/** Pipe a textual representation of a hyperplane to a <code>std::ostream</code>. */
+template <long N, typename T>
+std::ostream &
+operator<<(std::ostream & os, HyperplaneN<N, T> const & plane)
+{
+  return os << plane.toString();
+}
+
 } // namespace Thea
 
 #include "Hyperplane3.hpp"

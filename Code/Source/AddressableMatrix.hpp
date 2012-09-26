@@ -135,7 +135,7 @@ class /* THEA_API */ AddressableMatrix : public virtual BasicMatrix<T>
           set(r, c, value);
     }
 
-    /** Get the minimum element in the matrix. */
+    /** Get the minimum element (according to signed comparison) in the matrix. */
     virtual T const & min() const
     {
       long nr = this->numRows(), nc = this->numColumns();
@@ -153,7 +153,7 @@ class /* THEA_API */ AddressableMatrix : public virtual BasicMatrix<T>
       return *m;
     }
 
-    /** Get the maximum element in the matrix. */
+    /** Get the maximum element (according to signed comparison) in the matrix. */
     virtual T const & max() const
     {
       long nr = this->numRows(), nc = this->numColumns();

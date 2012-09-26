@@ -177,6 +177,14 @@ class /* THEA_API */ CoordinateFrameN : public Internal::CoordinateFrameNBase<N,
 
 }; // class CoordinateFrameN
 
+/** Pipe a textual representation of a coordinate frame to a <code>std::ostream</code>. */
+template <long N, typename T>
+std::ostream &
+operator<<(std::ostream & os, CoordinateFrameN<N, T> const & cf)
+{
+  return os << cf.toString();
+}
+
 } // namespace Thea
 
 #include "CoordinateFrame2.hpp"

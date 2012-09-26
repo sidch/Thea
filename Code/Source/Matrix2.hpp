@@ -131,7 +131,7 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
     {
       MatrixMN result = *this;
       if (!result.invert())
-        throw Error("MatrixMN<2, 2, T>: Could not invert matrix with given tolerance");
+        throw Error("MatrixMN<2, 2, T>: Could not invert matrix " + this->toString() + " with given tolerance");
 
       return result;
     }
