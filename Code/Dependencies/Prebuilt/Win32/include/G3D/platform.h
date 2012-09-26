@@ -12,6 +12,11 @@
 #ifndef G3D_platform_h
 #define G3D_platform_h
 
+// Added by S.C., Aug 2012 to avoid duplicate symbol errors c.f. Qt when compiling on Win64.
+#if !defined(_MSC_VER)
+#  define G3D_ENABLE_ZLIB
+#endif
+
 /**
  The version number of G3D in the form: MmmBB -> 
  version M.mm [beta BB]

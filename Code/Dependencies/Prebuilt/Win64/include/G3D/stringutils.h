@@ -32,17 +32,12 @@ void parseCommaSeparated(const std::string s, Array<std::string>& array, bool st
   \sa G3D::findLastSlash, G3D::isSlash
 */
 inline int findSlash(const std::string& f, int start = 0) {
-    std::size_t i = f.find('/', start);
-    std::size_t j = f.find('\\', start);
-    if (((i != -1) && (i < j)) || (j == -1)) {
-        return (int)i;
-    } else {
-        return (int)j;
-    }
+    std::size_t pos = f.find_first_of("/\\", (std::size_t)start);
+    return pos == std::string::npos ? -1 : (int)pos;
 }
 
 
-/** Finds the index of the first '\\' or '/' character, starting at index \a start (if \a start is -1, starts at the end of the string).
+/** Finds the index of the last '\\' or '/' character, starting at index \a start (if \a start is -1, starts at the end of the string).
   \sa G3D::findSlash, G3D::isSlash
   */
 inline int findLastSlash(const std::string& f, int start = -1) {
@@ -50,9 +45,8 @@ inline int findLastSlash(const std::string& f, int start = -1) {
         start = (int)f.length() - 1;
     }
 
-    std::size_t i = f.rfind('/', (std::size_t)start);
-    std::size_t j = f.rfind('\\', (std::size_t)start);
-    return (int)max(i, j);
+    std::size_t pos = f.find_last_of("/\\", (std::size_t)start);
+    return pos == std::string::npos ? -1 : (int)pos;
 }
 
 /**
