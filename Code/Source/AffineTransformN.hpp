@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include "MatrixMN.hpp"
 #include "VectorN.hpp"
+#include <sstream>
 
 namespace Thea {
 
@@ -171,6 +172,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Apply this transform to a vector. */
     VectorT operator*(VectorT const & v) const { return linear * v + trans; }
 
+    /** Get a string representing the transform. */
+    std::string toString() const
+    {
+      std::ostringstream oss;
+      oss << "[L: " << linear << ", T: " << trans << ']';
+      return oss.str();
+    }
+
     /** Get the identity transform. */
     static AffineTransformT const & identity()
     {
@@ -207,6 +216,14 @@ class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N,
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
 
 }; // class AffineTransformN
+
+/** Pipe a textual representation of an affine transform to a <code>std::ostream</code>. */
+template <long N, typename T>
+std::ostream &
+operator<<(std::ostream & os, AffineTransformN<N, T> const & tr)
+{
+  return os << tr.toString();
+}
 
 } // namespace Thea
 

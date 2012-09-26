@@ -175,7 +175,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       Vector3 v0 = getVertex(0), v1 = getVertex(1), v2 = getVertex(2);
 
       plane = Plane3::fromThreePoints(v0, v1, v2);
-      primary_axis = plane.getNormal().maxAxis();
+      primary_axis = plane.getNormal().maxAbsAxis();
 
       centroid = (v0 + v1 + v2) / 3;
       edge01   = v1 - v0;

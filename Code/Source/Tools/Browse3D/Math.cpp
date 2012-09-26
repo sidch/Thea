@@ -50,7 +50,7 @@ namespace Browse3D {
 Vector3
 getPerpendicularVector(Vector3 const & v)
 {
-  return (v.maxAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
+  return (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
 }
 
 Vector3
@@ -531,7 +531,7 @@ void
 getBarycentricCoordinates3(Vector3 const & q, Vector3 const & v0, Vector3 const & v1, Vector3 const & v2,
                            Real & bc0, Real & bc1, Real & bc2)
 {
-  switch ((v1 - v0).cross(v2 - v0).maxAxis())
+  switch ((v1 - v0).cross(v2 - v0).maxAbsAxis())
   {
     case 0:           getBarycentricCoordinates2(q.yz(), v0.yz(), v1.yz(), v2.yz(), bc0, bc1, bc2); break;
     case 1:           getBarycentricCoordinates2(q.xz(), v0.xz(), v1.xz(), v2.xz(), bc0, bc1, bc2); break;

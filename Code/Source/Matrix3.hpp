@@ -160,7 +160,7 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
     {
       MatrixMN result = *this;
       if (!result.invert())
-        throw Error("MatrixMN<3, 3, T>: Could not invert matrix with given tolerance");
+        throw Error("MatrixMN<3, 3, T>: Could not invert matrix " + this->toString() + " with given tolerance");
 
       return result;
     }
@@ -432,7 +432,7 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
       if (d < -0.9999)
       {
         VectorN<3, T> perp;
-        switch (u.maxAxis())
+        switch (u.maxAbsAxis())
         {
           case 0:           perp = VectorN<3, T>(u.y(),  -u.x(),       0); break;
           case 1:           perp = VectorN<3, T>(u.y(),  -u.x(),       0); break;

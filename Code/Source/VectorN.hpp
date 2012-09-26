@@ -249,56 +249,107 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       return result;
     }
 
-    /** Get the minimum component in the vector. */
-    T const & min() const
+    /**
+     * Get the minimum component in the vector (according to signed comparison). To compare absolute values, use minAbs()
+     * instead.
+     */
+    T min() const
     {
-      T const * m = NULL;
-      for (long i = 0; i < N; ++i)
-      {
-        T const & e = (*this)[i];
-        if (!m || e < *m)
-          m = &e;
-      }
-
-      debugAssertM(m, "VectorN: No minimum element found");
-      return *m;
-    }
-
-    /** Get the maximum component in the vector. */
-    T const & max() const
-    {
-      T const * m = NULL;
-      for (long i = 0; i < N; ++i)
-      {
-        T const & e = (*this)[i];
-        if (!m || e > *m)
-          m = &e;
-      }
-
-      debugAssertM(m, "VectorN: No maximum element found");
-      return *m;
-    }
-
-    /** Get the index of the axis of the vector with the numerically largest coordinate. */
-    long maxAxis() const
-    {
-      long max_axis = 0;
-      T abs_pc = std::abs((*this)[0]);
+      T best = (*this)[0];
       for (long i = 1; i < N; ++i)
       {
-        T abs_i = std::abs((*this)[i]);
-        if (abs_i > abs_pc)
+        if ((*this)[i] < best)
+          best = (*this)[i];
+      }
+
+      return best;
+    }
+
+    /**
+     * Get the (signed) component with the minimum absolute value.
+     *
+     * @see min()
+     */
+    T minAbs() const
+    {
+      T const * m = &(*this)[0];
+      T best = std::abs(*m);
+      for (long i = 1; i < N; ++i)
+      {
+        T const & e = (*this)[i];
+        T abs_e = std::abs(e);
+        if (!m || abs_e < best)
         {
-          max_axis = i;
-          abs_pc = abs_i;
+          m = &e;
+          best = abs_e;
         }
       }
 
-      return max_axis;
+      return *m;
     }
 
-    /** Get the index of the axis of the vector with the numerically smallest coordinate. */
+    /**
+     * Get the maximum component in the vector (according to signed comparison). To compare absolute values, use maxAbs()
+     * instead.
+     */
+    T max() const
+    {
+      T best = (*this)[0];
+      for (long i = 1; i < N; ++i)
+      {
+        if ((*this)[i] > best)
+          best = (*this)[i];
+      }
+
+      return best;
+    }
+
+    /**
+     * Get the (signed) component with the maximum absolute value.
+     *
+     * @see max()
+     */
+    T maxAbs() const
+    {
+      T const * m = &(*this)[0];
+      T best = std::abs(*m);
+      for (long i = 1; i < N; ++i)
+      {
+        T const & e = (*this)[i];
+        T abs_e = std::abs(e);
+        if (!m || abs_e > best)
+        {
+          m = &e;
+          best = abs_e;
+        }
+      }
+
+      return *m;
+    }
+
+    /**
+     * Get the index of the axis of the vector with the minimum coordinate (according to signed comparison). To compare absolute
+     * values, use minAbsAxis() instead.
+     */
     long minAxis() const
+    {
+      long min_axis = 0;
+      for (long i = 1; i < N; ++i)
+      {
+        if ((*this)[i] > (*this)[min_axis])
+          min_axis = i;
+      }
+
+      return min_axis;
+    }
+
+    /**
+     * Get the index of the axis of the vector with the numerically smallest coordinate (the one with the smallest absolute
+     * value).
+     *
+     * @see minAxis()
+     */
+    long minAbsAxis() const
     {
       long min_axis = 0;
       T abs_pc = std::abs((*this)[0]);
@@ -313,6 +364,45 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       }
 
       return min_axis;
+    }
+
+    /**
+     * Get the index of the axis of the vector with the maximum coordinate (according to signed comparison). To compare absolute
+     * values, use maxAbsAxis() instead.
+     */
+    long maxAxis() const
+    {
+      long max_axis = 0;
+      for (long i = 1; i < N; ++i)
+      {
+        if ((*this)[i] > (*this)[max_axis])
+          max_axis = i;
+      }
+
+      return max_axis;
+    }
+
+    /**
+     * Get the index of the axis of the vector with the numerically largest coordinate (the one with the largest absolute
+     * value).
+     *
+     * @see maxAxis()
+     */
+    long maxAbsAxis() const
+    {
+      long max_axis = 0;
+      T abs_pc = std::abs((*this)[0]);
+      for (long i = 1; i < N; ++i)
+      {
+        T abs_i = std::abs((*this)[i]);
+        if (abs_i > abs_pc)
+        {
+          max_axis = i;
+          abs_pc = abs_i;
+        }
+      }
+
+      return max_axis;
     }
 
     /** Return a vector containing the component-wise minima of this vector and another. */

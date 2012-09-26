@@ -44,6 +44,7 @@
 
 #include "Common.hpp"
 #include "AffineTransformN.hpp"
+#include <sstream>
 
 namespace Thea {
 
@@ -138,6 +139,14 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
     /** Apply this transform to a N-vector. */
     VectorT operator*(VectorT const & v) const { return aff * v; }
 
+    /** Get a string representing the transform. */
+    std::string toString() const
+    {
+      std::ostringstream oss;
+      oss << "[R: " << getRotation() << ", T: " << getTranslation() << ']';
+      return oss.str();
+    }
+
     /** Get the identity transform. */
     static RigidTransformT const & identity()
     {
@@ -173,6 +182,14 @@ class /* THEA_API */ RigidTransformN : public Internal::RigidTransformNBase<N, T
     RigidTransformN() {}
 
 }; // class RigidTransformN
+
+/** Pipe a textual representation of a rigid transform to a <code>std::ostream</code>. */
+template <long N, typename T>
+std::ostream &
+operator<<(std::ostream & os, RigidTransformN<N, T> const & tr)
+{
+  return os << tr.toString();
+}
 
 } // namespace Thea
 
