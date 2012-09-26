@@ -136,7 +136,11 @@ template<class T> struct HashTrait< G3D::ReferenceCountedPointer<T> > {
 #include "G3D/ImageFormat.h"
 
 #ifdef _MSC_VER
+
+#ifdef G3D_ENABLE_ZLIB
 #   pragma comment(lib, "zlib")
+#endif
+
 #   pragma comment(lib, "ws2_32")
 #   pragma comment(lib, "winmm")
 #   pragma comment(lib, "imagehlp")
@@ -145,9 +149,17 @@ template<class T> struct HashTrait< G3D::ReferenceCountedPointer<T> > {
 #   pragma comment(lib, "kernel32")
 #   pragma comment(lib, "version")
 #   pragma comment(lib, "advapi32")
+
+#ifdef G3D_ENABLE_ZLIB
 #   pragma comment(lib, "png")
+#endif
+
 #   pragma comment(lib, "jpeg")
+
+#ifdef G3D_ENABLE_ZLIB
 #   pragma comment(lib, "zip")
+#endif
+
 #   ifdef _DEBUG
         // Don't link against G3D when building G3D itself.
 #      ifndef G3D_BUILDING_LIBRARY_DLL

@@ -79,6 +79,9 @@ inline double __fastcall drand48() {
 */
 
 __inline long int lrint (double flt) {
+#ifdef _M_X64
+    return (long)((flt > 0.0) ? (flt + 0.5) : (flt - 0.5));
+#else
     int intgr;
 
     _asm {
@@ -87,9 +90,13 @@ __inline long int lrint (double flt) {
     };
 
     return intgr;
+#endif
 }
 
 __inline long int lrintf(float flt) {
+#ifdef _M_X64
+    return (long)((flt > 0.0f) ? (flt + 0.5f) : (flt - 0.5f));
+#else
     int intgr;
 
     _asm {
@@ -98,6 +105,7 @@ __inline long int lrintf(float flt) {
     };
 
     return intgr;
+#endif
 }
 #endif
 
