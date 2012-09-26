@@ -144,10 +144,29 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
       return result;
     }
 
-    using BaseT::getRow;
-    using BaseT::setRow;
-    using BaseT::getColumn;
-    using BaseT::setColumn;
+    void getRow(long row, T * values) const
+    {
+      for (long j = 0; j < N; ++j)
+        values[j] = m[row][j];
+    }
+
+    void setRow(long row, T const * values)
+    {
+      for (long j = 0; j < N; ++j)
+        m[row][j] = values[j];
+    }
+
+    void getColumn(long col, T * values) const
+    {
+      for (long i = 0; i < N; ++i)
+        values[i] = m[i][col];
+    }
+
+    void setColumn(long col, T const * values)
+    {
+      for (long i = 0; i < N; ++i)
+        m[i][col] = values[i];
+    }
 
     /** Get a row of the matrix. */
     VectorN<N, T> getRow(long r) const
