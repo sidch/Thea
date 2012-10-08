@@ -104,7 +104,7 @@ class BoundedSortedArrayN
     /** Get the element at a given position in the sorted sequence. */
     T const & operator[](int i) const
     {
-      debugAssertM(i >= 0 && i < N, format("BoundedSortedArrayN: Index %d out of bounds [0, %d)", i, N));
+      debugAssertM(i >= 0 && i < num_elems, format("BoundedSortedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
       return values[i];
     }
 

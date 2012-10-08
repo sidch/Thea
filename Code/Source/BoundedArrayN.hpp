@@ -101,14 +101,14 @@ class BoundedArrayN
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
     T const & operator[](int i) const
     {
-      debugAssertM(i >= 0 && i < N, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, N));
+      debugAssertM(i >= 0 && i < num_elems, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
       return values[i];
     }
 
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
     T & operator[](int i)
     {
-      debugAssertM(i >= 0 && i < N, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, N));
+      debugAssertM(i >= 0 && i < num_elems, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
       return values[i];
     }
 
@@ -135,11 +135,12 @@ class BoundedArrayN
      */
     void insert(int i, T const & t)
     {
-      debugAssertM(i >= 0 && i < N, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, N));
+      debugAssertM(i >= 0 && i <= std::min(num_elems, N - 1), format("BoundedArrayN: Index %d out of bounds [0, %d]", i,
+                                                                     std::min(num_elems, N - 1)));
 
       if (isFull())
         Algorithms::fastCopyBackward(values + i, values + N - 1, values + i + 1);
-      else
+      else if (i < num_elems)
         Algorithms::fastCopyBackward(values + i, values + num_elems, values + i + 1);
 
       values[i] = t;
