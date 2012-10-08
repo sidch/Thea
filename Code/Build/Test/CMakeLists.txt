@@ -489,17 +489,18 @@ ENDIF()
 #===========================================================
 
 SET(TheaTestsDependencies
-      TheaTestCSPARSE
-      TheaTestDisplayMesh
-      TheaTestGL
-      TheaTestKDTree3
-      TheaTestMath
-      TheaTestMesh
-      TheaTestMetrics
-      TheaTestOPTPP
-      TheaTestPCA
-      TheaTestPyramidMatch
-      TheaTestZernike)
+    TheaTestCSPARSE
+    TheaTestDisplayMesh
+    TheaTestGL
+    TheaTestJointBoost
+    TheaTestKDTree3
+    TheaTestMath
+    TheaTestMesh
+    TheaTestMetrics
+    TheaTestOPTPP
+    TheaTestPCA
+    TheaTestPyramidMatch
+    TheaTestZernike)
 
 IF(NOT APPLE)
   SET(TheaTestsDependencies ${TheaTestsDependencies} TheaTestARPACK)
