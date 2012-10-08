@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2010, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2012, Siddhartha Chaudhuri/Stanford University
 //
 // All rights reserved.
 //
@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_BoundedSortedArray_hpp__
-#define __Thea_BoundedSortedArray_hpp__
+#ifndef __Thea_SortedArray_hpp__
+#define __Thea_SortedArray_hpp__
 
 #include "Common.hpp"
 #include "Algorithms/FastCopy.hpp"
@@ -48,114 +48,47 @@
 
 namespace Thea {
 
-/**
- * A sorted array of bounded maximum size, ordered in ascending order according to a comparator. If the array is full and a new
- * element is added, the last element is dropped.
- *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>boost::has_trivial_assign</tt> is true for T.
- *
- * The implementation always allocates enough space to store the maximum number of instances of T. This space is allocated on
- * the heap: if the capacity is known at compile-time, BoundedSortedArrayN, which can use stack storage, is usually preferred.
- *
- * @see BoundedSortedArrayN
- */
+/** An array sorted in ascending order according to a comparator. */
 template < typename T, typename Compare = std::less<T> >
-class BoundedSortedArray
+class SortedArray
 {
   private:
+    TheaArray<T> values;
     Compare compare;
-    int capacity, num_elems;
-    T * values;
 
   public:
     /**
-     * Constructor. Allocates memory for \a capacity_ elements.
+     * Constructor.
      *
-     * @param capacity_ The maximum number of elements the array can hold. Must be a non-negative integer.
      * @param compare_ The comparator that evaluates the "less-than" operator on objects of type T.
      */
-    BoundedSortedArray(int capacity_ = 0, Compare compare_ = Compare())
-    : compare(compare_), capacity(capacity_), num_elems(0), values(NULL)
-    {
-      alwaysAssertM(capacity >= 0, "BoundedSortedArray: Capacity must be non-negative");
-
-      if (capacity > 0)
-        values = new T[capacity];
-    }
-
-    /** Copy constructor. */
-    BoundedSortedArray(BoundedSortedArray const & src)
-    : compare(src.compare), capacity(src.capacity), num_elems(src.num_elems),
-      values(src.capacity > 0 ? new T[src.capacity] : NULL)
-    {
-      if (src.num_elems > 0)
-        Algorithms::fastCopy(src.values, src.values + src.num_elems, values);
-    }
-
-    /** Assignment operator. */
-    BoundedSortedArray & operator=(BoundedSortedArray const & src)
-    {
-      compare = src.compare;
-      num_elems = src.num_elems;
-
-      if (capacity != src.capacity)
-      {
-        delete [] values;
-        values = (src.capacity > 0 ? new T[src.capacity] : NULL);
-        capacity = src.capacity;
-      }
-
-      if (src.num_elems > 0)
-        Algorithms::fastCopy(src.values, src.values + src.num_elems, values);
-
-      return *this;
-    }
-
-    /** Destructor. */
-    ~BoundedSortedArray() { delete [] values; }
-
-    /** Set the maximum number of elements the array can hold. The array is cleared and all prior data is discarded. */
-    void setCapacity(int capacity_)
-    {
-      if (capacity != capacity_)
-      {
-        delete [] values;
-        values = (capacity_ > 0 ? new T[capacity_] : NULL);
-        capacity = capacity_;
-      }
-
-      num_elems = 0;
-    }
-
-    /** Get the maximum number of elements the array can hold. */
-    int getCapacity() const { return capacity; }
+    SortedArray(Compare compare_ = Compare()) : compare(compare_) {}
 
     /** Get the number of elements in the array. */
-    int size() const { return num_elems; }
+    long size() const { return (long)values.size(); }
 
     /** Check if the array is empty or not. */
-    bool isEmpty() const { return num_elems <= 0; }
+    bool isEmpty() const { return values.empty(); }
 
     /** Get the first element in the sorted sequence. */
     T const & first() const
     {
-      debugAssertM(num_elems > 0, "BoundedSortedArray: Can't get first element of empty array");
+      debugAssertM(!values.empty(), "SortedArray: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the sorted sequence. */
     T const & last() const
     {
-      debugAssertM(num_elems > 0, "BoundedSortedArray: Can't get last element of empty array");
-      return values[num_elems - 1];
+      debugAssertM(!values.empty(), "SortedArray: Can't get last element of empty array");
+      return values[size() - 1];
     }
 
     /** Get the element at a given position in the sorted sequence. */
-    T const & operator[](int i) const
+    T const & operator[](long i) const
     {
-      debugAssertM(i >= 0 && i < num_elems, format("BoundedSortedArray: Index %d out of bounds [0, %d)", i, num_elems));
-      return values[i];
+      debugAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
+      return values[(array_size_t)i];
     }
 
     /** Check if the array contains an element with a given value. */
@@ -167,7 +100,7 @@ class BoundedSortedArray
      */
     template <typename EqualityComparatorT> bool contains(T const & t, EqualityComparatorT const & comp) const
     {
-      for (int i = 0; i < num_elems; ++i)
+      for (int i = 0; i < size(); ++i)
         if (comp(values[i], t))
           return true;
 
@@ -178,25 +111,25 @@ class BoundedSortedArray
      * Get the index of a given value, or negative if it is not present in the array. If the value occurs multiple times, the
      * index of any one occurrence is returned.
      */
-    int find(T const & t) const
+    long find(T const & t) const
     {
-      int lb = lowerBound(t);
-      return (lb < num_elems && !compare(t, values[lb])) ? lb : -1;
+      long lb = lowerBound(t);
+      return (lb < size() && !compare(t, values[lb])) ? lb : -1;
     }
 
     /**
-     * Get the index of the first element strictly greater than \a t, or return the capacity of the array if no such element is
+     * Get the index of the first element strictly greater than \a t, or return the size of the array if no such element is
      * present.
      */
-    int upperBound(T const & t) const
+    long upperBound(T const & t) const
     {
-      int first = 0, mid, step;
-      int count = num_elems;
+      long first = 0, mid, step;
+      long count = size();
       while (count > 0)
       {
         step = count >> 1;
         mid = first + step;
-        if (!compare(t, values[mid]))
+        if (!compare(t, values[(array_size_t)mid]))
         {
           first = mid + 1;
           count -= (step + 1);
@@ -209,18 +142,18 @@ class BoundedSortedArray
     }
 
     /**
-     * Get the index of the first element equal to or greater than \a t, or return the capacity of the array if no such element
-     * is present.
+     * Get the index of the first element equal to or greater than \a t, or return the size of the array if no such element is
+     * present.
      */
-    int lowerBound(T const & t) const
+    long lowerBound(T const & t) const
     {
-      int first = 0, mid, step;
-      int count = num_elems;
+      long first = 0, mid, step;
+      long count = size();
       while (count > 0)
       {
         step = count >> 1;
         mid = first + step;
-        if (compare(values[mid], t))
+        if (compare(values[(array_size_t)mid], t))
         {
           first = mid + 1;
           count -= (step + 1);
@@ -230,15 +163,6 @@ class BoundedSortedArray
       }
 
       return first;
-    }
-
-    /**
-     * Check if a value can be inserted in the array. This requires that either the array has fewer elements than its capacity,
-     * or the value is "less than" the last element in the array.
-     */
-    bool isInsertable(T const & t) const
-    {
-      return capacity > 0 && (num_elems < capacity || compare(t, last()));
     }
 
     /**
@@ -246,28 +170,19 @@ class BoundedSortedArray
      *
      * @return The index of the newly inserted element, or negative if the value could not be inserted.
      */
-    int insert(T const & t)
+    long insert(T const & t)
     {
-      if (capacity <= 0)
-        return -1;
-
-      if (num_elems <= 0)
+      if (values.empty())
       {
-        values[0] = t;
-        ++num_elems;
+        values.push_back(t);
         return 0;
       }
-      else if (isInsertable(t))
+      else
       {
-        int ub = upperBound(t);
-        T * end = values + (num_elems < capacity ? num_elems : capacity - 1);
-        Algorithms::fastCopyBackward(values + ub, end, end + 1);
-        values[ub] = t;
-        if (num_elems < capacity) ++num_elems;
+        long ub = upperBound(t);
+        values.insert(values.begin() + (array_size_t)ub, t);
         return ub;
       }
-
-      return -1;
     }
 
     /**
@@ -277,7 +192,7 @@ class BoundedSortedArray
      *
      * @todo Make this faster by merging the containment test with the lookup for the insertion position.
      */
-    int insertUnique(T const & t)
+    long insertUnique(T const & t)
     {
       if (contains(t))
         return -1;
@@ -286,13 +201,9 @@ class BoundedSortedArray
     }
 
     /** Remove the element at the given position from the array. */
-    void erase(int i)
+    void erase(long i)
     {
-      if (i >= 0 && i < num_elems)
-      {
-        Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
-        --num_elems;
-      }
+      values.erase(values.begin() + (array_size_t)i);
     }
 
     /** Remove (one occurrence of) the given value from the array, if it is present. */
@@ -304,10 +215,10 @@ class BoundedSortedArray
     /** Remove all elements from the array. */
     void clear()
     {
-      num_elems = 0;
+      values.clear();
     }
 
-}; // class BoundedSortedArray
+}; // class SortedArray
 
 } // namespace Thea
 

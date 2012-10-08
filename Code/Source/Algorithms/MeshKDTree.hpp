@@ -214,7 +214,7 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
     Vector3 vertices[3];    ///< The indices of the vertices of the mesh triangle.
     Mesh * mesh;            ///< The mesh containing the triangle.
     long face_index;        ///< The index of the face containing the triangle.
-    bool face_is_triangle;           ///< Is the face in the triangle list or the quad list?
+    bool face_is_triangle;  ///< Is the face in the triangle list or the quad list?
 
 }; // class MeshVertexTriple<DisplayMesh>
 

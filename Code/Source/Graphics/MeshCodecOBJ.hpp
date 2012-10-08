@@ -678,7 +678,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
-        typename Mesh::IndexArray indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
+        typename Mesh::IndexArray const & indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
         array_size_t step = (type == 0 ? 3 : 4);
 
         for (array_size_t i = 0; i < indices.size(); i += step)
