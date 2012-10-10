@@ -73,15 +73,29 @@ class MeshVertexTriple
                      typename Mesh::Face * face_, Mesh * mesh_)
     {
       debugAssertM(v0 && v1 && v2, "Mesh triangle: Null vertex provided");
-      vertices[0] = v0->getPosition();
-      vertices[1] = v1->getPosition();
-      vertices[2] = v2->getPosition();
+      vertices[0] = v0;
+      vertices[1] = v1;
+      vertices[2] = v2;
       face = face_;
       mesh = mesh_;
     }
 
     /** Get the position of any one of the three vertices. */
     Vector3 const & getVertex(int i) const
+    {
+      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      return vertices[i]->getPosition();
+    }
+
+    /** Get a pointer to any one of the three mesh vertices. */
+    typename Mesh::Vertex const * getMeshVertex(int i) const
+    {
+      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      return vertices[i];
+    }
+
+    /** Get a pointer to any one of the three mesh vertices. */
+    typename Mesh::Vertex * getMeshVertex(int i)
     {
       debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
       return vertices[i];
@@ -100,9 +114,9 @@ class MeshVertexTriple
     Mesh * getMesh() { return mesh; }
 
   private:
-    Vector3 vertices[3];         ///< The vertices of the triangle.
-    typename Mesh::Face * face;  ///< The mesh face containing the triangle.
-    Mesh * mesh;                 ///< The mesh containing the triangle.
+    typename Mesh::Vertex * vertices[3];  ///< The vertices of the triangle.
+    typename Mesh::Face * face;           ///< The mesh face containing the triangle.
+    Mesh * mesh;                          ///< The mesh containing the triangle.
 
 }; // class MeshVertexTriple
 
@@ -139,9 +153,15 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsCGALMesh<Me
       debugAssertM(v0 != typename Mesh::Vertex_handle()
                 && v1 != typename Mesh::Vertex_handle()
                 && v2 != typename Mesh::Vertex_handle(), "Mesh triangle: Null vertex provided");
+
       vertices[0] = MeshKDTreeInternal::cgalToVector3(v0->point());
       vertices[1] = MeshKDTreeInternal::cgalToVector3(v1->point());
       vertices[2] = MeshKDTreeInternal::cgalToVector3(v2->point());
+
+      vertex_handles[0] = v0;
+      vertex_handles[1] = v1;
+      vertex_handles[2] = v2;
+
       face = face_;
       mesh = mesh_;
     }
@@ -151,6 +171,20 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsCGALMesh<Me
     {
       debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
       return vertices[i];
+    }
+
+    /** Get a handle to any one of the three mesh vertices. */
+    typename Mesh::Vertex_handle const getMeshVertex(int i) const
+    {
+      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      return vertex_handles[i];
+    }
+
+    /** Get a handle to any one of the three mesh vertices. */
+    typename Mesh::Vertex_handle getMeshVertex(int i)
+    {
+      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      return vertex_handles[i];
     }
 
     /** Get the associated mesh face from which the vertices were obtained. */
@@ -163,9 +197,10 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsCGALMesh<Me
     Mesh * getMesh() const { return mesh; }
 
   private:
-    Vector3 vertices[3];               ///< The vertices of the mesh triangle.
-    typename Mesh::Facet_handle face;  ///< The face containing the triangle.
-    Mesh * mesh;                       ///< The mesh containing the triangle.
+    Vector3 vertices[3];                             ///< Positions of the vertices of the mesh triangle.
+    typename Mesh::Vertex_handle vertex_handles[3];  ///< Pointers to the vertices of the mesh triangle.
+    typename Mesh::Facet_handle face;                ///< The face containing the triangle.
+    Mesh * mesh;                                     ///< The mesh containing the triangle.
 
 }; // class MeshVertexTriple<CGALMesh>
 
@@ -192,6 +227,10 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
       vertices[0] = mv[(array_size_t)vi0];
       vertices[1] = mv[(array_size_t)vi1];
       vertices[2] = mv[(array_size_t)vi2];
+
+      vertex_indices[0] = (long)vi0;
+      vertex_indices[1] = (long)vi1;
+      vertex_indices[2] = (long)vi2;
     }
 
     /** Get the position of any one of the three vertices. */
@@ -199,6 +238,13 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
     {
       debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index must be 0, 1 or 2");
       return vertices[i];
+    }
+
+    /** Get the index of any one of the three mesh vertices. */
+    long getMeshVertexIndex(int i) const
+    {
+      debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index out of bounds");
+      return vertex_indices[i];
     }
 
     /** Get the index, in the source mesh, of the associated mesh face from which the vertices were obtained. */
@@ -211,10 +257,11 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
     Mesh * getMesh() const { return mesh; }
 
   private:
-    Vector3 vertices[3];    ///< The indices of the vertices of the mesh triangle.
-    Mesh * mesh;            ///< The mesh containing the triangle.
-    long face_index;        ///< The index of the face containing the triangle.
-    bool face_is_triangle;  ///< Is the face in the triangle list or the quad list?
+    Vector3 vertices[3];     ///< The positions of the vertices of the mesh triangle.
+    Mesh * mesh;             ///< The mesh containing the triangle.
+    long vertex_indices[3];  ///< The indices of the vertices of the mesh triangle.
+    long face_index;         ///< The index of the face containing the triangle.
+    bool face_is_triangle;   ///< Is the face in the triangle list or the quad list?
 
 }; // class MeshVertexTriple<DisplayMesh>
 

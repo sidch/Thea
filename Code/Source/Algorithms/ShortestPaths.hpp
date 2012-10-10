@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../GraphType.hpp"
 #include "../UnorderedMap.hpp"
 #include "fibheap/fibheap.hpp"
 #include <limits>
@@ -54,56 +55,14 @@ struct fibheap_el;
 namespace Thea {
 namespace Algorithms {
 
-/** Compute shortest paths on graphs. */
-template <typename VertexHandleT>
+/** Compute shortest paths on graphs. GraphT must satisfy IsAdjacencyGraph. */
+template <typename GraphT>
 class /* THEA_API */ ShortestPaths
 {
   public:
-    typedef VertexHandleT VertexHandle;  ///< Handle to a vertex in the graph.
-
-    /** Interface to graph properties required to computed shortest paths. Implement this for each actual graph you use. */
-    class Graph
-    {
-      public:
-        typedef VertexHandleT VertexHandle;  ///< Handle to a vertex in the graph.
-
-        /** Get the number of vertices in the graph. */
-        virtual long numVertices() const = 0;
-
-        /** Start iterating over the vertices of the graph. */
-        virtual void startVertexIteration() = 0;
-
-        /** Check if the graph has any more vertices to be iterated over. */
-        virtual bool hasMoreVertices() const = 0;
-
-        /**
-         * Get the next vertex in the graph.
-         *
-         * @return A handle to the next vertex. If there are no more vertices to iterate over, the return value is undefined
-         *   (this condition should be avoided by checking hasMoreVertices()).
-         */
-        virtual VertexHandle nextVertex() = 0;
-
-        /** Get the number of neighbors of a vertex. */
-        virtual long numNeighbors(VertexHandle vertex) const = 0;
-
-        /** Start iterating over the neighbors of a vertex. */
-        virtual void startNeighborIteration(VertexHandle vertex) = 0;
-
-        /** Check if the current vertex has any more neighbors to be iterated over. */
-        virtual bool hasMoreNeighbors() const = 0;
-
-        /**
-         * Get the next neighbor of the current vertex.
-         *
-         * @param distance If non-null, used to return the distance to to the neighbor.
-         *
-         * @return A handle to the neighboring vertex. If there are no more vertices to iterate over, the return value is
-         *   undefined (this condition should be avoided by checking hasMoreNeighbors()).
-         */
-        virtual VertexHandle nextNeighbor(double * distance = NULL) = 0;
-
-    }; // class Graph
+    typedef GraphT Graph;  ///< The graph type.
+    typedef typename GraphT::Vertex Vertex;  ///< A vertex of the graph.
+    typedef typename GraphT::Vertex * VertexHandle;  ///< Handle to a vertex in the graph.
 
     /** Stores shortest path information for a vertex. */
     class ShortestPathInfo
@@ -113,7 +72,8 @@ class /* THEA_API */ ShortestPaths
         ShortestPathInfo() {}
 
         /** Constructor. */
-        ShortestPathInfo(double dist_, bool has_pred_, VertexHandle pred_) : dist(dist_), has_pred(has_pred_), pred(pred_) {}
+        ShortestPathInfo(double dist_, bool has_pred_, VertexHandle pred_)
+        : dist(dist_), has_pred(has_pred_), pred(pred_) {}
 
         /** Get the distance of this vertex from the source point. */
         double getDistance() const { return dist; }
@@ -155,10 +115,16 @@ class /* THEA_API */ ShortestPaths
 
     }; // class Callback
 
+    /** Destructor. */
+    ~ShortestPaths()
+    {
+      THEA_CONCEPT_CHECK(IsAdjacencyGraph<GraphT>);
+    }
+
     /**
      * Compute the shortest paths in a graph from a source vertex (or a set of source vertices) to every other vertex, using
-     * Dijkstra's algorithm [1959]. A Fibonacci heap accelerates the computation to O(|E| + |V| log |V|) [Fredman & Tarjan 1984].
-     * <b>All edge lengths must be non-negative.</b>
+     * Dijkstra's algorithm [1959]. A Fibonacci heap accelerates the computation to O(|E| + |V| log |V|)
+     * [Fredman & Tarjan 1984]. <b>All edge lengths must be non-negative.</b>
      *
      * @param graph The graph to process. <b>Must have non-negative edge lengths.</b>
      * @param src The source vertex from which to measure distances. This vertex is initialized to distance zero and no
@@ -180,8 +146,8 @@ class /* THEA_API */ ShortestPaths
 
     /**
      * Compute the shortest paths in a graph from a source vertex (or a set of source vertices) to every other vertex, using
-     * Dijkstra's algorithm [1959]. A Fibonacci heap accelerates the computation to O(|E| + |V| log |V|) [Fredman & Tarjan 1984].
-     * <b>All edge lengths must be non-negative.</b>
+     * Dijkstra's algorithm [1959]. A Fibonacci heap accelerates the computation to O(|E| + |V| log |V|)
+     * [Fredman & Tarjan 1984]. <b>All edge lengths must be non-negative.</b>
      *
      * @param graph The graph to process. <b>Must have non-negative edge lengths.</b>
      * @param src The source vertex from which to measure distances. This vertex is initialized to distance zero and no
@@ -244,10 +210,10 @@ class /* THEA_API */ ShortestPaths
 
 };  // class ShortestPaths
 
-template <typename VertexHandleT>
+template <typename GraphT>
 void
-ShortestPaths<VertexHandleT>::dijkstra(Graph & graph, VertexHandle src, Callback * callback, double limit,
-                                       TheaUnorderedMap<VertexHandle, double> const * src_region)
+ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, Callback * callback, double limit,
+                                TheaUnorderedMap<VertexHandle, double> const * src_region)
 {
   if (graph.numVertices() <= 0 || !callback)
     return;
@@ -289,41 +255,38 @@ ShortestPaths<VertexHandleT>::dijkstra(Graph & graph, VertexHandle src, Callback
   fh_setneginf(dijkstra_queue, &NEG_INF);
 
   // Initialize the vertex scratch data
-  graph.startVertexIteration();
+  for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
   {
-    while (graph.hasMoreVertices())
+    VertexHandle vertex = &graph.deref(vi);
+    ScratchElement & data = scratch[vertex];  // no new allocs if the element already exists
+
+    data.vertex = vertex;
+    data.has_pred = false;
+
+    if (has_src_region)
     {
-      VertexHandle vertex = graph.nextVertex();
-      ScratchElement & data = scratch[vertex];  // no new allocs if the element already exists
-
-      data.vertex = vertex;
-      data.has_pred = false;
-
-      if (has_src_region)
+      typename DistanceMap::const_iterator existing = src_region->find(vertex);
+      if (existing != src_region->end())
       {
-        typename DistanceMap::const_iterator existing = src_region->find(vertex);
-        if (existing != src_region->end())
-        {
-          data.dist = existing->second;
-          data.flag = GREY;
-          data.heap_elem = fh_insert(dijkstra_queue, (void *)&data);
-          continue;
-        }
+        data.dist = existing->second;
+        data.flag = GREY;
+        data.heap_elem = fh_insert(dijkstra_queue, (void *)&data);
+        continue;
       }
-      else
-      {
-        if (vertex == src)
-        {
-          data.dist = 0;
-          data.flag = GREY;
-          data.heap_elem = fh_insert(dijkstra_queue, (void *)&data);
-          continue;
-        }
-      }
-
-      data.dist = INF_DIST;
-      data.flag = WHITE;
     }
+    else
+    {
+      if (vertex == src)
+      {
+        data.dist = 0;
+        data.flag = GREY;
+        data.heap_elem = fh_insert(dijkstra_queue, (void *)&data);
+        continue;
+      }
+    }
+
+    data.dist = INF_DIST;
+    data.flag = WHITE;
   }
 
 #ifdef THEA_SHORTEST_PATHS_TIMER
@@ -338,17 +301,17 @@ ShortestPaths<VertexHandleT>::dijkstra(Graph & graph, VertexHandle src, Callback
 #endif
 
   ScratchElement tmp_data;
-  double nbr_dist = 0;
   while (true)
   {
     ScratchElement * data = (ScratchElement *)fh_extractmin(dijkstra_queue);
     if (!data)
       break;
 
-    graph.startNeighborIteration(data->vertex);
-    while (graph.hasMoreNeighbors())
+    for (typename GraphT::NeighborIterator ni = graph.neighborsBegin(data->vertex), nbrs_end = graph.neighborsEnd(data->vertex);
+         ni != nbrs_end; ++ni)
     {
-      VertexHandle nbr = graph.nextNeighbor(&nbr_dist);
+      VertexHandle nbr = &graph.deref(ni);
+      double nbr_dist = graph.distance(vi, ni);
 
       typename Scratch::iterator nbr_loc = scratch.find(nbr);
       debugAssertM(nbr_loc != scratch.end(), "ShortestPaths: No scratch entry found for neighboring vertex");
@@ -413,22 +376,19 @@ ShortestPaths<VertexHandleT>::dijkstra(Graph & graph, VertexHandle src, Callback
   fh_deleteheap(dijkstra_queue);
 
   // Notify the caller of each final result
-  graph.startVertexIteration();
+  for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
   {
-    while (graph.hasMoreVertices())
+    VertexHandle vertex = &graph.deref(vi);
+
+    typename Scratch::iterator loc = scratch.find(vertex);
+    debugAssertM(loc != scratch.end(), "ShortestPaths: No scratch entry found for vertex on second pass");
+
+    ScratchElement & data = loc->second;
+    if (data.flag != WHITE && (limit < 0 || data.dist <= limit))
     {
-      VertexHandle vertex = graph.nextVertex();
-
-      typename Scratch::iterator loc = scratch.find(vertex);
-      debugAssertM(loc != scratch.end(), "ShortestPaths: No scratch entry found for vertex on second pass");
-
-      ScratchElement & data = loc->second;
-      if (data.flag != WHITE && (limit < 0 || data.dist <= limit))
-      {
-        bool stop = (*callback)(vertex, data.dist, data.has_pred, data.pred);
-        if (stop)
-          break;
-      }
+      bool stop = (*callback)(vertex, data.dist, data.has_pred, data.pred);
+      if (stop)
+        break;
     }
   }
 
@@ -438,9 +398,9 @@ ShortestPaths<VertexHandleT>::dijkstra(Graph & graph, VertexHandle src, Callback
 #endif
 }
 
-template <typename VertexHandleT>
+template <typename GraphT>
 int
-ShortestPaths<VertexHandleT>::compareDistances(void * vx_data1, void * vx_data2)
+ShortestPaths<GraphT>::compareDistances(void * vx_data1, void * vx_data2)
 {
   double d1 = ((ScratchElement const *)vx_data1)->dist;
   double d2 = ((ScratchElement const *)vx_data2)->dist;
