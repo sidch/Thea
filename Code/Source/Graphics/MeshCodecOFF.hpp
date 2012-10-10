@@ -422,22 +422,32 @@ class CodecOFF : public CodecOFFBase<MeshT>
       mesh_group.addMesh(mesh);
     }
 
-    /** Count the number of vertices and faces in a mesh group. */
+    /** Count the number of vertices and faces in a general/DCEL/display mesh (increments parameters). */
+    template <typename _MeshT>
+    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces,
+                         typename boost::disable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL)
+    {
+      num_vertices += mesh.numVertices();
+      num_faces += mesh.numFaces();
+    }
+
+    /** Count the number of vertices and faces in a CGAL mesh (increments parameters). */
+    template <typename _MeshT>
+    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces,
+                         typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL)
+    {
+      num_vertices += (long)mesh.size_of_vertices();
+      num_faces += (long)mesh.size_of_vertices();
+    }
+
+    /** Count the number of vertices and faces in a mesh group (increments parameters). */
     static void getStats(MeshGroup const & mesh_group, long & num_vertices, long & num_faces)
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
-      {
-        num_vertices += (*mi)->numVertices();
-        num_faces += (*mi)->numFaces();
-      }
+        getStats(**mi, num_vertices, num_faces);
 
       for (typename MeshGroup::GroupConstIterator ci = mesh_group.childrenBegin(); ci != mesh_group.childrenEnd(); ++ci)
-      {
-        long nv = 0, nf = 0;
-        getStats(**ci, nv, nf);
-        num_vertices += nv;
-        num_faces += nf;
-      }
+        getStats(**ci, num_vertices, num_faces);
     }
 
     /** Write the bytes of a string (without any trailing zero) to a binary output stream. */

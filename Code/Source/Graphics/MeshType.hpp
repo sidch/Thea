@@ -43,86 +43,22 @@
 #define __Thea_Graphics_MeshType_hpp__
 
 #include "../Common.hpp"
+#include "../Concept.hpp"
 
 namespace Thea {
 namespace Graphics {
 
-//
-// The SFINAE tests in this header follow the examples in Vandevoorde and Josuttis, "C++ Templates: The Complete Guide".
-//
+/** Concept of a general-purpose mesh. */
+THEA_HAS_TYPE(IsGeneralMesh, GENERAL_MESH_TAG)
 
-/**
- * Has boolean member <code>value = true</code> if <code>T</code> is a general mesh, else <code>value = false</code>.
- *
- * @see GeneralMesh
- */
-template <typename T>
-class IsGeneralMesh
-{
-  private:
-    typedef char One;
-    typedef struct { char a[2]; } Two;
-    template <typename U> static One test(typename U::GENERAL_MESH_TAG *);
-    template <typename U> static Two test(...);
+/** Concept of a DCEL mesh. */
+THEA_HAS_TYPE(IsDCELMesh, DCEL_MESH_TAG)
 
-  public:
-    static bool const value = (sizeof(test<T>(0)) == 1);
-};
+/** Concept of a CGAL mesh. */
+THEA_HAS_TYPE(IsCGALMesh, Face_handle)
 
-/**
- * Has boolean member <code>value = true</code> if <code>T</code> is a DCEL mesh, else <code>value = false</code>.
- *
- * @see DCELMesh
- */
-template <typename T>
-class IsDCELMesh
-{
-  private:
-    typedef char One;
-    typedef struct { char a[2]; } Two;
-    template <typename U> static One test(typename U::DCEL_MESH_TAG *);
-    template <typename U> static Two test(...);
-
-  public:
-    static bool const value = (sizeof(test<T>(0)) == 1);
-};
-
-/**
- * Has boolean member <code>value = true</code> if <code>T</code> is a display mesh, else <code>value = false</code>.
- *
- * @see DisplayMesh
- */
-template <typename T>
-class IsDisplayMesh
-{
-  private:
-    typedef char One;
-    typedef struct { char a[2]; } Two;
-    template <typename U> static One test(typename U::DISPLAY_MESH_TAG *);
-    template <typename U> static Two test(...);
-
-  public:
-    static bool const value = (sizeof(test<T>(0)) == 1);
-};
-
-/**
- * Has boolean member <code>value = true</code> if <code>T</code> is a CGAL mesh (CGALMesh or CGAL::Polyhedron_3), else
- * <code>value = false</code>.
- *
- * @see CGALMesh, CGAL::Polyhedron_3
- */
-template <typename T>
-class IsCGALMesh
-{
-  private:
-    typedef char One;
-    typedef struct { char a[2]; } Two;
-    template <typename U> static One test(typename U::Face_handle *);  // this should be a reasonable differentiator
-    template <typename U> static Two test(...);
-
-  public:
-    static bool const value = (sizeof(test<T>(0)) == 1);
-};
+/** Concept of a display mesh. */
+THEA_HAS_TYPE(IsDisplayMesh, DISPLAY_MESH_TAG)
 
 } // namespace Graphics
 } // namespace Thea

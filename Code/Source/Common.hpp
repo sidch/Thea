@@ -97,6 +97,21 @@ typedef uint16 Color1uint16;
 /** Root namespace for the %Thea library. */
 namespace Thea {
 
+/**
+ * Require an expression to evaluate to true at compile-time. Example usage:
+ *
+ * \code
+ *   THEA_STATIC_ASSERT(sizeof(int) == 2)
+ * \endcode
+ *
+ * From Ralf Holly, http://www.drdobbs.com/compile-time-assertions/184401873
+ */
+#define THEA_STATIC_ASSERT(e) \
+do \
+{ \
+  enum { assert_static__ = 1/(e) }; \
+} while (0)
+
 typedef  boost::int8_t         int8;
 typedef  boost::int16_t        int16;
 typedef  boost::int32_t        int32;
