@@ -61,8 +61,7 @@ class /* THEA_API */ ShortestPaths
 {
   public:
     typedef GraphT Graph;  ///< The graph type.
-    typedef typename GraphT::Vertex Vertex;  ///< A vertex of the graph.
-    typedef typename GraphT::Vertex * VertexHandle;  ///< Handle to a vertex in the graph.
+    typedef typename GraphT::VertexHandle VertexHandle;  ///< Handle to a vertex in the graph.
 
     /** Stores shortest path information for a vertex. */
     class ShortestPathInfo
@@ -257,7 +256,7 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, Callback * call
   // Initialize the vertex scratch data
   for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
   {
-    VertexHandle vertex = &graph.deref(vi);
+    VertexHandle vertex = graph.getVertex(vi);
     ScratchElement & data = scratch[vertex];  // no new allocs if the element already exists
 
     data.vertex = vertex;
@@ -310,8 +309,8 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, Callback * call
     for (typename GraphT::NeighborIterator ni = graph.neighborsBegin(data->vertex), nbrs_end = graph.neighborsEnd(data->vertex);
          ni != nbrs_end; ++ni)
     {
-      VertexHandle nbr = &graph.deref(ni);
-      double nbr_dist = graph.distance(vi, ni);
+      VertexHandle nbr = graph.getVertex(ni);
+      double nbr_dist = graph.distance(data->vertex, ni);
 
       typename Scratch::iterator nbr_loc = scratch.find(nbr);
       debugAssertM(nbr_loc != scratch.end(), "ShortestPaths: No scratch entry found for neighboring vertex");
@@ -378,7 +377,7 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, Callback * call
   // Notify the caller of each final result
   for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
   {
-    VertexHandle vertex = &graph.deref(vi);
+    VertexHandle vertex = graph.getVertex(vi);
 
     typename Scratch::iterator loc = scratch.find(vertex);
     debugAssertM(loc != scratch.end(), "ShortestPaths: No scratch entry found for vertex on second pass");

@@ -139,8 +139,6 @@ ModelDisplay::updateCameraFrameFromModel()
 void
 ModelDisplay::updateCameraProjection()
 {
-  // qDebug() << "updateCameraProjection";
-
   static Real const HALF_WIDTH = 0.5;
   int w = width(), h = height();
   Real hw = 0, hh = 0;

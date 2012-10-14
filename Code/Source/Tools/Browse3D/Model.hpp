@@ -142,6 +142,9 @@ class Model : public QObject, public GraphicsWidget
     /** Is the model empty? */
     bool isEmpty() const;
 
+    /** Clear the model and invalidate all associated structures. */
+    void clear();
+
     /** Invalidate all associated structures. */
     void invalidateAll();
 
@@ -319,8 +322,19 @@ class Model : public QObject, public GraphicsWidget
     void needsSyncSamples(Model const * model);
 
   private:
+    /** Clear the model mesh. */
+    void clearMesh();
+
+    /** Clear the model points. */
+    void clearPoints();
+
     MeshGroupPtr mesh_group;
     QString filename;
+
+    TheaArray<Vector3> points;
+    AxisAlignedBox3 point_bounds;
+
+    AxisAlignedBox3 bounds;
 
     TheaArray<Sample> samples;
     bool valid_pick;
