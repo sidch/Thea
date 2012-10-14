@@ -116,7 +116,7 @@ MainWindow::init()
   connect(ui->actionFileOpen, SIGNAL(triggered(bool)), this, SLOT(selectAndLoadModel()));
   connect(ui->actionFileQuit, SIGNAL(triggered(bool)), this, SLOT(close()));
 
-  connect(ui->actionViewFitViewToModel, SIGNAL(toggled(bool)), model_display, SLOT(fitViewToModel()));
+  connect(ui->actionViewFitViewToModel, SIGNAL(triggered(bool)), model_display, SLOT(fitViewToModel()));
   connect(ui->actionViewWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderWireframe()));
   connect(ui->actionViewShaded, SIGNAL(triggered(bool)), model_display, SLOT(renderShaded()));
   connect(ui->actionViewShadedWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderShadedWireframe()));
@@ -170,7 +170,7 @@ getDirFiles(QString const & filename)
   if (dir.exists())
   {
     QStringList name_filter;
-    name_filter << "*.3ds" << "*.obj" << "*.off";
+    name_filter << "*.3ds" << "*.obj" << "*.off" << "*.off.bin" << "*.pts";
 
     return dir.entryList(name_filter, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
   }

@@ -48,17 +48,17 @@ namespace Thea {
 
 /** Define a template class that checks if the class supplied as the template argument defines a type with the given name. */
 #define THEA_HAS_TYPE(check_name, type_name)                                                                                  \
-template <typename T>                                                                                                         \
+template <typename check_name##T_>                                                                                            \
 class check_name                                                                                                              \
 {                                                                                                                             \
   private:                                                                                                                    \
     typedef char Yes;                                                                                                         \
     typedef struct { char a[2]; } No;                                                                                         \
-    template <typename U> static Yes test(typename U::type_name *);                                                           \
-    template <typename U> static No test(...);                                                                                \
+    template <typename check_name##U_> static Yes test(typename check_name##U_::type_name *);                                 \
+    template <typename check_name##U_> static No test(...);                                                                   \
                                                                                                                               \
   public:                                                                                                                     \
-    static bool const value = (sizeof(test<T>(0)) == sizeof(Yes));                                                               \
+    static bool const value = (sizeof(test<check_name##T_>(0)) == sizeof(Yes));                                               \
 };
 
 /**
@@ -66,20 +66,21 @@ class check_name                                                                
  * given name.
  */
 #define THEA_HAS_MEMBER(check_name, member_name)                                                                              \
-template <typename T>                                                                                                         \
+template <typename check_name##T_>                                                                                            \
 class check_name                                                                                                              \
 {                                                                                                                             \
   private:                                                                                                                    \
     typedef char Yes;                                                                                                         \
     typedef struct { char a[2]; } No;                                                                                         \
     struct BaseMixin { int member_name; };                                                                                    \
-    struct Base : public T, public BaseMixin {};                                                                              \
-    template <typename U, U> class Helper {};                                                                                 \
-    template <typename U> static No test(U *, Helper<int BaseMixin::*, &U::member_name> * = 0);                               \
-    template <typename U> static Yes test(...);                                                                               \
+    struct Base : public check_name##T_, public BaseMixin {};                                                                 \
+    template <typename check_name##U_, check_name##U_> class Helper {};                                                       \
+    template <typename check_name##U_> static No test(check_name##U_ *, Helper<int BaseMixin::*,                              \
+                                                     & check_name##U_::member_name> * = 0);                                   \
+    template <typename check_name##U_> static Yes test(...);                                                                  \
                                                                                                                               \
   public:                                                                                                                     \
-   static bool const value = (sizeof(test<T>((Base *)0)) == sizeof(Yes));                                                        \
+   static bool const value = (sizeof(test<check_name##T_>((Base *)0)) == sizeof(Yes));                                        \
 };
 
 /** Utility function that directly tests the value of concept_name::value using THEA_STATIC_ASSERT. */

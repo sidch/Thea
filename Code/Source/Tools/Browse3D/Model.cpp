@@ -113,7 +113,29 @@ Model::getName() const
 bool
 Model::isEmpty() const
 {
-  return !mesh_group || mesh_group->isEmpty();
+  return (!mesh_group || mesh_group->isEmpty()) && points.empty();
+}
+
+void
+Model::clear()
+{
+  clearMesh();
+  clearPoints();
+  invalidateAll();
+}
+
+void
+Model::clearMesh()
+{
+  if (mesh_group) mesh_group->clear();
+  samples.clear();
+}
+
+void
+Model::clearPoints()
+{
+  points.clear();
+  point_bounds.setNull();
 }
 
 bool
@@ -126,28 +148,65 @@ Model::load(QString const & filename_)
   if (!info.exists() || info.canonicalFilePath() == QFileInfo(filename).canonicalFilePath())
     return false;
 
-  MeshGroupPtr new_mesh_group(new MeshGroup("Mesh Group"));
-  Mesh::nextFaceIndex(Mesh::Face(), true);  // reset counting
-
-  static CodecOBJ<Mesh> const obj_codec(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
-  try
+  if (filename_.toLower().endsWith(".pts"))
   {
-    if (filename_.endsWith("obj", Qt::CaseInsensitive))
-      new_mesh_group->load(toStdString(filename_), obj_codec);
-    else
-      new_mesh_group->load(toStdString(filename_));
+    std::ifstream in(toStdString(filename_).c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Couldn't load points from file '" << filename_ << '\'';
+      return false;
+    }
+
+    clear();
+    filename = filename_;
+
+    std::string line;
+    Vector3 p;
+    while (getline(in, line))
+    {
+      std::istringstream line_in(line);
+      if (!(line_in >> p[0] >> p[1] >> p[2]))
+        continue;
+
+      points.push_back(p);
+      point_bounds.merge(p);
+    }
+
+    bounds = point_bounds;
+
+    THEA_CONSOLE << "Loaded " << points.size() << " points with bounding box " << point_bounds.toString() << " from '"
+                 << filename_ << '\'';
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, WARNING, "Couldn't load model '%s'", toStdString(filename_).c_str())
+  else
+  {
+    MeshGroupPtr new_mesh_group(new MeshGroup("Mesh Group"));
+    Mesh::nextFaceIndex(Mesh::Face(), true);  // reset counting
 
-  invalidateAll();
+    static CodecOBJ<Mesh> const obj_codec(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
+    try
+    {
+      if (filename_.endsWith("obj", Qt::CaseInsensitive))
+        new_mesh_group->load(toStdString(filename_), obj_codec);
+      else
+        new_mesh_group->load(toStdString(filename_));
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Couldn't load model '%s'", toStdString(filename_).c_str())
 
-  new_mesh_group->forEachMeshUntil(ModelInternal::averageNormals);
-  new_mesh_group->forEachMeshUntil(ModelInternal::enableWireframe);
+    invalidateAll();
 
-  mesh_group = new_mesh_group;
-  filename = filename_;
+    new_mesh_group->forEachMeshUntil(ModelInternal::averageNormals);
+    new_mesh_group->forEachMeshUntil(ModelInternal::enableWireframe);
 
-  loadSamples(getSamplesFilename());
+    mesh_group = new_mesh_group;
+    clearPoints();
+    filename = filename_;
+
+    bounds = new_mesh_group->getBounds();
+
+    THEA_CONSOLE << "Loaded model '" << filename_ << " with bounding box " << mesh_group->getBounds().toString();
+
+    loadSamples(getSamplesFilename());
+  }
 
   emit filenameChanged(filename);
   emit geometryChanged(this);
@@ -159,7 +218,7 @@ bool
 Model::selectAndLoad()
 {
   QString filename_ = QFileDialog::getOpenFileName(app().getMainWindow(), tr("Load model"), ModelInternal::getWorkingDir(),
-                                                   tr("Model files (*.3ds *.obj *.off)"));
+                                                   tr("Model files (*.3ds *.obj *.off *.off.bin *.pts)"));
 
   bool success = load(filename_);
   if (success)
@@ -595,15 +654,28 @@ Model::saveSamples(QString const & filename_) const
 AxisAlignedBox3 const &
 Model::getBounds() const
 {
-  static AxisAlignedBox3 const dummy;
-  return mesh_group ? mesh_group->getBounds() : dummy;
+  return bounds;
 }
 
 void
 Model::updateBounds()
 {
+  bounds.setNull();
+
   if (mesh_group)
+  {
     mesh_group->updateBounds();
+    bounds.merge(mesh_group->getBounds());
+  }
+
+  if (!points.empty())
+  {
+    point_bounds.setNull();
+    for (array_size_t i = 0; i < points.size(); ++i)
+      point_bounds.merge(points[i]);
+
+    bounds.merge(point_bounds);
+  }
 }
 
 void
@@ -616,12 +688,13 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 void
 Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
 {
-  if (!mesh_group)
+  if (isEmpty())
     return;
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
   static Color4 const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+  static Color4 const POINT_COLOR(1.0f, 1.0f, 0.5f, 1.0f);
   GraphicsWidget::setLight(Vector3(-1, -1, -2), Color3(1, 1, 1), Color3(1, 0.8f, 0.7f));
 
   render_system.pushShader();
@@ -650,7 +723,12 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
       }
 
       render_system.setColor(DEFAULT_COLOR);
-      mesh_group->draw(render_system, options);
+      if (mesh_group) mesh_group->draw(render_system, options);
+
+      render_system.setColor(POINT_COLOR);
+      Real point_radius = 0.002f * point_bounds.getExtent().length();
+      for (array_size_t i = 0; i < points.size(); ++i)
+        drawSphere(render_system, points[i], point_radius);
 
     render_system.popColorFlags();
   render_system.popShader();
