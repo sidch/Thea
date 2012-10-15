@@ -93,27 +93,25 @@ class /* THEA_API */ ShortestPaths
 
     }; // class ShortestPathInfo
 
-    /**
-     * Called for every visited vertex along with the distance to its shortest path from the source and its predecessor, if one
-     * exists. If the function returns true, the search is terminated at this point.
-     */
-    class Callback
+  private:
+    /** A callback that adds vertices to a map. */
+    class MapCallback
     {
       public:
-        /**
-         * Called for every visited vertex along with the distance to its shortest path from the source and its predecessor, if
-         * one exists. If the function returns true, the search is terminated at this point.
-         *
-         * @param vertex The visited vertex in the graph.
-         * @param distance Length of shortest path to the vertex from the source.
-         * @param has_pred Does the vertex have a predecessor in the shortest path to the source? (False if the vertex is (part
-         *   of) the source.)
-         * @param pred The predecessor of the vertex in the shortest path, if has_pred is true, else an undefined value.
-         */
-        virtual bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred) = 0;
+        MapCallback(TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result_) : result(result_) {}
 
-    }; // class Callback
+        bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred)
+        {
+          result[vertex] = ShortestPathInfo(distance, has_pred, pred);
+          return false;
+        }
 
+      private:
+        TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result;
+
+    }; // class MapCallback
+
+  public:
     /** Destructor. */
     ~ShortestPaths()
     {
@@ -148,6 +146,22 @@ class /* THEA_API */ ShortestPaths
      * Dijkstra's algorithm [1959]. A Fibonacci heap accelerates the computation to O(|E| + |V| log |V|)
      * [Fredman & Tarjan 1984]. <b>All edge lengths must be non-negative.</b>
      *
+     * This version of the function calls a callback operation on each processed vertex once its distance from the source has
+     * been determined. The callback must be equivalent to the following function signature:
+     *
+     * \code
+     *   //
+     *   // vertex: The visited vertex in the graph.
+     *   // distance: Length of shortest path to the vertex from the source.
+     *   // has_pred: Does the vertex have a predecessor in the shortest path to the source?
+     *   //           (False if the vertex is (part of) the source.)
+     *   // pred: Predecessor of the vertex in the shortest path, if has_pred is true, else an undefined value.
+     *   //
+     *   bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred);
+     * \endcode
+     *
+     * The callback should normally return false, unless it wants to terminate the search, in which case it should return true.
+     *
      * @param graph The graph to process. <b>Must have non-negative edge lengths.</b>
      * @param src The source vertex from which to measure distances. This vertex is initialized to distance zero and no
      *   predecessor. If \a src_region is non-empty, the \a src argument is ignored,
@@ -158,27 +172,11 @@ class /* THEA_API */ ShortestPaths
      *   <b>(must be non-negative)</b> to them. In this case the \a src argument is ignored. The predecessor of each such vertex
      *   is absent, unless a shorter path to the vertex is found.
      */
-    void dijkstra(Graph & graph, VertexHandle src, Callback * callback, double limit = -1,
+    template <typename CallbackT>
+    void dijkstra(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
                   TheaUnorderedMap<VertexHandle, double> const * src_region = NULL);
 
   private:
-    /** A callback that adds vertices to a map. */
-    class MapCallback : public Callback
-    {
-      public:
-        MapCallback(TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result_) : result(result_) {}
-
-        bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred)
-        {
-          result[vertex] = ShortestPathInfo(distance, has_pred, pred);
-          return false;
-        }
-
-      private:
-        TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result;
-
-    }; // class MapCallback
-
     /** Status of vertex during Dijkstra traversal. */
     enum VisitStatus
     {
@@ -210,8 +208,9 @@ class /* THEA_API */ ShortestPaths
 };  // class ShortestPaths
 
 template <typename GraphT>
+template <typename CallbackT>
 void
-ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, Callback * callback, double limit,
+ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
                                 TheaUnorderedMap<VertexHandle, double> const * src_region)
 {
   if (graph.numVertices() <= 0 || !callback)
