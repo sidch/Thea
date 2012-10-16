@@ -1,48 +1,47 @@
-#include "../Algorithms/JointBoost.hpp"
-#include "../Array.hpp"
-#include "../AxisAlignedBoxN.hpp"
-#include "../Matrix.hpp"
+#include "../Common.hpp"
 #include "../UnorderedMap.hpp"
-#include "../VectorN.hpp"
+#include "../Algorithms/JointBoost.hpp"
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
+
+// #define JB_VERBOSE
 
 using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-bool testJointBoost();
 bool testJointBoostFile(string const & path);
 
 int
 main(int argc, char * argv[])
 {
+  if (argc < 2)
+  {
+    cout << "Usage: " << argv[0] << " <training-file>" << endl;
+    return 0;
+  }
+
   try
   {
-    if (!testJointBoost()) return -1;
-
-    THEA_CONSOLE << ""; THEA_CONSOLE << "";
-    if (argc > 1)
-    {
-      if (!testJointBoostFile(argv[1])) return -1;
-    }
-    else
-      THEA_CONSOLE << "Not testing JointBoost with data from file";
+    if (!testJointBoostFile(argv[1]))
+      return -1;
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
   return 0;
 }
 
-class TrainingData : public JointBoost::TrainingData
+class ExampleSet : public JointBoost::TrainingData
 {
   public:
-    THEA_DEF_POINTER_TYPES(TrainingData, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ExampleSet, shared_ptr, weak_ptr)
 
-    TrainingData(long nfeatures) : features(0, nfeatures) {}
+    ExampleSet(long nfeatures) : features(0, nfeatures) {}
 
     template <typename DVecT>
     void addExample(DVecT const & example_features, long example_class)
@@ -60,13 +59,13 @@ class TrainingData : public JointBoost::TrainingData
     long numExamples() const { return features.numRows(); }
     long numFeatures() const { return features.numColumns(); }
 
-    void getFeature(long feature_index, TheaArray<double> & values) const
+    void getFeature(long feature_index, vector<double> & values) const
     {
-      values.resize((array_size_t)numExamples());
+      values.resize((size_t)numExamples());
       features.getColumn(feature_index, &values[0]);
     }
 
-    void getClasses(TheaArray<long> & classes_) const
+    void getClasses(vector<long> & classes_) const
     {
       classes_ = classes;
     }
@@ -78,12 +77,12 @@ class TrainingData : public JointBoost::TrainingData
 
     long getExampleClass(long example) const
     {
-      return classes[(array_size_t)example];
+      return classes[(size_t)example];
     }
 
   private:
-    Matrix<double, MatrixLayout::ROW_MAJOR> features;
-    TheaArray<long> classes;
+    Matrix<double> features;
+    vector<long> classes;
 };
 
 template <typename ArrayT>
@@ -102,84 +101,40 @@ arrayToString(ArrayT const & arr)
 }
 
 bool
-selfTest(JointBoost const & jb, TrainingData const & td, bool get_class_probs = false)
+test(JointBoost const & jb, ExampleSet const & test_set, bool get_class_probs = false)
 {
-  THEA_CONSOLE << "";
-  THEA_CONSOLE << "======================================";
-  THEA_CONSOLE << "Self-testing";
-  THEA_CONSOLE << "======================================";
-
-  TheaArray<double> class_probabilities((array_size_t)jb.numClasses());
-  TheaArray<double> f((array_size_t)jb.numFeatures());
+  vector<double> class_probabilities((size_t)jb.numClasses());
+  vector<double> f((size_t)jb.numFeatures());
   long num_correct = 0;
-  for (long i = 0; i < td.numExamples(); ++i)
+  for (long i = 0; i < test_set.numExamples(); ++i)
   {
-    td.getExampleFeatures(i, &f[0]);
-    long c = td.getExampleClass(i);
+    test_set.getExampleFeatures(i, &f[0]);
+    long c = test_set.getExampleClass(i);
 
     long pc = jb.predict(&f[0], get_class_probs ? &class_probabilities[0] : NULL);
     if (pc == c)
       num_correct++;
 
-    THEA_CONSOLE << "Features[" << i << "] = " << arrayToString(f) << ", actual class = " << c << ", predicted class = " << pc;
+#ifdef JB_VERBOSE
+    cout << "Features[" << i << "] = " << arrayToString(f) << ", actual class = " << c << ", predicted class = " << pc << endl;
     if (get_class_probs)
     {
-      for (array_size_t c = 0; c < class_probabilities.size(); ++c)
-        THEA_CONSOLE << "    Probability of class " << c << " = " << class_probabilities[c];
+      for (size_t c = 0; c < class_probabilities.size(); ++c)
+        cout << "    Probability of class " << c << " = " << class_probabilities[c] << endl;
 
-      THEA_CONSOLE << "";
+      cout << endl;
     }
+#endif
   }
 
-  THEA_CONSOLE << "Accuracy = " << 100.0 * num_correct / (float)td.numExamples() << '%';
+#ifndef JB_VERBOSE
+  cout << endl;
+#endif
+
+  cout << "Accuracy on " << test_set.numExamples() << " test cases = " << 100.0 * num_correct / (float)test_set.numExamples()
+       << '%' << endl << endl;
 
   return true;
-}
-
-bool
-testJointBoost()
-{
-  THEA_CONSOLE << "======================================";
-  THEA_CONSOLE << "Training";
-  THEA_CONSOLE << "======================================";
-
-  static int const NFEATURES = 2;
-  static long const PTS_PER_RANGE = 10;
-
-  typedef VectorN<NFEATURES, double> Vec;
-  typedef AxisAlignedBoxN<NFEATURES, double> AABB;
-
-  AABB ranges[] = { AABB(Vec(0, 0), Vec(1, 1)),
-                    AABB(Vec(1, 1), Vec(4, 2)),
-                    AABB(Vec(2, 0), Vec(3, 1))
-                  };
-
-  TrainingData td(NFEATURES);
-
-  long num_classes = (long)(sizeof(ranges) / sizeof(ranges[0]));
-
-  for (long r = 0; r < num_classes; ++r)
-  {
-    Vec ext = ranges[r].getExtent();
-    for (long i = 0; i < PTS_PER_RANGE; ++i)
-    {
-      Vec p = ranges[r].getLow() + Vec(Math::rand01() * ext.x(), Math::rand01() * ext.y());
-      td.addExample(p, r);
-    }
-  }
-
-  JointBoost::Options opts;
-  opts.setMinBoostingRounds(1)
-      .setMaxBoostingRounds(3 * num_classes)
-      .setMinFractionalErrorReduction(-1)
-      .setFeatureSamplingFraction(1)
-      .setForceExhaustive(true);
-
-  JointBoost jb(num_classes, NFEATURES, opts);
-  jb.train(td);
-  jb.dumpToConsole();
-
-  return selfTest(jb, td, true);
 }
 
 bool
@@ -188,20 +143,22 @@ testJointBoostFile(string const & path)
   ifstream in(path.c_str());
   if (!in)
   {
-    THEA_WARNING << "Couldn't open file " << path;
+    cerr << "Couldn't open file " << path << endl;
     return false;
   }
 
-  THEA_CONSOLE << "======================================";
-  THEA_CONSOLE << "Training from file";
-  THEA_CONSOLE << "======================================";
+  cout << "======================================" << endl;
+  cout << "Reading features from file" << endl;
+  cout << "======================================" << endl << endl;
 
-  TrainingData::Ptr td;
+  ExampleSet::Ptr all_training;
+  ExampleSet::Ptr training_subset;
+  ExampleSet::Ptr holdout_subset;
 
   typedef TheaUnorderedMap<string, long> LabelIndexMap;
   LabelIndexMap labels;
 
-  TheaArray<double> features;
+  vector<double> features;
   double feature;
   string label;
 
@@ -217,21 +174,21 @@ testJointBoostFile(string const & path)
 
     if (fields.size() < 2)
     {
-      THEA_ERROR << "Data has too few features per example";
+      cerr << "Data has too few features per example" << endl;
       return false;
     }
 
     long nfeat = (long)fields.size() - 1;
-    if (!td)
+    if (!all_training)
     {
-      THEA_CONSOLE << "Data has " << nfeat << " features per example";
-      td = TrainingData::Ptr(new TrainingData(nfeat));
+      cout << "Data has " << nfeat << " features per example" << endl;
+      all_training = ExampleSet::Ptr(new ExampleSet(nfeat));
     }
     else
     {
-      if (nfeat != td->numFeatures())
+      if (nfeat != all_training->numFeatures())
       {
-        THEA_ERROR << "Inconsistent number of features for example " << td->numExamples();
+        cout << "Inconsistent number of features for example " << all_training->numExamples() << endl;
         return false;
       }
     }
@@ -239,7 +196,7 @@ testJointBoostFile(string const & path)
     features.clear();
     for (long i = 0; i < nfeat; ++i)
     {
-      istringstream iss(fields[(array_size_t)i]);
+      istringstream iss(fields[(size_t)i]);
       iss >> feature;
       features.push_back(feature);
     }
@@ -252,34 +209,80 @@ testJointBoostFile(string const & path)
     {
       index = (long)labels.size();
       labels[label] = index;
-      THEA_CONSOLE << "Added class with label '" << label << "' and index " << index;
+      cout << "Added class with label '" << label << "' and index " << index << endl;
     }
     else
       index = existing_label->second;
 
-    td->addExample(features, index);
+    all_training->addExample(features, index);
+
+    if (rand() % 2)  // holdout half the input set for testing
+    {
+      if (!training_subset) training_subset = ExampleSet::Ptr(new ExampleSet(nfeat));
+      training_subset->addExample(features, index);
+    }
+    else
+    {
+      if (!holdout_subset) holdout_subset = ExampleSet::Ptr(new ExampleSet(nfeat));
+      holdout_subset->addExample(features, index);
+    }
   }
 
-  if (!td)
+  if (!all_training)
   {
-    THEA_ERROR << "Could not read any lines from file";
+    cout << "Could not read any lines from file" << endl;
     return false;
   }
 
   long num_classes = (long)labels.size();
 
-  THEA_CONSOLE << "Read " << td->numExamples() << " examples from " << num_classes << " classes from file";
+  cout << "Read " << all_training->numExamples() << " examples from " << num_classes << " classes from file" << endl;
 
   JointBoost::Options opts;
   opts.setMinBoostingRounds(num_classes)
       .setMaxBoostingRounds(4 * num_classes)
       .setMinFractionalErrorReduction(-1)
-      .setFeatureSamplingFraction(3.0 / td->numFeatures())
+      .setFeatureSamplingFraction(3.0 / all_training->numFeatures())
+      .setMaxThresholdsFraction(0.25)
       .setForceGreedy(true);
 
-  JointBoost jb(num_classes, td->numFeatures(), opts);
-  jb.train(*td);
-  jb.dumpToConsole();
+  JointBoost jb(num_classes, all_training->numFeatures(), opts);
 
-  return selfTest(jb, *td, true);
+  // Self-testing
+  {
+    cout << endl;
+    cout << "======================================" << endl;
+    cout << "Self-testing" << endl;
+    cout << "======================================" << endl << endl;
+
+    jb.train(*all_training);
+    jb.dumpToConsole();
+
+    if (!test(jb, *all_training, true))
+      return false;
+  }
+
+  jb.clear();
+
+  // Holdout-testing
+  if (training_subset && holdout_subset)
+  {
+    cout << endl;
+    cout << "======================================" << endl;
+    cout << "Holdout-testing" << endl;
+    cout << "======================================" << endl << endl;
+
+    jb.train(*training_subset);
+    jb.dumpToConsole();
+
+    if (!test(jb, *holdout_subset, true))
+      return false;
+  }
+  else
+  {
+    cerr << "Not enough examples to do holdout testing" << endl;
+    return false;
+  }
+
+  return true;
 }
