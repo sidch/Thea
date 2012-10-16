@@ -62,7 +62,7 @@ typedef boost::dynamic_bitset<> SharingSet;
  * A. Torralba, K. Murphy and W. Freeman, "Sharing features: efficient boosting procedures for multiclass object detection",
  * Proc. CVPR, 2004.
  *
- * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call classify().
+ * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call predict().
  */
 class THEA_API JointBoost
 {
