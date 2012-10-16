@@ -239,9 +239,8 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
   TheaArray<long> candidate_features;
   for (long f = 0; f < num_features; ++f)
   {
-    if (feature_sampling_fraction < 1)
-      if (Math::rand01() <= feature_sampling_fraction)
-        candidate_features.push_back(f);
+    if (feature_sampling_fraction >= 1 || Math::rand01() <= feature_sampling_fraction)
+      candidate_features.push_back(f);
   }
 
   if (candidate_features.empty())
