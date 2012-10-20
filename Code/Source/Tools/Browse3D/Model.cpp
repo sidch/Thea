@@ -44,6 +44,7 @@
 #include "MainWindow.hpp"
 #include "Math.hpp"
 #include "Mesh.hpp"
+#include "PointCloud.hpp"
 #include "Util.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
@@ -107,13 +108,18 @@ Model::~Model()
 QString
 Model::getName() const
 {
-  return toQString(mesh_group->getName());
+  if (mesh_group)
+    return toQString(mesh_group->getName());
+  else if (point_cloud)
+    return toQString(point_cloud->getName());
+  else
+    return "Untitled";
 }
 
 bool
 Model::isEmpty() const
 {
-  return (!mesh_group || mesh_group->isEmpty()) && points.empty();
+  return (!mesh_group || mesh_group->isEmpty()) && (!point_cloud || point_cloud->isEmpty());
 }
 
 void
@@ -134,8 +140,7 @@ Model::clearMesh()
 void
 Model::clearPoints()
 {
-  points.clear();
-  point_bounds.setNull();
+  if (point_cloud) point_cloud->clear();
 }
 
 bool
@@ -150,32 +155,13 @@ Model::load(QString const & filename_)
 
   if (filename_.toLower().endsWith(".pts"))
   {
-    std::ifstream in(toStdString(filename_).c_str());
-    if (!in)
-    {
-      THEA_ERROR << "Couldn't load points from file '" << filename_ << '\'';
-      return false;
-    }
-
     clear();
-    filename = filename_;
 
-    std::string line;
-    Vector3 p;
-    while (getline(in, line))
-    {
-      std::istringstream line_in(line);
-      if (!(line_in >> p[0] >> p[1] >> p[2]))
-        continue;
+    point_cloud = PointCloudPtr(new PointCloud);
+    if (!point_cloud->load(toStdString(filename_)))
+      return false;
 
-      points.push_back(p);
-      point_bounds.merge(p);
-    }
-
-    bounds = point_bounds;
-
-    THEA_CONSOLE << "Loaded " << points.size() << " points with bounding box " << point_bounds.toString() << " from '"
-                 << filename_ << '\'';
+    bounds = point_cloud->getBounds();
   }
   else
   {
@@ -199,7 +185,6 @@ Model::load(QString const & filename_)
 
     mesh_group = new_mesh_group;
     clearPoints();
-    filename = filename_;
 
     bounds = new_mesh_group->getBounds();
 
@@ -207,6 +192,8 @@ Model::load(QString const & filename_)
 
     loadSamples(getSamplesFilename());
   }
+
+  filename = filename_;
 
   emit filenameChanged(filename);
   emit geometryChanged(this);
@@ -668,13 +655,10 @@ Model::updateBounds()
     bounds.merge(mesh_group->getBounds());
   }
 
-  if (!points.empty())
+  if (point_cloud)
   {
-    point_bounds.setNull();
-    for (array_size_t i = 0; i < points.size(); ++i)
-      point_bounds.merge(points[i]);
-
-    bounds.merge(point_bounds);
+    point_cloud->updateBounds();
+    bounds.merge(point_cloud->getBounds());
   }
 }
 
@@ -683,6 +667,9 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 {
   if (mesh_group)
     mesh_group->uploadToGraphicsSystem(render_system);
+
+  if (point_cloud)
+    point_cloud->uploadToGraphicsSystem(render_system);
 }
 
 void
@@ -693,7 +680,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
-  static Color4 const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+  static Color4 const MESH_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
   static Color4 const POINT_COLOR(1.0f, 1.0f, 0.5f, 1.0f);
   GraphicsWidget::setLight(Vector3(-1, -1, -2), Color3(1, 1, 1), Color3(1, 0.8f, 0.7f));
 
@@ -722,13 +709,11 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         }
       }
 
-      render_system.setColor(DEFAULT_COLOR);
+      render_system.setColor(MESH_COLOR);
       if (mesh_group) mesh_group->draw(render_system, options);
 
       render_system.setColor(POINT_COLOR);
-      Real point_radius = 0.002f * point_bounds.getExtent().length();
-      for (array_size_t i = 0; i < points.size(); ++i)
-        drawSphere(render_system, points[i], point_radius);
+      if (point_cloud) point_cloud->draw(render_system, options);
 
     render_system.popColorFlags();
   render_system.popShader();

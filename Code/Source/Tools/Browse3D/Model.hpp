@@ -55,6 +55,9 @@ class QMouseEvent;
 
 namespace Browse3D {
 
+class PointCloud;
+typedef shared_ptr<PointCloud> PointCloudPtr;
+
 /**
  * An indexed vertex of a mesh suitable for kd-tree storage, saves memory over DisplayMeshVertex and allows forward-declaration
  * of the mesh.
@@ -325,14 +328,12 @@ class Model : public QObject, public GraphicsWidget
     /** Clear the model mesh. */
     void clearMesh();
 
-    /** Clear the model points. */
+    /** Clear the point cloud. */
     void clearPoints();
 
     MeshGroupPtr mesh_group;
+    PointCloudPtr point_cloud;
     QString filename;
-
-    TheaArray<Vector3> points;
-    AxisAlignedBox3 point_bounds;
 
     AxisAlignedBox3 bounds;
 

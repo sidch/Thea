@@ -285,11 +285,13 @@ class THEA_API Camera : public Serializable
      */
     Ray3 computePickRay(Vector2 const & screen_pos) const;
 
+    /** Get the name of the camera. */
     std::string getName() const
     {
       return (projection_type == ProjectionType::ORTHOGRAPHIC) ? "Orthographic Camera" : "Perspective Camera";
     }
 
+    /** Get a string describing the camera. */
     std::string toString() const;
 
     void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;

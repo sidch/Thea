@@ -1,13 +1,13 @@
 //============================================================================
 //
-// This file is part of the Thea project.
+// This file is part of the Browse3D project.
 //
 // This software is covered by the following BSD license, except for portions
 // derived from other works which are covered by their respective licenses.
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2012, Siddhartha Chaudhuri/Stanford University
 //
 // All rights reserved.
 //
@@ -39,62 +39,71 @@
 //
 //============================================================================
 
-#ifndef __Thea_Graphics_GL_GLVARArea_hpp__
-#define __Thea_Graphics_GL_GLVARArea_hpp__
+#ifndef __Browse3D_PointCloud_hpp__
+#define __Browse3D_PointCloud_hpp__
 
-#include "../../Graphics/VARArea.hpp"
-#include "GLCommon.hpp"
-#include "GLHeaders.hpp"
+#include "Common.hpp"
+#include "GraphicsWidget.hpp"
+#include "../../AxisAlignedBox3.hpp"
 
-namespace Thea {
-namespace Graphics {
-namespace GL {
+namespace Browse3D {
 
-/** An OpenGL Vertex Area Range storage area in either main or GPU memory. Not threadsafe even when using main memory. */
-class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
+/** The model manipulated by the user. */
+class PointCloud : public virtual NamedObject, public GraphicsWidget
 {
+  private:
+    /** A point on the surface. */
+    struct Point
+    {
+      Point() {}
+      Point(Vector3 const & p_, Vector3 const & n_ = Vector3::zero()) : p(p_), n(n_) {}
+
+      Vector3 p;
+      Vector3 n;
+    };
+
   public:
+    THEA_DEF_POINTER_TYPES(PointCloud, shared_ptr, weak_ptr)
+
     /** Constructor. */
-    GLVARArea(std::string const & name_, long capacity_, Usage usage, bool gpu_memory_ = true);
+    PointCloud(std::string const & path = "");
 
     /** Destructor. */
-    ~GLVARArea();
+    ~PointCloud();
 
-    /** Get a string describing the storage area. */
-    std::string toString() const;
+    /** Is the model empty? */
+    bool isEmpty() const { return points.empty(); }
 
-    void reset();
-    long getCapacity() const { return capacity; }
-    long getAllocatedSize() const { return allocated_size; }
-    bool inGPUMemory() const { return gpu_memory; }
+    /** Clear the point cloud. */
+    void clear();
 
-    VAR * createArray(long num_bytes);
-    void destroyArray(VAR * array);
+    /**
+     * Load the point cloud from a disk file.
+     *
+     * @return True if the model was successfully loaded, else false.
+     */
+    bool load(std::string const & path);
 
-    /** Get the OpenGL index for this buffer.*/
-    GLuint getGLBuffer() const { return gl_buffer; }
+    AxisAlignedBox3 const & getBounds() const;
 
-    /** Get a pointer to the first byte of the storage area.*/
-    void * getBasePointer() const { return base_pointer; }
+    void updateBounds();
 
-    /** Get the current generation (i.e. the number of times reset() has been called). */
-    int getCurrentGeneration() const { return generation; }
+    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
 
-    /** Mark an extra block as allocated. */
-    void incrementAllocated(long inc) { allocated_size += inc; }
+    void draw(Graphics::RenderSystem & render_system,
+              Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
   private:
-    long capacity;
-    bool gpu_memory;
-    GLuint gl_buffer;
-    uint8 * base_pointer;
-    int generation;
-    long allocated_size;
+    /** Invalidate the bounding box of the point cloud. */
+    void invalidateBounds();
 
-}; // class GLVARArea
+    TheaArray<Point> points;
+    bool has_normals;
+    bool normals_are_normalized;
+    AxisAlignedBox3 bounds;
 
-} // namespace GL
-} // namespace Graphics
-} // namespace Thea
+}; // class PointCloud
+
+} // namespace Browse3D
 
 #endif
