@@ -1,7 +1,9 @@
 #include "../Common.hpp"
-#include "../UnorderedMap.hpp"
 #include "../Algorithms/JointBoost.hpp"
 #include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/unordered_map.hpp>
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -9,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#define JB_FAST
 // #define JB_VERBOSE
 
 using namespace std;
@@ -31,7 +34,11 @@ main(int argc, char * argv[])
     if (!testJointBoostFile(argv[1]))
       return -1;
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
+  catch(...)
+  {
+    cerr << "An error occurred" << endl;
+    return -1;
+  }
 
   return 0;
 }
@@ -39,7 +46,7 @@ main(int argc, char * argv[])
 class ExampleSet : public JointBoost::TrainingData
 {
   public:
-    THEA_DEF_POINTER_TYPES(ExampleSet, shared_ptr, weak_ptr)
+    typedef boost::shared_ptr<ExampleSet> Ptr;
 
     ExampleSet(long nfeatures) : features(0, nfeatures) {}
 
@@ -155,7 +162,7 @@ testJointBoostFile(string const & path)
   ExampleSet::Ptr training_subset;
   ExampleSet::Ptr holdout_subset;
 
-  typedef TheaUnorderedMap<string, long> LabelIndexMap;
+  typedef boost::unordered_map<string, long> LabelIndexMap;
   LabelIndexMap labels;
 
   vector<double> features;
@@ -239,12 +246,42 @@ testJointBoostFile(string const & path)
   cout << "Read " << all_training->numExamples() << " examples from " << num_classes << " classes from file" << endl;
 
   JointBoost::Options opts;
+
+#ifdef JB_FAST
   opts.setMinBoostingRounds(num_classes)
       .setMaxBoostingRounds(4 * num_classes)
       .setMinFractionalErrorReduction(-1)
       .setFeatureSamplingFraction(3.0 / all_training->numFeatures())
       .setMaxThresholdsFraction(0.25)
-      .setForceGreedy(true);
+      .setForceGreedy(true)
+      .setVerbose(false);
+
+  // Options for bupa
+  // opts.setMinBoostingRounds(10 * num_classes)
+  //     .setMaxBoostingRounds(40 * num_classes)
+  //     .setMinFractionalErrorReduction(0.00001)
+  //     .setFeatureSamplingFraction(1)
+  //     .setMaxThresholdsFraction(0.25)
+  //     .setForceGreedy(true)
+  //     .setVerbose(false);
+
+  // Options for pendigits
+  // opts.setMinBoostingRounds(min(num_classes, 3L))
+  //     .setMaxBoostingRounds(4 * num_classes)
+  //     .setMinFractionalErrorReduction(0.0000001)
+  //     .setFeatureSamplingFraction(0.25)
+  //     .setMaxThresholdsFraction(0.001)
+  //     .setForceGreedy(true)
+  //     .setVerbose(true);
+#else
+  opts.setMinBoostingRounds(10 * num_classes)
+      .setMaxBoostingRounds(40 * num_classes)
+      .setMinFractionalErrorReduction(0.00001)
+      .setFeatureSamplingFraction(1)
+      .setMaxThresholdsFraction(1)
+      .setForceExhaustive(true)
+      .setVerbose(true);
+#endif
 
   JointBoost jb(num_classes, all_training->numFeatures(), opts);
 

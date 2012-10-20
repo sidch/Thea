@@ -88,20 +88,21 @@ class THEA_API RayQueryStructure3
     THEA_DEF_POINTER_TYPES(RayQueryStructure3, shared_ptr, weak_ptr)
 
     /** Check if a ray intersects the structure in the forward direction. */
-    template <typename RayIntersectionTesterT> bool rayIntersects(Ray3 const & ray) const;
+    template <typename RayIntersectionTesterT> bool rayIntersects(Ray3 const & ray, Real max_time = -1) const;
 
     /**
      * Get the time taken for a ray to intersect the structure, or a negative value if there was no intersection in the forward
      * direction.
      */
-    template <typename RayIntersectionTesterT> Real rayIntersectionTime(Ray3 const & ray) const;
+    template <typename RayIntersectionTesterT> Real rayIntersectionTime(Ray3 const & ray, Real max_time = -1) const;
 
     /**
      * Get the intersection of a ray with the structure, including the hit time, the normal at the intersection point, and the
      * index of the intersected element. A negative time is returned if there was no intersection in the forward direction. A
      * zero normal and a negative index are returned if those quantities are not known.
      */
-    template <typename RayIntersectionTesterT> RayStructureIntersection3 rayStructureIntersection(Ray3 const & ray) const;
+    template <typename RayIntersectionTesterT>
+    RayStructureIntersection3 rayStructureIntersection(Ray3 const & ray, Real max_time = -1) const;
 
 }; // class RayQueryStructure3
 

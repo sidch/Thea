@@ -607,6 +607,7 @@ class /* THEA_API */ KDTree3
     /** Get the number of nodes in the tree. */
     long numNodes() const { return num_nodes; }
 
+    /** Get a bounding box for all the objects in the tree. */
     AxisAlignedBox3 const & getBounds() const
     {
       updateBounds();
@@ -636,6 +637,7 @@ class /* THEA_API */ KDTree3
       filters.pop_back();
     }
 
+    /** Get the minimum distance between this structure and a query object. */
     template <typename MetricT, typename QueryT> double distance(QueryT const & query, double dist_bound = -1) const
     {
       double result = -1;
@@ -645,6 +647,16 @@ class /* THEA_API */ KDTree3
         return -1;
     }
 
+    /**
+     * Get the closest element in this structure to a query object, within a specified distance bound.
+     *
+     * @param query Query object.
+     * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param dist The distance to the query object is placed here. Ignored if null.
+     * @param closest_point The coordinates of the closest point are placed here. Ignored if null.
+     *
+     * @return A non-negative handle to the closest element, if one was found, else a negative number.
+     */
     template <typename MetricT, typename QueryT>
     long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, Vector3 * closest_point = NULL)
     const
@@ -660,7 +672,18 @@ class /* THEA_API */ KDTree3
       return pair.getTargetIndex();
     }
 
-    // BoundedObjectTraits3<QueryT> must be defined.
+    /**
+     * Get the closest pair of elements between this structure and another structure, whose separation is less than a specified
+     * upper bound. BoundedObjectTraits3<QueryT> must be defined.
+     *
+     * @param query Query object.
+     * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
+     *   and stored in the returned structure.
+     *
+     * @return Non-negative handles to the closest pair of elements in their respective objects, if such a pair was found. Else
+     *   returns a pair of negative numbers.
+     */
     template <typename MetricT, typename QueryT>
     NeighborPair closestPair(QueryT const & query, double dist_bound = -1, bool get_closest_points = false) const
     {
@@ -684,8 +707,26 @@ class /* THEA_API */ KDTree3
       return pair;
     }
 
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
-    long kClosestPairs(QueryT const & query, BoundedNeighborPairSet & k_closest_pairs, double dist_bound = -1,
+    /**
+     * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (k). The template
+     * type BoundedNeighborPairSetT should typically be BoundedSortedArray<NeighborPair> or BoundedSortedArrayN<k, NeighborPair>
+     * if only a few neighbors are requested.
+     *
+     * @param query Query object.
+     * @param k_closest_pairs The k (or fewer) nearest neighbors are placed here.
+     * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
+     *   computed and stored in the returned pairs.
+     * @param clear_set If true (default), this function discards prior data in \a k_closest_pairs. This is chiefly for internal
+     *   use and the default value of true should normally be left as is.
+     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
+     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
+     *   is chiefly for internal use and the default value of -1 should normally be left as is.
+     *
+     * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
+     */
+    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
+    long kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
                        bool get_closest_points = false, bool clear_set = true, long use_as_query_index_and_swap = -1) const
     {
       if (clear_set) k_closest_pairs.clear();
@@ -713,6 +754,15 @@ class /* THEA_API */ KDTree3
       return k_closest_pairs.size();
     }
 
+    /**
+     * Get all objects intersecting a range.
+     *
+     * @param range The range to search in.
+     * @param result The objects intersecting the range are stored here.
+     * @param discard_prior_results If true, the contents of \a results are cleared before the range query proceeds. If false,
+     *   the previous results are retained and new objects are appended to the array (this is useful for range queries over a
+     *   union of simpler ranges).
+     */
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQuery(RangeT const & range, TheaArray<T> & result, bool discard_prior_results = true) const
     {
@@ -724,6 +774,15 @@ class /* THEA_API */ KDTree3
       }
     }
 
+    /**
+     * Get the indices of all objects intersecting a range.
+     *
+     * @param range The range to search in.
+     * @param result The indices of objects intersecting the range are stored here.
+     * @param discard_prior_results If true, the contents of \a results are cleared before the range query proceeds. If false,
+     *   the previous results are retained and indices of new objects are appended to the array (this is useful for range
+     *   queries over a union of simpler ranges).
+     */
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQueryIndices(RangeT const & range, TheaArray<long> & result, bool discard_prior_results = true) const
     {
@@ -736,11 +795,20 @@ class /* THEA_API */ KDTree3
     }
 
     /**
-     * Apply a functor to all elements in a range, until the functor returns true. See the base class documentation
-     * (RangeQueryStructure3::processRangeUntil()) for more information.
+     * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
+     * (or be a function pointer with the equivalent signature)
+     * \code
+     * bool operator()(long index, T & t)
+     * \endcode
+     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
+     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
+     * object).
      *
      * The RangeT class should support intersection queries with AxisAlignedBox3 and containment queries with Vector3 and
      * AxisAlignedBox3.
+     *
+     * @return True if the functor evaluated to true on any object in the range (and hence stopped immediately after processing
+     *   this object), else false.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     bool processRangeUntil(RangeT const & range, FunctorT * functor)
