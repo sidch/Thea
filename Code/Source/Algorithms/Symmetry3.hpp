@@ -46,7 +46,7 @@
 #include "IteratorModifiers.hpp"
 #include "KDTree3.hpp"
 #include "MetricL2.hpp"
-#include "PCA3.hpp"
+#include "PCA_N.hpp"
 #include "PointTraitsN.hpp"
 #include <boost/utility/enable_if.hpp>
 #include <cmath>
@@ -161,7 +161,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsPointN<T, 3> >::t
       Real eigenvalues[3];
       Vector3 eigenvectors[3];
       Vector3 centroid;
-      PCA3<T>::compute(begin, end, eigenvalues, eigenvectors, &centroid);
+      PCA_N<T, 3>::compute(begin, end, eigenvalues, eigenvectors, &centroid);
 
       double best_error = max_mean_squared_error;
       bool found = false;
