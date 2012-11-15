@@ -188,7 +188,7 @@ Model::load(QString const & filename_)
 
     bounds = new_mesh_group->getBounds();
 
-    THEA_CONSOLE << "Loaded model '" << filename_ << " with bounding box " << mesh_group->getBounds().toString();
+    THEA_CONSOLE << "Loaded model '" << filename_ << "' with bounding box " << mesh_group->getBounds().toString();
 
     loadSamples(getSamplesFilename());
   }
