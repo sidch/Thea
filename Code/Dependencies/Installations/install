@@ -812,7 +812,7 @@ if $WITH_ARPACK ; then
                    cd ARPACK;
                    cat ARmake.inc | sed -e 's:\$(HOME):${BASE_DIR}/ARPACK:' \
                                         -e 's:PLAT = SUN4:PLAT = ${HOST_OS}:' \
-                                        -e 's:-cg89::' \
+                                        -e 's:-cg89:-fPIC:' \
                                         -e 's:/bin/make:make:'
                        > ARmake.inc.tmp;
                    if [[ '$HOST_OS' =~ .*arwin.* ]] ; then
