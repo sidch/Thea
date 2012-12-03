@@ -61,6 +61,21 @@ class check_name                                                                
     static bool const value = (sizeof(test<check_name##T_>(0)) == sizeof(Yes));                                               \
 };
 
+#if __GNUC__ == 4 && ((__GNUC_MINOR__ == 4 && __GNUC_PATCHLEVEL__ > 2) || __GNUC_MINOR__ == 5)
+
+#warning "Concept-checking for members disabled on 4.4.2 < GCC < 4.6"
+#warning "    cf. http://gcc.gnu.org/bugzilla/show_bug.cgi?id=46170"
+
+#define THEA_HAS_MEMBER(check_name, member_name)                                                                              \
+template <typename check_name##T_>                                                                                            \
+class check_name                                                                                                              \
+{                                                                                                                             \
+  public:                                                                                                                     \
+    static bool const value = true;                                                                                           \
+};
+
+#else
+
 /**
  * Define a template class that checks if the class supplied as the template argument has a (data or function) member with the
  * given name.
@@ -80,8 +95,10 @@ class check_name                                                                
     template <typename check_name##U_> static Yes test(...);                                                                  \
                                                                                                                               \
   public:                                                                                                                     \
-   static bool const value = (sizeof(test<check_name##T_>((Base *)0)) == sizeof(Yes));                                        \
+    static bool const value = (sizeof(test<check_name##T_>((Base *)0)) == sizeof(Yes));                                       \
 };
+
+#endif
 
 /** Utility function that directly tests the value of concept_name::value using THEA_STATIC_ASSERT. */
 #define THEA_CONCEPT_CHECK(concept_name) THEA_STATIC_ASSERT(concept_name::value)
