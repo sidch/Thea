@@ -380,20 +380,18 @@ lerp(T const & a, T const & b, S const & f)
 }
 
 /** Convert an angle from degrees to radians. */
-template <typename T>
-T
-degreesToRadians(T const & deg)
+inline double
+degreesToRadians(double deg)
 {
-  static T const CONV_FACTOR = static_cast<T>(pi() / 180.0);
+  static double const CONV_FACTOR = pi() / 180.0;
   return CONV_FACTOR * deg;
 }
 
 /** Convert an angle from radians to degrees. */
-template <typename T>
-T
-radiansToDegrees(T const & rad)
+inline double
+radiansToDegrees(double rad)
 {
-  static T const CONV_FACTOR = static_cast<T>(180.0 / pi());
+  static double const CONV_FACTOR = 180.0 / pi();
   return CONV_FACTOR * rad;
 }
 
