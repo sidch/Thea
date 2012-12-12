@@ -79,7 +79,7 @@ ConvexHull3::updateApprox() const
   THEA_DEBUG << "ConvexHull3: Computing convex hull of " << points.size() << " points";
 
   // Convert the input points to a packed array of floats
-  TheaArray<float> coords;
+  TheaArray<float> coords(3 * points.size());
   array_size_t base = 0;
   for (array_size_t i = 0; i < points.size(); ++i, base += 3)
   {
