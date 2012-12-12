@@ -1,3 +1,5 @@
+#include "Graph.hpp"
+
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
 
@@ -6,10 +8,12 @@
 #  include "../../Algorithms/Clustering.hpp"
 #endif
 
+#include "../../Algorithms/ConvexHull3.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Math.hpp"
+#include "../../UnorderedMap.hpp"
 #include "../../VectorN.hpp"
 #include <CGAL/Union_find.h>
 #include <boost/functional/hash.hpp>
@@ -165,6 +169,11 @@ segmentSDF(int argc, char * argv[])
   int num_clusters = Clustering::computeFlat(clusterable_pts, labels, options, num_clusters_hint);
 
   THEA_CONSOLE << "Segmented points into " << num_clusters << " clusters";
+
+  // Merge clusters whose union is approximately convex
+  num_clusters = combineClustersByConvexity(positions, normals, kdtree, labels, -1, -1);
+
+  THEA_CONSOLE << "Merged clusters into " << num_clusters << " clusters";
 
   // Write out the labels
   ofstream out(outpath.c_str());
@@ -471,4 +480,248 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   }
 
   return (int)uf.number_of_sets();
+}
+
+struct SampleCluster;  // forward declaration
+typedef Graph<SampleCluster *, double> SampleClusterConnectivityGraph;
+
+/** A cluster of samples, typically coresponding to a single segment of the model. */
+struct SampleCluster
+{
+  int label;
+  TheaArray<Vector3 const *> positions;
+  TheaArray<Vector3 const *> normals;
+  KDTree3<Vector3 const *> * kdtree;
+  double concavity;
+  SampleClusterConnectivityGraph::VertexIterator conn_vertex;
+  bool changed;
+
+  SampleCluster() : kdtree(new KDTree3<Vector3 const *>), changed(false) {}
+
+  void updateKDTree()
+  {
+    if (changed)
+    {
+      kdtree->init(positions.begin(), positions.end());
+      changed = false;
+    }
+  }
+};
+
+typedef TheaUnorderedMap<int, SampleCluster> SampleClusterMap;
+
+double
+computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3 const *> const & normals,
+                 KDTree const & kdtree)
+{
+  Real skin_width = 0.01 * kdtree.getBounds().getExtent().length();
+  THEA_CONSOLE << "Skin width = " << skin_width;
+
+  ConvexHull3::Options(ConvexHull3::Options::Approx(100, skin_width));
+  ConvexHull3 hull;
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    hull.addPoint(*positions[i]);
+
+  Mesh hull_mesh;
+  hull.computeApprox(hull_mesh);
+
+  KDTree hull_kdtree;
+  hull_kdtree.add(hull_mesh);
+  hull_kdtree.init();
+
+  Real extent = kdtree.getBounds().getExtent().length();
+  THEA_CONSOLE << "Extent = " << extent;
+  if (Math::fuzzyEq(extent, (Real)0))
+    return 0;
+
+  double sum_distances = 0;
+  long num_points = 0;
+  for (array_size_t i = 0; i < positions.size(); ++i)
+  {
+    Ray3 hull_ray(*positions[i], *normals[i]);
+    Real hull_isec_time = hull_kdtree.rayIntersectionTime<RayIntersectionTester>(hull_ray);
+    // cout << "Intersection time for ray " << i << " = " << isec_time << endl;
+
+    Ray3 model_ray(hull_ray.getOrigin() + 0.001 * hull_ray.getDirection(), hull_ray.getDirection());
+    Real model_isec_time = kdtree.rayIntersectionTime<RayIntersectionTester>(model_ray);
+    if (hull_isec_time < model_isec_time)
+    {
+      sum_distances += min(hull_isec_time, extent);
+      num_points++;
+    }
+  }
+
+  THEA_CONSOLE << "Sum of distances for " << num_points << " points = " << sum_distances;
+
+  return num_points <= 0 ? 0 : sum_distances / (num_points * extent);
+}
+
+int
+combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, KDTree const & kdtree,
+                           TheaArray<int> & labels, double concavity_threshold, double score_threshold)
+{
+  if (concavity_threshold < 0) concavity_threshold  =  0.015;
+  if (score_threshold     < 0) score_threshold      =  0.9;
+
+  SampleClusterMap sample_clusters;
+  {
+    for (array_size_t i = 0; i < positions.size(); ++i)
+    {
+      sample_clusters[labels[i]].positions.push_back(&positions[i]);
+      sample_clusters[labels[i]].normals.push_back(&normals[i]);
+    }
+
+    for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)
+    {
+      ci->second.label = ci->first;
+      ci->second.changed = true;
+    }
+  }
+
+  SampleClusterConnectivityGraph cluster_conn_graph;
+  {
+    double       const INTERSECTION_THRESHOLD  =  0.01 * kdtree.getBounds().getExtent().length();
+    array_size_t const NNBRS_THRESHOLD         =  10;
+
+    for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)
+    {
+      ci->second.updateKDTree();
+      ci->second.conn_vertex = cluster_conn_graph.addVertex(&ci->second);
+
+      for (SampleClusterMap::iterator cj = sample_clusters.begin(); cj != ci; ++cj)
+      {
+        array_size_t nnbrs = 0;
+        for (array_size_t j = 0; j < cj->second.positions.size(); ++j)
+        {
+          long nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j], INTERSECTION_THRESHOLD);
+          if (nn_index >= 0)
+          {
+            if (++nnbrs >= min(min(ci->second.positions.size(), cj->second.positions.size()), NNBRS_THRESHOLD))
+            {
+              THEA_CONSOLE << "Clusters " << cj->second.label << " and " << ci->second.label << " are connected ";
+              cluster_conn_graph.addEdge(cj->second.conn_vertex, ci->second.conn_vertex, 0);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Compute cluster concavities
+  for (SampleClusterConnectivityGraph::VertexIterator vi = cluster_conn_graph.verticesBegin();
+       vi != cluster_conn_graph.verticesEnd(); ++vi)
+  {
+    vi->attr()->concavity = computeConcavity(vi->attr()->positions, vi->attr()->normals, kdtree);
+  }
+
+  // Compute concavities of connected pairs of clusters
+  for (SampleClusterConnectivityGraph::EdgeIterator ei = cluster_conn_graph.edgesBegin(); ei != cluster_conn_graph.edgesEnd();
+       ++ei)
+  {
+    TheaArray<Vector3 const *> combined_positions(ei->getOrigin()->attr()->positions);
+    combined_positions.insert(combined_positions.end(), ei->getEnd()->attr()->positions.begin(),
+                                                        ei->getEnd()->attr()->positions.end());
+
+    TheaArray<Vector3 const *> combined_normals(ei->getOrigin()->attr()->normals);
+    combined_normals.insert(combined_normals.end(), ei->getEnd()->attr()->normals.begin(),
+                                                    ei->getEnd()->attr()->normals.end());
+
+    ei->setAttr(computeConcavity(combined_positions, combined_normals, kdtree));
+  }
+
+  printGraph(cluster_conn_graph);
+
+  while (cluster_conn_graph.numEdges() > 1)
+  {
+    SampleClusterConnectivityGraph::EdgeIterator max_edge = cluster_conn_graph.edgesEnd();
+    double max_score = -1e+30;
+    for (SampleClusterConnectivityGraph::EdgeIterator ei = cluster_conn_graph.edgesBegin(); ei != cluster_conn_graph.edgesEnd();
+         ++ei)
+    {
+      double edge_concavity = ei->attr();
+      double vertex0_concavity = ei->getOrigin()->attr()->concavity;
+      double vertex1_concavity = ei->getEnd()->attr()->concavity;
+      double vertex_concavity = min(vertex0_concavity, vertex1_concavity);
+      double score = vertex_concavity / max(edge_concavity, 1e-10);
+
+      THEA_CONSOLE << "Score of merging clusters " << ei->getOrigin()->attr()->label << " and " << ei->getEnd()->attr()->label
+                   << " = " << score;
+
+      if (score > max_score && (edge_concavity < concavity_threshold || score > score_threshold))
+      {
+        max_score = score;
+        max_edge = ei;
+      }
+    }
+
+    if (max_edge == cluster_conn_graph.edgesEnd())
+      break;
+
+    THEA_CONSOLE << "Merging clusters " << max_edge->getOrigin()->attr()->label << " and " << max_edge->getEnd()->attr()->label;
+
+    // Collapse the edge. The convexity of the vertex formed by merging the endpoints is the convexity stored at the edge.
+    SampleClusterConnectivityGraph::Vertex * ov = max_edge->getOrigin();
+    ov->attr()->concavity = max_edge->attr();
+
+    // Merge the sample lists of the two clusters
+    TheaArray<Vector3 const *> & opositions = ov->attr()->positions;
+    TheaArray<Vector3 const *> & epositions = max_edge->getEnd()->attr()->positions;
+    opositions.insert(opositions.end(), epositions.begin(), epositions.end());
+
+    TheaArray<Vector3 const *> & onormals = ov->attr()->normals;
+    TheaArray<Vector3 const *> & enormals = max_edge->getEnd()->attr()->normals;
+    onormals.insert(onormals.end(), enormals.begin(), enormals.end());
+
+    // Mark the KD-tree for an update
+    ov->attr()->changed = true;
+
+    cluster_conn_graph.collapseEdge(max_edge);
+    cluster_conn_graph.mergeTwinEdges(SampleClusterConnectivityGraph::VertexIterator(ov));
+
+    printGraph(cluster_conn_graph);
+
+    // Recompute the convexity values for all edges incident at this vertex
+    for (SampleClusterConnectivityGraph::Vertex::EdgeIterator ei = ov->incomingEdgesBegin(); ei != ov->incomingEdgesEnd(); ++ei)
+    {
+      TheaArray<Vector3 const *> combined_positions((*ei)->getOrigin()->attr()->positions);
+      combined_positions.insert(combined_positions.end(), opositions.begin(), opositions.end());
+
+      TheaArray<Vector3 const *> combined_normals((*ei)->getOrigin()->attr()->normals);
+      combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
+
+      double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);
+      (*ei)->setAttr(combined_concavity);
+    }
+
+    for (SampleClusterConnectivityGraph::Vertex::EdgeIterator ei = ov->outgoingEdgesBegin(); ei != ov->outgoingEdgesEnd(); ++ei)
+    {
+      TheaArray<Vector3 const *> combined_positions((*ei)->getEnd()->attr()->positions);
+      combined_positions.insert(combined_positions.end(), opositions.begin(), opositions.end());
+
+      TheaArray<Vector3 const *> combined_normals((*ei)->getEnd()->attr()->normals);
+      combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
+
+      double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);
+      (*ei)->setAttr(combined_concavity);
+    }
+  }
+
+  // Now relabel the points
+  int curr_label = 0;
+  for (SampleClusterConnectivityGraph::VertexIterator vi = cluster_conn_graph.verticesBegin();
+       vi != cluster_conn_graph.verticesEnd(); ++vi)
+  {
+    int label = -1;
+    if (vi->attr()->label >= 0)
+      label = curr_label++;
+
+    for (array_size_t i = 0; i < vi->attr()->positions.size(); ++i)
+    {
+      array_size_t index = (array_size_t)(vi->attr()->positions[i] - &positions[0]);
+      labels[index] = label;
+    }
+  }
+
+  return (int)cluster_conn_graph.numVertices();
 }
