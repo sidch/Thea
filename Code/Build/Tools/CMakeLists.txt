@@ -85,7 +85,7 @@ INCLUDE(${QT_USE_FILE})
 # Definitions, compiler switches etc.
 IF(CMAKE_COMPILER_IS_GNUCXX)
   IF(CMAKE_BUILD_TYPE MATCHES "[Dd][Ee][Bb][Uu][Gg]")
-    ADD_DEFINITIONS(${CGAL_DEBUG_CFLAGS} -Wall -g2 -fno-strict-aliasing)
+    ADD_DEFINITIONS(${CGAL_DEBUG_CFLAGS} -Wall -g2 -fno-strict-aliasing -frounding-math)
   ELSE()
     ADD_DEFINITIONS(${CGAL_RELEASE_CFLAGS} -Wall -O2 -fno-strict-aliasing -DNDEBUG)
   ENDIF()

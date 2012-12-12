@@ -69,6 +69,8 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
 
 int countSDFModes(TheaArray<Real> const & sdf_values);
 Color3 const & getPaletteColor(int i);
+int combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, KDTree const & kdtree,
+                               TheaArray<int> & labels, double concavity_threshold, double score_threshold);
 
 int
 segmentSDF(int argc, char * argv[])
@@ -140,6 +142,11 @@ segmentSDF(int argc, char * argv[])
   MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
   sdf.compute(positions, normals, sdf_values);
 
+  // Undo normalization
+  Real scale = sdf.getNormalizationScale();
+  for (array_size_t i = 0; i < sdf_values.size(); ++i)
+    sdf_values[i] *= scale;
+
   THEA_CONSOLE << "Computed SDF values";
 
   // Estimate number of clusters
@@ -183,8 +190,10 @@ segmentSDF(int argc, char * argv[])
   {
 #ifdef DEBUG_PTS
     Color3 pseudo_n = getPaletteColor(labels[i]);
+    // Real ns = sdf_values[i] / sdf.getNormalizationScale();
+    // Color3 pseudo_n(ns, sqrt(1 - ns * ns), 0);
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' '
-        << pseudo_n.r      << ' ' << pseudo_n.g      << ' ' << pseudo_n.b << endl;
+        << pseudo_n.r      << ' ' << pseudo_n.g      << ' ' << pseudo_n.b << ' ' << sdf_values[i] << ' ' << labels[i] << endl;
 #else
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' ' << sdf_values[i] << ' ' << labels[i]
         << endl;
