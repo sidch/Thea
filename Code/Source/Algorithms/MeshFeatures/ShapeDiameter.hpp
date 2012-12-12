@@ -68,9 +68,7 @@ class ShapeDiameter
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
-
-  private:
-    typedef MeshKDTree<Mesh> KDTree;  ///< Ray-intersection search structure.
+    typedef MeshKDTree<Mesh> KDTree;  ///< A kd-tree on the mesh.
 
   public:
     /**
