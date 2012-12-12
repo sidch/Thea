@@ -77,27 +77,40 @@ class ShapeDiameter
      * Constructs the object to compute shape diameter at sample points on a given mesh. The mesh must persist as long as this
      * object does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
      */
-    ShapeDiameter(Mesh const & mesh) : scale(0)
+    ShapeDiameter(Mesh const & mesh) : kdtree(new KDTree), owns_kdtree(true), scale(0)
     {
-      kdtree.add(mesh);
-      kdtree.init();
-      scale = kdtree.getBounds().getExtent().length();
+      kdtree->add(mesh);
+      kdtree->init();
+      scale = kdtree->getBounds().getExtent().length();
     }
 
     /**
-     * Constructs the object to compute shape diameter at sample points on a given mesh group. The mesh group must persist as
-     * long as this object does. Initializes internal data structures that do not need to be recomputed for successive calls to
-     * compute().
+     * Constructs the object to compute the shape diameter at sample points on a given mesh group. The mesh group must persist
+     * as long as this object does. Initializes internal data structures that do not need to be recomputed for successive calls
+     * to compute().
      */
-    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group) : scale(0)
+    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group) : kdtree(new KDTree), owns_kdtree(true), scale(0)
     {
-      kdtree.add(mesh_group);
-      kdtree.init();
-      scale = kdtree.getBounds().getExtent().length();
+      kdtree->add(mesh_group);
+      kdtree->init();
+      scale = kdtree->getBounds().getExtent().length();
+    }
+
+    /**
+     * Constructs the object to compute the shape diameter at sample points of a shape with a precomputed kd-tree. The kd-tree
+     * must persist as long as this object does.
+     */
+    ShapeDiameter(KDTree const * kdtree_) : kdtree(kdtree_), owns_kdtree(false), scale(0)
+    {
+      scale = kdtree->getBounds().getExtent().length();
     }
 
     /** Destructor. */
-    ~ShapeDiameter() { delete kdtree; }
+    ~ShapeDiameter()
+    {
+      if (owns_kdtree)
+        delete kdtree;
+    }
 
     /**
      * Get the normalization scale. This is the length by which ray intersection distances will be divided to get the normalized
@@ -114,7 +127,7 @@ class ShapeDiameter
       TheaArray<Vector3> const & normals(positions.size());
       for (array_size_t i = 0; i < positions.size(); ++i)
       {
-        long nn_index = kdtree.closestElement<MetricL2>(positions[i]);
+        long nn_index = kdtree->closestElement<MetricL2>(positions[i]);
         if (nn_index < 0)
         {
           THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, all SDF values set to zero";
@@ -123,7 +136,7 @@ class ShapeDiameter
           return;
         }
 
-        normals[i] = kdtree.getElements()[(array_size_t)nn_index].getNormal();
+        normals[i] = kdtree->getElements()[(array_size_t)nn_index].getNormal();
       }
 
       compute(positions, normals, sdf_values);
@@ -247,7 +260,7 @@ class ShapeDiameter
       v = dir.cross(u).unit();
     }
 
-    KDTree kdtree;  ///< KD-tree on the mesh for computing ray intersections.
+    KDTree const * kdtree;  ///< KD-tree on the mesh for computing ray intersections.
     Real scale;  ///< The normalization length.
 
 }; // class ShapeDiameter
