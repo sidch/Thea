@@ -233,8 +233,6 @@ SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFix)
 # SegmentSDF
 #===========================================================
 
-IF(NOT APPLE)
-
 # Source file lists
 FILE(GLOB SegmentSDFSources
      ${SourceRoot}/Tools/SegmentSDF/*.cpp)
@@ -264,8 +262,6 @@ IF(APPLE)
 ENDIF()
 
 SET(TheaToolsDependencies ${TheaToolsDependencies} SegmentSDF)
-
-ENDIF(NOT APPLE)
 
 #===========================================================
 # Target for all tools
