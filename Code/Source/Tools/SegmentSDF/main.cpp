@@ -1,8 +1,10 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
 
-#define THEA_ENABLE_CLUTO
-#include "../../Algorithms/Clustering.hpp"
+#ifndef THEA_OSX
+#  define THEA_ENABLE_CLUTO
+#  include "../../Algorithms/Clustering.hpp"
+#endif
 
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
@@ -73,6 +75,11 @@ segmentSDF(int argc, char * argv[])
     return 0;
   }
 
+#ifdef THEA_OSX
+  THEA_WARNING << "!!! On OS X, this program will only print the guessed number of segments !!!";
+  THEA_WARNING << "!!! No other output will be produced !!!";
+#endif
+
   string inpath = argv[1];
   string outpath = argv[2];
   long approx_num_samples = 5000;
@@ -138,7 +145,9 @@ segmentSDF(int argc, char * argv[])
   else if (num_clusters_hint > 20)
     num_clusters_hint = 20;
 
-  THEA_CONSOLE << "Guessed " << num_clusters_hint << " modes in the SDF distribution";
+  THEA_CONSOLE << "Estimated " << num_clusters_hint << " modes in the SDF distribution";
+
+#ifndef THEA_OSX
 
   TheaArray<ClusterablePoint> clusterable_pts(positions.size());
   for (array_size_t i = 0; i < positions.size(); ++i)
@@ -172,6 +181,8 @@ segmentSDF(int argc, char * argv[])
         << endl;
 #endif
   }
+
+#endif
 
   return 0;
 }
@@ -443,7 +454,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
     THEA_CONSOLE << uf.number_of_sets() << " clusters identified after merge pass " << iter << " with threshold "
                  << merge_threshold;
 
-    size_t diff = last_num_sets - uf.number_of_sets();
+    size_t diff = max(last_num_sets - uf.number_of_sets(), (size_t)1);
     if (uf.number_of_sets() <= MAX_CLUSTERS)
     {
       // If there are too few sets, or we just made a large jump to enter the allowed region, or there is a sharp drop in the
