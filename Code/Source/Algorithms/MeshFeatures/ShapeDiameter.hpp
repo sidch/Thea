@@ -125,7 +125,7 @@ class ShapeDiameter
       TheaArray<Vector3> const & normals(positions.size());
       for (array_size_t i = 0; i < positions.size(); ++i)
       {
-        long nn_index = kdtree->closestElement<MetricL2>(positions[i]);
+        long nn_index = kdtree->template closestElement<MetricL2>(positions[i]);
         if (nn_index < 0)
         {
           THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, all SDF values set to zero";
@@ -206,7 +206,7 @@ class ShapeDiameter
       {
         Vector3 dir = rot * CONE_DIRS[i];
         Ray3 ray(p + offset, dir);
-        RayStructureIntersection3 isec = kdtree->rayStructureIntersection<RayIntersectionTester>(ray);
+        RayStructureIntersection3 isec = kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
 
         if (isec.isValid() && isec.getNormal().dot(dir) >= 0)
         {
@@ -250,7 +250,7 @@ class ShapeDiameter
     }
 
     /** Get two unit vectors perpendicular to a given vector and to each other. */
-    void
+    static void
     getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
     {
       u = (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
@@ -259,6 +259,7 @@ class ShapeDiameter
     }
 
     KDTree const * kdtree;  ///< KD-tree on the mesh for computing ray intersections.
+    bool owns_kdtree;  ///< Did this object create the kd-tree, or does it simply wrap a precomputed one?
     Real scale;  ///< The normalization length.
 
 }; // class ShapeDiameter

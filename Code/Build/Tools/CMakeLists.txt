@@ -62,7 +62,7 @@ IF(EXISTS ${THEA_INSTALLATIONS_ROOT}/installed-boost)
 ELSE()
   SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT})
 ENDIF()
-FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS program_options thread REQUIRED)
 
 # Dependency: OpenGL
 FIND_PACKAGE(OpenGL)
@@ -228,6 +228,44 @@ IF(APPLE)
 ENDIF()
 
 SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFix)
+
+#===========================================================
+# SegmentSDF
+#===========================================================
+
+IF(NOT APPLE)
+
+# Source file lists
+FILE(GLOB SegmentSDFSources
+     ${SourceRoot}/Tools/SegmentSDF/*.cpp)
+
+# Libraries to link to
+SET(SegmentSDFLibraries Thea
+                     ${Lib3ds_LIBRARIES}
+                     ${G3D_LIBRARIES}
+                     ${Boost_LIBRARIES}
+                     ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(SegmentSDF ${SegmentSDFLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(SegmentSDF PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(SegmentSDF "${SegmentSDFLibraries}")
+ENDIF()
+
+SET(TheaToolsDependencies ${TheaToolsDependencies} SegmentSDF)
+
+ENDIF(NOT APPLE)
 
 #===========================================================
 # Target for all tools
