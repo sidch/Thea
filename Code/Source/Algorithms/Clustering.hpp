@@ -45,6 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../CompressedSparseMatrix.hpp"
+#include "../Matrix.hpp"
 #include "Metrics.hpp"
 
 #ifdef THEA_ENABLE_CLUTO
@@ -529,12 +530,12 @@ class THEA_API Clustering
 #ifdef THEA_ENABLE_CLUTO
     /** Get the number of dimensions of a vector. The dummy argument is needed for template resolution. */
     template <typename T>            static array_size_t numElems (T const & t);
-    template <size_t N, typename T>  static array_size_t numElems (VectorN<N, T> const & v);
+    template <long N, typename T>  static array_size_t numElems (VectorN<N, T> const & v);
     template <typename T>            static array_size_t numElems (TheaArray<T> const & v);
 
     /** Copy a vector to a float array and return a pointer to the next array position. */
     template <typename T>            static float * copyToFloatArray(T const & t, float * fp);
-    template <size_t N, typename T>  static float * copyToFloatArray(VectorN<N, T> const & v, float * fp);
+    template <long N, typename T>  static float * copyToFloatArray(VectorN<N, T> const & v, float * fp);
     template <typename T>            static float * copyToFloatArray(TheaArray<T> const & v, float * fp);
 
     /** Convert an array of points to a CLUTO matrix. */
@@ -583,7 +584,7 @@ template <typename T>            array_size_t Clustering::numElems         (T co
 template <> inline               array_size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
 template <> inline               array_size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
 template <> inline               array_size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
-template <size_t N, typename T>  array_size_t Clustering::numElems         (VectorN<N, T> const & v) { return (array_size_t)N; }
+template <long N, typename T>  array_size_t Clustering::numElems         (VectorN<N, T> const & v) { return (array_size_t)N; }
 template <typename T>            array_size_t Clustering::numElems         (TheaArray<T> const & v)      { return v.size(); }
 
 //=============================================================================================================================
@@ -599,7 +600,7 @@ template <> inline float * Clustering::copyToFloatArray<Vector3>(Vector3 const &
 template <> inline float * Clustering::copyToFloatArray<Vector4>(Vector4 const & t, float * fp)
 { fp[0] = t[0]; fp[1] = t[1]; fp[2] = t[2]; fp[3] = t[3]; return fp + 4; }
 
-template <size_t N, typename T>
+template <long N, typename T>
 float *
 Clustering::copyToFloatArray(VectorN<N, T> const & v, float * fp)
 {

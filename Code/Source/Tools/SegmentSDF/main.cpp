@@ -1,6 +1,9 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
+
+#define THEA_ENABLE_CLUTO
 #include "../../Algorithms/Clustering.hpp"
+
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -15,6 +18,9 @@
 #include <iostream>
 #include <limits>
 #include <string>
+
+// If defined, map the label to a color and print it as a fake normal after the position, instead of the SDF and label
+#define DEBUG_PTS
 
 using namespace std;
 using namespace Thea;
@@ -56,6 +62,7 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
 }
 
 int countSDFModes(TheaArray<Real> const & sdf_values);
+Color3 const & getPaletteColor(int i);
 
 int
 segmentSDF(int argc, char * argv[])
@@ -101,7 +108,7 @@ segmentSDF(int argc, char * argv[])
     KDTree::Element const & elem = kdtree.getElements()[(array_size_t)i];
     double num_samples = density * elem.getArea();
     double rem = num_samples;
-    for (long j = 0; j < num_samples; ++j)
+    for (long j = 1; j < num_samples; ++j)
     {
       positions.push_back(elem.randomPoint());
       normals.push_back(elem.getNormal());
@@ -156,11 +163,59 @@ segmentSDF(int argc, char * argv[])
   out << num_clusters << endl;
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
+#ifdef DEBUG_PTS
+    Color3 pseudo_n = getPaletteColor(labels[i]);
+    out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' '
+        << pseudo_n.r      << ' ' << pseudo_n.g      << ' ' << pseudo_n.b << endl;
+#else
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' ' << sdf_values[i] << ' ' << labels[i]
         << endl;
+#endif
   }
 
   return 0;
+}
+
+static int const NUM_PALETTE_COLORS = 24;
+Color3 COLOR_PALETTE[NUM_PALETTE_COLORS] = {
+  Color3::fromARGB(0x298edb),
+  Color3::fromARGB(0x982411),
+  Color3::fromARGB(0x6d4e25),
+  Color3::fromARGB(0x1b5043),
+  Color3::fromARGB(0x6e7662),
+  Color3::fromARGB(0xa08b00),
+  Color3::fromARGB(0x58427b),
+  Color3::fromARGB(0x1d2f5b),
+  Color3::fromARGB(0xac5e34),
+  Color3::fromARGB(0x804055),
+  Color3::fromARGB(0x6d7a00),
+  Color3::fromARGB(0x572e2c),
+
+  // Invert each color above
+  Color3::fromARGB(~0x298edb),
+  Color3::fromARGB(~0x982411),
+  Color3::fromARGB(~0x6d4e25),
+  Color3::fromARGB(~0x1b5043),
+  Color3::fromARGB(~0x6e7662),
+  Color3::fromARGB(~0xa08b00),
+  Color3::fromARGB(~0x58427b),
+  Color3::fromARGB(~0x1d2f5b),
+  Color3::fromARGB(~0xac5e34),
+  Color3::fromARGB(~0x804055),
+  Color3::fromARGB(~0x6d7a00),
+  Color3::fromARGB(~0x572e2c)
+};
+
+int
+numPaletteColors()
+{
+  return NUM_PALETTE_COLORS;
+}
+
+Color3 const &
+getPaletteColor(int i)
+{
+  return COLOR_PALETTE[i % numPaletteColors()];
 }
 
 namespace MathInternal {
