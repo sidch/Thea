@@ -64,41 +64,62 @@ class PtrToRefIterator : public PtrIterator
 
 }; // class PtrToRefIterator
 
-// Specialization when the iterator is a pointer to T.
-template <typename T>
-class PtrToRefIterator<T, T *> : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
-{
-  public:
-    explicit PtrToRefIterator(T * ii_ = NULL) : ii(ii_) {}
-    PtrToRefIterator(PtrToRefIterator const & src) : ii(src.ii) {}
-
-    T & operator*() const { return **ii; }
-    template <typename IntegerT> T & operator[](IntegerT n) { return ii[n]; }
-
-    PtrToRefIterator & operator++() { ++ii; return *this; }
-    PtrToRefIterator & operator++(int) { PtrToRefIterator tmp(*this); operator++(); return *this; }
-    PtrToRefIterator & operator--() { --ii; return *this; }
-    PtrToRefIterator & operator--(int) { PtrToRefIterator tmp(*this); operator--(); return *this; }
-
-    PtrToRefIterator & operator=(PtrToRefIterator const & src) { ii = src.ii; return *this; }
-    template <typename IntegerT> PtrToRefIterator & operator+=(IntegerT n) { ii += n; return *this; }
-    template <typename IntegerT> PtrToRefIterator & operator-=(IntegerT n) { ii -= n; return *this; }
-
-    template <typename IntegerT> PtrToRefIterator operator+(IntegerT n) const { return PtrToRefIterator(ii + n); }
-    template <typename IntegerT> PtrToRefIterator operator-(IntegerT n) const { return PtrToRefIterator(ii - n); }
-
-    bool operator==(PtrToRefIterator const & rhs) const { return ii == rhs.ii; }
-    bool operator!=(PtrToRefIterator const & rhs) const { return ii != rhs.ii; }
-
-    bool operator< (PtrToRefIterator const & rhs) const { return ii <  rhs.ii; }
-    bool operator> (PtrToRefIterator const & rhs) const { return ii >  rhs.ii; }
-    bool operator<=(PtrToRefIterator const & rhs) const { return ii <= rhs.ii; }
+#define THEA_PTR_PTR_TO_REF_ITERATOR_BODY(T)                                                                                  \
+    PtrToRefIterator(PtrToRefIterator const & src) : ii(src.ii) {}                                                            \
+                                                                                                                              \
+    T & operator*() const { return **ii; }                                                                                    \
+    template <typename IntegerT> T & operator[](IntegerT n) { return *ii[n]; }                                                \
+                                                                                                                              \
+    PtrToRefIterator & operator++() { ++ii; return *this; }                                                                   \
+    PtrToRefIterator   operator++(int) { PtrToRefIterator tmp(*this); operator++(); return tmp; }                             \
+    PtrToRefIterator & operator--() { --ii; return *this; }                                                                   \
+    PtrToRefIterator   operator--(int) { PtrToRefIterator tmp(*this); operator--(); return tmp; }                             \
+                                                                                                                              \
+    PtrToRefIterator & operator=(PtrToRefIterator const & src) { ii = src.ii; return *this; }                                 \
+    template <typename IntegerT> PtrToRefIterator & operator+=(IntegerT n) { ii += n; return *this; }                         \
+    template <typename IntegerT> PtrToRefIterator & operator-=(IntegerT n) { ii -= n; return *this; }                         \
+                                                                                                                              \
+    template <typename IntegerT> PtrToRefIterator operator+(IntegerT n) const { return PtrToRefIterator(ii + n); }            \
+    template <typename IntegerT> PtrToRefIterator operator-(IntegerT n) const { return PtrToRefIterator(ii - n); }            \
+                                                                                                                              \
+    bool operator==(PtrToRefIterator const & rhs) const { return ii == rhs.ii; }                                              \
+    bool operator!=(PtrToRefIterator const & rhs) const { return ii != rhs.ii; }                                              \
+                                                                                                                              \
+    bool operator< (PtrToRefIterator const & rhs) const { return ii <  rhs.ii; }                                              \
+    bool operator> (PtrToRefIterator const & rhs) const { return ii >  rhs.ii; }                                              \
+    bool operator<=(PtrToRefIterator const & rhs) const { return ii <= rhs.ii; }                                              \
     bool operator>=(PtrToRefIterator const & rhs) const { return ii >= rhs.ii; }
 
-  private:
-    T * ii;
+// Specialization when the iterator is a pointer to a pointer to T.
+template <typename T>
+class PtrToRefIterator<T, T **> : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
+{
+  public:
+    explicit PtrToRefIterator(T ** ii_ = NULL) : ii(ii_) {}
 
-}; // class PtrToRefIterator<T, T*>
+    THEA_PTR_PTR_TO_REF_ITERATOR_BODY(T)
+
+  private:
+    T ** ii;
+
+}; // class PtrToRefIterator<T, T **>
+
+// Specialization when the iterator is a const pointer to a const pointer to T.
+template <typename T>
+class PtrToRefIterator<T const, T const * const *> : public std::iterator<std::random_access_iterator_tag,
+                                                                          T const, std::ptrdiff_t, T const *, T const &>
+{
+  public:
+    explicit PtrToRefIterator(T const * const * ii_ = NULL) : ii(ii_) {}
+
+    THEA_PTR_PTR_TO_REF_ITERATOR_BODY(T const)
+
+  private:
+    T const * const * ii;
+
+}; // class PtrToRefIterator<T const, T const * const *>
+
+#undef THEA_PTR_PTR_TO_REF_ITERATOR_BODY
 
 } // namespace Algorithms
 } // namespace Thea

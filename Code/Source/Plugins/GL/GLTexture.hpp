@@ -65,6 +65,9 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     /** Constructs a cube-map from six pixel buffers, representing 2D images of identical format and size. */
     GLTexture(std::string const & name_, Image::Ptr images[6], Format const * desired_format, Options const & options);
 
+    /** Destructor. */
+    ~GLTexture();
+
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     int getDepth() const { return depth; }

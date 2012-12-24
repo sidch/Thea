@@ -16,5 +16,6 @@ FILES="$SRC_FILES $BLD_FILES"
 for f in $FILES
 do
   echo "Copying $f to $TGT_DIR/$f"
+  mkdir -p `dirname "$TGT_DIR/$f"`
   cp $f "$TGT_DIR/$f"
 done

@@ -48,4 +48,10 @@
 /** Set of objects, guaranteed to be a drop-in replacement for std::set. Requires an ordering on the objects. */
 #define TheaSet std::set
 
+/**
+ * Set of objects (with possible duplication), guaranteed to be a drop-in replacement for std::multiset. Requires an ordering on
+ * the objects.
+ */
+#define TheaMultiSet std::multiset
+
 #endif
