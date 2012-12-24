@@ -78,8 +78,7 @@ class /* THEA_API */ LinearLeastSquares2<T *>
   public:
     template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line)
     {
-      LinearLeastSquares2<T>::fitLine(PtrToRefIterator<T const, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                      line);
+      LinearLeastSquares2<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end), line);
     }
 
 }; // class LinearLeastSquares2<T *>

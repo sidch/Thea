@@ -48,4 +48,10 @@
 /** Maps keys to values, guaranteed to be a drop-in replacement for std::map. Requires an ordering on the keys. */
 #define TheaMap std::map
 
+/**
+ * Maps (possibly duplicate) keys to values, guaranteed to be a drop-in replacement for std::multimap. Requires an ordering on
+ * the keys.
+ */
+#define TheaMultiMap std::multimap
+
 #endif

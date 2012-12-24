@@ -97,15 +97,15 @@ class /* THEA_API */ LinearLeastSquares3<T *>
     template <typename InputIterator>
     static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL)
     {
-      return LinearLeastSquares3<T>::fitLine(PtrToRefIterator<T const, InputIterator>(begin),
-                                             PtrToRefIterator<T const, InputIterator>(end), line, centroid);
+      return LinearLeastSquares3<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin),
+                                             PtrToRefIterator<T, InputIterator>(end), line, centroid);
     }
 
     template <typename InputIterator>
     static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL)
     {
-      return LinearLeastSquares3<T>::fitPlane(PtrToRefIterator<T const, InputIterator>(begin),
-                                              PtrToRefIterator<T const, InputIterator>(end), plane, centroid);
+      return LinearLeastSquares3<T>::fitPlane(PtrToRefIterator<T, InputIterator>(begin),
+                                              PtrToRefIterator<T, InputIterator>(end), plane, centroid);
     }
 
 }; // class LinearLeastSquares3

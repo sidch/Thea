@@ -213,6 +213,11 @@ GLTexture::GLTexture(std::string const & name_, Image::Ptr images[6], Format con
   }
 }
 
+GLTexture::~GLTexture()
+{
+  glDeleteTextures(1, &gl_id);
+}
+
 void
 GLTexture::glTexImage(void const * bytes, Format const * bytes_format, Face face)
 {
