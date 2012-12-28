@@ -458,37 +458,49 @@ fastArcCos(float c)
 }
 
 /**
- * Fast approximation of inverse tangent using a lookup table. Input should be in [-1, 1]. Return value is in radians, range
- * [-pi/4, pi/4].
+ * Fast approximation of inverse tangent using a lookup table. Return value is in radians, range [-pi/2, pi/2] (like std::atan).
  */
 inline THEA_API float
 fastArcTan(float t)
 {
   using namespace MathInternal;
 
-  // tan(-a) = -tan(a)
-  if (t < 0)
-    return -INV_TRIG_TABLE[valueToInvTrigIndex(-t)][2];
+  static float const MY_HALF_PI = (float)halfPi();
+
+  float t_abs = std::fabs(t);
+  float a;
+  if (t_abs <= 1)
+    a = INV_TRIG_TABLE[valueToInvTrigIndex(t_abs)][2];  // 0 <= a <= pi/4
   else
-    return INV_TRIG_TABLE[valueToInvTrigIndex(t)][2];
+    a = MY_HALF_PI - INV_TRIG_TABLE[valueToInvTrigIndex(1.0f / t_abs)][2];  // pi/4 < a <= pi/2
+
+  // tan(-a) = -tan(a)
+  return (t < 0 ? -a : a);
 }
 
 /**
- * Fast approximation of atan2 using a lookup table. Return value is in radians, range [-pi/2, pi/2] (like std::atan2). Both
+ * Fast approximation of atan2 using a lookup table. Return value is in radians, range [-pi, pi] (like std::atan2). Both
  * arguments should not be zero.
  */
 inline THEA_API float
 fastArcTan2(float dy, float dx)
 {
-  static float const MY_PI       =  (float)pi();
-  static float const MY_HALF_PI  =  (float)halfPi();
+  using namespace MathInternal;
+
+  static float const MY_HALF_PI = (float)halfPi();
+  static float const MY_PI = (float)pi();
 
   float a;
   if (std::fabs(dx) > std::fabs(dy))
-    a = fastArcTan(dy / dx);  // -pi/4 <= a <= pi/4
+  {
+    float t = dy / dx;
+    a = (t < 0 ? -INV_TRIG_TABLE[valueToInvTrigIndex(-t)][2] : INV_TRIG_TABLE[valueToInvTrigIndex(t)][2]);
+  }
   else
   {
-    a = fastArcTan(dx / dy);
+    float t = dx / dy;
+    a = (t < 0 ? -INV_TRIG_TABLE[valueToInvTrigIndex(-t)][2] : INV_TRIG_TABLE[valueToInvTrigIndex(t)][2]);
+
     if (a < 0)  a = -MY_HALF_PI - a;  // a is negative, so we're adding
     else        a =  MY_HALF_PI - a;
   }
