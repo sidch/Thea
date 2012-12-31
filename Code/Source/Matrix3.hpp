@@ -159,7 +159,7 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
     MatrixMN inverse(double tolerance = 1.0e-30) const
     {
       MatrixMN result = *this;
-      if (!result.invert())
+      if (!result.invert(tolerance))
         throw Error("MatrixMN<3, 3, T>: Could not invert matrix " + this->toString() + " with given tolerance");
 
       return result;
