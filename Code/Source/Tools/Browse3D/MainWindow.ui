@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>BlendShape</string>
+   <string>Browse3D</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -43,12 +43,6 @@
            </attribute>
            <attribute name="verticalHeaderVisible">
             <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="horizontalHeaderVisible">
-            <bool>false</bool>
            </attribute>
            <column/>
           </widget>
@@ -98,7 +92,7 @@
      <x>0</x>
      <y>0</y>
      <width>784</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -136,6 +130,7 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionToolsSaveScreenshot"/>
     <addaction name="actionToolsPickPoints"/>
    </widget>
    <addaction name="menuFile"/>
@@ -290,6 +285,17 @@
    </property>
    <property name="toolTip">
     <string>Pick 3D points on the mesh</string>
+   </property>
+  </action>
+  <action name="actionToolsSaveScreenshot">
+   <property name="text">
+    <string>Save Screenshot</string>
+   </property>
+   <property name="toolTip">
+    <string>Save a screenshot of the current view</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>

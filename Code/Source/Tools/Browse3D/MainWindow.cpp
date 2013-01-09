@@ -124,6 +124,7 @@ MainWindow::init()
   connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
   connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
 
+  connect(ui->actionToolsSaveScreenshot, SIGNAL(triggered(bool)), model_display, SLOT(saveScreenshot()));
   connect(ui->actionToolsPickPoints, SIGNAL(toggled(bool)), this, SLOT(setPickPoints(bool)));
 
   connect(model, SIGNAL(filenameChanged(QString const &)), this, SLOT(setWindowTitle(QString const &)));

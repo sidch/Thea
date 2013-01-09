@@ -51,8 +51,11 @@
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Graphics/Shader.hpp"
 #include "../../Graphics/Texture.hpp"
+#include <QDateTime>
+#include <QDir>
 #include <QFont>
 #include <QFontMetrics>
+#include <QImage>
 #include <QMouseEvent>
 
 namespace Browse3D {
@@ -669,6 +672,23 @@ ModelDisplay::zoomView(QWheelEvent * event)
 
   Real camera_separation = (camera_look_at - camera.getPosition()).length();
   incrementViewTransform(zoomTransform(zoom, camera_separation, dir));
+}
+
+void
+ModelDisplay::saveScreenshot(QString path)
+{
+  if (path.isEmpty())
+  {
+    Model const * model = app().getMainWindow()->getModel();
+    QString prefix = model ? QFileInfo(model->getFilename()).baseName() : "Browse3D-Screenshot";
+    path = getFullPath(QDir::homePath(), prefix + QDateTime::currentDateTime().toString("-yyyy-MM-dd-hh-mm-ss") + ".png");
+  }
+
+  QImage img = grabFrameBuffer();
+  if (img.save(path))
+    THEA_CONSOLE << "Saved screenshot to " << path;
+  else
+    THEA_ERROR << "Could not save screenshot to " << path;
 }
 
 } // namespace Browse3D
