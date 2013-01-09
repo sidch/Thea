@@ -78,6 +78,12 @@ class MainWindow : public QMainWindow
     /** Get the display widget showing the model. */
     ModelDisplay * getRenderDisplay();
 
+    /** Get the active model. */
+    Model const * getModel() const { return model; }
+
+    /** Get the active model. */
+    Model * getModel() { return model; }
+
     /** Check if point-picking is on. */
     bool pickPoints() const;
 

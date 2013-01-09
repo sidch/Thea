@@ -138,6 +138,9 @@ class ModelDisplay : public QGLWidget
     /** Render shaded polygons, with edges in a different color. */
     void renderShadedWireframe();
 
+    /** Save a screenshot to a file. If the path is null, a default path is generated. */
+    void saveScreenshot(QString path = "");
+
   protected:
     /** [Qt] Called to initialize OpenGL. */
     void initializeGL();
