@@ -132,13 +132,14 @@ IF(QT4_FOUND AND OpenGL_FOUND)
   SET(Browse3DSources ${Browse3D_QtUicSources} ${Browse3D_QtMocSources} ${Browse3DSources})
 
   # Libraries to link to
-  SET(Browse3DLibraries Thea
-                        ${QT_LIBRARIES}
-                        ${Lib3ds_LIBRARIES}
-                        ${G3D_LIBRARIES}
-                        ${OPENGL_LIBRARIES}
-                        ${Boost_LIBRARIES}
-                        ${PLATFORM_LIBRARIES})
+  SET(Browse3DLibraries
+      Thea
+      ${QT_LIBRARIES}
+      ${Lib3ds_LIBRARIES}
+      ${G3D_LIBRARIES}
+      ${OPENGL_LIBRARIES}
+      ${Boost_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
 
   # Build products
   ADD_EXECUTABLE(Browse3D ${Browse3DSources})
@@ -170,11 +171,12 @@ FILE(GLOB MeshConvSources
      ${SourceRoot}/Tools/MeshConv/*.cpp)
 
 # Libraries to link to
-SET(MeshConvLibraries Thea
-                     ${Lib3ds_LIBRARIES}
-                     ${G3D_LIBRARIES}
-                     ${Boost_LIBRARIES}
-                     ${PLATFORM_LIBRARIES})
+SET(MeshConvLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${G3D_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshConv ${MeshConvSources})
@@ -196,6 +198,41 @@ ENDIF()
 SET(TheaToolsDependencies ${TheaToolsDependencies} MeshConv)
 
 #===========================================================
+# MeshFeatures
+#===========================================================
+
+# Source file lists
+FILE(GLOB MeshFeaturesSources
+     ${SourceRoot}/Tools/MeshFeatures/*.cpp)
+
+# Libraries to link to
+SET(MeshFeaturesLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${G3D_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(MeshFeatures ${MeshFeaturesSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(MeshFeatures ${MeshFeaturesLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(MeshFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(MeshFeatures "${MeshFeaturesLibraries}")
+ENDIF()
+
+SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFeatures)
+
+#===========================================================
 # MeshFix
 #===========================================================
 
@@ -204,11 +241,12 @@ FILE(GLOB MeshFixSources
      ${SourceRoot}/Tools/MeshFix/*.cpp)
 
 # Libraries to link to
-SET(MeshFixLibraries Thea
-                     ${Lib3ds_LIBRARIES}
-                     ${G3D_LIBRARIES}
-                     ${Boost_LIBRARIES}
-                     ${PLATFORM_LIBRARIES})
+SET(MeshFixLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${G3D_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshFix ${MeshFixSources})
@@ -230,6 +268,41 @@ ENDIF()
 SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFix)
 
 #===========================================================
+# Register
+#===========================================================
+
+# Source file lists
+FILE(GLOB RegisterSources
+     ${SourceRoot}/Tools/Register/*.cpp)
+
+# Libraries to link to
+SET(RegisterLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${G3D_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(Register ${RegisterSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(Register ${RegisterLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(Register PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(Register "${RegisterLibraries}")
+ENDIF()
+
+SET(TheaToolsDependencies ${TheaToolsDependencies} Register)
+
+#===========================================================
 # SegmentSDF
 #===========================================================
 
@@ -238,11 +311,12 @@ FILE(GLOB SegmentSDFSources
      ${SourceRoot}/Tools/SegmentSDF/*.cpp)
 
 # Libraries to link to
-SET(SegmentSDFLibraries Thea
-                     ${Lib3ds_LIBRARIES}
-                     ${G3D_LIBRARIES}
-                     ${Boost_LIBRARIES}
-                     ${PLATFORM_LIBRARIES})
+SET(SegmentSDFLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${G3D_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
