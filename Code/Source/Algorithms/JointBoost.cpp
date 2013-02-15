@@ -43,6 +43,7 @@
 #include "../Math.hpp"
 #include "../UnorderedSet.hpp"
 #include <algorithm>
+#include <fstream>
 #include <sstream>
 
 // #define JOINT_BOOST_TEST_ALL_THRESHOLDS
@@ -682,6 +683,212 @@ JointBoost::predict(double const * features, double * class_probabilities) const
   }
 
   return best_class;
+}
+
+bool
+JointBoost::Options::load(std::string const & path)
+{
+  std::ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "JointBoost: Could not load options from file '" << path << '\'';
+    return false;
+  }
+
+  return load(in);
+}
+
+bool
+JointBoost::Options::save(std::string const & path) const
+{
+  std::ofstream out(path.c_str());
+  if (!out)
+  {
+    THEA_ERROR << "JointBoost: Could not save options to file '" << path << '\'';
+    return false;
+  }
+
+  return save(out);
+}
+
+bool
+JointBoost::load(std::string const & path)
+{
+  std::ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "JointBoost: Could not load classifier from file '" << path << '\'';
+    return false;
+  }
+
+  if (!options.load(in))
+    return false;
+
+  if (!load(in))
+    return false;
+
+  return true;
+}
+
+bool
+JointBoost::save(std::string const & path) const
+{
+  std::ofstream out(path.c_str());
+  if (!out)
+  {
+    THEA_ERROR << "JointBoost: Could not save classifier to file '" << path << '\'';
+    return false;
+  }
+
+  if (!options.save(out))
+    return false;
+
+  out << std::endl;  // break up the output a bit
+
+  if (!save(out))
+    return false;
+
+  return true;
+}
+
+bool
+JointBoost::Options::load(std::istream & in)
+{
+  in >> min_boosting_rounds
+     >> max_boosting_rounds
+     >> min_fractional_error_reduction
+     >> feature_sampling_fraction
+     >> max_thresholds_fraction
+     >> force_exhaustive
+     >> force_greedy
+     >> verbose;
+
+  if (!in)
+  {
+    THEA_ERROR << "JointBoost: Error loading options";
+    return false;
+  }
+  else
+    return true;
+}
+
+bool
+JointBoost::Options::save(std::ostream & out) const
+{
+  out << min_boosting_rounds << '\n'
+      << max_boosting_rounds << '\n'
+      << min_fractional_error_reduction << '\n'
+      << feature_sampling_fraction << '\n'
+      << max_thresholds_fraction << '\n'
+      << force_exhaustive << '\n'
+      << force_greedy << '\n'
+      << verbose << std::endl;
+
+  if (!out)
+  {
+    THEA_ERROR << "JointBoost: Error saving options";
+    return false;
+  }
+  else
+    return true;
+}
+
+bool
+JointBoost::SharedStump::load(std::istream & in)
+{
+  if (!(in >> f >> n >> a >> b >> theta))
+    return false;
+
+  long num_k = 0;
+  in >> num_k;
+  if (!in || num_k < 0)
+    return false;
+
+  k.resize((std::size_t)num_k);
+  for (std::size_t i = 0; i < k.size(); ++i)
+    in >> k[i];
+
+  return (bool)in;
+}
+
+bool
+JointBoost::SharedStump::save(std::ostream & out) const
+{
+  out << f << '\n'
+      << n << '\n'
+      << a << '\n'
+      << b << '\n'
+      << theta << '\n';
+
+  out << k.size();
+  for (std::size_t i = 0; i < k.size(); ++i)
+    out << ' ' << k[i];
+
+  out << std::endl;
+
+  return (bool)out;
+}
+
+bool
+JointBoost::load(std::istream & in)
+{
+  if (!(in >> num_classes >> num_features))
+  {
+    THEA_ERROR << "JointBoost: Could not read class and feature counts";
+    return false;
+  }
+
+  if (num_classes < 2)
+  {
+    THEA_ERROR << "JointBoost: Classifier has invalid number of classes";
+    return false;
+  }
+
+  if (num_features < 1)
+  {
+    THEA_ERROR << "JointBoost: Classifier has invalid number of features";
+    return false;
+  }
+
+  long num_stumps = 0;
+  if (!(in >> num_stumps))
+  {
+    THEA_ERROR << "JointBoost: Could not read number of stumps";
+    return false;
+  }
+
+  if (num_stumps < 0)
+  {
+    THEA_ERROR << "JointBoost: Invalid number of stumps (" << num_stumps << ')';
+    return false;
+  }
+
+  stumps.resize((std::size_t)num_stumps);
+  for (std::size_t i = 0; i < stumps.size(); ++i)
+  {
+    stumps[i] = SharedStump::Ptr(new SharedStump);
+    if (!stumps[i]->load(in))
+    {
+      THEA_ERROR << "JointBoost: Could not read stump " << i;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool
+JointBoost::save(std::ostream & out) const
+{
+  out << num_classes << '\n'
+      << num_features << std::endl;
+
+  out << stumps.size() << std::endl;
+  for (std::size_t i = 0; i < stumps.size(); ++i)
+    if (!stumps[i]->save(out))
+      return false;
+
+  return (bool)out;
 }
 
 void

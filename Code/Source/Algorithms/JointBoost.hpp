@@ -140,10 +140,22 @@ class THEA_API JointBoost
         /** Set whether progress information will be printed to the console or not (default true). */
         Options & setVerbose(bool value) { verbose = value; return *this; }
 
+        /** Load classifier options from a disk file. */
+        bool load(std::string const & path);
+
+        /** Save classifier options to a disk file. */
+        bool save(std::string const & path) const;
+
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
+        /** Load classifier options from an input stream. */
+        bool load(std::istream & in);
+
+        /** Save classifier options to an output stream. */
+        bool save(std::ostream & out) const;
+
         long min_boosting_rounds;  /**< Minimum number of boosting rounds that must be performed even if the error reduction
                                         between successive rounds is below the threshold min_fractional_error_reduction. */
         long max_boosting_rounds;  ///< Maximum number of boosting rounds. This also limits the maximum number of stumps added.
@@ -205,6 +217,12 @@ class THEA_API JointBoost
      */
     long predict(double const * features, double * class_probabilities = NULL) const;
 
+    /** Load the classifier from a disk file. */
+    bool load(std::string const & path);
+
+    /** Save the trained classifier to disk. */
+    bool save(std::string const & path) const;
+
     /** Print debugging information about this classifier to the console. */
     void dumpToConsole() const;
 
@@ -236,6 +254,12 @@ class THEA_API JointBoost
       /** Get a printable description of the stump. */
       std::string toString() const;
 
+      /** Load the stump from an input stream. */
+      bool load(std::istream & in);
+
+      /** Save the stump to an output stream. */
+      bool save(std::ostream & out) const;
+
     }; // struct SharedStump
 
     /** Optimize a stump, for the current set of weights, by searching over features and subsets of classes. */
@@ -252,6 +276,12 @@ class THEA_API JointBoost
     /** Fit stump parameters a, b and theta, for a particular subset of classes. */
     double fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
                     long * num_generated_thresholds = NULL);
+
+    /** Load the classifier from an input stream. */
+    bool load(std::istream & in);
+
+    /** Save the trained classifier to an output stream. */
+    bool save(std::ostream & out) const;
 
     long num_classes;   ///< Number of object classes.
     long num_features;  ///< Number of features per object.
