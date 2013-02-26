@@ -1099,10 +1099,10 @@ class /* THEA_API */ KDTree3
 
         NeighborPair swapped;
         if (hasTransform())
-          swapped = query.closestPair<MetricT>(makeTransformedObject(&elem, &getTransform()), pair.getMonotoneApproxDistance(),
-                                               get_closest_points);
+          swapped = query.template closestPair<MetricT>(makeTransformedObject(&elem, &getTransform()),
+                                                        pair.getMonotoneApproxDistance(), get_closest_points);
         else
-          swapped = query.closestPair<MetricT>(elem, pair.getMonotoneApproxDistance(), get_closest_points);
+          swapped = query.template closestPair<MetricT>(elem, pair.getMonotoneApproxDistance(), get_closest_points);
 
         if (swapped.isValid())
         {
@@ -1205,10 +1205,10 @@ class /* THEA_API */ KDTree3
           continue;
 
         if (hasTransform())
-          query.kClosestPairs<MetricT>(makeTransformedObject(&elem, &getTransform()), k_closest_pairs, dist_bound,
-                                       get_closest_points, false, (long)index);
+          query.template kClosestPairs<MetricT>(makeTransformedObject(&elem, &getTransform()), k_closest_pairs, dist_bound,
+                                                get_closest_points, false, (long)index);
         else
-          query.kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, get_closest_points, false, (long)index);
+          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, get_closest_points, false, (long)index);
       }
     }
 

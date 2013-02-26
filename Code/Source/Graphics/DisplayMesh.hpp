@@ -599,7 +599,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
       else if (!value && wireframe_enabled)
         wireframe_enabled = false;
 
-      invalidateGPUBuffers(true);
+      invalidateGPUBuffers();
     }
 
     /**
@@ -626,7 +626,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL) { changed_buffers |= changed_buffers_; }
 
     /** Check if a buffer has is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & buffer) == 0; }
+    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
     void allGPUBuffersAreValid() { changed_buffers = 0; }

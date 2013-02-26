@@ -70,7 +70,6 @@ fastCopyImpl(T const * first, T const * last, T * out, boost::true_type const &)
    return out + (last - first);
 }
 
-// Same semantics as std::copy, calls memcpy where appropriate.
 template <typename I1, typename I2, bool b>
 I2
 fastCopyBackwardImpl(I1 first, I1 last, I2 out, boost::integral_constant<bool, b> const &)
@@ -90,8 +89,8 @@ fastCopyBackwardImpl(T const * first, T const * last, T * out, boost::true_type 
 } // namespace FastCopyInternal
 
 /**
- * A version of <tt>std::copy</tt> that calls <tt>memcpy</tt> where appropriate (if the class has a trivial assignment operator)
- * for speed.
+ * A version of <tt>std::copy</tt> that calls <tt>memcpy</tt> where appropriate (if the class has a trivial assignment operator
+ * and the iterators are raw pointers) for speed.
  *
  * To take advantage of fast copying, specialize boost::has_trivial_assign to return true for the value type.
  */
