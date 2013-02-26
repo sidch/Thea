@@ -1147,7 +1147,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     }
 
     /** Check if a GPU buffer is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & buffer) == 0; }
+    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
     void allGPUBuffersAreValid() { changed_buffers = 0; }
