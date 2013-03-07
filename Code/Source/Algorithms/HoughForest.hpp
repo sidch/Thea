@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Matrix.hpp"
 #include <iostream>
 
 namespace Thea {
@@ -68,7 +69,7 @@ class HoughTree;
  * The background class is always assumed to have index 0. This is important to keep in mind when supplying training data, since
  * the regression training does not consider votes involving background objects.
  *
- * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call vote().
+ * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call voteSelf() or voteContext().
  */
 class THEA_API HoughForest
 {
@@ -87,11 +88,23 @@ class THEA_API HoughForest
         /** Get the number of training examples. */
         virtual long numExamples() const = 0;
 
+        /** Get the number of possible class labels (some of which may be absent in the training data). */
+        virtual long numClasses() const = 0;
+
         /** Get the number of features per example. */
         virtual long numFeatures() const = 0;
 
         /** Get the number of parameters (dimensions) of the Hough space for a particular class. */
         virtual long numVoteParameters(long class_index) const = 0;
+
+        /**
+         * Get the values of a particular feature for all training examples. \a feature_index must be in the range
+         * 0... numFeatures() - 1.
+         *
+         * @param feature_index The index of the requested feature.
+         * @param values Used to return the feature values (assumed to be pre-allocated to \a num_selected_examples elements).
+         */
+        virtual void getFeatures(long feature_index, double * values) const = 0;
 
         /**
          * Get the values of a particular feature for a subset of training examples. \a feature_index must be in the range
@@ -104,6 +117,13 @@ class THEA_API HoughForest
          */
         virtual void getFeatures(long feature_index, long num_selected_examples, long const * selected_examples,
                                  double * values) const = 0;
+
+        /**
+         * Get the classes of all training examples.
+         *
+         * @param classes Used to return the classes (assumed to be pre-allocated to \a num_selected_examples elements).
+         */
+        virtual void getClasses(long * classes) const = 0;
 
         /**
          * Get the classes of a subset of training examples.
@@ -120,10 +140,8 @@ class THEA_API HoughForest
          * @param example_index The index of the voting example.
          * @param params Used to return the parameters of the Hough vote, assumed to be preallocated to the appropriate number
          *   of dimensions (see numVoteParameters()).
-         *
-         * @return True if a valid vote was found, else false.
          */
-        virtual bool getSelfVote(long example_index, double * params) const = 0;
+        virtual void getSelfVote(long example_index, double * params) const = 0;
 
     }; // class TrainingData
 
@@ -212,7 +230,7 @@ class THEA_API HoughForest
          * @param vote_params The array of Hough vote parameters, with \a num_vote_params values.
          * @param weight The weight of the vote.
          */
-        virtual bool operator()(long target_class, long num_vote_params, double const * vote_params, double weight) = 0;
+        virtual void operator()(long target_class, long num_vote_params, double const * vote_params, double weight) = 0;
     };
 
     /**
@@ -253,15 +271,14 @@ class THEA_API HoughForest
     void train(long num_trees, TrainingData const & training_data_);
 
     /**
-     * Sample the Hough votes for an object with a given set of features.
+     * Sample the Hough votes from a point with a given set of features.
      *
-     * @param features The features of the object. Must contain numFeatures() values.
-     * @param max_votes Maximum number of votes to sample. The votes are drawn evenly from the trees in the forest.
+     * @param features The features of the point. Must contain numFeatures() values.
+     * @param approx_max_votes Approximate maximum number of votes to sample per tree. If this value is negative, all relevant
+     *   votes are returned.
      * @param callback Called once for every vote.
-     *
-     * @return The index of the most likely class of the object.
      */
-    void vote(double const * features, long max_votes, VoteCallback & callback) const;
+    void voteSelf(double const * features, long approx_max_votes_per_tree, VoteCallback & callback) const;
 
     /** Load the forest from a disk file. */
     bool load(std::string const & path);
@@ -277,9 +294,16 @@ class THEA_API HoughForest
 
     typedef HoughForestInternal::HoughTree Tree;  ///< Hough tree class.
     typedef shared_ptr<Tree> TreePtr;  ///< Shared pointer to a Hough tree.
+    typedef Matrix<double, MatrixLayout::ROW_MAJOR> RowMajMatrix;  ///< Row-major matrix of double-precision values.
 
     /** Automatically choose suitable values for unspecified options. */
     void autoSelectUnspecifiedOptions(Options & options_, TrainingData const * training_data_) const;
+
+    /** Cast a vote for the parameters of a point's parent object by looking up an example in training data. */
+    void castSelfVoteByLookup(long index, double weight, VoteCallback & callback) const;
+
+    /** Create a locally cached copy of the training data, as a lookup table for voting. */
+    void cacheTrainingData(TrainingData const & training_data);
 
     /** Load the forest from an input stream. */
     bool load(std::istream & in);
@@ -290,9 +314,14 @@ class THEA_API HoughForest
     long num_classes;                 ///< Number of object classes.
     long num_features;                ///< Number of features per object.
     TheaArray<long> num_vote_params;  ///< Number of Hough parameters per class.
+    long max_vote_params;             ///< Maximum number of Hough parameters for any class.
     Options options;                  ///< Additional options.
 
     TheaArray<TreePtr> trees;  ///< Set of Hough trees in the forest.
+
+    TheaArray<long> all_classes;  ///< Cached copy of all class labels in training data.
+    RowMajMatrix all_features;    ///< Cached copy of all features in training data.
+    RowMajMatrix all_self_votes;  ///< Cached copy of all Hough self-votes in training data.
 
 }; // class HoughForest
 

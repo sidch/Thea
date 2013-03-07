@@ -41,7 +41,6 @@
 
 #include "HoughForest.hpp"
 #include "../Math.hpp"
-#include "../Matrix.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -207,6 +206,40 @@ class HoughTree
                    << training_data.numExamples() << " example(s)";
     }
 
+    // Cast votes for a query point with given features. Returns the number of votes cast. */
+    long voteSelf(double const * features, long approx_max_votes, VoteCallback & callback) const
+    {
+      Node * curr = root;
+      while (curr)
+      {
+        if (curr->isLeaf())
+        {
+          if (curr->elems.empty())
+            return 0;
+
+          double accept_prob = approx_max_votes / (double)curr->elems.size();
+          long num_votes = 0;
+          for (array_size_t i = 0; i < curr->elems.size(); ++i)
+            if (approx_max_votes < 0 || Math::rand01() < accept_prob)
+            {
+              parent->castSelfVoteByLookup(curr->elems[i], 1.0, callback);
+              num_votes++;
+            }
+
+          return num_votes;
+        }
+        else
+        {
+          if (features[curr->split_feature] < curr->split_value)
+            curr = curr->left;
+          else
+            curr = curr->right;
+        }
+      }
+
+      return 0;
+    }
+
   private:
     // Find a suitable splitting decision for a node, based on minimizing classification/regression uncertainty.
     bool optimizeTest(Node const * node, TrainingData const & training_data, long & split_feature, double & split_value,
@@ -327,8 +360,7 @@ class HoughTree
           if (classes[i] == BACKGROUND_CLASS)  // ignore background class, assumed to have index 0
             continue;
 
-          if (!training_data.getSelfVote(elems[i], &vote[0]))  // element doesn't have valid vote for its parent object
-            continue;
+          training_data.getSelfVote(elems[i], &vote[0]);
 
           // Add up:
           //   - the vote vector
@@ -494,7 +526,8 @@ HoughForest::Options::save(std::ostream & out) const
 HoughForest::HoughForest(long num_classes_, long num_features_, long const * num_vote_params_, Options const & options_)
 : num_classes(num_classes_),
   num_features(num_features_),
-  num_vote_params(num_vote_params_, num_vote_params_ + num_classes),
+  num_vote_params(num_vote_params_, num_vote_params_ + num_classes_),
+  max_vote_params(*std::max_element(num_vote_params_, num_vote_params_ + num_classes_)),
   options(options_)
 {
   alwaysAssertM(num_classes_ >= 2, "HoughForest: Can't create Hough forest for less than 2 classes");
@@ -516,6 +549,10 @@ void
 HoughForest::clear()
 {
   trees.clear();
+
+  all_classes.clear();
+  all_features.resize(0, 0);
+  all_self_votes.resize(0, 0);
 }
 
 void
@@ -555,6 +592,14 @@ void
 HoughForest::train(long num_trees, TrainingData const & training_data_)
 {
   alwaysAssertM(num_trees >= 0, "HoughForest: Forest cannot have a negative number of trees");
+  alwaysAssertM(training_data_.numFeatures() == numFeatures(), "HoughForest: Training data has different number of features");
+  alwaysAssertM(training_data_.numClasses() == numClasses(), "HoughForest: Training data has different number of classes");
+
+  for (long i = 0; i < num_classes; ++i)
+  {
+    alwaysAssertM(training_data_.numVoteParameters(i) == numVoteParameters(i),
+                  format("HoughForest: Training data has different number of vote parameters for class %ld", i));
+  }
 
   THEA_CONSOLE << "HoughForest: Training forest with " << num_trees << " tree(s)";
 
@@ -588,8 +633,51 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
 }
 
 void
-HoughForest::vote(double const * features, long max_votes, VoteCallback & callback) const
+HoughForest::voteSelf(double const * features, long approx_max_votes_per_tree, VoteCallback & callback) const
 {
+  for (array_size_t i = 0; i < trees.size(); ++i)
+    trees[i]->voteSelf(features, approx_max_votes_per_tree, callback);
+}
+
+void
+HoughForest::castSelfVoteByLookup(long index, double weight, VoteCallback & callback) const
+{
+  long c = all_classes[(array_size_t)index];
+  long nv = num_vote_params[(array_size_t)c];
+  callback(c, nv, all_self_votes.data() + index * all_self_votes.numColumns(), weight);
+}
+
+void
+HoughForest::cacheTrainingData(TrainingData const & training_data)
+{
+  long num_examples = training_data.numExamples();
+
+  // Cache classes
+  {
+    all_classes.resize((array_size_t)num_examples);
+    training_data.getClasses(&all_classes[0]);
+  }
+
+  // Cache features
+  {
+    all_features.resize(num_features, num_examples);
+    TheaArray<double> features(num_examples);
+    for (long i = 0; i < num_features; ++i)
+    {
+      training_data.getFeatures(i, &features[0]);
+      all_features.setRow(i, &features[0]);
+    }
+  }
+
+  // Cache self-votes
+  {
+    all_self_votes.resize(num_examples, max_vote_params);
+    for (long i = 0; i < num_examples; ++i)
+    {
+      double * row_start = all_self_votes.data() + i * all_self_votes.numColumns();
+      training_data.getSelfVote(i, row_start);
+    }
+  }
 }
 
 bool
@@ -632,12 +720,6 @@ HoughForest::save(std::string const & path) const
   return true;
 }
 
-void
-HoughForest::dumpToConsole() const
-{
-  THEA_CONSOLE << "HoughForest: Forest has " << trees.size() << " tree(s)";
-}
-
 bool
 HoughForest::load(std::istream & in)
 {
@@ -648,6 +730,12 @@ bool
 HoughForest::save(std::ostream & out) const
 {
   return false;
+}
+
+void
+HoughForest::dumpToConsole() const
+{
+  THEA_CONSOLE << "HoughForest: Forest has " << trees.size() << " tree(s)";
 }
 
 } // namespace Algorithms
