@@ -145,8 +145,17 @@ class THEA_API HoughForest
         /** Set the maximum number of randomly selected thresholds to consider for splitting along a feature (default -1). */
         Options & setMaxCandidateThresholds(long value) { max_candidate_thresholds = value; return *this; }
 
-        /** Set the minimum class uncertainty required to split a node by class uncertainty (default -1). */
-        Options & setMinClassUncertainty(double value) { min_class_uncertainty = value; return *this; }
+        /**
+         * Set the minimum class uncertainty required to split a node by class uncertainty (default -1). A different way of
+         * setting the same parameter is setMaxDominantFraction().
+         */
+        Options & setMinClassUncertainty(double value);
+
+        /**
+         * Set the maximum fraction of elements covered by a dominant class under which a node may be split to reduce class
+         * uncertainty (default -1). A different way of setting the same parameter is setMinClassUncertainty().
+         */
+        Options & setMaxDominantFraction(double value);
 
         /** Set whether progress information will be printed to the console or not (default true). */
         Options & setVerbose(bool value) { verbose = value; return *this; }
@@ -172,6 +181,7 @@ class THEA_API HoughForest
         long max_candidate_features;      ///< Maximum number of features to consider for splitting per iteration.
         long max_candidate_thresholds;    ///< Maximum number of randomly selected thresholds for splitting along a feature.
         double min_class_uncertainty;     ///< Minimum class uncertainty required to split a node by class uncertainty.
+        double max_dominant_fraction;     ///< Maximum fraction of elements covered by a single class for valid splitting.
         bool verbose;                     ///< Print progress information to the console.
 
         friend class HoughForest;
