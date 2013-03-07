@@ -480,7 +480,7 @@ class /* THEA_API */ KDTree3
 
       // The fraction of elements held by the larger node at each split is 0.5
       static double const SPLIT_FRACTION = 0.5;
-      int est_depth = Math::kdtreeDepth(num_elems, max_elems_in_leaf, SPLIT_FRACTION);
+      int est_depth = Math::binaryTreeDepth(num_elems, max_elems_in_leaf, SPLIT_FRACTION);
       max_depth = max_depth_;
       if (max_depth < 0)
         max_depth = est_depth;

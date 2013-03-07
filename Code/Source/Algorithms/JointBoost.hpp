@@ -46,6 +46,7 @@
 #include "../Array.hpp"
 #include "../Matrix.hpp"
 #include <boost/dynamic_bitset.hpp>
+#include <iostream>
 
 namespace Thea {
 namespace Algorithms {
@@ -197,11 +198,6 @@ class THEA_API JointBoost
      * Train the strong classifier by several rounds of boosting.
      *
      * @param training_data_ Data used for training the classifier.
-     * @param min_rounds The minimum number of boosting rounds that must be performed even if the error reduction between
-     *   successive rounds is below the threshold \a min_error_reduction.
-     * @param max_rounds The maximum number of boosting rounds. This also limits the maximum number of stumps added.
-     * @param min_error_reduction The minimum (subtractive) reduction in the classification error needed to continue iteration
-     *   beyond \a min_rounds rounds. A negative argument chooses a default value.
      */
     void train(TrainingData const & training_data_);
 
