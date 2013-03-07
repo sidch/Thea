@@ -241,6 +241,9 @@ class THEA_API HoughForest
     /** Get the number of parameters (dimensions) of the Hough voting space for a given class. */
     long numVoteParameters(long class_index) const { return num_vote_params[(array_size_t)class_index]; }
 
+    /** Get the number of trees in the forest. */
+    long numTrees() const { return (long)trees.size(); }
+
     /**
      * Train the Hough forest.
      *

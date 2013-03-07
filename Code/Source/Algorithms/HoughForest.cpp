@@ -558,6 +558,9 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
 
   THEA_CONSOLE << "HoughForest: Training forest with " << num_trees << " tree(s)";
 
+  G3D::Stopwatch overall_timer;
+  overall_timer.tick();
+
   // Auto-select appropriate values for unspecified options
   Options full_opts = options;
   autoSelectUnspecifiedOptions(full_opts, &training_data_);
@@ -577,8 +580,11 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
     trees[i] = tree;
 
     if (options.verbose)
-      THEA_CONSOLE << "HoughForest:  - Trained tree " << i << " in " << 1000 * timer.elapsedTime() << "ms";
+      THEA_CONSOLE << "HoughForest:  - Trained tree " << i << " in " << timer.elapsedTime() << "s";
   }
+
+  overall_timer.tock();
+  THEA_CONSOLE << "HoughForest: Training completed in " << overall_timer.elapsedTime() << "s";
 }
 
 void
