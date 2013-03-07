@@ -238,7 +238,6 @@ class HoughTree
 
         // Find a suitable split threshold
         getNodeFeatures(node, test_feature, training_data, features);
-        reordered_features = features;  // for nth_element
 
         for (long thresh_iter = 0; thresh_iter < max_thresh_iters; ++thresh_iter)
         {
@@ -250,6 +249,9 @@ class HoughTree
 
             // Operate on a scratch array so the original features array retains its ordering and can be passed to
             // measureUncertaintyAfterSplit()
+            if (thresh_iter == 0)
+              reordered_features = features;
+
             std::nth_element(reordered_features.begin(), reordered_features.begin() + index, reordered_features.end());
             test_threshold = reordered_features[index];
           }
@@ -285,7 +287,8 @@ class HoughTree
     {
       if (measure_mode == CLASS_UNCERTAINTY)
       {
-        // The uncertainty is defined to be the Shannon entropy of the labeling
+        // The uncertainty is defined to be the Shannon entropy of the labeling:
+        //   Entropy = -\sum_{c \in Classes} p(c) log p(c)
 
         TheaArray<long> classes(elems.size());
         training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
@@ -306,8 +309,8 @@ class HoughTree
       }
       else
       {
-        // The uncertainty is defined to be the average variance in Hough votes for the same class. Context votes (elements of
-        // one class voting for parameters of another class) are ignored.
+        // The uncertainty is defined to be the average variance in Hough votes for the same object. Context votes (elements of
+        // one object voting for parameters of another object) are ignored.
 
         // First get the class of each training example
         TheaArray<long> classes(elems.size());
@@ -396,6 +399,15 @@ class HoughTree
 
 }; // class HoughTree
 
+double
+uncertaintyForDominantFraction(double dominant_fraction, long num_classes)
+{
+  double rem_fraction = (1.0 - dominant_fraction) / num_classes;
+
+  return -(dominant_fraction * std::log(dominant_fraction)
+         + (num_classes - 1) * (rem_fraction * std::log(rem_fraction)));
+}
+
 } // namespace HoughForestInternal
 
 HoughForest::Options::Options()
@@ -404,8 +416,25 @@ HoughForest::Options::Options()
   max_candidate_features(-1),
   max_candidate_thresholds(-1),
   min_class_uncertainty(-1),
+  max_dominant_fraction(-1),
   verbose(false)
 {
+}
+
+HoughForest::Options &
+HoughForest::Options::setMinClassUncertainty(double value)
+{
+  min_class_uncertainty = value;
+  max_dominant_fraction = -1;
+  return *this;
+}
+
+HoughForest::Options &
+HoughForest::Options::setMaxDominantFraction(double value)
+{
+  min_class_uncertainty = -1;
+  max_dominant_fraction = value;
+  return *this;
 }
 
 bool
@@ -514,14 +543,11 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
       opts_.max_candidate_thresholds = 5;
   }
 
-  if (opts_.min_class_uncertainty < 0)
+  if (opts_.min_class_uncertainty < 0)  // we don't need to check max_dominant_fraction, it's not directly used anywhere
   {
     // Split to improve classification only if no class accounts for more than 95% of the examples
-    static double const MAX_DOMINANT_FRACTION = 0.95;
-    double rem_fraction = (1.0 - MAX_DOMINANT_FRACTION) / num_classes;
-
-    opts_.min_class_uncertainty = -MAX_DOMINANT_FRACTION * std::log(MAX_DOMINANT_FRACTION)
-                                - (num_classes - 1) * (rem_fraction * std::log(rem_fraction));
+    if (opts_.max_dominant_fraction < 0) opts_.max_dominant_fraction = 0.95;
+    opts_.min_class_uncertainty = HoughForestInternal::uncertaintyForDominantFraction(opts_.max_dominant_fraction, num_classes);
   }
 }
 
