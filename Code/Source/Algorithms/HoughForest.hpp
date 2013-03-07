@@ -57,9 +57,16 @@ class HoughTree;
 } // namespace HoughForestInternal
 
 /**
- * An implementation of class-specific Hough forests. Based on
+ * An implementation of Hough forests. Based on
  *
- * J. Gall and V. Lempitsky, "Class-Speciﬁc Hough Forests for Object Detection", Pro. CVPR, 2009.
+ * J. Gall and V. Lempitsky, "Class-Speciﬁc Hough Forests for Object Detection", Proc. CVPR, 2009.
+ *
+ * This implementation extends the framework to handle more than one class (plus a background class). It also supports
+ * cross-voting from one object to another (the two objects may be of different classes), which might be useful for modeling
+ * context.
+ *
+ * The background class is always assumed to have index 0. This is important to keep in mind when supplying training data, since
+ * the regression training does not consider votes involving background objects.
  *
  * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call vote().
  */
@@ -121,8 +128,8 @@ class THEA_API HoughForest
     }; // class TrainingData
 
     /**
-     * %Options for the forest. In most cases, passing a negative value for a normally non-negative parameter sets the default
-     * value for that parameter.
+     * %Options for a Hough forest. In most cases, passing a negative value for a normally non-negative parameter auto-selects a
+     * suitable value for that parameter.
      */
     class Options
     {
@@ -160,20 +167,20 @@ class THEA_API HoughForest
         /** Set whether progress information will be printed to the console or not (default true). */
         Options & setVerbose(bool value) { verbose = value; return *this; }
 
-        /** Load forest options from a disk file. */
+        /** Load options from a disk file. */
         bool load(std::string const & path);
 
-        /** Save forest options to a disk file. */
+        /** Save options to a disk file. */
         bool save(std::string const & path) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
-        /** Load forest options from an input stream. */
+        /** Load options from an input stream. */
         bool load(std::istream & in);
 
-        /** Save forest options to an output stream. */
+        /** Save options to an output stream. */
         bool save(std::ostream & out) const;
 
         long max_depth;                   ///< Maximum depth of tree.
