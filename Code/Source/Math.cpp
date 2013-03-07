@@ -65,11 +65,11 @@ randIntegerInRange(long lo, long hi)
 }
 
 int
-kdtreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
+binaryTreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
 {
-  alwaysAssertM(num_elems >= 0, "Math: Can't compute kd-tree depth for negative number of elements");
-  alwaysAssertM(max_elems_in_leaf > 0, "Math: Can't compute kd-tree depth for non-positive number of elements at leaf");
-  alwaysAssertM(split_ratio > 0 && split_ratio < 1, "Math: KD-tree split ratio must be in range (0, 1)");
+  alwaysAssertM(num_elems >= 0, "Math: Can't compute binary tree depth for negative number of elements");
+  alwaysAssertM(max_elems_in_leaf > 0, "Math: Can't compute binary tree depth for non-positive number of elements at leaf");
+  alwaysAssertM(split_ratio > 0 && split_ratio < 1, "Math: Binary tree split ratio must be in range (0, 1)");
 
   if (num_elems <= 0) return 0;
 
