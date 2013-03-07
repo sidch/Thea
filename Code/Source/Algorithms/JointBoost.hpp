@@ -100,8 +100,8 @@ class THEA_API JointBoost
     }; // class TrainingData
 
     /**
-     * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter sets the
-     * default value for that parameter.
+     * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter auto-selects a
+     * suitable value for that parameter.
      */
     class Options
     {
