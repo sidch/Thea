@@ -25,22 +25,6 @@ SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 # Postfix for debug builds
 SET(CMAKE_DEBUG_POSTFIX "d")
 
-# Mac-specific requirements: don't link to Lion SDK
-IF(APPLE)
-  # Determine the version of OS X that is installed
-  EXECUTE_PROCESS(
-    COMMAND sw_vers -productVersion
-    ERROR_QUIET
-    OUTPUT_VARIABLE SW_CMD
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-  STRING(REGEX REPLACE "^(10.[0-9]+).*" "\\1" SW_VER "${SW_CMD}")
-  IF(SW_VER STREQUAL "10.7" OR SW_VER STREQUAL "10.8")
-    SET(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.6.sdk CACHE STRING "Path to OS X SDK root" FORCE)
-    MESSAGE(STATUS "Setting SDK to 10.6: ${CMAKE_OSX_SYSROOT}")
-  ENDIF()
-ENDIF()
-
 # Subdirectories containing individual build targets
 ADD_SUBDIRECTORY(Common)
 
