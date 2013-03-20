@@ -1,0 +1,11 @@
+--- PointKDTree.h.orig	2013-03-20 00:24:30.000000000 -0400
++++ PointKDTree.h	2013-03-20 00:24:50.000000000 -0400
+@@ -809,7 +809,7 @@
+ 
+                 // Test values at this node against remaining planes
+                 for (int p = 0; p < plane.size(); ++p) {
+-                    if ((parentMask >> p) & 1 != 0) {
++                    if (((parentMask >> p) & 1) != 0) {
+                         // Test against this plane
+                         const Plane& curPlane = plane[p];
+                         for (int v = node->valueArray.size() - 1; v >= 0; --v) {
