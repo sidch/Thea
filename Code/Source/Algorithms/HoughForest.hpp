@@ -45,7 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Matrix.hpp"
-#include <iostream>
+#include "../Serializable.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -71,7 +71,7 @@ class HoughTree;
  *
  * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call voteSelf() or voteContext().
  */
-class THEA_API HoughForest
+class THEA_API HoughForest : public Serializable
 {
   public:
     THEA_DEF_POINTER_TYPES(HoughForest, shared_ptr, weak_ptr)
@@ -149,7 +149,7 @@ class THEA_API HoughForest
      * %Options for a Hough forest. In most cases, passing a negative value for a normally non-negative parameter auto-selects a
      * suitable value for that parameter.
      */
-    class Options
+    class Options : public Serializable
     {
       public:
         /** Constructor. Sets default options. */
@@ -191,16 +191,22 @@ class THEA_API HoughForest
         /** Save options to a disk file. */
         bool save(std::string const & path) const;
 
+        /** Save options to a binary output stream. */
+        void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+
+        /** Load options from a binary input stream. */
+        void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+
+        /** Save options to a text output stream. */
+        void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+
+        /** Load options from a text input stream. */
+        void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO());
+
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
-        /** Load options from an input stream. */
-        bool load(std::istream & in);
-
-        /** Save options to an output stream. */
-        bool save(std::ostream & out) const;
-
         long max_depth;                   ///< Maximum depth of tree.
         long max_leaf_elements;           ///< Maximum number of elements in leaf node, unless the maximum depth is reached.
         long max_candidate_features;      ///< Maximum number of features to consider for splitting per iteration.
@@ -239,7 +245,7 @@ class THEA_API HoughForest
      * @param num_classes_ Number of classes for classification. The classes are numbered 0 to \a num_classes - 1.
      * @param num_features_ Number of features per object.
      * @param num_vote_params_ Number of parameters (dimensions) of Hough space per class.
-     * @param options_ Addition options controlling the behaviour of the forest.
+     * @param options_ Additional options controlling the behaviour of the forest.
      */
     HoughForest(long num_classes_, long num_features_, long const * num_vote_params_,
                 Options const & options_ = Options::defaults());
@@ -286,6 +292,12 @@ class THEA_API HoughForest
     /** Save the trained forest to disk. */
     bool save(std::string const & path) const;
 
+    /** Save the trained forest to an output stream. */
+    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+
+    /** Load the forest from an input stream. */
+    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+
     /** Print debugging information about this forest to the console. */
     void dumpToConsole() const;
 
@@ -304,12 +316,6 @@ class THEA_API HoughForest
 
     /** Create a locally cached copy of the training data, as a lookup table for voting. */
     void cacheTrainingData(TrainingData const & training_data);
-
-    /** Load the forest from an input stream. */
-    bool load(std::istream & in);
-
-    /** Save the trained forest to an output stream. */
-    bool save(std::ostream & out) const;
 
     long num_classes;                 ///< Number of object classes.
     long num_features;                ///< Number of features per object.
