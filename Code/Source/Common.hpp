@@ -143,7 +143,6 @@ using    G3D::                 AtomicInt32;
       template <typename T> explicit name(T value_) : value(static_cast<Value>(value_)) {}                                    \
       name(Value value_) : value(value_) {}                                                                                   \
       operator Value() const { return value; }                                                                                \
-      template <typename T> operator T() const { return static_cast<T>(value); }                                              \
       bool operator==(Value other) const { return value == other; }                                                           \
       bool operator!=(Value other) const { return value != other; }                                                           \
       bool operator==(name const & other) const { return value == other.value; }                                              \
