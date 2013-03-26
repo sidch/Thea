@@ -53,36 +53,74 @@ namespace HoughForestInternal {
 
 static long const BACKGROUND_CLASS = 0;
 
-// A node of a Hough tree.
-struct HoughNode
+struct Gaussian
 {
-  HoughNode(long depth_ = 0) : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
+  double k;
+  TheaArray<Real> mean;
+  Matrix<double> invcov;
 
-  long depth;
-  long split_feature;
-  double split_value;
-  HoughNode * left;
-  HoughNode * right;
-  TheaArray<long> elems;
+}; // struct Gaussian
 
-  ~HoughNode()
-  {
-    clear();
-  }
+// A node of a Hough tree.
+class HoughNode
+{
+  public:
+    HoughNode(long depth_ = 0) : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
 
-  void clear()
-  {
-    delete left;
-    delete right;
-    left = right = NULL;
-  }
+    long depth;
+    long split_feature;
+    double split_value;
+    HoughNode * left;
+    HoughNode * right;
+    TheaArray<long> elems;
+    TheaArray<Gaussian> gaussians;
 
-  bool isLeaf() const
-  {
-    return !left && !right;
-  }
+    ~HoughNode()
+    {
+      clear();
+    }
 
-}; // struct HoughNode
+    void clear()
+    {
+      delete left;
+      delete right;
+      left = right = NULL;
+    }
+
+    bool isLeaf() const
+    {
+      return !left && !right;
+    }
+
+    void serializeSubtree(BinaryOutputStream & out) const
+    {
+      out.writeInt64(depth);
+      out.writeInt64(split_feature);
+      out.writeFloat64(split_value);
+    }
+
+    void deserializeSubtree(BinaryInputStream & in)
+    {
+      clear();
+
+      depth = (long)in.readInt64();
+      split_feature = (long)in.readInt64();
+      split_value = in.readFloat64();
+
+      if (in.readInt8())
+      {
+        left = new HoughNode(depth + 1);
+        left->deserializeSubtree(in);
+      }
+
+      if (in.readInt8())
+      {
+        right = new HoughNode(depth + 1);
+        right->deserializeSubtree(in);
+      }
+    }
+
+}; // class HoughNode
 
 // A single tree in a Hough forest.
 class HoughTree
@@ -238,6 +276,30 @@ class HoughTree
       }
 
       return 0;
+    }
+
+    void serializeNodes(BinaryOutputStream & out) const
+    {
+      out.setEndian(Endianness::LITTLE);
+      if (root)
+      {
+        out.writeInt8(1);
+        root->serializeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
+    }
+
+    void deserializeNodes(BinaryInputStream & in)
+    {
+      clear();
+
+      in.setEndian(Endianness::LITTLE);
+      if (in.readInt8())
+      {
+        root = new Node(0);
+        root->deserializeSubtree(in);
+      }
     }
 
   private:
@@ -421,6 +483,29 @@ class HoughTree
            + measureUncertainty(right_elems, training_data, measure_mode);
     }
 
+    void estimateClassGaussians(TheaArray<long> const & elems, TrainingData const & training_data,
+                                TheaArray<Gaussian> & gaussians)
+    {
+      // NOTE: Incomplete
+
+      gaussians.resize((array_size_t)num_classes);
+
+      TheaArray<long> classes(elems.size());
+      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+
+      Matrix<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (long)elems.size());
+      for (long i = 0; i < num_features; ++i)
+        training_data.getFeatures(i, (long)elems.size(), &elems[0], &all_features(i, 0));
+
+      for (long i = 0; i < num_classes; ++i)
+        estimateClassGaussian(i);
+    }
+
+    void estimateClassGaussian(long c)
+    {
+      // NOTE: Incomplete
+    }
+
     HoughForest * parent;
     long num_classes;
     long num_features;
@@ -472,55 +557,91 @@ HoughForest::Options::setMaxDominantFraction(double value)
 bool
 HoughForest::Options::load(std::string const & path)
 {
-  std::ifstream in(path.c_str());
-  if (!in)
+  try
   {
-    THEA_ERROR << "HoughForest: Could not load options from file '" << path << '\'';
-    return false;
+    TextInputStream in(path, configReadSettings());
+    deserialize(in);
   }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load options from input file '%s'", path.c_str())
 
-  return load(in);
+  return true;
 }
 
 bool
 HoughForest::Options::save(std::string const & path) const
 {
-  std::ofstream out(path.c_str());
-  if (!out)
+  try
   {
-    THEA_ERROR << "HoughForest: Could not save options to file '" << path << '\'';
-    return false;
+    TextOutputStream out(path, configWriteSettings());
+    serialize(out);
+    out.commit();
   }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save options to output file '%s'", path.c_str())
 
-  return save(out);
+  return true;
 }
 
-bool
-HoughForest::Options::load(std::istream & in)
+void
+HoughForest::Options::deserialize(BinaryInputStream & input, Codec const & codec)
 {
-  in >> verbose;
-
-  if (!in)
-  {
-    THEA_ERROR << "HoughForest: Error loading options";
-    return false;
-  }
-  else
-    return true;
+  max_depth                 =  (long)input.readInt64();
+  max_leaf_elements         =  (long)input.readInt64();
+  max_candidate_features    =  (long)input.readInt64();
+  max_candidate_thresholds  =  (long)input.readInt64();
+  min_class_uncertainty     =  (double)input.readFloat64();
+  max_dominant_fraction     =  (double)input.readFloat64();
+  verbose                   =  (input.readInt8() != 0);
 }
 
-bool
-HoughForest::Options::save(std::ostream & out) const
+void
+HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
 {
-  out << verbose << std::endl;
+  *this = defaults();
 
-  if (!out)
+  while (input.hasMore())
   {
-    THEA_ERROR << "HoughForest: Error saving options";
-    return false;
+    std::string field = input.readSymbol();
+    input.readSymbol("=");
+
+    if (field == "max_depth")
+      max_depth = (long)input.readNumber();
+    else if (field == "max_leaf_elements")
+      max_leaf_elements = (long)input.readNumber();
+    else if (field == "max_candidate_features")
+      max_candidate_features = (long)input.readNumber();
+    else if (field == "max_candidate_thresholds")
+      max_candidate_thresholds = (long)input.readNumber();
+    else if (field == "min_class_uncertainty")
+      min_class_uncertainty = input.readNumber();
+    else if (field == "max_dominant_fraction")
+      max_dominant_fraction = input.readNumber();
+    else if (field == "verbose")
+      verbose = input.readBoolean();
   }
-  else
-    return true;
+}
+
+void
+HoughForest::Options::serialize(BinaryOutputStream & output, Codec const & codec) const
+{
+  output.writeInt64(max_depth);
+  output.writeInt64(max_leaf_elements);
+  output.writeInt64(max_candidate_features);
+  output.writeInt64(max_candidate_thresholds);
+  output.writeFloat64(min_class_uncertainty);
+  output.writeFloat64(max_dominant_fraction);
+  output.writeInt8(verbose ? 1 : 0);
+}
+
+void
+HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) const
+{
+  output.printf("max_depth = %ld\n", max_depth);
+  output.printf("max_leaf_elements = %ld\n", max_leaf_elements);
+  output.printf("max_candidate_features = %ld\n", max_candidate_features);
+  output.printf("max_candidate_thresholds = %ld\n", max_candidate_thresholds);
+  output.printf("min_class_uncertainty = %lf\n", min_class_uncertainty);
+  output.printf("max_dominant_fraction = %lf\n", max_dominant_fraction);
+  output.printf("verbose = %s\n", (verbose ? "true" : "false"));
 }
 
 HoughForest::HoughForest(long num_classes_, long num_features_, long const * num_vote_params_, Options const & options_)
@@ -683,18 +804,12 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
 bool
 HoughForest::load(std::string const & path)
 {
-  std::ifstream in(path.c_str());
-  if (!in)
+  try
   {
-    THEA_ERROR << "HoughForest: Could not load from file '" << path << '\'';
-    return false;
+    BinaryInputStream in(path, Endianness::LITTLE);
+    deserialize(in);
   }
-
-  if (!options.load(in))
-    return false;
-
-  if (!load(in))
-    return false;
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load from input file '%s'", path.c_str())
 
   return true;
 }
@@ -702,34 +817,38 @@ HoughForest::load(std::string const & path)
 bool
 HoughForest::save(std::string const & path) const
 {
-  std::ofstream out(path.c_str());
-  if (!out)
+  try
   {
-    THEA_ERROR << "HoughForest: Could not save to file '" << path << '\'';
-    return false;
+    BinaryOutputStream out(path, Endianness::LITTLE);
+    if (!out.ok())
+    {
+      THEA_ERROR << "HoughForest: Could not save to output file '" << path << '\'';
+    }
+
+    serialize(out);
+    out.commit();
   }
-
-  if (!options.save(out))
-    return false;
-
-  out << std::endl;  // break up the output a bit
-
-  if (!save(out))
-    return false;
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save to output file '%s'", path.c_str())
 
   return true;
 }
 
-bool
-HoughForest::load(std::istream & in)
+void
+HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
 {
-  return false;
+  options.deserialize(input);
+
+  input.setEndian(Endianness::LITTLE);
+
+  // Write nodes in
 }
 
-bool
-HoughForest::save(std::ostream & out) const
+void
+HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
 {
-  return false;
+  options.serialize(output);
+
+  output.setEndian(Endianness::LITTLE);
 }
 
 void

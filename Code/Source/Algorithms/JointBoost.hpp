@@ -178,7 +178,7 @@ class THEA_API JointBoost
      *
      * @param num_classes_ Number of classes for classification. The classes are numbered 0 to \a num_classes - 1.
      * @param num_features_ Number of features per object.
-     * @param options_ Addition options controlling the behaviour of the classifier.
+     * @param options_ Additional options controlling the behaviour of the classifier.
      */
     JointBoost(long num_classes_, long num_features_, Options const & options_ = Options::defaults());
 

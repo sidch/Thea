@@ -117,7 +117,29 @@ class THEA_API Serializable
     /** Deserialize the object from a text input stream. */
     virtual void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO())
     { throw Error("Deserialization from text stream not implemented"); }
-};
+
+    /** Get the default settings for parsing configuration text files. */
+    static TextInputStream::Settings const & configReadSettings()
+    {
+      static const TextInputStream::Settings def = initConfigReadSettings();
+      return def;
+    }
+
+    /** Get the default settings for writing configuration text files. */
+    static TextOutputStream::Settings const & configWriteSettings()
+    {
+      static const TextOutputStream::Settings def = initConfigWriteSettings();
+      return def;
+    }
+
+  private:
+    /** Create default settings for parsing configuration text files. */
+    static TextInputStream::Settings initConfigReadSettings();
+
+    /** Create default settings for writing configuration text files. */
+    static TextOutputStream::Settings initConfigWriteSettings();
+
+}; // class Serializable
 
 /**
  * The interface for a factory for creating serializable objects. Classes which provide factories should define a
