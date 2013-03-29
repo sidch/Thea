@@ -514,6 +514,38 @@ fastArcTan2(float dy, float dx)
   return a;
 }
 
+namespace MathInternal {
+
+// exp(-x) approximations from http://www.xnoiz.co.cc/fast-exp-x/
+float fastMinuzExp_1(float x);
+float fastMinuzExp_2(float x);
+float fastMinuzExp_3(float x);
+float fastMinuzExpWider_1(float x);
+float fastMinuzExpWider_2(float x);
+float fastMinuzExpWider_3(float x);
+
+} // namespace MathInternal
+
+/** Computes a fast approximation to exp(-x). */
+inline THEA_API float
+fastMinusExp(float x)
+{
+  return MathInternal::fastMinuzExpWider_1(x);
+}
+
+/** Computes a fast approximation to exp(-x) for 0 <= x <= 1. */
+inline THEA_API float
+fastMinusExp01(float x)
+{
+  if (x > 0.69f)
+  {
+    float y = MathInternal::fastMinuzExp_1(0.5f * x);
+    return y * y;
+  }
+  else
+    return MathInternal::fastMinuzExp_1(x);
+}
+
 /**
  * Hermite interpolation, given two points \a a and \a b, the associated tangents \a da and \a db at these points, and a
  * parameter \a s in [0, 1].
@@ -576,6 +608,215 @@ THEA_API int solveQuartic(double c0, double c1, double c2, double c3, double c4,
  * returned numbers are <em>not</em> necessarily in sorted order.
  */
 void getRandomSubset(long n, long k, long * subset);
+
+namespace MathInternal {
+
+// exp(-x) approximations from http://www.xnoiz.co.cc/fast-exp-x/
+
+// approx method, returns exp(-x) when 0<=x<=ln(2) {~0.69}
+inline float
+fastMinuzExp_1(float x)
+{
+  // err <= 3e-3
+  return 1
+         - x * (0.9664
+                - x * (0.3536));
+}
+
+inline float
+fastMinuzExp_2(float x)
+{
+  // err <= 3e-5
+  return 1
+         - x * (0.9998684
+                - x * (0.4982926
+                       - x * (0.1595332
+                              - x * (0.0293641))));
+}
+
+inline float
+fastMinuzExp_3(float x)
+{
+  // err <= 3e-10
+  return 1
+         - x * (0.9999999995
+                - x * (0.4999999206
+                       - x * (0.1666653019
+                              - x * (0.0416573475
+                                     - x * (0.0083013598
+                                         - x * (0.0013298820
+                                             - x * (0.0001413161)))))));
+}
+
+// widen up fastMinuzExp
+inline float
+fastMinuzExpWider_1(float x)
+{
+  bool lessZero = false;
+
+  if (x < 0)
+  {
+    lessZero = true;
+    x = -x;
+  }
+
+  int mult = 0;
+
+  while (x > 0.69 * 2 * 2 * 2 * 2 * 2 * 2)
+  {
+    mult += 6;
+    x /= 64.0f;
+  }
+
+  while (x > 0.69 * 2 * 2 * 2)
+  {
+    mult += 3;
+    x /= 8.0f;
+  }
+
+  while (x > 0.69 * 2 * 2)
+  {
+    mult += 2;
+    x /= 4.0f;
+  }
+
+  while (x > 0.69)
+  {
+    mult++;
+    x /= 2.0f;
+  }
+
+  x = fastMinuzExp_1(x);
+
+  while (mult)
+  {
+    mult--;
+    x = x * x;
+  }
+
+  if (lessZero)
+  {
+    return 1 / x;
+  }
+  else
+  {
+    return x;
+  }
+}
+
+// widen up fastMinuzExp
+inline float
+fastMinuzExpWider_2(float x)
+{
+  bool lessZero = false;
+
+  if (x < 0)
+  {
+    lessZero = true;
+    x = -x;
+  }
+
+  int mult = 0;
+
+  while (x > 0.69 * 2 * 2 * 2 * 2 * 2 * 2)
+  {
+    mult += 6;
+    x /= 64.0f;
+  }
+
+  while (x > 0.69 * 2 * 2 * 2)
+  {
+    mult += 3;
+    x /= 8.0f;
+  }
+
+  while (x > 0.69 * 2 * 2)
+  {
+    mult += 2;
+    x /= 4.0f;
+  }
+
+  while (x > 0.69)
+  {
+    mult++;
+    x /= 2.0f;
+  }
+
+  x = fastMinuzExp_2(x);
+
+  while (mult)
+  {
+    mult--;
+    x = x * x;
+  }
+
+  if (lessZero)
+  {
+    return 1 / x;
+  }
+  else
+  {
+    return x;
+  }
+}
+
+// widen up fastMinuzExp
+inline float
+fastMinuzExpWider_3(float x)
+{
+  bool lessZero = false;
+
+  if (x < 0)
+  {
+    lessZero = true;
+    x = -x;
+  }
+
+  int mult = 0;
+
+  while (x > 0.69 * 2 * 2 * 2 * 2 * 2 * 2)
+  {
+    mult += 6;
+    x /= 64.0f;
+  }
+
+  while (x > 0.69 * 2 * 2 * 2)
+  {
+    mult += 3;
+    x /= 8.0f;
+  }
+
+  while (x > 0.69 * 2 * 2)
+  {
+    mult += 2;
+    x /= 4.0f;
+  }
+
+  while (x > 0.69)
+  {
+    mult++;
+    x /= 2.0f;
+  }
+
+  x = fastMinuzExp_3(x);
+
+  while (mult)
+  {
+    mult--;
+    x = x * x;
+  }
+
+  if (lessZero)
+  {
+    return 1 / x;
+  }
+  else
+  {
+    return x;
+  }
+}
+
+} // namespace MathInternal
 
 } // namespace Math
 
