@@ -61,6 +61,29 @@ struct Gaussian
 
 }; // struct Gaussian
 
+class Gaussian1D
+{
+  private:
+    double mean;
+    double variance;
+    double k;  // normalizing constant
+
+  public:
+    Gaussian1D() : mean(0), variance(0), k(0) {}
+    Gaussian1D(double mean_, double variance_) : mean(mean_), variance(variance_), k(std::sqrt(2 * Math::pi() * variance)) {}
+
+    double prob(double x)
+    {
+      return k * (std::exp(-Math::square(x - mean) / variance));
+    }
+
+    double probFast(double x)
+    {
+      return k * (Math::fastMinusExp((double)(Math::square(x - mean) / variance)));
+    }
+
+}; // class Gaussian1D
+
 // A node of a Hough tree.
 class HoughNode
 {
@@ -73,7 +96,7 @@ class HoughNode
     HoughNode * left;
     HoughNode * right;
     TheaArray<long> elems;
-    TheaArray<Gaussian> gaussians;
+    Gaussian1D feature_distribution;
 
     ~HoughNode()
     {
@@ -222,13 +245,24 @@ class HoughTree
             TheaArray<double> features;
             getNodeFeatures(node, split_feature, training_data, features);
 
+            TheaArray<double> left_features, right_features;
             for (array_size_t i = 0; i < node->elems.size(); ++i)
             {
               if (features[i] < split_feature)
+              {
                 node->left->elems.push_back(node->elems[i]);
+                left_features.push_back(features[i]);
+              }
               else
+              {
                 node->right->elems.push_back(node->elems[i]);
+                right_features.push_back(features[i]);
+              }
             }
+
+            // Estimation distribution of this feature within each child
+            estimateFeatureDistribution(left_features,   node->left->feature_distribution);
+            estimateFeatureDistribution(right_features,  node->right->feature_distribution);
 
             // Free up memory at this node
             node->elems.clear();
@@ -244,8 +278,8 @@ class HoughTree
                    << training_data.numExamples() << " example(s)";
     }
 
-    // Cast votes for a query point with given features. Returns the number of votes cast. */
-    long voteSelf(double const * features, long approx_max_votes, VoteCallback & callback) const
+    // Cast a single vote for a query point with given features. */
+    bool singleVoteSelf(double const * features, VoteCallback & callback) const
     {
       Node * curr = root;
       while (curr)
@@ -253,29 +287,39 @@ class HoughTree
         if (curr->isLeaf())
         {
           if (curr->elems.empty())
-            return 0;
+            return false;
 
-          double accept_prob = approx_max_votes / (double)curr->elems.size();
-          long num_votes = 0;
-          for (array_size_t i = 0; i < curr->elems.size(); ++i)
-            if (approx_max_votes < 0 || Math::rand01() < accept_prob)
-            {
-              parent->castSelfVoteByLookup(curr->elems[i], 1.0, callback);
-              num_votes++;
-            }
-
-          return num_votes;
+          long index = Math::randIntegerInRange(0, (long)curr->elems.size() - 1);
+          parent->singleSelfVoteByLookup(index, 1.0, callback);
+          break;
         }
         else
         {
-          if (features[curr->split_feature] < curr->split_value)
-            curr = curr->left;
-          else
-            curr = curr->right;
+          // Make a probabilistic choice for which child to step into, for smooth vote distributions
+          double feat = features[curr->split_feature];
+          double p_left   =  curr->left->feature_distribution.probFast(feat);
+          double p_right  =  curr->right->feature_distribution.probFast(feat);
+
+          double p_sum = p_left + p_right;
+          if (p_sum > 0)
+          {
+            double coin_toss = Math::rand01();
+            if (coin_toss < p_left / p_sum)
+              curr = curr->left;
+            else
+              curr = curr->right;
+          }
+          else  // make the traditional hard choice
+          {
+            if (feat < curr->split_value)
+              curr = curr->left;
+            else
+              curr = curr->right;
+          }
         }
       }
 
-      return 0;
+      return true;
     }
 
     void serializeNodes(BinaryOutputStream & out) const
@@ -467,7 +511,7 @@ class HoughTree
     }
 
     // Measure the classification/regression uncertainty after splitting elements along a feature.
-    double measureUncertaintyAfterSplit(TheaArray<long> const & elems, TheaArray<double> features, double split_value,
+    double measureUncertaintyAfterSplit(TheaArray<long> const & elems, TheaArray<double> const & features, double split_value,
                                         TrainingData const & training_data, MeasureMode measure_mode) const
     {
       TheaArray<long> left_elems, right_elems;
@@ -481,6 +525,25 @@ class HoughTree
 
       return measureUncertainty(left_elems,  training_data, measure_mode)
            + measureUncertainty(right_elems, training_data, measure_mode);
+    }
+
+    // Estimate the distribution of a set of 1D feature values
+    void estimateFeatureDistribution(TheaArray<double> const & features, Gaussian1D & distrib)
+    {
+      alwaysAssertM(!features.empty(), "HoughForest: Can't model distribution of empty set");
+
+      double sum = 0, sum_squares = 0;
+      for (array_size_t i = 0; i < features.size(); ++i)
+      {
+        sum += features[i];
+        sum_squares += (features[i] * features[i]);
+      }
+
+      double mean = sum / features.size();
+      double mean_squares = sum_squares / features.size();
+      double variance = mean_squares - mean * mean;
+
+      distrib = Gaussian1D(mean, variance);
     }
 
     void estimateClassGaussians(TheaArray<long> const & elems, TrainingData const & training_data,
@@ -753,15 +816,25 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
   THEA_CONSOLE << "HoughForest: Training completed in " << overall_timer.elapsedTime() << "s";
 }
 
-void
-HoughForest::voteSelf(double const * features, long approx_max_votes_per_tree, VoteCallback & callback) const
+long
+HoughForest::voteSelf(double const * features, long num_votes, VoteCallback & callback) const
 {
-  for (array_size_t i = 0; i < trees.size(); ++i)
-    trees[i]->voteSelf(features, approx_max_votes_per_tree, callback);
+  if (trees.empty())
+    return 0;
+
+  long votes_cast = 0;
+  for (long i = 0; i < num_votes; ++i)
+  {
+    long tree_index = Math::randIntegerInRange(0, (long)trees.size() - 1);
+    if (trees[(array_size_t)tree_index]->singleVoteSelf(features, callback))
+      votes_cast++;
+  }
+
+  return votes_cast;
 }
 
 void
-HoughForest::castSelfVoteByLookup(long index, double weight, VoteCallback & callback) const
+HoughForest::singleSelfVoteByLookup(long index, double weight, VoteCallback & callback) const
 {
   long c = all_classes[(array_size_t)index];
   long nv = num_vote_params[(array_size_t)c];

@@ -280,11 +280,12 @@ class THEA_API HoughForest : public Serializable
      * Sample the Hough votes from a point with a given set of features.
      *
      * @param features The features of the point. Must contain numFeatures() values.
-     * @param approx_max_votes Approximate maximum number of votes to sample per tree. If this value is negative, all relevant
-     *   votes are returned.
+     * @param num_votes Number of votes to cast.
      * @param callback Called once for every vote.
+     *
+     * @return The number of votes actually cast (usually == \a num_votes unless something goes horribly wrong).
      */
-    void voteSelf(double const * features, long approx_max_votes_per_tree, VoteCallback & callback) const;
+    long voteSelf(double const * features, long num_votes, VoteCallback & callback) const;
 
     /** Load the forest from a disk file. */
     bool load(std::string const & path);
@@ -311,8 +312,8 @@ class THEA_API HoughForest : public Serializable
     /** Automatically choose suitable values for unspecified options. */
     void autoSelectUnspecifiedOptions(Options & options_, TrainingData const * training_data_) const;
 
-    /** Cast a vote for the parameters of a point's parent object by looking up an example in training data. */
-    void castSelfVoteByLookup(long index, double weight, VoteCallback & callback) const;
+    /** Cast a single vote for the parameters of a point's parent object by looking up an example in training data. */
+    void singleSelfVoteByLookup(long index, double weight, VoteCallback & callback) const;
 
     /** Create a locally cached copy of the training data, as a lookup table for voting. */
     void cacheTrainingData(TrainingData const & training_data);
