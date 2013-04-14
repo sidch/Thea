@@ -74,12 +74,18 @@ class Gaussian1D
 
     double prob(double x)
     {
-      return k * (std::exp(-Math::square(x - mean) / variance));
+      if (variance > 0)
+        return k * (std::exp(-Math::square(x - mean) / variance));
+      else
+        return 1.0e-20;
     }
 
     double probFast(double x)
     {
-      return k * (Math::fastMinusExp((double)(Math::square(x - mean) / variance)));
+      if (variance > 0)
+        return k * (Math::fastMinusExp((double)(Math::square(x - mean) / variance)));
+      else
+        return 1.0e-20;
     }
 
 }; // class Gaussian1D
@@ -200,6 +206,7 @@ class HoughTree
       }
 
       root = new Node(0);
+      root->elems.resize((array_size_t)training_data.numExamples());
       for (long i = 0; i < training_data.numExamples(); ++i)
         root->elems[(array_size_t)i] = i;
 
@@ -228,7 +235,7 @@ class HoughTree
             node->split_feature = split_feature;
             node->split_value = split_value;
 
-            if (options.verbose)
+            if (options.verbose >= 2)
               THEA_CONSOLE << "HoughForest:    - Node test splits feature " << split_feature << " at value " << split_value
                            << " to reduce " << (measure_mode == CLASS_UNCERTAINTY ? "class" : "vote") << " uncertainty";
 
@@ -248,7 +255,7 @@ class HoughTree
             TheaArray<double> left_features, right_features;
             for (array_size_t i = 0; i < node->elems.size(); ++i)
             {
-              if (features[i] < split_feature)
+              if (features[i] < split_value)
               {
                 node->left->elems.push_back(node->elems[i]);
                 left_features.push_back(features[i]);
@@ -259,6 +266,10 @@ class HoughTree
                 right_features.push_back(features[i]);
               }
             }
+
+            if (options.verbose >= 2)
+              THEA_CONSOLE << "HoughForest:    - Left node has " << node->left->elems.size() << " elements, right node has "
+                           << node->right->elems.size() << " elements";
 
             // Estimation distribution of this feature within each child
             estimateFeatureDistribution(left_features,   node->left->feature_distribution);
@@ -289,6 +300,9 @@ class HoughTree
           if (curr->elems.empty())
             return false;
 
+          if (options.verbose >= 2)
+            THEA_CONSOLE << "HoughForest: Reached leaf at depth " << curr->depth << ", casting vote";
+
           long index = Math::randIntegerInRange(0, (long)curr->elems.size() - 1);
           parent->singleSelfVoteByLookup(index, 1.0, callback);
           break;
@@ -297,24 +311,51 @@ class HoughTree
         {
           // Make a probabilistic choice for which child to step into, for smooth vote distributions
           double feat = features[curr->split_feature];
-          double p_left   =  curr->left->feature_distribution.probFast(feat);
-          double p_right  =  curr->right->feature_distribution.probFast(feat);
-
-          double p_sum = p_left + p_right;
-          if (p_sum > 0)
+          bool done = false;
+          if (options.probabilistic_sampling)
           {
-            double coin_toss = Math::rand01();
-            if (coin_toss < p_left / p_sum)
-              curr = curr->left;
-            else
-              curr = curr->right;
+            double p_left   =  curr->left->feature_distribution.probFast(feat);
+            double p_right  =  curr->right->feature_distribution.probFast(feat);
+
+            double p_sum = p_left + p_right;
+            if (p_sum > 0)
+            {
+              double coin_toss = Math::rand01();
+              if (coin_toss < p_left / p_sum)
+              {
+                if (options.verbose >= 2)
+                  THEA_CONSOLE << "HoughForest: Traversing left on feature " << curr->split_feature;
+
+                curr = curr->left;
+              }
+              else
+              {
+                if (options.verbose >= 2)
+                  THEA_CONSOLE << "HoughForest: Traversing right on feature " << curr->split_feature;
+
+                curr = curr->right;
+              }
+
+              done = true;
+            }
           }
-          else  // make the traditional hard choice
+
+          if (!done)  // make the traditional hard choice
           {
             if (feat < curr->split_value)
+            {
+              if (options.verbose >= 2)
+                THEA_CONSOLE << "HoughForest: Traversing left on feature " << curr->split_feature;
+
               curr = curr->left;
+            }
             else
+            {
+              if (options.verbose >= 2)
+                THEA_CONSOLE << "HoughForest: Traversing right on feature " << curr->split_feature;
+
               curr = curr->right;
+            }
           }
         }
       }
@@ -351,7 +392,7 @@ class HoughTree
     bool optimizeTest(Node const * node, TrainingData const & training_data, long & split_feature, double & split_value,
                       MeasureMode & measure_mode) const
     {
-      if (node->elems.empty())
+      if (node->elems.size() < 4)  // doesn't make sense splitting smaller sets, and the quadrant index math will fail anyway
         return false;
 
       measure_mode = (std::rand() % 2 == 0 ? CLASS_UNCERTAINTY : VOTE_UNCERTAINTY);
@@ -386,6 +427,9 @@ class HoughTree
             // Generate a splitting value in the middle half (second and third quadrants) in the sorted order
             array_size_t index = features.size() / 4 + (std::rand() % (features.size() / 2));
 
+            if (options.verbose >= 3)
+              THEA_CONSOLE << "HoughForest:      - Testing split index " << index << " for feature " << test_feature;
+
             // Operate on a scratch array so the original features array retains its ordering and can be passed to
             // measureUncertaintyAfterSplit()
             if (thresh_iter == 0)
@@ -401,11 +445,18 @@ class HoughTree
           }
 
           // Measure the uncertainty after the split
-          double uncertainty = measureUncertaintyAfterSplit(node->elems, features, test_threshold, training_data, measure_mode);
-          if (split_feature < 0 || uncertainty < min_uncertainty)
+          bool valid_split;
+          double uncertainty = measureUncertaintyAfterSplit(node->elems, features, test_threshold, training_data, measure_mode,
+                                                            valid_split);
+          if (valid_split && (split_feature < 0 || uncertainty < min_uncertainty))
           {
             split_feature = test_feature;
             split_value = test_threshold;
+            min_uncertainty = uncertainty;
+
+            if (options.verbose >= 3)
+              THEA_CONSOLE << "HoughForest:      - Updated split feature " << split_feature << ", split value " << split_value
+                           << ", uncertainty " << min_uncertainty;
           }
         }
       }
@@ -512,8 +563,18 @@ class HoughTree
 
     // Measure the classification/regression uncertainty after splitting elements along a feature.
     double measureUncertaintyAfterSplit(TheaArray<long> const & elems, TheaArray<double> const & features, double split_value,
-                                        TrainingData const & training_data, MeasureMode measure_mode) const
+                                        TrainingData const & training_data, MeasureMode measure_mode, bool & valid_split) const
     {
+      static Real const MAX_ASYMMETRY = 7;
+
+      valid_split = true;
+
+      if (elems.empty())
+      {
+        valid_split = false;
+        return 0;
+      }
+
       TheaArray<long> left_elems, right_elems;
       for (array_size_t i = 0; i < elems.size(); ++i)
       {
@@ -522,6 +583,18 @@ class HoughTree
         else
           right_elems.push_back(elems[i]);
       }
+
+      // If the split is too asymmetrical, it is not valid
+      if (left_elems.size()  > MAX_ASYMMETRY * right_elems.size()
+       || right_elems.size() > MAX_ASYMMETRY * left_elems.size())
+      {
+        valid_split = false;
+        return 0;
+      }
+
+      if (options.verbose >= 3)
+        THEA_CONSOLE << "HoughForest:        - Split uncertainty test: left node has " << left_elems.size()
+                     << " elements, right node has " << right_elems.size() << " elements";
 
       return measureUncertainty(left_elems,  training_data, measure_mode)
            + measureUncertainty(right_elems, training_data, measure_mode);
@@ -597,7 +670,8 @@ HoughForest::Options::Options()
   max_candidate_thresholds(-1),
   min_class_uncertainty(-1),
   max_dominant_fraction(-1),
-  verbose(false)
+  probabilistic_sampling(true),
+  verbose(1)
 {
 }
 
@@ -653,7 +727,8 @@ HoughForest::Options::deserialize(BinaryInputStream & input, Codec const & codec
   max_candidate_thresholds  =  (long)input.readInt64();
   min_class_uncertainty     =  (double)input.readFloat64();
   max_dominant_fraction     =  (double)input.readFloat64();
-  verbose                   =  (input.readInt8() != 0);
+  probabilistic_sampling    =  (input.readInt8() != 0);
+  verbose                   =  (int)input.readInt32();
 }
 
 void
@@ -678,8 +753,10 @@ HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
       min_class_uncertainty = input.readNumber();
     else if (field == "max_dominant_fraction")
       max_dominant_fraction = input.readNumber();
+    else if (field == "probabilistic_sampling")
+      probabilistic_sampling = input.readBoolean();
     else if (field == "verbose")
-      verbose = input.readBoolean();
+      verbose = (int)input.readNumber();
   }
 }
 
@@ -692,7 +769,8 @@ HoughForest::Options::serialize(BinaryOutputStream & output, Codec const & codec
   output.writeInt64(max_candidate_thresholds);
   output.writeFloat64(min_class_uncertainty);
   output.writeFloat64(max_dominant_fraction);
-  output.writeInt8(verbose ? 1 : 0);
+  output.writeInt8(probabilistic_sampling ? 1 : 0);
+  output.writeInt32(verbose);
 }
 
 void
@@ -704,7 +782,8 @@ HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) 
   output.printf("max_candidate_thresholds = %ld\n", max_candidate_thresholds);
   output.printf("min_class_uncertainty = %lf\n", min_class_uncertainty);
   output.printf("max_dominant_fraction = %lf\n", max_dominant_fraction);
-  output.printf("verbose = %s\n", (verbose ? "true" : "false"));
+  output.printf("probabilistic_sampling = %s\n", (probabilistic_sampling ? "true" : "false"));
+  output.printf("verbose = %d\n", verbose);
 }
 
 HoughForest::HoughForest(long num_classes_, long num_features_, long const * num_vote_params_, Options const & options_)
@@ -809,11 +888,18 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
     trees[i] = tree;
 
     if (options.verbose)
-      THEA_CONSOLE << "HoughForest:  - Trained tree " << i << " in " << timer.elapsedTime() << "s";
+      THEA_CONSOLE << "HoughForest:  - Trained tree " << i << " in " << timer.elapsedTime() << 's';
   }
 
+  timer.tick();
+    cacheTrainingData(training_data_);
+  timer.tock();
+
+  if (options.verbose)
+    THEA_CONSOLE << "HoughForest:  - Cached training data in " << timer.elapsedTime() << 's';
+
   overall_timer.tock();
-  THEA_CONSOLE << "HoughForest: Training completed in " << overall_timer.elapsedTime() << "s";
+  THEA_CONSOLE << "HoughForest: Training completed in " << overall_timer.elapsedTime() << 's';
 }
 
 long
@@ -852,7 +938,7 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
     training_data.getClasses(&all_classes[0]);
   }
 
-  // Cache features
+  // Cache features, one example per column
   {
     all_features.resize(num_features, num_examples);
     TheaArray<double> features(num_examples);
@@ -863,7 +949,7 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
     }
   }
 
-  // Cache self-votes
+  // Cache self-votes, one example per row
   {
     all_self_votes.resize(num_examples, max_vote_params);
     for (long i = 0; i < num_examples; ++i)
