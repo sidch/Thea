@@ -225,6 +225,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestHoughForest
+#===========================================================
+
+# Source file lists
+SET(TheaTestHoughForestSources
+      ${SourceRoot}/Test/TestHoughForest.cpp)
+
+# Libraries to link to
+SET(TheaTestHoughForestLibraries
+      Thea
+      ${G3D_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestHoughForest ${TheaTestHoughForestSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestHoughForest ${TheaTestHoughForestLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestHoughForest "${TheaTestHoughForestLibraries}")
+ENDIF()
+
+#===========================================================
 # TestJointBoost
 #===========================================================
 

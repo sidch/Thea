@@ -182,8 +182,14 @@ class THEA_API HoughForest : public Serializable
          */
         Options & setMaxDominantFraction(double value);
 
-        /** Set whether progress information will be printed to the console or not (default true). */
-        Options & setVerbose(bool value) { verbose = value; return *this; }
+        /** Set if probabilistic sampling will be used or not. */
+        Options & setProbabilisticSampling(bool value) { probabilistic_sampling = value; return *this; }
+
+        /**
+         * Set how much progress information will be printed to the console (default 1, higher values indicate more verbose
+         * output, 0 indicates no output).
+         */
+        Options & setVerbose(int value) { verbose = value; return *this; }
 
         /** Load options from a disk file. */
         bool load(std::string const & path);
@@ -213,7 +219,8 @@ class THEA_API HoughForest : public Serializable
         long max_candidate_thresholds;    ///< Maximum number of randomly selected thresholds for splitting along a feature.
         double min_class_uncertainty;     ///< Minimum class uncertainty required to split a node by class uncertainty.
         double max_dominant_fraction;     ///< Maximum fraction of elements covered by a single class for valid splitting.
-        bool verbose;                     ///< Print progress information to the console.
+        bool probabilistic_sampling;      ///< Use probabilistic sampling?
+        int verbose;                      ///< Verbosity of printing progress information to the console.
 
         friend class HoughForest;
         friend class HoughForestInternal::HoughTree;
@@ -237,7 +244,8 @@ class THEA_API HoughForest : public Serializable
          * @param weight The weight of the vote.
          */
         virtual void operator()(long target_class, long num_vote_params, double const * vote_params, double weight) = 0;
-    };
+
+    }; // class VoteCallback
 
     /**
      * Constructor.
