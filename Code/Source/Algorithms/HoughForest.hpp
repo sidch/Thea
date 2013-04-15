@@ -167,6 +167,9 @@ class THEA_API HoughForest : public Serializable
         /** Set the maximum number of features to consider for splitting per iteration (default -1). */
         Options & setMaxCandidateFeatures(long value) { max_candidate_features = value; return *this; }
 
+        /** Set the number of times the set of features is expanded to find a split (default -1). */
+        Options & setNumFeatureExpansions(long value) { num_feature_expansions = value; return *this; }
+
         /** Set the maximum number of randomly selected thresholds to consider for splitting along a feature (default -1). */
         Options & setMaxCandidateThresholds(long value) { max_candidate_thresholds = value; return *this; }
 
@@ -216,6 +219,7 @@ class THEA_API HoughForest : public Serializable
         long max_depth;                   ///< Maximum depth of tree.
         long max_leaf_elements;           ///< Maximum number of elements in leaf node, unless the maximum depth is reached.
         long max_candidate_features;      ///< Maximum number of features to consider for splitting per iteration.
+        long num_feature_expansions;      ///< Number of times the set of features is expanded to find a split.
         long max_candidate_thresholds;    ///< Maximum number of randomly selected thresholds for splitting along a feature.
         double min_class_uncertainty;     ///< Minimum class uncertainty required to split a node by class uncertainty.
         double max_dominant_fraction;     ///< Maximum fraction of elements covered by a single class for valid splitting.
@@ -309,6 +313,9 @@ class THEA_API HoughForest : public Serializable
 
     /** Print debugging information about this forest to the console. */
     void dumpToConsole() const;
+
+    /** Change the debugging level, overriding the value in the initial options. */
+    void setVerbose(int level);
 
   private:
     friend class HoughForestInternal::HoughTree;
