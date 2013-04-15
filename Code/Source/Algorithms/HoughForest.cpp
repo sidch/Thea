@@ -46,6 +46,8 @@
 #include <fstream>
 #include <stack>
 
+#define THEA_HOUGH_SYMMETRIC_VARIANCE
+
 namespace Thea {
 namespace Algorithms {
 
@@ -56,7 +58,7 @@ static long const BACKGROUND_CLASS = 0;
 struct Gaussian
 {
   double k;
-  TheaArray<Real> mean;
+  TheaArray<double> mean;
   Matrix<double> invcov;
 
 }; // struct Gaussian
@@ -68,9 +70,11 @@ class Gaussian1D
     double variance;
     double k;  // normalizing constant
 
+    static double kFromVariance(double var) { return std::sqrt(2 * Math::pi() * var); }
+
   public:
     Gaussian1D() : mean(0), variance(0), k(0) {}
-    Gaussian1D(double mean_, double variance_) : mean(mean_), variance(variance_), k(std::sqrt(2 * Math::pi() * variance)) {}
+    Gaussian1D(double mean_, double variance_) : mean(mean_), variance(variance_), k(kFromVariance(variance_)) {}
 
     double prob(double x)
     {
@@ -86,6 +90,16 @@ class Gaussian1D
         return k * (Math::fastMinusExp((double)(Math::square(x - mean) / variance)));
       else
         return 1.0e-20;
+    }
+
+    double getMean() const { return mean; }
+    double getVariance() const { return variance; }
+
+    void setMean(double value) { mean = value; }
+    void setVariance(double value)
+    {
+      variance = value;
+      k = kFromVariance(value);
     }
 
 }; // class Gaussian1D
@@ -274,6 +288,15 @@ class HoughTree
             // Estimation distribution of this feature within each child
             estimateFeatureDistribution(left_features,   node->left->feature_distribution);
             estimateFeatureDistribution(right_features,  node->right->feature_distribution);
+
+#ifdef THEA_HOUGH_SYMMETRIC_VARIANCE
+            // Override the data variances to have equal fuzziness on the left and right sides. This is useful when all the
+            // feature values on one or both sides are identical (e.g. all zero), so the variance is zero.
+            double sep = node->left->feature_distribution.getMean() - node->right->feature_distribution.getMean();
+            double var = Math::square(sep / 4);
+            node->left->feature_distribution.setVariance(var);
+            node->right->feature_distribution.setVariance(var);
+#endif
 
             // Free up memory at this node
             node->elems.clear();
@@ -477,7 +500,7 @@ class HoughTree
           if (valid_split && (split_feature < 0 || uncertainty < min_uncertainty))
           {
             split_feature = test_feature;
-            split_value = test_threshold;
+            split_value = refineSplitValue(test_threshold, features);
             min_uncertainty = uncertainty;
 
             if (options.verbose >= 3)
@@ -628,6 +651,42 @@ class HoughTree
 
       return measureUncertainty(left_elems,  training_data, measure_mode)
            + measureUncertainty(right_elems, training_data, measure_mode);
+    }
+
+    // Adjust the split value to bisect the closest pair from the left and right sides.
+    double refineSplitValue(double split_value, TheaArray<double> const & features) const
+    {
+      double left_max = 0, right_min = 0;
+      bool found_left = false, found_right = false;
+      for (array_size_t i = 0; i < features.size(); ++i)
+      {
+        double feat = features[i];
+        if (feat < split_value)
+        {
+          if (!found_left)
+          {
+            left_max = feat;
+            found_left = true;
+          }
+          else if (feat > left_max)
+            left_max = feat;
+        }
+        else
+        {
+          if (!found_right)
+          {
+            right_min = feat;
+            found_right = true;
+          }
+          else if (feat < right_min)
+            right_min = feat;
+        }
+      }
+
+      if (found_left && found_right)
+        return 0.5 * (left_max + right_min);
+      else
+        return split_value;
     }
 
     // Estimate the distribution of a set of 1D feature values
