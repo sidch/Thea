@@ -300,11 +300,26 @@ class HoughTree
           if (curr->elems.empty())
             return false;
 
-          if (options.verbose >= 2)
-            THEA_CONSOLE << "HoughForest: Reached leaf at depth " << curr->depth << ", casting vote";
-
           long index = Math::randIntegerInRange(0, (long)curr->elems.size() - 1);
-          parent->singleSelfVoteByLookup(index, 1.0, callback);
+
+          if (options.verbose >= 2)
+          {
+            long actual_index = curr->elems[(array_size_t)index];
+            THEA_CONSOLE << "HoughForest: Reached leaf with " << curr->elems.size() << " element(s) at depth " << curr->depth
+                         << ", casting vote for element with index " << actual_index;
+
+            std::ostringstream oss;
+            oss << "HoughForest:  - Element features = [";
+            for (long i = 0; i < num_features; ++i)
+            {
+              if (i > 0) oss << ", ";
+              oss << parent->all_features(i, actual_index);
+            }
+            oss << ']';
+            THEA_CONSOLE << oss.str();
+          }
+
+          parent->singleSelfVoteByLookup(curr->elems[(array_size_t)index], 1.0, callback);
           break;
         }
         else
@@ -312,6 +327,11 @@ class HoughTree
           // Make a probabilistic choice for which child to step into, for smooth vote distributions
           double feat = features[curr->split_feature];
           bool done = false;
+
+          if (options.verbose >= 3)
+            THEA_CONSOLE << "HoughForest: Testing feature " << curr->split_feature << ", value " << feat
+                         << " against split value " << curr->split_value << " at depth " << curr->depth;
+
           if (options.probabilistic_sampling)
           {
             double p_left   =  curr->left->feature_distribution.probFast(feat);
@@ -323,15 +343,16 @@ class HoughTree
               double coin_toss = Math::rand01();
               if (coin_toss < p_left / p_sum)
               {
-                if (options.verbose >= 2)
-                  THEA_CONSOLE << "HoughForest: Traversing left on feature " << curr->split_feature;
+                if (options.verbose >= 3)
+                  THEA_CONSOLE << "HoughForest: Traversing left with probabilistic sampling on feature " << curr->split_feature;
 
                 curr = curr->left;
               }
               else
               {
-                if (options.verbose >= 2)
-                  THEA_CONSOLE << "HoughForest: Traversing right on feature " << curr->split_feature;
+                if (options.verbose >= 3)
+                  THEA_CONSOLE << "HoughForest: Traversing right with probabilistic sampling on feature "
+                               << curr->split_feature;
 
                 curr = curr->right;
               }
@@ -344,15 +365,15 @@ class HoughTree
           {
             if (feat < curr->split_value)
             {
-              if (options.verbose >= 2)
-                THEA_CONSOLE << "HoughForest: Traversing left on feature " << curr->split_feature;
+              if (options.verbose >= 3)
+                THEA_CONSOLE << "HoughForest: Traversing left with hard decision on feature " << curr->split_feature;
 
               curr = curr->left;
             }
             else
             {
-              if (options.verbose >= 2)
-                THEA_CONSOLE << "HoughForest: Traversing right on feature " << curr->split_feature;
+              if (options.verbose >= 3)
+                THEA_CONSOLE << "HoughForest: Traversing right with hard decision on feature " << curr->split_feature;
 
               curr = curr->right;
             }
@@ -387,6 +408,11 @@ class HoughTree
       }
     }
 
+    void setVerbose(int level)
+    {
+      options.setVerbose(level);
+    }
+
   private:
     // Find a suitable splitting decision for a node, based on minimizing classification/regression uncertainty.
     bool optimizeTest(Node const * node, TrainingData const & training_data, long & split_feature, double & split_value,
@@ -408,7 +434,7 @@ class HoughTree
       split_feature = -1;
       split_value = 0;
 
-      long max_feat_iters    =  std::min(options.max_candidate_features,   num_features);
+      long max_feat_iters    =  std::min((options.num_feature_expansions + 1) * options.max_candidate_features, num_features);
       long max_thresh_iters  =  std::min(options.max_candidate_thresholds, (long)node->elems.size());
 
       for (long feat_iter = 0; feat_iter < max_feat_iters; ++feat_iter)
@@ -459,6 +485,10 @@ class HoughTree
                            << ", uncertainty " << min_uncertainty;
           }
         }
+
+        // If we've reached the end of one expansion and we've found a valid splitting feature, we can stop
+        if (split_feature >= 0 && (feat_iter + 1) % options.max_candidate_features == 0)
+          break;
       }
 
       return (split_feature >= 0);
@@ -667,6 +697,7 @@ HoughForest::Options::Options()
 : max_depth(-1),
   max_leaf_elements(-1),
   max_candidate_features(-1),
+  num_feature_expansions(-1),
   max_candidate_thresholds(-1),
   min_class_uncertainty(-1),
   max_dominant_fraction(-1),
@@ -724,6 +755,7 @@ HoughForest::Options::deserialize(BinaryInputStream & input, Codec const & codec
   max_depth                 =  (long)input.readInt64();
   max_leaf_elements         =  (long)input.readInt64();
   max_candidate_features    =  (long)input.readInt64();
+  num_feature_expansions    =  (long)input.readInt64();
   max_candidate_thresholds  =  (long)input.readInt64();
   min_class_uncertainty     =  (double)input.readFloat64();
   max_dominant_fraction     =  (double)input.readFloat64();
@@ -747,6 +779,8 @@ HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
       max_leaf_elements = (long)input.readNumber();
     else if (field == "max_candidate_features")
       max_candidate_features = (long)input.readNumber();
+    else if (field == "num_feature_expansions")
+      num_feature_expansions = (long)input.readNumber();
     else if (field == "max_candidate_thresholds")
       max_candidate_thresholds = (long)input.readNumber();
     else if (field == "min_class_uncertainty")
@@ -766,6 +800,7 @@ HoughForest::Options::serialize(BinaryOutputStream & output, Codec const & codec
   output.writeInt64(max_depth);
   output.writeInt64(max_leaf_elements);
   output.writeInt64(max_candidate_features);
+  output.writeInt64(num_feature_expansions);
   output.writeInt64(max_candidate_thresholds);
   output.writeFloat64(min_class_uncertainty);
   output.writeFloat64(max_dominant_fraction);
@@ -779,6 +814,7 @@ HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) 
   output.printf("max_depth = %ld\n", max_depth);
   output.printf("max_leaf_elements = %ld\n", max_leaf_elements);
   output.printf("max_candidate_features = %ld\n", max_candidate_features);
+  output.printf("num_feature_expansions = %ld\n", num_feature_expansions);
   output.printf("max_candidate_thresholds = %ld\n", max_candidate_thresholds);
   output.printf("min_class_uncertainty = %lf\n", min_class_uncertainty);
   output.printf("max_dominant_fraction = %lf\n", max_dominant_fraction);
@@ -827,13 +863,22 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
   if (opts_.max_depth < 0)
   {
     if (training_data_)
-      opts_.max_depth = Math::binaryTreeDepth(training_data_->numExamples(), opts_.max_leaf_elements);
+      opts_.max_depth = 3 * Math::binaryTreeDepth(training_data_->numExamples(), opts_.max_leaf_elements);
     else
       opts_.max_depth = 10;
   }
 
   if (opts_.max_candidate_features < 0)
-    opts_.max_candidate_features = (long)std::ceil(num_features / 10.0);
+  {
+    // opts_.max_candidate_features = (long)std::ceil(num_features / 10.0);
+    // opts_.max_candidate_features = num_features;
+    opts_.max_candidate_features = (long)std::ceil(std::sqrt(num_features));
+  }
+
+  if (opts_.num_feature_expansions < 0)
+  {
+    opts_.num_feature_expansions = 2;
+  }
 
   if (opts_.max_candidate_thresholds < 0)
   {
@@ -1014,6 +1059,15 @@ void
 HoughForest::dumpToConsole() const
 {
   THEA_CONSOLE << "HoughForest: Forest has " << trees.size() << " tree(s)";
+}
+
+void
+HoughForest::setVerbose(int level)
+{
+  options.setVerbose(level);
+
+  for (array_size_t i = 0; i < trees.size(); ++i)
+    trees[i]->setVerbose(level);
 }
 
 } // namespace Algorithms
