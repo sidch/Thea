@@ -262,6 +262,9 @@ class THEA_API HoughForest : public Serializable
     HoughForest(long num_classes_, long num_features_, long const * num_vote_params_,
                 Options const & options_ = Options::defaults());
 
+    /** Construct a Hough forest by loading it from a file. */
+    HoughForest(std::string const & path);
+
     /** Destructor. */
     ~HoughForest();
 
