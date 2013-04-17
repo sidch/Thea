@@ -102,6 +102,19 @@ class Gaussian1D
       k = kFromVariance(value);
     }
 
+    void serialize(BinaryOutputStream & out) const
+    {
+      out.writeFloat64(mean);
+      out.writeFloat64(variance);
+    }
+
+    void deserialize(BinaryInputStream & in)
+    {
+      mean = in.readFloat64();
+      variance = in.readFloat64();
+      k = kFromVariance(variance);
+    }
+
 }; // class Gaussian1D
 
 // A node of a Hough tree.
@@ -140,6 +153,28 @@ class HoughNode
       out.writeInt64(depth);
       out.writeInt64(split_feature);
       out.writeFloat64(split_value);
+
+      out.writeInt64((int64)elems.size());
+      for (array_size_t i = 0; i < elems.size(); ++i)
+        out.writeInt64(elems[i]);
+
+      feature_distribution.serialize(out);
+
+      if (left)
+      {
+        out.writeInt8(1);
+        left->serializeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
+
+      if (right)
+      {
+        out.writeInt8(1);
+        right->serializeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
     }
 
     void deserializeSubtree(BinaryInputStream & in)
@@ -149,6 +184,13 @@ class HoughNode
       depth = (long)in.readInt64();
       split_feature = (long)in.readInt64();
       split_value = in.readFloat64();
+
+      int64 num_elems = in.readInt64();
+      elems.resize((array_size_t)num_elems);
+      for (array_size_t i = 0; i < elems.size(); ++i)
+        elems[i] = (long)in.readInt64();
+
+      feature_distribution.deserialize(in);
 
       if (in.readInt8())
       {
@@ -902,6 +944,15 @@ HoughForest::HoughForest(long num_classes_, long num_features_, long const * num
   }
 }
 
+HoughForest::HoughForest(std::string const & path)
+: num_classes(0),
+  num_features(0),
+  max_vote_params(0)
+{
+  if (!load(path))
+    throw Error("HoughForest: Could not load Hough forest from '" + path + '\'');
+}
+
 HoughForest::~HoughForest()
 {
   clear();
@@ -1110,19 +1161,87 @@ HoughForest::save(std::string const & path) const
 void
 HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
 {
+  using namespace HoughForestInternal;
+
+  clear();
+
   options.deserialize(input);
 
   input.setEndian(Endianness::LITTLE);
 
-  // Write nodes in
+  num_classes = (long)input.readInt64();
+  num_features = (long)input.readInt64();
+
+  num_vote_params.resize((array_size_t)num_classes);
+  long max_vote_params = 0;
+  for (array_size_t i = 0; i < num_vote_params.size(); ++i)
+  {
+    num_vote_params[i] = (long)input.readInt64();
+    if (i == 0 || num_vote_params[i] > max_vote_params)
+      max_vote_params = num_vote_params[i];
+  }
+
+  long num_trees = (long)input.readInt64();
+  trees.resize(num_trees);
+  for (array_size_t i = 0; i < trees.size(); ++i)
+  {
+    trees[i] = TreePtr(new HoughTree(this, num_classes, num_features, num_vote_params, options));
+    trees[i]->deserializeNodes(input);
+  }
+
+  int64 num_examples = input.readInt64();
+  all_classes.resize((array_size_t)num_examples);
+  for (array_size_t i = 0; i < all_classes.size(); ++i)
+    all_classes[i] = (long)input.readInt64();
+
+  long nrows = (long)input.readInt64();
+  long ncols = (long)input.readInt64();
+  all_features.resize(nrows, ncols);
+  for (long i = 0; i < nrows; ++i)
+    for (long j = 0; j < ncols; ++j)
+      all_features(i, j) = input.readFloat64();
+
+  nrows = (long)input.readInt64();
+  ncols = (long)input.readInt64();
+  all_self_votes.resize(nrows, ncols);
+  for (long i = 0; i < nrows; ++i)
+    for (long j = 0; j < ncols; ++j)
+      all_self_votes(i, j) = input.readFloat64();
 }
 
 void
 HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
 {
+  using namespace HoughForestInternal;
+
   options.serialize(output);
 
   output.setEndian(Endianness::LITTLE);
+
+  output.writeInt64(num_classes);
+  output.writeInt64(num_features);
+  for (array_size_t i = 0; i < num_vote_params.size(); ++i)
+    output.writeInt64(num_vote_params[i]);
+
+  output.writeInt64((int64)trees.size());
+  for (array_size_t i = 0; i < trees.size(); ++i)
+    trees[i]->serializeNodes(output);
+
+  output.writeInt64((int64)all_classes.size());
+  for (array_size_t i = 0; i < all_classes.size(); ++i)
+    output.writeInt64(all_classes[i]);
+
+  output.writeInt64(all_features.numRows());
+  output.writeInt64(all_features.numColumns());
+  for (long i = 0; i < all_features.numRows(); ++i)
+    for (long j = 0; j < all_features.numColumns(); ++j)
+      output.writeFloat64(all_features(i, j));
+
+  output.writeInt64(all_self_votes.numRows());
+  output.writeInt64(all_self_votes.numColumns());
+  for (long i = 0; i < all_self_votes.numRows(); ++i)
+    for (long j = 0; j < all_self_votes.numColumns(); ++j)
+      output.writeFloat64(all_self_votes(i, j));
 }
 
 void
