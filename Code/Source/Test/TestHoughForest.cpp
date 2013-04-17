@@ -304,10 +304,10 @@ class VoteCallback : public HoughForest::VoteCallback
 
     void operator()(long target_class, long num_vote_params, double const * vote_params, double weight)
     {
-      THEA_CONSOLE << "  - Hough vote:";
-      THEA_CONSOLE << "    - target class : " << training_data->houghClassToInputClass(target_class);
-      THEA_CONSOLE << "    - vote params  : " << rangeToString(vote_params, vote_params + num_vote_params);
-      THEA_CONSOLE << "    - weight       : " << weight;
+      THEA_CONSOLE << "Hough vote:";
+      THEA_CONSOLE << "  - target class : " << training_data->houghClassToInputClass(target_class);
+      THEA_CONSOLE << "  - vote params  : " << rangeToString(vote_params, vote_params + num_vote_params);
+      THEA_CONSOLE << "  - weight       : " << weight;
     }
 
   private:
@@ -353,10 +353,10 @@ testHoughForestFile(string const & path)
 
   THEA_CONSOLE << "\n======================================";
   THEA_CONSOLE << "Testing Hough forest";
-  THEA_CONSOLE << "======================================\n";
+  THEA_CONSOLE << "========================================";
 
-  // Change the debugging level
-  hf.setVerbose(2);
+  // Change the debugging level here if necessary
+  hf.setVerbose(1);
 
   VoteCallback callback(&training_data);
   TheaArray<double> training_vote, test_vote;
@@ -364,8 +364,6 @@ testHoughForestFile(string const & path)
   for (long i = 0; i < 10; ++i)
   {
     long index = std::rand() % training_data.numExamples();
-    THEA_CONSOLE << "Testing training example " << index;
-
     long c = training_data.getClass(index);
     long num_vote_params = training_data.numVoteParameters(c);
 
@@ -375,10 +373,12 @@ testHoughForestFile(string const & path)
     training_data.getSelfVote(index, &training_vote[0]);
     training_data.getExampleFeatures(index, &features[0]);
 
-    THEA_CONSOLE << "  - training vote:";
-    THEA_CONSOLE << "    - class       : " << training_data.houghClassToInputClass(c);
-    THEA_CONSOLE << "    - features    : " << arrayToString(features);
-    THEA_CONSOLE << "    - vote params : " << arrayToString(training_vote);
+    THEA_CONSOLE << "\n################################################################";
+    THEA_CONSOLE << "Testing training example " << index;
+    THEA_CONSOLE << "  - class       : " << training_data.houghClassToInputClass(c);
+    THEA_CONSOLE << "  - features    : " << arrayToString(features);
+    THEA_CONSOLE << "  - vote params : " << arrayToString(training_vote);
+    THEA_CONSOLE <<   "################################################################\n";
 
     hf.voteSelf(&features[0], 5, callback);
   }
