@@ -161,8 +161,8 @@ class ExampleSet: public HoughForest::TrainingData
 
             std::istringstream line_in(line);
 
-            long model_id, class_id;
-            line_in >> model_id >> class_id;
+            long class_id, model_id;
+            line_in >> class_id >> model_id;
 
             if (inputClassToHoughClass(class_id) < 0)
             {
@@ -197,10 +197,10 @@ class ExampleSet: public HoughForest::TrainingData
         std::ifstream in(path.c_str());
         TheaArray<double> example_features((array_size_t)num_features);
         TheaArray<double> example_self_vote((array_size_t)num_vote_params);
-        long model_id, class_id;
+        long class_id, model_id;
         for (long i = 0; i < num_examples; ++i)
         {
-          in >> model_id >> class_id;
+          in >> class_id >> model_id;
 
           for (long j = 0; j < num_vote_params; ++j)
             in >> example_self_vote[(array_size_t)j];
