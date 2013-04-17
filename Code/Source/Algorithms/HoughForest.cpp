@@ -290,8 +290,9 @@ class HoughTree
             estimateFeatureDistribution(right_features,  node->right->feature_distribution);
 
 #ifdef THEA_HOUGH_SYMMETRIC_VARIANCE
-            // Override the data variances to have equal fuzziness on the left and right sides. This is useful when all the
-            // feature values on one or both sides are identical (e.g. all zero), so the variance is zero.
+            // Override the data variances to have equal fuzziness on the left and right sides. This is to compensate for
+            // situations when all the feature values on one or both sides are identical (e.g. all zero), so the variance is
+            // zero.
             double sep = node->left->feature_distribution.getMean() - node->right->feature_distribution.getMean();
             double var = Math::square(sep / 4);
             node->left->feature_distribution.setVariance(var);
@@ -347,7 +348,10 @@ class HoughTree
         }
         else
         {
-          // Make a probabilistic choice for which child to step into, for smooth vote distributions
+          // Make a probabilistic choice for which child to step into, for smooth vote distributions. Similar to Gaussian
+          // kd-trees [Adams et al. 2009] but the left and right probabilities are evaluated a little differently, and we don't
+          // weight the sides by the number of samples on each side (to handle the situation of too many observed samples of a
+          // single class).
           double feat = features[curr->split_feature];
           bool done = false;
 
@@ -364,7 +368,7 @@ class HoughTree
             if (p_sum > 0)
             {
               double coin_toss = Math::rand01();
-              if (coin_toss < p_left / p_sum)
+              if (coin_toss * p_sum < p_left)
               {
                 if (options.verbose >= 3)
                   THEA_CONSOLE << "HoughForest: Traversing left with probabilistic sampling on feature " << curr->split_feature;
@@ -976,6 +980,13 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
   // Auto-select appropriate values for unspecified options
   Options full_opts = options;
   autoSelectUnspecifiedOptions(full_opts, &training_data_);
+
+  if (full_opts.verbose)
+  {
+    TextOutputStream opts_out;
+    full_opts.serialize(opts_out);
+    THEA_CONSOLE << "HoughForest: Options:\n" << opts_out.commitString();
+  }
 
   clear();
   trees.resize((array_size_t)num_trees);
