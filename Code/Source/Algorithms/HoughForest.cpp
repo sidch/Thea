@@ -55,14 +55,7 @@ namespace HoughForestInternal {
 
 static long const BACKGROUND_CLASS = 0;
 
-struct Gaussian
-{
-  double k;
-  TheaArray<double> mean;
-  Matrix<double> invcov;
-
-}; // struct Gaussian
-
+// A 1-dimensional Gaussian distribution.
 class Gaussian1D
 {
   private:
@@ -70,24 +63,24 @@ class Gaussian1D
     double variance;
     double k;  // normalizing constant
 
-    static double kFromVariance(double var) { return std::sqrt(2 * Math::pi() * var); }
+    static double kFromVariance(double var) { return 1.0 / std::sqrt(2 * Math::pi() * var); }
 
   public:
     Gaussian1D() : mean(0), variance(0), k(0) {}
     Gaussian1D(double mean_, double variance_) : mean(mean_), variance(variance_), k(kFromVariance(variance_)) {}
 
-    double prob(double x)
+    double prob(double x) const
     {
       if (variance > 0)
-        return k * (std::exp(-Math::square(x - mean) / variance));
+        return k * (std::exp(-Math::square(x - mean) / (2 * variance)));
       else
         return 1.0e-20;
     }
 
-    double probFast(double x)
+    double probFast(double x) const
     {
       if (variance > 0)
-        return k * (Math::fastMinusExp((double)(Math::square(x - mean) / variance)));
+        return k * (Math::fastMinusExp((double)(Math::square(x - mean) / (2 * variance))));
       else
         return 1.0e-20;
     }
@@ -116,6 +109,100 @@ class Gaussian1D
     }
 
 }; // class Gaussian1D
+
+// An n-dimensional Gaussian distribution.
+class Gaussian
+{
+  private:
+    TheaArray<double> mean;
+    Matrix<double> inv_cov;
+
+    void resize(long ndims)
+    {
+      mean.resize((array_size_t)ndims);
+      inv_cov.resize(ndims, ndims);
+    }
+
+  public:
+    Gaussian() {}
+    Gaussian(long ndims) { resize(ndims); }
+
+    double unnormalizedProb(double const * x) const
+    {
+      double xCx = 0;
+      for (array_size_t i = 0; i < mean.size(); ++i)
+      {
+        double prod = 0;
+        for (array_size_t j = 0; j < mean.size(); ++j)
+          prod += (inv_cov((long)i, (long)j) * (mean[j] - x[j]));
+
+        xCx += (mean[i] - x[i]) * prod;
+      }
+
+      return std::exp(-0.5 * xCx);
+    }
+
+    double unnormalizedProbFast(double const * x) const
+    {
+      double xCx = 0;
+      for (array_size_t i = 0; i < mean.size(); ++i)
+      {
+        double prod = 0;
+        for (array_size_t j = 0; j < mean.size(); ++j)
+          prod += (inv_cov((long)i, (long)j) * (mean[j] - x[j]));
+
+        xCx += (mean[i] - x[i]) * prod;
+      }
+
+      return Math::fastMinusExp(0.5 * xCx);
+    }
+
+    long numDimensions() const { return (long)mean.size(); }
+
+    TheaArray<double> const & getMean() const { return mean; }
+    Matrix<double> const & getInvCov() const { return inv_cov; }
+
+    void setMean(TheaArray<double> const & value) { mean = value; }
+    void setCov(Matrix<double> const & cov)
+    {
+      inv_cov = cov;
+
+      try
+      {
+        inv_cov.invert();
+      }
+      catch (...)
+      {
+        inv_cov.fill(1e+20);  // a near-zero matrix has an inverse with very large values
+      }
+    }
+
+    void serialize(BinaryOutputStream & out) const
+    {
+      out.writeInt64(numDimensions());
+
+      for (array_size_t i = 0; i < mean.size(); ++i)
+        out.writeFloat64(mean[i]);
+
+      for (long i = 0; i < inv_cov.numRows(); ++i)
+        for (long j = 0; j < inv_cov.numColumns(); ++j)
+          out.writeFloat64(inv_cov(i, j));
+    }
+
+    void deserialize(BinaryInputStream & in)
+    {
+      long ndims = (long)in.readInt64();
+      resize(ndims);
+
+      for (array_size_t i = 0; i < mean.size(); ++i)
+        mean[i] = in.readFloat64();
+
+      for (long i = 0; i < inv_cov.numRows(); ++i)
+        for (long j = 0; j < inv_cov.numColumns(); ++j)
+          inv_cov(i, j) = in.readFloat64();
+    }
+
+}; // struct Gaussian
 
 // A node of a Hough tree.
 class HoughNode
