@@ -211,11 +211,11 @@ class HoughNode
     long depth;
     long split_feature;
     double split_value;
-    TheaArray<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
     TheaArray<long> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
+    TheaArray<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
+    TheaArray<Gaussian1D> class_feature_distrib;
     HoughNode * left;
     HoughNode * right;
-    Gaussian1D feature_distribution;
 
     HoughNode(long depth_ = 0)
     : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
@@ -251,15 +251,20 @@ class HoughNode
       out.writeInt64(split_feature);
       out.writeFloat64(split_value);
 
-      out.writeInt64((int64)class_cum_freq.size());
-      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
-        out.writeInt64(class_cum_freq[i]);
-
       out.writeInt64((int64)elems.size());
       for (array_size_t i = 0; i < elems.size(); ++i)
         out.writeInt64(elems[i]);
 
-      feature_distribution.serialize(out);
+      alwaysAssertM(class_cum_freq.size() == class_feature_distrib.size(),
+                    "HoughForest: class_cum_freq.size() != class_feature_distrib.size()");
+
+      out.writeInt64((int64)class_cum_freq.size());
+
+      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
+        out.writeInt64(class_cum_freq[i]);
+
+      for (array_size_t i = 0; i < class_feature_distrib.size(); ++i)
+        class_feature_distrib[i].serialize(out);
 
       if (left)
       {
@@ -286,17 +291,20 @@ class HoughNode
       split_feature = (long)in.readInt64();
       split_value = in.readFloat64();
 
-      int64 num_classes = in.readInt64();
-      class_cum_freq.resize((array_size_t)num_classes);
-      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
-        class_cum_freq[i] = (long)in.readInt64();
-
       int64 num_elems = in.readInt64();
       elems.resize((array_size_t)num_elems);
       for (array_size_t i = 0; i < elems.size(); ++i)
         elems[i] = (long)in.readInt64();
 
-      feature_distribution.deserialize(in);
+      int64 num_classes = in.readInt64();
+
+      class_cum_freq.resize((array_size_t)num_classes);
+      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
+        class_cum_freq[i] = (long)in.readInt64();
+
+      class_feature_distrib.resize((array_size_t)num_classes);
+      for (array_size_t i = 0; i < class_feature_distrib.size(); ++i)
+        class_feature_distrib[i].deserialize(in);
 
       if (in.readInt8())
       {
@@ -367,10 +375,14 @@ class HoughTree
         return;
       }
 
+      // Set up root node
       root = new Node(0);
       root->elems.resize((array_size_t)training_data.numExamples());
       for (long i = 0; i < training_data.numExamples(); ++i)
         root->elems[(array_size_t)i] = i;
+
+      measureClassCumulativeFrequencies(root->elems, training_data, root->class_cum_freq);
+      root->class_feature_distrib.resize(root->class_cum_freq.size());
 
       long num_nodes = 1;
       long max_depth = 0;
@@ -437,18 +449,23 @@ class HoughTree
             measureClassCumulativeFrequencies(node->left->elems,  training_data, node->left->class_cum_freq);
             measureClassCumulativeFrequencies(node->right->elems, training_data, node->right->class_cum_freq);
 
-            // Estimation distribution of this feature within each child
-            estimateFeatureDistribution(left_features,   node->left->feature_distribution);
-            estimateFeatureDistribution(right_features,  node->right->feature_distribution);
+            // Estimate distribution of this feature for each class within each child
+            estimateClassFeatureDistributions(left_features, node->left->elems, training_data,
+                                              node->left->class_feature_distrib);
+            estimateClassFeatureDistributions(right_features, node->right->elems, training_data,
+                                              node->right->class_feature_distrib);
 
 #ifdef THEA_HOUGH_SYMMETRIC_VARIANCE
             // Override the data variances to have equal fuzziness on the left and right sides. This is to compensate for
             // situations when all the feature values on one or both sides are identical (e.g. all zero), so the variance is
             // zero.
-            double sep = node->left->feature_distribution.getMean() - node->right->feature_distribution.getMean();
-            double var = Math::square(sep / 4);
-            node->left->feature_distribution.setVariance(var);
-            node->right->feature_distribution.setVariance(var);
+            for (array_size_t i = 0; i < node->left->class_feature_distrib.size(); ++i)
+            {
+              double sep = node->left->class_feature_distrib[i].getMean() - node->right->class_feature_distrib[i].getMean();
+              double var = Math::square(sep / 4);
+              node->left->class_feature_distrib[i].setVariance(var);
+              node->right->class_feature_distrib[i].setVariance(var);
+            }
 #endif
 
             // Free up memory at this node
@@ -519,15 +536,17 @@ class HoughTree
           //===================================================================================================================
           // If either the left or the right subtree has zero samples from the query class, we can just visit the other subtree
           //===================================================================================================================
-          if (curr->left->getClassFrequency(query_class) > 0)
+          long left_freq   =  curr->left->getClassFrequency(query_class);
+          long right_freq  =  curr->right->getClassFrequency(query_class);
+          if (left_freq > 0)
           {
-            if (curr->right->getClassFrequency(query_class) <= 0)
+            if (right_freq <= 0)
             {
               curr = curr->left;
               done = true;
             }
           }
-          else if (curr->right->getClassFrequency(query_class) > 0)
+          else if (right_freq > 0)
           {
             curr = curr->right;
             done = true;
@@ -537,14 +556,15 @@ class HoughTree
 
           //===================================================================================================================
           // Make a probabilistic choice for which child to step into, for smooth vote distributions. Similar to Gaussian
-          // kd-trees [Adams et al. 2009] but the left and right probabilities are evaluated a little differently, and we don't
-          // weight the sides by the number of samples on each side (to handle the situation of too many observed samples of a
-          // single class).
+          // kd-trees [Adams et al. 2009] but the left and right probabilities are evaluated a little differently.
           //===================================================================================================================
           if (!done && options.probabilistic_sampling)
           {
-            double p_left   =  curr->left->feature_distribution.probFast(feat);
-            double p_right  =  curr->right->feature_distribution.probFast(feat);
+            double p_left   =  curr->left ->class_feature_distrib[(array_size_t)query_class].probFast(feat);
+            double p_right  =  curr->right->class_feature_distrib[(array_size_t)query_class].probFast(feat);
+
+            p_left   *=  left_freq;
+            p_right  *=  right_freq;
 
             double p_sum = p_left + p_right;
             if (p_sum > 0)
@@ -920,22 +940,40 @@ class HoughTree
     }
 
     // Estimate the distribution of a set of 1D feature values
-    void estimateFeatureDistribution(TheaArray<double> const & features, Gaussian1D & distrib)
+    void estimateClassFeatureDistributions(TheaArray<double> const & features, TheaArray<long> const & elems,
+                                           TrainingData const & training_data, TheaArray<Gaussian1D> & class_feature_distrib)
     {
-      alwaysAssertM(!features.empty(), "HoughForest: Can't model distribution of empty set");
+      alwaysAssertM(!elems.empty(), "HoughForest: Can't model distribution of empty set");
 
-      double sum = 0, sum_squares = 0;
-      for (array_size_t i = 0; i < features.size(); ++i)
+      TheaArray<long> classes(elems.size());
+      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+
+      TheaArray<double> sum((array_size_t)num_classes, 0.0);
+      TheaArray<double> sum_squares((array_size_t)num_classes, 0.0);
+      TheaArray<double> class_freq((array_size_t)num_classes, 0);
+
+      for (array_size_t i = 0; i < elems.size(); ++i)
       {
-        sum += features[i];
-        sum_squares += (features[i] * features[i]);
+        array_size_t c = (array_size_t)classes[i];
+        sum        [c] += features[i];
+        sum_squares[c] += (features[i] * features[i]);
+        class_freq [c]++;
       }
 
-      double mean = sum / features.size();
-      double mean_squares = sum_squares / features.size();
-      double variance = mean_squares - mean * mean;
-
-      distrib = Gaussian1D(mean, variance);
+      class_feature_distrib.resize(class_freq.size());
+      for (array_size_t i = 0; i < class_freq.size(); ++i)
+      {
+        long n = class_freq[i];
+        if (n > 0)
+        {
+          double mean = sum[i] / n;
+          double mean_squares = sum_squares[i] / n;
+          double variance = mean_squares - mean * mean;
+          class_feature_distrib[i] = Gaussian1D(mean, variance);
+        }
+        else
+          class_feature_distrib[i] = Gaussian1D(0, 0);
+      }
     }
 
     void estimateClassGaussians(TheaArray<long> const & elems, TrainingData const & training_data,
