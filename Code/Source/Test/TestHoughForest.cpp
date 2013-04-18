@@ -366,10 +366,10 @@ testHoughForestFile(string const & path)
 
   for (long c = 1; c < training_data.numClasses(); ++c)
   {
-    long hc = training_data.houghClassToInputClass(c);
+    long inpc = training_data.houghClassToInputClass(c);
 
     THEA_CONSOLE << "\n======================================";
-    THEA_CONSOLE << "Voting for class " << hc;
+    THEA_CONSOLE << "Voting for class " << inpc;
     THEA_CONSOLE << "======================================";
 
     for (long i = 0; i < NUM_POINTS_PER_CLASS; ++i)
