@@ -292,15 +292,16 @@ class THEA_API HoughForest : public Serializable
     void train(long num_trees, TrainingData const & training_data_);
 
     /**
-     * Sample the Hough votes from a point with a given set of features.
+     * Sample the Hough votes for a class from a point with a given set of features.
      *
+     * @param query_class The class for which to cast votes. Must be non-zero, i.e. not the background class.
      * @param features The features of the point. Must contain numFeatures() values.
      * @param num_votes Number of votes to cast.
      * @param callback Called once for every vote.
      *
      * @return The number of votes actually cast (usually == \a num_votes unless something goes horribly wrong).
      */
-    long voteSelf(double const * features, long num_votes, VoteCallback & callback) const;
+    long voteSelf(long query_class, double const * features, long num_votes, VoteCallback & callback) const;
 
     /** Load the forest from a disk file. */
     bool load(std::string const & path);

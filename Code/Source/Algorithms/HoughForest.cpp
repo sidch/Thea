@@ -121,15 +121,17 @@ class Gaussian1D
 class HoughNode
 {
   public:
-    HoughNode(long depth_ = 0) : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
-
     long depth;
     long split_feature;
     double split_value;
+    TheaArray<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
+    TheaArray<long> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
     HoughNode * left;
     HoughNode * right;
-    TheaArray<long> elems;
     Gaussian1D feature_distribution;
+
+    HoughNode(long depth_ = 0)
+    : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
 
     ~HoughNode()
     {
@@ -148,11 +150,23 @@ class HoughNode
       return !left && !right;
     }
 
+    long numElements() const { return class_cum_freq.back(); }
+
+    long getClassFrequency(long class_id) const
+    {
+      return class_id == 0 ? class_cum_freq[0]
+                           : class_cum_freq[(array_size_t)class_id] - class_cum_freq[(array_size_t)class_id - 1];
+    }
+
     void serializeSubtree(BinaryOutputStream & out) const
     {
       out.writeInt64(depth);
       out.writeInt64(split_feature);
       out.writeFloat64(split_value);
+
+      out.writeInt64((int64)class_cum_freq.size());
+      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
+        out.writeInt64(class_cum_freq[i]);
 
       out.writeInt64((int64)elems.size());
       for (array_size_t i = 0; i < elems.size(); ++i)
@@ -184,6 +198,11 @@ class HoughNode
       depth = (long)in.readInt64();
       split_feature = (long)in.readInt64();
       split_value = in.readFloat64();
+
+      int64 num_classes = in.readInt64();
+      class_cum_freq.resize((array_size_t)num_classes);
+      for (array_size_t i = 0; i < class_cum_freq.size(); ++i)
+        class_cum_freq[i] = (long)in.readInt64();
 
       int64 num_elems = in.readInt64();
       elems.resize((array_size_t)num_elems);
@@ -324,8 +343,12 @@ class HoughTree
             }
 
             if (options.verbose >= 2)
-              THEA_CONSOLE << "HoughForest:    - Left node has " << node->left->elems.size() << " elements, right node has "
-                           << node->right->elems.size() << " elements";
+              THEA_CONSOLE << "HoughForest:    - Left node has " << node->left->numElements() << " elements, right node has "
+                           << node->right->numElements() << " elements";
+
+            // Measure frequency of each class
+            measureClassCumulativeFrequencies(node->left->elems,  training_data, node->left->class_cum_freq);
+            measureClassCumulativeFrequencies(node->right->elems, training_data, node->right->class_cum_freq);
 
             // Estimation distribution of this feature within each child
             estimateFeatureDistribution(left_features,   node->left->feature_distribution);
@@ -349,6 +372,10 @@ class HoughTree
             nodes.push(node->right);
           }
         }
+
+        // Leaf nodes contain lists of elements which must be sorted by class for efficient sampling from a particular class
+        if (node->isLeaf())
+          sortByClass(node->elems, training_data);
       }
 
       THEA_CONSOLE << "HoughForest:  - Trained tree with " << num_nodes << " node(s) and " << max_depth + 1 << " level(s) from "
@@ -356,23 +383,28 @@ class HoughTree
     }
 
     // Cast a single vote for a query point with given features. */
-    bool singleVoteSelf(double const * features, VoteCallback & callback) const
+    bool singleVoteSelf(long query_class, double const * features, VoteCallback & callback) const
     {
       Node * curr = root;
       while (curr)
       {
         if (curr->isLeaf())
         {
-          if (curr->elems.empty())
+          // Elements are sorted by class, so we can access the range of elements for the class directly
+          long start_index = (query_class == 0 ? 0 : curr->class_cum_freq[(array_size_t)query_class - 1]);
+          long end_index = curr->class_cum_freq[(array_size_t)query_class] - 1;
+          if (end_index < start_index)
             return false;
 
-          long index = Math::randIntegerInRange(0, (long)curr->elems.size() - 1);
+          long index = Math::randIntegerInRange(start_index, end_index);
+          double weight = curr->getClassFrequency(query_class) / (double)curr->numElements();
 
           if (options.verbose >= 2)
           {
             long actual_index = curr->elems[(array_size_t)index];
-            THEA_CONSOLE << "HoughForest: Reached leaf with " << curr->elems.size() << " element(s) at depth " << curr->depth
-                         << ", casting vote for element with index " << actual_index;
+            THEA_CONSOLE << "HoughForest: Reached leaf with " << end_index - start_index + 1 << " element(s) of class "
+                         << query_class << " at depth " << curr->depth << ", casting vote for element " << actual_index
+                         << " with weight " << weight;
 
             std::ostringstream oss;
             oss << "HoughForest:  - Element features = [";
@@ -385,15 +417,11 @@ class HoughTree
             THEA_CONSOLE << oss.str();
           }
 
-          parent->singleSelfVoteByLookup(curr->elems[(array_size_t)index], 1.0, callback);
+          parent->singleSelfVoteByLookup(curr->elems[(array_size_t)index], weight, callback);
           break;
         }
         else
         {
-          // Make a probabilistic choice for which child to step into, for smooth vote distributions. Similar to Gaussian
-          // kd-trees [Adams et al. 2009] but the left and right probabilities are evaluated a little differently, and we don't
-          // weight the sides by the number of samples on each side (to handle the situation of too many observed samples of a
-          // single class).
           double feat = features[curr->split_feature];
           bool done = false;
 
@@ -401,7 +429,32 @@ class HoughTree
             THEA_CONSOLE << "HoughForest: Testing feature " << curr->split_feature << ", value " << feat
                          << " against split value " << curr->split_value << " at depth " << curr->depth;
 
-          if (options.probabilistic_sampling)
+          //===================================================================================================================
+          // If either the left or the right subtree has zero samples from the query class, we can just visit the other subtree
+          //===================================================================================================================
+          if (curr->left->getClassFrequency(query_class) > 0)
+          {
+            if (curr->right->getClassFrequency(query_class) <= 0)
+            {
+              curr = curr->left;
+              done = true;
+            }
+          }
+          else if (curr->right->getClassFrequency(query_class) > 0)
+          {
+            curr = curr->right;
+            done = true;
+          }
+          else  // this subtree has no samples from the query class
+            return false;
+
+          //===================================================================================================================
+          // Make a probabilistic choice for which child to step into, for smooth vote distributions. Similar to Gaussian
+          // kd-trees [Adams et al. 2009] but the left and right probabilities are evaluated a little differently, and we don't
+          // weight the sides by the number of samples on each side (to handle the situation of too many observed samples of a
+          // single class).
+          //===================================================================================================================
+          if (!done && options.probabilistic_sampling)
           {
             double p_left   =  curr->left->feature_distribution.probFast(feat);
             double p_right  =  curr->right->feature_distribution.probFast(feat);
@@ -430,7 +483,10 @@ class HoughTree
             }
           }
 
-          if (!done)  // make the traditional hard choice
+          //===================================================================================================================
+          // Make the traditional hard choice
+          //===================================================================================================================
+          if (!done)
           {
             if (feat < curr->split_value)
             {
@@ -490,12 +546,17 @@ class HoughTree
       if (node->elems.size() < 4)  // doesn't make sense splitting smaller sets, and the quadrant index math will fail anyway
         return false;
 
-      measure_mode = (std::rand() % 2 == 0 ? CLASS_UNCERTAINTY : VOTE_UNCERTAINTY);
-      if (measure_mode == CLASS_UNCERTAINTY)
+      if (num_classes <= 1)
+        measure_mode = VOTE_UNCERTAINTY;
+      else
       {
-        double uncertainty = measureUncertainty(node->elems, training_data, measure_mode);
-        if (uncertainty < options.min_class_uncertainty)
-          measure_mode = VOTE_UNCERTAINTY;
+        measure_mode = (std::rand() % 2 == 0 ? CLASS_UNCERTAINTY : VOTE_UNCERTAINTY);
+        if (measure_mode == CLASS_UNCERTAINTY)
+        {
+          double uncertainty = measureUncertainty(node->elems, training_data, measure_mode);
+          if (uncertainty < options.min_class_uncertainty)
+            measure_mode = VOTE_UNCERTAINTY;
+        }
       }
 
       TheaArray<double> features, reordered_features;
@@ -571,6 +632,46 @@ class HoughTree
       training_data.getFeatures(feature_index, (long)node->elems.size(), &node->elems[0], &features[0]);
     }
 
+    // Measure the frequency of occurrence of each class in a set of elements.
+    void measureClassFrequencies(TheaArray<long> const & elems, TrainingData const & training_data,
+                                 TheaArray<long> & class_freq) const
+    {
+      class_freq.resize((array_size_t)num_classes);
+      std::fill(class_freq.begin(), class_freq.end(), 0);
+
+      TheaArray<long> classes(elems.size());
+      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+
+      for (array_size_t i = 0; i < classes.size(); ++i)
+        class_freq[(array_size_t)classes[i]]++;
+    }
+
+    // Measure the cumulative frequency of occurrence of classes, in order of ID, in a set of elements.
+    void measureClassCumulativeFrequencies(TheaArray<long> const & elems, TrainingData const & training_data,
+                                           TheaArray<long> & class_cum_freq) const
+    {
+      measureClassFrequencies(elems, training_data, class_cum_freq);
+
+      for (array_size_t i = 1; i < class_cum_freq.size(); ++i)
+        class_cum_freq[i] = class_cum_freq[i - 1] + class_cum_freq[i];
+    }
+
+    // Sort a set of elements by their class ID's.
+    void sortByClass(TheaArray<long> & elems, TrainingData const & training_data) const
+    {
+      TheaArray<long> classes(elems.size());
+      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+
+      // Quadratic-time sort but we expect this to be called only by leaf nodes with few elements
+      for (array_size_t i = 0; i < elems.size(); ++i)
+        for (array_size_t j = i + 1; j < elems.size(); ++j)
+          if (classes[i] > classes[j])
+          {
+            std::swap(elems[i], elems[j]);
+            std::swap(classes[i], classes[j]);
+          }
+    }
+
     // Measure the classification/regression uncertainty of a collection training examples.
     double measureUncertainty(TheaArray<long> const & elems, TrainingData const & training_data, MeasureMode measure_mode) const
     {
@@ -579,12 +680,8 @@ class HoughTree
         // The uncertainty is defined to be the Shannon entropy of the labeling:
         //   Entropy = -\sum_{c \in Classes} p(c) log p(c)
 
-        TheaArray<long> classes(elems.size());
-        training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
-
-        TheaArray<long> class_freq((array_size_t)num_classes, 0);
-        for (array_size_t i = 0; i < classes.size(); ++i)
-          class_freq[(array_size_t)classes[i]]++;
+        TheaArray<long> class_freq;
+        measureClassFrequencies(elems, training_data, class_freq);
 
         double entropy = 0;
         for (array_size_t i = 0; i < class_freq.size(); ++i)
@@ -1069,7 +1166,7 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
 }
 
 long
-HoughForest::voteSelf(double const * features, long num_votes, VoteCallback & callback) const
+HoughForest::voteSelf(long query_class, double const * features, long num_votes, VoteCallback & callback) const
 {
   if (trees.empty())
     return 0;
@@ -1078,7 +1175,7 @@ HoughForest::voteSelf(double const * features, long num_votes, VoteCallback & ca
   for (long i = 0; i < num_votes; ++i)
   {
     long tree_index = Math::randIntegerInRange(0, (long)trees.size() - 1);
-    if (trees[(array_size_t)tree_index]->singleVoteSelf(features, callback))
+    if (trees[(array_size_t)tree_index]->singleVoteSelf(query_class, features, callback))
       votes_cast++;
   }
 
