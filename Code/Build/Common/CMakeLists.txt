@@ -151,6 +151,7 @@ IF(UseFilesMatching)  # CMake 2.6 and above
   INSTALL(DIRECTORY ${SourceRoot}/ DESTINATION include/Thea
           FILES_MATCHING
           REGEX "Test$" EXCLUDE
+          REGEX "Plugins$" EXCLUDE
           REGEX "Tools$" EXCLUDE
           PATTERN "CVS" EXCLUDE
           PATTERN ".svn" EXCLUDE
@@ -161,6 +162,7 @@ ELSE()
   # Bit flakier method, since we can't install only the files matching a pattern
   INSTALL(DIRECTORY ${SourceRoot}/ DESTINATION include/Thea
           REGEX "Test$" EXCLUDE
+          REGEX "Plugins$" EXCLUDE
           REGEX "Tools$" EXCLUDE
           PATTERN "CVS" EXCLUDE
           PATTERN ".svn" EXCLUDE
