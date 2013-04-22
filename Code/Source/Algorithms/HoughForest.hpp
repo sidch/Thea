@@ -231,23 +231,80 @@ class THEA_API HoughForest : public Serializable
 
     }; // class Options
 
+    /** Class containing parameters for a single vote. */
+    class Vote
+    {
+      public:
+        /**
+         * Constructor.
+         *
+         * @param target_class_ Class for which this vote is being cast.
+         * @param num_params_ Number of parameters defining the vote (dimension of Hough space).
+         * @param params_ Parameters defining the vote.
+         * @param weight_ Weight assigned to the vote.
+         * @param index_ [Optional] The index of the closest training example used to compute the vote. Negative if unknown.
+         * @param num_features_ [Optional] Number of features of the (training or estimated) point used to compute the vote.
+         *   Negative if unknown.
+         * @param features_ [Optional] Features of the (training or estimated) point used to compute the vote. Null if unknown.
+         */
+        Vote(long target_class_, long num_params_, double const * params_, double weight_, long index_ = -1,
+             long num_features_ = -1, double const * features_ = NULL)
+        : target_class(target_class_),
+          num_params(num_params_),
+          params(params_),
+          weight(weight_),
+          index(index_),
+          num_features(num_features_),
+          features(features_)
+        {}
+
+        /** Get the ID of the class for which this vote is being cast. */
+        long getTargetClassID() const { return target_class; }
+
+        /** Get the number of parameters defining the vote (dimension of Hough space). */
+        long numParameters() const { return num_params; }
+
+        /** Get the parameters defining the vote. */
+        double const * getParameters() const { return params; }
+
+        /** Get the weight assigned to the vote. */
+        double getWeight() const { return weight; }
+
+        /* Get the index of the closest training example used to compute the vote. Negative if unknown. */
+        long getTrainingExampleIndex() const { return index; }
+
+        /** Get the number of features of the (training or estimated) point used to compute the vote. Negative if unknown. */
+        long numVotingFeatures() const { return num_features; }
+
+        /** Get the features of the (training or estimated) point used to compute the vote. Null if unknown. */
+        double const * getVotingFeatures() const { return features; }
+
+      private:
+        long target_class;  ///< Class for which this vote is being cast.
+        long num_params;  ///< Number of parameters defining the vote (dimension of Hough space).
+        double const * params;  ///< Parameters defining the vote.
+        double weight;  ///< Weight assigned to the vote.
+        long index;  ///< The index of the closest training example used to compute the vote.
+        long num_features;  ///< Number of features of the (training or estimated) point used to compute the vote.
+        double const * features;  ///< Features of the closest training example used to compute the vote.
+
+    }; // class Vote
+
     /** Interface for a callback that is called for each Hough vote. */
     class VoteCallback
     {
       public:
+        typedef HoughForest::Vote Vote;  ///< Parameters of a Hough vote.
+
         /** Destructor. */
         virtual ~VoteCallback() {}
 
         /**
          * Function called for each Hough vote. Specialize this to suit your needs.
          *
-         * @param target_class The class for which the Hough vote is cast (NOT the predicted class of the voting element).
-         * @param num_vote_params Number of parameters (dimensions) of Hough voting space for the target class. Matches the
-         *   value used to construct the Hough forest, provided again here for convenience.
-         * @param vote_params The array of Hough vote parameters, with \a num_vote_params values.
-         * @param weight The weight of the vote.
+         * @param vote Parameters of the vote.
          */
-        virtual void operator()(long target_class, long num_vote_params, double const * vote_params, double weight) = 0;
+        virtual void operator()(Vote const & vote) = 0;
 
     }; // class VoteCallback
 
