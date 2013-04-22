@@ -58,18 +58,19 @@ class HoughTree;
 } // namespace HoughForestInternal
 
 /**
- * An implementation of Hough forests. Based on
+ * An implementation of Hough forests. Based on:
  *
  * J. Gall and V. Lempitsky, "Class-Speciﬁc Hough Forests for Object Detection", Proc. CVPR, 2009.
  *
- * This implementation extends the framework to handle more than one class (plus a background class). It also supports
- * cross-voting from one object to another (the two objects may be of different classes), which might be useful for modeling
- * context.
+ * This implementation extends the framework to handle more than one class (plus a background class).
  *
  * The background class is always assumed to have index 0. This is important to keep in mind when supplying training data, since
  * the regression training does not consider votes involving background objects.
  *
- * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call voteSelf() or voteContext().
+ * To use the class, implement an appropriate subclass of TrainingData, call train(), and then call voteSelf().
+ *
+ * @todo Add support for cross-voting from one object to another (the two objects may be of different classes), which might be
+ *   useful for modeling context.
  */
 class THEA_API HoughForest : public Serializable
 {
