@@ -515,7 +515,7 @@ class HoughTree
             for (long i = 0; i < num_features; ++i)
             {
               if (i > 0) oss << ", ";
-              oss << parent->all_features(i, actual_index);
+              oss << parent->all_features(actual_index, i);
             }
             oss << ']';
             THEA_CONSOLE << oss.str();
@@ -1312,7 +1312,13 @@ HoughForest::singleSelfVoteByLookup(long index, double weight, VoteCallback & ca
 {
   long c = all_classes[(array_size_t)index];
   long nv = num_vote_params[(array_size_t)c];
-  callback(c, nv, all_self_votes.data() + index * all_self_votes.numColumns(), weight);
+  callback(Vote(c,
+                nv,
+                all_self_votes.data() + index * all_self_votes.numColumns(),
+                weight,
+                index,
+                num_features,
+                all_features.data() + index * num_features));
 }
 
 void
@@ -1326,14 +1332,14 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
     training_data.getClasses(&all_classes[0]);
   }
 
-  // Cache features, one example per column
+  // Cache features, one example per row
   {
-    all_features.resize(num_features, num_examples);
+    all_features.resize(num_examples, num_features);
     TheaArray<double> features(num_examples);
     for (long i = 0; i < num_features; ++i)
     {
-      training_data.getFeatures(i, &features[0]);
-      all_features.setRow(i, &features[0]);
+      training_data.getFeatures(i, &features[0]);  // gets feature i for all training examples
+      all_features.setColumn(i, &features[0]);
     }
   }
 

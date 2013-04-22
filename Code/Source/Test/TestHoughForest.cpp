@@ -302,12 +302,12 @@ class VoteCallback : public HoughForest::VoteCallback
   public:
     VoteCallback(ExampleSet const * training_data_) : training_data(training_data_) {}
 
-    void operator()(long target_class, long num_vote_params, double const * vote_params, double weight)
+    void operator()(Vote const & vote)
     {
       THEA_CONSOLE << "Hough vote:";
-      THEA_CONSOLE << "  - target class : " << training_data->houghClassToInputClass(target_class);
-      THEA_CONSOLE << "  - vote params  : " << rangeToString(vote_params, vote_params + num_vote_params);
-      THEA_CONSOLE << "  - weight       : " << weight;
+      THEA_CONSOLE << "  - target class : " << training_data->houghClassToInputClass(vote.getTargetClassID());
+      THEA_CONSOLE << "  - vote params  : " << rangeToString(vote.getParameters(), vote.getParameters() + vote.numParameters());
+      THEA_CONSOLE << "  - weight       : " << vote.getWeight();
     }
 
   private:
