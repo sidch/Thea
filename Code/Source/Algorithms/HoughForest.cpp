@@ -237,7 +237,7 @@ class HoughNode
       return !left && !right;
     }
 
-    long numElements() const { return class_cum_freq.back(); }
+    long numElements() const { return class_cum_freq.empty() ? 0 : class_cum_freq.back(); }
 
     long getClassFrequency(long class_id) const
     {
@@ -441,10 +441,6 @@ class HoughTree
               }
             }
 
-            if (options.verbose >= 2)
-              THEA_CONSOLE << "HoughForest:    - Left node has " << node->left->numElements() << " elements, right node has "
-                           << node->right->numElements() << " elements";
-
             // Measure frequency of each class
             measureClassCumulativeFrequencies(node->left->elems,  training_data, node->left->class_cum_freq);
             measureClassCumulativeFrequencies(node->right->elems, training_data, node->right->class_cum_freq);
@@ -454,6 +450,10 @@ class HoughTree
                                               node->left->class_feature_distrib);
             estimateClassFeatureDistributions(right_features, node->right->elems, training_data,
                                               node->right->class_feature_distrib);
+
+            if (options.verbose >= 2)
+              THEA_CONSOLE << "HoughForest:    - Left node has " << node->left->numElements() << " elements, right node has "
+                           << node->right->numElements() << " elements";
 
 #ifdef THEA_HOUGH_SYMMETRIC_VARIANCE
             // Override the data variances to have equal fuzziness on the left and right sides. This is to compensate for
