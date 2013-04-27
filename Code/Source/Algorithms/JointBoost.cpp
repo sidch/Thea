@@ -734,7 +734,7 @@ JointBoost::Options::save(std::string const & path) const
       std::ofstream out(path.c_str());
       if (!out)
       {
-        THEA_ERROR << "JointBoost: Could not save options to input file '" << path << '\'';
+        THEA_ERROR << "JointBoost: Could not save options to output file '" << path << '\'';
         return false;
       }
     }

@@ -341,6 +341,9 @@ class THEA_API HoughForest : public Serializable
     /** Get the number of trees in the forest. */
     long numTrees() const { return (long)trees.size(); }
 
+    /** Get the current options for the Hough forest. */
+    Options const & getOptions() const { return options; }
+
     /**
      * Train the Hough forest.
      *

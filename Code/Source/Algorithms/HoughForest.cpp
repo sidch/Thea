@@ -1014,6 +1014,8 @@ double
 uncertaintyForDominantFraction(double dominant_fraction, long num_classes)
 {
   double rem_fraction = (1.0 - dominant_fraction) / num_classes;
+  if (rem_fraction < 1.0e-10)
+    return 0;
 
   return -(dominant_fraction * std::log(dominant_fraction)
          + (num_classes - 1) * (rem_fraction * std::log(rem_fraction)));
@@ -1055,6 +1057,16 @@ HoughForest::Options::load(std::string const & path)
 {
   try
   {
+    // FIXME: This is currently needed because TextInputStream crashes if the file cannot be read
+    {
+      std::ifstream in(path.c_str());
+      if (!in)
+      {
+        THEA_ERROR << "HoughForest: Could not load options from input file '" << path << '\'';
+        return false;
+      }
+    }
+
     TextInputStream in(path, configReadSettings());
     deserialize(in);
   }
@@ -1068,6 +1080,17 @@ HoughForest::Options::save(std::string const & path) const
 {
   try
   {
+    // FIXME: This is currently needed because TextOutputStream may crash (?) if the file cannot be written (going by the
+    // corresponding crash for TextInputStream)
+    {
+      std::ofstream out(path.c_str());
+      if (!out)
+      {
+        THEA_ERROR << "HoughForest: Could not save options to output file '" << path << '\'';
+        return false;
+      }
+    }
+
     TextOutputStream out(path, configWriteSettings());
     serialize(out);
     out.commit();

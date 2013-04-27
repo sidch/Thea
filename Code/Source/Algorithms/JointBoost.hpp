@@ -204,6 +204,9 @@ class THEA_API JointBoost
     /** Get the number of features for an object. */
     long numFeatures() const { return num_features; }
 
+    /** Get the current options for the classifier. */
+    Options const & getOptions() const { return options; }
+
     /**
      * Train the strong classifier by several rounds of boosting.
      *
