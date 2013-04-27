@@ -189,6 +189,9 @@ class THEA_API JointBoost
      */
     JointBoost(long num_classes_, long num_features_, Options const & options_ = Options::defaults());
 
+    /** Construct a JointBoost classifier by loading it from a file. */
+    JointBoost(std::string const & path);
+
     /** Destructor. */
     ~JointBoost();
 

@@ -81,6 +81,13 @@ JointBoost::JointBoost(long num_classes_, long num_features_, Options const & op
   alwaysAssertM(num_features_ >= 1, "JointBoost: At least one feature required");
 }
 
+JointBoost::JointBoost(std::string const & path)
+: num_classes(0), num_features(0)
+{
+  if (!load(path))
+    throw Error("JointBoost: Could not load classifier from '" + path + '\'');
+}
+
 JointBoost::~JointBoost()
 {
   clear();
