@@ -64,6 +64,44 @@ randIntegerInRange(long lo, long hi)
   return lo + (std::rand() % (hi - lo + 1));
 }
 
+void
+randIntegersInRange(long lo, long hi, long m, long * selected)
+{
+  // The current algorithm does no extra work to sort
+  randSortedIntegersInRange(lo, hi, m, selected);
+}
+
+namespace MathInternal {
+
+// Get a very large random integer (in the range [RAND_MAX / 2, RAND_MAX])
+long
+bigRand()
+{
+  static long const HALF_RAND_MAX = RAND_MAX / 2;
+  return HALF_RAND_MAX + std::rand() % HALF_RAND_MAX;  // should never be greater than RAND_MAX
+}
+
+} // namespace MathInternal
+
+void
+randSortedIntegersInRange(long lo, long hi, long m, long * selected)
+{
+  long remaining = m;
+  for (long i = lo; i <= hi; ++i)
+  {
+    // Select m of remaining n - i
+    long r = MathInternal::bigRand();
+    if ((r % (hi - i + 1)) < remaining)
+    {
+      selected[m - remaining] = i;
+      remaining--;
+
+      if (remaining <= 0)
+        return;
+    }
+  }
+}
+
 int
 binaryTreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
 {

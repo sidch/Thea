@@ -371,6 +371,32 @@ Real randInRange(Real lo, Real hi);
  */
 long randIntegerInRange(long lo, long hi);
 
+/**
+ * Get \a m random integers in [\a lo, \a hi] (endpoints inclusive). Slow if the range is very large, and possibly breaks if the
+ * upper limit of the range is very large (more than RAND_MAX / 2).
+ * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of Knuth's
+ * Seminumerical Algorithms.
+ *
+ * @param lo Lower limit of range (inclusive).
+ * @param hi Upper limit of range (inclusive).
+ * @param m Number of distinct random integers requested from the range.
+ * @param selected Used to return the generated random integers. Assumed to be preallocated to \a m elements.
+ */
+void randIntegersInRange(long lo, long hi, long m, long * selected);
+
+/**
+ * Get \a m random integers in [\a lo, \a hi] (endpoints inclusive), sorted in ascending order. Slow if the range is very large,
+ * and possibly breaks if the upper limit of the range is very large (more than RAND_MAX / 2).
+ * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of Knuth's
+ * Seminumerical Algorithms.
+ *
+ * @param lo Lower limit of range (inclusive).
+ * @param hi Upper limit of range (inclusive).
+ * @param m Number of distinct random integers requested from the range.
+ * @param selected Used to return the generated random integers in ascending order. Assumed to be preallocated to \a m elements.
+ */
+void randSortedIntegersInRange(long lo, long hi, long m, long * selected);
+
 /** Returns \a a + (\a b - \a a) * \a f. */
 template <typename T, typename S>
 T

@@ -41,6 +41,7 @@
 
 #include "JointBoost.hpp"
 #include "../Math.hpp"
+#include "../Serializable.hpp"
 #include "../UnorderedSet.hpp"
 #include <algorithm>
 #include <fstream>
@@ -236,16 +237,25 @@ JointBoost::train(TrainingData const & training_data_)
 double
 JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes)
 {
-  // Select a random fraction of the features
-  TheaArray<long> candidate_features;
-  for (long f = 0; f < num_features; ++f)
+  if (num_features <= 0)
   {
-    if (feature_sampling_fraction >= 1 || Math::rand01() <= feature_sampling_fraction)
-      candidate_features.push_back(f);
+    THEA_WARNING << "JointBoost:     Can't optimize stump with " << num_features << " features";
+    return -1;
   }
 
-  if (candidate_features.empty())
-    candidate_features.push_back(Math::randIntegerInRange(0, num_features - 1));
+  // Select a random fraction of the features
+  TheaArray<long> candidate_features;
+  if (feature_sampling_fraction >= 1)
+  {
+    for (long f = 0; f < num_features; ++f)
+      candidate_features.push_back(f);
+  }
+  else
+  {
+    long num_candidate_features = std::max((long)Math::round(feature_sampling_fraction * num_features), 1L);
+    candidate_features.resize((array_size_t)num_candidate_features);
+    Math::randIntegersInRange(0, num_features - 1, num_candidate_features, &candidate_features[0]);
+  }
 
   if (options.verbose && (long)candidate_features.size() < num_features)
     THEA_CONSOLE << "JointBoost:     Optimizing over " << candidate_features.size() << " randomly selected feature(s)";
@@ -688,27 +698,49 @@ JointBoost::predict(double const * features, double * class_probabilities) const
 bool
 JointBoost::Options::load(std::string const & path)
 {
-  std::ifstream in(path.c_str());
-  if (!in)
+  try
   {
-    THEA_ERROR << "JointBoost: Could not load options from file '" << path << '\'';
-    return false;
-  }
+    // FIXME: This is currently needed because TextInputStream crashes if the file cannot be read
+    {
+      std::ifstream in(path.c_str());
+      if (!in)
+      {
+        THEA_ERROR << "JointBoost: Could not load options from input file '" << path << '\'';
+        return false;
+      }
+    }
 
-  return load(in);
+    TextInputStream in(path, Serializable::configReadSettings());
+    return deserialize(in);
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "JointBoost: Could not load options from input file '%s'", path.c_str())
 }
 
 bool
 JointBoost::Options::save(std::string const & path) const
 {
-  std::ofstream out(path.c_str());
-  if (!out)
+  try
   {
-    THEA_ERROR << "JointBoost: Could not save options to file '" << path << '\'';
-    return false;
-  }
+    // FIXME: This is currently needed because TextOutputStream may crash (?) if the file cannot be written (going by the
+    // corresponding crash for TextInputStream)
+    {
+      std::ofstream out(path.c_str());
+      if (!out)
+      {
+        THEA_ERROR << "JointBoost: Could not save options to input file '" << path << '\'';
+        return false;
+      }
+    }
 
-  return save(out);
+    TextOutputStream out(path, Serializable::configWriteSettings());
+    if (!serialize(out))
+      return false;
+
+    out.commit();
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "JointBoost: Could not save options to output file '%s'", path.c_str())
+
+  return true;
 }
 
 bool
@@ -721,10 +753,10 @@ JointBoost::load(std::string const & path)
     return false;
   }
 
-  if (!options.load(in))
+  if (!options.deserialize(in))
     return false;
 
-  if (!load(in))
+  if (!deserialize(in))
     return false;
 
   return true;
@@ -740,19 +772,19 @@ JointBoost::save(std::string const & path) const
     return false;
   }
 
-  if (!options.save(out))
+  if (!options.serialize(out))
     return false;
 
   out << std::endl;  // break up the output a bit
 
-  if (!save(out))
+  if (!serialize(out))
     return false;
 
   return true;
 }
 
 bool
-JointBoost::Options::load(std::istream & in)
+JointBoost::Options::deserialize(std::istream & in)
 {
   in >> min_boosting_rounds
      >> max_boosting_rounds
@@ -765,7 +797,7 @@ JointBoost::Options::load(std::istream & in)
 
   if (!in)
   {
-    THEA_ERROR << "JointBoost: Error loading options";
+    THEA_ERROR << "JointBoost: Error reading options";
     return false;
   }
   else
@@ -773,7 +805,38 @@ JointBoost::Options::load(std::istream & in)
 }
 
 bool
-JointBoost::Options::save(std::ostream & out) const
+JointBoost::Options::deserialize(TextInputStream & input)
+{
+  *this = defaults();
+
+  while (input.hasMore())
+  {
+    std::string field = input.readSymbol();
+    input.readSymbol("=");
+
+    if (field == "min_boosting_rounds")
+      min_boosting_rounds = (long)input.readNumber();
+    else if (field == "max_boosting_rounds")
+      max_boosting_rounds = (long)input.readNumber();
+    else if (field == "min_fractional_error_reduction")
+      min_fractional_error_reduction = input.readNumber();
+    else if (field == "feature_sampling_fraction")
+      feature_sampling_fraction = input.readNumber();
+    else if (field == "max_thresholds_fraction")
+      max_thresholds_fraction = input.readNumber();
+    else if (field == "force_exhaustive")
+      force_exhaustive = input.readBoolean();
+    else if (field == "force_greedy")
+      force_greedy = input.readBoolean();
+    else if (field == "verbose")
+      verbose = input.readBoolean();
+  }
+
+  return true;
+}
+
+bool
+JointBoost::Options::serialize(std::ostream & out) const
 {
   out << min_boosting_rounds << '\n'
       << max_boosting_rounds << '\n'
@@ -786,7 +849,7 @@ JointBoost::Options::save(std::ostream & out) const
 
   if (!out)
   {
-    THEA_ERROR << "JointBoost: Error saving options";
+    THEA_ERROR << "JointBoost: Error writing options";
     return false;
   }
   else
@@ -794,7 +857,22 @@ JointBoost::Options::save(std::ostream & out) const
 }
 
 bool
-JointBoost::SharedStump::load(std::istream & in)
+JointBoost::Options::serialize(TextOutputStream & output) const
+{
+  output.printf("min_boosting_rounds = %ld\n", min_boosting_rounds);
+  output.printf("max_boosting_rounds = %ld\n", max_boosting_rounds);
+  output.printf("min_fractional_error_reduction = %lg\n", min_fractional_error_reduction);
+  output.printf("feature_sampling_fraction = %lg\n", feature_sampling_fraction);
+  output.printf("max_thresholds_fraction = %lg\n", max_thresholds_fraction);
+  output.printf("force_exhaustive = %s\n", (force_exhaustive ? "true" : "false"));
+  output.printf("force_greedy = %s\n", (force_greedy ? "true" : "false"));
+  output.printf("verbose = %s\n", (verbose ? "true" : "false"));
+
+  return true;
+}
+
+bool
+JointBoost::SharedStump::deserialize(std::istream & in)
 {
   if (!(in >> f >> n >> a >> b >> theta))
     return false;
@@ -812,7 +890,7 @@ JointBoost::SharedStump::load(std::istream & in)
 }
 
 bool
-JointBoost::SharedStump::save(std::ostream & out) const
+JointBoost::SharedStump::serialize(std::ostream & out) const
 {
   out << f << '\n'
       << n << '\n'
@@ -830,7 +908,7 @@ JointBoost::SharedStump::save(std::ostream & out) const
 }
 
 bool
-JointBoost::load(std::istream & in)
+JointBoost::deserialize(std::istream & in)
 {
   if (!(in >> num_classes >> num_features))
   {
@@ -867,7 +945,7 @@ JointBoost::load(std::istream & in)
   for (std::size_t i = 0; i < stumps.size(); ++i)
   {
     stumps[i] = SharedStump::Ptr(new SharedStump);
-    if (!stumps[i]->load(in))
+    if (!stumps[i]->deserialize(in))
     {
       THEA_ERROR << "JointBoost: Could not read stump " << i;
       return false;
@@ -878,14 +956,14 @@ JointBoost::load(std::istream & in)
 }
 
 bool
-JointBoost::save(std::ostream & out) const
+JointBoost::serialize(std::ostream & out) const
 {
   out << num_classes << '\n'
       << num_features << std::endl;
 
   out << stumps.size() << std::endl;
   for (std::size_t i = 0; i < stumps.size(); ++i)
-    if (!stumps[i]->save(out))
+    if (!stumps[i]->serialize(out))
       return false;
 
   return (bool)out;
