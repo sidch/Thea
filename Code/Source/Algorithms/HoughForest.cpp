@@ -677,6 +677,7 @@ class HoughTree
       for (long feat_iter = 0; feat_iter < max_feat_iters; ++feat_iter)
       {
         // Generate a random feature
+        // TODO: Rewrite this using randIntegersInRange to avoid repeating features
         long test_feature = (max_feat_iters < num_features ? std::rand() % num_features : feat_iter);
 
         // Find a suitable split threshold
@@ -1143,8 +1144,8 @@ HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) 
   output.printf("max_candidate_features = %ld\n", max_candidate_features);
   output.printf("num_feature_expansions = %ld\n", num_feature_expansions);
   output.printf("max_candidate_thresholds = %ld\n", max_candidate_thresholds);
-  output.printf("min_class_uncertainty = %lf\n", min_class_uncertainty);
-  output.printf("max_dominant_fraction = %lf\n", max_dominant_fraction);
+  output.printf("min_class_uncertainty = %lg\n", min_class_uncertainty);
+  output.printf("max_dominant_fraction = %lg\n", max_dominant_fraction);
   output.printf("probabilistic_sampling = %s\n", (probabilistic_sampling ? "true" : "false"));
   output.printf("verbose = %d\n", verbose);
 }

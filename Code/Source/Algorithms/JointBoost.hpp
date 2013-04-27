@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../IOStream.hpp"
 #include "../Matrix.hpp"
 #include <boost/dynamic_bitset.hpp>
 #include <iostream>
@@ -147,16 +148,22 @@ class THEA_API JointBoost
         /** Save classifier options to a disk file. */
         bool save(std::string const & path) const;
 
+        /** Load classifier options from a standard input stream. */
+        bool deserialize(std::istream & in);
+
+        /** Load classifier options from a text input stream. */
+        bool deserialize(TextInputStream & in);
+
+        /** Save classifier options to a standard output stream. */
+        bool serialize(std::ostream & out) const;
+
+        /** Save classifier options to a text output stream. */
+        bool serialize(TextOutputStream & out) const;
+
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
-        /** Load classifier options from an input stream. */
-        bool load(std::istream & in);
-
-        /** Save classifier options to an output stream. */
-        bool save(std::ostream & out) const;
-
         long min_boosting_rounds;  /**< Minimum number of boosting rounds that must be performed even if the error reduction
                                         between successive rounds is below the threshold min_fractional_error_reduction. */
         long max_boosting_rounds;  ///< Maximum number of boosting rounds. This also limits the maximum number of stumps added.
@@ -251,10 +258,10 @@ class THEA_API JointBoost
       std::string toString() const;
 
       /** Load the stump from an input stream. */
-      bool load(std::istream & in);
+      bool deserialize(std::istream & in);
 
       /** Save the stump to an output stream. */
-      bool save(std::ostream & out) const;
+      bool serialize(std::ostream & out) const;
 
     }; // struct SharedStump
 
@@ -274,10 +281,10 @@ class THEA_API JointBoost
                     long * num_generated_thresholds = NULL);
 
     /** Load the classifier from an input stream. */
-    bool load(std::istream & in);
+    bool deserialize(std::istream & in);
 
     /** Save the trained classifier to an output stream. */
-    bool save(std::ostream & out) const;
+    bool serialize(std::ostream & out) const;
 
     long num_classes;   ///< Number of object classes.
     long num_features;  ///< Number of features per object.
