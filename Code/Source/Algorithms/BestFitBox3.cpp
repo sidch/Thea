@@ -41,6 +41,7 @@
 
 #include "BestFitBox3.hpp"
 #include "LinearLeastSquares3.hpp"
+#include "../Quat.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -96,7 +97,7 @@ namespace BestFitBox3Internal {
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-static G3D::Quat
+static Quat
 rotationArc(Vector3 const & v0, Vector3 const & v1)
 {
   Vector3 cross = v0.cross(v1);
@@ -105,7 +106,7 @@ rotationArc(Vector3 const & v0, Vector3 const & v1)
   Real recip = 1.0f / s;
 
   Vector3 rc = recip * cross;
-  return G3D::Quat(G3D::Vector3(rc.x(), rc.y(), rc.z()), 0.5f * s);
+  return Quat(rc, 0.5f * s);
 }
 
 // Convert a plane equation to a rigid transform.
@@ -125,12 +126,8 @@ planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 &
   }
   else
   {
-    G3D::Quat quat = rotationArc(Vector3::unitY(), n);
-    G3D::Matrix3 gr;
-    quat.toRotationMatrix(gr);
-    rot = Matrix3(gr[0][0], gr[0][1], gr[0][2],
-                  gr[1][0], gr[1][1], gr[1][2],
-                  gr[2][0], gr[2][1], gr[2][2]);
+    Quat quat = rotationArc(Vector3::unitY(), n);
+    rot = quat.toRotationMatrix();
   }
 
   cframe = CoordinateFrame3(RigidTransform3::_fromAffine(AffineTransform3(rot, centroid)));

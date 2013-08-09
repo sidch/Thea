@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <cmath>
+#include <limits>
 
 // lrint and lrintf routines
 #ifdef THEA_WINDOWS
@@ -200,6 +201,12 @@ template <class T> bool isInfinite(T const & t) { return boost::math::isinf(t); 
 /** Check if a number represents NaN ("not a number", for instance the result of 0/0). */
 template <class T> bool isNaN(T const & t) { return boost::math::isnan(t); }
 
+/** Representation of infinity. Don't compare against this value directly. */
+template <class T> T inf() { return std::numeric_limits<T>::infinity(); }
+
+/** Representation of NaN (not-a-number). Don't compare against this value directly. */
+template <class T> T nan() { return std::numeric_limits<T>::quiet_NaN(); }
+
 /** Computes an appropriate epsilon for comparing a number to zero. */
 template <typename T>
 T
@@ -271,7 +278,7 @@ template <typename T> bool fuzzyLe(T const & a, T const & b, T const & tol) { re
 /** Check if \a a is less than or approximately equal to \a b, with default tolerance. */
 template <typename T> bool fuzzyLe(T const & a, T const & b) { return fuzzyLe(a, b, eps(a, b)); }
 
-/** A fast approximation to 1 / sqrt(\a x) (currently no faster than 1 / std::sqrt). */
+/** A fast approximation to 1 / sqrt(\a x). */
 inline THEA_API float32
 fastRsq(float32 x)
 {
