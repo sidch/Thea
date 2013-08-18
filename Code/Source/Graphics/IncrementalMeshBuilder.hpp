@@ -43,6 +43,7 @@
 #define __Thea_Graphics_IncrementalMeshBuilder_hpp__
 
 #include "../Common.hpp"
+#include "../Colors.hpp"
 #include "../Vector3.hpp"
 
 namespace Thea {
@@ -71,7 +72,7 @@ class IncrementalMeshBuilder
     void begin();
 
     /** Add a vertex to the mesh and return a handle to it. Must be called within a begin() / end() block. */
-    VertexHandle addVertex(Vector3 const & pos, Vector3 const * normal = NULL, Color4 const * color = NULL,
+    VertexHandle addVertex(Vector3 const & pos, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                            Vector2 const * texcoord = NULL);
 
     /** Add a face to the mesh and return a handle to it. Must be called within a begin() / end() block. */

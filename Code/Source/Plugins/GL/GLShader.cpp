@@ -341,9 +341,9 @@ static void toFloats(Vector2 const & v, float * f) { f[0] = v.x(); f[1] = v.y();
 static void toFloats(Vector3 const & v, float * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); }
 static void toFloats(Vector4 const & v, float * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); f[3] = v.w(); }
 
-static void toFloats(Color1 const & c, float * f) { *f = c.value; }
-static void toFloats(Color3 const & c, float * f) { f[0] = c.r; f[1] = c.g; f[2] = c.b; }
-static void toFloats(Color4 const & c, float * f) { f[0] = c.r; f[1] = c.g; f[2] = c.b; f[3] = c.a; }
+static void toFloats(ColorL const & c, float * f) { *f = c.value(); }
+static void toFloats(ColorRGB const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); }
+static void toFloats(ColorRGBA const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); f[3] = c.a(); }
 
 static void toFloats(Matrix2 const & m, float * f) { m.getElementsRowMajor(f); }
 static void toFloats(Matrix3 const & m, float * f) { m.getElementsRowMajor(f); }
@@ -370,15 +370,15 @@ GLShader::setUniform(std::string const & uniform_name, int value)
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, Color1 const & value)
+GLShader::setUniform(std::string const & uniform_name, ColorL const & value)
 {
-  setUniform(uniform_name, value.value);
+  setUniform(uniform_name, value.value());
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, Color1uint8 const & value)
+GLShader::setUniform(std::string const & uniform_name, ColorL8 const & value)
 {
-  setUniform(uniform_name, Color1(value).value);
+  setUniform(uniform_name, ColorL(value).value());
 }
 
 void
@@ -407,16 +407,16 @@ GLShader::setUniform(std::string const & uniform_name, Texture * value)
     entry->second.valueChanged();                                                                                             \
   }
 
-GLShader__MULTI_FLOAT_SET_UNIFORM(Vector2,      Vector2, GL_FLOAT_VEC2_ARB,  2)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Vector3,      Vector3, GL_FLOAT_VEC3_ARB,  3)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Vector4,      Vector4, GL_FLOAT_VEC4_ARB,  4)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Color3,       Color3,  GL_FLOAT_VEC3_ARB,  3)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Color3uint8,  Color3,  GL_FLOAT_VEC3_ARB,  3)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Color4,       Color4,  GL_FLOAT_VEC4_ARB,  4)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Color4uint8,  Color4,  GL_FLOAT_VEC4_ARB,  4)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix2,      Matrix2, GL_FLOAT_MAT2_ARB,  4)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix3,      Matrix3, GL_FLOAT_MAT3_ARB,  9)
-GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix4,      Matrix4, GL_FLOAT_MAT4_ARB, 16)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Vector2,      Vector2,    GL_FLOAT_VEC2_ARB,  2)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Vector3,      Vector3,    GL_FLOAT_VEC3_ARB,  3)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Vector4,      Vector4,    GL_FLOAT_VEC4_ARB,  4)
+GLShader__MULTI_FLOAT_SET_UNIFORM(ColorRGB,     ColorRGB,   GL_FLOAT_VEC3_ARB,  3)
+GLShader__MULTI_FLOAT_SET_UNIFORM(ColorRGB8,    ColorRGB,   GL_FLOAT_VEC3_ARB,  3)
+GLShader__MULTI_FLOAT_SET_UNIFORM(ColorRGBA,    ColorRGBA,  GL_FLOAT_VEC4_ARB,  4)
+GLShader__MULTI_FLOAT_SET_UNIFORM(ColorRGBA8,   ColorRGBA,  GL_FLOAT_VEC4_ARB,  4)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix2,      Matrix2,    GL_FLOAT_MAT2_ARB,  4)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix3,      Matrix3,    GL_FLOAT_MAT3_ARB,  9)
+GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix4,      Matrix4,    GL_FLOAT_MAT4_ARB, 16)
 
 void
 GLShader::setUniform(std::string const & uniform_name, TheaArray<float> const & value)
@@ -452,7 +452,7 @@ GLShader::setUniform(std::string const & uniform_name, TheaArray<Texture *> cons
 
 #define GLShader__FLOAT_ARRAY_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(std::string const & uniform_name, TheaArray<uniform_type> const & value)                              \
+  GLShader::setUniform(std::string const & uniform_name, TheaArray<uniform_type> const & value)                               \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, value.size());                                                     \
@@ -469,18 +469,18 @@ GLShader::setUniform(std::string const & uniform_name, TheaArray<Texture *> cons
     entry->second.valueChanged();                                                                                             \
   }
 
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector2,      Vector2, GL_FLOAT_VEC2_ARB,  2)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector3,      Vector3, GL_FLOAT_VEC3_ARB,  3)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector4,      Vector4, GL_FLOAT_VEC4_ARB,  4)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color1,       Color1,  GL_FLOAT,           1)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color1uint8,  Color1,  GL_FLOAT,           1)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color3,       Color3,  GL_FLOAT_VEC3_ARB,  3)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color3uint8,  Color3,  GL_FLOAT_VEC3_ARB,  3)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color4,       Color4,  GL_FLOAT_VEC4_ARB,  4)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Color4uint8,  Color4,  GL_FLOAT_VEC4_ARB,  4)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix2,      Matrix2, GL_FLOAT_MAT2_ARB,  4)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix3,      Matrix3, GL_FLOAT_MAT3_ARB,  9)
-GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix4,      Matrix4, GL_FLOAT_MAT4_ARB, 16)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector2,      Vector2,    GL_FLOAT_VEC2_ARB,  2)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector3,      Vector3,    GL_FLOAT_VEC3_ARB,  3)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Vector4,      Vector4,    GL_FLOAT_VEC4_ARB,  4)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorL,       ColorL,     GL_FLOAT,           1)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorL8,      ColorL,     GL_FLOAT,           1)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorRGB,     ColorRGB,   GL_FLOAT_VEC3_ARB,  3)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorRGB8,    ColorRGB,   GL_FLOAT_VEC3_ARB,  3)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorRGBA,    ColorRGBA,  GL_FLOAT_VEC4_ARB,  4)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(ColorRGBA8,   ColorRGBA,  GL_FLOAT_VEC4_ARB,  4)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix2,      Matrix2,    GL_FLOAT_MAT2_ARB,  4)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix3,      Matrix3,    GL_FLOAT_MAT3_ARB,  9)
+GLShader__FLOAT_ARRAY_SET_UNIFORM(Matrix4,      Matrix4,    GL_FLOAT_MAT4_ARB, 16)
 
 } // namespace GL
 } // namespace Graphics

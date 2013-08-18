@@ -88,12 +88,6 @@
 #  define THEA_EXPORT_INSTANTIATION
 #endif
 
-namespace G3D {
-
-typedef uint16 Color1uint16;
-
-} // namespace G3D
-
 /** Root namespace for the %Thea library. */
 namespace Thea {
 
@@ -128,13 +122,6 @@ typedef  float                 Real;
 typedef  float                 float32;  // assume IEEE 754
 typedef  double                float64;  // assume IEEE 754
 
-using    G3D::                 Color4;
-using    G3D::                 Color4uint8;
-using    G3D::                 Color3;
-using    G3D::                 Color3uint8;
-using    G3D::                 Color1;
-using    G3D::                 Color1uint8;
-using    G3D::                 Color1uint16;
 using    G3D::                 AtomicInt32;
 
 #define THEA_ENUM_CLASS_BODY(name)                                                                                            \

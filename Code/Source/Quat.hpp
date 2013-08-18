@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2013, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,6 +39,19 @@
 //
 //============================================================================
 
+/*
+  ORIGINAL HEADER
+
+  @file Quat.h
+ 
+  Quaternion
+  
+  @maintainer Morgan McGuire, http://graphics.cs.williams.edu
+  
+  @created 2002-01-23
+  @edited  2009-05-10
+ */
+
 #ifndef __Thea_Quat_hpp__
 #define __Thea_Quat_hpp__
 
@@ -50,7 +63,7 @@
 namespace Thea {
 
 /**
- * Arbitrary quaternion (not necessarily unit). Derived from the G3D library -- http://g3d.sourceforge.net
+ * Arbitrary quaternion (not necessarily unit). Derived from the G3D library: http://g3d.sourceforge.net
  *
  * Unit quaternions are used in computer graphics to represent rotation about an axis. Any 3x3 rotation matrix can be stored
  * as a quaternion.
@@ -70,12 +83,6 @@ namespace Thea {
 class THEA_API Quat
 {
   private:
-    // Hidden operators
-    bool operator< (Quat const &) const;
-    bool operator> (Quat const &) const;
-    bool operator<=(Quat const &) const;
-    bool operator>=(Quat const &) const;
-
     // Components v = (x, y, z), s = w
     //
     // q = [sin(angle / 2) * axis, cos(angle / 2)]
@@ -193,8 +200,6 @@ class THEA_API Quat
       s *= t;
       return *this;
     }
-
-    friend Quat operator*(Real t, Quat const & q);
 
     /** Divide by a scalar. */
     Quat operator/(Real t) const
@@ -1414,7 +1419,8 @@ class THEA_API Quat
  *
  * @cite Based on Watt & Watt, page 360
  */
-inline Quat operator*(Real s, Quat const & q)
+inline Quat
+operator*(Real s, Quat const & q)
 {
   return q * s;
 }

@@ -46,8 +46,8 @@ namespace Browse3D {
 
 Graphics::Shader * GraphicsWidget::shader;
 Vector3 GraphicsWidget::light_dir;
-Color3 GraphicsWidget::light_color;
-Color3 GraphicsWidget::ambient_color;
+ColorRGB GraphicsWidget::light_color;
+ColorRGB GraphicsWidget::ambient_color;
 
 namespace GraphicsWidgetInternal {
 
@@ -56,9 +56,9 @@ Graphics::Shader * phong_shader = NULL;
 void
 setDefaultPhongUniforms(Graphics::Shader & shader)
 {
-  shader.setUniform("ambient_color", Color3(1, 0.8f, 0.7f));
+  shader.setUniform("ambient_color", ColorRGB(1, 0.8f, 0.7f));
   shader.setUniform("light_dir", Vector3(-1, -1, -2));
-  shader.setUniform("light_color", Color3(1, 1, 1));
+  shader.setUniform("light_color", ColorRGB(1, 1, 1));
 
   shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
   if (shader.hasUniform("metallicity"))
@@ -116,7 +116,7 @@ GraphicsWidget::getShader()
 }
 
 void
-GraphicsWidget::setLight(Vector3 const & dir, Color3 const & color, Color3 const & ambient_color_)
+GraphicsWidget::setLight(Vector3 const & dir, ColorRGB const & color, ColorRGB const & ambient_color_)
 {
   light_dir = dir;
   light_color = color;

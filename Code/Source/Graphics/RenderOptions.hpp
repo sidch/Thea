@@ -43,6 +43,7 @@
 #define __Thea_Graphics_RenderOptions_hpp__
 
 #include "../Common.hpp"
+#include "../Colors.hpp"
 #include "Camera.hpp"
 
 namespace Thea {
@@ -52,15 +53,15 @@ namespace Graphics {
 class THEA_API RenderOptions
 {
   private:
-    bool     _send_normals;
-    bool     _send_colors;
-    bool     _send_texcoords;
-    bool     _use_vertex_data;
-    bool     _draw_faces;
-    bool     _draw_edges;
-    bool     _override_edge_color;
-    Color4   _edge_color;
-    Camera   _viewing_camera;
+    bool       _send_normals;
+    bool       _send_colors;
+    bool       _send_texcoords;
+    bool       _use_vertex_data;
+    bool       _draw_faces;
+    bool       _draw_edges;
+    bool       _override_edge_color;
+    ColorRGBA  _edge_color;
+    Camera     _viewing_camera;
 
   public:
     /** Default constructor. */
@@ -72,7 +73,7 @@ class THEA_API RenderOptions
       _draw_faces(true),
       _draw_edges(false),
       _override_edge_color(false),
-      _edge_color(Color3::white()),
+      _edge_color(ColorRGB::white()),
       _viewing_camera()
     {}
 
@@ -122,10 +123,10 @@ class THEA_API RenderOptions
     bool & overrideEdgeColor() { return _override_edge_color; }
 
     /** Color for drawing edges when overrideEdgeColor() is true. */
-    Color4 const & edgeColor() const { return _edge_color; }
+    ColorRGBA const & edgeColor() const { return _edge_color; }
 
     /** Color for drawing edges when overrideEdgeColor() is true. */
-    Color4 & edgeColor() { return _edge_color; }
+    ColorRGBA & edgeColor() { return _edge_color; }
 
     /** The camera being used for rendering. */
     Camera const & viewingCamera() const { return _viewing_camera; }

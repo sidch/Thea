@@ -80,7 +80,7 @@ class App : public QObject
       QString model;                ///< The initial shape to load.
 
       bool bg_plain;                ///< Draw the background in a single plain color?
-      Color3 bg_color;              ///< Background color.
+      ColorRGB bg_color;              ///< Background color.
 
     }; // struct Options
 

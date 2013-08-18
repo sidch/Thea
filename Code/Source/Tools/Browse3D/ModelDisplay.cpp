@@ -46,6 +46,7 @@
 #include "Model.hpp"
 #include "Util.hpp"
 #include "../../Application.hpp"
+#include "../../Colors.hpp"
 #include "../../Image.hpp"
 #include "../../Ray3.hpp"
 #include "../../Graphics/RenderSystem.hpp"
@@ -82,7 +83,7 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
   render_opts.sendTexCoords() = false;
   render_opts.drawEdges() = true;
   render_opts.overrideEdgeColor() = true;
-  render_opts.edgeColor() = Color3(0.15f, 0.25f, 0.5f);
+  render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
 
   connect(model, SIGNAL(geometryChanged(Model const *)), this, SLOT(modelGeometryChanged()));
   connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(update()));
@@ -346,15 +347,15 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 
       rs.beginPrimitive(RenderSystem::Primitive::LINES);
 
-        rs.setColor(Color3::red());
+        rs.setColor(ColorRGB::red());
         rs.sendVertex(arrow_origin);
         rs.sendVertex(x_arrow_tip);
 
-        rs.setColor(Color3::green());
+        rs.setColor(ColorRGB::green());
         rs.sendVertex(arrow_origin);
         rs.sendVertex(y_arrow_tip);
 
-        rs.setColor(Color3::blue());
+        rs.setColor(ColorRGB::blue());
         rs.sendVertex(arrow_origin);
         rs.sendVertex(z_arrow_tip);
 
@@ -391,13 +392,13 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
   QPoint z_text_bottom_left(G3D::iRound((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
                             G3D::iRound((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
 
-  rs.setColor(Color3::red());
+  rs.setColor(ColorRGB::red());
   renderText(x_text_bottom_left.x(), x_text_bottom_left.y(), "X", label_font);
 
-  rs.setColor(Color3::green());
+  rs.setColor(ColorRGB::green());
   renderText(y_text_bottom_left.x(), y_text_bottom_left.y(), "Y", label_font);
 
-  rs.setColor(Color3::blue());
+  rs.setColor(ColorRGB::blue());
   renderText(z_text_bottom_left.x(), z_text_bottom_left.y(), "Z", label_font);
 
 #ifndef THEA_WINDOWS

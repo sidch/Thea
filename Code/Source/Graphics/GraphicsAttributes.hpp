@@ -43,6 +43,7 @@
 #define __Thea_Graphics_GraphicsAttributes_hpp__
 
 #include "../Common.hpp"
+#include "../Colors.hpp"
 #include "RenderOptions.hpp"
 #include "RenderSystem.hpp"
 
@@ -378,33 +379,33 @@ THEA_HAS_GRAPHICS_ATTRIB(HasTexCoordAttrib, getTexCoord, setTexCoord)
 template <typename T>
 struct HasColor
 {
-  static bool const value = HasColorAttrib<typename T::Attribute, Color4>::value
-                         || HasColorAttrib<typename T::Attribute, Color4uint8>::value
-                         || HasColorAttrib<typename T::Attribute, Color3>::value
-                         || HasColorAttrib<typename T::Attribute, Color3uint8>::value;
+  static bool const value = HasColorAttrib<typename T::Attribute, ColorRGBA>::value
+                         || HasColorAttrib<typename T::Attribute, ColorRGBA8>::value
+                         || HasColorAttrib<typename T::Attribute, ColorRGB>::value
+                         || HasColorAttrib<typename T::Attribute, ColorRGB8>::value;
 };
 
-// Convert from a Color4 to the attribute color type
-template <class T, typename Enable = void> struct FromColor4 {};
+// Convert from a ColorRGBA to the attribute color type
+template <class T, typename Enable = void> struct FromColorRGBA {};
 
-template <class T> struct FromColor4<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, Color4> >::type>
+template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGBA> >::type>
 {
-  static Color4 const & convert(Color4 const & color) { return color; }
+  static ColorRGBA const & convert(ColorRGBA const & color) { return color; }
 };
 
-template <class T> struct FromColor4<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, Color4uint8> >::type>
+template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGBA8> >::type>
 {
-  static Color4uint8 convert(Color4 const & color) { return Color4uint8(color); }
+  static ColorRGBA8 convert(ColorRGBA const & color) { return ColorRGBA8(color); }
 };
 
-template <class T> struct FromColor4<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, Color3> >::type>
+template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGB> >::type>
 {
-  static Color3 convert(Color4 const & color) { return color.rgb(); }
+  static ColorRGB convert(ColorRGBA const & color) { return color.rgb(); }
 };
 
-template <class T> struct FromColor4<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, Color3uint8> >::type>
+template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGB8> >::type>
 {
-  static Color3uint8 convert(Color4 const & color) { return Color3uint8(color.rgb()); }
+  static ColorRGB8 convert(ColorRGBA const & color) { return ColorRGB8(color.rgb()); }
 };
 
 // Short-hand for calling HasTexCoordAttrib<T::Attribute, TexCoordT> for all allowed texture coordinate types.

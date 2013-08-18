@@ -49,6 +49,7 @@
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
+#include "../../Colors.hpp"
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMouseEvent>
@@ -680,9 +681,9 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
-  static Color4 const MESH_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
-  static Color4 const POINT_COLOR(1.0f, 1.0f, 0.5f, 1.0f);
-  GraphicsWidget::setLight(Vector3(-1, -1, -2), Color3(1, 1, 1), Color3(1, 0.8f, 0.7f));
+  static ColorRGBA const MESH_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+  static ColorRGBA const POINT_COLOR(1.0f, 1.0f, 0.5f, 1.0f);
+  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
 
   render_system.pushShader();
     render_system.pushColorFlags();
@@ -694,7 +695,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         Real sample_radius = 0.005f * getBounds().getExtent().length();
         if (valid_pick)
         {
-          render_system.setColor(Color3::red());
+          render_system.setColor(ColorRGB::red());
           drawSphere(render_system, picked_sample.position, sample_radius);
         }
 

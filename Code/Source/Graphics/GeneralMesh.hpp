@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Colors.hpp"
 #include "../List.hpp"
 #include "../NamedObject.hpp"
 #include "../UnorderedMap.hpp"
@@ -330,7 +331,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      *
      * @return A pointer to the newly created vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL, Color4 const * color = NULL,
+    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                        Vector2 const * texcoord = NULL)
     {
       if (normal)
@@ -850,15 +851,15 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
   private:
     /** Set vertex color. */
     template <typename VertexT>
-    void setVertexColor(VertexT * vertex, Color4 const & color,
+    void setVertexColor(VertexT * vertex, ColorRGBA const & color,
                         typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
-      vertex->attr().setColor(FromColor4<VertexT>::convert(color));
+      vertex->attr().setColor(FromColorRGBA<VertexT>::convert(color));
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template <typename VertexT>
-    void setVertexColor(VertexT * vertex, Color4 const & color,
+    void setVertexColor(VertexT * vertex, ColorRGBA const & color,
                         typename boost::disable_if< HasColor<VertexT> >::type * dummy = NULL)
     {}
 
@@ -1121,7 +1122,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       packed_vertex_colors.resize(vertices.size());
       array_size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_colors[i] = Color4(vi->attr().getColor());
+        packed_vertex_colors[i] = ColorRGBA(vi->attr().getColor());
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
@@ -1202,7 +1203,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
     typedef TheaArray<Vector3>  PositionArray;  ///< Array of vertex positions.
     typedef TheaArray<Vector3>  NormalArray;    ///< Array of normals.
-    typedef TheaArray<Color4>   ColorArray;     ///< Array of colors.
+    typedef TheaArray<ColorRGBA>   ColorArray;     ///< Array of colors.
     typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
     typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
 

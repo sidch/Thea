@@ -58,7 +58,7 @@
 namespace Browse3D {
 
 App::Options::Options()
-: bg_color(Color3::black())
+: bg_color(ColorRGB::black())
 {
 }
 
@@ -210,12 +210,12 @@ App::parseOptions(int argc, char * argv[])
       ss >> argb;
 
       opts.bg_plain = true;
-      opts.bg_color = Color3::fromARGB(argb);
+      opts.bg_color = ColorRGB::fromARGB(argb);
     }
     else
     {
       opts.bg_plain = false;
-      opts.bg_color = Color3::black();
+      opts.bg_color = ColorRGB::black();
     }
 
     Application::setResourceArchive(s_resource_dir);

@@ -43,9 +43,10 @@
 #define __Thea_Graphics_RenderSystem_hpp__
 
 #include "../Common.hpp"
+#include "../Image.hpp"
+#include "../Colors.hpp"
 #include "../Map.hpp"
 #include "../NamedObject.hpp"
-#include "../Image.hpp"
 #include "Camera.hpp"
 #include "Framebuffer.hpp"
 #include "Texture.hpp"
@@ -424,16 +425,16 @@ class THEA_API RenderSystem : public virtual NamedObject
     virtual void setStencilWrite(uint32 mask) = 0;
 
     /** Set the current drawing color. */
-    virtual void setColor(Color3 const & value) = 0;
+    virtual void setColor(ColorRGB const & value) = 0;
 
     /** Set the current drawing color. */
-    virtual void setColor(Color4 const & value) = 0;
+    virtual void setColor(ColorRGBA const & value) = 0;
 
     /** Set the value to clear the color buffer with. */
-    virtual void setColorClearValue(Color3 const & value) = 0;
+    virtual void setColorClearValue(ColorRGB const & value) = 0;
 
     /** Set the value to clear the color buffer with. */
-    virtual void setColorClearValue(Color4 const & value) = 0;
+    virtual void setColorClearValue(ColorRGBA const & value) = 0;
 
     /** Set the value to clear the depth buffer with. */
     virtual void setDepthClearValue(Real value) = 0;

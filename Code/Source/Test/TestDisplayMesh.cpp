@@ -1,6 +1,7 @@
 // #define USE_GENERAL_MESH
 
 #include "../Common.hpp"
+#include "../Colors.hpp"
 #include "../Math.hpp"
 #include "../Plugin.hpp"
 #include "../Graphics/RenderSystem.hpp"
@@ -37,7 +38,7 @@ void init();
 
 // Global variables
 #ifdef USE_GENERAL_MESH
-  typedef GeneralMesh< ColorAttribute<Color4> > Mesh;
+  typedef GeneralMesh< ColorAttribute<ColorRGBA> > Mesh;
 #else
   typedef DisplayMesh Mesh;
 #endif
@@ -93,7 +94,7 @@ initMesh(Mesh & mesh)
     cout << "Mesh does not have vertex texture coordinates" << endl;
 
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-    vi->attr().setColor(Color3::random());
+    vi->attr().setColor(ColorRGB::random());
 
   mesh.setGPUBufferedRendering(true);
 
@@ -250,7 +251,7 @@ draw()
   timer.tick();
 #endif
 
-  render_system->setColorClearValue(Color3::white());
+  render_system->setColorClearValue(ColorRGB::white());
   render_system->clear();
 
   Matrix3 rotx = Matrix3::rotationAxisAngle(Vector3::unitX(), Math::degreesToRadians(view_rotx));

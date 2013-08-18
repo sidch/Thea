@@ -186,8 +186,8 @@ drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center,
 
 void
 drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v, Real radius,
-          Real width, int num_major_steps, int num_minor_steps, bool alternate_colors, Color4 const & color1,
-          Color4 const & color2)
+          Real width, int num_major_steps, int num_minor_steps, bool alternate_colors, ColorRGBA const & color1,
+          ColorRGBA const & color2)
 {
   using namespace Graphics;
 
@@ -340,33 +340,33 @@ dragToScale(QPoint const & start, QPoint const & end, int width, int height, Gra
 }
 
 int const NUM_PALETTE_COLORS = 24;
-Color3 COLOR_PALETTE[NUM_PALETTE_COLORS] = {
-  Color3::fromARGB(0x298edb),
-  Color3::fromARGB(0x982411),
-  Color3::fromARGB(0x6d4e25),
-  Color3::fromARGB(0x1b5043),
-  Color3::fromARGB(0x6e7662),
-  Color3::fromARGB(0xa08b00),
-  Color3::fromARGB(0x58427b),
-  Color3::fromARGB(0x1d2f5b),
-  Color3::fromARGB(0xac5e34),
-  Color3::fromARGB(0x804055),
-  Color3::fromARGB(0x6d7a00),
-  Color3::fromARGB(0x572e2c),
+ColorRGB COLOR_PALETTE[NUM_PALETTE_COLORS] = {
+  ColorRGB::fromARGB(0x298edb),
+  ColorRGB::fromARGB(0x982411),
+  ColorRGB::fromARGB(0x6d4e25),
+  ColorRGB::fromARGB(0x1b5043),
+  ColorRGB::fromARGB(0x6e7662),
+  ColorRGB::fromARGB(0xa08b00),
+  ColorRGB::fromARGB(0x58427b),
+  ColorRGB::fromARGB(0x1d2f5b),
+  ColorRGB::fromARGB(0xac5e34),
+  ColorRGB::fromARGB(0x804055),
+  ColorRGB::fromARGB(0x6d7a00),
+  ColorRGB::fromARGB(0x572e2c),
 
   // Invert each color above
-  Color3::fromARGB(~0x298edb),
-  Color3::fromARGB(~0x982411),
-  Color3::fromARGB(~0x6d4e25),
-  Color3::fromARGB(~0x1b5043),
-  Color3::fromARGB(~0x6e7662),
-  Color3::fromARGB(~0xa08b00),
-  Color3::fromARGB(~0x58427b),
-  Color3::fromARGB(~0x1d2f5b),
-  Color3::fromARGB(~0xac5e34),
-  Color3::fromARGB(~0x804055),
-  Color3::fromARGB(~0x6d7a00),
-  Color3::fromARGB(~0x572e2c)
+  ColorRGB::fromARGB(~0x298edb),
+  ColorRGB::fromARGB(~0x982411),
+  ColorRGB::fromARGB(~0x6d4e25),
+  ColorRGB::fromARGB(~0x1b5043),
+  ColorRGB::fromARGB(~0x6e7662),
+  ColorRGB::fromARGB(~0xa08b00),
+  ColorRGB::fromARGB(~0x58427b),
+  ColorRGB::fromARGB(~0x1d2f5b),
+  ColorRGB::fromARGB(~0xac5e34),
+  ColorRGB::fromARGB(~0x804055),
+  ColorRGB::fromARGB(~0x6d7a00),
+  ColorRGB::fromARGB(~0x572e2c)
 };
 
 int
@@ -375,20 +375,20 @@ numPaletteColors()
   return NUM_PALETTE_COLORS;
 }
 
-Color3 const &
+ColorRGB const &
 getPaletteColor(int i)
 {
   alwaysAssertM(i >= 0, "Can't use a negative index to get a palette color");
   return COLOR_PALETTE[i % numPaletteColors()];
 }
 
-Color3
+ColorRGB
 getLabelColor(QString const & label)
 {
   unsigned int hash = qHash(label);
   G3D::Random rnd(hash);
 
-  return Color3(rnd.uniform(0, 1), rnd.uniform(0, 1), rnd.uniform(0, 1));
+  return ColorRGB(rnd.uniform(0, 1), rnd.uniform(0, 1), rnd.uniform(0, 1));
 }
 
 bool

@@ -1,13 +1,13 @@
 //============================================================================
 //
-// This file is part of the Browse3D project.
+// This file is part of the Thea project.
 //
 // This software is covered by the following BSD license, except for portions
 // derived from other works which are covered by their respective licenses.
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,65 +39,32 @@
 //
 //============================================================================
 
-#ifndef __Browse3D_Common_hpp__
-#define __Browse3D_Common_hpp__
+/*
+ ORIGINAL HEADER
 
-#define QT_USE_FAST_CONCATENATION
-#define QT_USE_FAST_OPERATOR_PLUS
+ @file ColorL.cpp
 
-#include "../../Common.hpp"
-#include "../../Colors.hpp"
-#include "../../IOStream.hpp"
-#include <QDebug>
-#include <QtDebug>
-#include <QString>
-#include <string>
-#include <iostream>
+ Color class.
 
-/** Allow a std::string to be piped to a Qt debug stream. */
-inline QDebug
-operator<<(QDebug dbg, std::string const & str)
+ @author Morgan McGuire, http://graphics.cs.williams.edu
+
+ @created 2007-01-30
+ @edited  2009-03-27
+ */
+
+#include "ColorL.hpp"
+#include "ColorL8.hpp"
+
+namespace Thea {
+
+ColorL::ColorL(ColorL8 const & other)
+: val(other.value() / 255.0f)
+{}
+
+std::string
+ColorL::toString() const
 {
-  dbg << str.c_str();
-  return dbg;
+  return format("L(%g)", val);
 }
 
-/** Allow a QString to be piped to a standard output stream. */
-inline std::ostream &
-operator<<(std::ostream & out, QString const & s)
-{
-  return out << s.toAscii().data();
-}
-
-/** Convert a std::string to a Qt string. */
-inline QString
-toQString(std::string const s)
-{
-  return QString::fromAscii(s.data(), (int)s.size());
-}
-
-/** Convert a Qt string to a std::string (use this function and <b>NOT</b> QString::toStdString()!). */
-inline std::string
-toStdString(QString const s)
-{
-  return std::string(s.toAscii().data(), (int)s.length());
-}
-
-/** Namespace for data-driven texturing project. */
-namespace Browse3D {
-
-using namespace Thea;
-
-// Put quotes around the result of a macro expansion.
-#define BROWSE3D_STRINGIFY_(x) #x
-#define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-using Thea::getFullPath;
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-QString getFullPath(QString const & dir, QString const & filename);
-
-} // namespace Browse3D
-
-#endif
+} // namespace G3D

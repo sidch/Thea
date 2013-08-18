@@ -43,6 +43,7 @@
 #define __Browse3D_Util_hpp__
 
 #include "Common.hpp"
+#include "../../Colors.hpp"
 #include "../../Ray3.hpp"
 
 class QPoint;
@@ -73,16 +74,16 @@ void drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_ce
 // Draw a torus with the given center and primary axes given by the unit vectors u, v.
 void drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v,
                Real radius, Real width, int num_major_steps = 16, int num_minor_steps = 8, bool alternate_dark_light = false,
-               Color4 const & color1 = Color4(1, 0, 0, 1), Color4 const & color2 = Color4(0, 1, 0, 1));
+               ColorRGBA const & color1 = ColorRGBA(1, 0, 0, 1), ColorRGBA const & color2 = ColorRGBA(0, 1, 0, 1));
 
 // Get the number of colors in the standard palette.
 int numPaletteColors();
 
 // Get the i-th color in the standard palette.
-Color3 const & getPaletteColor(int i);
+ColorRGB const & getPaletteColor(int i);
 
 // Map a label to a color.
-Color3 getLabelColor(QString const & label);
+ColorRGB getLabelColor(QString const & label);
 
 // Compute a picking ray, given a screen point and a camera.
 Ray3 computePickRay(QPointF const & p, Graphics::Camera const & camera, int width, int height);

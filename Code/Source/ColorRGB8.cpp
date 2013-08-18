@@ -1,13 +1,13 @@
 //============================================================================
 //
-// This file is part of the Browse3D project.
+// This file is part of the Thea project.
 //
 // This software is covered by the following BSD license, except for portions
 // derived from other works which are covered by their respective licenses.
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,65 +39,35 @@
 //
 //============================================================================
 
-#ifndef __Browse3D_Common_hpp__
-#define __Browse3D_Common_hpp__
+/*
+ ORIGINAL HEADER
 
-#define QT_USE_FAST_CONCATENATION
-#define QT_USE_FAST_OPERATOR_PLUS
+ @file Color3uint8.cpp
 
-#include "../../Common.hpp"
-#include "../../Colors.hpp"
-#include "../../IOStream.hpp"
-#include <QDebug>
-#include <QtDebug>
-#include <QString>
-#include <string>
-#include <iostream>
+ @author Morgan McGuire, http://graphics.cs.williams.edu
 
-/** Allow a std::string to be piped to a Qt debug stream. */
-inline QDebug
-operator<<(QDebug dbg, std::string const & str)
+ @created 2003-04-07
+ @edited  2006-01-07
+*/
+
+#include "ColorRGB8.hpp"
+#include "ColorRGB.hpp"
+
+namespace Thea {
+
+ColorRGB8::ColorRGB8(ColorRGB const & src)
 {
-  dbg << str.c_str();
-  return dbg;
+  c[0] = (uint8)Math::clamp((Real)std::floor(src.r() * 256), (Real)0, (Real)255);
+  c[1] = (uint8)Math::clamp((Real)std::floor(src.g() * 256), (Real)0, (Real)255);
+  c[2] = (uint8)Math::clamp((Real)std::floor(src.b() * 256), (Real)0, (Real)255);
 }
 
-/** Allow a QString to be piped to a standard output stream. */
-inline std::ostream &
-operator<<(std::ostream & out, QString const & s)
+ColorRGB8
+ColorRGB8::fromARGB(uint32 argb)
 {
-  return out << s.toAscii().data();
+  return ColorRGB8((uint8)((argb >> 16) & 0xFF),
+                   (uint8)((argb >>  8) & 0xFF),
+                   (uint8)( argb        & 0xFF));
 }
 
-/** Convert a std::string to a Qt string. */
-inline QString
-toQString(std::string const s)
-{
-  return QString::fromAscii(s.data(), (int)s.size());
-}
-
-/** Convert a Qt string to a std::string (use this function and <b>NOT</b> QString::toStdString()!). */
-inline std::string
-toStdString(QString const s)
-{
-  return std::string(s.toAscii().data(), (int)s.length());
-}
-
-/** Namespace for data-driven texturing project. */
-namespace Browse3D {
-
-using namespace Thea;
-
-// Put quotes around the result of a macro expansion.
-#define BROWSE3D_STRINGIFY_(x) #x
-#define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-using Thea::getFullPath;
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-QString getFullPath(QString const & dir, QString const & filename);
-
-} // namespace Browse3D
-
-#endif
+} // namespace Thea
