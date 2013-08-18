@@ -43,9 +43,8 @@
 #define __Thea_Graphics_VAR_hpp__
 
 #include "../Common.hpp"
-#include "../Vector2.hpp"
-#include "../Vector3.hpp"
-#include "../Vector4.hpp"
+#include "../Colors.hpp"
+#include "../VectorN.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -123,7 +122,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color1 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorL const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -136,7 +135,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color1uint8 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorL8 const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -149,7 +148,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color1uint16 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorL16 const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -162,7 +161,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color3 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorRGB const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -175,7 +174,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color3uint8 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorRGB8 const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -188,7 +187,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color4 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorRGBA const * array) = 0;
 
     /**
      * Update a section of a color array. If the VAR is currently non-empty, the new and old data types must match. Call clear()
@@ -201,7 +200,7 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateColors(long start_elem, long num_elems_to_update, Color4uint8 const * array) = 0;
+    virtual void updateColors(long start_elem, long num_elems_to_update, ColorRGBA8 const * array) = 0;
 
     /**
      * Update a section of an index array. If the VAR is currently non-empty, the new and old data types must match. Call

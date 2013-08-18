@@ -42,6 +42,7 @@
 #include "PointCloud.hpp"
 #include "Util.hpp"
 #include "../../Math.hpp"
+#include "../../Colors.hpp"
 #include <fstream>
 
 namespace Browse3D {
@@ -159,7 +160,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
       if (!normals_are_normalized)
         n.unitize();
 
-      render_system.setColor(Color3(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1)));
+      render_system.setColor(ColorRGB(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1)));
     }
 
     drawSphere(render_system, points[i].p, point_radius);
@@ -173,7 +174,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
 
       render_system.setShader(NULL);
       render_system.setTexture(0, NULL);
-      render_system.setColor(Color3(0, 0, 1));
+      render_system.setColor(ColorRGB(0, 0, 1));
 
       Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().length() : 1);
 

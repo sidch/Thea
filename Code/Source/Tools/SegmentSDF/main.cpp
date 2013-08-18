@@ -12,6 +12,7 @@
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../Colors.hpp"
 #include "../../Math.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../VectorN.hpp"
@@ -68,7 +69,7 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
 }
 
 int countSDFModes(TheaArray<Real> const & sdf_values);
-Color3 const & getPaletteColor(int i);
+ColorRGB const & getPaletteColor(int i);
 int combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, KDTree const & kdtree,
                                TheaArray<int> & labels, double concavity_threshold, double score_threshold);
 
@@ -189,11 +190,11 @@ segmentSDF(int argc, char * argv[])
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
 #ifdef DEBUG_PTS
-    Color3 pseudo_n = getPaletteColor(labels[i]);
+    ColorRGB pseudo_n = getPaletteColor(labels[i]);
     // Real ns = sdf_values[i] / sdf.getNormalizationScale();
-    // Color3 pseudo_n(ns, sqrt(1 - ns * ns), 0);
+    // ColorRGB pseudo_n(ns, sqrt(1 - ns * ns), 0);
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' '
-        << pseudo_n.r      << ' ' << pseudo_n.g      << ' ' << pseudo_n.b << ' ' << sdf_values[i] << ' ' << labels[i] << endl;
+        << pseudo_n.r()    << ' ' << pseudo_n.g()    << ' ' << pseudo_n.b() << ' ' << sdf_values[i] << ' ' << labels[i] << endl;
 #else
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' ' << sdf_values[i] << ' ' << labels[i]
         << endl;
@@ -206,33 +207,33 @@ segmentSDF(int argc, char * argv[])
 }
 
 static int const NUM_PALETTE_COLORS = 24;
-Color3 COLOR_PALETTE[NUM_PALETTE_COLORS] = {
-  Color3::fromARGB(0x298edb),
-  Color3::fromARGB(0x982411),
-  Color3::fromARGB(0x6d4e25),
-  Color3::fromARGB(0x1b5043),
-  Color3::fromARGB(0x6e7662),
-  Color3::fromARGB(0xa08b00),
-  Color3::fromARGB(0x58427b),
-  Color3::fromARGB(0x1d2f5b),
-  Color3::fromARGB(0xac5e34),
-  Color3::fromARGB(0x804055),
-  Color3::fromARGB(0x6d7a00),
-  Color3::fromARGB(0x572e2c),
+ColorRGB COLOR_PALETTE[NUM_PALETTE_COLORS] = {
+  ColorRGB::fromARGB(0x298edb),
+  ColorRGB::fromARGB(0x982411),
+  ColorRGB::fromARGB(0x6d4e25),
+  ColorRGB::fromARGB(0x1b5043),
+  ColorRGB::fromARGB(0x6e7662),
+  ColorRGB::fromARGB(0xa08b00),
+  ColorRGB::fromARGB(0x58427b),
+  ColorRGB::fromARGB(0x1d2f5b),
+  ColorRGB::fromARGB(0xac5e34),
+  ColorRGB::fromARGB(0x804055),
+  ColorRGB::fromARGB(0x6d7a00),
+  ColorRGB::fromARGB(0x572e2c),
 
   // Invert each color above
-  Color3::fromARGB(~0x298edb),
-  Color3::fromARGB(~0x982411),
-  Color3::fromARGB(~0x6d4e25),
-  Color3::fromARGB(~0x1b5043),
-  Color3::fromARGB(~0x6e7662),
-  Color3::fromARGB(~0xa08b00),
-  Color3::fromARGB(~0x58427b),
-  Color3::fromARGB(~0x1d2f5b),
-  Color3::fromARGB(~0xac5e34),
-  Color3::fromARGB(~0x804055),
-  Color3::fromARGB(~0x6d7a00),
-  Color3::fromARGB(~0x572e2c)
+  ColorRGB::fromARGB(~0x298edb),
+  ColorRGB::fromARGB(~0x982411),
+  ColorRGB::fromARGB(~0x6d4e25),
+  ColorRGB::fromARGB(~0x1b5043),
+  ColorRGB::fromARGB(~0x6e7662),
+  ColorRGB::fromARGB(~0xa08b00),
+  ColorRGB::fromARGB(~0x58427b),
+  ColorRGB::fromARGB(~0x1d2f5b),
+  ColorRGB::fromARGB(~0xac5e34),
+  ColorRGB::fromARGB(~0x804055),
+  ColorRGB::fromARGB(~0x6d7a00),
+  ColorRGB::fromARGB(~0x572e2c)
 };
 
 int
@@ -241,7 +242,7 @@ numPaletteColors()
   return NUM_PALETTE_COLORS;
 }
 
-Color3 const &
+ColorRGB const &
 getPaletteColor(int i)
 {
   return COLOR_PALETTE[i % numPaletteColors()];

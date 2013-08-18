@@ -77,16 +77,16 @@ class GraphicsWidget : public Graphics::DrawableObject
     static Graphics::Shader * getShader();
 
     /** Set the lighting parameters. */
-    static void setLight(Vector3 const & dir, Color3 const & color, Color3 const & ambient_color_);
+    static void setLight(Vector3 const & dir, ColorRGB const & color, ColorRGB const & ambient_color_);
 
     /** Get the direction of incident light. */
     static Vector3 const & getLightDirection() { return light_dir; }
 
     /** Get the color of incident light. */
-    static Color3 const & getLightColor() { return light_color; }
+    static ColorRGB const & getLightColor() { return light_color; }
 
     /** Get the color of ambient light. */
-    static Color3 const & getAmbientColor() { return ambient_color; }
+    static ColorRGB const & getAmbientColor() { return ambient_color; }
 
   private:
     /** Set shader uniforms related to lighting. */
@@ -94,8 +94,8 @@ class GraphicsWidget : public Graphics::DrawableObject
 
     static Graphics::Shader * shader;
     static Vector3 light_dir;
-    static Color3 light_color;
-    static Color3 ambient_color;
+    static ColorRGB light_color;
+    static ColorRGB ambient_color;
 
 }; // class GraphicsWidget
 

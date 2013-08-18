@@ -158,10 +158,10 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     void setColorWrite(bool red, bool green, bool blue, bool alpha);
     void setDepthWrite(bool value);
     void setStencilWrite(uint32 mask);
-    void setColor(Color3 const & value);
-    void setColor(Color4 const & value);
-    void setColorClearValue(Color3 const & value);
-    void setColorClearValue(Color4 const & value);
+    void setColor(ColorRGB const & value);
+    void setColor(ColorRGBA const & value);
+    void setColorClearValue(ColorRGB const & value);
+    void setColorClearValue(ColorRGBA const & value);
     void setDepthClearValue(Real value);
     void setStencilClearValue(int value);
     void clear();

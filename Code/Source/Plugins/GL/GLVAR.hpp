@@ -72,13 +72,13 @@ class THEA_GL_DLL_LOCAL GLVAR : public VAR
     void updateVectors(long start_elem, long num_elems_to_update, Vector3 const * array);
     void updateVectors(long start_elem, long num_elems_to_update, Vector4 const * array);
 
-    void updateColors(long start_elem, long num_elems_to_update, Color1 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color1uint8 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color1uint16 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color3 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color3uint8 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color4 const * array);
-    void updateColors(long start_elem, long num_elems_to_update, Color4uint8 const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorL const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorL8 const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorL16 const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorRGB const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorRGB8 const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorRGBA const * array);
+    void updateColors(long start_elem, long num_elems_to_update, ColorRGBA8 const * array);
 
     void updateIndices(long start_elem, long num_elems_to_update, uint8 const * array);
     void updateIndices(long start_elem, long num_elems_to_update, uint16 const * array);

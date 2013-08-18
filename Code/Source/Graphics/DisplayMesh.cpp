@@ -147,7 +147,7 @@ DisplayMesh::addColors()
 {
   if (colors.empty() && !vertices.empty())
   {
-    colors.resize(vertices.size(), Color4(0, 0, 0, 0));
+    colors.resize(vertices.size(), ColorRGBA(0, 0, 0, 0));
     invalidateGPUBuffers();
   }
 }
@@ -173,7 +173,7 @@ DisplayMesh::addTexCoords()
 }
 
 long
-DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, Color4 const * color, Vector2 const * texcoord)
+DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, ColorRGBA const * color, Vector2 const * texcoord)
 {
   alwaysAssertM((normal && normals.size() == vertices.size()) || (!normal && normals.empty()),
                 getName() + ": Mesh must have all or no normals");

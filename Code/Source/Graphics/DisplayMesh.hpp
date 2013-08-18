@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Colors.hpp"
 #include "../NamedObject.hpp"
 #include "IncrementalDisplayMeshBuilder.hpp"
 #include "DefaultMeshCodecs.hpp"
@@ -66,7 +67,7 @@ class THEA_API DisplayMeshVertex
     DisplayMesh  *  mesh;
     Vector3      *  point;
     Vector3      *  normal;
-    Color4       *  color;
+    ColorRGBA       *  color;
     Vector2      *  texcoord;
 
   public:
@@ -74,7 +75,7 @@ class THEA_API DisplayMeshVertex
     DisplayMeshVertex() : mesh(NULL), point(NULL) {}
 
     /** Constructor. */
-    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = NULL, Color4 * color_ = NULL,
+    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = NULL, ColorRGBA * color_ = NULL,
                       Vector2 * texcoord_ = NULL)
     : mesh(mesh_), point(&point_), normal(normal_), color(color_), texcoord(texcoord_)
     {}
@@ -111,14 +112,14 @@ class THEA_API DisplayMeshVertex
     bool hasColor() const { return color != NULL; }
 
     /** Get the color at the vertex. Call only if hasColor() returns true. */
-    Color4 const & getColor() const
+    ColorRGBA const & getColor() const
     {
       debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
       return *color;
     }
 
     /** Set the color at the vertex. Call only if hasColor() returns true. */
-    void setColor(Color4 const & color_);
+    void setColor(ColorRGBA const & color_);
 
     /** Check if the vertex has a texture coordinate. */
     bool hasTexCoord() const { return texcoord != NULL; }
@@ -183,10 +184,10 @@ class THEA_API DisplayMeshIndexedVertex
     bool hasColor() const;
 
     /** Get the color at the vertex. Call only if hasColor() returns true. */
-    Color4 const & getColor() const;
+    ColorRGBA const & getColor() const;
 
     /** Set the color at the vertex. Call only if hasColor() returns true. */
-    void setColor(Color4 const & color_);
+    void setColor(ColorRGBA const & color_);
 
     /** Check if the vertex has a texture coordinate. */
     bool hasTexCoord() const;
@@ -281,7 +282,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     typedef TheaArray<Vector3>  VertexArray;    ///< Array of vertex positions.
     typedef TheaArray<Vector3>  NormalArray;    ///< Array of normals.
     typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<Color4>   ColorArray;     ///< Array of colors.
+    typedef TheaArray<ColorRGBA>   ColorArray;     ///< Array of colors.
     typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
 
     typedef DisplayMeshVertex Vertex;  ///< A convenience wrapper for accessing a vertex's properties.
@@ -422,7 +423,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     bool hasTexCoords() const { return !texcoords.empty(); }
 
     /**
-     * Adds a color property to each vertex, initially initialized to Color4(0, 0, 0, 0). If a color property already exists, no
+     * Adds a color property to each vertex, initially initialized to ColorRGBA(0, 0, 0, 0). If a color property already exists, no
      * action is taken.
      */
     virtual void addColors();
@@ -444,7 +445,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @return The index of the new vertex. Indices are guaranteed to be sequentially generated, starting from 0.
      */
-    virtual long addVertex(Vector3 const & point, Vector3 const * normal = NULL, Color4 const * color = NULL,
+    virtual long addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                            Vector2 const * texcoord = NULL);
 
     /**
@@ -558,7 +559,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     }
 
     /** Set the color of a mesh vertex. */
-    virtual void setColor(long vertex_index, Color4 const & color)
+    virtual void setColor(long vertex_index, ColorRGBA const & color)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)colors.size(),
                     getName() + ": Vertex index out of bounds, or vertex does not have associated color field");
@@ -667,7 +668,7 @@ DisplayMeshVertex::setNormal(Vector3 const & normal_)
 }
 
 inline void
-DisplayMeshVertex::setColor(Color4 const & color_)
+DisplayMeshVertex::setColor(ColorRGBA const & color_)
 {
   debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
   *color = color_;
@@ -734,7 +735,7 @@ DisplayMeshIndexedVertex::hasColor() const
   return mesh->hasColors();
 }
 
-inline Color4 const &
+inline ColorRGBA const &
 DisplayMeshIndexedVertex::getColor() const
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
@@ -742,7 +743,7 @@ DisplayMeshIndexedVertex::getColor() const
 }
 
 inline void
-DisplayMeshIndexedVertex::setColor(Color4 const & color_)
+DisplayMeshIndexedVertex::setColor(ColorRGBA const & color_)
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
   mesh->colors[(array_size_t)index] = color_;

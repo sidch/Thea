@@ -43,6 +43,7 @@
 #define __Thea_Serializable_hpp__
 
 #include "Common.hpp"
+#include "Colors.hpp"
 #include "CoordinateFrameN.hpp"
 #include "HyperplaneN.hpp"
 #include "IOStream.hpp"
@@ -219,106 +220,106 @@ deserializeVector4(Vector4 & v, BinaryInputStream & input)
 
 /** Serialize a color with 1 8-bit channel to a binary output stream. */
 inline THEA_API void
-serializeColor1uint8(Color1uint8 const & c, BinaryOutputStream & output)
+serializeColorL8(ColorL8 const & c, BinaryOutputStream & output)
 {
-  output.writeUInt8(c.value);
+  output.writeUInt8(c.value());
 }
 
 /** Deserialize a color with 1 8-bit channel from a binary input stream. */
 inline THEA_API void
-deserializeColor1uint8(Color1uint8 & c, BinaryInputStream & input)
+deserializeColorL8(ColorL8 & c, BinaryInputStream & input)
 {
-  c.value = input.readUInt8();
+  c.value() = input.readUInt8();
 }
 
 /** Serialize a color with 1 floating-point channel to a binary output stream. */
 inline THEA_API void
-serializeColor1(Color1 const & c, BinaryOutputStream & output)
+serializeColorL(ColorL const & c, BinaryOutputStream & output)
 {
-  output.writeFloat32(c.value);
+  output.writeFloat32(c.value());
 }
 
 /** Deserialize a color with 1 floating-point channel from a binary input stream. */
 inline THEA_API void
-deserializeColor1(Color1 & c, BinaryInputStream & input)
+deserializeColorL(ColorL & c, BinaryInputStream & input)
 {
-  c.value = input.readFloat32();
+  c.value() = input.readFloat32();
 }
 
 /** Serialize a color with 3 8-bit channels to a binary output stream. */
 inline THEA_API void
-serializeColor3uint8(Color3uint8 const & c, BinaryOutputStream & output)
+serializeColorRGB8(ColorRGB8 const & c, BinaryOutputStream & output)
 {
-  output.writeUInt8(c.r);
-  output.writeUInt8(c.g);
-  output.writeUInt8(c.b);
+  output.writeUInt8(c.r());
+  output.writeUInt8(c.g());
+  output.writeUInt8(c.b());
 }
 
 /** Deserialize a color with 3 8-bit channels from a binary input stream. */
 inline THEA_API void
-deserializeColor3uint8(Color3uint8 & c, BinaryInputStream & input)
+deserializeColorRGB8(ColorRGB8 & c, BinaryInputStream & input)
 {
-  c.r = input.readUInt8();
-  c.g = input.readUInt8();
-  c.b = input.readUInt8();
+  c.r() = input.readUInt8();
+  c.g() = input.readUInt8();
+  c.b() = input.readUInt8();
 }
 
 /** Serialize a color with 3 floating-point channels to a binary output stream. */
 inline THEA_API void
-serializeColor3(Color3 const & c, BinaryOutputStream & output)
+serializeColorRGB(ColorRGB const & c, BinaryOutputStream & output)
 {
-  output.writeFloat32(c.r);
-  output.writeFloat32(c.g);
-  output.writeFloat32(c.b);
+  output.writeFloat32(c.r());
+  output.writeFloat32(c.g());
+  output.writeFloat32(c.b());
 }
 
 /** Deserialize a color with 3 floating-point channels from a binary input stream. */
 inline THEA_API void
-deserializeColor3(Color3 & c, BinaryInputStream & input)
+deserializeColorRGB(ColorRGB & c, BinaryInputStream & input)
 {
-  c.r = input.readFloat32();
-  c.g = input.readFloat32();
-  c.b = input.readFloat32();
+  c.r() = input.readFloat32();
+  c.g() = input.readFloat32();
+  c.b() = input.readFloat32();
 }
 
 /** Serialize a color with 4 8-bit channels to a binary output stream. */
 inline THEA_API void
-serializeColor4uint8(Color4uint8 const & c, BinaryOutputStream & output)
+serializeColorRGBA8(ColorRGBA8 const & c, BinaryOutputStream & output)
 {
-  output.writeUInt8(c.r);
-  output.writeUInt8(c.g);
-  output.writeUInt8(c.b);
-  output.writeUInt8(c.a);
+  output.writeUInt8(c.r());
+  output.writeUInt8(c.g());
+  output.writeUInt8(c.b());
+  output.writeUInt8(c.a());
 }
 
 /** Deserialize a color with 4 8-bit channels from a binary input stream. */
 inline THEA_API void
-deserializeColor4uint8(Color4uint8 & c, BinaryInputStream & input)
+deserializeColorRGBA8(ColorRGBA8 & c, BinaryInputStream & input)
 {
-  c.r = input.readUInt8();
-  c.g = input.readUInt8();
-  c.b = input.readUInt8();
-  c.a = input.readUInt8();
+  c.r() = input.readUInt8();
+  c.g() = input.readUInt8();
+  c.b() = input.readUInt8();
+  c.a() = input.readUInt8();
 }
 
 /** Serialize a color with 3 floating-point channels to a binary output stream. */
 inline THEA_API void
-serializeColor4(Color4 const & c, BinaryOutputStream & output)
+serializeColorRGBA(ColorRGBA const & c, BinaryOutputStream & output)
 {
-  output.writeFloat32(c.r);
-  output.writeFloat32(c.g);
-  output.writeFloat32(c.b);
-  output.writeFloat32(c.a);
+  output.writeFloat32(c.r());
+  output.writeFloat32(c.g());
+  output.writeFloat32(c.b());
+  output.writeFloat32(c.a());
 }
 
 /** Deserialize a color with 4 floating-point channels from a binary input stream. */
 inline THEA_API void
-deserializeColor4(Color4 & c, BinaryInputStream & input)
+deserializeColorRGBA(ColorRGBA & c, BinaryInputStream & input)
 {
-  c.r = input.readFloat32();
-  c.g = input.readFloat32();
-  c.b = input.readFloat32();
-  c.a = input.readFloat32();
+  c.r() = input.readFloat32();
+  c.g() = input.readFloat32();
+  c.b() = input.readFloat32();
+  c.a() = input.readFloat32();
 }
 
 /** Serialize a 2x2 matrix to a binary output stream. */

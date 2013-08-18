@@ -836,27 +836,27 @@ GLRenderSystem::setStencilWrite(uint32 mask)
 }
 
 void
-GLRenderSystem::setColor(Color3 const & value)
+GLRenderSystem::setColor(ColorRGB const & value)
 {
-  glColor3f((GLfloat)value.r, (GLfloat)value.g, (GLfloat)value.b);
+  glColor3f((GLfloat)value.r(), (GLfloat)value.g(), (GLfloat)value.b());
 }
 
 void
-GLRenderSystem::setColor(Color4 const & value)
+GLRenderSystem::setColor(ColorRGBA const & value)
 {
-  glColor4f((GLfloat)value.r, (GLfloat)value.g, (GLfloat)value.b, (GLfloat)value.a);
+  glColor4f((GLfloat)value.r(), (GLfloat)value.g(), (GLfloat)value.b(), (GLfloat)value.a());
 }
 
 void
-GLRenderSystem::setColorClearValue(Color3 const & value)
+GLRenderSystem::setColorClearValue(ColorRGB const & value)
 {
-  glClearColor((GLclampf)value.r, (GLclampf)value.g, (GLclampf)value.b, 1.0f);
+  glClearColor((GLclampf)value.r(), (GLclampf)value.g(), (GLclampf)value.b(), 1.0f);
 }
 
 void
-GLRenderSystem::setColorClearValue(Color4 const & value)
+GLRenderSystem::setColorClearValue(ColorRGBA const & value)
 {
-  glClearColor((GLclampf)value.r, (GLclampf)value.g, (GLclampf)value.b, (GLclampf)value.a);
+  glClearColor((GLclampf)value.r(), (GLclampf)value.g(), (GLclampf)value.b(), (GLclampf)value.a());
 }
 
 void

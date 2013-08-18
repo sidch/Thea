@@ -91,4 +91,20 @@
 // Symbol visibility flags
 #include "SymbolVisibility.hpp"
 
+/** Use tight alignment for a class. Useful for small classes that must be packed into an array. */
+#ifdef _MSC_VER
+#  define THEA_BEGIN_PACKED_CLASS(byte_align)  PRAGMA( pack(push, byte_align) )
+#else
+#  define THEA_BEGIN_PACKED_CLASS(byte_align)
+#endif
+
+/** Mark end of class that uses tight alignment. */
+#ifdef _MSC_VER
+#  define THEA_END_PACKED_CLASS(byte_align)  ; PRAGMA( pack(pop) )
+#elif defined(__GNUC__)
+#  define THEA_END_PACKED_CLASS(byte_align)  __attribute((aligned(byte_align))) ;
+#else
+#  define THEA_END_PACKED_CLASS(byte_align)  ;
+#endif
+
 #endif
