@@ -76,7 +76,7 @@ class THEA_API Codec
 };
 
 /** Write the name of the object to an output stream. */
-inline THEA_API std::ostream &
+inline std::ostream &
 operator<<(std::ostream & os, Codec const & codec)
 {
   return os << codec.getName() << " codec";
@@ -165,7 +165,7 @@ class THEA_API SerializableFactory
 // argument, to prevent user errors caused by implicit conversions.
 
 /** Serialize a 2-vector to a binary output stream. */
-inline THEA_API void
+inline void
 serializeVector2(Vector2 const & v, BinaryOutputStream & output)
 {
   output.writeFloat32(v.x());
@@ -173,7 +173,7 @@ serializeVector2(Vector2 const & v, BinaryOutputStream & output)
 }
 
 /** Deserialize a 2-vector from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeVector2(Vector2 & v, BinaryInputStream & input)
 {
   v.x() = input.readFloat32();
@@ -181,7 +181,7 @@ deserializeVector2(Vector2 & v, BinaryInputStream & input)
 }
 
 /** Serialize a 3-vector to a binary output stream. */
-inline THEA_API void
+inline void
 serializeVector3(Vector3 const & v, BinaryOutputStream & output)
 {
   output.writeFloat32(v.x());
@@ -190,7 +190,7 @@ serializeVector3(Vector3 const & v, BinaryOutputStream & output)
 }
 
 /** Deserialize a 3-vector from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeVector3(Vector3 & v, BinaryInputStream & input)
 {
   v.x() = input.readFloat32();
@@ -199,7 +199,7 @@ deserializeVector3(Vector3 & v, BinaryInputStream & input)
 }
 
 /** Serialize a 4-vector to a binary output stream. */
-inline THEA_API void
+inline void
 serializeVector4(Vector4 const & v, BinaryOutputStream & output)
 {
   output.writeFloat32(v.x());
@@ -209,7 +209,7 @@ serializeVector4(Vector4 const & v, BinaryOutputStream & output)
 }
 
 /** Deserialize a 4-vector from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeVector4(Vector4 & v, BinaryInputStream & input)
 {
   v.x() = input.readFloat32();
@@ -219,35 +219,35 @@ deserializeVector4(Vector4 & v, BinaryInputStream & input)
 }
 
 /** Serialize a color with 1 8-bit channel to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorL8(ColorL8 const & c, BinaryOutputStream & output)
 {
   output.writeUInt8(c.value());
 }
 
 /** Deserialize a color with 1 8-bit channel from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorL8(ColorL8 & c, BinaryInputStream & input)
 {
   c.value() = input.readUInt8();
 }
 
 /** Serialize a color with 1 floating-point channel to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorL(ColorL const & c, BinaryOutputStream & output)
 {
   output.writeFloat32(c.value());
 }
 
 /** Deserialize a color with 1 floating-point channel from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorL(ColorL & c, BinaryInputStream & input)
 {
   c.value() = input.readFloat32();
 }
 
 /** Serialize a color with 3 8-bit channels to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorRGB8(ColorRGB8 const & c, BinaryOutputStream & output)
 {
   output.writeUInt8(c.r());
@@ -256,7 +256,7 @@ serializeColorRGB8(ColorRGB8 const & c, BinaryOutputStream & output)
 }
 
 /** Deserialize a color with 3 8-bit channels from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorRGB8(ColorRGB8 & c, BinaryInputStream & input)
 {
   c.r() = input.readUInt8();
@@ -265,7 +265,7 @@ deserializeColorRGB8(ColorRGB8 & c, BinaryInputStream & input)
 }
 
 /** Serialize a color with 3 floating-point channels to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorRGB(ColorRGB const & c, BinaryOutputStream & output)
 {
   output.writeFloat32(c.r());
@@ -274,7 +274,7 @@ serializeColorRGB(ColorRGB const & c, BinaryOutputStream & output)
 }
 
 /** Deserialize a color with 3 floating-point channels from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorRGB(ColorRGB & c, BinaryInputStream & input)
 {
   c.r() = input.readFloat32();
@@ -283,7 +283,7 @@ deserializeColorRGB(ColorRGB & c, BinaryInputStream & input)
 }
 
 /** Serialize a color with 4 8-bit channels to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorRGBA8(ColorRGBA8 const & c, BinaryOutputStream & output)
 {
   output.writeUInt8(c.r());
@@ -293,7 +293,7 @@ serializeColorRGBA8(ColorRGBA8 const & c, BinaryOutputStream & output)
 }
 
 /** Deserialize a color with 4 8-bit channels from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorRGBA8(ColorRGBA8 & c, BinaryInputStream & input)
 {
   c.r() = input.readUInt8();
@@ -303,7 +303,7 @@ deserializeColorRGBA8(ColorRGBA8 & c, BinaryInputStream & input)
 }
 
 /** Serialize a color with 3 floating-point channels to a binary output stream. */
-inline THEA_API void
+inline void
 serializeColorRGBA(ColorRGBA const & c, BinaryOutputStream & output)
 {
   output.writeFloat32(c.r());
@@ -313,7 +313,7 @@ serializeColorRGBA(ColorRGBA const & c, BinaryOutputStream & output)
 }
 
 /** Deserialize a color with 4 floating-point channels from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeColorRGBA(ColorRGBA & c, BinaryInputStream & input)
 {
   c.r() = input.readFloat32();
@@ -323,7 +323,7 @@ deserializeColorRGBA(ColorRGBA & c, BinaryInputStream & input)
 }
 
 /** Serialize a 2x2 matrix to a binary output stream. */
-inline THEA_API void
+inline void
 serializeMatrix2(Matrix2 const & m, BinaryOutputStream & output)
 {
   output.writeFloat32(m(0, 0));
@@ -333,7 +333,7 @@ serializeMatrix2(Matrix2 const & m, BinaryOutputStream & output)
 }
 
 /** Deserialize a 2x2 matrix from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeMatrix2(Matrix2 & m, BinaryInputStream & input)
 {
   m(0, 0) = input.readFloat32();
@@ -343,7 +343,7 @@ deserializeMatrix2(Matrix2 & m, BinaryInputStream & input)
 }
 
 /** Serialize a 3x3 matrix to a binary output stream. */
-inline THEA_API void
+inline void
 serializeMatrix3(Matrix3 const & m, BinaryOutputStream & output)
 {
   for (int r = 0; r < 3; ++r)
@@ -352,7 +352,7 @@ serializeMatrix3(Matrix3 const & m, BinaryOutputStream & output)
 }
 
 /** Deserialize a 3x3 matrix from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeMatrix3(Matrix3 & m, BinaryInputStream & input)
 {
   for (int r = 0; r < 3; ++r)
@@ -361,7 +361,7 @@ deserializeMatrix3(Matrix3 & m, BinaryInputStream & input)
 }
 
 /** Serialize a 4x4 matrix to a binary output stream. */
-inline THEA_API void
+inline void
 serializeMatrix4(Matrix4 const & m, BinaryOutputStream & output)
 {
   for (int r = 0; r < 4; ++r)
@@ -370,7 +370,7 @@ serializeMatrix4(Matrix4 const & m, BinaryOutputStream & output)
 }
 
 /** Deserialize a 4x4 matrix from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeMatrix4(Matrix4 & m, BinaryInputStream & input)
 {
   for (int r = 0; r < 4; ++r)
@@ -379,7 +379,7 @@ deserializeMatrix4(Matrix4 & m, BinaryInputStream & input)
 }
 
 /** Serialize a coordinate frame to a binary output stream. */
-inline THEA_API void
+inline void
 serializeCoordinateFrame3(CoordinateFrame3 const & c, BinaryOutputStream & output)
 {
   serializeMatrix3(c.getRotation(), output);
@@ -387,7 +387,7 @@ serializeCoordinateFrame3(CoordinateFrame3 const & c, BinaryOutputStream & outpu
 }
 
 /** Deserialize a coordinate frame from a binary input stream. */
-inline THEA_API void
+inline void
 deserializeCoordinateFrame3(CoordinateFrame3 & c, BinaryInputStream & input)
 {
   Matrix3 rot;
@@ -398,7 +398,7 @@ deserializeCoordinateFrame3(CoordinateFrame3 & c, BinaryInputStream & input)
 }
 
 /** Serialize a 3D plane to a binary output stream. */
-inline THEA_API void
+inline void
 serializePlane3(Plane3 const & plane, BinaryOutputStream & output)
 {
   Real a, b, c, d;
@@ -410,7 +410,7 @@ serializePlane3(Plane3 const & plane, BinaryOutputStream & output)
 }
 
 /** Deserialize a 3D plane from a binary input stream. */
-inline THEA_API void
+inline void
 deserializePlane3(Plane3 & plane, BinaryInputStream & input)
 {
   float a = input.readFloat32();
@@ -428,7 +428,7 @@ deserializePlane3(Plane3 & plane, BinaryInputStream & input)
  *
  * @see deserializeAlignedString
  */
-inline THEA_API void
+inline void
 serializeAlignedString(std::string const & s, BinaryOutputStream & output)
 {
   static const char zero[4] = { 0, 0, 0, 0 };
@@ -450,7 +450,7 @@ serializeAlignedString(std::string const & s, BinaryOutputStream & output)
  *
  * @see serializeAlignedString
  */
-inline THEA_API std::string
+inline std::string
 deserializeAlignedString(BinaryInputStream & input)
 {
   int length = (int)input.readUInt32();  // string length
@@ -464,7 +464,7 @@ deserializeAlignedString(BinaryInputStream & input)
 }
 
 // [Internal] Reads a line of input from the stream, bounded by any of the standard newline characters.
-inline THEA_API std::string
+inline std::string
 readLine(BinaryInputStream & input)
 {
   std::ostringstream oss;

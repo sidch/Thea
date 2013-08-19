@@ -49,7 +49,6 @@
 #include "Memory.hpp"
 #include "Noncopyable.hpp"
 #include <boost/cstdint.hpp>
-#include <boost/algorithm/string.hpp>
 #include <cassert>
 #include <cstdlib>
 #include <sstream>
@@ -177,22 +176,10 @@ struct THEA_API CompareOp
 };
 
 /**
- * Similar to sprintf, only return the result as a string, without overflow issues. Declared as
- * <code>std::string format(char const * fmt ...);</code>
- */
-using G3D::format;
-
-// More string functions.
-using G3D::beginsWith;
-using G3D::endsWith;
-using G3D::toUpper;
-using G3D::toLower;
-
-/**
  * Get the full path to a file, given the path to the containing directory and the name of the file itself. If the directory
  * name is empty, just the filename is returned.
  */
-inline THEA_API std::string
+inline std::string
 getFullPath(std::string const & dir, std::string const & filename)
 {
   // URL's can be picky about double slashes, so remove those
@@ -200,7 +187,7 @@ getFullPath(std::string const & dir, std::string const & filename)
 }
 
 /** Pause the current thread for a given number of milliseconds. */
-inline THEA_API void
+inline void
 sleep(size_t ms)
 {
 #ifdef _WIN32
@@ -247,5 +234,6 @@ getClass(T const & obj)
 
 // Commonly-used but requires the stuff in Common.hpp to be declared first, so is included here.
 #include "Application.hpp"
+#include "StringAlg.hpp"
 
 #endif

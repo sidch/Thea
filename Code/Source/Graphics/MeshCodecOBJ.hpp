@@ -132,8 +132,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         Options & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
 
         /**
-         * Ignore normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by faces
-         * is treated as a distinct vertex. Note that not all mesh types can store normals by default.
+         * Ignore normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by
+         * faces is treated as a distinct vertex. Note that not all mesh types can store normals by default.
          */
         Options & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
 
@@ -245,12 +245,12 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       while (in->hasMore())
       {
-        std::string line = boost::trim_copy(readLine(*in));
+        std::string line = trimWhitespace(readLine(*in));
         bool done = false;
         while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'g'))
         {
           if (in->hasMore())
-            line = boost::trim_copy(readLine(*in));
+            line = trimWhitespace(readLine(*in));
           else
           {
             done = true;

@@ -105,7 +105,7 @@ isSquare(MatrixT const & m)
   return MatrixUtilInternal::IsSquareImpl<MatrixT>::isSquare(m);
 }
 
-inline THEA_API bool
+inline bool
 isSquare(G3D::Matrix const & m)
 {
   return m.rows() == m.cols();
@@ -119,7 +119,7 @@ getFormat(MatrixT const & m)
   return MatrixUtilInternal::GetFormatImpl<MatrixT>::getFormat(m);
 }
 
-inline THEA_API MatrixFormat
+inline MatrixFormat
 getFormat(G3D::Matrix const & m)
 {
   return MatrixFormat::DENSE_ROW_MAJOR;
