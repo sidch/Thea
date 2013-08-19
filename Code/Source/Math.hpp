@@ -126,7 +126,7 @@ square(T const & x)
 }
 
 /** Get the highest non-zero bit of a 32-bit unsigned integer. Returns -1 if the integer is 0. */
-inline THEA_API int
+inline int
 highestBit(uint32 x)
 {
   // Copied from G3D.
@@ -154,14 +154,14 @@ highestBit(uint32 x)
 }
 
 /** Compute the floor of the logarithm of an integer, to the base 2. Returns -1 if the integer is 0. */
-inline THEA_API int
+inline int
 floorLog2(uint32 i)
 {
   return highestBit(i);
 }
 
 /** Compute the ceiling of the logarithm of an integer, to the base 2. Returns -1 if the integer is 0. */
-inline THEA_API int
+inline int
 ceilLog2(uint32 i)
 {
   int hibit = highestBit(i);
@@ -169,7 +169,7 @@ ceilLog2(uint32 i)
 }
 
 /** Fast approximation of logarithm to the base 2. */
-inline THEA_API float32
+inline float32
 fastLog2(float32 f)
 {
   debugAssertM(f > 0.0f, "Math::fastLog2: Cannot compute logarithm of negative number");
@@ -179,14 +179,14 @@ fastLog2(float32 f)
 }
 
 /** Very fast test to check if a number is a power of 2 or not. */
-inline THEA_API bool
+inline bool
 isPowerOf2(unsigned long i)
 {
   return i > 0 && !(i & (i - 1));
 }
 
 /** Pad an integer to a multiple of a period. */
-inline THEA_API int
+inline int
 padPeriodic(int i, int period)
 {
   return i + (period - i % period) % period;
@@ -279,7 +279,7 @@ template <typename T> bool fuzzyLe(T const & a, T const & b, T const & tol) { re
 template <typename T> bool fuzzyLe(T const & a, T const & b) { return fuzzyLe(a, b, eps(a, b)); }
 
 /** A fast approximation to 1 / sqrt(\a x). */
-inline THEA_API float32
+inline float32
 fastRsq(float32 x)
 {
   // From Quake 3 source code
@@ -297,7 +297,7 @@ fastRsq(float32 x)
 }
 
 /** A fast approximation to 1 / sqrt(\a x) (currently no faster than 1 / std::sqrt). */
-inline THEA_API double
+inline double
 fastRsq(double x)
 {
   return 1.0 / std::sqrt(x);
@@ -312,35 +312,35 @@ fastSqrt(T const & x)
 }
 
 /** The constant Pi. */
-inline THEA_API double
+inline double
 pi()
 {
   return 3.14159265358979;
 }
 
 /** The constant Pi / 2. */
-inline THEA_API double
+inline double
 halfPi()
 {
   return 1.57079632679490;
 }
 
 /** The constant 2 * Pi. */
-inline THEA_API double
+inline double
 twoPi()
 {
   return 6.28318530717959;
 }
 
 /** Round a real number to the nearest integer using the lrintf() routine. */
-inline THEA_API float
+inline float
 round(float x)
 {
   return lrintf(x);
 }
 
 /** Round a real number to the nearest integer using the lrint() routine. */
-inline THEA_API double
+inline double
 round(double x)
 {
   return lrint(x);
@@ -436,14 +436,14 @@ extern float const TRIG_TABLE[NUM_TRIG_STEPS + 1][3];
 int const NUM_INV_TRIG_STEPS = 512;
 extern float const INV_TRIG_TABLE[NUM_INV_TRIG_STEPS + 1][3];
 
-inline THEA_API int
+inline int
 radiansToTrigIndex(float radians)
 {
   static float const CONV_FACTOR = NUM_TRIG_STEPS / (float)twoPi();
   return clamp((int)round(CONV_FACTOR * radians), 0, NUM_TRIG_STEPS);
 }
 
-inline THEA_API int
+inline int
 valueToInvTrigIndex(float value)
 {
   return clamp((int)round(NUM_INV_TRIG_STEPS * value), 0, NUM_INV_TRIG_STEPS);
@@ -452,18 +452,18 @@ valueToInvTrigIndex(float value)
 } // namespace MathInternal
 
 /** Fast approximation of sine function using a lookup table. */
-inline THEA_API float fastSin(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][0]; }
+inline float fastSin(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][0]; }
 
 /** Fast approximation of cosine function using a lookup table. */
-inline THEA_API float fastCos(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][1]; }
+inline float fastCos(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][1]; }
 
 /** Fast approximation of tangent function using a lookup table. */
-inline THEA_API float fastTan(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][2]; }
+inline float fastTan(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][2]; }
 
 /**
  * Fast approximation of inverse sine using a lookup table. Return value is in radians, range [-pi/2, pi/2] (like std::asin).
  */
-inline THEA_API float
+inline float
 fastArcSin(float s)
 {
   using namespace MathInternal;
@@ -476,7 +476,7 @@ fastArcSin(float s)
 }
 
 /** Fast approximation of inverse cosine using a lookup table. Return value is in radians, range [0, pi] (like std::acos). */
-inline THEA_API float
+inline float
 fastArcCos(float c)
 {
   using namespace MathInternal;
@@ -493,7 +493,7 @@ fastArcCos(float c)
 /**
  * Fast approximation of inverse tangent using a lookup table. Return value is in radians, range [-pi/2, pi/2] (like std::atan).
  */
-inline THEA_API float
+inline float
 fastArcTan(float t)
 {
   using namespace MathInternal;
@@ -515,7 +515,7 @@ fastArcTan(float t)
  * Fast approximation of atan2 using a lookup table. Return value is in radians, range [-pi, pi] (like std::atan2). Both
  * arguments should not be zero.
  */
-inline THEA_API float
+inline float
 fastArcTan2(float dy, float dx)
 {
   using namespace MathInternal;
@@ -560,14 +560,14 @@ float fastMinuzExpWider_3(float x);
 } // namespace MathInternal
 
 /** Computes a fast approximation to exp(-x). */
-inline THEA_API float
+inline float
 fastMinusExp(float x)
 {
   return MathInternal::fastMinuzExpWider_1(x);
 }
 
 /** Computes a fast approximation to exp(-x) for 0 <= x <= 1. */
-inline THEA_API float
+inline float
 fastMinusExp01(float x)
 {
   if (x > 0.69f)

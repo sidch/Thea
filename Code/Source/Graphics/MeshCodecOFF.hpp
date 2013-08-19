@@ -213,7 +213,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         in = tmp_in.get();
       }
 
-      std::string header = boost::trim_copy(readLine(*in));
+      std::string header = trimWhitespace(readLine(*in));
       if (header != "OFF" && !beginsWith(header, "OFF "))
         throw Error(getName() + ": Invalid OFF stream (does not start with 'OFF')");
 
@@ -228,11 +228,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Deserialize a mesh group in ASCII format. */
     void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in) const
     {
-      std::string line = boost::trim_copy(readLine(in));
+      std::string line = trimWhitespace(readLine(in));
       while (line.empty() || line[0] == '#')
       {
         if (in.hasMore())
-          line = boost::trim_copy(readLine(in));
+          line = trimWhitespace(readLine(in));
         else
           throw Error(getName() + ": Unexpected end of file");
       }
@@ -262,11 +262,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
       double x, y, z;
       for (long v = 0; v < num_vertices; ++v)
       {
-        std::string line = boost::trim_copy(readLine(in));
+        std::string line = trimWhitespace(readLine(in));
         while (line.empty() || line[0] == '#')
         {
           if (in.hasMore())
-            line = boost::trim_copy(readLine(in));
+            line = trimWhitespace(readLine(in));
           else
             throw Error(getName() + ": Unexpected end of file");
         }
@@ -287,11 +287,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
       int num_face_vertices;
       for (long f = 0; f < num_faces; ++f)
       {
-        std::string line = boost::trim_copy(readLine(in));
+        std::string line = trimWhitespace(readLine(in));
         while (line.empty() || line[0] == '#')
         {
           if (in.hasMore())
-            line = boost::trim_copy(readLine(in));
+            line = trimWhitespace(readLine(in));
           else
             throw Error(getName() + ": Unexpected end of file");
         }

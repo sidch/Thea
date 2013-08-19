@@ -102,7 +102,7 @@ NamedObject::~NamedObject()
 }
 
 /** Write a short description of a named object to an output stream. */
-inline THEA_API std::ostream &
+inline std::ostream &
 operator<<(std::ostream & os, NamedObject const & obj)
 {
   std::string cls = getClass(obj);

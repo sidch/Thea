@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include "Math.hpp"
 #include <boost/array.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <limits>
 #include <sstream>
 
