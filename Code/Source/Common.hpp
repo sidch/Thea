@@ -169,22 +169,36 @@ struct THEA_API CompareOp
     LESS,       ///< Less-than.
     LEQUAL,     ///< Less-than-or-equal.
     GREATER,    ///< Greater-than.
-    GEQUAL,     ///< Greater-than-or-equal.
+    GEQUAL      ///< Greater-than-or-equal.
   };
 
   THEA_ENUM_CLASS_BODY(CompareOp)
 };
 
-/**
- * Get the full path to a file, given the path to the containing directory and the name of the file itself. If the directory
- * name is empty, just the filename is returned.
- */
-inline std::string
-getFullPath(std::string const & dir, std::string const & filename)
+/** %Endianness values (little-endian and big-endian) (enum class). Also has a function to check the machine endianness. */
+struct THEA_API Endianness
 {
-  // URL's can be picky about double slashes, so remove those
-  return dir.empty() ? filename : (dir[dir.length() - 1] == '/' ? dir + filename : dir + '/' + filename);
-}
+  /** Supported values. */
+  enum Value
+  {
+    BIG,
+    LITTLE
+  };
+
+  THEA_ENUM_CLASS_BODY(Endianness)
+
+  /** Get the machine endian-ness. */
+  static Endianness machine()
+  {
+    union
+    {
+      uint32 i;
+      char c[4];
+    } b = { 0x01020304 };
+
+    return (b.c[0] == 1 ? BIG : LITTLE);
+  }
+};
 
 /** Pause the current thread for a given number of milliseconds. */
 inline void

@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Stanford University
 //
 // All rights reserved.
 //
@@ -39,35 +39,37 @@
 //
 //============================================================================
 
-#ifndef __Thea_Database_OutputClient_hpp__
-#define __Thea_Database_OutputClient_hpp__
-
-#include "../Common.hpp"
-#include "../IOStream.hpp"
+#include "Application.hpp"
+#include "FilePath.hpp"
+#include "FileSystem.hpp"
 
 namespace Thea {
-namespace Database {
 
-/** A base class for clients that write to a database. */
-class THEA_API OutputClient
+void
+Application::setResourceArchive(std::string const & path)
 {
-  public:
-    THEA_DEF_POINTER_TYPES(OutputClient, shared_ptr, weak_ptr)
+  if (!path.empty())
+  {
+    if (!FileSystem::directoryExists(path))
+      throw Error("Resource archive '" + path + "' does not exist or is not a valid directory");
 
-    /** Destructor. */
-    virtual ~OutputClient() {}
+    _resourceArchive() = FileSystem::resolve(path);
 
-    /**
-     * Open a binary output stream by name. If the stream could not be opened, a null pointer is returned, although in rare
-     * cases an exception could be thrown. The initial endianness of the stream is unspecified.
-     */
-    virtual BinaryOutputStreamPtr openBinaryOutputStream(std::string const & name) = 0;
+    THEA_DEBUG << "Resource archive set to '" << _resourceArchive() << '\'';
+  }
+}
 
-}; // class OutputClient
+std::string
+Application::getFullResourcePath(std::string const & resource_name)
+{
+  return FilePath::concat(_resourceArchive(), resource_name);
+}
 
-} // namespace Database
+std::string &
+Application::_resourceArchive()
+{
+  static std::string resource_archive = FilePath::parent(G3D::System::currentProgramFilename());
+  return resource_archive;
+}
+
 } // namespace Thea
-
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::Database::OutputClient)
-
-#endif

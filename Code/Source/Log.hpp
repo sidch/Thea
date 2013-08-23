@@ -42,8 +42,8 @@
 #ifndef Thea_Log_hpp
 #define Thea_Log_hpp
 
-#include "G3D/G3D.h"
 #include "Platform.hpp"
+#include "BasicStringAlg.hpp"
 #include <iostream>
 #include <string>
 
@@ -86,10 +86,10 @@ class THEA_API LockedOutputStream
 
 // Fully qualify references in #defines so they can be used in client programs in non-Thea namespaces without namespace errors.
 
-#define THEA_LOG_STANDARD_PREFIX G3D::format("[%s] %s:%ld: ", \
-                                             Thea::LogInternal::currentDateTimeToString().c_str(), \
-                                             Thea::LogInternal::stripPathFromFilename(__FILE__).c_str(), \
-                                             (long)__LINE__)
+#define THEA_LOG_STANDARD_PREFIX Thea::format("[%s] %s:%ld: ", \
+                                              Thea::LogInternal::currentDateTimeToString().c_str(), \
+                                              Thea::LogInternal::stripPathFromFilename(__FILE__).c_str(), \
+                                              (long)__LINE__)
 
 /**
  * Synchronized console output stream, with no line prefix. Outputs a newline at the end of every sequence of stream operations

@@ -106,6 +106,7 @@ FILE(GLOB TheaSources
 
 # Libraries to link to
 SET(TheaLibraries
+    ${Boost_LIBRARIES}
     ${CLUTO_LIBRARIES}
     ${CGAL_LIBRARIES}
     ${Lib3ds_LIBRARIES}

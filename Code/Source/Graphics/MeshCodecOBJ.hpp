@@ -164,24 +164,24 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
     long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info) const
     {
-      output.setEndian(Endianness::LITTLE);
-      int64 initial_pos = output.position();
+      output.setEndianness(Endianness::LITTLE);
+      int64 initial_pos = output.getPosition();
 
       int64 size_pos = 0;
       if (prefix_info)
       {
-        output.writeBytes(BaseT::getMagic().data(), BaseT::MAGIC_LENGTH);
+        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic().data());
 
         // Placeholder for the size field
-        size_pos = output.position();
+        size_pos = output.getPosition();
         output.writeUInt32(0);
       }
 
-      int64 enc_start = output.position();
+      int64 enc_start = output.getPosition();
         VertexIndexMap vertex_indices;
         serializeVertices(mesh_group, output, vertex_indices);
         serializeFaces(mesh_group, vertex_indices, output);
-      int64 enc_end = output.position();
+      int64 enc_end = output.getPosition();
 
       if (prefix_info)
       {
@@ -202,7 +202,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       if (read_prefixed_info)
       {
-        input.setEndian(Endianness::LITTLE);
+        input.setEndianness(Endianness::LITTLE);
         input.skip(BaseT::MAGIC_LENGTH);
         uint32 encoding_size = input.readUInt32();
 
@@ -210,10 +210,10 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           return;
 
         enc_block.resize((array_size_t)encoding_size);
-        input.readBytes(&enc_block[0], (int64)encoding_size);
+        input.readBytes((int64)encoding_size, &enc_block[0]);
 
-        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false,
-                                                            false));  // shared pointer ensures deallocation on return
+        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
+                                                            // shared pointer ensures deallocation on return
         in = tmp_in.get();
       }
 
@@ -245,12 +245,12 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       while (in->hasMore())
       {
-        std::string line = trimWhitespace(readLine(*in));
+        std::string line = trimWhitespace(in->readLine());
         bool done = false;
         while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'g'))
         {
           if (in->hasMore())
-            line = trimWhitespace(readLine(*in));
+            line = trimWhitespace(in->readLine());
           else
           {
             done = true;
@@ -463,7 +463,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
     static void writeString(std::string const & str, BinaryOutputStream & output)
     {
-      output.writeBytes(str.data(), (int)str.length());
+      output.writeBytes((int64)str.length(), str.data());
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */

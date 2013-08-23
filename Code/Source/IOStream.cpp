@@ -41,14 +41,5 @@
 
 #include "IOStream.hpp"
 
-THEA_INSTANTIATE_SMART_POINTERS(Thea::BinaryInputStream)
-THEA_INSTANTIATE_SMART_POINTERS(Thea::BinaryOutputStream)
 THEA_INSTANTIATE_SMART_POINTERS(Thea::TextInputStream)
 THEA_INSTANTIATE_SMART_POINTERS(Thea::TextOutputStream)
-
-namespace Thea {
-
-Endianness::Value const Endianness::BIG     =  G3D::G3D_BIG_ENDIAN;
-Endianness::Value const Endianness::LITTLE  =  G3D::G3D_LITTLE_ENDIAN;
-
-} // namespace Thea

@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../FilePath.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/Filter.hpp"
 #include "../../Algorithms/KDTree3.hpp"
@@ -632,8 +633,8 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Wrote offsets to " << offsets_path1;
 
-  string pts_with_offsets_path1 = getFullPath(G3D::FilePath::parent(offsets_path1),
-                                              G3D::FilePath::base(samples_path1) + "_with_offsets.pts");
+  string pts_with_offsets_path1 = FilePath::concat(FilePath::parent(offsets_path1),
+                                                   FilePath::baseName(samples_path1) + "_with_offsets.pts");
   ofstream out_pts(pts_with_offsets_path1.c_str(), ios::binary);
   for (array_size_t i = 0; i < samples1.size(); ++i)
   {
@@ -645,8 +646,8 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Wrote points with offsets to " << pts_with_offsets_path1;
 
-  string offset_pts_path1 = getFullPath(G3D::FilePath::parent(offsets_path1),
-                                        G3D::FilePath::base(samples_path1) + "_deformed.pts");
+  string offset_pts_path1 = FilePath::concat(FilePath::parent(offsets_path1),
+                                             FilePath::baseName(samples_path1) + "_deformed.pts");
   ofstream out_def_pts(offset_pts_path1.c_str(), ios::binary);
   for (array_size_t i = 0; i < samples1.size(); ++i)
   {

@@ -270,7 +270,7 @@ namespace MeshKDTreeInternal {
 // Add a face of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.isTriangle())
   {
@@ -317,7 +317,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
 // Convert the faces of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type
-buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     addFace<MeshT>(mesh, *fi, tris);
@@ -326,7 +326,7 @@ buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
 // Add a face of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.isTriangle())
   {
@@ -375,7 +375,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
 // Convert the faces of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type
-buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     addFace<MeshT>(mesh, **fi, tris);
@@ -384,7 +384,7 @@ buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
 // Add a face of a CGAL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.is_triangle())
   {
@@ -433,7 +433,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
 // Convert the faces of a CGAL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type
-buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); ++fi)
     addFace<MeshT>(mesh, *fi, tris);
@@ -442,7 +442,7 @@ buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
 // Add a face of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.hasTriangles())
   {
@@ -475,7 +475,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, G3D::Array<TriangleT> & tris)
 // Convert the faces of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type
-buildTriangleList(MeshT & mesh, G3D::Array<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   typedef MeshT Mesh;
   typedef TriangleT Triangle;
@@ -515,7 +515,7 @@ class MeshKDTree : public Algorithms::KDTree3< Triangle3< MeshVertexTriple<MeshT
     typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.
     typedef MeshVertexTriple<Mesh> VertexTriple;  ///< A triple of mesh vertices.
     typedef Triangle3< VertexTriple > Triangle;   ///< The triangle defined by a triple of mesh vertices.
-    typedef G3D::Array<Triangle> TriangleArray;   ///< An array of mesh triangles.
+    typedef TheaArray<Triangle> TriangleArray;    ///< An array of mesh triangles.
 
     /**
      * Add a mesh to the kd-tree. The mesh is converted to triangles which are cached internally. The tree is <b>not</b>
@@ -569,25 +569,22 @@ class MeshKDTree : public Algorithms::KDTree3< Triangle3< MeshVertexTriple<MeshT
 
     /**
      * Compute the kd-tree from the added meshes. You <b>must</b> call this function to construct (or recompute) the tree after
-     * any addMesh() or addMeshGroup() calls.
+     * any addMesh() or addMeshGroup() calls. Clears the triangle cache.
      */
     void init(int max_depth = -1, int max_elems_in_leaf = -1, bool save_memory = false, bool deallocate_previous_memory = true)
     {
       BaseT::init(tris.begin(), tris.end(), max_depth, max_elems_in_leaf, save_memory, deallocate_previous_memory);
-      tris.clear(save_memory);
+      tris.clear();
     }
 
     /**
      * Clear the tree. If \a deallocate_all_memory is false, memory allocated in pools is held to be reused if possible by the
-     * next init() operation, and the list of cached triangles is also retained so that the memory can be reused by subsequent
-     * add() operations.
+     * next init() operation.
      */
     void clear(bool deallocate_all_memory = true)
     {
       BaseT::clear(deallocate_all_memory);
-
-      if (deallocate_all_memory)
-        tris.clear(true);
+      tris.clear();
     }
 
   private:

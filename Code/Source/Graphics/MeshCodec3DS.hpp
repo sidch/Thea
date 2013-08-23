@@ -141,7 +141,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
       if (read_prefixed_info)
       {
-        input.setEndian(Endianness::LITTLE);
+        input.setEndianness(Endianness::LITTLE);
         input.skip(BaseT::MAGIC_LENGTH);
         uint32 encoding_size = input.readUInt32();
 
@@ -149,10 +149,10 @@ class Codec3DS : public Codec3DSBase<MeshT>
           return;
 
         enc_block.resize((array_size_t)encoding_size);
-        input.readBytes(&enc_block[0], (int64)encoding_size);
+        input.readBytes((int64)encoding_size, &enc_block[0]);
 
-        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false,
-                                                            false));  // shared pointer ensures deallocation on return
+        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
+                                                            // shared pointer ensures deallocation on return
         in = tmp_in.get();
       }
 
@@ -355,11 +355,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
       {
         case LIB3DS_SEEK_SET: abs_pos = (int64)offset; break;
         case LIB3DS_SEEK_CUR: abs_pos = (int64)(in.getPosition() + offset); break;
-        case LIB3DS_SEEK_END: abs_pos = (int64)(in.getLength() + offset); break;
+        case LIB3DS_SEEK_END: abs_pos = (int64)(in.size() + offset); break;
         default: throw Error(_getName() + ": Invalid enum value specified to seekInput");
       }
 
-      if (abs_pos >= 0 && abs_pos <= in.getLength())
+      if (abs_pos >= 0 && abs_pos <= in.size())
       {
         in.setPosition(abs_pos);
         return 0;
@@ -378,12 +378,12 @@ class Codec3DS : public Codec3DSBase<MeshT>
       switch (origin)
       {
         case LIB3DS_SEEK_SET: abs_pos = (int64)offset; break;
-        case LIB3DS_SEEK_CUR: abs_pos = (int64)(out.position() + offset); break;
-        case LIB3DS_SEEK_END: abs_pos = (int64)(out.length() + offset); break;
+        case LIB3DS_SEEK_CUR: abs_pos = (int64)(out.getPosition() + offset); break;
+        case LIB3DS_SEEK_END: abs_pos = (int64)(out.size() + offset); break;
         default: throw Error(_getName() + ": Invalid enum value specified to seekOutput");
       }
 
-      if (abs_pos >= 0 && abs_pos <= out.length())
+      if (abs_pos >= 0 && abs_pos <= out.size())
       {
         out.setPosition(abs_pos);
         return 0;
@@ -401,7 +401,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
     /** Get current position in an output stream. */
     static long tellOutput(void * self)
     {
-      return self ? (long)static_cast<BinaryOutputStream *>(self)->position() : -1;
+      return self ? (long)static_cast<BinaryOutputStream *>(self)->getPosition() : -1;
     }
 
     /** Read bytes from an input stream. */
@@ -410,9 +410,9 @@ class Codec3DS : public Codec3DSBase<MeshT>
       if (!self) return 0;
       BinaryInputStream & in = *static_cast<BinaryInputStream *>(self);
 
-      int64 max_bytes = in.getLength() - in.getPosition();
+      int64 max_bytes = in.size() - in.getPosition();
       int64 bytes_to_read = std::max(std::min(max_bytes, (int64)size), (int64)0);
-      if (bytes_to_read > 0) in.readBytes(buffer, bytes_to_read);
+      if (bytes_to_read > 0) in.readBytes(bytes_to_read, buffer);
 
       return static_cast<size_t>(bytes_to_read);
     }
@@ -423,7 +423,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
       if (!self) return 0;
       BinaryOutputStream & out = *static_cast<BinaryOutputStream *>(self);
 
-      out.writeBytes(buffer, (int)size);
+      out.writeBytes((int64)size, buffer);
       return size;
     }
 

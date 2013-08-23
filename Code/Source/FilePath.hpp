@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,40 +39,57 @@
 //
 //============================================================================
 
-#ifndef __Thea_Application_hpp__
-#define __Thea_Application_hpp__
+#ifndef __Thea_FilePath_hpp__
+#define __Thea_FilePath_hpp__
 
 #include "Common.hpp"
 
 namespace Thea {
 
 /**
- * Access and modify global properties of the current application.
+ * Operations on file paths. These do string manipulation and do <b>not</b> actually access the filesystem.
+ *
+ * @note Returned paths are in native OS format (e.g. backslashes on Windows, forward slashes on Unix).
+ * @note Trailing slashes at the end of directory names, and repeated slashes, are ignored, so "/foo" and "/foo/" are treated
+ *   identically, as are "foo/bar" and "foo///bar". In this respect this implementation differs from, say, Boost.Filesystem.
  */
-class THEA_API Application
+class THEA_API FilePath
 {
   public:
     /**
-     * Get the archive in which the application will look for resources (by default the directory containing the executable).
+     * Get the basename of the node, consisting of the node name without the path, upto but not including the first '.'
+     * character.
      */
-    static std::string const & getResourceArchive() { return _resourceArchive(); }
+    static std::string baseName(std::string const & path);
 
     /**
-     * Set the archive in which the application will look for resources.
+     * Get the complete basename of the node, consisting of the node name without the path, upto but not including the last '.'
+     * character.
      */
-    static void setResourceArchive(std::string const & path);
+    static std::string completeBaseName(std::string const & path);
 
-    /** Get the fully qualified path to a resource. */
-    static std::string getFullResourcePath(std::string const & resource_name);
+    /** Get the extension of the node, consisting of all characters after the last '.' character (or null if no '.' exists). */
+    static std::string suffix(std::string const & path);
 
-  private:
     /**
-     * Wraps the resource archive variable to ensure that a) we don't need a separate implementation file and b) the variable is
-     * initialized to the default value on first call and not earlier.
+     * Get the complete extension of the node, consisting of all characters after the first '.' character (or null if no '.'
+     * exists).
      */
-    static std::string & _resourceArchive();
+    static std::string completeSuffix(std::string const & path);
 
-}; // class Application
+    /** Get the name of the node without the path. Ignores trailing slashes and isolated '.' characters. */
+    static std::string nodeName(std::string const & path);
+
+    /** Get the path to the immediate parent of a node. Ignores trailing slashes and isolated '.' characters. */
+    static std::string parent(std::string const & path);
+
+    /**
+     * Get the full path to a child node, given the path to the containing directory and the name of the child itself. If the
+     * directory name is empty, just the child name is returned.
+     */
+    static std::string concat(std::string const & parent, std::string const & child);
+
+}; // class FilePath
 
 } // namespace Thea
 

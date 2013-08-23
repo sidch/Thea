@@ -43,8 +43,8 @@
 #define __Thea_Error_hpp__
 
 #include "Platform.hpp"
+#include "BasicStringAlg.hpp"
 #include "Log.hpp"
-#include "G3D/G3D.h"
 #include <stdexcept>
 #include <string>
 
@@ -91,32 +91,32 @@ class THEA_API FatalError
 #define THEA_STANDARD_CATCH_BLOCKS(action__, stream__, message__, ...) \
     catch (FatalError & e__) \
     { \
-      THEA_ERROR << G3D::format( "A fatal error occurred (%s)", e__.what() ); \
+      THEA_ERROR << format( "A fatal error occurred (%s)", e__.what() ); \
       throw; \
     } \
     catch (Error & e__) \
     { \
-      THEA_ ## stream__ << G3D::format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
+      THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
       action__ \
     } \
     catch (std::exception & e__) \
     { \
-      THEA_ ## stream__ << G3D::format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
+      THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
       action__ \
     } \
     catch (std::string & e__) \
     { \
-      THEA_ ## stream__ << G3D::format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.c_str() ); \
+      THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.c_str() ); \
       action__ \
     } \
     catch (const char * e__) \
     { \
-      THEA_ ## stream__ << G3D::format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__ ); \
+      THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__ ); \
       action__ \
     } \
     catch (...) \
     { \
-      THEA_ ## stream__ << G3D::format( (message__ + std::string(" (Unknown error)")).c_str(), __VA_ARGS__ ); \
+      THEA_ ## stream__ << format( (message__ + std::string(" (Unknown error)")).c_str(), __VA_ARGS__ ); \
       action__ \
     }
 

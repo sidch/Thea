@@ -1,5 +1,6 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../FilePath.hpp"
 #include "../Plugin.hpp"
 #include "../Algorithms/LinearSolver.hpp"
 #include <cmath>
@@ -42,9 +43,9 @@ testCSPARSE(int argc, char * argv[])
 
   // Try to load the CSPARSE plugin from the same parent directory as the executable
 #ifdef THEA_DEBUG_BUILD
-  string plugin_path = getFullPath(bin_path, "../lib/libTheaPluginCSPARSEd");
+  string plugin_path = FilePath::concat(bin_path, "../lib/libTheaPluginCSPARSEd");
 #else
-  string plugin_path = getFullPath(bin_path, "../lib/libTheaPluginCSPARSE");
+  string plugin_path = FilePath::concat(bin_path, "../lib/libTheaPluginCSPARSE");
 #endif
 
   cout << "Loading plugin: " << plugin_path << endl;

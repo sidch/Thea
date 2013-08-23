@@ -53,6 +53,9 @@
 #include "StringAlg.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cctype>
+#include <cstdio>
+#include <cstring>
 #include <sstream>
 
 // Not cstdio, to make sure we pull in the vsnprintf etc functions
@@ -491,6 +494,227 @@ vformat(char const * fmt, va_list arg_ptr)
 }
 
 #endif
+
+#define THEA_EOS            '\0'
+#define THEA_RANGE_MATCH      1
+#define THEA_RANGE_NOMATCH    0
+#define THEA_RANGE_ERROR    (-1)
+
+namespace StringAlgInternal {
+
+static int
+rangeMatch(char const * pattern, char test, int flags, char ** newp)
+{
+  int negate, ok;
+  char c, c2;
+
+  /*
+   * A bracket expression starting with an unquoted circumflex
+   * character produces unspecified results (IEEE 1003.2-1992,
+   * 3.13.2).  This implementation treats it like '!', for
+   * consistency with the regular expression syntax.
+   * J.T. Conklin (conklin@ngai.kaleida.com)
+   */
+  if ((negate = (*pattern == '!' || *pattern == '^')))
+    ++pattern;
+
+  if (flags & FNM_CASEFOLD)
+    test = std::tolower((unsigned char)test);
+
+  /*
+   * A right bracket shall lose its special meaning and represent
+   * itself in a bracket expression if it occurs first in the list.
+   * -- POSIX.2 2.8.3.2
+   */
+  ok = 0;
+  c = *pattern++;
+
+  do
+  {
+    if (c == '\\' && !(flags & FNM_NOESCAPE))
+      c = *pattern++;
+
+    if (c == THEA_EOS)
+      return (THEA_RANGE_ERROR);
+
+    if (c == '/' && (flags & FNM_PATHNAME))
+      return (THEA_RANGE_NOMATCH);
+
+    if ((flags & FNM_CASEFOLD))
+      c = std::tolower((unsigned char)c);
+
+    if (*pattern == '-'
+        && (c2 = *(pattern + 1)) != THEA_EOS && c2 != ']')
+    {
+      pattern += 2;
+
+      if (c2 == '\\' && !(flags & FNM_NOESCAPE))
+        c2 = *pattern++;
+
+      if (c2 == THEA_EOS)
+        return (THEA_RANGE_ERROR);
+
+      if (flags & FNM_CASEFOLD)
+        c2 = std::tolower((unsigned char)c2);
+
+      if (c <= test && test <= c2)
+        ok = 1;
+    }
+    else if (c == test)
+      ok = 1;
+  }
+  while ((c = *pattern++) != ']');
+
+  *newp = (char *)pattern;
+  return (ok == negate ? THEA_RANGE_NOMATCH : THEA_RANGE_MATCH);
+}
+
+int
+fnmatch(char const * pattern, char const * query, int flags)
+{
+  char const * stringstart;
+  char * newp;
+  char c, test;
+
+  for (stringstart = query;;)
+  {
+    switch (c = *pattern++)
+    {
+      case THEA_EOS:
+        if ((flags & FNM_LEADING_DIR) && *query == '/')
+          return (0);
+
+        return (*query == THEA_EOS ? 0 : FNM_NOMATCH);
+
+      case '?':
+        if (*query == THEA_EOS)
+          return (FNM_NOMATCH);
+
+        if (*query == '/' && (flags & FNM_PATHNAME))
+          return (FNM_NOMATCH);
+
+        if (*query == '.' && (flags & FNM_PERIOD) &&
+            (query == stringstart ||
+             ((flags & FNM_PATHNAME) && *(query - 1) == '/')))
+          return (FNM_NOMATCH);
+
+        ++query;
+        break;
+
+      case '*':
+        c = *pattern;
+
+        /* Collapse multiple stars. */
+        while (c == '*')
+          c = *++pattern;
+
+        if (*query == '.' && (flags & FNM_PERIOD) &&
+            (query == stringstart ||
+             ((flags & FNM_PATHNAME) && *(query - 1) == '/')))
+          return (FNM_NOMATCH);
+
+        /* Optimize for pattern with * at end or before /. */
+        if (c == THEA_EOS)
+        {
+          if (flags & FNM_PATHNAME)
+            return ((flags & FNM_LEADING_DIR) ||
+                    std::strchr(query, '/') == NULL ?
+                    0 : FNM_NOMATCH);
+          else
+            return (0);
+        }
+        else if (c == '/' && (flags & FNM_PATHNAME))
+        {
+          if ((query = std::strchr(query, '/')) == NULL)
+            return (FNM_NOMATCH);
+
+          break;
+        }
+
+        /* General case, use recursion. */
+        while ((test = *query) != THEA_EOS)
+        {
+          if (!patternMatch(pattern, query, flags & ~FNM_PERIOD))
+            return (0);
+
+          if (test == '/' && (flags & FNM_PATHNAME))
+            break;
+
+          ++query;
+        }
+
+        return (FNM_NOMATCH);
+
+      case '[':
+        if (*query == THEA_EOS)
+          return (FNM_NOMATCH);
+
+        if (*query == '/' && (flags & FNM_PATHNAME))
+          return (FNM_NOMATCH);
+
+        if (*query == '.' && (flags & FNM_PERIOD) &&
+            (query == stringstart ||
+             ((flags & FNM_PATHNAME) && *(query - 1) == '/')))
+          return (FNM_NOMATCH);
+
+        switch (rangeMatch(pattern, *query, flags, &newp))
+        {
+          case THEA_RANGE_ERROR:
+            /* not a good range, treat as normal text */
+            goto fnmatch_normal;
+
+          case THEA_RANGE_MATCH:
+            pattern = newp;
+            break;
+
+          case THEA_RANGE_NOMATCH:
+            return (FNM_NOMATCH);
+        }
+
+        ++query;
+        break;
+
+      case '\\':
+        if (!(flags & FNM_NOESCAPE))
+        {
+          if ((c = *pattern++) == THEA_EOS)
+          {
+            c = '\\';
+            --pattern;
+          }
+        }
+
+        /* FALLTHROUGH */
+      default:
+fnmatch_normal:
+        if (c != *query && !((flags & FNM_CASEFOLD) &&
+                              (std::tolower((unsigned char)c) ==
+                               std::tolower((unsigned char)*query))))
+          return (FNM_NOMATCH);
+
+        ++query;
+        break;
+    }
+  }
+
+  /* NOTREACHED */
+  return -1;
+}
+
+} // namespace StringAlgInternal
+
+bool
+patternMatch(std::string const & pattern, std::string const & query, int flags)
+{
+  int status = StringAlgInternal::fnmatch(pattern.c_str(), query.c_str(), flags);
+
+  switch (status)
+  {
+    case 0: return true;
+    case FNM_NOMATCH: return false;
+    default: throw Error("patternMatch: Invalid pattern");
+  }
+}
 
 } // namespace Thea
 

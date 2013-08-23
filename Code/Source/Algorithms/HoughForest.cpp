@@ -618,7 +618,7 @@ class HoughTree
 
     void serializeNodes(BinaryOutputStream & out) const
     {
-      out.setEndian(Endianness::LITTLE);
+      out.setEndianness(Endianness::LITTLE);
       if (root)
       {
         out.writeInt8(1);
@@ -632,7 +632,7 @@ class HoughTree
     {
       clear();
 
-      in.setEndian(Endianness::LITTLE);
+      in.setEndianness(Endianness::LITTLE);
       if (in.readInt8())
       {
         root = new Node(0);
@@ -1419,7 +1419,7 @@ HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
 
   options.deserialize(input);
 
-  input.setEndian(Endianness::LITTLE);
+  input.setEndianness(Endianness::LITTLE);
 
   num_classes = (long)input.readInt64();
   num_features = (long)input.readInt64();
@@ -1468,7 +1468,7 @@ HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
 
   options.serialize(output);
 
-  output.setEndian(Endianness::LITTLE);
+  output.setEndianness(Endianness::LITTLE);
 
   output.writeInt64(num_classes);
   output.writeInt64(num_features);

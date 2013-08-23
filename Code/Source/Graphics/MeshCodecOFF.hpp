@@ -140,20 +140,20 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
     long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info) const
     {
-      output.setEndian(Endianness::LITTLE);
-      int64 initial_pos = output.position();
+      output.setEndianness(Endianness::LITTLE);
+      int64 initial_pos = output.getPosition();
 
       int64 size_pos = 0;
       if (prefix_info)
       {
-        output.writeBytes(BaseT::getMagic().data(), BaseT::MAGIC_LENGTH);
+        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic().data());
 
         // Placeholder for the size field
-        size_pos = output.position();
+        size_pos = output.getPosition();
         output.writeUInt32(0);
       }
 
-      int64 enc_start = output.position();
+      int64 enc_start = output.getPosition();
 
         long num_vertices = 0, num_faces = 0;
         getStats(mesh_group, num_vertices, num_faces);
@@ -161,7 +161,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         VertexIndexMap vertex_indices;
         if (write_opts.binary)
         {
-          output.setEndian(Endianness::BIG);  // binary OFF uses big-endian storage
+          output.setEndianness(Endianness::BIG);  // binary OFF uses big-endian storage
           writeString("OFF BINARY\n", output);
           output.writeInt32((int32)num_vertices);
           output.writeInt32((int32)num_faces);
@@ -176,11 +176,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
         serializeVertices(mesh_group, output, vertex_indices);
         serializeFaces(mesh_group, vertex_indices, output);
 
-      int64 enc_end = output.position();
+      int64 enc_end = output.getPosition();
 
       if (prefix_info)
       {
-        output.setEndian(Endianness::LITTLE);
+        output.setEndianness(Endianness::LITTLE);
         output.setPosition(size_pos);
         output.writeUInt32((uint32)(enc_end - enc_start));
       }
@@ -198,7 +198,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       if (read_prefixed_info)
       {
-        input.setEndian(Endianness::LITTLE);
+        input.setEndianness(Endianness::LITTLE);
         input.skip(BaseT::MAGIC_LENGTH);
         uint32 encoding_size = input.readUInt32();
 
@@ -206,14 +206,14 @@ class CodecOFF : public CodecOFFBase<MeshT>
           return;
 
         enc_block.resize((array_size_t)encoding_size);
-        input.readBytes(&enc_block[0], (int64)encoding_size);
+        input.readBytes((int64)encoding_size, &enc_block[0]);
 
-        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::BIG, false,
-                                                            false));  // shared pointer ensures deallocation on return
+        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::BIG, false));
+                                                            // shared pointer ensures deallocation on return
         in = tmp_in.get();
       }
 
-      std::string header = trimWhitespace(readLine(*in));
+      std::string header = trimWhitespace(in->readLine());
       if (header != "OFF" && !beginsWith(header, "OFF "))
         throw Error(getName() + ": Invalid OFF stream (does not start with 'OFF')");
 
@@ -228,11 +228,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Deserialize a mesh group in ASCII format. */
     void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in) const
     {
-      std::string line = trimWhitespace(readLine(in));
+      std::string line = trimWhitespace(in.readLine());
       while (line.empty() || line[0] == '#')
       {
         if (in.hasMore())
-          line = trimWhitespace(readLine(in));
+          line = trimWhitespace(in.readLine());
         else
           throw Error(getName() + ": Unexpected end of file");
       }
@@ -262,11 +262,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
       double x, y, z;
       for (long v = 0; v < num_vertices; ++v)
       {
-        std::string line = trimWhitespace(readLine(in));
+        std::string line = trimWhitespace(in.readLine());
         while (line.empty() || line[0] == '#')
         {
           if (in.hasMore())
-            line = trimWhitespace(readLine(in));
+            line = trimWhitespace(in.readLine());
           else
             throw Error(getName() + ": Unexpected end of file");
         }
@@ -287,11 +287,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
       int num_face_vertices;
       for (long f = 0; f < num_faces; ++f)
       {
-        std::string line = trimWhitespace(readLine(in));
+        std::string line = trimWhitespace(in.readLine());
         while (line.empty() || line[0] == '#')
         {
           if (in.hasMore())
-            line = trimWhitespace(readLine(in));
+            line = trimWhitespace(in.readLine());
           else
             throw Error(getName() + ": Unexpected end of file");
         }
@@ -339,7 +339,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Deserialize a mesh group in binary format. */
     void deserializeBinary(MeshGroup & mesh_group, BinaryInputStream & in) const
     {
-      in.setEndian(Endianness::BIG);  // binary OFF uses big-endian
+      in.setEndianness(Endianness::BIG);  // binary OFF uses big-endian
 
       long num_vertices = (long)in.readInt32();
       long num_faces = (long)in.readInt32();
@@ -453,7 +453,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
     static void writeString(std::string const & str, BinaryOutputStream & output)
     {
-      output.writeBytes(str.data(), (int)str.length());
+      output.writeBytes((int64)str.length(), str.data());
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */
