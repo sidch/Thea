@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,37 +39,49 @@
 //
 //============================================================================
 
-#ifndef __Thea_Database_InputClient_hpp__
-#define __Thea_Database_InputClient_hpp__
-
-#include "../Common.hpp"
-#include "../IOStream.hpp"
+#include "FileSystem.hpp"
+#include <boost/filesystem.hpp>
 
 namespace Thea {
 
-/** %Database access. */
-namespace Database {
-
-/** A base class for clients that read from a database. */
-class THEA_API InputClient
+bool
+FileSystem::exists(std::string const & path)
 {
-  public:
-    THEA_DEF_POINTER_TYPES(InputClient, shared_ptr, weak_ptr)
+  return boost::filesystem::exists(path);
+}
 
-    /** Destructor. */
-    virtual ~InputClient() {}
+bool
+FileSystem::fileExists(std::string const & path)
+{
+  return boost::filesystem::is_regular_file(path);
+}
 
-    /**
-     * Open a binary input stream by name. If the stream could not be opened, a null pointer is returned, although in rare cases
-     * an exception could be thrown. The initial endianness of the stream is unspecified.
-     */
-    virtual BinaryInputStreamPtr openBinaryInputStream(std::string const & name) const = 0;
+bool
+FileSystem::directoryExists(std::string const & path)
+{
+  return boost::filesystem::is_directory(path);
+}
 
-}; // class InputClient
+int64
+FileSystem::fileSize(std::string const & path)
+{
+  uintmax_t size = boost::filesystem::file_size(path);
+  if (size == static_cast<uintmax_t>(-1))
+    return -1;
+  else
+    return static_cast<int64>(size);
+}
 
-} // namespace Database
+std::string
+FileSystem::resolve(std::string const & path)
+{
+  return boost::filesystem::system_complete(path).string();
+}
+
+bool
+FileSystem::createDirectory(std::string const & path)
+{
+  return boost::filesystem::create_directories(path);
+}
+
 } // namespace Thea
-
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::Database::InputClient)
-
-#endif

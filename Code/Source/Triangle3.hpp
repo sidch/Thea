@@ -47,8 +47,8 @@
 #include "Ball3.hpp"
 #include "Box3.hpp"
 #include "LineSegment3.hpp"
+#include "Plane3.hpp"
 #include "RayIntersectable3.hpp"
-#include "Serializable.hpp"
 #include <cmath>
 #include <limits>
 
@@ -59,7 +59,7 @@ namespace Thea {
  *
  * @see Triangle3
  */
-class THEA_API TriangleLocalVertexTriple3 : public Serializable
+class THEA_API TriangleLocalVertexTriple3
 {
   public:
     /** Default constructor. */
@@ -76,15 +76,8 @@ class THEA_API TriangleLocalVertexTriple3 : public Serializable
     /** Get the i'th vertex. */
     Vector3 const & getVertex(int i) const { return vertices[i]; }
 
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
-
   private:
     Vector3 vertices[3];  ///< Vertex positions.
-
-    /** Get the endianness of the serialized form. */
-    static Endianness getEndianness() { return Endianness::LITTLE; }
 
 }; // TriangleLocalVertexTriple3
 

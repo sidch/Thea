@@ -47,6 +47,7 @@
 
 #include "../../Common.hpp"
 #include "../../Colors.hpp"
+#include "../../FilePath.hpp"
 #include "../../IOStream.hpp"
 #include <QDebug>
 #include <QtDebug>
@@ -93,7 +94,10 @@ using namespace Thea;
 #define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
 
 /** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-using Thea::getFullPath;
+inline std::string getFullPath(std::string const & dir, std::string const & filename)
+{
+  return FilePath::concat(dir, filename);
+}
 
 /** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
 QString getFullPath(QString const & dir, QString const & filename);

@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,29 +39,79 @@
 //
 //============================================================================
 
-#include "FileClient.hpp"
-
-THEA_INSTANTIATE_SMART_POINTERS(Thea::Database::FileClient)
+#include "FilePath.hpp"
+#include <boost/filesystem.hpp>
 
 namespace Thea {
-namespace Database {
 
-BinaryInputStreamPtr
-FileClient::openBinaryInputStream(std::string const & name) const
+std::string
+FilePath::baseName(std::string const & path)
 {
-  if (!G3D::FileSystem::exists(name, true))
-    return BinaryInputStreamPtr();
-
-  return BinaryInputStreamPtr(new BinaryInputStream(name, G3D::G3D_LITTLE_ENDIAN));
+  std::string node = nodeName(path);
+  size_t first_dot = node.find_first_of('.');
+  return (first_dot == std::string::npos ? node : node.substr(0, first_dot));
 }
 
-BinaryOutputStreamPtr
-FileClient::openBinaryOutputStream(std::string const & name)
+std::string
+FilePath::completeBaseName(std::string const & path)
 {
-  // We have no way of knowing whether writes will succeed or not until output is flushed using commit(), so don't errorcheck
-  // here
-  return BinaryOutputStreamPtr(new BinaryOutputStream(name, G3D::G3D_LITTLE_ENDIAN));
+  std::string node = nodeName(path);
+  size_t last_dot = node.find_last_of('.');
+  return (last_dot == std::string::npos ? node : node.substr(0, last_dot));
 }
 
-} // namespace Database
+std::string
+FilePath::suffix(std::string const & path)
+{
+  std::string node = nodeName(path);
+  size_t last_dot = node.find_last_of('.');
+  return (last_dot == std::string::npos ? std::string() : node.substr(last_dot + 1));
+}
+
+std::string
+FilePath::completeSuffix(std::string const & path)
+{
+  std::string node = nodeName(path);
+  size_t first_dot = node.find_first_of('.');
+  return (first_dot == std::string::npos ? std::string() : node.substr(first_dot + 1));
+}
+
+std::string
+FilePath::nodeName(std::string const & path)
+{
+  boost::filesystem::path p(path);
+  boost::filesystem::path n = p.filename();
+
+  while (n.string() == "." && p.string() != ".")
+  {
+    p.remove_filename();
+    n = p.filename();
+  }
+
+  return n.string();
+}
+
+std::string
+FilePath::parent(std::string const & path)
+{
+  boost::filesystem::path p(path);
+  boost::filesystem::path n = p.filename();
+
+  while (n.string() == "." && p.string() != ".")
+  {
+    p.remove_filename();
+    n = p.filename();
+  }
+
+  return p.parent_path().string();
+}
+
+std::string
+FilePath::concat(std::string const & parent_name, std::string const & child_name)
+{
+  boost::filesystem::path p(parent_name);
+  p /= child_name;
+  return p.string();
+}
+
 } // namespace Thea

@@ -164,11 +164,11 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
                                                                                                                               \
   if (prefix_info)                                                                                                            \
   {                                                                                                                           \
-    output.setEndian(Endianness::LITTLE);                                                                                     \
+    output.setEndianness(Endianness::LITTLE);                                                                                     \
     output.writeUInt32(static_cast<uint32>(size_in_bytes));                                                                   \
   }                                                                                                                           \
                                                                                                                               \
-  output.writeBytes(data, size_in_bytes);                                                                                     \
+  output.writeBytes(size_in_bytes, data);                                                                                     \
                                                                                                                               \
   return (long)(prefix_info ? size_in_bytes + 4 : size_in_bytes);                                                             \
 }
@@ -183,13 +183,13 @@ void                                                                            
 codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const                              \
 {                                                                                                                             \
   /* Get the size of the image block in bytes */                                                                              \
-  input.setEndian(Endianness::LITTLE);                                                                                        \
+  input.setEndianness(Endianness::LITTLE);                                                                                        \
   uint32 size = read_prefixed_info ? input.readUInt32() : input.size();                                                       \
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
   /* input stream?)  */                                                                                                       \
   TheaArray<uint8> img_block((array_size_t)size);                                                                             \
-  input.readBytes(&img_block[0], (int64)size);                                                                                \
+  input.readBytes((int64)size, &img_block[0]);                                                                                \
                                                                                                                               \
   /* Decode the image */                                                                                                      \
   fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);                                                                        \
@@ -539,13 +539,13 @@ void
 Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
 {
   // Get the size of the image block in bytes
-  input.setEndian(Endianness::LITTLE);
+  input.setEndianness(Endianness::LITTLE);
   uint32 size = read_prefixed_info ? input.readUInt32() : input.size();
 
   // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
   // stream?)
   TheaArray<uint8> img_block((array_size_t)size);
-  input.readBytes(&img_block[0], (int64)size);
+  input.readBytes((int64)size, &img_block[0]);
 
   // Decode the image
   fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);

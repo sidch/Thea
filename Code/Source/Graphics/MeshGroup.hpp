@@ -46,7 +46,6 @@
 #include "../NamedObject.hpp"
 #include "../Serializable.hpp"
 #include "../Set.hpp"
-#include "../Database/InputClient.hpp"
 #include "DrawableObject.hpp"
 #include "MeshCodec.hpp"
 
@@ -265,10 +264,6 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * {@inheritDoc}
      *
      * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
-     *
-     * This function does <b>not</b> load additional resources specified in the mesh file, e.g. textures. To subsequently load
-     * these, you must either explicitly call loadResources(), or call
-     * deserialize(BinaryInputStream, Database::InputClient::Ptr, Codec const &).
      */
     void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO())
     {
@@ -289,19 +284,6 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
 
       updateBounds();
-    }
-
-    /** Load extra resources (e.g. textures) from a database. */
-    void loadResources(Database::InputClient::Ptr client) {}
-
-    /**
-     * Load a mesh group and its resources. This convenience function first calls deserialize(BinaryInputStream) and then
-     * loadResources().
-     */
-    void deserialize(BinaryInputStream & input, Database::InputClient::Ptr client, Codec const & codec = Codec_AUTO())
-    {
-      deserialize(input, codec);
-      loadResources(client);
     }
 
     /**
@@ -393,10 +375,10 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
 
       // Try to identify by filename extension
-      std::string filename = toLower(input.getFilename());
+      std::string path = toLower(input.getPath());
       for (int i = 0; i < NUM_CODECS; ++i)
         for (array_size_t j = 0; j < codecs[i]->getExtensions().size(); ++j)
-          if (endsWith(filename, '.' + codecs[i]->getExtensions()[j]))
+          if (endsWith(path, '.' + codecs[i]->getExtensions()[j]))
           {
             codecs[i]->deserializeMeshGroup(*this, input, false);
             return;

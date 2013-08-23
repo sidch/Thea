@@ -43,54 +43,13 @@
 #define __Thea_IOStream_hpp__
 
 #include "Common.hpp"
+#include "BinaryInputStream.hpp"
+#include "BinaryOutputStream.hpp"
 
 namespace Thea {
 
-/**
- * %Endianness values (little-endian and big-endian) (enum class).
- */
-class THEA_API Endianness
-{
-  public:
-    typedef G3D::G3DEndian Value;
-    static Value const BIG;
-    static Value const LITTLE;
-
-    /** Default constructor. */
-    Endianness() {}
-
-    /** Copy/initializing constructor. */
-    template <typename T> explicit Endianness(T value_) : value(static_cast<Value>(value_)) {}
-
-    /** Initializing constructor. */
-    Endianness(Value value_) : value(value_) {}
-
-    /** Implicit conversion to G3D endianness type. */
-    operator Value() const { return static_cast<Value>(static_cast<int>(value)); }
-
-    /** Equality operator. */
-    bool operator==(Value const & other) const { return value == other; }
-
-    /** Inequality operator. */
-    bool operator!=(Value const & other) const { return value != other; }
-
-  private:
-    Value value;  ///< Wrapped enum value.
-};
-
-/**
- * Binary input stream with the interface of G3D::BinaryInput. If you ever decide to change this to, say, std::istream, use a
- * wrapper class with the interface of G3D::BinaryInput.
- */
-typedef G3D::BinaryInput BinaryInputStream;
-typedef shared_ptr<BinaryInputStream> BinaryInputStreamPtr;
-
-/**
- * Binary output stream with the interface of G3D::BinaryOutput. If you ever decide to change this to, say, std::ostream, use a
- * wrapper class with the interface of G3D::BinaryOutput.
- */
-typedef G3D::BinaryOutput BinaryOutputStream;
-typedef shared_ptr<BinaryOutputStream> BinaryOutputStreamPtr;
+typedef shared_ptr<BinaryInputStream>   BinaryInputStreamPtr;
+typedef shared_ptr<BinaryOutputStream>  BinaryOutputStreamPtr;
 
 /**
  * Text input stream with the interface of G3D::TextInput. If you ever decide to change this to, say, std::istream, use a
@@ -108,8 +67,6 @@ typedef shared_ptr<TextOutputStream> TextOutputStreamPtr;
 
 } // namespace Thea
 
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::BinaryInputStream)
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::BinaryOutputStream)
 THEA_DECL_EXTERN_SMART_POINTERS(Thea::TextInputStream)
 THEA_DECL_EXTERN_SMART_POINTERS(Thea::TextOutputStream)
 

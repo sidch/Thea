@@ -105,24 +105,12 @@ isSquare(MatrixT const & m)
   return MatrixUtilInternal::IsSquareImpl<MatrixT>::isSquare(m);
 }
 
-inline bool
-isSquare(G3D::Matrix const & m)
-{
-  return m.rows() == m.cols();
-}
-
 /** Get the format of a matrix. */
 template <typename MatrixT>
 MatrixFormat
 getFormat(MatrixT const & m)
 {
   return MatrixUtilInternal::GetFormatImpl<MatrixT>::getFormat(m);
-}
-
-inline MatrixFormat
-getFormat(G3D::Matrix const & m)
-{
-  return MatrixFormat::DENSE_ROW_MAJOR;
 }
 
 } // namespace MatrixUtil

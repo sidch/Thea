@@ -54,14 +54,23 @@
 #define __Thea_StringAlg_hpp_
 
 #include "Common.hpp"
+#include "BasicStringAlg.hpp"
 #include "Array.hpp"
-#include <cctype>
-#include <string>
+
+#ifdef THEA_WINDOWS
+#  ifndef FNM_NOMATCH
+#    define FNM_NOMATCH         1      /* Match failed. */
+#    define FNM_NOESCAPE     0x01      /* Disable backslash escaping. */
+#    define FNM_PATHNAME     0x02      /* Slash must be matched by slash. */
+#    define FNM_PERIOD       0x04      /* Period must be matched by period. */
+#    define FNM_LEADING_DIR  0x08      /* Ignore /<tail> after Imatch. */
+#    define FNM_CASEFOLD     0x10      /* Case insensitive search. */
+#  endif
+#else  // On non-windows systems, include fnmatch directly. Both GNU/Linux and OS X support all the flags above.
+#  include <fnmatch.h>
+#endif
 
 namespace Thea {
-
-/** The newline character sequence for the current platform. LF for Unix (Linux, Mac OS X), CR-LF for Windows. */
-extern THEA_API char const * NEWLINE;
 
 /**
  * Separates a comma-separated line, properly escaping commas within double quotes (") and super quotes ("""). This matches
@@ -73,137 +82,62 @@ extern THEA_API char const * NEWLINE;
  */
 THEA_API void parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool strip_quotes = true);
 
-/**
- * Finds the index of the first '\\' or '/' character, starting at index \a start.
- *
- * @return The index of the first slash if one is found, else a negative number.
- *
- * @see findLastSlash, isSlash
- */
-inline long
-findFirstSlash(std::string const & f, long start = 0)
-{
-  size_t pos = f.find_first_of("/\\", (size_t)start);
-  return (pos == std::string::npos ? -1 : (long)pos);
-}
-
-/**
- * Finds the index of the last '\\' or '/' character, starting at index \a start (starts at the end of the string if \a start is
- * negative).
- *
- * @return The index of the last slash if one is found, else a negative number.
- *
- * @see findFirstSlash, isSlash
- */
-inline long
-findLastSlash(std::string const & f, long start = -1)
-{
-  if (start == -1)
-    start = (long)f.length() - 1;
-
-  size_t pos = f.find_last_of("/\\", (size_t)start);
-  return (pos == std::string::npos ? -1 : (long)pos);
-}
-
-/** Check if the test string begins with the pattern string. */
-THEA_API bool beginsWith(std::string const & test, std::string const & pattern);
-
-/** Check if the test string ends with the pattern string. */
-THEA_API bool endsWith(std::string const & test, std::string const & pattern);
-
-/**
- * Produces a new string that is the input string wrapped at a certain number of columns (where the line is broken at the latest
- * space before the column limit). Platform specific newlines are inserted to wrap, or a specific "newline" character may be
- * specified.
- */
-THEA_API std::string wordWrap(std::string const & input, long num_cols, char const * newline = NEWLINE);
-
-/** Get the uppercase version of a string. */
-THEA_API std::string toUpper(std::string const & x);
-
-/** Get the lowercase version of a string. */
-THEA_API std::string toLower(std::string const & x);
-
 /** Split a string at each occurance of a splitting character and return the number of fields found. */
 THEA_API long stringSplit(std::string const & x, char split_char, TheaArray<std::string> & result,
                           bool skip_empty_fields = false);
 
 /** Concatenate a sequence of strings, separated by a joining character. */
-THEA_API std::string stringJoin(G3D::Array<std::string> const  & a, char join_char);
+THEA_API std::string stringJoin(TheaArray<std::string> const  & a, char join_char);
 
 /** Concatenate a sequence of strings, separated by a joining string. */
 THEA_API std::string stringJoin(TheaArray<std::string> const & a, std::string const & join_str);
 
-/** Strips whitespace from both ends of the string. */
-THEA_API std::string trimWhitespace(std::string const & s);
-
-/** Check if a character is a whitespace character. */
-inline bool
-isWhitespace(char c)
+/** Pattern matching flags (enum class). Correspond to flags for POSIX fnmatch. */
+struct THEA_API Match
 {
-  return std::isspace(c) != 0;
-}
+  /** Supported values. */
+  enum Value
+  {
+    /** Treat backslash as an ordinary character, instead of an escape character. */
+    NOESCAPE     =  FNM_NOESCAPE,
 
-/** Check if a character is a newline character. */
-inline bool
-isNewline(char c)
-{
-  return (c == '\n') || (c == '\r');
-}
+    /**
+     * Match a slash in the query only with a slash in the pattern and not by an asterisk (*) or a question mark (?)
+     * metacharacter, nor by a bracket expression ([]) containing a slash.
+     */
+    PATHNAME     =  FNM_PATHNAME,
 
-/** Check if a character is a digit. */
-inline bool
-isDigit(char c)
-{
-  return std::isdigit(c) != 0;
-}
+    /**
+     * A leading period in the query has to be matched exactly by a period in the pattern. A period is considered to be leading
+     * if it is the first character in \a query, or if both FNM_PATHNAME is set and the period immediately follows a slash.
+     */
+    PERIOD       =  FNM_PERIOD,
 
-/** Check if a character is a letter of the alphabet. */
-inline bool
-isAlpha(char c)
-{
-  return std::isalpha(c) != 0;
-}
+    /**
+     * If this flag (a GNU extension) is set, the pattern is considered to be matched if it matches an initial segment of the
+     * query which is followed by a slash. This flag is mainly for the internal use of glibc and is only implemented in certain
+     * cases.
+     */
+    LEADING_DIR  =  FNM_LEADING_DIR,
 
-/** Check if a character is a slash (forward or backward). */
-inline bool
-isSlash(char c)
-{
-  return (c == '\\') || (c == '/');
-}
+    /** If this flag (a GNU extension) is set, the pattern is matched case-insensitively. */
+    CASEFOLD     =  FNM_CASEFOLD
+  };
 
-/** Check if a character is a quote (single or double). */
-inline bool
-isQuote(char c)
-{
-  return (c == '\'') || (c == '\"');
-}
+  THEA_ENUM_CLASS_BODY(Match)
 
-#ifdef __GNUC__
-#  define THEA_CHECK_PRINTF_ARGS   __attribute__((__format__(__printf__, 1, 2)))
-#  define THEA_CHECK_VPRINTF_ARGS  __attribute__((__format__(__printf__, 1, 0)))
-#else
-#  define THEA_CHECK_PRINTF_ARGS
-#  define THEA_CHECK_VPRINTF_ARGS
-#endif
+}; // struct Match
 
 /**
- * Produces a string from arguments in the style of printf. This avoids problems with buffer overflows when using sprintf and
- * makes it easy to use the result functionally.  This function is fast when the resulting string is under 160 characters (not
- * including terminator) and slower when the string is longer.
+ * Compares a filename or pathname to a pattern. Equivalent (except for boolean instead of integer return value) to function
+ * fnmatch() as specified in POSIX 1003.2-1992, section B.6.
+ *
+ * The function checks whether the \a query argument matches the \a pattern argument, which is a shell wildcard pattern. The
+ * \a flags argument modifies the behaviour; it is the bitwise OR of zero or more Match flags.
+ *
+ * @return True if \a query matches \a pattern, false otherwise. Throws an error if the pattern is malformed.
  */
-THEA_API std::string __cdecl format(char const * fmt, ...) THEA_CHECK_PRINTF_ARGS;
-
-/**
- * Produces a string from arguments in the style of printf, can be called with the argument list from a function that itself
- * takes variable arguments. This avoids problems with buffer overflows when using sprintf and makes it easy to use the result
- * functionally.  This function is fast when the resulting string is under 160 characters (not including terminator) and slower
- * when the string is longer.
- */
-THEA_API std::string vformat(char const * fmt, va_list arg_ptr) THEA_CHECK_VPRINTF_ARGS;
-
-#undef THEA_CHECK_PRINTF_ARGS
-#undef THEA_CHECK_VPRINTF_ARGS
+THEA_API bool patternMatch(std::string const & pattern, std::string const & query, int flags = 0);
 
 } // namespace Thea
 

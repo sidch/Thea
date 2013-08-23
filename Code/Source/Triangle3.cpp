@@ -43,26 +43,6 @@
 
 namespace Thea {
 
-void
-TriangleLocalVertexTriple3::serialize(BinaryOutputStream & output, Codec const & codec) const
-{
-  output.setEndian(getEndianness());
-
-  Thea::serializeVector3(vertices[0], output);
-  Thea::serializeVector3(vertices[1], output);
-  Thea::serializeVector3(vertices[2], output);
-}
-
-void
-TriangleLocalVertexTriple3::deserialize(BinaryInputStream & input, Codec const & codec)
-{
-  input.setEndian(getEndianness());
-
-  Thea::deserializeVector3(vertices[0], input);
-  Thea::deserializeVector3(vertices[1], input);
-  Thea::deserializeVector3(vertices[2], input);
-}
-
 namespace Triangle3Internal {
 
 using namespace std;

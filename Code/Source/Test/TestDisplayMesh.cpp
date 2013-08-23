@@ -2,6 +2,7 @@
 
 #include "../Common.hpp"
 #include "../Colors.hpp"
+#include "../FilePath.hpp"
 #include "../Math.hpp"
 #include "../Plugin.hpp"
 #include "../Graphics/RenderSystem.hpp"
@@ -173,9 +174,9 @@ testDisplayMesh(int argc, char * argv[])
 
   // Try to load the OpenGL plugin from the same parent directory as the executable
 #ifdef THEA_DEBUG_BUILD
-  string gl_plugin_path = getFullPath(bin_path, "../lib/libTheaPluginGLd");
+  string gl_plugin_path = FilePath::concat(bin_path, "../lib/libTheaPluginGLd");
 #else
-  string gl_plugin_path = getFullPath(bin_path, "../lib/libTheaPluginGL");
+  string gl_plugin_path = FilePath::concat(bin_path, "../lib/libTheaPluginGL");
 #endif
 
   cout << "Loading plugin: " << gl_plugin_path << endl;

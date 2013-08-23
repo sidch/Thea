@@ -137,12 +137,10 @@ Camera::toString() const
 void
 Camera::serialize(BinaryOutputStream & output, Codec const & codec) const
 {
-  output.setEndian(getEndianness());
+  output.setEndianness(getEndianness());
 
-  Thea::serializeCoordinateFrame3(frame, output);
-
+  output.writeCoordinateFrame3(frame);
   output.writeUInt8(projection_type == ProjectionType::ORTHOGRAPHIC ? 0 : 1);
-
   output.writeFloat32(static_cast<float32>(left));
   output.writeFloat32(static_cast<float32>(right));
   output.writeFloat32(static_cast<float32>(bottom));
@@ -156,9 +154,9 @@ Camera::serialize(BinaryOutputStream & output, Codec const & codec) const
 void
 Camera::deserialize(BinaryInputStream & input, Codec const & codec)
 {
-  input.setEndian(getEndianness());
+  input.setEndianness(getEndianness());
 
-  Thea::deserializeCoordinateFrame3(frame, input);
+  frame = input.readCoordinateFrame3();
 
   uint8 pt = input.readUInt8();
   projection_type = (pt == 0 ? ProjectionType::ORTHOGRAPHIC : ProjectionType::PERSPECTIVE);

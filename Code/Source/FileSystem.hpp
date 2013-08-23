@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,10 +39,45 @@
 //
 //============================================================================
 
-#ifdef THEA_EXTERN_TEMPLATES
+#ifndef __Thea_FileSystem_hpp__
+#define __Thea_FileSystem_hpp__
 
-#include "InputClient.hpp"
+#include "Common.hpp"
 
-THEA_INSTANTIATE_SMART_POINTERS(Thea::Database::InputClient)
+namespace Thea {
 
-#endif // THEA_EXTERN_TEMPLATES
+/**
+ * Filesystem operations. Unlike FilePath, these functions do actually access the filesystem.
+ *
+ * @note Returned paths are in native OS format (e.g. backslashes on Windows, forward slashes on Unix).
+ */
+class THEA_API FileSystem
+{
+  public:
+    /** Check if a file or directory exists. */
+    static bool exists(std::string const & path);
+
+    /** Check if a file exists, and is indeed a regular file (and not for instance a directory). */
+    static bool fileExists(std::string const & path);
+
+    /** Check if a directory exists, and is indeed a directory (and not for instance a file). */
+    static bool directoryExists(std::string const & path);
+
+    /** Get the length of a file in bytes. Returns a negative number on failure. */
+    static int64 fileSize(std::string const & path);
+
+    /** Resolve a relative path. */
+    static std::string resolve(std::string const & path);
+
+    /**
+     * Create a directory, including all necessary parents (equivalent to "mkdir -p").
+     *
+     * @return True on success, false on error.
+     */
+    static bool createDirectory(std::string const & path);
+
+}; // class FileSystem
+
+} // namespace Thea
+
+#endif
