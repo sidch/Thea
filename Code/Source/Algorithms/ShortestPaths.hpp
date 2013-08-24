@@ -49,6 +49,13 @@
 #include "fibheap/fibheap.hpp"
 #include <limits>
 
+// #define THEA_SHORTEST_PATHS_DO_STATS
+// #define THEA_SHORTEST_PATHS_TIMER
+
+#ifdef THEA_SHORTEST_PATHS_TIMER
+#  include "../Stopwatch.hpp"
+#endif
+
 // Forward declarations
 struct fibheap_el;
 
@@ -216,11 +223,8 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, CallbackT * cal
   if (graph.numVertices() <= 0 || !callback)
     return;
 
-// #define THEA_SHORTEST_PATHS_DO_STATS
-// #define THEA_SHORTEST_PATHS_TIMER
-
 #ifdef THEA_SHORTEST_PATHS_TIMER
-  G3D::Stopwatch timer;
+  Stopwatch timer;
   timer.tick();
 #endif
 

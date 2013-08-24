@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../FilePath.hpp"
 #include "../../Algorithms/KDTree3.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
@@ -83,7 +84,7 @@ meshFix(int argc, char * argv[])
   if (parse_status <= 0)
     return parse_status;
 
-  MG mg(G3D::FilePath::baseExt(infile));
+  MG mg(FilePath::nodeName(infile));
   mg.load(infile);
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())

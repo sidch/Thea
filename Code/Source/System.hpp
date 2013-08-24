@@ -39,93 +39,93 @@
 //
 //============================================================================
 
-#include "Application.hpp"
-#include "FilePath.hpp"
-#include "FileSystem.hpp"
-#include "System.hpp"
+#ifndef __Thea_System_hpp__
+#define __Thea_System_hpp__
 
-#if defined(THEA_WINDOWS)
+#include "Common.hpp"
 
-#  include <windows.h>
-
-#elif defined(THEA_LINUX)
-
-#  include <unistd.h>
-
-#elif defined(THEA_OSX)
-
-#  include <stdio.h>
-#  include <unistd.h>
-
+#ifndef THEA_WINDOWS
+#  include <sys/time.h>
 #endif
 
 namespace Thea {
 
-std::string
-Application::programPath()
+/** Low-level system information and profiling functions. */
+class THEA_API System
 {
-  char path[2048];
+  public:
+    /** Get the hardware concurrency (approximate number of thread contexts). */
+    static long concurrency();
+
+    /** Get the machine endianness. */
+    static Endianness endianness()
+    {
+      return Endianness::machine();
+    }
+
+    /** Pause the current thread for a given number of milliseconds. */
+    static void sleep(long ms);
+
+    /**
+     * The actual time (measured in seconds since Jan 1 1970 midnight). Adjusted for local timezone and daylight savings time.
+     * This is as accurate and fast as getCycleCount().
+     */
+    static double time();
+
+    /**
+     * Begin a timing operation. To count the number of cycles a given operation takes:
+     *
+     * <pre>
+     *   unsigned long count;
+     *   System::beginCycleCount(count);
+     *   ...
+     *   System::endCycleCount(count);
+     *   // count now contains the cycle count for the intervening operation.
+     * </pre>
+     *
+     * @see endCycleCount()
+     */
+    static void beginCycleCount(uint64 & cycle_count);
+
+    /**
+     * End a timing operation.
+     *
+     * @see beginCycleCount()
+     */
+    static void endCycleCount(uint64 & cycle_count);
+
+  private:
+    /** Constructor. */
+    System();
+
+    /** Called to initialize timing operations when the object is constructed. */
+    void initTime();
+
+    /** Get the current cycle count. */
+    static uint64 getCycleCount();
+
+    /** Singleton instance. */
+    static System & instance()
+    {
+      static System s; return s;
+    }
 
 #ifdef THEA_WINDOWS
-  {
-    GetModuleFileNameA(NULL, path, sizeof(path));
-  }
-#elif defined(THEA_OSX)
-  {
-    // Run the 'ps' program to extract the program name from the process ID.
-    int pid;
-    FILE * fd;
-    char cmd[80];
-    pid = getpid();
-    sprintf(cmd, "ps -p %d -o comm=\"\"", pid);
-    fd = popen(cmd, "r");
-    int s = fread(path, 1, sizeof(path), fd);
-
-    // Path will contain a newline: overwrite it
-    path[s - 1] = '\0';
-  }
+    int64          m_start;
+    int64          m_counterFrequency;
 #else
-  {
-    int ret = readlink("/proc/self/exe", path, sizeof(path));
-
-    // In case of an error, leave the handling up to the caller
-    if (ret == -1)
-      return "";
-
-    debugAssertM((int)sizeof(path) > ret, "System: String too short to store current program path");
-    // Ensure proper NULL termination
-    path[ret] = 0;
-  }
+    struct timeval m_start;
 #endif
 
-  return path;
-}
+#ifdef THEA_OSX
+    int32          m_OSXCPUSpeed;
+    double         m_secondsPerNS;
+#endif
 
-void
-Application::setResourceArchive(std::string const & path)
-{
-  if (!path.empty())
-  {
-    if (!FileSystem::directoryExists(path))
-      throw Error("Resource archive '" + path + "' does not exist or is not a valid directory");
+    double         m_realWorldGetTickTime0;
 
-    _resourceArchive() = FileSystem::resolve(path);
-
-    THEA_DEBUG << "Resource archive set to '" << _resourceArchive() << '\'';
-  }
-}
-
-std::string
-Application::getFullResourcePath(std::string const & resource_name)
-{
-  return FilePath::concat(_resourceArchive(), resource_name);
-}
-
-std::string &
-Application::_resourceArchive()
-{
-  static std::string resource_archive = FilePath::parent(programPath());
-  return resource_archive;
-}
+}; // class System
 
 } // namespace Thea
+
+#endif

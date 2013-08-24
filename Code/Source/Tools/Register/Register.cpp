@@ -65,7 +65,7 @@ class AccelKDTree : public KDTree3<T>
     {
       TheaArray<T> subsampled;
       for (InputIterator ii = begin; ii != end; ++ii)
-        if (Math::rand01() < 0.02f)
+        if (Random::common().uniform01() < 0.02f)
           subsampled.push_back(*ii);
 
       coarse_kdtree.init(subsampled.begin(), subsampled.end());

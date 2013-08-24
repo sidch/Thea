@@ -10,6 +10,7 @@
 #define __Thea_Graphics_GL_GLHeaders_hpp__
 
 #include "GLCommon.hpp"
+#include "../../FilePath.hpp"
 
 // Main includes
 
@@ -123,8 +124,8 @@ struct THEA_GL_DLL_LOCAL GLClientScope
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
     err_string = gluErrorString(err_code); \
-    throw FatalError(G3D::format("%s:%ld: OpenGL error: %s", /* FIXME: Should be plain Error? */ \
-                     G3D::FilePath::baseExt(__FILE__).c_str(), (long)__LINE__, err_string)); \
+    throw FatalError(Thea::format("%s:%ld: OpenGL error: %s", /* FIXME: Should be plain Error? */ \
+                     Thea::FilePath::nodeName(__FILE__).c_str(), (long)__LINE__, err_string)); \
   } \
 }
 

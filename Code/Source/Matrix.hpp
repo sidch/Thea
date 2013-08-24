@@ -203,32 +203,6 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
       }
     }
 
-    /** Construct from a G3D matrix. */
-    explicit Matrix(G3D::Matrix const & m) : num_rows(0), num_cols(0), values(NULL), owns_memory(true)
-    {
-      if (owns_memory)
-        resize(m.rows(), m.cols());
-      else
-      {
-        alwaysAssertM(num_rows == m.rows() && num_cols == m.cols(),
-                      "Matrix: A wrapper matrix cannot be assigned a value of different dimensions");
-      }
-
-      T * curr = values;
-      if (L == MatrixLayout::ROW_MAJOR)
-      {
-        for (int row = 0; row < m.rows(); ++row)
-          for (int col = 0; col < m.cols(); ++col, ++curr)
-            *curr = static_cast<T>(m.get(row, col));
-      }
-      else
-      {
-        for (int col = 0; col < m.cols(); ++col)
-          for (int row = 0; row < m.rows(); ++row, ++curr)
-            *curr = static_cast<T>(m.get(col, row));
-      }
-    }
-
     /** Destructor. */
     ~Matrix()
     {

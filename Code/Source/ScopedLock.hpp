@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2013, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,93 +39,37 @@
 //
 //============================================================================
 
-#include "Application.hpp"
-#include "FilePath.hpp"
-#include "FileSystem.hpp"
-#include "System.hpp"
-
-#if defined(THEA_WINDOWS)
-
-#  include <windows.h>
-
-#elif defined(THEA_LINUX)
-
-#  include <unistd.h>
-
-#elif defined(THEA_OSX)
-
-#  include <stdio.h>
-#  include <unistd.h>
-
-#endif
+#ifndef __Thea_ScopedLock_hpp__
+#define __Thea_ScopedLock_hpp__
 
 namespace Thea {
 
-std::string
-Application::programPath()
+/** A wrapper for a shared lock object that acquires the lock upon construction and releases it upon destruction. */
+template <typename LockT>
+class ScopedLock
 {
-  char path[2048];
+  public:
+    typedef LockT Lock;  ///< The wrapped lock class.
 
-#ifdef THEA_WINDOWS
-  {
-    GetModuleFileNameA(NULL, path, sizeof(path));
-  }
-#elif defined(THEA_OSX)
-  {
-    // Run the 'ps' program to extract the program name from the process ID.
-    int pid;
-    FILE * fd;
-    char cmd[80];
-    pid = getpid();
-    sprintf(cmd, "ps -p %d -o comm=\"\"", pid);
-    fd = popen(cmd, "r");
-    int s = fread(path, 1, sizeof(path), fd);
+    /** Constructor, which acquires the lock. The wrapped lock object must persist as long as this wrapper does. */
+    ScopedLock(LockT * lock_) : lock(lock_)
+    {
+      if (lock)
+        lock->lock();
+    }
 
-    // Path will contain a newline: overwrite it
-    path[s - 1] = '\0';
-  }
-#else
-  {
-    int ret = readlink("/proc/self/exe", path, sizeof(path));
+    /** Destructor, which releases the lock. */
+    ~ScopedLock()
+    {
+      if (lock)
+        lock->unlock();
+    }
 
-    // In case of an error, leave the handling up to the caller
-    if (ret == -1)
-      return "";
+  private:
+    Lock * lock;
 
-    debugAssertM((int)sizeof(path) > ret, "System: String too short to store current program path");
-    // Ensure proper NULL termination
-    path[ret] = 0;
-  }
-#endif
-
-  return path;
-}
-
-void
-Application::setResourceArchive(std::string const & path)
-{
-  if (!path.empty())
-  {
-    if (!FileSystem::directoryExists(path))
-      throw Error("Resource archive '" + path + "' does not exist or is not a valid directory");
-
-    _resourceArchive() = FileSystem::resolve(path);
-
-    THEA_DEBUG << "Resource archive set to '" << _resourceArchive() << '\'';
-  }
-}
-
-std::string
-Application::getFullResourcePath(std::string const & resource_name)
-{
-  return FilePath::concat(_resourceArchive(), resource_name);
-}
-
-std::string &
-Application::_resourceArchive()
-{
-  static std::string resource_archive = FilePath::parent(programPath());
-  return resource_archive;
-}
+}; // class ScopedLock
 
 } // namespace Thea
+
+#endif

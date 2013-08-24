@@ -41,8 +41,9 @@
 
 #include "PointCloud.hpp"
 #include "Util.hpp"
-#include "../../Math.hpp"
 #include "../../Colors.hpp"
+#include "../../FilePath.hpp"
+#include "../../Math.hpp"
 #include <fstream>
 
 namespace Browse3D {
@@ -108,7 +109,7 @@ PointCloud::load(std::string const & path)
 
   updateBounds();
 
-  setName(G3D::FilePath::base(path));
+  setName(FilePath::baseName(path));
 
   THEA_CONSOLE << getName() << ": Loaded " << points.size() << " points with bounding box " << bounds.toString() << " from '"
                << path << '\'';

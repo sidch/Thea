@@ -191,10 +191,6 @@ class THEA_API Manifold
     template <typename FaceT> static array_size_t getLastIndex(FaceT const & face)
     { return (array_size_t)*face.rbegin(); }
 
-    /** Get the last index of a face represented as a G3D::Array. */
-    template <typename IndexT> static array_size_t getLastIndex(G3D::Array<IndexT> const & face)
-    { return (array_size_t)face.last(); }
-
     /**
      * Get the two neighbouring vertices of a given vertex on the boundary of a face. Throws an error if the face has repeated
      * vertices.

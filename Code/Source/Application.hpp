@@ -52,6 +52,9 @@ namespace Thea {
 class THEA_API Application
 {
   public:
+    /** Get the path to the current program. */
+    static std::string programPath();
+
     /**
      * Get the archive in which the application will look for resources (by default the directory containing the executable).
      */

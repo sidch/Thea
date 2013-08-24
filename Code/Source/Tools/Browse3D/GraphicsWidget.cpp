@@ -41,6 +41,7 @@
 
 #include "GraphicsWidget.hpp"
 #include "../../Graphics/Shader.hpp"
+#include "../../Application.hpp"
 
 namespace Browse3D {
 

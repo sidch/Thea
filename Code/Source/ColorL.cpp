@@ -67,4 +67,4 @@ ColorL::toString() const
   return format("L(%g)", val);
 }
 
-} // namespace G3D
+} // namespace Thea

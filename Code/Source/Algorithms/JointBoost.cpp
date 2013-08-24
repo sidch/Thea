@@ -251,7 +251,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
   }
 
   // Select a random fraction of the features
-  TheaArray<long> candidate_features;
+  TheaArray<int32> candidate_features;
   if (feature_sampling_fraction >= 1)
   {
     for (long f = 0; f < num_features; ++f)
@@ -259,9 +259,9 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
   }
   else
   {
-    long num_candidate_features = std::max((long)Math::round(feature_sampling_fraction * num_features), 1L);
+    int32 num_candidate_features = std::max((int32)Math::round(feature_sampling_fraction * num_features), (int32)1);
     candidate_features.resize((array_size_t)num_candidate_features);
-    Math::randIntegersInRange(0, num_features - 1, num_candidate_features, &candidate_features[0]);
+    Random::common().integers(0, (int32)num_features - 1, num_candidate_features, &candidate_features[0]);
   }
 
   if (options.verbose && (long)candidate_features.size() < num_features)
@@ -489,7 +489,7 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
   for (long t = 0; t < max_thresholds; ++t)
   {
     // Start with a random seed
-    array_size_t index = (array_size_t)Math::randIntegerInRange(0, (long)sorted_indices.size() - 1);
+    array_size_t index = (array_size_t)Random::common().integer(0, (int32)sorted_indices.size() - 1);
     array_size_t mapped_index = sorted_indices[index];
     double threshold = features[mapped_index];
 
@@ -542,7 +542,7 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
       // Which is the better direction to move?
       int best_offset = (std::fabs(offset_qualities[0]) > std::fabs(offset_qualities[1]) ? 0 : 1);
       if (std::fabs(offset_qualities[best_offset]) > std::fabs(quality)
-       || (equal_quality[best_offset] && Math::rand01() < 0.5))  // if equal, move with 50% probability
+       || (equal_quality[best_offset] && Random::common().uniform01() < 0.5))  // if equal, move with 50% probability
       {
         // If move left, current example's accuracy is inverted
         if (best_offset == 0)

@@ -43,6 +43,7 @@
 #define __Thea_Math_hpp__
 
 #include "Common.hpp"
+#include "Random.hpp"
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <cmath>
 #include <limits>
@@ -366,44 +367,6 @@ sign(T const & x)
   return x < 0 ? -1 : (x > 0 ? 1 : 0);
 }
 
-/** Get a uniformly distributed random number between 0 and 1, inclusive. */
-Real rand01();
-
-/** Get a uniformly distributed random number from the interval [\a lo, \a hi]. \a hi must be strictly greater than \a lo. */
-Real randInRange(Real lo, Real hi);
-
-/**
- * Get a uniformly distributed integer from the interval [\a lo, \a hi] (endpoints inclusive). \a hi must be strictly greater
- * than \a lo.
- */
-long randIntegerInRange(long lo, long hi);
-
-/**
- * Get \a m random integers in [\a lo, \a hi] (endpoints inclusive). Slow if the range is very large, and possibly breaks if the
- * upper limit of the range is very large (more than RAND_MAX / 2).
- * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of Knuth's
- * Seminumerical Algorithms.
- *
- * @param lo Lower limit of range (inclusive).
- * @param hi Upper limit of range (inclusive).
- * @param m Number of distinct random integers requested from the range.
- * @param selected Used to return the generated random integers. Assumed to be preallocated to \a m elements.
- */
-void randIntegersInRange(long lo, long hi, long m, long * selected);
-
-/**
- * Get \a m random integers in [\a lo, \a hi] (endpoints inclusive), sorted in ascending order. Slow if the range is very large,
- * and possibly breaks if the upper limit of the range is very large (more than RAND_MAX / 2).
- * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of Knuth's
- * Seminumerical Algorithms.
- *
- * @param lo Lower limit of range (inclusive).
- * @param hi Upper limit of range (inclusive).
- * @param m Number of distinct random integers requested from the range.
- * @param selected Used to return the generated random integers in ascending order. Assumed to be preallocated to \a m elements.
- */
-void randSortedIntegersInRange(long lo, long hi, long m, long * selected);
-
 /** Returns \a a + (\a b - \a a) * \a f. */
 template <typename T, typename S>
 T
@@ -635,12 +598,6 @@ THEA_API int solveCubic(double c0, double c1, double c2, double c3, double * roo
  * @return The number of real roots found (0, 1, 2, 3 or 4).
  */
 THEA_API int solveQuartic(double c0, double c1, double c2, double c3, double c4, double * roots);
-
-/**
- * Get a set of \a k random integers from the set [0, \a n - 1]. \a subset must have been preallocated to \a k elements. The
- * returned numbers are <em>not</em> necessarily in sorted order.
- */
-void getRandomSubset(long n, long k, long * subset);
 
 namespace MathInternal {
 

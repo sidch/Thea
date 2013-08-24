@@ -229,11 +229,11 @@ Quat
 Quat::unitRandom()
 {
   // From "Uniform Random Rotations", Ken Shoemake, Graphics Gems III
-  Real x0 = Math::rand01();
+  Real x0 = Random::common().uniform01();
   Real r1 = std::sqrt(1 - x0),
        r2 = std::sqrt(x0);
-  Real t1 = (Real)Math::twoPi() * Math::rand01();
-  Real t2 = (Real)Math::twoPi() * Math::rand01();
+  Real t1 = (Real)Math::twoPi() * Random::common().uniform01();
+  Real t2 = (Real)Math::twoPi() * Random::common().uniform01();
   Real c1 = std::cos(t1),
        s1 = std::sin(t1);
   Real c2 = std::cos(t2),

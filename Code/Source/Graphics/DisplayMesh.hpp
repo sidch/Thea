@@ -482,7 +482,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      */
     template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end)
     {
-      face_vertex_indices.fastClear();
+      face_vertex_indices.clear();
       for (IndexIterator vi = vi_begin; vi != vi_end; ++vi)
         face_vertex_indices.push_back((long)*vi);
 
@@ -640,7 +640,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     void updateEdges();
 
     // Temporary storage for triangulating polygons with more than 4 vertices
-    G3D::Array<long> face_vertex_indices;
+    TheaArray<long> face_vertex_indices;
     TheaArray<long> triangulated_indices;
 
 }; // class DisplayMesh

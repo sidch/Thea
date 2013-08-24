@@ -45,6 +45,7 @@
 #include "../Common.hpp"
 #include "../NamedObject.hpp"
 #include "../Image.hpp"
+#include "TextureFormat.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -146,7 +147,7 @@ class THEA_API Texture : public virtual NamedObject
     };
 
     /** %Texture storage format. */
-    typedef G3D::ImageFormat Format;
+    typedef TextureFormat Format;
 
     /** Destructor. */
     virtual ~Texture() {}

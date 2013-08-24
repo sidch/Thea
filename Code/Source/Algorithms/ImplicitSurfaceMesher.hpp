@@ -45,6 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Ball3.hpp"
+#include "../Math.hpp"
 #include "../UnorderedMap.hpp"
 #include "../Graphics/IncrementalMeshBuilder.hpp"
 #include "../Graphics/MeshType.hpp"
@@ -256,7 +257,7 @@ class THEA_API ImplicitSurfaceMesher
 
       // Define meshing criteria
       CGAL::Surface_mesh_default_criteria_3<Tr> criteria(
-          static_cast<FT>(options.min_facet_angle       < 0 ? 30  : G3D::toDegrees(options.min_facet_angle)),
+          static_cast<FT>(options.min_facet_angle       < 0 ? 30  : Math::radiansToDegrees(options.min_facet_angle)),
           static_cast<FT>(options.min_delaunay_radius   < 0 ? 0.1 : options.min_delaunay_radius),
           static_cast<FT>(options.min_center_separation < 0 ? 0.1 : options.min_center_separation));
 

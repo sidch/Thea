@@ -256,7 +256,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       builder.begin();
 
       TheaArray<typename Builder::VertexHandle> vrefs;
-      G3D::Array<typename Builder::VertexHandle> face;
+      TheaArray<typename Builder::VertexHandle> face;
 
       // Read list of vertices
       double x, y, z;
@@ -284,7 +284,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       // Read list of faces
       long index;
-      int num_face_vertices;
+      long num_face_vertices;
       for (long f = 0; f < num_faces; ++f)
       {
         std::string line = trimWhitespace(in.readLine());
@@ -302,10 +302,10 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
         if (num_face_vertices > 0)
         {
-          face.resize(num_face_vertices, false);
+          face.resize(num_face_vertices);
 
           bool skip = false;
-          for (int v = 0; v < num_face_vertices && !skip; ++v)
+          for (long v = 0; v < num_face_vertices && !skip; ++v)
           {
             if (!(vstr >> index))
               throw Error(getName() + ": Could not read vertex index on line '" + line + '\'');
@@ -313,7 +313,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             if (index < 0 || index >= (long)vrefs.size())
               throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
 
-            face[v] = vrefs[(array_size_t)index];
+            face[(array_size_t)v] = vrefs[(array_size_t)index];
 
             for (int w = 0; w < v; ++w)
               if (face[w] == face[v])  // face has repeated vertices
@@ -359,7 +359,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       builder.begin();
 
       TheaArray<typename Builder::VertexHandle> vrefs;
-      G3D::Array<typename Builder::VertexHandle> face;
+      TheaArray<typename Builder::VertexHandle> face;
 
       // Read list of vertices
       Vector3 vertex;
@@ -382,7 +382,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         int num_face_vertices = (int)in.readInt32();
         if (num_face_vertices > 0)
         {
-          face.resize(num_face_vertices, false);
+          face.resize(num_face_vertices);
 
           bool skip = false;
           for (int v = 0; v < num_face_vertices; ++v)

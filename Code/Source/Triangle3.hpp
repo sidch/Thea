@@ -47,9 +47,9 @@
 #include "Ball3.hpp"
 #include "Box3.hpp"
 #include "LineSegment3.hpp"
+#include "Math.h"
 #include "Plane3.hpp"
 #include "RayIntersectable3.hpp"
-#include <cmath>
 #include <limits>
 
 namespace Thea {
@@ -119,6 +119,19 @@ THEA_API int tri_tri_intersect_with_isectline(Real const V0[3],Real const V1[3],
                                               Real const U0[3],Real const U1[3],Real const U2[3],int *coplanar,
                                               Real isectpt1[3],Real isectpt2[3]);
 
+// Check if a point is inside a triangle.
+bool isPointInsideTriangle(Vector3 const &  v0,
+                           Vector3 const &  v1,
+                           Vector3 const &  v2,
+                           int              primary_axis,
+                           Vector3 const &  p);
+
+// Closest point on the perimeter of a triangle.
+Vector3 closestPointOnTrianglePerimeter(const Vector3   &   v0,
+                                        const Vector3   &   v1,
+                                        const Vector3   &   v2,
+                                        const Vector3   &   point);
+
 // Intersection time of a ray with a triangle. Returns a negative value if the ray does not intersect the triangle.
 THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02);
 
@@ -168,7 +181,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       Vector3 v0 = getVertex(0), v1 = getVertex(1), v2 = getVertex(2);
 
       plane = Plane3::fromThreePoints(v0, v1, v2);
-      primary_axis = plane.getNormal().maxAbsAxis();
+      primary_axis = (int)plane.getNormal().maxAbsAxis();
 
       centroid = (v0 + v1 + v2) / 3;
       edge01   = v1 - v0;
@@ -210,8 +223,8 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       // From G3D::Triangle
 
       // Choose a random point in the parallelogram
-      float s = G3D::Random::common().uniform(0, 1);
-      float t = G3D::Random::common().uniform(0, 1);
+      float s = Random::common().uniform01();
+      float t = Random::common().uniform01();
 
       if (s + t > 1.0f)
       {
@@ -288,20 +301,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /** Check if the triangle contains a point. */
     bool contains(Vector3 const & p) const
     {
-        Vector3 v0 = getVertex(0);
-        Vector3 v1 = getVertex(1);
-        Vector3 v2 = getVertex(2);
-        Vector3 const & n = getNormal();
-
-        G3D::Vector3::Axis axis = (primary_axis == 0 ? G3D::Vector3::X_AXIS
-                                                     : (primary_axis == 1 ? G3D::Vector3::Y_AXIS : G3D::Vector3::Z_AXIS));
-
-        return G3D::CollisionDetection::isPointInsideTriangle(G3D::Vector3(v0.x(), v0.y(), v0.z()),
-                                                              G3D::Vector3(v1.x(), v1.y(), v1.z()),
-                                                              G3D::Vector3(v2.x(), v2.y(), v2.z()),
-                                                              G3D::Vector3(n.x(),  n.y(),  n.z()),
-                                                              G3D::Vector3(p.x(),  p.y(),  p.z()),
-                                                              axis);
+      return Triangle3Internal::isPointInsideTriangle(getVertex(0), getVertex(1), getVertex(2), primary_axis, p);
     }
 
     /** Get the distance of the triangle from a point. */
@@ -332,16 +332,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       if (contains(proj))
         return proj;
       else  // the closest point is on the perimeter instead
-      {
-        Vector3 v0 = getVertex(0);
-        Vector3 v1 = getVertex(1);
-        Vector3 v2 = getVertex(2);
-        G3D::Vector3 cp = G3D::CollisionDetection::closestPointOnTrianglePerimeter(G3D::Vector3(v0.x(), v0.y(), v0.z()),
-                                                                                   G3D::Vector3(v1.x(), v1.y(), v1.z()),
-                                                                                   G3D::Vector3(v2.x(), v2.y(), v2.z()),
-                                                                                   G3D::Vector3(p.x(),  p.y(),  p.z()));
-        return Vector3(cp.x, cp.y, cp.z);
-      }
+        return Triangle3Internal::closestPointOnTrianglePerimeter(getVertex(0), getVertex(1), getVertex(2), p);
     }
 
     /** Get the squared distance of the triangle from another triangle. */
@@ -485,7 +476,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
   protected:
     VertexTriple  vertices;      ///< The vertices of the triangle.
     Plane3        plane;         ///< Plane of the triangle.
-    long          primary_axis;  ///< Primary axis (closest to normal).
+    int           primary_axis;  ///< Primary axis (closest to normal).
     Vector3       centroid;      ///< Centroid of the triangle (mean of three vertices).
     Vector3       edge01;        ///< vertices[1] - vertices[0]
     Vector3       edge02;        ///< vertices[2] - vertices[0]
