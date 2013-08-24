@@ -41,6 +41,7 @@
 
 #include "FileSystem.hpp"
 #include <boost/filesystem.hpp>
+#include <cstdio>
 
 namespace Thea {
 
@@ -82,6 +83,51 @@ bool
 FileSystem::createDirectory(std::string const & path)
 {
   return boost::filesystem::create_directories(path);
+}
+
+bool
+FileSystem::readWholeFile(std::string const & path, std::string & ret)
+{
+  if (!fileExists(path))
+  {
+    THEA_ERROR << "FileSystem: File '" << path << "' not found";
+    return false;
+  }
+
+  int64 length = fileSize(path);
+  if (length <= 0)
+  {
+    ret.clear();
+    return true;
+  }
+
+  char * buffer = (char *)std::malloc((size_t)length);
+  if (!buffer)
+  {
+    THEA_ERROR << "FileSystem: Could not allocate buffer to hold " << length << " bytes from file '" << path << '\'';
+    return false;
+  }
+
+  FILE * f = std::fopen(path.c_str(), "rb");
+  if (!f)
+  {
+    THEA_ERROR << "FileSystem: Couldn't open file '" << path << "' for reading";
+    return false;
+  }
+
+  int num_read = std::fread(buffer, 1, length, f);
+  if (num_read != length)
+  {
+    THEA_ERROR << "FileSystem: Error reading from file '" << path << '\'';
+    return false;
+  }
+
+  std::fclose(f);
+
+  ret.assign(buffer, (size_t)length);
+  std::free(buffer);
+
+  return true;
 }
 
 } // namespace Thea

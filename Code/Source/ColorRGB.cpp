@@ -186,7 +186,7 @@ ColorRGB const & ColorRGB::wheelRandom()
     ColorRGB::cyan(),   ColorRGB::purple(), ColorRGB::brown()
   };
 
-  return color_array[Math::randIntegerInRange(0, 7)];
+  return color_array[Random::common().integer(0, 7)];
 }
 
 ColorRGB::ColorRGB(ColorRGB8 const & src)
@@ -204,7 +204,7 @@ ColorRGB::fromARGB(uint32 x)
 
 ColorRGB ColorRGB::random()
 {
-  return ColorRGB(Math::rand01(), Math::rand01(), Math::rand01()).unit();
+  return ColorRGB(Random::common().uniform01(), Random::common().uniform01(), Random::common().uniform01()).unit();
 }
 
 ColorRGB

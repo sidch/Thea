@@ -41,6 +41,7 @@
 
 #include "GLShader.hpp"
 #include "GLCaps.hpp"
+#include "../../FileSystem.hpp"
 #include <fstream>
 
 namespace Thea {
@@ -69,7 +70,7 @@ GLShader::attachModuleFromFile(ModuleType type, std::string const & path)
   if (!in)
     throw Error(getName() + ": Shader module '" + path + "' not found");
 
-  std::string source = G3D::readWholeFile(path);
+  std::string source = FileSystem::readWholeFile(path);
   attachModuleFromString(type, source);
 }
 
@@ -187,7 +188,7 @@ GLShader::readActiveUniforms()
 
       data.location = glGetUniformLocationARB(program_id, &name_chars[0]);
 
-      bool is_gl_builtin = (data.location == -1 || G3D::beginsWith(name, "gl_"));
+      bool is_gl_builtin = (data.location == -1 || beginsWith(name, "gl_"));
       if (!is_gl_builtin)
       {
         if (GLShader__isSamplerType(data.type))

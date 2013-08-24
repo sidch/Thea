@@ -28,6 +28,7 @@ typedef Thea::Graphics::CGALMesh<> CM;
 #include "../Algorithms/ImplicitSurfaceMesher.hpp"
 #include "../Algorithms/MeshKDTree.hpp"
 #include "../Array.hpp"
+#include "../FilePath.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -158,7 +159,7 @@ testManifold(int argc, char * argv[])
 
   string model_path = (argc < 2 ? "../../Data/Models/bunny-conformal.obj" : argv[1]);
 
-  MeshGroup<GM> input_mg(G3D::FilePath::baseExt(model_path));
+  MeshGroup<GM> input_mg(FilePath::nodeName(model_path));
   input_mg.load(model_path);
 
   input_mg.forEachMeshUntil(isManifold);
@@ -233,7 +234,7 @@ testIMLS(int argc, char * argv[])
   }
 
   // binvox format, see http://www.cs.princeton.edu/~min/binvox/binvox.html
-  ofstream voxout((G3D::FilePath::base(model_path) + ".binvox").c_str(), ios::binary);
+  ofstream voxout((FilePath::baseName(model_path) + ".binvox").c_str(), ios::binary);
   voxout << "#binvox 1\n"
          << "dim " << NUM_STEPS << ' ' << NUM_STEPS << ' ' << NUM_STEPS << '\n'  // add a border
          << "translate 0 0 0\n"
@@ -313,7 +314,7 @@ testIMLS(int argc, char * argv[])
 
   MeshGroup<GM> output_mg("IMLS Output");
   output_mg.addMesh(output);
-  output_mg.save((G3D::FilePath::base(model_path) + "_remeshed.obj").c_str(), CodecOBJ<GM>());
+  output_mg.save((FilePath::baseName(model_path) + "_remeshed.obj").c_str(), CodecOBJ<GM>());
 
 #endif
 

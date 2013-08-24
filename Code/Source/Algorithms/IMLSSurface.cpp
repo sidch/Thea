@@ -46,6 +46,11 @@
 #include <limits>
 
 #define IMLS_SURFACE_EVAL_RECURSIVE
+// #define IMLS_SURFACE_EVAL_TIMER
+
+#ifdef IMLS_SURFACE_EVAL_TIMER
+#  include "../Stopwatch.hpp"
+#endif
 
 namespace Thea {
 namespace Algorithms {
@@ -477,11 +482,10 @@ IMLSSurface::evalRec(Vector3 const & p, TriangleKDTree::Node const * start, Func
 double
 IMLSSurface::operator()(Vector3 const & p) const
 {
-// #define EVAL_TIMER
-#ifdef EVAL_TIMER
+#ifdef IMLS_SURFACE_EVAL_TIMER
   static double total_time = 0;
   static long num_calls = 1;
-  G3D::StopWatch timer;
+  Stopwatch timer;
   timer.tick();
 #endif
 
@@ -493,7 +497,7 @@ IMLSSurface::operator()(Vector3 const & p) const
   eval(p, efunc);
 #endif
 
-#if EVAL_TIMER
+#if IMLS_SURFACE_EVAL_TIMER
   timer.tock();
   total_time += timer.elapsedTime();
   if (num_calls % 1000 == 0)

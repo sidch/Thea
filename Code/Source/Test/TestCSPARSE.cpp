@@ -39,7 +39,7 @@ bool
 testCSPARSE(int argc, char * argv[])
 {
   // Get the path containing the executable
-  string bin_path = G3D::filenamePath(argv[0]);
+  string bin_path = FilePath::parent(argv[0]);
 
   // Try to load the CSPARSE plugin from the same parent directory as the executable
 #ifdef THEA_DEBUG_BUILD

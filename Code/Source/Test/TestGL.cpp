@@ -1,6 +1,7 @@
 #include "../Common.hpp"
 #include "../FilePath.hpp"
 #include "../Plugin.hpp"
+#include "../System.hpp"
 #include "../Graphics/RenderSystem.hpp"
 #include <iostream>
 #include <cstdlib>
@@ -49,7 +50,7 @@ void
 testGL(int argc, char * argv[])
 {
   // Get the path containing the executable
-  string bin_path = G3D::filenamePath(argv[0]);
+  string bin_path = FilePath::parent(argv[0]);
 
   // Try to load the OpenGL plugin from the same parent directory as the executable
 #ifdef THEA_DEBUG_BUILD
@@ -276,9 +277,9 @@ draw()
 
    // calc framerate
    {
-      static G3D::RealTime t0 = -1;
+      static double t0 = -1;
       static int frames = 0;
-      G3D::RealTime t = G3D::System::time();
+      double t = System::time();
 
       if (t0 < 0)
          t0 = t;
@@ -287,7 +288,7 @@ draw()
 
       if (t - t0 >= 5.0)
       {
-         G3D::RealTime seconds = t - t0;
+         double seconds = t - t0;
          double fps = frames / seconds;
          printf("%d frames in %3.1lf seconds = %6.3lf FPS\n", frames, seconds, fps);
          t0 = t;

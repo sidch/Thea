@@ -46,62 +46,6 @@
 namespace Thea {
 namespace Math {
 
-Real
-rand01()
-{
-  return (Real)G3D::Random::common().uniform(0, 1);
-}
-
-Real
-randInRange(Real lo, Real hi)
-{
-  return (Real)G3D::Random::common().uniform((float)lo, (float)hi);
-}
-
-long
-randIntegerInRange(long lo, long hi)
-{
-  return lo + (std::rand() % (hi - lo + 1));
-}
-
-void
-randIntegersInRange(long lo, long hi, long m, long * selected)
-{
-  // The current algorithm does no extra work to sort
-  randSortedIntegersInRange(lo, hi, m, selected);
-}
-
-namespace MathInternal {
-
-// Get a very large random integer (in the range [RAND_MAX / 2, RAND_MAX])
-long
-bigRand()
-{
-  static long const HALF_RAND_MAX = RAND_MAX / 2;
-  return HALF_RAND_MAX + std::rand() % HALF_RAND_MAX;  // should never be greater than RAND_MAX
-}
-
-} // namespace MathInternal
-
-void
-randSortedIntegersInRange(long lo, long hi, long m, long * selected)
-{
-  long remaining = m;
-  for (long i = lo; i <= hi; ++i)
-  {
-    // Select m of remaining n - i
-    long r = MathInternal::bigRand();
-    if ((r % (hi - i + 1)) < remaining)
-    {
-      selected[m - remaining] = i;
-      remaining--;
-
-      if (remaining <= 0)
-        return;
-    }
-  }
-}
-
 int
 binaryTreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
 {
@@ -321,23 +265,6 @@ solveQuartic(double c0, double c1, double c2, double c3, double c4, double * roo
   }
 
   return num_roots;
-}
-
-void
-getRandomSubset(long n, long k, long * subset)
-{
-  TheaArray<long> shuffled((array_size_t)n);
-  for (long i = 0; i < n; ++i)
-    shuffled[(array_size_t)i] = i;
-
-  for (long i = 0; i < k; i++)
-  {
-    long j = (std::rand() % (n - i)) + i;
-    std::swap(shuffled[(array_size_t)i], shuffled[(array_size_t)j]);
-  }
-
-  // std::sort(&shuffled[0], &shuffled[0] + k);
-  std::copy(&shuffled[0], &shuffled[0] + k, subset);
 }
 
 } // namespace Math

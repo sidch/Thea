@@ -1,9 +1,10 @@
 #include "../Common.hpp"
 #include "../Algorithms/MetricL2.hpp"
-#include "../RigidTransform2.hpp"
-#include "../RigidTransform3.hpp"
 #include "../AffineTransform2.hpp"
 #include "../AffineTransform3.hpp"
+#include "../Math.hpp"
+#include "../RigidTransform2.hpp"
+#include "../RigidTransform3.hpp"
 #include "../Transformable.hpp"
 #include <iostream>
 #include <string>
@@ -60,7 +61,7 @@ testMetrics(int argc, char * argv[])
                                                        Math::degreesToRadians(30)), Vector3::zero());
   Matrix4 m2 = Matrix4::homTranslation(Vector3(1, 1, 1));
   RigidTransform3 rt = RigidTransform3::translation(Vector3(5, 5, 5))
-                     * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), G3D::toRadians(45));
+                     * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), Math::degreesToRadians(45));
   cout << MetricL2::distance(makeTransformedObject(&p, &m1),     makeTransformedObject(&p, &m2)) << endl;
   cout << MetricL2::distance(p,                                  makeTransformedObject(&p, &m2)) << endl;
   cout << MetricL2::distance(makeTransformedObject(&p, &m1),     p) << endl;

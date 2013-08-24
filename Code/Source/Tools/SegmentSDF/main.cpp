@@ -14,6 +14,7 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Colors.hpp"
 #include "../../Math.hpp"
+#include "../../System.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../VectorN.hpp"
 #include <CGAL/Union_find.h>
@@ -129,7 +130,7 @@ segmentSDF(int argc, char * argv[])
       rem -= 1;
     }
 
-    if (Math::rand01() < rem)
+    if (Random::common().uniform01() < rem)
     {
       positions.push_back(elem.randomPoint());
       normals.push_back(elem.getNormal());
@@ -402,11 +403,7 @@ typedef UnionFind<int> LabelUnionFind;
 int
 defaultConcurrency()
 {
-  int cc = (int)boost::thread::hardware_concurrency();
-  if (cc <= 0)
-    return G3D::System::numCores();
-  else
-    return cc;
+  return (int)System::concurrency();
 }
 
 int

@@ -65,8 +65,8 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
   alwaysAssertM(num_longitude_steps >= 3, "A hemisphere must be drawn with at least 3 longitudinal steps");
   alwaysAssertM(num_latitude_steps >= 1, "A hemisphere must be drawn with at least 3 latitudinal steps");
 
-  float longitude_conv_factor = (float)G3D::twoPi() / num_longitude_steps;
-  float latitude_conv_factor = (float)G3D::halfPi() / num_latitude_steps;
+  float longitude_conv_factor = (float)Math::twoPi() / num_longitude_steps;
+  float latitude_conv_factor = (float)Math::halfPi() / num_latitude_steps;
 
   float prev_s_lat = 0;
   float prev_c_lat = 1;
@@ -132,7 +132,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
 void
 drawSphere(Graphics::RenderSystem & render_system, Vector3 const & center, Real radius, int num_steps)
 {
-  int num_latitude_steps = G3D::iCeil(num_steps / 4.0);
+  int num_latitude_steps = (int)std::ceil(num_steps / 4.0);
 
   drawHemisphere(render_system, center, Vector3::unitX(), Vector3::unitY(),  Vector3::unitZ(), radius, num_steps,
                  num_latitude_steps);
@@ -148,7 +148,7 @@ drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center
 
   alwaysAssertM(num_steps >= 3, "A cylinder must be drawn with at least 3 steps");
 
-  float conv_factor = (float)G3D::twoPi() / num_steps;
+  float conv_factor = (float)Math::twoPi() / num_steps;
 
   render_system.beginPrimitive(RenderSystem::Primitive::QUAD_STRIP);
 
@@ -179,7 +179,7 @@ drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center,
   drawCylinder(render_system, base_center, top_center, u, v, radius, num_steps);
 
   // Base and top
-  int num_latitude_steps = G3D::iCeil(num_steps / 4.0);
+  int num_latitude_steps = std::ceil(num_steps / 4.0);
   drawHemisphere(render_system, base_center, u, v, -w, radius, num_steps, num_latitude_steps);
   drawHemisphere(render_system, top_center,  u, v,  w, radius, num_steps, num_latitude_steps);
 }
@@ -191,8 +191,8 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
 {
   using namespace Graphics;
 
-  float major_conv_factor = (float)G3D::twoPi() / num_major_steps;
-  float minor_conv_factor = (float)G3D::twoPi() / num_minor_steps;
+  float major_conv_factor = (float)Math::twoPi() / num_major_steps;
+  float minor_conv_factor = (float)Math::twoPi() / num_minor_steps;
 
   Vector3 w = u.cross(v);
 
@@ -386,9 +386,9 @@ ColorRGB
 getLabelColor(QString const & label)
 {
   unsigned int hash = qHash(label);
-  G3D::Random rnd(hash);
+  Random rnd(hash);
 
-  return ColorRGB(rnd.uniform(0, 1), rnd.uniform(0, 1), rnd.uniform(0, 1));
+  return ColorRGB(rnd.uniform01(), rnd.uniform01(), rnd.uniform01());
 }
 
 bool

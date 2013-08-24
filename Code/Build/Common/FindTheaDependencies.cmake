@@ -29,7 +29,7 @@ IF(Thea_FIND_Boost OR Thea_FIND_CGAL)
   ELSE()
     SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT})
   ENDIF()
-  FIND_PACKAGE(Boost COMPONENTS filesystem system REQUIRED)
+  FIND_PACKAGE(Boost COMPONENTS filesystem system thread REQUIRED)
 ENDIF()
 
 # Dependency: G3D

@@ -88,6 +88,32 @@
 #  define THEA_BSD 1
 #endif
 
+// http://nadeausoftware.com/articles/2012/02/c_c_tip_how_detect_processor_type_using_compiler_predefined_macros
+// http://sourceforge.net/p/predef/wiki/Architectures/
+#if defined(_M_X64) || defined(__x86_64__) || defined(__amd_64__)
+#  define THEA_64BIT 1
+#  define THEA_X64 1
+#elif defined(_M_IA64) || defined(__ia64) || defined(__ia64__)
+#  define THEA_64BIT 1
+#  define THEA_ITANIUM 1
+#elif defined(__i386) || defined(_M_IX86)
+#  define THEA_32BIT 1
+#  define THEA_X86 1
+#elif defined(__aarch64__) || defined(__aarch64)
+#  define THEA_64BIT 1
+#  define THEA_ARM 1
+#elif defined(_M_ARM) || defined(__arm) || defined(__arm__)
+#  define THEA_32BIT 1
+#  define THEA_ARM 1
+#elif defined(__powerpc__) || defined(__PPC__) || defined(__POWERPC__)
+#  if defined(__ppc64__) || defined(__powerpc64__) || defined(__64BIT__) || defined(_LP64)
+#    define THEA_64BIT 1
+#  else
+#    define THEA_32BIT 1
+#  endif
+#  define THEA_POWERPC 1
+#endif
+
 // Symbol visibility flags
 #include "SymbolVisibility.hpp"
 

@@ -41,6 +41,7 @@
 
 #include "Log.hpp"
 #include "Common.hpp"
+#include "Spinlock.hpp"
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -96,12 +97,12 @@ LockedOutputStream::~LockedOutputStream()
 void
 LockedOutputStream::setOutputLock(bool value)
 {
-  static G3D::GMutex mutex;
+  static Spinlock lock;  // one lock for ALL output streams -- can't be bothered to implement a shared lock for each stream
 
   if (value)
-    mutex.lock();
+    lock.lock();
   else
-    mutex.unlock();
+    lock.unlock();
 }
 
 } // namespace LogInternal

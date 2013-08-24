@@ -57,30 +57,33 @@ class THEA_API FilePath
 {
   public:
     /**
-     * Get the basename of the node, consisting of the node name without the path, upto but not including the first '.'
+     * Get the basename of the node, consisting of the node name without the path, upto but not including the first period
      * character.
      */
     static std::string baseName(std::string const & path);
 
     /**
-     * Get the complete basename of the node, consisting of the node name without the path, upto but not including the last '.'
-     * character.
+     * Get the complete basename of the node, consisting of the node name without the path, upto but not including the last
+     * period character.
      */
     static std::string completeBaseName(std::string const & path);
 
-    /** Get the extension of the node, consisting of all characters after the last '.' character (or null if no '.' exists). */
+    /**
+     * Get the extension of the node, consisting of all characters after the last period character (or null if no period
+     * exists).
+     */
     static std::string suffix(std::string const & path);
 
     /**
-     * Get the complete extension of the node, consisting of all characters after the first '.' character (or null if no '.'
-     * exists).
+     * Get the complete extension of the node, consisting of all characters after the first period character (or null if no
+     * period exists).
      */
     static std::string completeSuffix(std::string const & path);
 
-    /** Get the name of the node without the path. Ignores trailing slashes and isolated '.' characters. */
+    /** Get the name of the node without the path. Ignores trailing slashes and isolated period characters. */
     static std::string nodeName(std::string const & path);
 
-    /** Get the path to the immediate parent of a node. Ignores trailing slashes and isolated '.' characters. */
+    /** Get the path to the immediate parent of a node. Ignores trailing slashes and isolated period characters. */
     static std::string parent(std::string const & path);
 
     /**

@@ -5,6 +5,7 @@
 #include "../FilePath.hpp"
 #include "../Math.hpp"
 #include "../Plugin.hpp"
+#include "../Stopwatch.hpp"
 #include "../Graphics/RenderSystem.hpp"
 
 #ifdef USE_GENERAL_MESH
@@ -170,7 +171,7 @@ testDisplayMesh(int argc, char * argv[])
   }
 
   // Get the path containing the executable
-  string bin_path = G3D::filenamePath(argv[0]);
+  string bin_path = FilePath::parent(argv[0]);
 
   // Try to load the OpenGL plugin from the same parent directory as the executable
 #ifdef THEA_DEBUG_BUILD
@@ -248,7 +249,7 @@ draw()
 {
 // #define FRAME_TIMER
 #ifdef FRAME_TIMER
-  G3D::Stopwatch timer;
+  Stopwatch timer;
   timer.tick();
 #endif
 

@@ -41,6 +41,7 @@
 
 #include "HoughForest.hpp"
 #include "../Math.hpp"
+#include "../Stopwatch.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -500,7 +501,7 @@ class HoughTree
           if (end_index < start_index)
             return false;
 
-          long index = Math::randIntegerInRange(start_index, end_index);
+          long index = Random::common().integer(start_index, end_index);
           double weight = curr->getClassFrequency(query_class) / (double)curr->numElements();
 
           if (options.verbose >= 2)
@@ -569,7 +570,7 @@ class HoughTree
             double p_sum = p_left + p_right;
             if (p_sum > 0)
             {
-              double coin_toss = Math::rand01();
+              double coin_toss = Random::common().uniform01();
               if (coin_toss * p_sum < p_left)
               {
                 if (options.verbose >= 3)
@@ -657,7 +658,7 @@ class HoughTree
         measure_mode = VOTE_UNCERTAINTY;
       else
       {
-        measure_mode = (std::rand() % 2 == 0 ? CLASS_UNCERTAINTY : VOTE_UNCERTAINTY);
+        measure_mode = (Random::common().coinToss() ? CLASS_UNCERTAINTY : VOTE_UNCERTAINTY);
         if (measure_mode == CLASS_UNCERTAINTY)
         {
           double uncertainty = measureUncertainty(node->elems, training_data, measure_mode);
@@ -678,7 +679,7 @@ class HoughTree
       {
         // Generate a random feature
         // TODO: Rewrite this using randIntegersInRange to avoid repeating features
-        long test_feature = (max_feat_iters < num_features ? std::rand() % num_features : feat_iter);
+        long test_feature = (max_feat_iters < num_features ? Random::common().integer() % num_features : feat_iter);
 
         // Find a suitable split threshold
         getNodeFeatures(node, test_feature, training_data, features);
@@ -689,7 +690,7 @@ class HoughTree
           if (max_thresh_iters < (long)features.size())
           {
             // Generate a splitting value in the middle half (second and third quadrants) in the sorted order
-            array_size_t index = features.size() / 4 + (std::rand() % (features.size() / 2));
+            array_size_t index = features.size() / 4 + (Random::common().integer() % (features.size() / 2));
 
             if (options.verbose >= 3)
               THEA_CONSOLE << "HoughForest:      - Testing split index " << index << " for feature " << test_feature;
@@ -1271,7 +1272,7 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
 
   THEA_CONSOLE << "HoughForest: Training forest with " << num_trees << " tree(s)";
 
-  G3D::Stopwatch overall_timer;
+  Stopwatch overall_timer;
   overall_timer.tick();
 
   // Auto-select appropriate values for unspecified options
@@ -1288,7 +1289,7 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
   clear();
   trees.resize((array_size_t)num_trees);
 
-  G3D::Stopwatch timer;
+  Stopwatch timer;
   for (array_size_t i = 0; i < trees.size(); ++i)
   {
     TreePtr tree(new Tree(this, num_classes, num_features, num_vote_params, full_opts));
@@ -1323,7 +1324,7 @@ HoughForest::voteSelf(long query_class, double const * features, long num_votes,
   long votes_cast = 0;
   for (long i = 0; i < num_votes; ++i)
   {
-    long tree_index = Math::randIntegerInRange(0, (long)trees.size() - 1);
+    long tree_index = Random::common().integer(0, (long)trees.size() - 1);
     if (trees[(array_size_t)tree_index]->singleVoteSelf(query_class, features, callback))
       votes_cast++;
   }

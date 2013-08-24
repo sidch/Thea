@@ -76,6 +76,23 @@ class THEA_API FileSystem
      */
     static bool createDirectory(std::string const & path);
 
+    /** Get the entire contents of a file as a string. */
+    static std::string readWholeFile(std::string const & path)
+    {
+      std::string s;
+      if (!readWholeFile(path, s))
+        throw Error("FileSystem: Could not read '" + path + '\'');
+
+      return s;
+    }
+
+    /**
+     * Get the entire contents of a file as a string.
+     *
+     * @return True on success, false on error.
+     */
+    static bool readWholeFile(std::string const & path, std::string & ret);
+
 }; // class FileSystem
 
 } // namespace Thea

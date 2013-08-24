@@ -222,7 +222,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       typedef TheaUnorderedMap<long, typename Builder::VertexHandle> IndexVertexMap;
       VTNVertexMap vtn_refs;
       IndexVertexMap vrefs;
-      G3D::Array<typename Builder::VertexHandle> face;
+      TheaArray<typename Builder::VertexHandle> face;
 
       // OBJ is not neatly divided into separate meshes (e.g. *all* the vertices can be put at the beginning), so we need to
       // cache the vertices and add them to meshes on-demand.
@@ -299,7 +299,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
             builder->begin();
           }
 
-          face.clear(false);
+          face.clear();
           size_t field_begin = line.find_first_not_of("f \t"), field_end = 0;
           while (field_end != std::string::npos)
           {
@@ -424,7 +424,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           }
 
           // Read the new group name
-          group_name = G3D::trimWhitespace(line.substr(1));
+          group_name = trimWhitespace(line.substr(1));
           if (group_name.empty())
             group_name = format("AnonymousMesh%d", ++anon_index);
 

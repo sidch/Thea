@@ -44,11 +44,12 @@
 
 #include "G3D/G3D.h"
 #include "Platform.hpp"
+#include "AtomicInt32.hpp"
 #include "Error.hpp"
 #include "Log.hpp"
 #include "Memory.hpp"
 #include "Noncopyable.hpp"
-#include <boost/cstdint.hpp>
+#include "NumericTypes.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <sstream>
@@ -59,12 +60,6 @@
 #if defined(__GNUC__) && __GNUC__ >= 3
 #  include <cxxabi.h>
 #  define THEA_HAVE_CXA_DEMANGLE
-#endif
-
-#ifdef _WIN32
-  #include <windows.h> // Sleep
-#else
-  #include <unistd.h>  // usleep
 #endif
 
 #undef debugAssertM
@@ -104,24 +99,6 @@ do \
 { \
   enum { assert_static__ = 1/(e) }; \
 } while (0)
-
-typedef  boost::int8_t         int8;
-typedef  boost::int16_t        int16;
-typedef  boost::int32_t        int32;
-typedef  boost::int64_t        int64;
-
-typedef  boost::uint8_t        uint8;
-typedef  boost::uint16_t       uint16;
-typedef  boost::uint32_t       uint32;
-typedef  boost::uint64_t       uint64;
-
-using    std::                 size_t;
-
-typedef  float                 Real;
-typedef  float                 float32;  // assume IEEE 754
-typedef  double                float64;  // assume IEEE 754
-
-using    G3D::                 AtomicInt32;
 
 #define THEA_ENUM_CLASS_BODY(name)                                                                                            \
     public:                                                                                                                   \
@@ -200,17 +177,6 @@ struct THEA_API Endianness
   }
 };
 
-/** Pause the current thread for a given number of milliseconds. */
-inline void
-sleep(size_t ms)
-{
-#ifdef _WIN32
-  Sleep(static_cast<DWORD>(ms));
-#else
-  usleep(static_cast<useconds_t>(ms * 1000));
-#endif
-}
-
 /** Get the class of an object. */
 template <typename T>
 /* THEA_API */
@@ -247,7 +213,6 @@ getClass(T const & obj)
 } // namespace Thea
 
 // Commonly-used but requires the stuff in Common.hpp to be declared first, so is included here.
-#include "Application.hpp"
 #include "StringAlg.hpp"
 
 #endif

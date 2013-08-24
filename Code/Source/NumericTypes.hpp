@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2013, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -39,93 +39,31 @@
 //
 //============================================================================
 
-#include "Application.hpp"
-#include "FilePath.hpp"
-#include "FileSystem.hpp"
-#include "System.hpp"
+#ifndef __Thea_NumericTypes_hpp__
+#define __Thea_NumericTypes_hpp__
 
-#if defined(THEA_WINDOWS)
-
-#  include <windows.h>
-
-#elif defined(THEA_LINUX)
-
-#  include <unistd.h>
-
-#elif defined(THEA_OSX)
-
-#  include <stdio.h>
-#  include <unistd.h>
-
-#endif
+#include "Platform.hpp"
+#include <boost/cstdint.hpp>
+#include <cstddef>
 
 namespace Thea {
 
-std::string
-Application::programPath()
-{
-  char path[2048];
+typedef  boost::int8_t         int8;
+typedef  boost::int16_t        int16;
+typedef  boost::int32_t        int32;
+typedef  boost::int64_t        int64;
 
-#ifdef THEA_WINDOWS
-  {
-    GetModuleFileNameA(NULL, path, sizeof(path));
-  }
-#elif defined(THEA_OSX)
-  {
-    // Run the 'ps' program to extract the program name from the process ID.
-    int pid;
-    FILE * fd;
-    char cmd[80];
-    pid = getpid();
-    sprintf(cmd, "ps -p %d -o comm=\"\"", pid);
-    fd = popen(cmd, "r");
-    int s = fread(path, 1, sizeof(path), fd);
+typedef  boost::uint8_t        uint8;
+typedef  boost::uint16_t       uint16;
+typedef  boost::uint32_t       uint32;
+typedef  boost::uint64_t       uint64;
 
-    // Path will contain a newline: overwrite it
-    path[s - 1] = '\0';
-  }
-#else
-  {
-    int ret = readlink("/proc/self/exe", path, sizeof(path));
+using    std::                 size_t;
 
-    // In case of an error, leave the handling up to the caller
-    if (ret == -1)
-      return "";
-
-    debugAssertM((int)sizeof(path) > ret, "System: String too short to store current program path");
-    // Ensure proper NULL termination
-    path[ret] = 0;
-  }
-#endif
-
-  return path;
-}
-
-void
-Application::setResourceArchive(std::string const & path)
-{
-  if (!path.empty())
-  {
-    if (!FileSystem::directoryExists(path))
-      throw Error("Resource archive '" + path + "' does not exist or is not a valid directory");
-
-    _resourceArchive() = FileSystem::resolve(path);
-
-    THEA_DEBUG << "Resource archive set to '" << _resourceArchive() << '\'';
-  }
-}
-
-std::string
-Application::getFullResourcePath(std::string const & resource_name)
-{
-  return FilePath::concat(_resourceArchive(), resource_name);
-}
-
-std::string &
-Application::_resourceArchive()
-{
-  static std::string resource_archive = FilePath::parent(programPath());
-  return resource_archive;
-}
+typedef  float                 Real;
+typedef  float                 float32;  // assume IEEE 754
+typedef  double                float64;  // assume IEEE 754
 
 } // namespace Thea
+
+#endif

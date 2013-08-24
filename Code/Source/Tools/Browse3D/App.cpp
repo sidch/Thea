@@ -42,6 +42,7 @@
 #include "App.hpp"
 #include "MainWindow.hpp"
 #include "../../Application.hpp"
+#include "../../FileSystem.hpp"
 #include "../../Plugin.hpp"
 #include "../../Graphics/RenderSystem.hpp"
 #include <QApplication>
@@ -266,7 +267,7 @@ App::loadPlugins()
   std::string debug_plugin_path_ext = debug_plugin_path + ".so";
 #endif
 
-  std::string plugin_path = G3D::FileSystem::exists(debug_plugin_path_ext) ? debug_plugin_path : release_plugin_path;
+  std::string plugin_path = FileSystem::exists(debug_plugin_path_ext) ? debug_plugin_path : release_plugin_path;
 #else
 
 #ifdef THEA_WINDOWS

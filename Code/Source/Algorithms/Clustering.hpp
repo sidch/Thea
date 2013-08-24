@@ -45,6 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../CompressedSparseMatrix.hpp"
+#include "../Math.hpp"
 #include "../Matrix.hpp"
 #include "Metrics.hpp"
 
@@ -293,22 +294,22 @@ class THEA_API Clustering
             // Analysis", UMN CS 01-040, 2001, for choice of criterion function in each case
             case FlatMethod::CLUTO_CLUSTER_DIRECT:
             {
-              CLUTO_VP_ClusterDirect((int)cm.numRows(),        // nrows
-                                     (int)cm.numColumns(),     // ncols
-                                     NULL,                     // rowptr
-                                     NULL,                     // rowind
-                                     &cm.getValues()[0],       // rowval
-                                     simfun,                   // simfun
-                                     crfun,                    // crfun
-                                     CLUTO_ROWMODEL_NONE,      // rowmodel
-                                     CLUTO_COLMODEL_NONE,      // colmodel
-                                     1.0f,                     // colprune
-                                     10,                       // ntrials
-                                     10,                       // niter
-                                     G3D::iRandom(0, 0xFFFF),  // seed
-                                     0,                        // dbglvl
-                                     num_clusters_hint,        // nclusters
-                                     &labels[0]);              // part
+              CLUTO_VP_ClusterDirect((int)cm.numRows(),                    // nrows
+                                     (int)cm.numColumns(),                 // ncols
+                                     NULL,                                 // rowptr
+                                     NULL,                                 // rowind
+                                     &cm.getValues()[0],                   // rowval
+                                     simfun,                               // simfun
+                                     crfun,                                // crfun
+                                     CLUTO_ROWMODEL_NONE,                  // rowmodel
+                                     CLUTO_COLMODEL_NONE,                  // colmodel
+                                     1.0f,                                 // colprune
+                                     10,                                   // ntrials
+                                     10,                                   // niter
+                                     Random::common().integer(0, 0xFFFF),  // seed
+                                     0,                                    // dbglvl
+                                     num_clusters_hint,                    // nclusters
+                                     &labels[0]);                          // part
 
               num_clusters_found = num_clusters_hint;
               break;
@@ -316,24 +317,24 @@ class THEA_API Clustering
 
             case FlatMethod::CLUTO_CLUSTER_RB:
             {
-              CLUTO_VP_ClusterRB((int)cm.numRows(),        // nrows
-                                 (int)cm.numColumns(),     // ncols
-                                 NULL,                     // rowptr
-                                 NULL,                     // rowind
-                                 &cm.getValues()[0],       // rowval
-                                 simfun,                   // simfun
-                                 crfun,                    // crfun
-                                 CLUTO_ROWMODEL_NONE,      // rowmodel
-                                 CLUTO_COLMODEL_NONE,      // colmodel
-                                 1.0f,                     // colprune
-                                 10,                       // ntrials
-                                 10,                       // niter
-                                 G3D::iRandom(0, 0xFFFF),  // seed
-                                 cstype,                   // cstype
-                                 1,                        // kwayrefine
-                                 0,                        // dbglvl
-                                 num_clusters_hint,        // nclusters
-                                 &labels[0]);              // part
+              CLUTO_VP_ClusterRB((int)cm.numRows(),                    // nrows
+                                 (int)cm.numColumns(),                 // ncols
+                                 NULL,                                 // rowptr
+                                 NULL,                                 // rowind
+                                 &cm.getValues()[0],                   // rowval
+                                 simfun,                               // simfun
+                                 crfun,                                // crfun
+                                 CLUTO_ROWMODEL_NONE,                  // rowmodel
+                                 CLUTO_COLMODEL_NONE,                  // colmodel
+                                 1.0f,                                 // colprune
+                                 10,                                   // ntrials
+                                 10,                                   // niter
+                                 Random::common().integer(0, 0xFFFF),  // seed
+                                 cstype,                               // cstype
+                                 1,                                    // kwayrefine
+                                 0,                                    // dbglvl
+                                 num_clusters_hint,                    // nclusters
+                                 &labels[0]);                          // part
 
               num_clusters_found = num_clusters_hint;
               break;
@@ -342,27 +343,27 @@ class THEA_API Clustering
             default:  // FlatMethod::CLUTO_GRAPH_CLUSTER_RB
             {
               float cut_value;
-              num_clusters_found = CLUTO_VP_GraphClusterRB((int)cm.numRows(),        // nrows
-                                                           (int)cm.numColumns(),     // ncols
-                                                           NULL,                     // rowptr
-                                                           NULL,                     // rowind
-                                                           &cm.getValues()[0],       // rowval
-                                                           simfun,                   // simfun
-                                                           CLUTO_ROWMODEL_NONE,      // rowmodel
-                                                           CLUTO_COLMODEL_NONE,      // colmodel
-                                                           1.0f,                     // colprune
-                                                           grmodel,                  // grmodel
-                                                           nnbrs,                    // nnbrs
-                                                           -1,                       // edgeprune
-                                                           -1,                       // vtxprune
-                                                           5,                        // mincmp
-                                                           10,                       // ntrials
-                                                           G3D::iRandom(0, 0xFFFF),  // seed
-                                                           cstype,                   // cstype
-                                                           0,                        // dbglvl
-                                                           num_clusters_hint,        // nclusters
-                                                           &labels[0],               // part
-                                                           &cut_value);              // crvalue
+              num_clusters_found = CLUTO_VP_GraphClusterRB((int)cm.numRows(),                    // nrows
+                                                           (int)cm.numColumns(),                 // ncols
+                                                           NULL,                                 // rowptr
+                                                           NULL,                                 // rowind
+                                                           &cm.getValues()[0],                   // rowval
+                                                           simfun,                               // simfun
+                                                           CLUTO_ROWMODEL_NONE,                  // rowmodel
+                                                           CLUTO_COLMODEL_NONE,                  // colmodel
+                                                           1.0f,                                 // colprune
+                                                           grmodel,                              // grmodel
+                                                           nnbrs,                                // nnbrs
+                                                           -1,                                   // edgeprune
+                                                           -1,                                   // vtxprune
+                                                           5,                                    // mincmp
+                                                           10,                                   // ntrials
+                                                           Random::common().integer(0, 0xFFFF),  // seed
+                                                           cstype,                               // cstype
+                                                           0,                                    // dbglvl
+                                                           num_clusters_hint,                    // nclusters
+                                                           &labels[0],                           // part
+                                                           &cut_value);                          // crvalue
             }
           }
           break;
@@ -430,17 +431,17 @@ class THEA_API Clustering
             // Analysis", UMN CS 01-040, 2001, for choice of criterion function in each case
             case FlatMethod::CLUTO_CLUSTER_DIRECT:
             {
-              CLUTO_SP_ClusterDirect((int)weights.numRows(),   // nrows
-                                     rowptr,                   // rowptr
-                                     rowind,                   // rowind
-                                     rowval,                   // rowval
-                                     crfun,                    // crfun
-                                     10,                       // ntrials
-                                     10,                       // niter
-                                     G3D::iRandom(0, 0xFFFF),  // seed
-                                     0,                        // dbglvl
-                                     num_clusters_hint,        // nclusters
-                                     &labels[0]);              // part
+              CLUTO_SP_ClusterDirect((int)weights.numRows(),               // nrows
+                                     rowptr,                               // rowptr
+                                     rowind,                               // rowind
+                                     rowval,                               // rowval
+                                     crfun,                                // crfun
+                                     10,                                   // ntrials
+                                     10,                                   // niter
+                                     Random::common().integer(0, 0xFFFF),  // seed
+                                     0,                                    // dbglvl
+                                     num_clusters_hint,                    // nclusters
+                                     &labels[0]);                          // part
 
               num_clusters_found = num_clusters_hint;
               break;
@@ -448,19 +449,19 @@ class THEA_API Clustering
 
             case FlatMethod::CLUTO_CLUSTER_RB:
             {
-              CLUTO_SP_ClusterRB((int)weights.numRows(),   // nrows
-                                 rowptr,                   // rowptr
-                                 rowind,                   // rowind
-                                 rowval,                   // rowval
-                                 crfun,                    // crfun
-                                 10,                       // ntrials
-                                 10,                       // niter
-                                 G3D::iRandom(0, 0xFFFF),  // seed
-                                 cstype,                   // cstype
-                                 1,                        // kwayrefine
-                                 0,                        // dbglvl
-                                 num_clusters_hint,        // nclusters
-                                 &labels[0]);              // part
+              CLUTO_SP_ClusterRB((int)weights.numRows(),               // nrows
+                                 rowptr,                               // rowptr
+                                 rowind,                               // rowind
+                                 rowval,                               // rowval
+                                 crfun,                                // crfun
+                                 10,                                   // ntrials
+                                 10,                                   // niter
+                                 Random::common().integer(0, 0xFFFF),  // seed
+                                 cstype,                               // cstype
+                                 1,                                    // kwayrefine
+                                 0,                                    // dbglvl
+                                 num_clusters_hint,                    // nclusters
+                                 &labels[0]);                          // part
 
               num_clusters_found = num_clusters_hint;
               break;
@@ -469,21 +470,21 @@ class THEA_API Clustering
             default:  // FlatMethod::CLUTO_GRAPH_CLUSTER_RB
             {
               float cut_value;
-              num_clusters_found = CLUTO_SP_GraphClusterRB((int)weights.numRows(),   // nrows
-                                                           rowptr,                   // rowptr
-                                                           rowind,                   // rowind
-                                                           rowval,                   // rowval
-                                                           nnbrs,                    // nnbrs
-                                                           -1,                       // edgeprune
-                                                           -1,                       // vtxprune
-                                                           5,                        // mincmp
-                                                           10,                       // ntrials
-                                                           G3D::iRandom(0, 0xFFFF),  // seed
-                                                           cstype,                   // cstype
-                                                           0,                        // dbglvl
-                                                           num_clusters_hint,        // nclusters
-                                                           &labels[0],               // part
-                                                           &cut_value);              // crvalue
+              num_clusters_found = CLUTO_SP_GraphClusterRB((int)weights.numRows(),               // nrows
+                                                           rowptr,                               // rowptr
+                                                           rowind,                               // rowind
+                                                           rowval,                               // rowval
+                                                           nnbrs,                                // nnbrs
+                                                           -1,                                   // edgeprune
+                                                           -1,                                   // vtxprune
+                                                           5,                                    // mincmp
+                                                           10,                                   // ntrials
+                                                           Random::common().integer(0, 0xFFFF),  // seed
+                                                           cstype,                               // cstype
+                                                           0,                                    // dbglvl
+                                                           num_clusters_hint,                    // nclusters
+                                                           &labels[0],                           // part
+                                                           &cut_value);                          // crvalue
             }
           }
           break;
@@ -584,8 +585,8 @@ template <typename T>            array_size_t Clustering::numElems         (T co
 template <> inline               array_size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
 template <> inline               array_size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
 template <> inline               array_size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
-template <long N, typename T>  array_size_t Clustering::numElems         (VectorN<N, T> const & v) { return (array_size_t)N; }
-template <typename T>            array_size_t Clustering::numElems         (TheaArray<T> const & v)      { return v.size(); }
+template <long N, typename T>    array_size_t Clustering::numElems         (VectorN<N, T> const & v) { return (array_size_t)N; }
+template <typename T>            array_size_t Clustering::numElems         (TheaArray<T> const & v)  { return v.size(); }
 
 //=============================================================================================================================
 // Copy a vector to a float array and return a pointer to the next array position.

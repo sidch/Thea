@@ -13,9 +13,25 @@
 #include <cstring>
 #include <sstream>
 
+#ifdef THEA_WINDOWS
+#  include <windows.h>
+#endif
+
 namespace Thea {
 namespace Graphics {
 namespace GL {
+
+#ifdef THEA_WINDOWS
+
+namespace GLInternal {
+
+bool registryKeyExists(std::string const & key);
+bool registryValueExists(std::string const & key, std::string const & value);
+bool registryReadString(std::string const & key, std::string const & value, std::string & data);
+
+} // namespace GLInternal
+
+#endif // THEA_WINDOWS
 
 // Global init flags for GLCaps. Because this is an integer constant (equal to zero), we can safely assume that it will be
 // initialized before this translation unit is entered.
@@ -93,7 +109,7 @@ GLCaps::getDriverVersion()
 #ifdef THEA_WINDOWS
   // Locate the driver on Windows and get the version this systems expects Windows 2000/XP/Vista
   std::string videoDriverKey;
-  bool canCheckVideoDevice = G3D::RegistryUtil::keyExists("HKEY_LOCAL_MACHINE\\HARDWARE\\DEVICEMAP\\VIDEO");
+  bool canCheckVideoDevice = GLInternal::registryKeyExists("HKEY_LOCAL_MACHINE\\HARDWARE\\DEVICEMAP\\VIDEO");
   if (canCheckVideoDevice)
   {
     // Find the driver expected to load
@@ -101,13 +117,13 @@ GLCaps::getDriverVersion()
     std::string videoDeviceValue = "\\Device\\Video";
     int videoDeviceNum = 0;
 
-    while (G3D::RegistryUtil::valueExists(videoDeviceKey, format("%s%d", videoDeviceValue.c_str(), videoDeviceNum)))
+    while (GLInternal::registryValueExists(videoDeviceKey, format("%s%d", videoDeviceValue.c_str(), videoDeviceNum)))
       ++videoDeviceNum;
 
     // Find the key where the installed driver lives
     std::string installedDriversKey;
-    G3D::RegistryUtil::readString(videoDeviceKey, format("%s%d", videoDeviceValue.c_str(), videoDeviceNum - 1),
-                                  installedDriversKey);
+    GLInternal::registryReadString(videoDeviceKey, format("%s%d", videoDeviceValue.c_str(), videoDeviceNum - 1),
+                                   installedDriversKey);
 
     // Find and remove the "\Registry\Machine\" part of the key
     std::size_t subKeyIndex = installedDriversKey.find('\\', 1);
@@ -118,7 +134,7 @@ GLCaps::getDriverVersion()
     // Read the list of driver files this display driver installed/loads. This is a multi-string value, but we only care about
     // the first entry so reading one string is fine
     std::string videoDrivers;
-    G3D::RegistryUtil::readString("HKEY_LOCAL_MACHINE" + installedDriversKey, "InstalledDisplayDrivers", videoDrivers);
+    GLInternal::registryReadString("HKEY_LOCAL_MACHINE" + installedDriversKey, "InstalledDisplayDrivers", videoDrivers);
 
     if (videoDrivers.find(',', 0) != std::string::npos)
       videoDrivers = videoDrivers.substr(0, videoDrivers.find(',', 0));
@@ -744,6 +760,135 @@ GLCaps::describeSystem()
   describeSystem(os);
   return os.str();
 }
+
+#ifdef THEA_WINDOWS
+
+namespace GLInternal {
+
+HKEY
+getRootKeyFromString(char const * str, size_t length)
+{
+  if (str)
+  {
+    if       ( std::strncmp(str, "HKEY_CLASSES_ROOT", length) == 0 )
+      return HKEY_CLASSES_ROOT;
+    else if  ( std::strncmp(str, "HKEY_CURRENT_CONFIG", length) == 0 )
+      return HKEY_CURRENT_CONFIG;
+    else if  ( std::strncmp(str, "HKEY_CURRENT_USER", length) == 0 )
+      return HKEY_CURRENT_USER;
+    else if  ( std::strncmp(str, "HKEY_LOCAL_MACHINE", length) == 0 )
+      return HKEY_LOCAL_MACHINE;
+    else if  ( std::strncmp(str, "HKEY_PERFORMANCE_DATA", length) == 0 )
+      return HKEY_PERFORMANCE_DATA;
+    else if  ( std::strncmp(str, "HKEY_PERFORMANCE_NLSTEXT", length) == 0 )
+      return HKEY_PERFORMANCE_NLSTEXT;
+    else if  ( std::strncmp(str, "HKEY_PERFORMANCE_TEXT", length) == 0 )
+      return HKEY_PERFORMANCE_TEXT;
+    else if  ( std::strncmp(str, "HKEY_CLASSES_ROOT", length) == 0 )
+      return HKEY_CLASSES_ROOT;
+    else
+      return NULL;
+  }
+  else
+    return NULL;
+}
+
+bool
+registryKeyExists(std::string const & key)
+{
+  size_t pos = key.find('\\', 0);
+  if (pos == std::string::npos)
+    return false;
+
+  HKEY hkey = getRootKeyFromString(key.c_str(), pos);
+  if (hkey == NULL)
+    return false;
+
+  HKEY openKey;
+  int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
+  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+
+  if (result == ERROR_SUCCESS)
+  {
+    RegCloseKey(openKey);
+    return true;
+  }
+  else
+    return false;
+}
+
+bool
+registryValueExists(std::string const & key, std::string const & value)
+{
+  size_t pos = key.find('\\', 0);
+  if (pos == std::string::npos)
+    return false;
+
+  HKEY hkey = getRootKeyFromString(key.c_str(), pos);
+  if ( hkey == NULL )
+    return false;
+
+  HKEY openKey;
+  int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
+  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+
+  if (result == ERROR_SUCCESS)
+  {
+    uint32 dataSize = 0;
+    result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, NULL, reinterpret_cast<LPDWORD>(&dataSize));
+    debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
+    RegCloseKey(openKey);
+  }
+
+  return (result == ERROR_SUCCESS);
+}
+
+bool
+registryReadString(std::string const & key, std::string const & value, std::string & data)
+{
+  size_t pos = key.find('\\', 0);
+  if (pos == std::string::npos)
+    return false;
+
+  HKEY hkey = getRootKeyFromString(key.c_str(), pos);
+  if (hkey == NULL)
+    return false;
+
+  HKEY openKey;
+  int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
+  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+
+  if (result == ERROR_SUCCESS)
+  {
+    uint32 dataSize = 0;
+    result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, NULL, reinterpret_cast<LPDWORD>(&dataSize));
+    debugAssertM(result == ERROR_SUCCESS, "Couldn't query registry value");
+
+    // increment datasize to allow for non null-terminated strings in registry
+    dataSize += 1;
+
+    if (result == ERROR_SUCCESS)
+    {
+      char * tmpStr = static_cast<char *>(std::malloc(dataSize));
+      std::memset(tmpStr, 0, dataSize);
+      result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, reinterpret_cast<LPBYTE>(tmpStr),
+                                reinterpret_cast<LPDWORD>(&dataSize));
+      debugAssertM(result == ERROR_SUCCESS, "Couldn't query registry value.");
+
+      if (result == ERROR_SUCCESS)
+        data = tmpStr;
+
+      RegCloseKey(openKey);
+      std::free(tmpStr);
+    }
+  }
+
+  return (result == ERROR_SUCCESS);
+}
+
+} // namespace GLInternal
+
+#endif // THEA_WINDOWS
 
 } // namespace GL
 } // namespace Graphics

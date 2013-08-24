@@ -493,7 +493,7 @@ kdtreeDepth(long num_elems, int max_elems_in_leaf)
   alwaysAssertM(num_elems >= 0, "Can't compute kd-tree depth for negative number of elements");
   alwaysAssertM(max_elems_in_leaf > 0, "Can't compute kd-tree depth for non-positive number of elements at leaf");
 
-  int max_depth = (num_elems > 0 ? (int)std::ceil(G3D::log2(num_elems / (double)max_elems_in_leaf)) : 0);
+  int max_depth = (num_elems > 0 ? (int)std::ceil(Math::fastLog2(num_elems / (double)max_elems_in_leaf)) : 0);
   return max_depth;
 }
 
@@ -552,8 +552,8 @@ triRandomPointFromEdges(Vector3 const & v0, Vector3 const & edge01, Vector3 cons
 
   // Choose a random point in the parallelogram
 
-  float s = G3D::Random::common().uniform(0, 1);
-  float t = G3D::Random::common().uniform(0, 1);
+  float s = Random::common().uniform01();
+  float t = Random::common().uniform01();
 
   if (t > 1.0f - s)
   {
@@ -576,7 +576,7 @@ quadRandomPoint(Vector3 const & v0, Vector3 const & v1, Vector3 const & v2, Vect
   Real tri0_double_area = edge01.cross(edge03).fastLength();
   Real tri1_double_area = edge21.cross(edge23).fastLength();
 
-  float tri = G3D::Random::common().uniform(0, tri0_double_area + tri1_double_area);
+  float tri = Random::common().uniform(0, tri0_double_area + tri1_double_area);
   if (tri <= tri0_double_area)
     return triRandomPointFromEdges(v0, edge01, edge03);
   else
