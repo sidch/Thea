@@ -296,10 +296,14 @@ class THEA_API ParseError : std::runtime_error
 class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
 {
   public:
-    /** Includes MSVC specials parsing */
+    /** Extract a number from a string. Includes MSVC specials parsing */
     static double parseNumber(std::string const & _string);
 
-    /** toLower(_string) == "true" */
+    /**
+     * Extract a boolean value from a string.
+     *
+     * @return True if toLower(_string) == "true", else false.
+     */
     static bool parseBoolean(std::string const & _string);
 
     /** Tokenizer configuration options. */
