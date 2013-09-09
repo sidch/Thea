@@ -67,6 +67,7 @@
 #include "Colors.hpp"
 #include "CoordinateFrame3.hpp"
 #include "MatrixMN.hpp"
+#include "NamedObject.hpp"
 #include "Noncopyable.hpp"
 #include "Plane3.hpp"
 #include "VectorN.hpp"
@@ -80,9 +81,9 @@ namespace Thea {
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  *
- * @todo Reimplement using <iostream> for arbitrary seeking and safer performance?
+ * @todo Reimplement using %<iostream%> for arbitrary seeking and safer performance?
  */
-class THEA_API BinaryInputStream : private Noncopyable
+class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyable
 {
   private:
     /** Is the file big or little endian? */
@@ -90,9 +91,6 @@ class THEA_API BinaryInputStream : private Noncopyable
 
     /** Path to the opened file. */
     std::string     m_path;
-
-    /** Name of the opened file. */
-    std::string     m_name;
 
     /** Swap bytes when writing? */
     bool            m_swapBytes;
@@ -135,8 +133,8 @@ class THEA_API BinaryInputStream : private Noncopyable
     /** Verifies that at least this number of bytes can be read.*/
     void prepareToRead(int64 nbytes)
     {
-      debugAssertM(m_length > 0, m_name + ": Stream not found, empty or corrupt.");
-      debugAssertM(m_pos + nbytes + m_alreadyRead <= m_length, m_name + ": Read past end of stream");
+      debugAssertM(m_length > 0, getName() + ": Stream not found, empty or corrupt.");
+      debugAssertM(m_pos + nbytes + m_alreadyRead <= m_length, getName() + ": Read past end of stream");
 
       if (m_pos + nbytes > m_bufferLength)
         loadIntoMemory(m_pos + m_alreadyRead, nbytes);
@@ -161,7 +159,7 @@ class THEA_API BinaryInputStream : private Noncopyable
     BinaryInputStream(uint8 const * data, int64 data_len, Endianness data_endian, bool copy_memory = true);
 
     /** Destructor. */
-    virtual ~BinaryInputStream();
+    ~BinaryInputStream();
 
     /**
      * Change the endianness for interpreting the file contents. This only changes the interpretation of the file for future
@@ -176,9 +174,9 @@ class THEA_API BinaryInputStream : private Noncopyable
     }
 
     /** Get the name of the current stream (filename if file, "<memory>" if memory stream). */
-    std::string getName() const
+    std::string const & getName() const
     {
-      return m_name;
+      return NamedObject::getName();
     }
 
     /** Get the path to the current file being read ("<memory>" for memory streams). */

@@ -54,7 +54,6 @@ SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folde
 
 # Locate dependencies
 SET(Thea_FIND_Boost  TRUE)
-SET(Thea_FIND_G3D    TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: OPT++
@@ -99,7 +98,6 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS}
                     ${OPTPP_INCLUDE_DIRS})
 
 # Source file lists
@@ -110,7 +108,6 @@ FILE(GLOB TheaPluginOPTPPSources
 SET(TheaPluginOPTPPLibraries
     Thea
     ${OPTPP_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
 # Build products

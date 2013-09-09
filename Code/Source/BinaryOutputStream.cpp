@@ -1,4 +1,47 @@
-/**
+//============================================================================
+//
+// This file is part of the Thea project.
+//
+// This software is covered by the following BSD license, except for portions
+// derived from other works which are covered by their respective licenses.
+// For full licensing information including reproduction of these external
+// licenses, see the file LICENSE.txt provided in the documentation.
+//
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// * Neither the name of the copyright holders nor the names of contributors
+// to this software may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+//============================================================================
+
+/*
+ ORIGINAL HEADER
+
  @file BinaryOutput.cpp
 
  @author Morgan McGuire, http://graphics.cs.williams.edu
@@ -6,7 +49,7 @@
 
  @created 2002-02-20
  @edited  2010-03-17
- */
+*/
 
 #include "BinaryOutputStream.hpp"
 #include "FilePath.hpp"
@@ -159,7 +202,7 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
 {
   if (m_path == "<memory>")
   {
-    throw Error(m_name + ": Out of memory while writing to memory (no RAM left)");
+    throw Error(getName() + ": Out of memory while writing to memory (no RAM left)");
   }
   else if ((int64)bytes > m_bufferCapacity)
   {
@@ -176,15 +219,15 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
       writeBytes = m_bufferLen;
     }
 
-    debugAssertM(writeBytes > 0, m_name + ": No bytes to write");
+    debugAssertM(writeBytes > 0, getName() + ": No bytes to write");
 
     // Write to the file
     char const * mode = (m_alreadyWritten > 0) ? "ab" : "wb";
     FILE * file = fopen(m_path.c_str(), mode);
-    debugAssertM(file, m_name + ": Could not open file for writing");
+    debugAssertM(file, getName() + ": Could not open file for writing");
 
     size_t count = fwrite(m_buffer, 1, (size_t)writeBytes, file);
-    debugAssertM((int64)count == writeBytes, m_name + ": All bytes were not written");
+    debugAssertM((int64)count == writeBytes, getName() + ": All bytes were not written");
     (void)count;  // avoid unused variable warning
 
     fclose(file);
@@ -195,10 +238,10 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
     m_bufferLen -= writeBytes;
     m_pos -= writeBytes;
 
-    debugAssertM(m_bufferLen < m_bufferCapacity, m_name + ": Buffer exceeds maximum size");
-    debugAssertM(m_bufferLen >= 0, m_name + ": Buffer has negative size");
-    debugAssertM(m_pos >= 0, m_name + ": Write position is negative");
-    debugAssertM(m_pos <= m_bufferLen, m_name + ": Write position is beyond end of buffer");
+    debugAssertM(m_bufferLen < m_bufferCapacity, getName() + ": Buffer exceeds maximum size");
+    debugAssertM(m_bufferLen >= 0, getName() + ": Buffer has negative size");
+    debugAssertM(m_pos >= 0, getName() + ": Write position is negative");
+    debugAssertM(m_pos <= m_bufferLen, getName() + ": Write position is beyond end of buffer");
 
     // Shift the unwritten data back appropriately in the buffer.
     std::memmove(m_buffer, m_buffer + writeBytes, m_bufferLen);
@@ -211,8 +254,8 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
 }
 
 BinaryOutputStream::BinaryOutputStream(Endianness endian)
-: m_path("<memory>"),
-  m_name("<memory>"),
+: NamedObject("<memory>"),
+  m_path("<memory>"),
   m_beginEndBits(0),
   m_bitString(0),
   m_bitPos(0),
@@ -227,8 +270,8 @@ BinaryOutputStream::BinaryOutputStream(Endianness endian)
 }
 
 BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file_endian)
-: m_path(FileSystem::resolve(path)),
-  m_name(FilePath::nodeName(path)),
+: NamedObject(FilePath::nodeName(path)),
+  m_path(FileSystem::resolve(path)),
   m_beginEndBits(0),
   m_bitString(0),
   m_bitPos(0),
@@ -248,8 +291,8 @@ BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file
 void
 BinaryOutputStream::reset()
 {
-  debugAssertM(m_beginEndBits == 0, m_name + ": Can't reset in beginBits/endBits block");
-  alwaysAssertM(m_path == "<memory>", m_name + ": Can only reset a BinaryOutputStream that writes to memory");
+  debugAssertM(m_beginEndBits == 0, getName() + ": Can't reset in beginBits/endBits block");
+  alwaysAssertM(m_path == "<memory>", getName() + ": Can only reset a BinaryOutputStream that writes to memory");
 
   // Do not reallocate, just clear the size of the buffer.
   m_pos = 0;
@@ -290,6 +333,10 @@ BinaryOutputStream::commit(bool flush)
 bool
 BinaryOutputStream::_commit(bool flush, bool force)
 {
+  // If there is already an error, the commit fails
+  if (!m_ok)
+    return false;
+
   // Nothing to commit for memory streams
   if (m_path == "<memory>")
     return true;
@@ -298,7 +345,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
   if (!force && m_bufferLen <= 0)
     return true;
 
-  debugAssertM(m_beginEndBits == 0, m_name + ": Missing endBits before commit");
+  debugAssertM(m_beginEndBits == 0, getName() + ": Missing endBits before commit");
 
   // Make sure the directory exists
   std::string dir = FilePath::parent(m_path);
@@ -326,7 +373,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
     if (m_buffer != NULL && m_bufferLen > 0)
     {
       int success = fwrite(m_buffer, m_bufferLen, 1, file);
-      debugAssertM(success == 1, m_name + ": Could not write buffer contents to disk");
+      debugAssertM(success == 1, getName() + ": Could not write buffer contents to disk");
       (void)success;
 
       m_alreadyWritten += m_bufferLen;
@@ -347,7 +394,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
 void
 BinaryOutputStream::commit(uint8 * dst) const
 {
-  alwaysAssertM(m_path == "<memory>", m_name + ": Can only commit buffer contents of memory streams to memory");
+  alwaysAssertM(m_path == "<memory>", getName() + ": Can only commit buffer contents of memory streams to memory");
   std::memcpy(dst, m_buffer, m_bufferLen);
 }
 
@@ -380,7 +427,7 @@ BinaryOutputStream::writeUInt32(uint32 u)
 {
   reserveBytes(4);
   uint8 * convert = (uint8 *)&u;
-  debugAssert(m_beginEndBits == 0);
+  debugAssertM(m_beginEndBits == 0, getName() + ": Can't write non-bit data within beginBits/endBits block");
 
   if (m_swapBytes)
   {
@@ -443,7 +490,7 @@ BinaryOutputStream::writeUInt64(uint64 u)
 void
 BinaryOutputStream::writeString(char const * s)
 {
-  debugAssertM(m_beginEndBits == 0, m_name + ": Can't write strings in a beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 0, getName() + ": Can't write strings in a beginBits/endBits block");
 
   // +1 is because strlen doesn't count the null
   int len = strlen(s) + 1;
@@ -470,7 +517,7 @@ BinaryOutputStream::writeAlignedString(std::string const & s, int alignment)
 void
 BinaryOutputStream::beginBits()
 {
-  debugAssertM(m_beginEndBits == 0, m_name + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 0, getName() + ": beginBits/endBits mismatch");
 
   m_bitString = 0x00;
   m_bitPos = 0;
@@ -480,7 +527,7 @@ BinaryOutputStream::beginBits()
 void
 BinaryOutputStream::writeBits(int num_bits, uint32 value)
 {
-  debugAssertM(m_beginEndBits == 1, m_name + ": Can't call writeBits outside beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 1, getName() + ": Can't call writeBits outside beginBits/endBits block");
 
   while (num_bits > 0)
   {
@@ -503,7 +550,7 @@ BinaryOutputStream::writeBits(int num_bits, uint32 value)
 void
 BinaryOutputStream::endBits()
 {
-  debugAssertM(m_beginEndBits == 1, m_name + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 1, getName() + ": beginBits/endBits mismatch");
 
   if (m_bitPos > 0)
   {

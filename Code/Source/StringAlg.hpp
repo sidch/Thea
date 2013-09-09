@@ -76,6 +76,8 @@ namespace Thea {
  * Separates a comma-separated line, properly escaping commas within double quotes (") and super quotes ("""). This matches
  * Microsoft Excel's CSV output.
  *
+ * @param s The string to parse.
+ * @param array The comma-separated fields are stored here.
  * @param strip_quotes If true, strips leading and trailing " and """.
  *
  * @see stringSplit, TextInput

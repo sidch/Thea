@@ -198,7 +198,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       BinaryInputStream * in = &input;
       TheaArray<uint8> enc_block;
-      BinaryInputStreamPtr tmp_in;
+      BinaryInputStream::Ptr tmp_in;
 
       if (read_prefixed_info)
       {
@@ -212,8 +212,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         enc_block.resize((array_size_t)encoding_size);
         input.readBytes((int64)encoding_size, &enc_block[0]);
 
-        tmp_in = BinaryInputStreamPtr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
-                                                            // shared pointer ensures deallocation on return
+        tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
+                                                              // shared pointer ensures deallocation on return
         in = tmp_in.get();
       }
 

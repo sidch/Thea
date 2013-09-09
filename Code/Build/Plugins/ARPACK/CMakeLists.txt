@@ -54,7 +54,6 @@ SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folde
 
 # Locate dependencies
 SET(Thea_FIND_Boost  TRUE)
-SET(Thea_FIND_G3D    TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: ARPACK
@@ -121,7 +120,6 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS}
                     ${ARPACKPP_INCLUDE_DIRS})
 
 # Source file lists
@@ -130,7 +128,6 @@ FILE(GLOB TheaPluginARPACKSources ${SourceRoot}/Plugins/ARPACK/*.cpp)
 # Libraries to link to
 SET(TheaPluginARPACKLibraries
     Thea
-    ${G3D_LIBRARIES}
     ${SuperLU_LIBRARIES}
     ${ARPACK_LIBRARIES}
     ${PLATFORM_LIBRARIES})

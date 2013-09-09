@@ -42,7 +42,6 @@
 #ifndef __Thea_Common_hpp__
 #define __Thea_Common_hpp__
 
-#include "G3D/G3D.h"
 #include "Platform.hpp"
 #include "AtomicInt32.hpp"
 #include "Error.hpp"
@@ -68,13 +67,22 @@
    {                                                                                                                          \
      if (!(test))                                                                                                             \
      {                                                                                                                        \
-       THEA_ERROR << "Assertion failed: " << (msg);                                                                           \
+       THEA_ERROR << "Debug-mode assertion failed: " << (msg);                                                                \
        throw Thea::FatalError(msg);                                                                                           \
      }                                                                                                                        \
    }
 #else
 #  define debugAssertM(test, msg) {}
 #endif
+
+#define alwaysAssertM(test, msg)                                                                                              \
+   {                                                                                                                          \
+     if (!(test))                                                                                                             \
+     {                                                                                                                        \
+       THEA_ERROR << "Assertion failed: " << (msg);                                                                           \
+       throw Thea::FatalError(msg);                                                                                           \
+     }                                                                                                                        \
+   }
 
 // Visual Studio requires templates instantiations to be explicitly imported from DLL's to avoid conflicts like
 // http://www.codesynthesis.com/~boris/blog/2010/01/18/dll-export-cxx-templates/

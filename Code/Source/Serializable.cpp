@@ -86,15 +86,15 @@ Serializable::initConfigWriteSettings()
   settings.falseSymbol = "false";
 
 #ifdef THEA_WINDOWS
-  settings.newlineStyle = TextOutputStream::Settings::NEWLINE_WINDOWS;
+  settings.newlineStyle = TextOutputStream::NewlineStyle::WINDOWS;
 #else
-  settings.newlineStyle = TextOutputStream::Settings::NEWLINE_UNIX;
+  settings.newlineStyle = TextOutputStream::NewlineStyle::UNIX;
 #endif
 
   settings.numColumns = 8;
   settings.spacesPerIndent = 4;
   settings.trueSymbol = "true";
-  settings.wordWrap = TextOutputStream::Settings::WRAP_NONE;
+  settings.wordWrap = TextOutputStream::WordWrap::NONE;
 
   return settings;
 }

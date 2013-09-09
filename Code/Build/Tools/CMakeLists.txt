@@ -47,7 +47,6 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Locate Thea dependencies
-SET(Thea_FIND_G3D        TRUE)
 SET(Thea_FIND_Lib3ds     TRUE)
 SET(Thea_FIND_FreeImage  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
@@ -103,7 +102,6 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${CMAKE_CURRENT_BINARY_DIR}  # QT4_WRAP_UI generates ui_*.h files here
                     ${SourceRoot}
                     ${Boost_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS})
 
 # Link directories
@@ -136,7 +134,6 @@ IF(QT4_FOUND AND OpenGL_FOUND)
       Thea
       ${QT_LIBRARIES}
       ${Lib3ds_LIBRARIES}
-      ${G3D_LIBRARIES}
       ${OPENGL_LIBRARIES}
       ${Boost_LIBRARIES}
       ${PLATFORM_LIBRARIES})
@@ -174,7 +171,6 @@ FILE(GLOB MeshConvSources
 SET(MeshConvLibraries
     Thea
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
@@ -209,7 +205,6 @@ FILE(GLOB MeshFeaturesSources
 SET(MeshFeaturesLibraries
     Thea
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
@@ -244,7 +239,6 @@ FILE(GLOB MeshFixSources
 SET(MeshFixLibraries
     Thea
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
@@ -279,7 +273,6 @@ FILE(GLOB RegisterSources
 SET(RegisterLibraries
     Thea
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
@@ -314,7 +307,6 @@ FILE(GLOB SegmentSDFSources
 SET(SegmentSDFLibraries
     Thea
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 

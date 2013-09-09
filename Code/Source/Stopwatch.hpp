@@ -64,22 +64,22 @@ namespace Thea {
  * Accurately measure durations and framerates.
  *
  * Example 1: For profiling code in the context of a rendering loop:
- *   <pre>
- *     sw.tick();
- *     ...timed code...
- *     sw.tock();
+ * <pre>
+ *   sw.tick();
+ *   ...timed code...
+ *   sw.tock();
  *
- *     printf("%f\n", sw.smoothFPS());
- *   </pre>
+ *   printf("%f\n", sw.smoothFPS());
+ * </pre>
  *
  * Example 2: For profiling pieces of a sequence:
- *  <pre>
+ * <pre>
  *   Stopwatch sw;
  *   slowOperation();
  *   sw.after("slowOperation");
  *   kdTree.balance();
  *   sw.after("Balance tree");
- *  </pre>
+ * </pre>
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  */
