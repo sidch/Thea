@@ -76,6 +76,8 @@ namespace Thea {
  * Indenting adds the specified number of spaces immediately after a newline. If a newline was followed by spaces in the
  * original string, these are added to the indent spaces.  Indenting <b>will</b> indent blank lines and will leave indents after
  * the last newline of a file (if the indent level is non-zero at the end).
+ *
+ * Derived from the G3D library: http://g3d.sourceforge.net
  */
 class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyable
 {
@@ -83,8 +85,8 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     /**
      * Word-wrap settings (enum class).
      *
-     * - NONE               Word wrapping is disabled
-     * - WITHOUT_BREAKING   Word-wrap, but don't break continuous lines that are longer than numColumns (default)
+     * - NONE               Word wrapping is disabled.
+     * - WITHOUT_BREAKING   Word-wrap, but don't break continuous lines that are longer than numColumns (default).
      * - ALWAYS             Wrap even if it means breaking a continuous line or a quoted string.
      *
      * Word wrapping is only allowed at whitespaces ('\\n', '\\r', '\\t', ' '); it will not occur after commas, punctuation,

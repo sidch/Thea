@@ -266,6 +266,8 @@ class THEA_API ParseError : std::runtime_error
  *
  * Assumes that the file is not modified once opened.
  *
+ * Derived from the G3D library: http://g3d.sourceforge.net
+ *
  * <b>Examples</b>
  *
  * <pre>
@@ -290,7 +292,7 @@ class THEA_API ParseError : std::runtime_error
  * ti.readSymbols("name", "=");
  * std::string name = ti.readString();
  * ti.readSymbols(",", "height", "=");
- * double height = ti. readNumber();
+ * double height = ti.readNumber();
  * </pre>
  */
 class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
