@@ -206,7 +206,7 @@ void
 BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
 {
   // Load the next section of the file
-  debugAssertM(m_path != "<memory>", m_name + ": Read past end of stream");
+  debugAssertM(m_path != "<memory>", getName() + ": Read past end of stream");
   int64 absPos = m_alreadyRead + m_pos;
 
   if (m_bufferLength < min_length)
@@ -214,11 +214,11 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
     // The current buffer isn't big enough to hold the chunk we want to read. This happens if there was little memory available
     // during the initial constructor read but more memory has since been freed.
     m_bufferLength = min_length;
-    debugAssertM(m_freeBuffer, m_name + ": Null free buffer");
+    debugAssertM(m_freeBuffer, getName() + ": Null free buffer");
 
     m_buffer = (uint8 *)std::realloc(m_buffer, m_bufferLength);
     if (!m_buffer)
-      throw Error(m_name + ": Tried to read a larger memory chunk than could fit in memory");
+      throw Error(getName() + ": Tried to read a larger memory chunk than could fit in memory");
   }
 
   m_alreadyRead = start_position;
@@ -226,14 +226,14 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
 #ifdef THEA_WINDOWS
 
   FILE * file = fopen(m_path.c_str(), "rb");
-  debugAssertM(file, m_name + ": Could not open file");
+  debugAssertM(file, getName() + ": Could not open file");
 
   int ret = fseek(file, (off_t)m_alreadyRead, SEEK_SET);
-  debugAssertM(ret == 0, m_name + ": Seek failed");
+  debugAssertM(ret == 0, getName() + ": Seek failed");
 
   size_t toRead = (size_t)std::min(m_bufferLength, m_length - m_alreadyRead);
   ret = fread(m_buffer, 1, toRead, file);
-  debugAssertM(ret == toRead, m_name + ": Read failed");
+  debugAssertM(ret == toRead, getName() + ": Read failed");
 
   fclose(file);
   file = NULL;
@@ -241,14 +241,14 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
 #else
 
   FILE * file = fopen(m_path.c_str(), "rb");
-  debugAssertM(file, m_name + ": Could not open file");
+  debugAssertM(file, getName() + ": Could not open file");
 
   int ret = fseeko(file, (off_t)m_alreadyRead, SEEK_SET);
-  debugAssertM(ret == 0, m_name + ": Seek failed");
+  debugAssertM(ret == 0, getName() + ": Seek failed");
 
   size_t toRead = (size_t)std::min(m_bufferLength, m_length - m_alreadyRead);
   ret = fread(m_buffer, 1, toRead, file);
-  debugAssertM((size_t)ret == (size_t)toRead, m_name + ": Read failed");
+  debugAssertM((size_t)ret == (size_t)toRead, getName() + ": Read failed");
 
   fclose(file);
   file = NULL;
@@ -256,7 +256,7 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
 #endif
 
   m_pos = absPos - m_alreadyRead;
-  debugAssertM(m_pos >= 0, m_name + ": Could not set initial read position");
+  debugAssertM(m_pos >= 0, getName() + ": Could not set initial read position");
 }
 
 void
@@ -267,8 +267,8 @@ BinaryInputStream::setEndianness(Endianness e)
 }
 
 BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endianness data_endian, bool copy_memory)
-: m_path("<memory>"),
-  m_name("<memory>"),
+: NamedObject("<memory>"),
+  m_path("<memory>"),
   m_bitPos(0),
   m_bitString(0),
   m_beginEndBits(0),
@@ -284,20 +284,20 @@ BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endiann
 
   if (!copy_memory)
   {
-    debugAssert(!m_freeBuffer);
+    debugAssertM(!m_freeBuffer, "BinaryInputStream: Can't free buffer if it is not a copy");
     m_buffer = const_cast<uint8 *>(data);
   }
   else
   {
-    debugAssert(m_freeBuffer);
+    debugAssertM(m_freeBuffer, "BinaryInputStream: Must free buffer if it is a copy");
     m_buffer = (uint8 *)std::malloc(m_length);
     std::memcpy(m_buffer, data, data_len);
   }
 }
 
 BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_endian)
-: m_path(FileSystem::resolve(path)),
-  m_name(FilePath::nodeName(path)),
+: NamedObject(FilePath::nodeName(path)),
+  m_path(FileSystem::resolve(path)),
   m_bitPos(0),
   m_bitString(0),
   m_beginEndBits(0),
@@ -333,7 +333,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
     m_bufferLength = m_length;
   }
 
-  debugAssert(m_freeBuffer);
+  debugAssertM(m_freeBuffer, "BinaryInputStream: Allocated buffer not set to be freed");
   m_buffer = (uint8 *)std::malloc(m_bufferLength);
 
   if (m_buffer == NULL)
@@ -347,7 +347,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
     }
   }
 
-  debugAssertM(m_buffer, m_name + ": Could not allocate buffer");
+  debugAssertM(m_buffer, getName() + ": Could not allocate buffer");
 
   fread(m_buffer, m_bufferLength, sizeof(int8), file);
   fclose(file);
@@ -412,10 +412,10 @@ std::string
 BinaryInputStream::readString(int64 n)
 {
   prepareToRead(n);
-  debugAssertM((m_pos + n) <= m_length, m_name + ": Read past end of file");
+  debugAssertM((m_pos + n) <= m_length, getName() + ": Read past end of file");
 
   char * s = (char *)std::malloc(n + 1);
-  debugAssertM(s != NULL, m_name + ": Could not allocate buffer for reading string");
+  debugAssertM(s != NULL, getName() + ": Could not allocate buffer for reading string");
 
   std::memcpy(s, m_buffer + m_pos, n);
 
@@ -517,17 +517,17 @@ BinaryInputStream::readAlignedString(int alignment)
 void
 BinaryInputStream::beginBits()
 {
-  debugAssertM(m_beginEndBits == 0, m_name + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 0, getName() + ": beginBits/endBits mismatch");
   m_beginEndBits = 1;
   m_bitPos = 0;
-  debugAssertM(hasMore(), m_name + ": Can't call beginBits() when at the end of a file");
+  debugAssertM(hasMore(), getName() + ": Can't call beginBits() when at the end of a file");
   m_bitString = readUInt8();
 }
 
 uint32
 BinaryInputStream::readBits(int num_bits)
 {
-  debugAssertM(m_beginEndBits == 1, m_name + ": Can't call readBits outside a beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 1, getName() + ": Can't call readBits outside a beginBits/endBits block");
 
   uint32 out = 0;
   int const total = num_bits;
@@ -558,7 +558,7 @@ BinaryInputStream::readBits(int num_bits)
 void
 BinaryInputStream::endBits()
 {
-  debugAssertM(m_beginEndBits == 1, m_name + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 1, getName() + ": beginBits/endBits mismatch");
 
   if (m_bitPos == 0)
   {

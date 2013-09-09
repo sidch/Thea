@@ -67,6 +67,7 @@
 #include "Colors.hpp"
 #include "CoordinateFrame3.hpp"
 #include "MatrixMN.hpp"
+#include "NamedObject.hpp"
 #include "Noncopyable.hpp"
 #include "Plane3.hpp"
 #include "VectorN.hpp"
@@ -88,9 +89,9 @@ namespace Thea {
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  *
- * @todo Reimplement using <iostream> for arbitrary seeking and safer performance?
+ * @todo Reimplement using %<iostream%> for arbitrary seeking and safer performance?
  */
-class THEA_API BinaryOutputStream : private Noncopyable
+class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopyable
 {
   private:
     /** Is the file big or little endian? */
@@ -98,9 +99,6 @@ class THEA_API BinaryOutputStream : private Noncopyable
 
     /** Path to the opened file. */
     std::string     m_path;
-
-    /** Name of the opened file. */
-    std::string     m_name;
 
     /** 0 outside of beginBits...endBits, 1 inside */
     int             m_beginEndBits;
@@ -144,7 +142,7 @@ class THEA_API BinaryOutputStream : private Noncopyable
     /** Make sure at least \a num_bytes bytes can be written, resizing if necessary. */
     void reserveBytes(int64 num_bytes)
     {
-      debugAssertM(num_bytes > 0, m_name + ": Can't reserve less than one byte");
+      debugAssertM(num_bytes > 0, getName() + ": Can't reserve less than one byte");
       size_t oldBufferLen = (size_t)m_bufferLen;
       m_bufferLen = std::max(m_bufferLen, (m_pos + num_bytes));
 
@@ -162,11 +160,12 @@ class THEA_API BinaryOutputStream : private Noncopyable
     THEA_DEF_POINTER_TYPES(BinaryOutputStream, shared_ptr, weak_ptr)
 
     /** Construct a stream that writes to an (expanding, contiguous) memory buffer. */
-    BinaryOutputStream(Endianness endian = Endianness::LITTLE);
+    explicit BinaryOutputStream(Endianness endian = Endianness::LITTLE);
 
     /**
-     * Construct a stream that writes to a file. Doesn't actually open the file until you commit(). Use "<memory>" as the path
-     * if you're going to commit to memory -- this has the same effect as the default constructor.
+     * Construct a stream that writes to a file. Use "<memory>" as the path if you're going to commit to memory -- this has the
+     * same effect as the default constructor. The file and its parent directories will be created if they do not exist, and the
+     * file initialized to be blank. If the file cannot be constructed, ok() will return false.
      */
     BinaryOutputStream(std::string const & path, Endianness file_endian);
 
@@ -186,9 +185,9 @@ class THEA_API BinaryOutputStream : private Noncopyable
     }
 
     /** Get the name of the current stream (filename if file, "<memory>" if memory stream). */
-    std::string getName() const
+    std::string const & getName() const
     {
-      return m_name;
+      return NamedObject::getName();
     }
 
     /** Get the path to the current file being written ("<memory>" for memory streams). */
@@ -244,7 +243,7 @@ class THEA_API BinaryOutputStream : private Noncopyable
       n = n - m_alreadyWritten;
 
       if (n < 0)
-        throw Error(m_name + ": Cannot resize huge files to be shorter");
+        throw Error(getName() + ": Cannot resize huge files to be shorter");
       else if (n < m_bufferLen)
       {
         m_bufferLen = n;
@@ -273,7 +272,7 @@ class THEA_API BinaryOutputStream : private Noncopyable
       int64 q = p - m_alreadyWritten;
 
       if (q < 0)
-        throw Error(m_name + ": Cannot seek too far backwards in a huge file");
+        throw Error(getName() + ": Cannot seek too far backwards in a huge file");
 
       if (q > m_bufferLen)
         setSize(p);
@@ -295,8 +294,8 @@ class THEA_API BinaryOutputStream : private Noncopyable
     {
       reserveBytes(n);
 
-      debugAssertM(m_pos >= 0, m_name + ": Invalid write position");
-      debugAssertM(m_bufferLen >= n, m_name + format(": Could not reserve space to write %ld bytes", n));
+      debugAssertM(m_pos >= 0, getName() + ": Invalid write position");
+      debugAssertM(m_bufferLen >= n, getName() + format(": Could not reserve space to write %ld bytes", n));
 
       std::memcpy(m_buffer + m_pos, b, n);
       m_pos += n;
@@ -354,7 +353,7 @@ class THEA_API BinaryOutputStream : private Noncopyable
     /** Write a 32-bit floating point number. */
     void writeFloat32(float32 f)
     {
-      debugAssertM(m_beginEndBits == 0, m_name + ": Byte-level writes not allowed in a beginBits/endBits block");
+      debugAssertM(m_beginEndBits == 0, getName() + ": Byte-level writes not allowed in a beginBits/endBits block");
       union
       {
         float32 a;
@@ -367,7 +366,7 @@ class THEA_API BinaryOutputStream : private Noncopyable
     /** Write a 64-bit floating point number. */
     void writeFloat64(float64 f)
     {
-      debugAssertM(m_beginEndBits == 0, m_name + ": Byte-level writes not allowed in a beginBits/endBits block");
+      debugAssertM(m_beginEndBits == 0, getName() + ": Byte-level writes not allowed in a beginBits/endBits block");
       union
       {
         float64 a;

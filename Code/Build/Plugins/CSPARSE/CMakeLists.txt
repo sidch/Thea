@@ -54,7 +54,6 @@ SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folde
 
 # Locate dependencies
 SET(Thea_FIND_Boost  TRUE)
-SET(Thea_FIND_G3D    TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Additional platform-specific libraries
@@ -88,8 +87,7 @@ ENDIF()
 
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
-                    ${Boost_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS})
+                    ${Boost_INCLUDE_DIRS})
 
 # Source file lists
 FILE(GLOB TheaPluginCSPARSESources
@@ -99,7 +97,6 @@ FILE(GLOB TheaPluginCSPARSESources
 # Libraries to link to
 SET(TheaPluginCSPARSELibraries
     Thea
-    ${G3D_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
 # Build products

@@ -54,7 +54,6 @@ SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folde
 
 # Locate dependencies
 SET(Thea_FIND_Boost  TRUE)
-SET(Thea_FIND_G3D    TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # -- TODO: Spin off into separate offscreen rendering plugin --
@@ -126,8 +125,7 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
-                    ${OpenGL_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS})
+                    ${OpenGL_INCLUDE_DIRS})
 
 # Source file lists
 FILE(GLOB TheaPluginGLSources
@@ -137,7 +135,6 @@ FILE(GLOB TheaPluginGLSources
 # Libraries to link to
 SET(TheaPluginGLLibraries
     Thea
-    ${G3D_LIBRARIES}
     ${OpenGL_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 

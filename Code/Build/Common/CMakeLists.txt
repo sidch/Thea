@@ -86,7 +86,6 @@ ENDIF()
 INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
                     ${FreeImage_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
                     ${CLUTO_INCLUDE_DIRS})
@@ -110,7 +109,6 @@ SET(TheaLibraries
     ${CLUTO_LIBRARIES}
     ${CGAL_LIBRARIES}
     ${Lib3ds_LIBRARIES}
-    ${G3D_LIBRARIES}
     ${FreeImage_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 

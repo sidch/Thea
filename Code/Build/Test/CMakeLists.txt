@@ -100,7 +100,6 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
                     ${GLUT_INCLUDE_DIR}
                     ${OpenGL_INCLUDE_DIRS}
-                    ${G3D_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
                     ${CLUTO_INCLUDE_DIRS})
@@ -122,7 +121,6 @@ SET(TheaTestARPACKSources
 SET(TheaTestARPACKLibraries
       Thea
       TheaPluginARPACK
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -151,7 +149,6 @@ SET(TheaTestCSPARSESources
 SET(TheaTestCSPARSELibraries
       Thea
       TheaPluginCSPARSE
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -178,7 +175,6 @@ SET(TheaTestDisplayMeshSources
 SET(TheaTestDisplayMeshLibraries
       Thea
       TheaPluginGL
-      ${G3D_LIBRARIES}
       ${GLUT_LIBRARIES}
       ${OpenGL_LIBRARIES}
       ${PLATFORM_LIBRARIES})
@@ -207,7 +203,6 @@ SET(TheaTestGLSources
 SET(TheaTestGLLibraries
       Thea
       TheaPluginGL
-      ${G3D_LIBRARIES}
       ${GLUT_LIBRARIES}
       ${OpenGL_LIBRARIES}
       ${PLATFORM_LIBRARIES})
@@ -235,7 +230,6 @@ SET(TheaTestHoughForestSources
 # Libraries to link to
 SET(TheaTestHoughForestLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -261,7 +255,6 @@ SET(TheaTestJointBoostSources
 # Libraries to link to
 SET(TheaTestJointBoostLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -287,7 +280,6 @@ SET(TheaTestKDTree3Sources
 # Libraries to link to
 SET(TheaTestKDTree3Libraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -313,7 +305,6 @@ SET(TheaTestLaplaceBeltramiSources
 # Libraries to link to
 SET(TheaTestLaplaceBeltramiLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -339,7 +330,6 @@ SET(TheaTestMathSources
 # Libraries to link to
 SET(TheaTestMathLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -365,7 +355,6 @@ SET(TheaTestMetricsSources
 # Libraries to link to
 SET(TheaTestMetricsLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -391,7 +380,6 @@ SET(TheaTestMeshSources
 # Libraries to link to
 SET(TheaTestMeshLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -417,7 +405,6 @@ SET(TheaTestOPTPPSources
 # Libraries to link to
 SET(TheaTestOPTPPLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -443,7 +430,6 @@ SET(TheaTestPCASources
 # Libraries to link to
 SET(TheaTestPCALibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -469,7 +455,6 @@ SET(TheaTestPyramidMatchSources
 # Libraries to link to
 SET(TheaTestPyramidMatchLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -495,7 +480,6 @@ SET(TheaTestZernikeSources
 # Libraries to link to
 SET(TheaTestZernikeLibraries
       Thea
-      ${G3D_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products

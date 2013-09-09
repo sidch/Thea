@@ -42,32 +42,9 @@
 #ifndef __Thea_IOStream_hpp__
 #define __Thea_IOStream_hpp__
 
-#include "Common.hpp"
 #include "BinaryInputStream.hpp"
 #include "BinaryOutputStream.hpp"
-
-namespace Thea {
-
-typedef shared_ptr<BinaryInputStream>   BinaryInputStreamPtr;
-typedef shared_ptr<BinaryOutputStream>  BinaryOutputStreamPtr;
-
-/**
- * Text input stream with the interface of G3D::TextInput. If you ever decide to change this to, say, std::istream, use a
- * wrapper class with the interface of G3D::TextInput.
- */
-typedef G3D::TextInput TextInputStream;
-typedef shared_ptr<TextInputStream> TextInputStreamPtr;
-
-/**
- * Text output stream with the interface of G3D::TextOutput. If you ever decide to change this to, say, std::ostream, use a
- * wrapper class with the interface of G3D::TextOutput.
- */
-typedef G3D::TextOutput TextOutputStream;
-typedef shared_ptr<TextOutputStream> TextOutputStreamPtr;
-
-} // namespace Thea
-
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::TextInputStream)
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::TextOutputStream)
+#include "TextInputStream.hpp"
+#include "TextOutputStream.hpp"
 
 #endif
