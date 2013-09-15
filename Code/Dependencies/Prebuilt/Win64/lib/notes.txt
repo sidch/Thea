@@ -1,1 +1,0 @@
-G3D built without zlib (hence also without zip, png and tiff) support because of duplicate symbol errors with Win64 Qt.
