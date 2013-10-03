@@ -63,11 +63,14 @@ namespace MeshFeatures {
  *
  * Gal, Shamir and Cohen-Or, "Pose-Oblivious Shape Signature", IEEE TVCG 2007.
  */
-template <typename MeshT>
+template < typename MeshT, typename ExternalKDTreeT = MeshKDTree<MeshT> >
 class ShapeDiameter
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
+    typedef ExternalKDTreeT ExternalKDTree;  ///< A precomputed kd-tree on the mesh.
+
+  private:
     typedef MeshKDTree<Mesh> KDTree;  ///< A kd-tree on the mesh.
 
   public:
@@ -75,9 +78,9 @@ class ShapeDiameter
      * Constructs the object to compute shape diameter at sample points on a given mesh. The mesh must persist as long as this
      * object does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
      */
-    ShapeDiameter(Mesh const & mesh) : kdtree(new KDTree), owns_kdtree(true), scale(0)
+    ShapeDiameter(Mesh const & mesh) : kdtree(new KDTree), precomp_kdtree(NULL), scale(0)
     {
-      kdtree->add(mesh);
+      kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
       scale = kdtree->getBounds().getExtent().length();
     }
@@ -87,9 +90,9 @@ class ShapeDiameter
      * as long as this object does. Initializes internal data structures that do not need to be recomputed for successive calls
      * to compute().
      */
-    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group) : kdtree(new KDTree), owns_kdtree(true), scale(0)
+    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group) : kdtree(new KDTree), precomp_kdtree(NULL), scale(0)
     {
-      kdtree->add(mesh_group);
+      kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
       scale = kdtree->getBounds().getExtent().length();
     }
@@ -98,16 +101,16 @@ class ShapeDiameter
      * Constructs the object to compute the shape diameter at sample points of a shape with a precomputed kd-tree. The kd-tree
      * must persist as long as this object does.
      */
-    ShapeDiameter(KDTree const * kdtree_) : kdtree(kdtree_), owns_kdtree(false), scale(0)
+    ShapeDiameter(ExternalKDTree const * kdtree_) : kdtree(NULL), precomp_kdtree(kdtree_), scale(0)
     {
-      scale = kdtree->getBounds().getExtent().length();
+      alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
+      scale = precomp_kdtree->getBounds().getExtent().length();
     }
 
     /** Destructor. */
     ~ShapeDiameter()
     {
-      if (owns_kdtree)
-        delete kdtree;
+      delete kdtree;
     }
 
     /**
@@ -125,7 +128,8 @@ class ShapeDiameter
       TheaArray<Vector3> const & normals(positions.size());
       for (array_size_t i = 0; i < positions.size(); ++i)
       {
-        long nn_index = kdtree->template closestElement<MetricL2>(positions[i]);
+        long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(positions[i])
+                                       : kdtree->template closestElement<MetricL2>(positions[i]);
         if (nn_index < 0)
         {
           THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, all SDF values set to zero";
@@ -134,7 +138,8 @@ class ShapeDiameter
           return;
         }
 
-        normals[i] = kdtree->getElements()[(array_size_t)nn_index].getNormal();
+        normals[i] = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
+                                    : kdtree->getElements()[(array_size_t)nn_index].getNormal();
       }
 
       compute(positions, normals, sdf_values);
@@ -144,7 +149,7 @@ class ShapeDiameter
     void compute(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, TheaArray<Real> & sdf_values) const
     {
       alwaysAssertM(positions.size() == normals.size(), "ShapeDiameter: Number of sample positions and normals do not match");
-      alwaysAssertM(kdtree, "ShapeDiameter: KD-tree not initialized for mesh");
+      alwaysAssertM(kdtree || precomp_kdtree, "ShapeDiameter: KD-tree not initialized for mesh");
 
       sdf_values.resize(positions.size());
 
@@ -206,7 +211,9 @@ class ShapeDiameter
       {
         Vector3 dir = rot * CONE_DIRS[i];
         Ray3 ray(p + offset, dir);
-        RayStructureIntersection3 isec = kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
+        RayStructureIntersection3 isec = precomp_kdtree
+                                       ? precomp_kdtree->template rayStructureIntersection<RayIntersectionTester>(ray)
+                                       : kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
 
         if (isec.isValid() && isec.getNormal().dot(dir) >= 0)
         {
@@ -258,8 +265,8 @@ class ShapeDiameter
       v = dir.cross(u).unit();
     }
 
-    KDTree const * kdtree;  ///< KD-tree on the mesh for computing ray intersections.
-    bool owns_kdtree;  ///< Did this object create the kd-tree, or does it simply wrap a precomputed one?
+    KDTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
+    ExternalKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
     Real scale;  ///< The normalization length.
 
 }; // class ShapeDiameter

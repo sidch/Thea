@@ -584,7 +584,10 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
   thresholds = stump_features;
 #else
   long max_thresholds = (long)std::ceil(max_thresholds_fraction * stump_features.size());
-  getCandidateThresholds(stump.n, weights, stump_features, stump_classes, max_thresholds, thresholds);
+  if (max_thresholds < (long)stump_features.size())
+    getCandidateThresholds(stump.n, weights, stump_features, stump_classes, max_thresholds, thresholds);
+  else
+    thresholds = stump_features;
 #endif
 
   if (num_generated_thresholds)

@@ -46,6 +46,7 @@
 #include "Mesh.hpp"
 #include "PointCloud.hpp"
 #include "Util.hpp"
+#include "../../Algorithms/KDTree3.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
@@ -163,6 +164,7 @@ Model::load(QString const & filename_)
       return false;
 
     bounds = point_cloud->getBounds();
+    filename = filename_;
   }
   else
   {
@@ -191,10 +193,11 @@ Model::load(QString const & filename_)
 
     THEA_CONSOLE << "Loaded model '" << filename_ << "' with bounding box " << mesh_group->getBounds().toString();
 
-    loadSamples(getSamplesFilename());
-  }
+    filename = filename_;
 
-  filename = filename_;
+    loadSamples(getSamplesFilename());
+    loadFeatures(getFeaturesFilename());
+  }
 
   emit filenameChanged(filename);
   emit geometryChanged(this);
@@ -365,8 +368,9 @@ Model::pick(Ray3 const & ray)
     array_size_t index = (array_size_t)isec.getElementIndex();
     KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
     picked_sample.mesh = triple.getMesh();
-    picked_sample.face_index = triple.meshFaceIsTriangle() ? picked_sample.mesh->getTriFaceIndex(triple.getMeshFaceIndex())
-                                                           : picked_sample.mesh->getQuadFaceIndex(triple.getMeshFaceIndex());
+    picked_sample.face_index = (triple.getMeshFaceType() == KDTree::VertexTriple::FaceType::TRIANGLE
+                              ? picked_sample.mesh->getTriFaceIndex(triple.getMeshFaceIndex())
+                              : picked_sample.mesh->getQuadFaceIndex(triple.getMeshFaceIndex()));
     picked_sample.position = ray.getPoint(isec.getTime());
 
     valid_pick = true;
@@ -571,7 +575,7 @@ Model::loadSamples(QString const & filename_)
 QString
 Model::getSamplesFilename() const
 {
-  return getFilename() + ".featpts";
+  return getFilename() + ".picked";
 }
 
 bool
@@ -637,6 +641,78 @@ Model::saveSamples(QString const & filename_) const
   }
 
   return true;
+}
+
+namespace ModelInternal {
+
+typedef Algorithms::KDTree3<Vector3> PointKDTree;
+
+struct VertexFeatureVisitor
+{
+  VertexFeatureVisitor(PointKDTree * fkdtree_, Real const * feat_vals_) : fkdtree(fkdtree_), feat_vals(feat_vals_) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    mesh.addColors();
+
+    for (long i = 0; i < mesh.numVertices(); ++i)
+    {
+      Mesh::IndexedVertex vx = mesh.getIndexedVertex(i);
+      long nn_index = fkdtree->closestElement<Algorithms::MetricL2>(vx.getPosition());
+      if (nn_index >= 0)
+        vx.setColor(ColorRGB::jetColorMap(feat_vals[nn_index]));
+    }
+
+    return false;
+  }
+
+  PointKDTree * fkdtree;
+  Real const * feat_vals;
+};
+
+} // namespace ModelInternal
+
+bool
+Model::loadFeatures(QString const & filename_)
+{
+  using namespace ModelInternal;
+
+  TheaArray<Vector3> feat_pts;
+  TheaArray<Real> feat_vals;
+  bool status = true;
+  try
+  {
+    std::ifstream in(toStdString(filename_).c_str());
+    if (!in)
+      throw Error("Could not open file");
+
+    std::string line;
+    Vector3 p;
+    Real f;
+    while (std::getline(in, line))
+    {
+      std::istringstream line_in(line);
+      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
+        throw Error("Could not read feature");
+
+      feat_pts.push_back(p);
+      feat_vals.push_back(f);
+    }
+
+    PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
+    VertexFeatureVisitor visitor(&fkdtree, &feat_vals[0]);
+    mesh_group->forEachMeshUntil(&visitor);
+  }
+  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model features from '%s'",
+                             toStdString(filename_).c_str())
+
+  return status;
+}
+
+QString
+Model::getFeaturesFilename() const
+{
+  return getFilename() + ".features";
 }
 
 AxisAlignedBox3 const &

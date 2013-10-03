@@ -375,7 +375,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      * Get a structure referencing the position, normal, color and texture coordinates of a single vertex, via its index. This
      * may be used to access and modify the properties of a vertex.
      */
-    IndexedVertex getIndexedVertex(long i);
+    IndexedVertex getIndexedVertex(long i) { return IndexedVertex(this, i); }
 
     /** Get the vertex indices of the triangular faces. Each successive triplet defines a triangle. */
     IndexArray const & getTriangleIndices() const { return tris; }

@@ -245,8 +245,8 @@ testIMLS(int argc, char * argv[])
   for (int i = 0; i < NUM_STEPS; ++i)
     for (int j = 0; j < NUM_STEPS; ++j)
       for (int k = 0; k < NUM_STEPS; ++k)
-        if (std::fabs(voxels[i][j][k]) > max_value)
-          max_value = std::fabs(voxels[i][j][k]);
+        if (fabs(voxels[i][j][k]) > max_value)
+          max_value = fabs(voxels[i][j][k]);
 
   static double const THRESHOLD = 0.03;
   for (int i = 0; i < NUM_STEPS; ++i)
@@ -260,9 +260,9 @@ testIMLS(int argc, char * argv[])
         voxels[i][j][k] /= max_value;
         // cout << "val = " << voxels[i][j][k] << endl;
 
-        if (std::fabs(voxels[i][j][k]) < THRESHOLD)
+        if (fabs(voxels[i][j][k]) < THRESHOLD)
         {
-          int ll = (int)floor(-log10(std::fabs(voxels[i][j][k])));
+          int ll = (int)floor(-log10(fabs(voxels[i][j][k])));
           if (ll < 1)
             ll = 1;
           else if (ll > 9)

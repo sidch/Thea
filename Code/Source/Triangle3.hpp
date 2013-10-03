@@ -187,7 +187,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       edge01   = v1 - v0;
       edge02   = v2 - v0;
 
-      area = 0.5f * edge01.cross(edge02).length();
+      area = 0.5f * std::fabs(plane.getNormal().dot(edge01.cross(edge02)));  // exploit precomputed normal to avoid sqrt
     }
 
     /** Get a vertex of the triangle. */
@@ -234,6 +234,23 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       }
 
       return s * edge01 + t * edge02 + getVertex(0);
+    }
+
+    /** Get the barycentric coordinates of a point assumed to be in the plane of the triangle. */
+    Vector3 barycentricCoordinates(Vector3 const & p) const
+    {
+      if (area <= 0)
+        return Vector3::zero();
+
+      Vector3 const & n = getNormal();
+      Vector3 p0 = getVertex(0) - p;
+      Vector3 p1 = getVertex(1) - p;
+      Vector3 p2 = getVertex(2) - p;
+
+      Real b0 = n.dot(p1.cross(p2)) / (2 * area);
+      Real b1 = n.dot(p2.cross(p0)) / (2 * area);
+
+      return Vector3(b0, b1, 1 - b0 - b1);
     }
 
     /** Get a bounding box for the triangle. */
