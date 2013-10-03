@@ -649,7 +649,8 @@ typedef Algorithms::KDTree3<Vector3> PointKDTree;
 
 struct VertexFeatureVisitor
 {
-  VertexFeatureVisitor(PointKDTree * fkdtree_, Real const * feat_vals_) : fkdtree(fkdtree_), feat_vals(feat_vals_) {}
+  VertexFeatureVisitor(PointKDTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -660,14 +661,26 @@ struct VertexFeatureVisitor
       Mesh::IndexedVertex vx = mesh.getIndexedVertex(i);
       long nn_index = fkdtree->closestElement<Algorithms::MetricL2>(vx.getPosition());
       if (nn_index >= 0)
-        vx.setColor(ColorRGB::jetColorMap(feat_vals[nn_index]));
+      {
+        if (!feat_vals2)
+        {
+          if (!feat_vals1)
+            vx.setColor(ColorRGB::jetColorMap(feat_vals0[nn_index]));
+          else
+            vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], 1.0f));
+        }
+        else
+          vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], feat_vals2[nn_index]));
+      }
     }
 
     return false;
   }
 
   PointKDTree * fkdtree;
-  Real const * feat_vals;
+  Real const * feat_vals0;
+  Real const * feat_vals1;
+  Real const * feat_vals2;
 };
 
 } // namespace ModelInternal
@@ -678,7 +691,7 @@ Model::loadFeatures(QString const & filename_)
   using namespace ModelInternal;
 
   TheaArray<Vector3> feat_pts;
-  TheaArray<Real> feat_vals;
+  TheaArray< TheaArray<Real> > feat_vals(1);
   bool status = true;
   try
   {
@@ -696,11 +709,36 @@ Model::loadFeatures(QString const & filename_)
         throw Error("Could not read feature");
 
       feat_pts.push_back(p);
-      feat_vals.push_back(f);
+      feat_vals[0].push_back(f);
+
+      if (feat_pts.size() == 1)
+      {
+        while (line_in >> f)
+        {
+          feat_vals.push_back(TheaArray<Real>());
+          feat_vals.back().push_back(f);
+        }
+      }
+      else
+      {
+        for (array_size_t i = 1; i < feat_vals.size(); ++i)
+        {
+          if (!(line_in >> f))
+            throw Error("Could not read feature");
+
+          feat_vals[i].push_back(f);
+        }
+      }
     }
 
+    if (feat_pts.empty())
+      return true;
+
     PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
-    VertexFeatureVisitor visitor(&fkdtree, &feat_vals[0]);
+    VertexFeatureVisitor visitor(&fkdtree,
+                                 &feat_vals[0][0],
+                                 feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
+                                 feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
     mesh_group->forEachMeshUntil(&visitor);
   }
   THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model features from '%s'",
