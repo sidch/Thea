@@ -107,6 +107,9 @@ INCLUDE_DIRECTORIES(BEFORE
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib)
 
+# List of all tools
+SET(TheaAllTools )
+
 #===========================================================
 # Browse3D
 #===========================================================
@@ -155,7 +158,7 @@ IF(QT4_FOUND AND OpenGL_FOUND)
     OSX_FIX_DYLIB_REFERENCES(Browse3D "${Browse3DLibraries}")
   ENDIF()
 
-  SET(TheaToolsDependencies ${TheaToolsDependencies} Browse3D)
+  SET(TheaAllTools ${TheaAllTools} Browse3D)
 
 ENDIF()
 
@@ -191,7 +194,7 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(MeshConv "${MeshConvLibraries}")
 ENDIF()
 
-SET(TheaToolsDependencies ${TheaToolsDependencies} MeshConv)
+SET(TheaAllTools ${TheaAllTools} MeshConv)
 
 #===========================================================
 # MeshFeatures
@@ -225,7 +228,7 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(MeshFeatures "${MeshFeaturesLibraries}")
 ENDIF()
 
-SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFeatures)
+SET(TheaAllTools ${TheaAllTools} MeshFeatures)
 
 #===========================================================
 # MeshFix
@@ -259,7 +262,41 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(MeshFix "${MeshFixLibraries}")
 ENDIF()
 
-SET(TheaToolsDependencies ${TheaToolsDependencies} MeshFix)
+SET(TheaAllTools ${TheaAllTools} MeshFix)
+
+#===========================================================
+# MeshSample
+#===========================================================
+
+# Source file lists
+FILE(GLOB MeshSampleSources
+     ${SourceRoot}/Tools/MeshSample/*.cpp)
+
+# Libraries to link to
+SET(MeshSampleLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(MeshSample ${MeshSampleSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(MeshSample ${MeshSampleLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(MeshSample PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(MeshSample "${MeshSampleLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} MeshSample)
 
 #===========================================================
 # Register
@@ -293,7 +330,7 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(Register "${RegisterLibraries}")
 ENDIF()
 
-SET(TheaToolsDependencies ${TheaToolsDependencies} Register)
+SET(TheaAllTools ${TheaAllTools} Register)
 
 #===========================================================
 # SegmentSDF
@@ -327,10 +364,10 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(SegmentSDF "${SegmentSDFLibraries}")
 ENDIF()
 
-SET(TheaToolsDependencies ${TheaToolsDependencies} SegmentSDF)
+SET(TheaAllTools ${TheaAllTools} SegmentSDF)
 
 #===========================================================
 # Target for all tools
 #===========================================================
 
-ADD_CUSTOM_TARGET(TheaTools DEPENDS ${TheaToolsDependencies})
+ADD_CUSTOM_TARGET(TheaTools DEPENDS ${TheaAllTools})

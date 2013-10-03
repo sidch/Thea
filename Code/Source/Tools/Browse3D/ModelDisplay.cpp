@@ -79,7 +79,7 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
 
   render_opts.useVertexData() = true;
   render_opts.sendNormals() = true;
-  render_opts.sendColors() = false;
+  render_opts.sendColors() = true;
   render_opts.sendTexCoords() = false;
   render_opts.drawEdges() = true;
   render_opts.overrideEdgeColor() = true;
