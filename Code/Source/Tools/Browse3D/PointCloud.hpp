@@ -98,9 +98,13 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     void invalidateBounds();
 
     TheaArray<Point> points;
+
     bool has_normals;
     bool normals_are_normalized;
     AxisAlignedBox3 bounds;
+
+    bool has_graph;
+    TheaArray< TheaArray<long> > graph;
 
 }; // class PointCloud
 

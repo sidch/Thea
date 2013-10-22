@@ -333,6 +333,40 @@ ENDIF()
 SET(TheaAllTools ${TheaAllTools} Register)
 
 #===========================================================
+# SampleGraph
+#===========================================================
+
+# Source file lists
+FILE(GLOB SampleGraphSources
+     ${SourceRoot}/Tools/SampleGraph/*.cpp)
+
+# Libraries to link to
+SET(SampleGraphLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(SampleGraph ${SampleGraphSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(SampleGraph ${SampleGraphLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(SampleGraph PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(SampleGraph "${SampleGraphLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} SampleGraph)
+
+#===========================================================
 # SegmentSDF
 #===========================================================
 
