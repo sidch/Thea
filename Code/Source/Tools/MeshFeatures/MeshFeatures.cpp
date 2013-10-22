@@ -1,6 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Curvature.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
+#include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"

@@ -43,13 +43,14 @@
 #include "Util.hpp"
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
+#include "../../FileSystem.hpp"
 #include "../../Math.hpp"
 #include <fstream>
 
 namespace Browse3D {
 
 PointCloud::PointCloud(std::string const & path)
-: has_normals(false), normals_are_normalized(false)
+: has_normals(false), normals_are_normalized(false), has_graph(false)
 {
   if (!path.empty())
     load(path);
@@ -63,7 +64,11 @@ void
 PointCloud::clear()
 {
   points.clear();
+  graph.clear();
+
   has_normals = false;
+  has_graph = false;
+
   bounds.setNull();
 }
 
@@ -114,6 +119,55 @@ PointCloud::load(std::string const & path)
   THEA_CONSOLE << getName() << ": Loaded " << points.size() << " points with bounding box " << bounds.toString() << " from '"
                << path << '\'';
 
+  std::string graph_path = FilePath::concat(FilePath::parent(path), FilePath::completeBaseName(path) + ".graph");
+  if (FileSystem::exists(graph_path))
+  {
+    has_graph = true;
+
+    std::ifstream gin(graph_path.c_str());
+    if (!gin)
+    {
+      THEA_WARNING << getName() << ": Error opening file '" << graph_path << "' with adjacency graph of points";
+      has_graph = false;
+    }
+    else
+    {
+      graph.resize(points.size());
+
+      for (array_size_t i = 0; i < points.size(); ++i)
+      {
+        long num_nbrs;
+        if (!(gin >> num_nbrs) || num_nbrs < 0 || num_nbrs >= (long)points.size())
+        {
+          THEA_WARNING << getName() << ": Error reading number of neighbors of point " << i << " from '" << graph_path << '\'';
+          has_graph = false;
+          break;
+        }
+
+        graph[i].resize((array_size_t)num_nbrs);
+
+        for (array_size_t j = 0; j < graph[i].size(); ++j)
+        {
+          if (!(gin >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
+          {
+            THEA_WARNING << getName() << ": Error reading neighbor" << j << " of point " << i << " from '" << graph_path
+                         << '\'';
+            has_graph = false;
+            break;
+          }
+        }
+
+        if (!has_graph)
+          break;
+      }
+
+      if (!has_graph)
+        graph.clear();
+
+      THEA_CONSOLE << getName() << ": Loaded sample adjacency graph from '" << graph_path << '\'';
+    }
+  }
+
   return true;
 }
 
@@ -152,7 +206,8 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
 
   const_cast<PointCloud *>(this)->uploadToGraphicsSystem(render_system);
 
-  Real point_radius = 0.005f * getBounds().getExtent().length();
+  Real scale = getBounds().getExtent().length();
+  Real point_radius = Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
   for (array_size_t i = 0; i < points.size(); ++i)
   {
     if (has_normals)
@@ -164,10 +219,37 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
       render_system.setColor(ColorRGB(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1)));
     }
 
-    drawSphere(render_system, points[i].p, point_radius);
+    drawSphere(render_system, points[i].p, point_radius, 8);
   }
 
-  if (has_normals)
+  if (has_graph)
+  {
+    render_system.pushShader();
+    render_system.pushTextures();
+    render_system.pushColorFlags();
+
+      render_system.setShader(NULL);
+      render_system.setTexture(0, NULL);
+      render_system.setColor(ColorRGB(1, 1, 0));
+
+      render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+
+        for (array_size_t i = 0; i < graph.size(); ++i)
+        {
+          for (array_size_t j = 0; j < graph[i].size(); ++j)
+          {
+            render_system.sendVertex(points[i].p);
+            render_system.sendVertex(points[(array_size_t)graph[i][j]].p);
+          }
+        }
+
+      render_system.endPrimitive();
+
+    render_system.popColorFlags();
+    render_system.popTextures();
+    render_system.popShader();
+  }
+  else if (has_normals)
   {
     render_system.pushShader();
     render_system.pushTextures();

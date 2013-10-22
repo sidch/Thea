@@ -377,14 +377,14 @@ BinaryInputStream::readUInt64()
   if (m_swapBytes)
   {
     uint8 out[8];
-    out[0] = m_buffer[m_pos + 7];
-    out[1] = m_buffer[m_pos + 6];
-    out[2] = m_buffer[m_pos + 5];
-    out[3] = m_buffer[m_pos + 4];
-    out[4] = m_buffer[m_pos + 3];
-    out[5] = m_buffer[m_pos + 2];
-    out[6] = m_buffer[m_pos + 1];
-    out[7] = m_buffer[m_pos + 0];
+    out[0] = m_buffer[m_pos - 1];
+    out[1] = m_buffer[m_pos - 2];
+    out[2] = m_buffer[m_pos - 3];
+    out[3] = m_buffer[m_pos - 4];
+    out[4] = m_buffer[m_pos - 5];
+    out[5] = m_buffer[m_pos - 6];
+    out[6] = m_buffer[m_pos - 7];
+    out[7] = m_buffer[m_pos - 8];
 
     return *(uint64 *)out;
   }
@@ -394,14 +394,14 @@ BinaryInputStream::readUInt64()
     return *(uint64 *)(m_buffer + m_pos);
 #else
     uint8 out[8];
-    out[0] = m_buffer[m_pos + 0];
-    out[1] = m_buffer[m_pos + 1];
-    out[2] = m_buffer[m_pos + 2];
-    out[3] = m_buffer[m_pos + 3];
-    out[4] = m_buffer[m_pos + 4];
-    out[5] = m_buffer[m_pos + 5];
-    out[6] = m_buffer[m_pos + 6];
-    out[7] = m_buffer[m_pos + 7];
+    out[0] = m_buffer[m_pos - 8];
+    out[1] = m_buffer[m_pos - 7];
+    out[2] = m_buffer[m_pos - 6];
+    out[3] = m_buffer[m_pos - 5];
+    out[4] = m_buffer[m_pos - 4];
+    out[5] = m_buffer[m_pos - 3];
+    out[6] = m_buffer[m_pos - 2];
+    out[7] = m_buffer[m_pos - 1];
 
     return *(uint64 *)out;
 #endif
