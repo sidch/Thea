@@ -55,6 +55,7 @@
 
 #include "Platform.hpp"
 #include <cctype>
+#include <cstdarg>
 #include <string>
 
 namespace Thea {
