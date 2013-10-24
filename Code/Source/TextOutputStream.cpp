@@ -57,6 +57,7 @@
 #include "FileSystem.hpp"
 #include "Math.hpp"
 #include <cstdarg>
+#include <stdio.h>
 
 namespace Thea {
 

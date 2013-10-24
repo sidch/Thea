@@ -472,15 +472,15 @@ if $WITH_BOOST ; then
     if ! $BOOST_INSTALLED ; then
         user_eval "cd '${BASE_DIR}/Boost';
                    echo 'Decompressing archive...';
-                   tar -xkzf boost_1_43_0.tar.gz;
-                   cd boost_1_43_0;
+                   tar -xkzf boost_1_54_0.tar.gz;
+                   cd boost_1_54_0;
                    ./bootstrap.sh --prefix='${INSTALL_DIR}';"
-        BOOST_TOOLSET=`grep -o -m1 'using.\+' "${BASE_DIR}/Boost/boost_1_43_0/project-config.jam" | sed 's/using[ \t]\+\([^ \t]\+\).*/\1/'`
-        user_eval "cd '${BASE_DIR}/Boost/boost_1_43_0';
+        BOOST_TOOLSET=`grep -o -m1 'using.\+' "${BASE_DIR}/Boost/boost_1_54_0/project-config.jam" | sed 's/using[ \t]\+\([^ \t]\+\).*/\1/'`
+        user_eval "cd '${BASE_DIR}/Boost/boost_1_54_0';
                    if [[ '$BOOST_TOOLSET' = darwin ]] ; then
                        ./bjam $NUM_PROCS darwin/cxxflags=-fno-strict-aliasing install;
                    elif [[ '$BOOST_TOOLSET' = gcc ]] ; then
-                       ./bjam $NUM_PROCS gcc/cxxflags=-fno-strict-aliasing install;
+                      ./bjam $NUM_PROCS gcc/cxxflags='-fno-strict-aliasing -fPIC' install;
                    else
                        ./bjam $NUM_PROCS install;
                    fi;

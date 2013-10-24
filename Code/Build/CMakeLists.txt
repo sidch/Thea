@@ -29,7 +29,7 @@ SET(CMAKE_DEBUG_POSTFIX "d")
 ADD_SUBDIRECTORY(Common)
 
 IF(NOT APPLE AND NOT WIN32)  # we don't have arpack/superlu working on OS X or Windows yet
-  ADD_SUBDIRECTORY(Plugins/ARPACK)
+  # ADD_SUBDIRECTORY(Plugins/ARPACK)
 ENDIF()
 
 ADD_SUBDIRECTORY(Plugins/CSPARSE)

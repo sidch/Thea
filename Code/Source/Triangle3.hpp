@@ -47,7 +47,7 @@
 #include "Ball3.hpp"
 #include "Box3.hpp"
 #include "LineSegment3.hpp"
-#include "Math.h"
+#include "Math.hpp"
 #include "Plane3.hpp"
 #include "RayIntersectable3.hpp"
 #include <limits>
