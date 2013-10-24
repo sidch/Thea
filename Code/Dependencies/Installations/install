@@ -480,7 +480,7 @@ if $WITH_BOOST ; then
                    if [[ '$BOOST_TOOLSET' = darwin ]] ; then
                        ./bjam $NUM_PROCS darwin/cxxflags=-fno-strict-aliasing install;
                    elif [[ '$BOOST_TOOLSET' = gcc ]] ; then
-                      ./bjam $NUM_PROCS gcc/cxxflags='-fno-strict-aliasing -fPIC' install;
+                       ./bjam $NUM_PROCS gcc/cxxflags='-fno-strict-aliasing -fPIC' install;
                    else
                        ./bjam $NUM_PROCS install;
                    fi;
