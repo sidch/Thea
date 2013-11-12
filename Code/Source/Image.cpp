@@ -660,7 +660,7 @@ Image::convert(Type dst_type, Image & dst) const
     {
       if (&dst != this) dst = *this;
 
-      if (dst.fip_img->convertToType(dst_fitype))
+      if (dst.fip_img->convertToType(dst_fitype) == TRUE)
         status = true;
     }
 
