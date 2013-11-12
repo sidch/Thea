@@ -614,6 +614,7 @@ Image::convert(Type dst_type, Image & dst) const
   }
   else
   {
+    FREE_IMAGE_TYPE src_fitype = Image__typeToFreeImageType(type);
     FREE_IMAGE_TYPE dst_fitype = Image__typeToFreeImageType(dst_type);
 
     if (dst_fitype == FIT_BITMAP)
@@ -624,14 +625,19 @@ Image::convert(Type dst_type, Image & dst) const
         case 4:
         {
           if (&dst != this) dst = *this;
-          status = (dst.fip_img->convertTo4Bits() == TRUE);
+
+          if (src_fitype != FIT_BITMAP) status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
+          if (status)                   status = (dst.fip_img->convertTo4Bits() == TRUE);
+
           break;
         }
 
         case 8:
         {
           if (&dst != this) dst = *this;
-          status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize output
+
+          if (src_fitype != FIT_BITMAP) status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
+          if (status)                   status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize
           break;
         }
 
