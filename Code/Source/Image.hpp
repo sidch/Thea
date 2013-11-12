@@ -154,8 +154,14 @@ class THEA_API Image : public Serializable
      */
     Image(std::string const & filename, Codec const & codec = Codec_AUTO());
 
+    /* Copy constructor. */
+    Image(Image const & src);
+
     /** Destructor. */
     ~Image();
+
+    /* Assignment operator. */
+    Image & operator=(Image const & src);
 
     /**
      * Check if the image has been allocated non-zero memory space (hence has valid type and dimensions) or not. An image
@@ -301,6 +307,18 @@ class THEA_API Image : public Serializable
      * will be thrown if the image cannot be loaded.
      */
     void load(std::string const & filename, Codec const & codec = Codec_AUTO());
+
+    /**
+     * Convert this image to a different format. Currently only source/target format combinations supported by FreeImage are
+     * available.
+     */
+    bool convert(Type dst_type);
+
+    /**
+     * Convert an image from one format to another. Currently only source/target format combinations supported by FreeImage are
+     * available.
+     */
+    bool convert(Type dst_type, Image & dst) const;
 
     /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
     fipImage const * _getFreeImage() const { return fip_img; }

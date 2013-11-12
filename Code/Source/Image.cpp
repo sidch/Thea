@@ -320,6 +320,22 @@ Image::Image(std::string const & filename, Codec const & codec)
   load(filename, codec);
 }
 
+Image::Image(Image const & src)
+: fip_img(new fipImage(*src.fip_img)), type(src.type)
+{
+  cacheTypeProperties();
+}
+
+Image &
+Image::operator=(Image const & src)
+{
+  *fip_img = *src.fip_img;
+  type = src.type;
+  cacheTypeProperties();
+
+  return *this;
+}
+
 Image::~Image()
 {
   delete fip_img;
@@ -579,6 +595,77 @@ Image::cacheTypeProperties()
   bits_per_channel           =  type.getBitsPerChannel();
   has_byte_aligned_pixels    =  type.hasByteAlignedPixels();
   has_byte_aligned_channels  =  type.hasByteAlignedChannels();
+}
+
+bool
+Image::convert(Type dst_type)
+{
+  return convert(dst_type, *this);
+}
+
+bool
+Image::convert(Type dst_type, Image & dst) const
+{
+  bool status = false;
+  if (type == dst_type)
+  {
+    if (&dst != this) dst = *this;
+    status = true;
+  }
+  else
+  {
+    FREE_IMAGE_TYPE dst_fitype = Image__typeToFreeImageType(dst_type);
+
+    if (dst_fitype == FIT_BITMAP)
+    {
+      WORD dst_fibpp = Image__typeToFreeImageBPP(dst_type);
+      switch (dst_fibpp)
+      {
+        case 4:
+        {
+          if (&dst != this) dst = *this;
+          status = (dst.fip_img->convertTo4Bits() == TRUE);
+          break;
+        }
+
+        case 8:
+        {
+          if (&dst != this) dst = *this;
+          status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize output
+          break;
+        }
+
+        case 24:
+        {
+          if (&dst != this) dst = *this;
+          status = (dst.fip_img->convertTo24Bits() == TRUE);
+          break;
+        }
+
+        case 32:
+        {
+          if (&dst != this) dst = *this;
+          status = (dst.fip_img->convertTo32Bits() == TRUE);
+          break;
+        }
+      }
+    }
+    else
+    {
+      if (&dst != this) dst = *this;
+
+      if (dst.fip_img->convertToType(dst_fitype))
+        status = true;
+    }
+
+    if (status)
+    {
+      dst.type = dst_type;
+      dst.cacheTypeProperties();
+    }
+  }
+
+  return status;
 }
 
 } // namespace Thea
