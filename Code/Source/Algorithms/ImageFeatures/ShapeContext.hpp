@@ -60,7 +60,7 @@ class QuadTree;
 } // namespace ShapeContextInternal
 
 /**
- * Computes the shape context at each pixel of a contour image. If the image has more than one channel, the luminance channel is
+ * Computes the shape context at pixels of a contour image. If the image has more than one channel, the luminance channel is
  * used. Follows the algorithm of:
  *
  * Mori, Belongie and Malik, "Shape contexts enable efficient retrieval of similar shapes", CVPR 2001.
@@ -83,7 +83,7 @@ class ShapeContext
      *   dimension for packing).
      * @param ignore_empty_pixels Does not compute shape contexts for pixels that are empty (zero luminance, i.e. black). The
      *   corresponding entries in \a values are set to zero.
-     * @param max_radius Limits the area of the context for a pixel to this radius.
+     * @param max_radius Limits the area of the context for a pixel to this radius (negative for default).
      */
     void compute(long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, bool ignore_empty_pixels = true,
                  Real max_radius = -1) const;
@@ -97,7 +97,7 @@ class ShapeContext
      * @param num_polar_bins Number of divisions in the angular direction.
      * @param values Computed shape context, in a \a num_radial_bins * \a num_polar_bins array (\a num_radial_bins is major
      *   dimension for packing).
-     * @param max_radius Limits the area of the context to this radius.
+     * @param max_radius Limits the area of the context to this radius (negative for default).
      */
     void compute(int row, int col, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, Real max_radius = -1)
          const;
