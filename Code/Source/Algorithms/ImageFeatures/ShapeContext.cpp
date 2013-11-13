@@ -173,35 +173,24 @@ struct QuadTree
   static int const MIN_NODE_WIDTH = 10;
 
   TheaArray<QuadTreeNode> nodes;
-  Image owned_image;
-  Image const * image;
+  Image image;
 
-  void clear()
+  QuadTree(Image const & image_)
   {
-    nodes.clear();
-  }
+    if (!image_.convert(Image::Type::LUMINANCE_8U, image))
+      throw Error("ShapeContext: Could not initialize quadtree for image");
 
-  bool init(Image const & image_)
-  {
-    clear();
-
-    image = &image_;
-    if (image_.getType() != Image::Type::LUMINANCE_8U)
-    {
-      if (!image_.convert(Image::Type::LUMINANCE_8U, owned_image))
-        return false;
-
-      image = &owned_image;
-    }
-
-    int w = image->getWidth();
-    int h = image->getHeight();
+    int w = image.getWidth();
+    int h = image.getHeight();
 
     nodes.push_back(QuadTreeNode());
     nodes[0].rect.set(Vector2(0, 0), Vector2(w - 1, h - 1));
     buildTree(0);
+  }
 
-    return true;
+  void clear()
+  {
+    nodes.clear();
   }
 
   void buildTree(array_size_t node_index)
@@ -255,7 +244,7 @@ struct QuadTree
 
     for (int i = ymin; i <= ymax; ++i)
     {
-      uint8 const * scanline = (uint8 const *)image->getScanLine(i);
+      uint8 const * scanline = (uint8 const *)image.getScanLine(i);
 
       for (int j = xmin; j <= xmax; ++j)
         node->weight += scanline[j];
@@ -285,7 +274,7 @@ struct QuadTree
 
       for (int i = ymin; i <= ymax; ++i)
       {
-        uint8 const * scanline = (uint8 const *)image->getScanLine(i);
+        uint8 const * scanline = (uint8 const *)image.getScanLine(i);
 
         for (int j = xmin; j <= xmax; ++j)
         {
@@ -309,25 +298,26 @@ struct QuadTree
 
 } // namespace ShapeContextInternal
 
-bool
-ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values,
-                      bool ignore_empty_pixels, Real max_radius) const
+ShapeContext::ShapeContext(Image const & image)
+: qtree(new ShapeContextInternal::QuadTree(image))
+{
+}
+
+ShapeContext::~ShapeContext()
+{
+  delete qtree;
+}
+
+void
+ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, bool ignore_empty_pixels,
+                      Real max_radius) const
 {
   using namespace ShapeContextInternal;
 
   alwaysAssertM(num_radial_bins > 0 && num_polar_bins > 0, "ShapeContext: Number of bins must be positive");
 
-  QuadTree qtree;
-  if (!qtree.init(image))
-  {
-    THEA_ERROR << "ShapeContext: Could not initialize quadtree for image";
-    return false;
-  }
-
-  THEA_CONSOLE << "ShapeContext: Intialized quadtree";
-
-  int w = qtree.image->getWidth();
-  int h = qtree.image->getHeight();
+  int w = qtree->image.getWidth();
+  int h = qtree->image.getHeight();
 
   Real rad_limit = (max_radius <= 0 ? std::sqrt(w * w + h * h) : max_radius);
   Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
@@ -344,7 +334,7 @@ ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_
 
   for (int i = 0; i < h; ++i)
   {
-    uint8 const * scanline = (uint8 const *)qtree.image->getScanLine(i);
+    uint8 const * scanline = (uint8 const *)qtree->image.getScanLine(i);
 
     if (i >= next_progress_milestone)
     {
@@ -371,7 +361,7 @@ ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_
           for (int p = 0; p < num_polar_bins; ++p, ang += ang_step)
           {
             Sector sector(Vector2(j, i), old_radius, radius, old_ang, ang);
-            Real weight = qtree.rangeWeight(sector);
+            Real weight = qtree->rangeWeight(sector);
 
             // Compensate for increasing size of bins. The formula is derived by computing the increase in area from bin to bin,
             // but then taking the square root since the image content is assumed to be a sketched curve whose length increases
@@ -391,8 +381,53 @@ ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_
   }
 
   THEA_CONSOLE << "... 100%";
+}
 
-  return true;
+void
+ShapeContext::compute(int row, int col, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, Real max_radius)
+const
+{
+  using namespace ShapeContextInternal;
+
+  alwaysAssertM(num_radial_bins > 0 && num_polar_bins > 0, "ShapeContext: Number of bins must be positive");
+
+  int w = qtree->image.getWidth();
+  int h = qtree->image.getHeight();
+
+  Real rad_limit = (max_radius <= 0 ? std::sqrt(w * w + h * h) : max_radius);
+  Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
+  Real ang_step = Math::twoPi() / num_polar_bins;
+
+  values.resize((array_size_t)(num_radial_bins * num_polar_bins));
+
+  static Real const SQRT_3 = std::sqrt(3.0f);
+
+  Real radius = rad_init;
+  Real old_radius = 0;
+
+  for (int r = 0; r < num_radial_bins; ++r, radius *= 2)
+  {
+    Real ang = ang_step;
+    Real old_ang = 0;
+
+    for (int p = 0; p < num_polar_bins; ++p, ang += ang_step)
+    {
+      Sector sector(Vector2(col, row), old_radius, radius, old_ang, ang);
+      Real weight = qtree->rangeWeight(sector);
+
+      // Compensate for increasing size of bins. The formula is derived by computing the increase in area from bin to bin,
+      // but then taking the square root since the image content is assumed to be a sketched curve whose length increases
+      // as the square root of the area increase.
+      if (r > 0)
+        weight /= (SQRT_3 * (1 << (r - 1)));
+
+      values[(array_size_t)(r * num_polar_bins + p)] = weight;
+
+      old_ang = ang;
+    }
+
+    old_radius = radius;
+  }
 }
 
 } // namespace ImageFeatures
