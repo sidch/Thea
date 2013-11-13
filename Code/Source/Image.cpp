@@ -598,6 +598,12 @@ Image::cacheTypeProperties()
 }
 
 bool
+Image::invert()
+{
+  return (fip_img->invert() == TRUE);
+}
+
+bool
 Image::convert(Type dst_type)
 {
   return convert(dst_type, *this);
@@ -636,8 +642,14 @@ Image::convert(Type dst_type, Image & dst) const
         {
           if (&dst != this) dst = *this;
 
-          if (src_fitype != FIT_BITMAP) status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
-          if (status)                   status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize
+          if (src_fitype != FIT_BITMAP)
+            status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
+          else
+            status = true;
+
+          if (status)
+            status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize
+
           break;
         }
 
