@@ -163,6 +163,40 @@ IF(QT4_FOUND AND OpenGL_FOUND)
 ENDIF()
 
 #===========================================================
+# ImageFeatures
+#===========================================================
+
+# Source file lists
+FILE(GLOB ImageFeaturesSources
+     ${SourceRoot}/Tools/ImageFeatures/*.cpp)
+
+# Libraries to link to
+SET(ImageFeaturesLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(ImageFeatures ${ImageFeaturesSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(ImageFeatures ${ImageFeaturesLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(ImageFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(ImageFeatures "${ImageFeaturesLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} ImageFeatures)
+
+#===========================================================
 # MeshConv
 #===========================================================
 

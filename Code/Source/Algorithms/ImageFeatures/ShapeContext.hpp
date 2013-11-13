@@ -43,6 +43,7 @@
 #define __Thea_Algorithms_ImageFeatures_ShapeContext_hpp__
 
 #include "../../Common.hpp"
+#include "../../Array.hpp"
 
 namespace Thea {
 
@@ -61,9 +62,20 @@ namespace ImageFeatures {
 class ShapeContext
 {
   public:
-    /** Computes the shape context at each pixel of a contour image. */
-    bool compute(Image const & image, long num_radial_bins = 5, long num_polar_bins = 12, bool ignore_empty_pixels = true,
-                 Real max_radius = -1) const;
+    /**
+     * Computes the shape context at each pixel of a contour image.
+     *
+     * @param image The input image.
+     * @param num_radial_bins Number of divisions in the radial direction.
+     * @param num_polar_bins Number of divisions in the angular direction.
+     * @param values Computed shape contexts, in a #pixels * \a num_radial_bins * \a num_polar_bins array (#pixels is major
+     *   dimension for packing).
+     * @param ignore_empty_pixels Does not compute shape contexts for pixels that are empty (zero luminance, i.e. black). The
+     *   corresponding entries in \a values are set to zero.
+     * @param max_radius Limits the area of the context for a pixel to this radius.
+     */
+    bool compute(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values,
+                 bool ignore_empty_pixels = true, Real max_radius = -1) const;
 
 }; // class ShapeContext
 

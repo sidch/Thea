@@ -282,6 +282,21 @@ class THEA_API Image : public Serializable
      */
     double getNormalizedValue(void const * pixel, int channel) const;
 
+    /** Invert the pixel values of the image. */
+    bool invert();
+
+    /**
+     * Convert this image to a different format. Currently only source/target format combinations supported by FreeImage are
+     * available.
+     */
+    bool convert(Type dst_type);
+
+    /**
+     * Convert an image from one format to another. Currently only source/target format combinations supported by FreeImage are
+     * available.
+     */
+    bool convert(Type dst_type, Image & dst) const;
+
     /**
      * {@inheritDoc}
      *
@@ -307,18 +322,6 @@ class THEA_API Image : public Serializable
      * will be thrown if the image cannot be loaded.
      */
     void load(std::string const & filename, Codec const & codec = Codec_AUTO());
-
-    /**
-     * Convert this image to a different format. Currently only source/target format combinations supported by FreeImage are
-     * available.
-     */
-    bool convert(Type dst_type);
-
-    /**
-     * Convert an image from one format to another. Currently only source/target format combinations supported by FreeImage are
-     * available.
-     */
-    bool convert(Type dst_type, Image & dst) const;
 
     /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
     fipImage const * _getFreeImage() const { return fip_img; }

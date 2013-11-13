@@ -40,12 +40,12 @@
 //============================================================================
 
 #include "ShapeContext.hpp"
-#include "../../Array.hpp"
 #include "../../AxisAlignedBoxN.hpp"
 #include "../../HyperplaneN.hpp"
 #include "../../Image.hpp"
 #include "../../Math.hpp"
 #include "../../Vector2.hpp"
+#include <algorithm>
 
 namespace Thea {
 namespace Algorithms {
@@ -157,7 +157,7 @@ struct QuadTreeNode
   Real weight;
   TheaArray<array_size_t> children;
 
-  void getBounds(int xmin, int ymin, int xmax, int ymax) const
+  void getBounds(int & xmin, int & ymin, int & xmax, int & ymax) const
   {
     xmin = (int)rect.getLow().x();
     ymin = (int)rect.getLow().y();
@@ -199,29 +199,34 @@ struct QuadTree
 
     nodes.push_back(QuadTreeNode());
     nodes[0].rect.set(Vector2(0, 0), Vector2(w - 1, h - 1));
-    buildTree(&nodes[0]);
+    buildTree(0);
+
+    return true;
   }
 
-  void buildTree(QuadTreeNode * node)
+  void buildTree(array_size_t node_index)
   {
     int xmin, ymin, xmax, ymax;
-    node->getBounds(xmin, ymin, xmax, ymax);
+    nodes[node_index].getBounds(xmin, ymin, xmax, ymax);
 
     int num_xsteps = (xmax - xmin >= MIN_NODE_WIDTH ? 2 : 1);
     int num_ysteps = (ymax - ymin >= MIN_NODE_WIDTH ? 2 : 1);
 
+    if (num_xsteps <= 1 && num_ysteps <= 1)
+      return;
+
     int xmid = (num_xsteps > 1 ? (xmin + xmax) / 2 : xmax);
     int ymid = (num_ysteps > 1 ? (ymin + ymax) / 2 : ymax);
 
-    for (int i = 0; i < num_xsteps; ++i)
+    for (int i = 0; i < num_ysteps; ++i)
     {
-      int cell_xmin = (i == 0 ? xmin : xmid + 1);
-      int cell_xmax = (i == 0 ? xmid : xmax);
+      int cell_ymin = (i == 0 ? ymin : ymid + 1);
+      int cell_ymax = (i == 0 ? ymid : ymax);
 
-      for (int j = 0; j < num_ysteps; ++j)
+      for (int j = 0; j < num_xsteps; ++j)
       {
-        int cell_ymin = (i == 0 ? ymin : ymid + 1);
-        int cell_ymax = (i == 0 ? ymid : ymax);
+        int cell_xmin = (j == 0 ? xmin : xmid + 1);
+        int cell_xmax = (j == 0 ? xmid : xmax);
 
         QuadTreeNode child;
         child.rect.set(Vector2(cell_xmin, cell_ymin), Vector2(cell_xmax, cell_ymax));
@@ -230,13 +235,15 @@ struct QuadTree
         if (child.weight > 1e-10)
         {
           nodes.push_back(child);
-          node->children.push_back(nodes.size() - 1);
+          nodes[node_index].children.push_back(nodes.size() - 1);
+
+          // THEA_CONSOLE << "Weight of node " << nodes.size() - 1 << " = " << nodes.back().weight;
         }
       }
     }
 
-    for (array_size_t i = 0; i < node->children.size(); ++i)
-      buildTree(&nodes[node->children[i]]);
+    for (array_size_t i = 0; i < nodes[node_index].children.size(); ++i)
+      buildTree(nodes[node_index].children[i]);
   }
 
   void initWeight(QuadTreeNode * node)
@@ -282,7 +289,7 @@ struct QuadTree
 
         for (int j = xmin; j <= xmax; ++j)
         {
-          if (range.contains(Vector2(i, j)))
+          if (range.contains(Vector2(j, i)))
             weight += scanline[j];
         }
       }
@@ -303,10 +310,89 @@ struct QuadTree
 } // namespace ShapeContextInternal
 
 bool
-ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_bins, bool ignore_empty_pixels, Real max_radius)
-const
+ShapeContext::compute(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values,
+                      bool ignore_empty_pixels, Real max_radius) const
 {
-  return false;
+  using namespace ShapeContextInternal;
+
+  alwaysAssertM(num_radial_bins > 0 && num_polar_bins > 0, "ShapeContext: Number of bins must be positive");
+
+  QuadTree qtree;
+  if (!qtree.init(image))
+  {
+    THEA_ERROR << "ShapeContext: Could not initialize quadtree for image";
+    return false;
+  }
+
+  THEA_CONSOLE << "ShapeContext: Intialized quadtree";
+
+  int w = qtree.image->getWidth();
+  int h = qtree.image->getHeight();
+
+  Real rad_limit = (max_radius <= 0 ? std::sqrt(w * w + h * h) : max_radius);
+  Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
+  Real ang_step = Math::twoPi() / num_polar_bins;
+
+  values.resize((array_size_t)(w * h * num_radial_bins * num_polar_bins));
+  Real * entry = &values[0];
+  long entry_size = num_radial_bins * num_polar_bins;
+
+  Real progress_step = h / 5.0f;
+  Real next_progress_milestone = progress_step;
+
+  static Real const SQRT_3 = std::sqrt(3.0f);
+
+  for (int i = 0; i < h; ++i)
+  {
+    uint8 const * scanline = (uint8 const *)qtree.image->getScanLine(i);
+
+    if (i >= next_progress_milestone)
+    {
+      THEA_CONSOLE << "... " << (int)(100 * next_progress_milestone / h) << '%';
+      next_progress_milestone += progress_step;
+    }
+
+    for (int j = 0; j < w; ++j, entry += entry_size)
+    {
+      // THEA_CONSOLE << "ShapeContext: -- Pixel (" << i << ", " << j << ") = " << (int)scanline[j];
+
+      if (ignore_empty_pixels && scanline[j] == 0)
+        std::fill(entry, entry + entry_size, 0);
+      else
+      {
+        Real radius = rad_init;
+        Real old_radius = 0;
+
+        for (int r = 0; r < num_radial_bins; ++r, radius *= 2)
+        {
+          Real ang = ang_step;
+          Real old_ang = 0;
+
+          for (int p = 0; p < num_polar_bins; ++p, ang += ang_step)
+          {
+            Sector sector(Vector2(j, i), old_radius, radius, old_ang, ang);
+            Real weight = qtree.rangeWeight(sector);
+
+            // Compensate for increasing size of bins. The formula is derived by computing the increase in area from bin to bin,
+            // but then taking the square root since the image content is assumed to be a sketched curve whose length increases
+            // as the square root of the area increase.
+            if (r > 0)
+              weight /= (SQRT_3 * (1 << (r - 1)));
+
+            entry[r * num_polar_bins + p] = weight;
+
+            old_ang = ang;
+          }
+
+          old_radius = radius;
+        }
+      }
+    }
+  }
+
+  THEA_CONSOLE << "... 100%";
+
+  return true;
 }
 
 } // namespace ImageFeatures
