@@ -119,7 +119,7 @@ main(int argc, char * argv[])
     feat_str << feat_names[i];
   }
 
-  THEA_CONSOLE << "Computed " << feat_names.size() << " features: " << feat_str.str();
+  THEA_CONSOLE << "Computed " << feat_names.size() << " feature(s): " << feat_str.str();
 
   // Write features to file
   ofstream out(out_path.c_str());
@@ -169,8 +169,13 @@ computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bi
   THEA_CONSOLE << "Computing shape contexts";
 
   values.clear();
-  ImageFeatures::ShapeContext sc;
-  sc.compute(image, num_polar_bins, num_radial_bins, values);
+
+  try
+  {
+    ImageFeatures::ShapeContext sc(image);
+    sc.compute(num_polar_bins, num_radial_bins, values);
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not compute shape context")
 
   THEA_CONSOLE << "  -- done";
 

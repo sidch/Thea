@@ -53,6 +53,12 @@ class Image;
 namespace Algorithms {
 namespace ImageFeatures {
 
+namespace ShapeContextInternal {
+
+class QuadTree;
+
+} // namespace ShapeContextInternal
+
 /**
  * Computes the shape context at each pixel of a contour image. If the image has more than one channel, the luminance channel is
  * used. Follows the algorithm of:
@@ -62,10 +68,15 @@ namespace ImageFeatures {
 class ShapeContext
 {
   public:
+    /** Constructor. */
+    ShapeContext(Image const & image);
+
+    /** Destructor. */
+    ~ShapeContext();
+
     /**
      * Computes the shape context at each pixel of a contour image.
      *
-     * @param image The input image.
      * @param num_radial_bins Number of divisions in the radial direction.
      * @param num_polar_bins Number of divisions in the angular direction.
      * @param values Computed shape contexts, in a #pixels * \a num_radial_bins * \a num_polar_bins array (#pixels is major
@@ -74,8 +85,25 @@ class ShapeContext
      *   corresponding entries in \a values are set to zero.
      * @param max_radius Limits the area of the context for a pixel to this radius.
      */
-    bool compute(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values,
-                 bool ignore_empty_pixels = true, Real max_radius = -1) const;
+    void compute(long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, bool ignore_empty_pixels = true,
+                 Real max_radius = -1) const;
+
+    /**
+     * Computes the shape context at a single pixel of a contour image.
+     *
+     * @param row Row of pixel.
+     * @param col Column of pixel.
+     * @param num_radial_bins Number of divisions in the radial direction.
+     * @param num_polar_bins Number of divisions in the angular direction.
+     * @param values Computed shape context, in a \a num_radial_bins * \a num_polar_bins array (\a num_radial_bins is major
+     *   dimension for packing).
+     * @param max_radius Limits the area of the context to this radius.
+     */
+    void compute(int row, int col, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, Real max_radius = -1)
+         const;
+
+  private:
+    ShapeContextInternal::QuadTree * qtree;
 
 }; // class ShapeContext
 
