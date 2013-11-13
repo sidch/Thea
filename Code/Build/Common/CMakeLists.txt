@@ -94,6 +94,8 @@ INCLUDE_DIRECTORIES(BEFORE
 FILE(GLOB TheaSources
      ${SourceRoot}/*.cpp
      ${SourceRoot}/Algorithms/*.cpp
+     ${SourceRoot}/Algorithms/ImageFeatures/*.cpp
+     ${SourceRoot}/Algorithms/MeshFeatures/*.cpp
      ${SourceRoot}/Algorithms/dx/*.c
      ${SourceRoot}/Algorithms/fibheap/*.cpp
      ${SourceRoot}/Algorithms/NNLS/*.c
