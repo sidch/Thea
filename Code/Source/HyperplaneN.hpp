@@ -72,7 +72,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     THEA_DEF_POINTER_TYPES(HyperplaneT, shared_ptr, weak_ptr)
 
     /** Default constructor. */
-    HyperplaneNBase() : normal(Vector3::zero()), dist(0) {}
+    HyperplaneNBase() : normal(VectorT::zero()), dist(0) {}
 
     /** Construct a hyperplane from a point on it, and the direction vector of the hyperplane (need not be a unit vector). */
     static HyperplaneT fromPointAndNormal(VectorT const & point_, VectorT const & normal_)
