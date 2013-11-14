@@ -185,6 +185,7 @@ struct QuadTree
 
     nodes.push_back(QuadTreeNode());
     nodes[0].rect.set(Vector2(0, 0), Vector2(w - 1, h - 1));
+    initWeight(&nodes[0]);
     buildTree(0);
   }
 
@@ -253,12 +254,12 @@ struct QuadTree
     node->weight /= 255.0;  // normalize each pixel's weight to [0, 1]
   }
 
-  Real rangeWeight(Sector const & range)
+  Real rangeWeight(Sector const & range) const
   {
     return rangeWeight(&nodes[0], range);
   }
 
-  Real rangeWeight(QuadTreeNode const * node, Sector const & range)
+  Real rangeWeight(QuadTreeNode const * node, Sector const & range) const
   {
     if (range.contains(node->rect))
       return node->weight;
@@ -344,8 +345,6 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real>
 
     for (int j = 0; j < w; ++j, entry += entry_size)
     {
-      // THEA_CONSOLE << "ShapeContext: -- Pixel (" << i << ", " << j << ") = " << (int)scanline[j];
-
       if (ignore_empty_pixels && scanline[j] == 0)
         std::fill(entry, entry + entry_size, 0);
       else
@@ -376,6 +375,8 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real>
 
           old_radius = radius;
         }
+
+        THEA_CONSOLE << '\n';
       }
     }
   }
