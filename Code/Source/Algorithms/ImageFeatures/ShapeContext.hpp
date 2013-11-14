@@ -51,6 +51,8 @@ namespace Thea {
 class Image;
 
 namespace Algorithms {
+
+/** Namespace for classes that compute features on an image. */
 namespace ImageFeatures {
 
 namespace ShapeContextInternal {
