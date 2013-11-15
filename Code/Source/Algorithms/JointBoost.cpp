@@ -100,8 +100,21 @@ JointBoost::clear()
   stumps.clear();
 }
 
-void
-JointBoost::train(TrainingData const & training_data_)
+std::string
+JointBoost::getClassName(long i) const
+{
+  if (class_names.empty())
+  {
+    std::ostringstream rout;
+    rout << i;
+    return rout.str();
+  }
+  else
+    return class_names[(array_size_t)i];
+}
+
+long
+JointBoost::train(TrainingData const & training_data_, TrainingData const * validation_data_)
 {
   alwaysAssertM(training_data_.numExamples() > 0, "JointBoost: No training examples provided");
   alwaysAssertM(num_features == training_data_.numFeatures(), "JointBoost: Unexpected number of features in training data");
@@ -134,12 +147,17 @@ JointBoost::train(TrainingData const & training_data_)
   if (max_thresholds_fraction <= 0)
     max_thresholds_fraction = 1.0;  // test all features as thresholds by default
 
+  // Get class names from training data, if available
+  training_data->getClassNames(class_names);
+  alwaysAssertM(class_names.empty() || (long)class_names.size() == num_classes,
+                "JointBoost: Incorrect number of class names specified");
+
   // Get classes for training data
   TheaArray<long> classes;
   training_data->getClasses(classes);
 
   // Initialize the weights
-  TheaArray<long> training_weights;
+  TheaArray<double> training_weights;
   training_data->getWeights(training_weights);
   weights.resize(num_classes, (long)classes.size());
   if (!training_weights.empty())
@@ -168,6 +186,7 @@ JointBoost::train(TrainingData const & training_data_)
   // Do several rounds of boosting, adding a new stump (weak learner) in each round
   stumps.clear();
   double error = -1;
+  double validation_error = -1;
   for (long round = 0; round < max_rounds; ++round)
   {
     if (options.verbose) THEA_CONSOLE << "JointBoost: Training round " << round;
@@ -194,51 +213,90 @@ JointBoost::train(TrainingData const & training_data_)
 
     // Optimize this stump
     double round_err = optimizeStump(*stump, classes);
+    double round_validation_err = -1;
 
     if (options.verbose)
       THEA_CONSOLE << "JointBoost:     Error in round " << round << " = " << round_err << " with " << stump->toString();
 
-    if (round_err >= 0)
+    if (round_err <= 0)
+      break;
+
+    // Check if we should stop at this point
+    if (round >= min_rounds)
     {
-      // Check if we should stop at this point
-      if (round >= min_rounds && error >= 0)
+      // Check if error reduction is below threshold
+      if (error >= 0)
       {
         double err_reduction = error - round_err;
         if (err_reduction < min_fractional_error_reduction * error)
+        {
+          if (options.verbose)
+            THEA_CONSOLE << "JointBoost: Stopping training, fractional error reduction less than threshold";
+
           break;
+        }
       }
 
-      // We have a new error value
-      error = round_err;
+      // Check if error has increased on validation set
+      if (validation_data_)
+      {
+        round_validation_err = computeValidationError(*validation_data_, stump);
 
-      // Add the stump to the strong classifier
-      stumps.push_back(stump);
-
-      // Update weights
-      TheaArray<double> stump_features;
-      training_data->getFeature(stump->f, stump_features);
-
-      for (long c = 0; c < num_classes; ++c)
-        for (array_size_t i = 0; i < classes.size(); ++i)
+        if (validation_error >= 0 && round_validation_err > validation_error)
         {
-          // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+          if (options.verbose)
+            THEA_CONSOLE << "JointBoost: Stopping training, validation error increased from " << validation_error << " to "
+                         << round_validation_err;
 
-          int z = (classes[i] == c ? +1 : -1);
-          double h = (*stump)(stump_features[i], c);
-
-          // THEA_CONSOLE << "      h[i = " << i << ", c = " << c << "] = " << h << ", z = " << z;
-
-          weights(c, (long)i) *= std::exp(-z * h);
-
-          // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+          break;
         }
+      }
     }
+
+    // We have new error values
+    error = round_err;
+    validation_error = round_validation_err;
+
+    // Add the stump to the strong classifier
+    stumps.push_back(stump);
+
+    // Update weights
+    TheaArray<double> stump_features;
+    training_data->getFeature(stump->f, stump_features);
+
+    for (long c = 0; c < num_classes; ++c)
+      for (array_size_t i = 0; i < classes.size(); ++i)
+      {
+        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+
+        int z = (classes[i] == c ? +1 : -1);
+        double h = (*stump)(stump_features[i], c);
+
+        // THEA_CONSOLE << "      h[i = " << i << ", c = " << c << "] = " << h << ", z = " << z;
+
+        weights(c, (long)i) *= std::exp(-z * h);
+
+        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+      }
   }
 
   training_data = NULL;
 
   if (options.verbose)
-    THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error;
+  {
+    if (validation_data_)
+    {
+      if (validation_error < 0)
+        validation_error = computeValidationError(*validation_data_);
+
+      THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error
+                   << ", validation error " << validation_error;
+    }
+    else
+      THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error;
+  }
+
+  return (long)stumps.size();
 }
 
 double
@@ -705,12 +763,49 @@ JointBoost::predict(double const * features, double * class_probabilities) const
   return best_class;
 }
 
+double
+JointBoost::computeValidationError(TrainingData const & validation_data_, SharedStump::Ptr new_stump)
+{
+  alwaysAssertM(validation_data_.numFeatures() == num_features, "JointBoost: Validation set has different number of features");
+
+  if (new_stump)
+    stumps.push_back(new_stump);
+
+  Matrix<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
+  TheaArray<double> feat;
+  for (long i = 0; i < num_features; ++i)
+  {
+    validation_data_.getFeature(i, feat);
+    validation_features.setColumn(i, &feat[0]);
+  }
+
+  TheaArray<long> validation_classes;
+  TheaArray<double> validation_weights;
+
+  validation_data_.getClasses(validation_classes);
+  validation_data_.getWeights(validation_weights);
+
+  double err = 0;
+  for (long i = 0; i < validation_features.numRows(); ++i)
+  {
+    long predicted = predict(&validation_features.getMutable(i, 0));
+    if (predicted != validation_classes[i])
+      err += validation_weights[i];
+  }
+
+  if (new_stump)
+    stumps.pop_back();
+
+  return err;
+}
+
 bool
 JointBoost::Options::load(std::string const & path)
 {
   try
   {
     // FIXME: This is currently needed because TextInputStream crashes if the file cannot be read
+    // UPDATE: Was this fixed by importing the G3D I/O classes into Thea?
     {
       std::ifstream in(path.c_str());
       if (!in)
@@ -733,6 +828,7 @@ JointBoost::Options::save(std::string const & path) const
   {
     // FIXME: This is currently needed because TextOutputStream may crash (?) if the file cannot be written (going by the
     // corresponding crash for TextInputStream)
+    // UPDATE: Was this fixed by importing the G3D I/O classes into Thea?
     {
       std::ofstream out(path.c_str());
       if (!out)
@@ -938,6 +1034,23 @@ JointBoost::deserialize(std::istream & in)
     return false;
   }
 
+  class_names.resize((array_size_t)num_classes);
+  for (array_size_t i = 0; i < class_names.size(); )
+  {
+    if (!std::getline(in, class_names[i]))
+    {
+      THEA_ERROR << "JointBoost: Could not read name of class " << i;
+      return false;
+    }
+
+    class_names[i] = trimWhitespace(class_names[i]);
+
+    if (class_names[i].empty())
+      continue;
+    else
+      i++;
+  }
+
   long num_stumps = 0;
   if (!(in >> num_stumps))
   {
@@ -969,7 +1082,20 @@ bool
 JointBoost::serialize(std::ostream & out) const
 {
   out << num_classes << '\n'
-      << num_features << std::endl;
+      << num_features << '\n' << std::endl;
+
+  if (class_names.empty())
+  {
+    for (int i = 0; i < num_classes; ++i)
+      out << i << std::endl;
+  }
+  else
+  {
+    for (array_size_t i = 0; i < class_names.size(); ++i)
+      out << class_names[i] << std::endl;
+  }
+
+  out << std::endl;
 
   out << stumps.size() << std::endl;
   for (std::size_t i = 0; i < stumps.size(); ++i)
