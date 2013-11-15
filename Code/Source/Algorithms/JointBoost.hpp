@@ -96,7 +96,13 @@ class THEA_API JointBoost
         virtual void getClasses(TheaArray<long> & classes) const = 0;
 
         /** Get the weight of each training example. If an empty array is returned, all weights are set to 1. */
-        virtual void getWeights(TheaArray<long> & weights) const { weights.clear(); }
+        virtual void getWeights(TheaArray<double> & weights) const { weights.clear(); }
+
+        /**
+         * Get the name of each class. If it returns an empty vector, the numeric index of the class will be used as the label
+         * name.
+         */
+        virtual void getClassNames(TheaArray<std::string> & names) const { names.clear(); };
 
     }; // class TrainingData
 
@@ -204,6 +210,9 @@ class THEA_API JointBoost
     /** Get the number of features for an object. */
     long numFeatures() const { return num_features; }
 
+    /** Get the name of a class. */
+    std::string getClassName(long i) const;
+
     /** Get the current options for the classifier. */
     Options const & getOptions() const { return options; }
 
@@ -211,8 +220,12 @@ class THEA_API JointBoost
      * Train the strong classifier by several rounds of boosting.
      *
      * @param training_data_ Data used for training the classifier.
+     * @param validation_data_ [Optional] Data used for cross-validation. Training is stopped if the error on the validation set
+     *   starts increasing.
+     *
+     * @return The number of stumps added during the training process.
      */
-    void train(TrainingData const & training_data_);
+    long train(TrainingData const & training_data_, TrainingData const * validation_data_ = NULL);
 
     /**
      * Predict the most likely class for an object with a given set of features, optionally also returning the probability of
@@ -286,15 +299,24 @@ class THEA_API JointBoost
     double fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
                     long * num_generated_thresholds = NULL);
 
+    /**
+     * Compute the prediction error (number of misclassified examples) on a validation set.
+     *
+     * @param validation_data_ Validation data set.
+     * @param new_stump If non-null, added to the current set of stumps before measuring error (and removed afterwards).
+     */
+    double computeValidationError(TrainingData const & validation_data_, SharedStump::Ptr new_stump = SharedStump::Ptr());
+
     /** Load the classifier from an input stream. */
     bool deserialize(std::istream & in);
 
     /** Save the trained classifier to an output stream. */
     bool serialize(std::ostream & out) const;
 
-    long num_classes;   ///< Number of object classes.
-    long num_features;  ///< Number of features per object.
-    Options options;    ///< Additional options.
+    long num_classes;                    ///< Number of object classes.
+    long num_features;                   ///< Number of features per object.
+    TheaArray<std::string> class_names;  ///< Name of each class, if specified in training data.
+    Options options;                     ///< Additional options.
 
     TrainingData const * training_data;  ///< Cached handle to training data, valid only during training.
     double feature_sampling_fraction;  ///< Cached fraction of features test per round, valid only during training.
