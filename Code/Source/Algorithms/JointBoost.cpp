@@ -785,12 +785,15 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
   validation_data_.getClasses(validation_classes);
   validation_data_.getWeights(validation_weights);
 
+  alwaysAssertM((long)validation_classes.size() == validation_features.numRows(),
+                "JointBoost: Ground truth classes for validation data do not match number of examples");
+
   double err = 0;
   for (long i = 0; i < validation_features.numRows(); ++i)
   {
     long predicted = predict(&validation_features.getMutable(i, 0));
     if (predicted != validation_classes[i])
-      err += validation_weights[i];
+      err += (validation_weights.empty() ? 1.0 : validation_weights[i]);
   }
 
   if (new_stump)
