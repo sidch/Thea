@@ -72,13 +72,13 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     typedef T *       Iterator;                   ///< Iterator over matrix elements.
     typedef T const * ConstIterator;              ///< Const iterator over matrix elements.
 
-    /**
-     * Constructs a matrix of a given size, filled with a given value. If the number of columns is omitted or zero, a square
-     * matrix is created.
-     */
-    Matrix(long num_rows_ = 0, long num_cols_ = 0) : num_rows(0), num_cols(0), values(NULL), owns_memory(true)
+    /** Constructs an empty matrix. */
+    Matrix() : num_rows(0), num_cols(0), values(NULL), owns_memory(true) {}
+
+    /** Constructs a matrix of a given size, filled with a given value. */
+    Matrix(long num_rows_, long num_cols_) : num_rows(0), num_cols(0), values(NULL), owns_memory(true)
     {
-      resize(num_rows_, num_cols_ ? num_cols_ : num_rows_);
+      resize(num_rows_, num_cols_);
     }
 
     /** Constructs a matrix of a given size, filled with a given value. */
@@ -265,6 +265,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
      * Append a single (uninitialized) row to a row-major matrix. If the matrix is not row-major, or if the matrix does not own
      * its memory block, an assertion failure occurs.
      *
+     * @warning This is a slow operation especially for large matrices! Avoid calling it repeatedly. Instead, preallocate memory
+     *   for the matrix if possible. It is better to overallocate and then free unused memory at the end with a call to
+     *   resize().
+     *
      * @see appendRows()
      */
     void appendRow()
@@ -275,6 +279,9 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /**
      * Append one or more (uninitialized) rows to a row-major matrix. If the matrix is not row-major, or if the matrix does not
      * own its memory block, an assertion failure occurs. \a num_rows_to_append must be non-negative.
+     *
+     * @warning This is very slow if you repeatedly add small numbers of rows to a large matrix. Instead, preallocate memory for
+     *   the matrix if possible. It is better to overallocate and then free unused memory at the end with a call to resize().
      *
      * @see appendRow()
      */
@@ -305,6 +312,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
      * Append a single (uninitialized) column to a column-major matrix. If the matrix is not column-major, or if the matrix does
      * not own its memory block, an assertion failure occurs.
      *
+     * @warning This is a slow operation especially for large matrices! Avoid calling it repeatedly. Instead, preallocate memory
+     *   for the matrix if possible. It is better to overallocate and then free unused memory at the end with a call to
+     *   resize().
+     *
      * @see appendColumns()
      */
     void appendColumn()
@@ -315,6 +326,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /**
      * Append one or more (uninitialized) columns to a column-major matrix. If the matrix is not column-major, or if the matrix
      * does not own its memory block, an assertion failure occurs. \a num_cols_to_append must be non-negative.
+     *
+     * @warning This is very slow if you repeatedly add small numbers of columns to a large matrix. Instead, preallocate memory
+     *   for the matrix if possible. It is better to overallocate and then free unused memory at the end with a call to
+     *   resize().
      *
      * @see appendColumn()
      */
