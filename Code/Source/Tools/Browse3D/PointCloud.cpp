@@ -40,11 +40,13 @@
 //============================================================================
 
 #include "PointCloud.hpp"
+#include "App.hpp"
 #include "Util.hpp"
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
 #include "../../Math.hpp"
+#include <algorithm>
 #include <fstream>
 
 namespace Browse3D {
@@ -119,6 +121,10 @@ PointCloud::load(std::string const & path)
   THEA_CONSOLE << getName() << ": Loaded " << points.size() << " points with bounding box " << bounds.toString() << " from '"
                << path << '\'';
 
+  std::string feat_path = getFeaturesFilename(path);
+  if (!feat_path.empty() && loadFeatures(feat_path))
+    THEA_CONSOLE << getName() << ": Loaded " << features.size() << " features from '" << feat_path << '\'';
+
   std::string graph_path = FilePath::concat(FilePath::parent(path), FilePath::completeBaseName(path) + ".graph");
   if (FileSystem::exists(graph_path))
   {
@@ -171,6 +177,127 @@ PointCloud::load(std::string const & path)
   return true;
 }
 
+bool
+PointCloud::loadFeatures(std::string const & filename_)
+{
+  bool status = true;
+  try
+  {
+    std::ifstream in(filename_.c_str());
+    if (!in)
+      throw Error("Could not open file");
+
+    features.resize(1);
+    features[0].resize(points.size());
+
+    std::string line;
+    Vector3 p;
+    Real f;
+
+    for (array_size_t i = 0; i < points.size(); ++i)
+    {
+      if (!std::getline(in, line))
+        throw Error(format("Could not read feature for point %ld", (long)i));
+
+      std::istringstream line_in(line);
+      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
+        throw Error(format("Could not read first feature for point %ld", (long)i));
+
+      features[0][i] = f;
+
+      if (i == 0)
+      {
+        while (line_in >> f)
+        {
+          features.push_back(TheaArray<Real>(points.size()));
+          features.back()[0] = f;
+        }
+      }
+      else
+      {
+        for (array_size_t j = 1; j < features.size(); ++j)
+        {
+          if (!(line_in >> f))
+            throw Error(format("Could not read feature %ld for point %ld", (long)j, (long)i));
+
+          features[j][i] = f;
+        }
+      }
+    }
+
+    if (features[0].empty())
+    {
+      features.clear();
+      return true;
+    }
+
+    if (app().options().accentuate_features)
+    {
+      for (array_size_t i = 0; i < features.size(); ++i)
+      {
+        TheaArray<Real> sorted = features[i];
+        std::sort(features.begin(), features.end());
+
+        array_size_t tenth = (int)(0.1 * sorted.size());
+        Real lo = *(sorted.begin() + tenth);
+
+        array_size_t ninetieth = (int)(0.9 * sorted.size());
+        Real hi = *(sorted.begin() + ninetieth);
+
+        Real range = hi - lo;
+
+        if (range < 1e-20)
+        {
+          lo = sorted.front();
+          hi = sorted.back();
+          range = hi - lo;
+
+          if (range < 1e-20)
+            continue;
+        }
+
+        if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
+        {
+          for (array_size_t j = 0; j < features[i].size(); ++j)
+            features[i][j] = Math::clamp((features[i][j] - lo) / range, (Real)0, (Real)1);
+        }
+        else
+        {
+          Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
+          for (array_size_t j = 0; j < features[i].size(); ++j)
+            features[i][j] = Math::clamp((features[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+        }
+      }
+    }
+  }
+  THEA_STANDARD_CATCH_BLOCKS({ features.clear(); status = false; }, WARNING, "Couldn't load point features from '%s'",
+                             filename_.c_str())
+
+  return status;
+}
+
+std::string
+PointCloud::getFeaturesFilename(std::string const & filename) const
+{
+  std::string ffn = filename + ".features";
+  if (FileSystem::exists(ffn))
+    return ffn;
+  else
+  {
+    ffn = FilePath::concat(FilePath::parent(filename), FilePath::completeBaseName(filename) + ".features");
+    if (FileSystem::exists(ffn))
+      return ffn;
+    else
+    {
+      ffn = FilePath::concat(FilePath::parent(filename), FilePath::baseName(filename) + ".features");
+      if (FileSystem::exists(ffn))
+        return ffn;
+    }
+  }
+
+  return "";
+}
+
 AxisAlignedBox3 const &
 PointCloud::getBounds() const
 {
@@ -210,7 +337,16 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
   Real point_radius = Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
   for (array_size_t i = 0; i < points.size(); ++i)
   {
-    if (has_normals)
+    if (!features.empty())
+    {
+      switch (features.size())
+      {
+        case 1:   render_system.setColor(ColorRGB::jetColorMap(features[0][i])); break;
+        case 2:   render_system.setColor(ColorRGB(features[0][i], features[1][i], 1.0f)); break;
+        default:  render_system.setColor(ColorRGB(features[0][i], features[1][i], features[2][i])); break;
+      }
+    }
+    else if (has_normals)
     {
       Vector3 n = points[i].n;
       if (!normals_are_normalized)
@@ -222,7 +358,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
     drawSphere(render_system, points[i].p, point_radius, 8);
   }
 
-  if (has_graph)
+  if (has_graph && app().options().show_graph)
   {
     render_system.pushShader();
     render_system.pushTextures();

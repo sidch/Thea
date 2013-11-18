@@ -97,11 +97,19 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     /** Invalidate the bounding box of the point cloud. */
     void invalidateBounds();
 
+    /** Load features from a file. */
+    bool loadFeatures(std::string const & filename_);
+
+    /** Get the path to the file in which features are stored, given the path to the point cloud. */
+    std::string getFeaturesFilename(std::string const & filename) const;
+
     TheaArray<Point> points;
 
     bool has_normals;
     bool normals_are_normalized;
     AxisAlignedBox3 bounds;
+
+    TheaArray< TheaArray<Real> > features;
 
     bool has_graph;
     TheaArray< TheaArray<long> > graph;

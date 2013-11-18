@@ -54,6 +54,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMouseEvent>
+#include <algorithm>
 #include <fstream>
 
 namespace Browse3D {
@@ -575,7 +576,14 @@ Model::loadSamples(QString const & filename_)
 QString
 Model::getSamplesFilename() const
 {
-  return getFilename() + ".picked";
+  QString sfn = getFilename() + ".picked";
+  if (QFileInfo(sfn).exists())
+    return sfn;
+  else
+  {
+    QFileInfo info(getFilename());
+    return info.dir().filePath(info.baseName() + ".picked");
+  }
 }
 
 bool
@@ -734,6 +742,45 @@ Model::loadFeatures(QString const & filename_)
     if (feat_pts.empty())
       return true;
 
+    if (app().options().accentuate_features)
+    {
+      for (array_size_t i = 0; i < feat_vals.size(); ++i)
+      {
+        TheaArray<Real> sorted = feat_vals[i];
+        std::sort(feat_vals.begin(), feat_vals.end());
+
+        array_size_t tenth = (int)(0.1 * sorted.size());
+        Real lo = *(sorted.begin() + tenth);
+
+        array_size_t ninetieth = (int)(0.9 * sorted.size());
+        Real hi = *(sorted.begin() + ninetieth);
+
+        Real range = hi - lo;
+
+        if (range < 1e-20)
+        {
+          lo = sorted.front();
+          hi = sorted.back();
+          range = hi - lo;
+
+          if (range < 1e-20)
+            continue;
+        }
+
+        if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
+        {
+          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
+        }
+        else
+        {
+          Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
+          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+        }
+      }
+    }
+
     PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
     VertexFeatureVisitor visitor(&fkdtree,
                                  &feat_vals[0][0],
@@ -750,7 +797,14 @@ Model::loadFeatures(QString const & filename_)
 QString
 Model::getFeaturesFilename() const
 {
-  return getFilename() + ".features";
+  QString ffn = getFilename() + ".features";
+  if (QFileInfo(ffn).exists())
+    return ffn;
+  else
+  {
+    QFileInfo info(getFilename());
+    return info.dir().filePath(info.baseName() + ".features");
+  }
 }
 
 AxisAlignedBox3 const &
