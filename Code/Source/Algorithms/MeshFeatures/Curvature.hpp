@@ -229,9 +229,9 @@ class Curvature
     }
 
     /**
-     * Compute the (numerically, ignoring sign) minimum and maximum <em>projected</em> curvatures at a given set of query points
-     * with known normals on the mesh. The projected curvature is an approximation to the actual curvature, obtained by
-     * projecting sample points in the neighborhood of the query point onto the normal.
+     * Compute the <em>projected</em> curvatures at a given set of query points with known normals on the mesh. The projected
+     * curvature is an approximation to the actual curvature, obtained by projecting sample points in the neighborhood of the
+     * query point onto the normal.
      *
      * @note The returned curvatures are signed. Positive curvature surfaces curve <em>away</em> from the normal.
      */

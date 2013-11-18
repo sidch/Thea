@@ -2,8 +2,10 @@
 #include "../../Algorithms/IntersectionTester.hpp"
 #include "../../Algorithms/KDTree3.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
+#include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -92,12 +94,14 @@ typedef MeshKDTree<Mesh> KDTree;
 typedef KDTree3<SurfaceSample *> SampleKDTree;
 
 TheaArray<SurfaceSample> samples;
+array_size_t orig_num_samples = 0;
 KDTree kdtree;
 SampleKDTree sample_kdtree;
 Real sample_nbd_radius;
 
 void computeSampleNeighborhoodRadius();
 void computeSampleNeighbors(SurfaceSample & sample);
+void extractOriginalAdjacencies();
 
 int
 main(int argc, char * argv[])
@@ -206,14 +210,11 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Loaded " << samples.size() << " samples(s) from " << samples_path;
 
   //===========================================================================================================================
-  // KD-tree on mesh and points
+  // KD-tree on mesh
   //===========================================================================================================================
 
   kdtree.add(mg);
   kdtree.init();
-
-  sample_kdtree.init(RefToPtrIterator< TheaArray<SurfaceSample>::iterator >(samples.begin()),
-                     RefToPtrIterator< TheaArray<SurfaceSample>::iterator >(samples.end()));
 
   //===========================================================================================================================
   // If the samples have no normals, compute them
@@ -237,6 +238,41 @@ main(int argc, char * argv[])
   }
 
   //===========================================================================================================================
+  // Augment the number of samples if necessary
+  //===========================================================================================================================
+
+  static array_size_t const MIN_SAMPLES = 10000;
+
+  orig_num_samples = samples.size();
+  bool added_extra_samples = false;
+  if (orig_num_samples < MIN_SAMPLES)
+  {
+    TheaArray<Vector3> positions;
+    TheaArray<Vector3> face_normals;
+
+    MeshSampler<Mesh> sampler(mg);
+    sampler.sampleEvenlyByArea(MIN_SAMPLES - orig_num_samples, positions, &face_normals);
+
+    for (array_size_t i = 0; i < positions.size(); ++i)
+    {
+      s.p = positions[i];
+      s.n = face_normals[i];
+      samples.push_back(s);
+    }
+
+    added_extra_samples = (samples.size() > orig_num_samples);
+    if (added_extra_samples)
+      THEA_CONSOLE << samples.size() - orig_num_samples << " extra samples added to original set, for density";
+  }
+
+  //===========================================================================================================================
+  // KD-tree on samples
+  //===========================================================================================================================
+
+  sample_kdtree.init(RefToPtrIterator< TheaArray<SurfaceSample>::iterator >(samples.begin()),
+                     RefToPtrIterator< TheaArray<SurfaceSample>::iterator >(samples.end()));
+
+  //===========================================================================================================================
   // Compute neighbors
   //===========================================================================================================================
 
@@ -244,6 +280,19 @@ main(int argc, char * argv[])
 
   for (array_size_t i = 0; i < samples.size(); ++i)
     computeSampleNeighbors(samples[i]);
+
+  THEA_CONSOLE << "Computed sample adjacencies";
+
+  //===========================================================================================================================
+  // If we added extra samples, we must recompute neighbors only among the original samples
+  //===========================================================================================================================
+
+  if (added_extra_samples)
+  {
+    extractOriginalAdjacencies();
+
+    THEA_CONSOLE << "Adjacencies computed on original samples using extra samples as intermediates";
+  }
 
   //===========================================================================================================================
   // Write graph to file
@@ -257,13 +306,15 @@ main(int argc, char * argv[])
   }
 
   double sum_degrees = 0;
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (array_size_t i = 0; i < orig_num_samples; ++i)
   {
     out << samples[i].nbrs.size();
 
     for (int j = 0; j < samples[i].nbrs.size(); ++j)
     {
       size_t index = samples[i].nbrs[j].sample - &samples[0];
+      alwaysAssertM(index < orig_num_samples, "Neighbor index out of bounds");
+
       out << ' ' << index;
     }
 
@@ -272,7 +323,7 @@ main(int argc, char * argv[])
     sum_degrees += samples[i].nbrs.size();
   }
 
-  THEA_CONSOLE << "Wrote sample graph of average degree " << sum_degrees / samples.size() << " to " << out_path;
+  THEA_CONSOLE << "Wrote sample graph of average degree " << sum_degrees / orig_num_samples << " to " << out_path;
 
   return 0;
 }
@@ -389,4 +440,91 @@ computeSampleNeighbors(SurfaceSample & sample)
   THEA_CONSOLE << getName() << ": Neighbors of sample " << &sample << " updated in " << 1000 * timer.elapsedTime()
                << "ms, sample has " << sample.nbrs.size() << " neighbors";
 #endif
+}
+
+struct Graph
+{
+  typedef TheaArray<SurfaceSample> NodeArray;
+  typedef SurfaceSample::NeighborSet NeighborSet;
+
+  NodeArray * nodes;
+
+  typedef SurfaceSample * VertexHandle;
+  typedef SurfaceSample const * VertexConstHandle;
+  typedef NodeArray::iterator VertexIterator;
+  typedef NodeArray::const_iterator VertexConstIterator;
+
+  typedef Neighbor * NeighborIterator;
+  typedef Neighbor const * NeighborConstIterator;
+
+  Graph(NodeArray * nodes_) : nodes(nodes_) {}
+
+  long numVertices() const { return (long)nodes->size(); }
+
+  VertexIterator verticesBegin() { return nodes->begin(); }
+  VertexConstIterator verticesBegin() const { return nodes->begin(); }
+
+  VertexIterator verticesEnd() { return nodes->end(); }
+  VertexConstIterator verticesEnd() const { return nodes->end(); }
+
+  VertexHandle getVertex(VertexIterator vi) { return &(*vi); }
+  VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
+
+  long numNeighbors(VertexConstHandle vertex) const { return vertex->nbrs.size(); }
+
+  NeighborIterator neighborsBegin(VertexHandle vertex)
+  {
+    return vertex->nbrs.isEmpty() ? NULL : const_cast<Neighbor *>(&vertex->nbrs[0]);
+  }
+
+  NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
+  {
+    return vertex->nbrs.isEmpty() ? NULL : &vertex->nbrs[0];
+  }
+
+  NeighborIterator neighborsEnd(VertexHandle vertex) { return neighborsBegin(vertex) + numNeighbors(vertex); }
+  NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const { return neighborsBegin(vertex) + numNeighbors(vertex); }
+
+  VertexHandle getVertex(NeighborIterator ni) { return ni->sample; }
+  VertexConstHandle getVertex(NeighborConstIterator ni) const { return ni->sample; }
+
+  double distance(VertexConstHandle v, NeighborConstIterator ni) const { return ni->separation; }
+};
+
+struct DijkstraCallback
+{
+  DijkstraCallback(SurfaceSample * sample_, array_size_t src_index_) : sample(sample_), src_index(src_index_)
+  {
+    sample->nbrs.clear();
+  }
+
+  bool operator()(Graph::VertexHandle vertex, double distance, bool has_pred, Graph::VertexHandle pred)
+  {
+    array_size_t index = vertex - &samples[0];
+    if (index < orig_num_samples && index != src_index)
+      sample->nbrs.insert(Neighbor(vertex, (Real)distance));
+
+    return false;
+  }
+
+  SurfaceSample * sample;
+  array_size_t src_index;
+};
+
+void
+extractOriginalAdjacencies()
+{
+  Graph graph(&samples);
+  ShortestPaths<Graph> shortest_paths;
+
+  TheaArray<SurfaceSample> samples_with_new_nbrs(orig_num_samples);
+  for (array_size_t i = 0; i < orig_num_samples; ++i)
+  {
+    samples_with_new_nbrs[i] = samples[i];
+    DijkstraCallback callback(&samples_with_new_nbrs[i], i);
+    shortest_paths.dijkstra(graph, &samples[i], &callback);
+  }
+
+  for (array_size_t i = 0; i < orig_num_samples; ++i)
+    samples[i] = samples_with_new_nbrs[i];
 }

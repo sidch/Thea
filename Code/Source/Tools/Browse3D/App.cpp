@@ -83,6 +83,10 @@ App::optsToString() const
       << "\n  resource-dir = " << opts.resource_dir
       << "\n  working-dir = " << opts.working_dir
       << "\n  model = " << opts.model
+      << "\n  bg-plain = " << opts.bg_plain
+      << "\n  bg-color = " << opts.bg_color.toString()
+      << "\n  accentuate-features = " << opts.accentuate_features
+      << "\n  show-graph = " << opts.show_graph
       << '\n';
 
   return oss.str();
@@ -137,14 +141,16 @@ App::parseOptions(int argc, char * argv[])
 
   po::options_description visible("Allowed options");
   visible.add_options()
-          ("help,h",           "Print this help message")
-          ("version,v",        "Print the program version")
-          ("conf",             po::value<std::string>(&conf_file)->default_value("Browse3D.conf"), "Configuration file (overridden by duplicate cmdline options)")
-          ("plugin-dir",       po::value<std::string>(&s_plugin_dir)->default_value(def_plugin_dir), "Plugins directory")
-          ("resource-dir",     po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
-          ("working-dir",      po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
-          ("model",            po::value<std::string>(&s_model), "Model to load on startup")
-          ("bg-color",         po::value<std::string>(&s_bg_color), "Background color")
+          ("help,h",               "Print this help message")
+          ("version,v",            "Print the program version")
+          ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"), "Configuration file (overridden by duplicate cmdline options)")
+          ("plugin-dir",           po::value<std::string>(&s_plugin_dir)->default_value(def_plugin_dir), "Plugins directory")
+          ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
+          ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
+          ("model",                po::value<std::string>(&s_model), "Model to load on startup")
+          ("bg-color",             po::value<std::string>(&s_bg_color), "Background color")
+          ("accentuate-features",  po::value<bool>(&opts.accentuate_features)->default_value(false), "Make feature distributions easier to view?")
+          ("show-graph",           po::value<bool>(&opts.show_graph)->default_value(true), "Show point adjacency graph, if available?")
   ;
 
   po::options_description desc;

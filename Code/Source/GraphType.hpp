@@ -104,7 +104,7 @@ class IsGraph
  * and implement the following functions:
  *
  * \code
- *   long numNeighbors(VertexConstHandle vertex) [const];
+ *   long numNeighbors(VertexConstHandle vertex) const;
  *   Neighbor[Const]Iterator neighborsBegin(Vertex[Const]Handle vertex) [const];
  *   Neighbor[Const]Iterator neighborsEnd(Vertex[Const]Handle vertex) [const];
  *   Vertex[Const]Handle getVertex(Neighbor[Const]Iterator) [const];
