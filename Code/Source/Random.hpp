@@ -152,7 +152,7 @@ class THEA_API Random
     virtual Real uniform01()
     {
       // We could compute the ratio in double precision here for about 1.5x slower performance and slightly better precision.
-      Real const NORM = 1.0f / (Real)0xFFFFFFFFUL;
+      static Real const NORM = 1.0f / (Real)0xFFFFFFFFUL;
       return (Real)bits() * NORM;
     }
 
@@ -185,7 +185,7 @@ class THEA_API Random
      * @param m Number of distinct random integers requested from the range.
      * @param selected Used to return the generated random integers. Assumed to be preallocated to \a m elements.
      */
-     virtual void integers(int32 lo, int32 hi, int32 m, int32 * selected);
+    virtual void integers(int32 lo, int32 hi, int32 m, int32 * selected);
 
     /**
      * Get \a m distinct random integers in [\a lo, \a hi] (endpoints inclusive), sorted in ascending order. Slow if the range
