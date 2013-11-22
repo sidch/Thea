@@ -192,7 +192,7 @@ PointCloud::loadFeatures(std::string const & filename_)
 
     std::string line;
     Vector3 p;
-    Real f;
+    double f;
 
     for (array_size_t i = 0; i < points.size(); ++i)
     {
@@ -203,14 +203,14 @@ PointCloud::loadFeatures(std::string const & filename_)
       if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
         throw Error(format("Could not read first feature for point %ld", (long)i));
 
-      features[0][i] = f;
+      features[0][i] = (Real)f;
 
       if (i == 0)
       {
         while (line_in >> f)
         {
           features.push_back(TheaArray<Real>(points.size()));
-          features.back()[0] = f;
+          features.back()[0] = (Real)f;
         }
       }
       else
@@ -220,7 +220,7 @@ PointCloud::loadFeatures(std::string const & filename_)
           if (!(line_in >> f))
             throw Error(format("Could not read feature %ld for point %ld", (long)j, (long)i));
 
-          features[j][i] = f;
+          features[j][i] = (Real)f;
         }
       }
     }
