@@ -526,11 +526,11 @@ Model::loadSamples(QString const & filename_)
 
       iss >> type >> face_index >> bary[0] >> bary[1] >> bary[2];
 
+      bool read_pos = false;
       if (!(iss >> label))
         label = "";
-
-      iss >> coords[0] >> coords[1] >> coords[2];
-      bool read_pos = (bool)iss;
+      else
+        read_pos = (bool)(iss >> coords[0] >> coords[1] >> coords[2]);
 
       Mesh::Face const & face = Mesh::mapIndexToFace(face_index);
       if (!face)
