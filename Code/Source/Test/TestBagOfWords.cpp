@@ -21,7 +21,7 @@ testBagOfWords()
 {
   static long const NUM_POINT_FEATURES = 100;
   static long const NUM_WORDS = 50;
-  static long const NUM_TRAINING_POINTS = 50000;
+  static long const NUM_TRAINING_POINTS = 101;
   static long const NUM_TEST_POINTS = 5000;
 
   Random rng(0x01234567);

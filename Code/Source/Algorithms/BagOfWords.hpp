@@ -43,10 +43,13 @@
 #define __Thea_Algorithms_BagOfWords_hpp__
 
 #include "../Common.hpp"
+#include "../AtomicInt32.hpp"
+#include "../Math.hpp"
 #include "../Matrix.hpp"
 #include "../Random.hpp"
 #include "../Stopwatch.hpp"
 #include "../System.hpp"
+#include <boost/thread.hpp>
 
 namespace Thea {
 namespace Algorithms {
@@ -55,6 +58,11 @@ namespace Algorithms {
 class THEA_API BagOfWords
 {
   public:
+    THEA_DEF_POINTER_TYPES(BagOfWords, shared_ptr, weak_ptr)
+
+    /** Constructor. */
+    BagOfWords(bool use_threads_ = true) : use_threads(use_threads_) {}
+
     /** Get the number of words in the vocabulary. */
     long numWords() const { return centers.numRows(); }
 
@@ -210,39 +218,101 @@ class THEA_API BagOfWords
       }
     }
 
+    /** Worker class for parallelizing the mapping of points to their closest centers. */
+    template <typename AddressableMatrixT> class CenterMapper
+    {
+      public:
+        /** Constructor. */
+        CenterMapper(BagOfWords const * parent_, long num_centers_, AddressableMatrixT const * points_, long points_begin_,
+                     long points_end_, TheaArray<long> * center_indices_, TheaArray<double> * center_sqdists_)
+        : parent(parent_), num_centers(num_centers_), points(points_), points_begin(points_begin_), points_end(points_end_),
+          center_indices(center_indices_), center_sqdists(center_sqdists_)
+        {}
+
+        /** Main function, called once per thread. */
+        void operator()()
+        {
+          long index = -1;
+          double sqdist = -1;
+          bool changed = false;
+          for (long i = points_begin; i < points_end; ++i)
+          {
+            parent->mapToCenter(num_centers, *points, i, index, sqdist);
+
+            if (center_indices)
+            {
+              changed = changed || ((*center_indices)[(array_size_t)i] != index);
+              (*center_indices)[(array_size_t)i] = index;
+            }
+
+            if (center_sqdists)
+              (*center_sqdists)[(array_size_t)i] = sqdist;
+          }
+
+          if (changed)
+            parent->flag.increment();
+        }
+
+      private:
+        BagOfWords const * parent;
+        long num_centers;
+        AddressableMatrixT const * points;
+        long points_begin;
+        long points_end;
+        TheaArray<long> * center_indices;
+        TheaArray<double> * center_sqdists;
+
+    }; // class CenterMapper
+
+    template <typename AddressableMatrixT> friend class CenterMapper;
+
     /**
      * Map each point to its closest center.
      *
-     * @return true If \a closest_center_indices is null, or if the assignment to centers changed as a result of a call to this
-     *   function.
+     * @return True if \a center_indices is non-null and the assignment to centers changed as a result of a call to this
+     *   function, else false.
      */
     template <typename AddressableMatrixT>
-    bool mapToCenters(long num_centers, AddressableMatrixT const & points, TheaArray<long> * closest_center_indices,
-                      TheaArray<double> * sqdist = NULL) const
+    bool mapToCenters(long num_centers, AddressableMatrixT const & points, TheaArray<long> * center_indices,
+                      TheaArray<double> * center_sqdists = NULL) const
     {
       long num_points = points.numRows();
 
-      if (closest_center_indices) closest_center_indices->resize((array_size_t)num_points, -1);
-      if (sqdist) sqdist->resize((array_size_t)num_points);
+      if (center_indices) center_indices->resize((array_size_t)num_points, -1);
+      if (center_sqdists) center_sqdists->resize((array_size_t)num_points);
 
-      long center_index = -1;
-      double center_sqdist = -1;
-      bool changed = false;
-      for (long i = 0; i < num_points; ++i)
+      flag = 0;
+
+      unsigned int concurrency = boost::thread::hardware_concurrency();
+      if (use_threads && concurrency > 1 && num_points > (long)(2 * concurrency))
       {
-        mapToCenter(num_centers, points, i, center_index, center_sqdist);
+        boost::thread_group pool;
+        double points_per_thread = num_points / (double)concurrency;
 
-        if (closest_center_indices)
+        long points_begin = 0;
+        for (unsigned int i = 0; i < concurrency; ++i)
         {
-          changed = changed || ((*closest_center_indices)[(array_size_t)i] != center_index);
-          (*closest_center_indices)[(array_size_t)i] = center_index;
+          long points_end = (long)Math::round(points_begin + points_per_thread);
+
+          pool.add_thread(new boost::thread(CenterMapper<AddressableMatrixT>(this,
+                                                                             num_centers,
+                                                                             &points,
+                                                                             points_begin,
+                                                                             points_end,
+                                                                             center_indices,
+                                                                             center_sqdists)));
+          points_begin = points_end;
         }
 
-        if (sqdist)
-          (*sqdist)[(array_size_t)i] = center_sqdist;
+        pool.join_all();
+      }
+      else
+      {
+        CenterMapper<AddressableMatrixT> mapper(this, num_centers, &points, 0, num_points, center_indices, center_sqdists);
+        mapper();
       }
 
-      return changed || !closest_center_indices;
+      return (flag.value() > 0);
     }
 
     /** Map a point to its nearest center. */
@@ -277,7 +347,7 @@ class THEA_API BagOfWords
 
     /** Update each center to be the centroid of its cluster */
     template <typename AddressableMatrixT>
-    void updateCenters(AddressableMatrixT const & points, TheaArray<long> const & closest_center_indices)
+    void updateCenters(AddressableMatrixT const & points, TheaArray<long> const & center_indices)
     {
       long num_words = centers.numRows();
       long num_points = points.numRows();
@@ -288,7 +358,7 @@ class THEA_API BagOfWords
       TheaArray<long> num_assigned((array_size_t)num_words, 0);
       for (long i = 0; i < num_points; ++i)
       {
-        long cc_index = closest_center_indices[(array_size_t)i];
+        long cc_index = center_indices[(array_size_t)i];
 
         addPointToCenter(points, i, cc_index);
         num_assigned[(array_size_t)cc_index]++;
@@ -317,7 +387,10 @@ class THEA_API BagOfWords
     }
 
     Matrix<double> centers;
+    bool use_threads;
+
     mutable TheaArray<double> fvec;
+    mutable AtomicInt32 flag;
 
 }; // class BagOfWords
 
