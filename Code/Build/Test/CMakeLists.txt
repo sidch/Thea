@@ -138,6 +138,31 @@ ENDIF()
 ENDIF(NOT APPLE)
 
 #===========================================================
+# TestBagOfWords
+#===========================================================
+
+# Source file lists
+SET(TheaTestBagOfWordsSources
+      ${SourceRoot}/Test/TestBagOfWords.cpp)
+
+# Libraries to link to
+SET(TheaTestBagOfWordsLibraries
+      Thea
+      ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestBagOfWords ${TheaTestBagOfWordsSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestBagOfWords ${TheaTestBagOfWordsLibraries})
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestBagOfWords "${TheaTestBagOfWordsLibraries}")
+ENDIF()
+
+#===========================================================
 # TestCSPARSE
 #===========================================================
 
@@ -499,6 +524,7 @@ ENDIF()
 #===========================================================
 
 SET(TheaTestsDependencies
+    TheaTestBagOfWords
     TheaTestCSPARSE
     TheaTestDisplayMesh
     TheaTestGL
