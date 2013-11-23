@@ -50,6 +50,7 @@
 #include "../Stopwatch.hpp"
 #include "../System.hpp"
 #include <boost/thread.hpp>
+#include <algorithm>
 
 namespace Thea {
 namespace Algorithms {
@@ -87,6 +88,8 @@ class THEA_API BagOfWords
       alwaysAssertM(num_points > 0, "BagOfWords: Number of points must be at least 1");
       alwaysAssertM(num_features > 0, "BagOfWords: Number of features must be at least 1");
 
+      num_words = std::min(num_words, num_points);
+
       THEA_CONSOLE << "BagOfWords: Training model with " << num_words << " word(s) from " << num_points << " point(s)";
 
       Stopwatch timer;
@@ -99,15 +102,16 @@ class THEA_API BagOfWords
       timer.tick();
 
       TheaArray<long> labeling;
-      mapToCenters(num_words, training_points, &labeling);
+      TheaArray<double> sqdist;
+      mapToCenters(num_words, training_points, &labeling, &sqdist);
 
       bool changed = true;
       long num_iterations = 0;
       double start_time = System::time();
       do
       {
-        updateCenters(training_points, labeling);
-        changed = mapToCenters(num_words, training_points, &labeling);
+        updateCenters(training_points, labeling, sqdist);  // FIXME: Check for reassignments and || with changed? Unclear.
+        changed = mapToCenters(num_words, training_points, &labeling, &sqdist);
         num_iterations++;
 
         double curr_time = System::time();
@@ -345,9 +349,13 @@ class THEA_API BagOfWords
       }
     }
 
-    /** Update each center to be the centroid of its cluster */
+    /**
+     * Update each center to be the centroid of its cluster.
+     *
+     * @return True if points were reassigned to fix empty clusters, else false.
+     */
     template <typename AddressableMatrixT>
-    void updateCenters(AddressableMatrixT const & points, TheaArray<long> const & center_indices)
+    bool updateCenters(AddressableMatrixT const & points, TheaArray<long> & center_indices, TheaArray<double> & center_sqdists)
     {
       long num_words = centers.numRows();
       long num_points = points.numRows();
@@ -364,6 +372,44 @@ class THEA_API BagOfWords
         num_assigned[(array_size_t)cc_index]++;
       }
 
+      // If a cluster is empty then:
+      //   1. Find the biggest cluster.
+      //   2. Find the farthest from the center point in the biggest cluster.
+      //   3. Exclude the farthest point from the biggest cluster and form a new 1-point cluster.
+      //
+      // (follows OpenCV)
+
+      bool reassigned = false;
+
+      for (long i = 0; i < num_words; ++i)
+      {
+        if (num_assigned[(array_size_t)i] <= 0)
+        {
+          array_size_t max_cluster = std::max_element(num_assigned.begin(), num_assigned.end()) - num_assigned.begin();
+          alwaysAssertM(num_assigned[max_cluster] > 1, "BagOfWords: Maximum cluster has < 2 points");
+
+          array_size_t farthest = center_sqdists.size();
+          for (array_size_t j = 0; j < center_sqdists.size(); ++j)
+            if (center_indices[j] == (long)max_cluster
+             && (farthest == center_sqdists.size() || center_sqdists[j] > center_sqdists[farthest]))
+              farthest = j;
+
+          alwaysAssertM(farthest < center_sqdists.size(), "BagOfWords: Farthest point in maximum cluster not found");
+
+          // Reassign the point
+          center_indices[farthest] = i;
+          center_sqdists[farthest] = 0.0;
+
+          addPointToCenter(points, (long)farthest, i);
+          subtractPointFromCenter(points, (long)farthest, max_cluster);
+
+          num_assigned[(array_size_t)i]++;
+          num_assigned[max_cluster]--;
+
+          reassigned = true;
+        }
+      }
+
       for (long i = 0; i < num_words; ++i)
       {
         long n = num_assigned[(array_size_t)i];
@@ -373,6 +419,8 @@ class THEA_API BagOfWords
             centers(i, j) /= n;
         }
       }
+
+      return reassigned;
     }
 
     /** Add the feature vector of a point to the coordinates of a center. */
@@ -384,6 +432,17 @@ class THEA_API BagOfWords
 
       for (array_size_t i = 0; i < fvec.size(); ++i)
         centers(center_index, (long)i) += fvec[i];
+    }
+
+    /** Subtract the feature vector of a point from the coordinates of a center. */
+    template <typename AddressableMatrixT>
+    void subtractPointFromCenter(AddressableMatrixT const & points, long point_index, long center_index)
+    {
+      fvec.resize((array_size_t)centers.numColumns());
+      points.getRow(point_index, &fvec[0]);
+
+      for (array_size_t i = 0; i < fvec.size(); ++i)
+        centers(center_index, (long)i) -= fvec[i];
     }
 
     Matrix<double> centers;
