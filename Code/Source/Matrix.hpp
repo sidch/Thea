@@ -380,6 +380,30 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     T & getMutable(long row, long col) { return (*this)(row, col); }
     void set(long row, long col, T const & value) { (*this)(row, col) = value; }
 
+    void getRow(long row, T * values) const
+    {
+      for (long c = 0; c < num_cols; ++c)
+        values[c] = (*this)(row, c);
+    }
+
+    void setRow(long row, T const * values)
+    {
+      for (long c = 0; c < num_cols; ++c)
+        (*this)(row, c) = values[c];
+    }
+
+    void getColumn(long col, T * values) const
+    {
+      for (long r = 0; r < num_rows; ++r)
+        values[r] = (*this)(r, col);
+    }
+
+    void setColumn(long col, T const * values)
+    {
+      for (long r = 0; r < num_rows; ++r)
+        (*this)(r, col) = values[r];
+    }
+
     // This is needed to avoid a Visual Studio warning about inheriting via dominance
     void makeZero() { AddressableBaseT::makeZero(); }
 

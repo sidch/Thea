@@ -126,7 +126,7 @@ class THEA_API Stopwatch
     /** Constructor. */
     Stopwatch(std::string const & name = "Stopwatch");
 
-    /** Amount of time between the most recent tick() and tock(0 calls. 0 if tick() has never been called. */
+    /** Amount of time between the most recent tick() and tock() calls. 0 if tick() has never been called. */
     double elapsedTime() const
     {
       return lastDuration;
