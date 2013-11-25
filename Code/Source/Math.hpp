@@ -348,11 +348,11 @@ round(double x)
 }
 
 /** Clamp a number to lie in the range [lo, hi] (inclusive). */
-template <typename T>
+template <typename T, typename U, typename V>
 T
-clamp(T const & x, T const & lo, T const & hi)
+clamp(T const & x, U const & lo, V const & hi)
 {
-  return x < lo ? lo : (x > hi ? hi : x);
+  return x < lo ? static_cast<T>(lo) : (x > hi ? static_cast<T>(hi) : x);
 }
 
 /**

@@ -1,6 +1,7 @@
 #include "../Algorithms/BagOfWords.hpp"
 #include "../Matrix.hpp"
 #include "../Random.hpp"
+#include "../EnumClass.hpp"
 
 using namespace std;
 using namespace Thea;
