@@ -43,88 +43,49 @@
 #define __Thea_Algorithms_BagOfWords_hpp__
 
 #include "../Common.hpp"
-#include "../AtomicInt32.hpp"
-#include "../Math.hpp"
-#include "../Matrix.hpp"
-#include "../Random.hpp"
-#include "../Stopwatch.hpp"
-#include "../System.hpp"
-#include <boost/thread.hpp>
-#include <algorithm>
+#include "KMeans.hpp"
+#include "../Serializable.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
 /** A bag-of-words model for classifying objects described as a set of points, each point having a feature vector. */
-class THEA_API BagOfWords
+class THEA_API BagOfWords : public Serializable
 {
   public:
     THEA_DEF_POINTER_TYPES(BagOfWords, shared_ptr, weak_ptr)
 
+    /** Options for building the model. */
+    typedef KMeans::Options Options;
+
     /** Constructor. */
-    BagOfWords(bool use_threads_ = true) : use_threads(use_threads_) {}
+    BagOfWords(Options const & options_ = Options::defaults()) : vocabulary(options_) {}
+
+    /** Get the current set of options. */
+    Options const & getOptions() const { return vocabulary.getOptions(); }
+
+    /** Set the current set of options. */
+    void setOptions(Options const & options_) { vocabulary.setOptions(options_); }
 
     /** Get the number of words in the vocabulary. */
-    long numWords() const { return centers.numRows(); }
+    long numWords() const { return vocabulary.numClusters(); }
 
     /** Get the size of the feature vector of a point. */
-    long numPointFeatures() const { return centers.numColumns(); }
+    long numPointFeatures() const { return vocabulary.numPointFeatures(); }
 
     /**
      * Train the Bag-of-Words model from a set of training points, one per row of the input matrix. The points are clustered
      * into a vocabulary of \a num_words words during training.
      *
+     * @param num_words Number of words to cluster points into.
      * @param training_points The set of training points, one vector per row. AddressableMatrixT should have the interface of an
      *   AddressableMatrix of some real-valued scalar type.
-     * @param num_words Number of words to cluster points into.
+     *
+     * @return True if the training converged, else false.
      */
-    template <typename AddressableMatrixT> void train(long num_words, AddressableMatrixT const & training_points)
+    template <typename AddressableMatrixT> bool train(long num_words, AddressableMatrixT const & training_points)
     {
-      alwaysAssertM(num_words > 0, "BagOfWords: Number of words must be at least 1");
-
-      long num_points = training_points.numRows();
-      long num_features = training_points.numColumns();
-
-      alwaysAssertM(num_points > 0, "BagOfWords: Number of points must be at least 1");
-      alwaysAssertM(num_features > 0, "BagOfWords: Number of features must be at least 1");
-
-      num_words = std::min(num_words, num_points);
-
-      THEA_CONSOLE << "BagOfWords: Training model with " << num_words << " word(s) from " << num_points << " point(s)";
-
-      Stopwatch timer;
-      timer.tick();
-
-      selectInitialCenters(num_words, training_points);
-
-      timer.tock();
-      THEA_CONSOLE << "BagOfWords: Selected initial center(s) in " << timer.elapsedTime() << 's';
-      timer.tick();
-
-      TheaArray<long> labeling;
-      TheaArray<double> sqdist;
-      mapToCenters(num_words, training_points, &labeling, &sqdist);
-
-      bool changed = true;
-      long num_iterations = 0;
-      double start_time = System::time();
-      do
-      {
-        updateCenters(training_points, labeling, sqdist);  // FIXME: Check for reassignments and || with changed? Unclear.
-        changed = mapToCenters(num_words, training_points, &labeling, &sqdist);
-        num_iterations++;
-
-        double curr_time = System::time();
-        if (curr_time - start_time > 3)  // print an update every 3 seconds or every iteration, whichever is longer
-        {
-          THEA_CONSOLE << "BagOfWords: -- " << num_iterations << " iteration(s)";
-          start_time = curr_time;
-        }
-
-      } while (changed);
-
-      timer.tock();
-      THEA_CONSOLE << "BagOfWords: Words found after " << num_iterations << " iteration(s) in " << timer.elapsedTime() << 's';
+      return vocabulary.cluster(num_words, training_points);
     }
 
     /**
@@ -141,315 +102,34 @@ class THEA_API BagOfWords
     template <typename AddressableMatrixT, typename U>
     void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = NULL) const
     {
-      alwaysAssertM(centers.numRows() > 0, "BagOfWords: No words found -- model has not been trained");
+      long num_points = points.numRows();
+      TheaArray<long> labeling((array_size_t)num_points);
+      vocabulary.mapToClusters(points, &labeling[0]);
 
-      long num_features = centers.numColumns();
-      alwaysAssertM(num_features == points.numColumns(),
-                    "BagOfWords: Number of point features of test object doesn't match training data");
-
-      long num_words = centers.numRows();
+      long num_words = numWords();
       for (long i = 0; i < num_words; ++i)
         histogram[i] = 0;
 
-      long num_points = points.numRows();
-      long center_index = -1;
-      double center_sqdist = -1;
-      for (long i = 0; i < num_points; ++i)
+      for (array_size_t i = 0; i < labeling.size(); ++i)
       {
-        mapToCenter(num_words, points, i, center_index, center_sqdist);
-
-        debugAssertM(center_index >= 0 && center_index < num_words, "BagOfWords: Invalid closest center index");
-
-        histogram[center_index] += static_cast<U>(point_weights ? point_weights[i] : 1);
+        if (labeling[i] >= 0)
+          histogram[labeling[i]] += static_cast<U>(point_weights ? point_weights[i] : 1);
       }
     }
+
+    /** Load the bag-of-words model from a disk file. */
+    bool load(std::string const & path) { return vocabulary.load(path); }
+
+    /** Save the bag-of-words model to a disk file. */
+    bool save(std::string const & path) const { return vocabulary.save(path); }
+
+    void deserialize(BinaryInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.deserialize(in); }
+    void serialize(BinaryOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.serialize(out); }
+    void deserialize(TextInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.deserialize(in); }
+    void serialize(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.serialize(out); }
 
   private:
-    /** Select initial centers by k-means++. */
-    template <typename AddressableMatrixT>
-    void selectInitialCenters(long num_words, AddressableMatrixT const & training_points)
-    {
-      long num_points = training_points.numRows();
-      long num_features = training_points.numColumns();
-
-      // Choose initial cluster centers by k-means++ [Arthur/Vassilvitskii '07]:
-      // 1. Choose one center uniformly at random from among the data points.
-      // 2. For each data point x, compute D(x), the distance between x and the nearest center that has already been chosen.
-      // 3. Choose one new data point at random as a new center, using a weighted probability distribution where a point x is
-      //    chosen with probability proportional to D(x)^2.
-      // 4. Repeat steps 2 and 3 until k centers have been chosen.
-
-      centers.resize(num_words, num_features);
-      centers.fill(0);
-
-      // First center is randomly chosen
-      long index = Random::common().integer(0, num_points - 1);
-      addPointToCenter(training_points, index, 0);
-
-      // Subsequent centers by k-means++
-      TheaArray<double> sqdist;
-      double start_time = System::time();
-      for (long i = 1; i < num_words; ++i)
-      {
-        mapToCenters(i, training_points, NULL, &sqdist);
-
-        // Sample next center from points with probability proportional to sqdist
-        double sum_sqdist = 0;
-        for (array_size_t j = 0; j < sqdist.size(); ++j)
-          sum_sqdist += sqdist[j];
-
-        double r = Random::common().uniform(0, sum_sqdist);
-        sum_sqdist = 0;
-        index = num_points - 1;  // to compensate for numerical error when r is approximately = sum_sqdist
-        for (array_size_t j = 0; j < sqdist.size(); ++j)
-        {
-          sum_sqdist += sqdist[j];
-          if (sum_sqdist >= r)
-          {
-            index = (long)j;
-            break;
-          }
-        }
-
-        addPointToCenter(training_points, index, i);
-
-        double curr_time = System::time();
-        if (curr_time - start_time > 3)  // print an update every 3 seconds or every iteration, whichever is longer
-        {
-          THEA_CONSOLE << "BagOfWords: -- selected " << i + 1 << " center(s)";
-          start_time = curr_time;
-        }
-      }
-    }
-
-    /** Worker class for parallelizing the mapping of points to their closest centers. */
-    template <typename AddressableMatrixT> class CenterMapper
-    {
-      public:
-        /** Constructor. */
-        CenterMapper(BagOfWords const * parent_, long num_centers_, AddressableMatrixT const * points_, long points_begin_,
-                     long points_end_, TheaArray<long> * center_indices_, TheaArray<double> * center_sqdists_)
-        : parent(parent_), num_centers(num_centers_), points(points_), points_begin(points_begin_), points_end(points_end_),
-          center_indices(center_indices_), center_sqdists(center_sqdists_)
-        {}
-
-        /** Main function, called once per thread. */
-        void operator()()
-        {
-          long index = -1;
-          double sqdist = -1;
-          bool changed = false;
-          for (long i = points_begin; i < points_end; ++i)
-          {
-            parent->mapToCenter(num_centers, *points, i, index, sqdist);
-
-            if (center_indices)
-            {
-              changed = changed || ((*center_indices)[(array_size_t)i] != index);
-              (*center_indices)[(array_size_t)i] = index;
-            }
-
-            if (center_sqdists)
-              (*center_sqdists)[(array_size_t)i] = sqdist;
-          }
-
-          if (changed)
-            parent->flag.increment();
-        }
-
-      private:
-        BagOfWords const * parent;
-        long num_centers;
-        AddressableMatrixT const * points;
-        long points_begin;
-        long points_end;
-        TheaArray<long> * center_indices;
-        TheaArray<double> * center_sqdists;
-
-    }; // class CenterMapper
-
-    template <typename AddressableMatrixT> friend class CenterMapper;
-
-    /**
-     * Map each point to its closest center.
-     *
-     * @return True if \a center_indices is non-null and the assignment to centers changed as a result of a call to this
-     *   function, else false.
-     */
-    template <typename AddressableMatrixT>
-    bool mapToCenters(long num_centers, AddressableMatrixT const & points, TheaArray<long> * center_indices,
-                      TheaArray<double> * center_sqdists = NULL) const
-    {
-      long num_points = points.numRows();
-
-      if (center_indices) center_indices->resize((array_size_t)num_points, -1);
-      if (center_sqdists) center_sqdists->resize((array_size_t)num_points);
-
-      flag = 0;
-
-      unsigned int concurrency = boost::thread::hardware_concurrency();
-      if (use_threads && concurrency > 1 && num_points > (long)(2 * concurrency))
-      {
-        boost::thread_group pool;
-        double points_per_thread = num_points / (double)concurrency;
-
-        long points_begin = 0;
-        for (unsigned int i = 0; i < concurrency; ++i)
-        {
-          long points_end = (long)Math::round(points_begin + points_per_thread);
-
-          pool.add_thread(new boost::thread(CenterMapper<AddressableMatrixT>(this,
-                                                                             num_centers,
-                                                                             &points,
-                                                                             points_begin,
-                                                                             points_end,
-                                                                             center_indices,
-                                                                             center_sqdists)));
-          points_begin = points_end;
-        }
-
-        pool.join_all();
-      }
-      else
-      {
-        CenterMapper<AddressableMatrixT> mapper(this, num_centers, &points, 0, num_points, center_indices, center_sqdists);
-        mapper();
-      }
-
-      return (flag.value() > 0);
-    }
-
-    /** Map a point to its nearest center. */
-    template <typename AddressableMatrixT>
-    void mapToCenter(long num_centers, AddressableMatrixT const & points, long point_index, long & center_index,
-                     double & center_sqdist) const
-    {
-      long num_features = centers.numColumns();
-
-      fvec.resize((array_size_t)num_features);
-      points.getRow(point_index, &fvec[0]);
-
-      center_index = -1;
-      center_sqdist = -1;
-      for (long i = 0; i < num_centers; ++i)
-      {
-        // Compute squared distance to this center
-        double sqdist = 0;
-        for (long j = 0; j < num_features; ++j)
-        {
-          double diff = fvec[(array_size_t)j] - centers(i, j);
-          sqdist += (diff * diff);
-        }
-
-        if (i == 0 || sqdist < center_sqdist)
-        {
-          center_index = i;
-          center_sqdist = sqdist;
-        }
-      }
-    }
-
-    /**
-     * Update each center to be the centroid of its cluster.
-     *
-     * @return True if points were reassigned to fix empty clusters, else false.
-     */
-    template <typename AddressableMatrixT>
-    bool updateCenters(AddressableMatrixT const & points, TheaArray<long> & center_indices, TheaArray<double> & center_sqdists)
-    {
-      long num_words = centers.numRows();
-      long num_points = points.numRows();
-      long num_features = points.numColumns();
-
-      centers.fill(0);
-
-      TheaArray<long> num_assigned((array_size_t)num_words, 0);
-      for (long i = 0; i < num_points; ++i)
-      {
-        long cc_index = center_indices[(array_size_t)i];
-
-        addPointToCenter(points, i, cc_index);
-        num_assigned[(array_size_t)cc_index]++;
-      }
-
-      // If a cluster is empty then:
-      //   1. Find the biggest cluster.
-      //   2. Find the farthest from the center point in the biggest cluster.
-      //   3. Exclude the farthest point from the biggest cluster and form a new 1-point cluster.
-      //
-      // (follows OpenCV)
-
-      bool reassigned = false;
-
-      for (long i = 0; i < num_words; ++i)
-      {
-        if (num_assigned[(array_size_t)i] <= 0)
-        {
-          array_size_t max_cluster = std::max_element(num_assigned.begin(), num_assigned.end()) - num_assigned.begin();
-          alwaysAssertM(num_assigned[max_cluster] > 1, "BagOfWords: Maximum cluster has < 2 points");
-
-          array_size_t farthest = center_sqdists.size();
-          for (array_size_t j = 0; j < center_sqdists.size(); ++j)
-            if (center_indices[j] == (long)max_cluster
-             && (farthest == center_sqdists.size() || center_sqdists[j] > center_sqdists[farthest]))
-              farthest = j;
-
-          alwaysAssertM(farthest < center_sqdists.size(), "BagOfWords: Farthest point in maximum cluster not found");
-
-          // Reassign the point
-          center_indices[farthest] = i;
-          center_sqdists[farthest] = 0.0;
-
-          addPointToCenter(points, (long)farthest, i);
-          subtractPointFromCenter(points, (long)farthest, max_cluster);
-
-          num_assigned[(array_size_t)i]++;
-          num_assigned[max_cluster]--;
-
-          reassigned = true;
-        }
-      }
-
-      for (long i = 0; i < num_words; ++i)
-      {
-        long n = num_assigned[(array_size_t)i];
-        if (n > 0)
-        {
-          for (long j = 0; j < num_features; ++j)
-            centers(i, j) /= n;
-        }
-      }
-
-      return reassigned;
-    }
-
-    /** Add the feature vector of a point to the coordinates of a center. */
-    template <typename AddressableMatrixT>
-    void addPointToCenter(AddressableMatrixT const & points, long point_index, long center_index)
-    {
-      fvec.resize((array_size_t)centers.numColumns());
-      points.getRow(point_index, &fvec[0]);
-
-      for (array_size_t i = 0; i < fvec.size(); ++i)
-        centers(center_index, (long)i) += fvec[i];
-    }
-
-    /** Subtract the feature vector of a point from the coordinates of a center. */
-    template <typename AddressableMatrixT>
-    void subtractPointFromCenter(AddressableMatrixT const & points, long point_index, long center_index)
-    {
-      fvec.resize((array_size_t)centers.numColumns());
-      points.getRow(point_index, &fvec[0]);
-
-      for (array_size_t i = 0; i < fvec.size(); ++i)
-        centers(center_index, (long)i) -= fvec[i];
-    }
-
-    Matrix<double> centers;
-    bool use_threads;
-
-    mutable TheaArray<double> fvec;
-    mutable AtomicInt32 flag;
+    KMeans vocabulary;   ///< The set of learned words.
 
 }; // class BagOfWords
 

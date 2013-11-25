@@ -44,6 +44,7 @@
 
 #include "Platform.hpp"
 #include "AtomicInt32.hpp"
+#include "EnumClass.hpp"
 #include "Error.hpp"
 #include "Log.hpp"
 #include "Memory.hpp"
@@ -107,22 +108,6 @@ do \
 { \
   enum { assert_static__ = 1/(e) }; \
 } while (0)
-
-#define THEA_ENUM_CLASS_BODY(name)                                                                                            \
-    public:                                                                                                                   \
-      name() {}                                                                                                               \
-      template <typename T> explicit name(T value_) : value(static_cast<Value>(value_)) {}                                    \
-      name(Value value_) : value(value_) {}                                                                                   \
-      operator Value() const { return value; }                                                                                \
-      bool operator==(Value other) const { return value == other; }                                                           \
-      bool operator!=(Value other) const { return value != other; }                                                           \
-      bool operator==(name const & other) const { return value == other.value; }                                              \
-      bool operator!=(name const & other) const { return value != other.value; }                                              \
-                                                                                                                              \
-    private:                                                                                                                  \
-      Value value;                                                                                                            \
-                                                                                                                              \
-    public:
 
 /** Coordinate axis-aligned directions upto 4D (enum class). */
 struct THEA_API AxisAlignedDirection

@@ -274,7 +274,7 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     void popIndent();
 
     /**
-     * Write a quoted string. Special characters in the string (e.g. \\, \\t, \\n) are escaped so that TextInputStream will
+     * Write a quoted string. Special characters in the string (e.g. \\, \\t, \\n) are escaped so that TextInputStream will
      * produce the identical string on reading.
      */
     void writeString(std::string const & str);
