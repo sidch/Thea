@@ -84,7 +84,7 @@ namespace Thea {
  */
 THEA_API void parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool strip_quotes = true);
 
-/** Split a string at each occurance of a splitting character and return the number of fields found. */
+/** Split a string at each occurrence of a splitting character and return the number of fields found. */
 THEA_API long stringSplit(std::string const & x, char split_char, TheaArray<std::string> & result,
                           bool skip_empty_fields = false);
 

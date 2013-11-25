@@ -206,7 +206,7 @@ class THEA_API Random
      * Get a set of \a k random integers from the set [0, \a n - 1]. \a subset must have been preallocated to \a k elements. The
      * returned numbers are <em>not</em> necessarily in sorted order.
      */
-    void randomSubset(int32 n, int32 k, int32 * subset);
+    virtual void randomSubset(int32 n, int32 k, int32 * subset);
 
     /**
      * A shared, threadsafe random number generator. Suggested for general usage when a separate object is not required (e.g. as

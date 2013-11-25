@@ -72,7 +72,7 @@ class THEA_API JointBoost
     THEA_DEF_POINTER_TYPES(JointBoost, shared_ptr, weak_ptr)
 
     /** Interface for accessing training data. */
-    class TrainingData
+    class THEA_API TrainingData
     {
       public:
         THEA_DEF_POINTER_TYPES(TrainingData, shared_ptr, weak_ptr)
@@ -110,7 +110,7 @@ class THEA_API JointBoost
      * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter auto-selects a
      * suitable value for that parameter.
      */
-    class Options
+    class THEA_API Options
     {
       public:
         /** Constructor. Sets default options. */

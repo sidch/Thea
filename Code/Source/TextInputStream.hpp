@@ -193,7 +193,7 @@ class THEA_API Token
 }; // class Token
 
 /** Thrown by TextInputStream and other parsers on unexpected input. */
-class THEA_API ParseError : std::runtime_error
+class THEA_API ParseError : public std::runtime_error
 {
   public:
     enum { UNKNOWN = -1 };
@@ -271,7 +271,7 @@ class THEA_API ParseError : std::runtime_error
  * <b>Examples</b>
  *
  * <pre>
- * TextInputStream ti(TextInputStream::FROM_STRING, "name = \"Max\", height = 6");
+ * TextInputStream ti(TextInputStream::FROM_STRING, "name = 'Max', height = 6");
  *
  * Token t;
  *
@@ -288,7 +288,7 @@ class THEA_API ParseError : std::runtime_error
  * </pre>
  *
  * <pre>
- * TextInputStream ti(TextInputStream::FROM_STRING, "name = \"Max\", height = 6");
+ * TextInputStream ti(TextInputStream::FROM_STRING, "name = 'Max', height = 6");
  * ti.readSymbols("name", "=");
  * std::string name = ti.readString();
  * ti.readSymbols(",", "height", "=");
