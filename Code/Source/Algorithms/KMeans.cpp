@@ -97,6 +97,9 @@ KMeans::Options::deserialize(TextInputStream & input, Codec const & codec)
   while (input.hasMore())
   {
     std::string field = input.readSymbol();
+    if (field == "END_OPTIONS")
+      break;
+
     input.readSymbol("=");
 
     if (field == "max_iterations")
@@ -130,6 +133,7 @@ KMeans::Options::serialize(TextOutputStream & output, Codec const & codec) const
   output.printf("seeding = \"%s\"\n", seeding.toString().c_str());
   output.printf("parallelize = %s\n", (parallelize ? "true" : "false"));
   output.printf("verbose = %s\n", (verbose ? "true" : "false"));
+  output.printf("END_OPTIONS\n");
 }
 
 bool
@@ -137,7 +141,7 @@ KMeans::load(std::string const & path)
 {
   try
   {
-    TextInputStream in(path.c_str());
+    TextInputStream in(path.c_str(), Serializable::configReadSettings());
     options.deserialize(in);
     deserialize(in);
   }
@@ -151,7 +155,7 @@ KMeans::save(std::string const & path) const
 {
   try
   {
-    TextOutputStream out(path.c_str());
+    TextOutputStream out(path.c_str(), Serializable::configWriteSettings());
     options.serialize(out);
     out.writeNewline();
     serialize(out);

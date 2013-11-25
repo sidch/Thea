@@ -64,7 +64,7 @@ class THEA_API KMeans : public Serializable
     THEA_DEF_POINTER_TYPES(KMeans, shared_ptr, weak_ptr)
 
     /** How to seed the initial centers (enum class). */
-    class Seeding
+    class THEA_API Seeding
     {
       public:
         /** Supported values. */
@@ -88,7 +88,7 @@ class THEA_API KMeans : public Serializable
      * %Options for the classifier. In most cases, passing a negative value for a normally non-negative parameter auto-selects a
      * suitable value for that parameter.
      */
-    class Options : public Serializable
+    class THEA_API Options : public Serializable
     {
       public:
         /** Constructor. Sets default options. */
@@ -195,7 +195,8 @@ class THEA_API KMeans : public Serializable
       if (options.verbose)
         timer.tick();
 
-      selectInitialCenters(num_clusters, points);
+      if (!selectInitialCenters(num_clusters, points))
+        return false;
 
       if (options.verbose)
       {
@@ -317,59 +318,84 @@ class THEA_API KMeans : public Serializable
   private:
     /** Select initial centers by k-means++. */
     template <typename AddressableMatrixT>
-    void selectInitialCenters(long num_clusters, AddressableMatrixT const & points)
+    bool selectInitialCenters(long num_clusters, AddressableMatrixT const & points)
     {
       long num_points = points.numRows();
       long num_features = points.numColumns();
 
-      // Choose initial cluster centers by k-means++ [Arthur/Vassilvitskii '07]:
-      // 1. Choose one center uniformly at random from among the data points.
-      // 2. For each data point x, compute D(x), the distance between x and the nearest center that has already been chosen.
-      // 3. Choose one new data point at random as a new center, using a weighted probability distribution where a point x is
-      //    chosen with probability proportional to D(x)^2.
-      // 4. Repeat steps 2 and 3 until k centers have been chosen.
+      alwaysAssertM(num_clusters > 0, "KMeans: Must select at least one center");
+      alwaysAssertM(num_points >= num_clusters, "KMeans: Cannot select more centers than points");
+      alwaysAssertM(num_features > 0, "KMeans: Cannot select centers without any point features");
 
-      centers.resize(num_clusters, num_features);
-      centers.fill(0);
-
-      // First center is randomly chosen
-      long index = Random::common().integer(0, num_points - 1);
-      addPointToCenter(points, index, 0);
-
-      // Subsequent centers by k-means++
-      TheaArray<double> sqdist((array_size_t)num_points);
-      double start_time = System::time();
-      for (long i = 1; i < num_clusters; ++i)
+      if (options.seeding == Seeding::K_MEANS_PLUS_PLUS)
       {
-        mapToClusters(i, points, NULL, &sqdist[0]);
+        // Choose initial cluster centers by k-means++ [Arthur/Vassilvitskii '07]:
+        // 1. Choose one center uniformly at random from among the data points.
+        // 2. For each data point x, compute D(x), the distance between x and the nearest center that has already been chosen.
+        // 3. Choose one new data point at random as a new center, using a weighted probability distribution where a point x is
+        //    chosen with probability proportional to D(x)^2.
+        // 4. Repeat steps 2 and 3 until k centers have been chosen.
 
-        // Sample next center from points with probability proportional to sqdist
-        double sum_sqdist = 0;
-        for (array_size_t j = 0; j < sqdist.size(); ++j)
-          sum_sqdist += sqdist[j];
+        centers.resize(num_clusters, num_features);
+        centers.fill(0);
 
-        double r = Random::common().uniform(0, sum_sqdist);
-        sum_sqdist = 0;
-        index = num_points - 1;  // to compensate for numerical error when r is approximately = sum_sqdist
-        for (array_size_t j = 0; j < sqdist.size(); ++j)
+        // First center is randomly chosen
+        long index = Random::common().integer(0, num_points - 1);
+        addPointToCenter(points, index, 0);
+
+        // Subsequent centers by k-means++
+        TheaArray<double> sqdist((array_size_t)num_points);
+        double start_time = System::time();
+        for (long i = 1; i < num_clusters; ++i)
         {
-          sum_sqdist += sqdist[j];
-          if (sum_sqdist >= r)
+          mapToClusters(i, points, NULL, &sqdist[0]);
+
+          // Sample next center from points with probability proportional to sqdist
+          double sum_sqdist = 0;
+          for (array_size_t j = 0; j < sqdist.size(); ++j)
+            sum_sqdist += sqdist[j];
+
+          double r = Random::common().uniform(0, sum_sqdist);
+          sum_sqdist = 0;
+          index = num_points - 1;  // to compensate for numerical error when r is approximately = sum_sqdist
+          for (array_size_t j = 0; j < sqdist.size(); ++j)
           {
-            index = (long)j;
-            break;
+            sum_sqdist += sqdist[j];
+            if (sum_sqdist >= r)
+            {
+              index = (long)j;
+              break;
+            }
+          }
+
+          addPointToCenter(points, index, i);
+
+          double curr_time = System::time();
+          if (curr_time - start_time > 3)  // print an update every 3 seconds or every iteration, whichever is longer
+          {
+            THEA_CONSOLE << "KMeans: -- selected " << i + 1 << " center(s)";
+            start_time = curr_time;
           }
         }
-
-        addPointToCenter(points, index, i);
-
-        double curr_time = System::time();
-        if (curr_time - start_time > 3)  // print an update every 3 seconds or every iteration, whichever is longer
-        {
-          THEA_CONSOLE << "KMeans: -- selected " << i + 1 << " center(s)";
-          start_time = curr_time;
-        }
       }
+      else if (options.seeding == Seeding::RANDOM)
+      {
+        centers.resize(num_clusters, num_features);
+        centers.fill(0);
+
+        TheaArray<int32> indices((array_size_t)num_clusters);
+        Random::common().randomSubset((int32)num_points, (int32)num_clusters, &indices[0]);
+
+        for (array_size_t i = 0; i < indices.size(); ++i)
+          addPointToCenter(points, indices[i], (long)i);
+      }
+      else
+      {
+        THEA_ERROR << "KMeans: Unsupported seeding strategy " << options.seeding.toString();
+        return false;
+      }
+
+      return true;
     }
 
     /** Worker class for parallelizing the mapping of points to their closest centers. */
@@ -442,7 +468,7 @@ class THEA_API KMeans : public Serializable
         long points_begin = 0;
         for (unsigned int i = 0; i < concurrency; ++i)
         {
-          long points_end = (long)Math::round(points_begin + points_per_thread);
+          long points_end = std::min((long)Math::round(points_begin + points_per_thread), num_points - 1);
 
           pool.add_thread(new boost::thread(ClusterMapper<AddressableMatrixT>(this,
                                                                              num_clusters,

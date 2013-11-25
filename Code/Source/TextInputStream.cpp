@@ -852,8 +852,9 @@ numLabel:
           if (test != 'I')
           {
             throw BadMSVCSpecial
-            ("Incorrect floating-point special (inf or nan) format",
-             t.line(), charNumber);
+            (
+              "Incorrect floating-point special (inf or nan) format",
+              t.line(), charNumber);
           }
 
           c = eatAndPeekInputChar();
