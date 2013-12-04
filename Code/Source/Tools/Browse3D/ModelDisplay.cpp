@@ -41,6 +41,7 @@
 
 #include "ModelDisplay.hpp"
 #include "App.hpp"
+#include "GraphicsWidget.hpp"
 #include "MainWindow.hpp"
 #include "Math.hpp"
 #include "Model.hpp"
@@ -204,6 +205,18 @@ ModelDisplay::renderShadedWireframe()
   update();
 
   qDebug() << "Rendering shaded faces with wireframe edges";
+}
+
+void
+ModelDisplay::setTwoSided(bool value)
+{
+  if (GraphicsWidget::isTwoSided() != value)
+  {
+    GraphicsWidget::setTwoSided(value);
+    update();
+
+    qDebug() << "Two-sided lighting = " << value;
+  }
 }
 
 void

@@ -79,6 +79,9 @@ class GraphicsWidget : public Graphics::DrawableObject
     /** Set the lighting parameters. */
     static void setLight(Vector3 const & dir, ColorRGB const & color, ColorRGB const & ambient_color_);
 
+    /** Set two-sided lighting on/off. */
+    static void setTwoSided(bool value);
+
     /** Get the direction of incident light. */
     static Vector3 const & getLightDirection() { return light_dir; }
 
@@ -88,14 +91,21 @@ class GraphicsWidget : public Graphics::DrawableObject
     /** Get the color of ambient light. */
     static ColorRGB const & getAmbientColor() { return ambient_color; }
 
+    /** Check if two-sided lighting is on or off. */
+    static bool isTwoSided() { return two_sided; }
+
   private:
     /** Set shader uniforms related to lighting. */
-    static void setLightingUniforms();
+    static void setLightingUniforms(Graphics::Shader * s = NULL);
+
+    /** Get the wrapped Phong shader. */
+    static Graphics::Shader * getPhongShader(Graphics::RenderSystem & render_system);
 
     static Graphics::Shader * shader;
     static Vector3 light_dir;
     static ColorRGB light_color;
     static ColorRGB ambient_color;
+    static bool two_sided;
 
 }; // class GraphicsWidget
 

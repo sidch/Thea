@@ -103,6 +103,14 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     /** Get the path to the file in which features are stored, given the path to the point cloud. */
     std::string getFeaturesFilename(std::string const & filename) const;
 
+    /** Reconstruct an approximate surface from the point cloud. */
+    void reconstructSurface(Graphics::RenderSystem & render_system,
+                            Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+
+    /** Draw the point cloud as a reconstructed surface. */
+    void drawSurface(Graphics::RenderSystem & render_system,
+                     Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+
     TheaArray<Point> points;
 
     bool has_normals;
