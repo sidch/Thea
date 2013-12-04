@@ -120,6 +120,7 @@ MainWindow::init()
   connect(ui->actionViewWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderWireframe()));
   connect(ui->actionViewShaded, SIGNAL(triggered(bool)), model_display, SLOT(renderShaded()));
   connect(ui->actionViewShadedWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderShadedWireframe()));
+  connect(ui->actionViewTwoSidedLighting, SIGNAL(toggled(bool)), model_display, SLOT(setTwoSided(bool)));
 
   connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
   connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
@@ -136,6 +137,9 @@ MainWindow::init()
 
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
+
+  ui->actionViewTwoSidedLighting->setChecked(false);
+  model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
 
   setPickPoints(false);
   ui->actionToolsPickPoints->setChecked(false);

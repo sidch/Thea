@@ -45,29 +45,16 @@
 
 namespace Browse3D {
 
-Graphics::Shader * GraphicsWidget::shader;
-Vector3 GraphicsWidget::light_dir;
-ColorRGB GraphicsWidget::light_color;
-ColorRGB GraphicsWidget::ambient_color;
-
-namespace GraphicsWidgetInternal {
-
+Graphics::Shader * GraphicsWidget::shader = NULL;
 Graphics::Shader * phong_shader = NULL;
 
-void
-setDefaultPhongUniforms(Graphics::Shader & shader)
-{
-  shader.setUniform("ambient_color", ColorRGB(1, 0.8f, 0.7f));
-  shader.setUniform("light_dir", Vector3(-1, -1, -2));
-  shader.setUniform("light_color", ColorRGB(1, 1, 1));
-
-  shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
-  if (shader.hasUniform("metallicity"))
-    shader.setUniform("metallicity", 0.5f);
-}
+Vector3 GraphicsWidget::light_dir       =  Vector3(-1, -1, -2);
+ColorRGB GraphicsWidget::light_color    =  ColorRGB(1, 1, 1);
+ColorRGB GraphicsWidget::ambient_color  =  ColorRGB(1, 0.8f, 0.7f);
+bool GraphicsWidget::two_sided          =  true;
 
 Graphics::Shader *
-getPhongShader(Graphics::RenderSystem & render_system)
+GraphicsWidget::getPhongShader(Graphics::RenderSystem & render_system)
 {
   using namespace Graphics;
 
@@ -78,32 +65,33 @@ getPhongShader(Graphics::RenderSystem & render_system)
     phong_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
                                        Application::getFullResourcePath("Materials/PhongVert.glsl"));
     phong_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
-                                       Application::getFullResourcePath("Materials/PhongNoSpecularFrag.glsl"));
+                                       Application::getFullResourcePath("Materials/PhongFrag.glsl"));
 
-    setDefaultPhongUniforms(*phong_shader);
+    setLightingUniforms(phong_shader);
+    phong_shader->setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
   }
 
   return phong_shader;
 }
 
-} // namespace GraphicsWidgetInternal
-
 void
-GraphicsWidget::setLightingUniforms()
+GraphicsWidget::setLightingUniforms(Graphics::Shader * s)
 {
   using namespace Graphics;
 
-  if (!shader) return;
+  if (!s) s = shader;
+  if (!s) return;
 
-  shader->setUniform("light_dir", light_dir);
-  shader->setUniform("light_color", light_color);
-  shader->setUniform("ambient_color", ambient_color);
+  s->setUniform("light_dir", light_dir);
+  s->setUniform("light_color", light_color);
+  s->setUniform("ambient_color", ambient_color);
+  s->setUniform("two_sided", two_sided ? 1.0f : 0.0f);
 }
 
 void
 GraphicsWidget::setPhongShader(Graphics::RenderSystem & render_system)
 {
-  shader = GraphicsWidgetInternal::getPhongShader(render_system);
+  shader = getPhongShader(render_system);
 
   setLightingUniforms();  // don't worry about multiple calls, let's play safe
 
@@ -122,6 +110,13 @@ GraphicsWidget::setLight(Vector3 const & dir, ColorRGB const & color, ColorRGB c
   light_dir = dir;
   light_color = color;
   ambient_color = ambient_color_;
+  setLightingUniforms();
+}
+
+void
+GraphicsWidget::setTwoSided(bool value)
+{
+  two_sided = value;
   setLightingUniforms();
 }
 

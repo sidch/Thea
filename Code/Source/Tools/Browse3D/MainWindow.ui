@@ -115,6 +115,8 @@
      <addaction name="actionViewShaded"/>
      <addaction name="actionViewWireframe"/>
      <addaction name="actionViewShadedWireframe"/>
+     <addaction name="separator"/>
+     <addaction name="actionViewTwoSidedLighting"/>
     </widget>
     <addaction name="actionViewFitViewToModel"/>
     <addaction name="menuRendering"/>
@@ -296,6 +298,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
+   </property>
+  </action>
+  <action name="actionViewTwoSidedLighting">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Two-Sided Lighting</string>
+   </property>
+   <property name="toolTip">
+    <string>Turn two-sided lighting on/off</string>
    </property>
   </action>
  </widget>
