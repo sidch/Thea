@@ -468,7 +468,7 @@ class THEA_API KMeans : public Serializable
         long points_begin = 0;
         for (unsigned int i = 0; i < concurrency; ++i)
         {
-          long points_end = std::min((long)Math::round(points_begin + points_per_thread), num_points - 1);
+          long points_end = std::min((long)Math::round(points_begin + points_per_thread), num_points);
 
           pool.add_thread(new boost::thread(ClusterMapper<AddressableMatrixT>(this,
                                                                              num_clusters,
