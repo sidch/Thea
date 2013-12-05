@@ -25,6 +25,11 @@ SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 # Postfix for debug builds
 SET(CMAKE_DEBUG_POSTFIX "d")
 
+# Set the default build type
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE "Release")
+ENDIF()
+
 # Subdirectories containing individual build targets
 ADD_SUBDIRECTORY(Common)
 
