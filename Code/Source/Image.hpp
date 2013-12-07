@@ -374,18 +374,51 @@ class THEA_API ImageCodec : public Codec
     virtual void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const = 0;
 };
 
+#define THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                 \
+    public:                                                                                                                   \
+      std::string getName() const { static std::string const my_name = desc; return my_name; }                                \
+      long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                          \
+      void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;
+
 #define THEA_DEF_IMAGE_CODEC(name, desc)                                                                                      \
   class THEA_API name : public ImageCodec                                                                                     \
   {                                                                                                                           \
-    public:                                                                                                                   \
-      std::string getName() const { static std::string const my_name = desc; return my_name; }                                \
-      long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                 \
-      void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;                         \
+    THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                     \
   };
 
-THEA_DEF_IMAGE_CODEC(CodecBMP, "Windows Bitmap (BMP)")
-THEA_DEF_IMAGE_CODEC(CodecPNG, "Portable Network Graphics (PNG)")
-THEA_DEF_IMAGE_CODEC(CodecPPM, "Portable Pixmap (PPM)")
+// TODO: Add options to all the ones that support them
+THEA_DEF_IMAGE_CODEC(CodecBMP,     "Windows or OS/2 Bitmap File (*.BMP)")
+THEA_DEF_IMAGE_CODEC(CodecCUT,     "Dr. Halo (*.CUT)")
+THEA_DEF_IMAGE_CODEC(CodecDDS,     "DirectDraw Surface (*.DDS)")
+THEA_DEF_IMAGE_CODEC(CodecEXR,     "ILM OpenEXR (*.EXR)")
+THEA_DEF_IMAGE_CODEC(CodecFAXG3,   "Raw Fax format CCITT G3 (*.G3)")
+THEA_DEF_IMAGE_CODEC(CodecGIF,     "Graphics Interchange Format (*.GIF)")
+THEA_DEF_IMAGE_CODEC(CodecHDR,     "High Dynamic Range (*.HDR)")
+THEA_DEF_IMAGE_CODEC(CodecICO,     "Windows Icon (*.ICO)")
+THEA_DEF_IMAGE_CODEC(CodecIFF,     "Amiga IFF (*.IFF, *.LBM)")
+THEA_DEF_IMAGE_CODEC(CodecJ2K,     "JPEG-2000 codestream (*.J2K, *.J2C)")
+THEA_DEF_IMAGE_CODEC(CodecJNG,     "JPEG Network Graphics (*.JNG)")
+THEA_DEF_IMAGE_CODEC(CodecJP2,     "JPEG-2000 File Format (*.JP2)")
+THEA_DEF_IMAGE_CODEC(CodecKOALA,   "Commodore 64 Koala format (*.KOA)")
+THEA_DEF_IMAGE_CODEC(CodecMNG,     "Multiple Network Graphics (*.MNG)")
+THEA_DEF_IMAGE_CODEC(CodecPBM,     "Portable Bitmap (ASCII) (*.PBM)")
+THEA_DEF_IMAGE_CODEC(CodecPBMRAW,  "Portable Bitmap (BINARY) (*.PBM)")
+THEA_DEF_IMAGE_CODEC(CodecPCD,     "Kodak PhotoCD (*.PCD)")
+THEA_DEF_IMAGE_CODEC(CodecPCX,     "Zsoft Paintbrush PCX bitmap format (*.PCX)")
+THEA_DEF_IMAGE_CODEC(CodecPFM,     "Portable Floatmap (*.PFM)")
+THEA_DEF_IMAGE_CODEC(CodecPGM,     "Portable Graymap (ASCII) (*.PGM)")
+THEA_DEF_IMAGE_CODEC(CodecPGMRAW,  "Portable Graymap (BINARY) (*.PGM)")
+THEA_DEF_IMAGE_CODEC(CodecPNG,     "Portable Network Graphics (*.PNG)")
+THEA_DEF_IMAGE_CODEC(CodecPPM,     "Portable Pixelmap (ASCII) (*.PPM)")
+THEA_DEF_IMAGE_CODEC(CodecPPMRAW,  "Portable Pixelmap (BINARY) (*.PPM)")
+THEA_DEF_IMAGE_CODEC(CodecPSD,     "Adobe Photoshop (*.PSD)")
+THEA_DEF_IMAGE_CODEC(CodecRAS,     "Sun Rasterfile (*.RAS)")
+THEA_DEF_IMAGE_CODEC(CodecSGI,     "Silicon Graphics SGI image format (*.SGI)")
+THEA_DEF_IMAGE_CODEC(CodecTARGA,   "Truevision Targa files (*.TGA, *.TARGA)")
+THEA_DEF_IMAGE_CODEC(CodecTIFF,    "Tagged Image File Format (*.TIF, *.TIFF)")
+THEA_DEF_IMAGE_CODEC(CodecWBMP,    "Wireless Bitmap (*.WBMP)")
+THEA_DEF_IMAGE_CODEC(CodecXBM,     "X11 Bitmap Format (*.XBM)")
+THEA_DEF_IMAGE_CODEC(CodecXPM,     "X11 Pixmap Format (*.XPM)")
 
 /** JPEG image codec. */
 class THEA_API CodecJPEG : public ImageCodec
@@ -413,11 +446,7 @@ class THEA_API CodecJPEG : public ImageCodec
     /** Constructor to set encoding options. */
     CodecJPEG(Options const & options_) : options(options_) {}
 
-    std::string getName() const { static std::string const my_name = "JPEG"; return my_name; }
-
-    long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;
-
-    void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;
+    THEA_DEF_IMAGE_CODEC_BODY(CodecJPEG, "Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)")
 
   private:
     Options options;

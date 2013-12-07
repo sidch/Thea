@@ -51,6 +51,8 @@
 
 #include "Image.hpp"
 #include "Array.hpp"
+#include "FilePath.hpp"
+#include "UnorderedMap.hpp"
 #include <FreeImagePlus.h>
 #include <cmath>
 
@@ -63,8 +65,10 @@ int const Image::Channel::GREEN  =  FI_RGBA_GREEN;
 int const Image::Channel::BLUE   =  FI_RGBA_BLUE;
 int const Image::Channel::ALPHA  =  FI_RGBA_ALPHA;
 
+namespace ImageInternal {
+
 static FREE_IMAGE_TYPE
-Image__typeToFreeImageType(Image::Type type)
+typeToFreeImageType(Image::Type type)
 {
   switch (type)
   {
@@ -90,7 +94,7 @@ Image__typeToFreeImageType(Image::Type type)
 }
 
 static WORD
-Image__typeToFreeImageBPP(Image::Type type)
+typeToFreeImageBPP(Image::Type type)
 {
   switch (type)
   {
@@ -116,7 +120,7 @@ Image__typeToFreeImageBPP(Image::Type type)
 }
 
 static Image::Type
-Image__typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
+typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
 {
   switch (fi_type)
   {
@@ -150,6 +154,70 @@ Image__typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
   return Image::Type::UNKNOWN;
 }
 
+typedef TheaUnorderedMap<std::string, ImageCodec const *> CodecMap;
+CodecMap codec_map;
+
+static ImageCodec const *
+initCodecMap()
+{
+  codec_map["BMP"  ] = new CodecBMP();
+  codec_map["CUT"  ] = new CodecCUT();
+  codec_map["DDS"  ] = new CodecDDS();
+  codec_map["EXR"  ] = new CodecEXR();
+  codec_map["G3"   ] = new CodecFAXG3();
+  codec_map["GIF"  ] = new CodecGIF();
+  codec_map["HDR"  ] = new CodecHDR();
+  codec_map["ICO"  ] = new CodecICO();
+  codec_map["IFF"  ] = new CodecIFF();
+  codec_map["LBM"  ] = new CodecIFF();
+  codec_map["J2K"  ] = new CodecJ2K();
+  codec_map["J2C"  ] = new CodecJ2K();
+  codec_map["JNG"  ] = new CodecJNG();
+  codec_map["JP2"  ] = new CodecJP2();
+  codec_map["JPG"  ] = new CodecJPEG();
+  codec_map["JIF"  ] = new CodecJPEG();
+  codec_map["JPEG" ] = new CodecJPEG();
+  codec_map["JPE"  ] = new CodecJPEG();
+  codec_map["KOA"  ] = new CodecKOALA();
+  codec_map["MNG"  ] = new CodecMNG();
+  codec_map["PBM"  ] = new CodecPBM();
+  codec_map["PBM"  ] = new CodecPBMRAW();
+  codec_map["PCD"  ] = new CodecPCD();
+  codec_map["PCX"  ] = new CodecPCX();
+  codec_map["PFM"  ] = new CodecPFM();
+  codec_map["PGM"  ] = new CodecPGM();
+  codec_map["PGM"  ] = new CodecPGMRAW();
+  codec_map["PNG"  ] = new CodecPNG();
+  codec_map["PPM"  ] = new CodecPPM();
+  codec_map["PPM"  ] = new CodecPPMRAW();
+  codec_map["PSD"  ] = new CodecPSD();
+  codec_map["RAS"  ] = new CodecRAS();
+  codec_map["SGI"  ] = new CodecSGI();
+  codec_map["TGA"  ] = new CodecTARGA();
+  codec_map["TARGA"] = new CodecTARGA();
+  codec_map["TIF"  ] = new CodecTIFF();
+  codec_map["TIFF" ] = new CodecTIFF();
+  codec_map["WBMP" ] = new CodecWBMP();
+  codec_map["XBM"  ] = new CodecXBM();
+  codec_map["XPM"  ] = new CodecXPM();
+
+  return NULL;
+}
+
+static ImageCodec const *
+codecFromPath(std::string const & path)
+{
+  static ImageCodec const * UNKNOWN_CODEC = initCodecMap();
+
+  CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::suffix(path)));
+  if (existing == codec_map.end())
+    return UNKNOWN_CODEC;
+  else
+    return existing->second;
+}
+
+} // namespace ImageInternal
+
 #define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
 long                                                                                                                          \
 codec::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const                               \
@@ -164,7 +232,7 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
                                                                                                                               \
   if (prefix_info)                                                                                                            \
   {                                                                                                                           \
-    output.setEndianness(Endianness::LITTLE);                                                                                     \
+    output.setEndianness(Endianness::LITTLE);                                                                                 \
     output.writeUInt32(static_cast<uint32>(size_in_bytes));                                                                   \
   }                                                                                                                           \
                                                                                                                               \
@@ -173,17 +241,47 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
   return (long)(prefix_info ? size_in_bytes + 4 : size_in_bytes);                                                             \
 }
 
-THEA_DEF_SERIALIZE_IMAGE(CodecBMP,  FIF_BMP,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPNG,  FIF_PNG,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPPM,  FIF_PPM,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJPEG, FIF_JPEG, options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
+// TODO: Add options to all the ones that support them
+THEA_DEF_SERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecFAXG3,   FIF_FAXG3,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
+THEA_DEF_SERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
 
 #define THEA_DEF_DESERIALIZE_IMAGE(codec, fip_format, flags)                                                                  \
 void                                                                                                                          \
 codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const                              \
 {                                                                                                                             \
   /* Get the size of the image block in bytes */                                                                              \
-  input.setEndianness(Endianness::LITTLE);                                                                                        \
+  input.setEndianness(Endianness::LITTLE);                                                                                    \
   uint32 size = read_prefixed_info ? input.readUInt32() : input.size();                                                       \
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
@@ -202,7 +300,7 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
                                                                                                                               \
   *fip_img = bitmap;  /* the FIP object will now manage the destruction of the bitmap */                                      \
                                                                                                                               \
-  Image::Type type = Image__typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());                 \
+  Image::Type type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());                 \
   if (type == Image::Type::UNKNOWN)                                                                                           \
   {                                                                                                                           \
     image.clear();                                                                                                            \
@@ -212,10 +310,40 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
   image._setType(type);                                                                                                       \
 }
 
-THEA_DEF_DESERIALIZE_IMAGE(CodecBMP,  FIF_BMP,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPNG,  FIF_PNG,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPPM,  FIF_PPM,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJPEG, FIF_JPEG, 0)
+// TODO: Add options to all the ones that support them
+THEA_DEF_DESERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecFAXG3,   FIF_FAXG3,   0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
 
 int
 Image::Type::numChannels() const
@@ -253,7 +381,7 @@ Image::Type::isFloatingPoint() const
 int
 Image::Type::getBitsPerPixel() const
 {
-  return (int)Image__typeToFreeImageBPP(*this);
+  return (int)ImageInternal::typeToFreeImageBPP(*this);
 }
 
 int
@@ -301,7 +429,7 @@ Image::Image(Type type_, int width, int height)
   if (type == Type::UNKNOWN || width <= 0 || height <= 0)
     throw Error("Cannot initialize image of unknown type or non-positive size");
 
-  fip_img = new fipImage(Image__typeToFreeImageType(type), width, height, Image__typeToFreeImageBPP(type));
+  fip_img = new fipImage(ImageInternal::typeToFreeImageType(type), width, height, ImageInternal::typeToFreeImageBPP(type));
   if (!isValid())
     throw Error("Could not create an image of the specified type and dimensions");
 
@@ -363,7 +491,7 @@ Image::resize(Type type_, int width, int height)
   if (type_ == type && width == getWidth() && height == getHeight())
     return;
 
-  fip_img->setSize(Image__typeToFreeImageType(type_), width, height, Image__typeToFreeImageBPP(type_));
+  fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width, height, ImageInternal::typeToFreeImageBPP(type_));
   if (!isValid())
     throw Error("Could not resize the image to the specified type and dimensions");
 
@@ -469,15 +597,11 @@ Image::serialize(BinaryOutputStream & output, Codec const & codec) const
   if (codec == Codec_AUTO())
     throw Error("You must explicitly choose a codec for serializing images");
 
-  try
-  {
-    ImageCodec const & img_codec = dynamic_cast<ImageCodec const &>(codec);
-    img_codec.serializeImage(*this, output, true);
-  }
-  catch (std::bad_cast &)
-  {
-    throw FatalError("Codec specified for image serialization is not an image codec.");  // serious programming error
-  }
+  ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
+  if (!img_codec)
+    throw Error("Codec specified for image serialization is not an image codec.");
+
+  img_codec->serializeImage(*this, output, true);
 }
 
 void
@@ -487,15 +611,11 @@ Image::deserialize(BinaryInputStream & input, Codec const & codec)
     deserialize_AUTO(input, true);
   else
   {
-    try
-    {
-      ImageCodec const & img_codec = dynamic_cast<ImageCodec const &>(codec);
-      img_codec.deserializeImage(*this, input, true);
-    }
-    catch (std::bad_cast &)
-    {
-      throw FatalError("Codec specified for image deserialization is not an image codec.");  // serious programming error
-    }
+    ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
+    if (!img_codec)
+      throw Error("Codec specified for image deserialization is not an image codec.");
+
+    img_codec->deserializeImage(*this, input, true);
   }
 }
 
@@ -505,22 +625,26 @@ Image::save(std::string const & filename, Codec const & codec) const
   if (!isValid())
     throw Error("Can't save an invalid image");
 
+  ImageCodec const * c = NULL;
   if (codec == Codec_AUTO())
-    throw Error("You must explicitly choose a codec for saving images");
+  {
+    c = ImageInternal::codecFromPath(filename);
+    if (!c)
+      throw Error("Could not detect codec from filename");
+  }
+
+  if (!c)
+  {
+    c = dynamic_cast<ImageCodec const *>(&codec);
+    if (!c)
+      throw Error("Codec specified for saving image is not an image codec.");
+  }
 
   BinaryOutputStream out(filename, Endianness::LITTLE);
   if (!out.ok())
     throw Error("Could not open image file for writing");
 
-  try
-  {
-    ImageCodec const & img_codec = dynamic_cast<ImageCodec const &>(codec);
-    img_codec.serializeImage(*this, out, false);
-  }
-  catch (std::bad_cast &)
-  {
-    throw FatalError("Codec specified for saving image is not an image codec.");  // serious programming error
-  }
+  c->serializeImage(*this, out, false);
 
   out.commit();
   if (!out.ok())
@@ -546,7 +670,7 @@ Image::load(std::string const & filename, Codec const & codec)
     }
     catch (std::bad_cast &)
     {
-      throw FatalError("Codec specified for loading image is not an image codec.");  // serious programming error
+      throw Error("Codec specified for loading image is not an image codec.");
     }
   }
 }
@@ -568,7 +692,7 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
   if (!fip_img->loadFromMemory(mem))
     throw Error("Could not load image from memory stream");
 
-  type = Image__typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());
+  type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());
   if (type == Type::UNKNOWN)
   {
     clear();
@@ -620,12 +744,12 @@ Image::convert(Type dst_type, Image & dst) const
   }
   else
   {
-    FREE_IMAGE_TYPE src_fitype = Image__typeToFreeImageType(type);
-    FREE_IMAGE_TYPE dst_fitype = Image__typeToFreeImageType(dst_type);
+    FREE_IMAGE_TYPE src_fitype = ImageInternal::typeToFreeImageType(type);
+    FREE_IMAGE_TYPE dst_fitype = ImageInternal::typeToFreeImageType(dst_type);
 
     if (dst_fitype == FIT_BITMAP)
     {
-      WORD dst_fibpp = Image__typeToFreeImageBPP(dst_type);
+      WORD dst_fibpp = ImageInternal::typeToFreeImageBPP(dst_type);
       switch (dst_fibpp)
       {
         case 4:
