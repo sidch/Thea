@@ -133,9 +133,6 @@ class App : public QObject
     /** Create the application's rendersystem. */
     void createRenderSystem();
 
-    /** Create the application's undo/redo manager. */
-    void createUndoManager();
-
     Options opts;
     MainWindow * main_window;
     AtomicInt32 has_render_system;
