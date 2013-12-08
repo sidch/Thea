@@ -81,6 +81,9 @@ FIND_PACKAGE(Qt4)
 SET(QT_USE_QTOPENGL 1)
 INCLUDE(${QT_USE_FILE})
 
+# Dependency: OpenCL
+FIND_PACKAGE(OpenCL)
+
 # Definitions, compiler switches etc.
 IF(CMAKE_COMPILER_IS_GNUCXX)
 
@@ -166,6 +169,42 @@ IF(QT4_FOUND AND OpenGL_FOUND)
   ENDIF()
 
   SET(TheaAllTools ${TheaAllTools} Browse3D)
+
+ENDIF()
+
+#===========================================================
+# GIP
+#===========================================================
+
+IF(OPENCL_FOUND)
+  # Source file lists
+  FILE(GLOB GIPSources
+       ${SourceRoot}/Tools/GIP/*.cpp)
+
+  # Libraries to link to
+  SET(GIPLibraries
+      Thea
+      ${OPENCL_LIBRARIES}
+      ${PLATFORM_LIBRARIES})
+
+  # Build products
+  ADD_EXECUTABLE(gip ${GIPSources})
+
+  # Additional libraries to be linked
+  TARGET_LINK_LIBRARIES(gip ${GIPLibraries})
+
+  # Linker flags
+  IF(Thea_LDFLAGS)
+    SET_TARGET_PROPERTIES(gip PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+  ENDIF()
+
+  # Fix library install names on OS X
+  IF(APPLE)
+    INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+    OSX_FIX_DYLIB_REFERENCES(GIP "${GIPLibraries}")
+  ENDIF()
+
+  SET(TheaAllTools ${TheaAllTools} gip)
 
 ENDIF()
 
