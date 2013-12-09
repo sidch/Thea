@@ -210,7 +210,8 @@ template <typename T, uint32 MAX_VALUE> struct PixelToFloats<T, 1, MAX_VALUE>
 {
   inline static void conv(T const * pixel, float32 * out)
   {
-    out[0] = out[1] = out[2] = out[3] = *pixel / (float32)MAX_VALUE;
+    out[0] = out[1] = out[2] = *pixel / (float32)MAX_VALUE;
+    out[3] = 1.0f;
   }
 };
 
@@ -308,7 +309,7 @@ template <typename T, uint32 MAX_VALUE> struct PixelFromFloats<T, 1, MAX_VALUE>
 {
   inline static void conv(float32 const * in, T * pixel)
   {
-    *pixel = convertValue<T, MAX_VALUE>(0.2126 * in[0] + 0.7152 * in[1] + 0.0722  * in[3]);
+    *pixel = convertValue<T, MAX_VALUE>(0.2126 * in[0] + 0.7152 * in[1] + 0.0722  * in[2]);
   }
 };
 
@@ -639,6 +640,7 @@ main(int argc, char * argv[])
     }
 
     // Copy final image from OpenCL buffer
+    // FIXME: Create a new image, so we can load in greyscale and save in color if a colorize filter was applied, for instance
     if (!copyImageFromCL(inbuf, image))
       return -1;
 
@@ -958,7 +960,7 @@ threshold(cl_mem & inbuf, cl_mem & outbuf, Args const & args)
     ""
     "  int base_index = (y * width + x);"
     "  float lum = 0.2126f * in[base_index].x + 0.7152f * in[base_index].y + 0.0722f * in[base_index].z;"
-    "  float bit = step(thresh, lum);"
+    "  float bit = (lum < thresh) ? 0.0f : 1.0f;"
     "  out[base_index] = (float4)(bit, bit, bit, in[base_index].w);"
     "}";
 
