@@ -54,6 +54,22 @@ namespace Thea {
 class THEA_API FileSystem
 {
   public:
+    /** Types of nodes (entries) in the filesystem. */
+    struct NodeType
+    {
+      /** Supported values. */
+      enum Value
+      {
+        FILE            =  0x0001,  ///< Ordinary file.
+        DIRECTORY       =  0x0002,  ///< Directory.
+        SYMLINK         =  0x0004,  ///< Symbolic link.
+        ALL             =  0xFFFF,  ///< Catch-all value for all types of filesystem nodes.
+      };
+
+      THEA_ENUM_CLASS_BODY(NodeType)
+
+    }; // struct NodeType
+
     /** Check if a file or directory exists. */
     static bool exists(std::string const & path);
 
@@ -92,6 +108,26 @@ class THEA_API FileSystem
      * @return True on success, false on error.
      */
     static bool readWholeFile(std::string const & path, std::string & ret);
+
+    /**
+     * Get the entries in a directory, optionally recursing into subdirectories and filtering entries by type and name. Symbolic
+     * links are returned as symbolic links and are not dereferenced to the files or directories they point to.
+     *
+     * @param dir The path to the directory.
+     * @param entries Used to return the full paths of all retrieved entries in the directory. Prior contents are discarded.
+     * @param types A bitwise-OR of NodeType flags (pass zero, negative or NodeType::ALL to allow all types of entries).
+     * @param patterns If this array is non-empty, the function will return only entries whose names (without path) match at
+     *   least one of these shell wildcard patterns. The patterns should be specified in the format of patternMatch().
+     * @param recursive If true, subdirectories are searched recursively. The name of each such subdirectory is also returned.
+     *
+     * @return The number of entries found, equal to the size of \a entries. If the supplied path is not a directory, returns a
+     *   negative value.
+     */
+    static long getDirectoryEntries(std::string const & dir,
+                                    TheaArray<std::string> & entries,
+                                    int types = -1,
+                                    TheaArray<std::string> const & patterns = TheaArray<std::string>(),
+                                    bool recursive = false);
 
 }; // class FileSystem
 

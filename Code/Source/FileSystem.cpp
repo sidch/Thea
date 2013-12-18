@@ -40,6 +40,7 @@
 //============================================================================
 
 #include "FileSystem.hpp"
+#include "StringAlg.hpp"
 #include <boost/filesystem.hpp>
 #include <cstdio>
 
@@ -128,6 +129,76 @@ FileSystem::readWholeFile(std::string const & path, std::string & ret)
   std::free(buffer);
 
   return true;
+}
+
+namespace FileSystemInternal {
+
+bool
+entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int types, TheaArray<std::string> const & patterns)
+{
+  if (types > 0 && types != FileSystem::NodeType::ALL)
+  {
+    boost::filesystem::file_status status = entry.symlink_status();
+    if (!boost::filesystem::is_symlink(status))
+      status = entry.status();
+
+    bool ok = false;
+
+    if (!ok && (types & FileSystem::NodeType::FILE) && boost::filesystem::is_regular_file(status))
+      ok = true;
+
+    if (!ok && (types & FileSystem::NodeType::DIRECTORY) && boost::filesystem::is_directory(status))
+      ok = true;
+
+    if (!ok && (types & FileSystem::NodeType::SYMLINK) && boost::filesystem::is_symlink(status))
+      ok = true;
+
+    if (!ok)
+      return false;
+  }
+
+  if (!patterns.empty())
+  {
+    std::string name = entry.path().filename().string();
+    bool ok = false;
+    for (array_size_t i = 0; !ok && i < patterns.size(); ++i)
+      if (patternMatch(patterns[i], name))
+        ok = true;
+
+    if (!ok)
+      return false;
+  }
+
+  return true;
+}
+
+} // namespace FileSystemInternal
+
+long
+FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> & entries, int types,
+                                TheaArray<std::string> const & patterns, bool recursive)
+{
+  if (!directoryExists(dir))
+    return -1;
+
+  entries.clear();
+
+  if (recursive)
+  {
+    boost::filesystem::recursive_directory_iterator entries_end;
+    for (boost::filesystem::recursive_directory_iterator iter(dir); iter != entries_end; ++iter)
+      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patterns))
+        entries.push_back(iter->path().string());
+  }
+  else
+  {
+    boost::filesystem::directory_iterator entries_end;
+    for (boost::filesystem::directory_iterator iter(dir); iter != entries_end; ++iter)
+      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patterns))
+        entries.push_back(iter->path().string());
+  }
+
+  return (long)entries.size();
 }
 
 } // namespace Thea
