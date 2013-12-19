@@ -129,6 +129,19 @@ class THEA_API FileSystem
                                     TheaArray<std::string> const & patterns = TheaArray<std::string>(),
                                     bool recursive = false);
 
+    /**
+     * Remove a file, a symbolic link, or a directory. If the path is a directory, the operation succeeds only if the directory
+     * is empty or if \a recursive is true.
+     *
+     * @param path The path to remove.
+     * @param recursive If true, and if the path points to a directory, contents of the directory are recursively removed before
+     *   the directory itself.
+     *
+     * @return True if the entry was successfully removed or did not exist in the first place, false on error (e.g. directory
+     *   not empty (with \a recursive == false) or operation not permitted).
+     */
+    static bool remove(std::string const & path, bool recursive = false);
+
 }; // class FileSystem
 
 } // namespace Thea

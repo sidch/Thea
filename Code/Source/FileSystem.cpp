@@ -201,4 +201,16 @@ FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> 
   return (long)entries.size();
 }
 
+bool
+FileSystem::remove(std::string const & path, bool recursive)
+{
+  boost::system::error_code error;
+  if (recursive)
+    boost::filesystem::remove_all(path, error);
+  else
+    boost::filesystem::remove(path, error);
+
+  return (bool)error;
+}
+
 } // namespace Thea
