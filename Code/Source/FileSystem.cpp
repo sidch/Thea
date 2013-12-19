@@ -176,10 +176,14 @@ entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int 
 
 long
 FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> & entries, int types,
-                                TheaArray<std::string> const & patterns, bool recursive)
+                                std::string const & patterns, bool recursive)
 {
   if (!directoryExists(dir))
     return -1;
+
+  TheaArray<std::string> patlist;
+  if (!patterns.empty())
+    stringSplit(patterns, ' ', patlist, true);
 
   entries.clear();
 
@@ -187,14 +191,14 @@ FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> 
   {
     boost::filesystem::recursive_directory_iterator entries_end;
     for (boost::filesystem::recursive_directory_iterator iter(dir); iter != entries_end; ++iter)
-      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patterns))
+      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patlist))
         entries.push_back(iter->path().string());
   }
   else
   {
     boost::filesystem::directory_iterator entries_end;
     for (boost::filesystem::directory_iterator iter(dir); iter != entries_end; ++iter)
-      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patterns))
+      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patlist))
         entries.push_back(iter->path().string());
   }
 
