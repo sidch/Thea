@@ -116,8 +116,10 @@ class THEA_API FileSystem
      * @param dir The path to the directory.
      * @param entries Used to return the full paths of all retrieved entries in the directory. Prior contents are discarded.
      * @param types A bitwise-OR of NodeType flags (pass zero, negative or NodeType::ALL to allow all types of entries).
-     * @param patterns If this array is non-empty, the function will return only entries whose names (without path) match at
-     *   least one of these shell wildcard patterns. The patterns should be specified in the format of patternMatch().
+     * @param patterns If this string is non-empty, it is split into fields separated by spaces and each field interpreted as a
+     *   shell wildcard pattern specified in the format of patternMatch(). The function will return only entries whose names
+     *   (without path) match at least one of the patterns. E.g. \a patterns = "*.txt *.png" will return only files with names
+     *   ending in .txt or .png.
      * @param recursive If true, subdirectories are searched recursively. The name of each such subdirectory is also returned.
      *
      * @return The number of entries found, equal to the size of \a entries. If the supplied path is not a directory, returns a
@@ -126,7 +128,7 @@ class THEA_API FileSystem
     static long getDirectoryEntries(std::string const & dir,
                                     TheaArray<std::string> & entries,
                                     int types = -1,
-                                    TheaArray<std::string> const & patterns = TheaArray<std::string>(),
+                                    std::string const & patterns = "",
                                     bool recursive = false);
 
     /**
