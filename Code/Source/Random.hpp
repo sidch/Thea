@@ -210,7 +210,7 @@ class THEA_API Random
     /** Randomly shuffle a set of \a n elements. This implements the Fisher-Yates/Knuth shuffle. */
     template <typename T> void randomShuffle(int32 n, T * elems)
     {
-      randomSubset(n, n, elems);
+      randomShuffle(n, n, elems);
     }
 
     /**
