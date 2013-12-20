@@ -56,7 +56,6 @@
 #include "Random.hpp"
 #include "Array.hpp"
 #include "Math.hpp"
-#include <algorithm>
 #include <ctime>
 #include <limits>
 
@@ -313,23 +312,6 @@ Random::sortedIntegers(int32 lo, int32 hi, int32 m, int32 * selected)
         return;
     }
   }
-}
-
-void
-Random::randomSubset(int32 n, int32 k, int32 * subset)
-{
-  TheaArray<int32> shuffled((array_size_t)n);
-  for (int32 i = 0; i < n; ++i)
-    shuffled[(array_size_t)i] = i;
-
-  for (int32 i = 0; i < k; i++)
-  {
-    int32 j = (integer() % (n - i)) + i;
-    std::swap(shuffled[(array_size_t)i], shuffled[(array_size_t)j]);
-  }
-
-  // std::sort(&shuffled[0], &shuffled[0] + k);
-  std::copy(&shuffled[0], &shuffled[0] + k, subset);
 }
 
 namespace RandomInternal {

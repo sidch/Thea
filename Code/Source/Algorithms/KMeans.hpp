@@ -383,11 +383,15 @@ class THEA_API KMeans : public Serializable
         centers.resize(num_clusters, num_features);
         centers.fill(0);
 
-        TheaArray<int32> indices((array_size_t)num_clusters);
-        Random::common().randomSubset((int32)num_points, (int32)num_clusters, &indices[0]);
+        TheaArray<long> indices((array_size_t)num_points);
+        for (long i = 0; i < num_points; ++i)
+          indices[(array_size_t)i] = i;
 
-        for (array_size_t i = 0; i < indices.size(); ++i)
-          addPointToCenter(points, indices[i], (long)i);
+        // Select num_clusters random points as initial centers
+        Random::common().randomShuffle((int32)num_points, (int32)num_clusters, &indices[0]);
+
+        for (long i = 0; i < num_clusters; ++i)
+          addPointToCenter(points, indices[(array_size_t)i], i);
       }
       else
       {
