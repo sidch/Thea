@@ -290,25 +290,25 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
      */
-    void save(std::string const & filename, Codec const & codec = Codec_AUTO()) const
+    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const
     {
+      MeshCodec<Mesh> const * mesh_codec = NULL;
+
       if (codec == Codec_AUTO())
-        throw Error(getName() + ": You must explicitly choose a codec for saving mesh groups");
-
-      BinaryOutputStream out(filename, Endianness::LITTLE);
-      if (!out.ok())
-        throw Error(getName() + ": Could not open mesh file for writing");
-
-      try
       {
-        MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-        mesh_codec.serializeMeshGroup(*this, out, false);
+        mesh_codec = codecFromPath(path);
+        if (!mesh_codec)
+          throw Error(getName() + ": Could not autodetect codec for saving mesh group");
       }
-      catch (std::bad_cast &)
+      else
       {
-        // Serious programming error
-        throw FatalError(getName() + ": Codec specified for saving mesh group is not a mesh codec.");
+        mesh_codec = dynamic_cast<MeshCodec<Mesh> const *>(&codec);
+        if (!mesh_codec)
+          throw Error(getName() + ": Codec specified for saving mesh group is not a mesh codec");
       }
+
+      BinaryOutputStream out(path, Endianness::LITTLE);
+      mesh_codec->serializeMeshGroup(*this, out, false);
 
       out.commit();
       if (!out.ok())
@@ -319,28 +319,25 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be loaded.
      */
-    void load(std::string const & filename, Codec const & codec = Codec_AUTO())
+    void load(std::string const & path, Codec const & codec = Codec_AUTO())
     {
-      BinaryInputStream in(filename, Endianness::LITTLE);
-      int64 file_size = in.size();
-      if (file_size <= 0)
-        throw Error(getName() + ": Mesh file does not exist or is empty");
+      MeshCodec<Mesh> const * mesh_codec = NULL;
 
       if (codec == Codec_AUTO())
-        deserialize_AUTO(in, false);
+      {
+        mesh_codec = codecFromPath(path);
+        if (!mesh_codec)
+          throw Error(getName() + ": Could not autodetect codec for loading mesh group");
+      }
       else
       {
-        try
-        {
-          MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-          mesh_codec.deserializeMeshGroup(*this, in, false);
-        }
-        catch (std::bad_cast &)
-        {
-          // Serious programming error
-          throw FatalError(getName() + ": Codec specified for loading mesh group is not a mesh codec.");
-        }
+        mesh_codec = dynamic_cast<MeshCodec<Mesh> const *>(&codec);
+        if (!mesh_codec)
+          throw Error(getName() + ": Codec specified for loading mesh group is not a mesh codec");
       }
+
+      BinaryInputStream in(path, Endianness::LITTLE);
+      mesh_codec->deserializeMeshGroup(*this, in, false);
 
       updateBounds();
     }
@@ -352,13 +349,6 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      */
     void deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
     {
-      // A set of default codecs that should be implemented for each mesh type
-      static CodecOBJ<Mesh> const codec_OBJ;
-      static CodecOFF<Mesh> const codec_OFF;
-      static Codec3DS<Mesh> const codec_3DS;
-      static int const NUM_CODECS = 3;
-      static MeshCodec<Mesh> const * codecs[NUM_CODECS] = { &codec_OBJ, &codec_OFF, &codec_3DS };
-
       if (read_prefixed_info)
       {
         // Try to identify the codec by the magic string
@@ -366,25 +356,57 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         std::string magic = input.readString(MeshCodec<Mesh>::MAGIC_LENGTH);
         input.setPosition(pos);
 
-        for (int i = 0; i < NUM_CODECS; ++i)
-          if (codecs[i]->getMagic() == magic)
+        MeshCodec<Mesh> const * codec = NULL;
+        long codec_index = 0;
+        while ((codec = getDefaultCodec(codec_index++)))
+          if (codec->getMagic() == magic)
           {
-            codecs[i]->deserializeMeshGroup(*this, input, true);
+            codec->deserializeMeshGroup(*this, input, true);
             return;
           }
       }
 
       // Try to identify by filename extension
-      std::string path = toLower(input.getPath());
-      for (int i = 0; i < NUM_CODECS; ++i)
-        for (array_size_t j = 0; j < codecs[i]->getExtensions().size(); ++j)
-          if (endsWith(path, '.' + codecs[i]->getExtensions()[j]))
-          {
-            codecs[i]->deserializeMeshGroup(*this, input, false);
-            return;
-          }
+      MeshCodec<Mesh> const * codec = codecFromPath(input.getPath());
+      if (codec)
+      {
+        codec->deserializeMeshGroup(*this, input, false);
+        return;
+      }
 
       throw Error(getName() + ": Could not detect mesh encoding from input. Please specify the encoding explicitly.");
+    }
+
+    /** Try to get the appropriate codec for a mesh, given the path to the mesh. */
+    static MeshCodec<Mesh> const * codecFromPath(std::string path)
+    {
+      path = toLower(path);
+      MeshCodec<Mesh> const * codec = NULL;
+      long codec_index = 0;
+      while ((codec = getDefaultCodec(codec_index++)))
+      {
+        for (array_size_t j = 0; j < codec->getExtensions().size(); ++j)
+          if (endsWith(path, '.' + codec->getExtensions()[j]))
+            return codec;
+      }
+
+      return NULL;
+    }
+
+    /** Get one of the default mesh codecs. */
+    static MeshCodec<Mesh> const * getDefaultCodec(long index)
+    {
+      // A set of default codecs that should be implemented for each mesh type
+      static CodecOBJ<Mesh> const codec_OBJ;
+      static CodecOFF<Mesh> const codec_OFF;
+      static Codec3DS<Mesh> const codec_3DS;
+      static long const NUM_CODECS = 3;
+      static MeshCodec<Mesh> const * codecs[NUM_CODECS] = { &codec_OBJ, &codec_OFF, &codec_3DS };
+
+      if (index >= 0 && index < NUM_CODECS)
+        return codecs[index];
+      else
+        return NULL;
     }
 
     MeshSet meshes;
