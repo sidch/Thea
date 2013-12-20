@@ -58,6 +58,7 @@
 
 #include "Common.hpp"
 #include "Spinlock.hpp"
+#include <algorithm>
 
 namespace Thea {
 
@@ -175,10 +176,14 @@ class THEA_API Random
 
     /**
      * Get \a m distinct random integers in [\a lo, \a hi] (endpoints inclusive). Slow if the range is very large, and possibly
-     * breaks if the upper limit of the range is very large (more than RAND_MAX / 2).
+     * breaks if the upper limit of the range is very large (more than MAX_INTEGER / 2).
      *
-     * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of Knuth's
-     * Seminumerical Algorithms.
+     * This function is similar to randomShuffle(int32, int32, T *), but trades speed for reduced memory usage
+     * (randomShuffle(int32, int32, T *) requires an array of size \a hi - \a lo + 1 -- integers() requires essentially no extra
+     * memory).
+     *
+     * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of
+     * Knuth's Seminumerical Algorithms.
      *
      * @param lo Lower limit of range (inclusive).
      * @param hi Upper limit of range (inclusive).
@@ -189,7 +194,7 @@ class THEA_API Random
 
     /**
      * Get \a m distinct random integers in [\a lo, \a hi] (endpoints inclusive), sorted in ascending order. Slow if the range
-     * is very large, and possibly breaks if the upper limit of the range is very large (more than RAND_MAX / 2).
+     * is very large, and possibly breaks if the upper limit of the range is very large (more than MAX_INTEGER / 2).
      *
      * From http://my.opera.com/subjam/blog/book-review-programming-pearls . This implements Algorithm S in Section 3.4.2 of
      * Knuth's Seminumerical Algorithms.
@@ -202,11 +207,30 @@ class THEA_API Random
      */
     virtual void sortedIntegers(int32 lo, int32 hi, int32 m, int32 * selected);
 
+    /** Randomly shuffle a set of \a n elements. This implements the Fisher-Yates/Knuth shuffle. */
+    template <typename T> void randomShuffle(int32 n, T * elems)
+    {
+      randomSubset(n, n, elems);
+    }
+
     /**
-     * Get a set of \a k random integers from the set [0, \a n - 1]. \a subset must have been preallocated to \a k elements. The
-     * returned numbers are <em>not</em> necessarily in sorted order.
+     * Get the first \a k elements of a random permutation of a set of \a n elements. This implements a partial
+     * Fisher-Yates/Knuth shuffle.
+     *
+     * @param n The number of elements in the complete set.
+     * @param k The size of the desired prefix of the random permutation.
+     * @param elems The input set, also used to return the desired prefix of the random permutation. The function will set the
+     *   first \a k entries of this array to be the computed prefix. The remaining \a n - \a k entries will contain the
+     *   remainder of the elements, but not in random order.
      */
-    virtual void randomSubset(int32 n, int32 k, int32 * subset);
+    template <typename T> void randomShuffle(int32 n, int32 k, T * elems)
+    {
+      for (int32 i = 0; i < k; i++)
+      {
+        int32 j = (integer() % (n - i)) + i;
+        std::swap(elems[i], elems[j]);
+      }
+    }
 
     /**
      * A shared, threadsafe random number generator. Suggested for general usage when a separate object is not required (e.g. as
