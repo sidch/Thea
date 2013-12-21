@@ -85,6 +85,7 @@ App::optsToString() const
       << "\n  model = " << opts.model
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
+      << "\n  two-sided = " << opts.two_sided
       << "\n  accentuate-features = " << opts.accentuate_features
       << "\n  show-graph = " << opts.show_graph
       << '\n';
@@ -149,6 +150,7 @@ App::parseOptions(int argc, char * argv[])
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
           ("bg-color",             po::value<std::string>(&s_bg_color), "Background color")
+          ("two-sided",            po::value<bool>(&opts.two_sided), "Use two-sided lighting?")
           ("accentuate-features",  po::value<bool>(&opts.accentuate_features)->default_value(false), "Make feature distributions easier to view?")
           ("show-graph",           po::value<bool>(&opts.show_graph)->default_value(true), "Show point adjacency graph, if available?")
   ;
@@ -188,8 +190,8 @@ App::parseOptions(int argc, char * argv[])
 
   if (vm.count("version") > 0)
   {
-    qDebug() << "Browse3D version 1.0";
-    qDebug() << "Computer Graphics Lab, Stanford University, 2011";
+    qDebug() << "Browse3D version 1.1";
+    qDebug() << "Siddhartha Chaudhuri/Stanford University/Princeton University, 2013";
     quit = true;
   }
 

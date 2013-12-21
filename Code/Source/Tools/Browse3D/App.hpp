@@ -81,6 +81,7 @@ class App : public QObject
 
       bool bg_plain;                ///< Draw the background in a single plain color?
       ColorRGB bg_color;            ///< Background color.
+      bool two_sided;               ///< Use two-sided lighting?
 
       bool accentuate_features;     ///< Make feature distributions easier to view?
       bool show_graph;              ///< Show point adjacency graph, if available?

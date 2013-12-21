@@ -138,7 +138,7 @@ MainWindow::init()
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
 
-  ui->actionViewTwoSidedLighting->setChecked(false);
+  ui->actionViewTwoSidedLighting->setChecked(app().options().two_sided);
   model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
 
   setPickPoints(false);
