@@ -215,7 +215,7 @@ ModelDisplay::setTwoSided(bool value)
     GraphicsWidget::setTwoSided(value);
     update();
 
-    qDebug() << "Two-sided lighting = " << value;
+    qDebug() << "Two-sided lighting =" << value;
   }
 }
 
