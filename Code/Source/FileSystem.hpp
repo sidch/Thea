@@ -88,7 +88,7 @@ class THEA_API FileSystem
     /**
      * Create a directory, including all necessary parents (equivalent to "mkdir -p").
      *
-     * @return True on success, false on error.
+     * @return True if the directory already exists or was successfully created, false on error.
      */
     static bool createDirectory(std::string const & path);
 

@@ -83,6 +83,9 @@ FileSystem::resolve(std::string const & path)
 bool
 FileSystem::createDirectory(std::string const & path)
 {
+  if (directoryExists(path))
+    return true;
+
   return boost::filesystem::create_directories(path);
 }
 
