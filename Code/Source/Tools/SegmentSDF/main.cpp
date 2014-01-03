@@ -498,12 +498,12 @@ struct SampleCluster
   int label;
   TheaArray<Vector3 const *> positions;
   TheaArray<Vector3 const *> normals;
-  KDTree3<Vector3 const *> * kdtree;
+  KDTreeN<Vector3 const *, 3> * kdtree;
   double concavity;
   SampleClusterConnectivityGraph::VertexIterator conn_vertex;
   bool changed;
 
-  SampleCluster() : kdtree(new KDTree3<Vector3 const *>), changed(false) {}
+  SampleCluster() : kdtree(new KDTreeN<Vector3 const *, 3>), changed(false) {}
 
   void updateKDTree()
   {

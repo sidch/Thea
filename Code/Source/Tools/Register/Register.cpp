@@ -2,7 +2,7 @@
 #include "../../FilePath.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/Filter.hpp"
-#include "../../Algorithms/KDTree3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../AffineTransform3.hpp"
@@ -53,10 +53,10 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 } // namespace Thea
 
 template <typename T>
-class AccelKDTree : public KDTree3<T>
+class AccelKDTree : public KDTreeN<T, 3>
 {
   private:
-    typedef KDTree3<T> BaseType;
+    typedef KDTreeN<T, 3> BaseType;
 
   public:
     template <typename InputIterator> AccelKDTree(InputIterator begin, InputIterator end) { init(begin, end); }

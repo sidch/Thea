@@ -1,6 +1,6 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
-#include "../../Algorithms/KDTree3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
@@ -369,7 +369,7 @@ tJuncts(Mesh & mesh)
     if (vi->isBoundary())
       boundary_verts.push_back(&(*vi));
 
-  typedef KDTree3<Mesh::Vertex *> VertexKDTree;
+  typedef KDTreeN<Mesh::Vertex *, 3> VertexKDTree;
   VertexKDTree kdtree(boundary_verts.begin(), boundary_verts.end());
 
   TheaArray<Mesh::Edge *> boundary_edges;

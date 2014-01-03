@@ -45,10 +45,10 @@
 #include "Common.hpp"
 #include "GraphicsWidget.hpp"
 #include "MeshFwd.hpp"
-#include "../../Algorithms/KDTree3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
-#include "../../Algorithms/RayQueryStructure3.hpp"
+#include "../../Algorithms/RayQueryStructureN.hpp"
 #include <QObject>
 
 class QMouseEvent;
@@ -107,7 +107,7 @@ class Model : public QObject, public GraphicsWidget
     typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
-    typedef Thea::Algorithms::KDTree3<IndexedMeshVertex> VertexKDTree;  ///< A kd-tree on mesh vertices.
+    typedef Thea::Algorithms::KDTreeN<IndexedMeshVertex, 3> VertexKDTree;  ///< A kd-tree on mesh vertices.
 
     /** A sample point on the surface. */
     struct Sample

@@ -46,7 +46,7 @@
 #include "Mesh.hpp"
 #include "PointCloud.hpp"
 #include "Util.hpp"
-#include "../../Algorithms/KDTree3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
@@ -653,7 +653,7 @@ Model::saveSamples(QString const & filename_) const
 
 namespace ModelInternal {
 
-typedef Algorithms::KDTree3<Vector3> PointKDTree;
+typedef Algorithms::KDTreeN<Vector3, 3> PointKDTree;
 
 struct VertexFeatureVisitor
 {

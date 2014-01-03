@@ -49,7 +49,7 @@
 #include "../Triangle3.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
-#include "KDTree3.hpp"
+#include "KDTreeN.hpp"
 #include <boost/utility/enable_if.hpp>
 
 namespace Thea {
@@ -585,10 +585,10 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
  * @see GeneralMesh, DCELMesh, CGALMesh, DisplayMesh
  */
 template <typename MeshT, typename NodeAttributeT = NullAttribute>
-class MeshKDTree : public Algorithms::KDTree3< Triangle3< MeshVertexTriple<MeshT> >, NodeAttributeT >
+class MeshKDTree : public Algorithms::KDTreeN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT >
 {
   private:
-    typedef Algorithms::KDTree3< Triangle3< MeshVertexTriple<MeshT> >, NodeAttributeT > BaseT;
+    typedef Algorithms::KDTreeN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT > BaseT;
 
   public:
     THEA_DEF_POINTER_TYPES(MeshKDTree, shared_ptr, weak_ptr)

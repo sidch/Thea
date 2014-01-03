@@ -39,48 +39,48 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_BoundedObjectTraits3_Transform_hpp__
-#define __Thea_Algorithms_BoundedObjectTraits3_Transform_hpp__
+#ifndef __Thea_Algorithms_BoundedObjectTraitsN_Transform_hpp__
+#define __Thea_Algorithms_BoundedObjectTraitsN_Transform_hpp__
 
 #include "TransformedObject.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
-template <typename ObjectT, typename TransformT>
-class /* THEA_API */ BoundedObjectTraits3< TransformedObject<ObjectT, TransformT> >
+template <typename ObjectT, typename TransformT, long N, typename ScalarT>
+class /* THEA_API */ BoundedObjectTraitsN< TransformedObject<ObjectT, TransformT>, N, ScalarT >
 {
   public:
     typedef TransformedObject<ObjectT, TransformT> TO;
 
     template <typename RangeT> static void getBounds(TO const & t, RangeT & bounds)
     {
-      BoundedObjectTraits3<ObjectT>::getBounds(t.getObject(), bounds);
+      BoundedObjectTraitsN<ObjectT, N, ScalarT>::getBounds(t.getObject(), bounds);
       bounds = bounds.transformAndBound(t.getTransform());
     }
 
-    static Vector3 getCenter(TO const & t)
+    static VectorN<N, ScalarT> getCenter(TO const & t)
     {
-      AxisAlignedBox3 bounds;
+      AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);
       return bounds.getCenter();
     }
 
-    static Real getHigh(TO const & t, int coord)
+    static Real getHigh(TO const & t, long coord)
     {
-      AxisAlignedBox3 bounds;
+      AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);
       return bounds.getHigh()[coord];
     }
 
-    static Real getLow(TO const & t, int coord)
+    static Real getLow(TO const & t, long coord)
     {
-      AxisAlignedBox3 bounds;
+      AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);
       return bounds.getLow()[coord];
     }
 
-}; // class BoundedObjectTraits3
+}; // class BoundedObjectTraitsN
 
 } // namespace Algorithms
 } // namespace Thea

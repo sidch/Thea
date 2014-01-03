@@ -1,6 +1,6 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/IntersectionTester.hpp"
-#include "../../Algorithms/KDTree3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -91,7 +91,7 @@ struct RefToPtrIterator : public RefIterator
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
 typedef MeshKDTree<Mesh> KDTree;
-typedef KDTree3<SurfaceSample *> SampleKDTree;
+typedef KDTreeN<SurfaceSample *, 3> SampleKDTree;
 
 TheaArray<SurfaceSample> samples;
 array_size_t orig_num_samples = 0;

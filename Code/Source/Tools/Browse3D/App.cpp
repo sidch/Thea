@@ -59,7 +59,7 @@
 namespace Browse3D {
 
 App::Options::Options()
-: bg_color(ColorRGB::black())
+: bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), accentuate_features(false), show_graph(true)
 {
 }
 
@@ -150,7 +150,7 @@ App::parseOptions(int argc, char * argv[])
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
           ("bg-color",             po::value<std::string>(&s_bg_color), "Background color")
-          ("two-sided",            po::value<bool>(&opts.two_sided), "Use two-sided lighting?")
+          ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
           ("accentuate-features",  po::value<bool>(&opts.accentuate_features)->default_value(false), "Make feature distributions easier to view?")
           ("show-graph",           po::value<bool>(&opts.show_graph)->default_value(true), "Show point adjacency graph, if available?")
   ;
