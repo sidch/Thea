@@ -39,11 +39,12 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_ProximityQueryStructure3_hpp__
-#define __Thea_Algorithms_ProximityQueryStructure3_hpp__
+#ifndef __Thea_Algorithms_ProximityQueryStructureN_hpp__
+#define __Thea_Algorithms_ProximityQueryStructureN_hpp__
 
 #include "../Common.hpp"
-#include "../AxisAlignedBox3.hpp"
+#include "../AxisAlignedBoxN.hpp"
+#include "../VectorN.hpp"
 #include <cmath>
 #include <sstream>
 #include <utility>
@@ -52,13 +53,16 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * Interface for a structure that supports proximity queries in 3-space. None of the functions are virtual, this just defines a
+ * Interface for a structure that supports proximity queries in N-space. None of the functions are virtual, this just defines a
  * concept subclasses must implement.
  */
-class THEA_API ProximityQueryStructure3
+template <long N, typename T = Real>
+class /* THEA_API */ ProximityQueryStructureN
 {
   public:
-    THEA_DEF_POINTER_TYPES(ProximityQueryStructure3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ProximityQueryStructureN, shared_ptr, weak_ptr)
+
+    typedef VectorN<N, T> VectorT;  ///< N-dimensional vector.
 
     /**
      * A return value of a k-nearest-neighbors query, specified by a monotone approximation to (for L2, square of) the distance
@@ -77,15 +81,15 @@ class THEA_API ProximityQueryStructure3
          */
         NeighborPair(long query_index_, long target_index_ = -1, double mon_approx_dist_ = 0)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_),
-          query_point(Vector3::zero()), target_point(Vector3::zero())  // else g++ 4.2.1 on OS X complains that fields of the
+          query_point(VectorT::zero()), target_point(VectorT::zero())  // else g++ 4.2.1 on OS X complains that fields of the
         {}                                                             // boost::array superclass may be used uninitialized
 
         /**
          * Construct from a pair of query and target indices, a monotone approximation to the distance between the elements, and
          * the positions of the closest pair of points on them.
          */
-        NeighborPair(long query_index_, long target_index_, double mon_approx_dist_, Vector3 const & query_point_,
-                     Vector3 const & target_point_)
+        NeighborPair(long query_index_, long target_index_, double mon_approx_dist_, VectorT const & query_point_,
+                     VectorT const & target_point_)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_), query_point(query_point_),
           target_point(target_point_)
         {}
@@ -118,16 +122,16 @@ class THEA_API ProximityQueryStructure3
         template <typename MetricT> double getDistance() const { return MetricT::invertMonotoneApprox(mon_approx_dist); }
 
         /** Get the point of the query element. */
-        Vector3 const & getQueryPoint() const { return query_point; }
+        VectorT const & getQueryPoint() const { return query_point; }
 
         /** Set the point of the query element. */
-        void setQueryPoint(Vector3 const & query_point_) { query_point = query_point_; }
+        void setQueryPoint(VectorT const & query_point_) { query_point = query_point_; }
 
         /** Get the point of the target element. */
-        Vector3 const & getTargetPoint() const { return target_point; }
+        VectorT const & getTargetPoint() const { return target_point; }
 
         /** Set the point of the target element. */
-        void setTargetPoint(Vector3 const & target_point_) { target_point = target_point_; }
+        void setTargetPoint(VectorT const & target_point_) { target_point = target_point_; }
 
         /** Returns a pair with the query and target indices swapped. */
         NeighborPair swapped() const
@@ -158,8 +162,8 @@ class THEA_API ProximityQueryStructure3
         long query_index;
         long target_index;
         double mon_approx_dist;
-        Vector3 query_point;
-        Vector3 target_point;
+        VectorT query_point;
+        VectorT target_point;
 
     }; // class NeighborPair
 
@@ -180,7 +184,7 @@ class THEA_API ProximityQueryStructure3
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
     template <typename MetricT, typename QueryT>
-    long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, Vector3 * closest_point = NULL)
+    long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
          const;
 
     /**
@@ -220,7 +224,13 @@ class THEA_API ProximityQueryStructure3
     long kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
                        bool get_closest_points = false, bool clear_set = true, long use_as_query_index_and_swap = -1) const;
 
-}; // class ProximityQueryStructure3
+}; // class ProximityQueryStructureN
+
+/** Interface for a structure that supports proximity queries in 2-space. */
+typedef ProximityQueryStructureN<2, Real> ProximityQueryStructure2;
+
+/** Interface for a structure that supports proximity queries in 3-space. */
+typedef ProximityQueryStructureN<3, Real> ProximityQueryStructure3;
 
 } // namespace Algorithms
 } // namespace Thea

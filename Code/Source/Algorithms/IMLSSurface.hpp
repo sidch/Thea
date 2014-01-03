@@ -53,7 +53,7 @@
 #include "../VectorN.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
-#include "KDTree3.hpp"
+#include "KDTreeN.hpp"
 #include <boost/utility/enable_if.hpp>
 
 namespace Thea {
@@ -105,7 +105,7 @@ struct NodeAttribute
   double         normal_len;  ///< Cached magnitude of the normal.
 };
 
-typedef KDTree3<IndexedTriangle, NodeAttribute> TriangleKDTree;
+typedef KDTreeN<IndexedTriangle, 3, Real, NodeAttribute> TriangleKDTree;
 
 // A data structure to hold the integral terms.
 struct IntegralData

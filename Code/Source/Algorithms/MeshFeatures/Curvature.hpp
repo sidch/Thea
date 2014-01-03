@@ -44,7 +44,7 @@
 
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
-#include "../KDTree3.hpp"
+#include "../KDTreeN.hpp"
 #include "../IntersectionTester.hpp"
 #include "../MeshSampler.hpp"
 #include "../MetricL2.hpp"
@@ -98,7 +98,7 @@ namespace MeshFeatures {
 
 /** Computes the curvature at a given set of positions on a mesh. */
 template < typename MeshT,
-           typename ExternalSampleKDTreeT = KDTree3<CurvatureInternal::SurfaceSample> >
+           typename ExternalSampleKDTreeT = KDTreeN<CurvatureInternal::SurfaceSample, 3> >
 class Curvature
 {
   public:
@@ -107,7 +107,7 @@ class Curvature
 
   private:
     typedef CurvatureInternal::SurfaceSample SurfaceSample;  ///< A point plus a normal.
-    typedef KDTree3<SurfaceSample> SampleKDTree;  ///< A kd-tree on mesh samples.
+    typedef KDTreeN<SurfaceSample, 3> SampleKDTree;  ///< A kd-tree on mesh samples.
 
     static long const DEFAULT_NUM_SAMPLES = 50000;
 

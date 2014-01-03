@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_RangeQueryStructure3_hpp__
-#define __Thea_Algorithms_RangeQueryStructure3_hpp__
+#ifndef __Thea_Algorithms_RangeQueryStructure_hpp__
+#define __Thea_Algorithms_RangeQueryStructure_hpp__
 
 #include "../Common.hpp"
 #include "../Array.hpp"
@@ -49,14 +49,14 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * Interface for a structure that supports range queries in 3-space. None of the functions are virtual, this just defines a
- * concept subclasses must implement.
+ * Interface for a structure that supports range queries. None of the functions are virtual, this just defines a concept
+ * subclasses must implement.
  */
 template <typename T>
-class /* THEA_API */ RangeQueryStructure3
+class /* THEA_API */ RangeQueryStructure
 {
   public:
-    THEA_DEF_POINTER_TYPES(RangeQueryStructure3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RangeQueryStructure, shared_ptr, weak_ptr)
 
     /**
      * Get all objects intersecting a range.
@@ -98,7 +98,7 @@ class /* THEA_API */ RangeQueryStructure3
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     bool processRangeUntil(RangeT const & range, FunctorT * functor);
 
-}; // class RangeQueryStructure3
+}; // class RangeQueryStructure
 
 } // namespace Algorithms
 } // namespace Thea

@@ -1,5 +1,5 @@
 #include "../Common.hpp"
-#include "../Algorithms/KDTree3.hpp"
+#include "../Algorithms/KDTreeN.hpp"
 #include "../Algorithms/MetricL2.hpp"
 #include "../Algorithms/IntersectionTester.hpp"
 #include "../Algorithms/RayIntersectionTester.hpp"
@@ -31,7 +31,7 @@ main(int argc, char * argv[])
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
-  cout << "KDTree3: Test completed" << endl;
+  cout << "KDTreeN: Test completed" << endl;
   return 0;
 }
 
@@ -141,7 +141,7 @@ testPointKDTree()
   //============================================================================================================================
 
   // Create a kd-tree for all the points
-  typedef KDTree3<MyCustomPoint> KDTree;
+  typedef KDTreeN<MyCustomPoint, 3> KDTree;
   KDTree kdtree(points.begin(), points.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
                                                 // reinitialization, set the deallocate_previous_memory arg of init() to false.
   cout << "Created kd-tree for points" << endl;
@@ -302,7 +302,7 @@ testTriangleKDTree()
   //============================================================================================================================
 
   // Create a kd-tree for all the triangles
-  typedef KDTree3<MyCustomTriangle> KDTree;
+  typedef KDTreeN<MyCustomTriangle, 3> KDTree;
   KDTree kdtree(triangles.begin(), triangles.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
                                                       // reinitialization, set the deallocate_previous_memory arg of init() to
                                                       // false.

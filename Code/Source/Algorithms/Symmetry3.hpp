@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "IteratorModifiers.hpp"
-#include "KDTree3.hpp"
+#include "KDTreeN.hpp"
 #include "MetricL2.hpp"
 #include "PCA_N.hpp"
 #include "PointTraitsN.hpp"
@@ -127,7 +127,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsPointN<T, 3> >::t
     static bool findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
                           Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1)
     {
-      KDTree3<T> kdtree(begin, end);
+      KDTreeN<T, 3> kdtree(begin, end);
       return findPlane(begin, end, kdtree, plane, precomputed_centroid, max_rms_error);
     }
 
