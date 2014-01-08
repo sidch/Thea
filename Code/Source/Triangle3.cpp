@@ -875,10 +875,9 @@ isPointInsideTriangle(
   int i, j;
   switch (primary_axis)
   {
-    case 0: i = 1; j = 2; break;
-    case 1: i = 2; j = 0; break;
-    case 2: i = 0; j = 1; break;
-    default: debugAssertM(false, "Triangle3: No primary axis");
+    case 1          : i = 2; j = 0; break;
+    case 2          : i = 0; j = 1; break;
+    default /* 0 */ : i = 1; j = 2;
   }
 
   // See if all barycentric coordinates are non-negative
