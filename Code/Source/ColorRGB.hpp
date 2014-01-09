@@ -74,7 +74,7 @@ class ColorRGB8;
  * A color with three floating-point channels: red, green and blue, each in [0, 1]. Derived from the G3D library:
  * http://g3d.sourceforge.net
  */
-class ColorRGB
+class THEA_API ColorRGB
 {
   private:
     Real c[3];  ///< Three components: red, green and blue.
@@ -90,10 +90,13 @@ class ColorRGB
     explicit ColorRGB(Real v) { c[0] = c[1] = c[2] = v; }
 
     /** Construct a color from a 3-vector. */
-    explicit ColorRGB(Vector3 const & v) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; }
+    explicit ColorRGB(Vector3 const & v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
 
     /** Construct a color from three components in an array. */
-    explicit ColorRGB(Real v[3]) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; }
+    explicit ColorRGB(Real v[3]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
+
+    /** Copy constructor. */
+    ColorRGB(ColorRGB const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; }
 
     /** Construct from a color with byte channels, with automatic scaling from [0, 255] to [0, 1]. */
     ColorRGB(ColorRGB8 const & src);

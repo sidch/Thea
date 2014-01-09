@@ -106,7 +106,7 @@ namespace Thea {
 #define THEA_STATIC_ASSERT(e) \
 do \
 { \
-  enum { assert_static__ = 1/(e) }; \
+  enum { assert_static__ = 1/((int)(e)) }; \
 } while (0)
 
 /** Coordinate axis-aligned directions upto 4D (enum class). */

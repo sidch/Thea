@@ -670,7 +670,7 @@ class /* THEA_API */ KDTreeN
     long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
     const
     {
-      NeighborPair pair = closestPair<MetricT>(query, dist_bound, (bool)closest_point);
+      NeighborPair pair = closestPair<MetricT>(query, dist_bound, closest_point != NULL);
 
       if (pair.isValid())
       {

@@ -30,39 +30,41 @@
 #ifndef _FIBONACCI_HEAP_HPP_
 #define _FIBONACCI_HEAP_HPP_
 
+#include "../../Platform.hpp"
+
 struct fibheap;
 struct fibheap_el;
 typedef int (*voidcmp)(void *, void *);
 
 /* functions for key heaps */
-struct fibheap *fh_makekeyheap(void);
-struct fibheap_el *fh_insertkey(struct fibheap *, int, void *);
-int fh_minkey(struct fibheap *);
-int fh_replacekey(struct fibheap *, struct fibheap_el *, int);
-void *fh_replacekeydata(struct fibheap *, struct fibheap_el *, int, void *);
+THEA_API struct fibheap *fh_makekeyheap(void);
+THEA_API struct fibheap_el *fh_insertkey(struct fibheap *, int, void *);
+THEA_API int fh_minkey(struct fibheap *);
+THEA_API int fh_replacekey(struct fibheap *, struct fibheap_el *, int);
+THEA_API void *fh_replacekeydata(struct fibheap *, struct fibheap_el *, int, void *);
 
 /* functions for void * heaps */
-struct fibheap *fh_makeheap(void);
-voidcmp fh_setcmp(struct fibheap *, voidcmp);
-void *fh_setneginf(struct fibheap *, void *);
-struct fibheap_el *fh_insert(struct fibheap *, void *);
+THEA_API struct fibheap *fh_makeheap(void);
+THEA_API voidcmp fh_setcmp(struct fibheap *, voidcmp);
+THEA_API void *fh_setneginf(struct fibheap *, void *);
+THEA_API struct fibheap_el *fh_insert(struct fibheap *, void *);
 
 /* shared functions */
-void *fh_extractmin(struct fibheap *);
-void *fh_min(struct fibheap *);
-void *fh_replacedata(struct fibheap *, struct fibheap_el *, void *);
-void *fh_delete(struct fibheap *, struct fibheap_el *);
-void fh_deleteheap(struct fibheap *);
-struct fibheap *fh_union(struct fibheap *, struct fibheap *);
+THEA_API void *fh_extractmin(struct fibheap *);
+THEA_API void *fh_min(struct fibheap *);
+THEA_API void *fh_replacedata(struct fibheap *, struct fibheap_el *, void *);
+THEA_API void *fh_delete(struct fibheap *, struct fibheap_el *);
+THEA_API void fh_deleteheap(struct fibheap *);
+THEA_API struct fibheap *fh_union(struct fibheap *, struct fibheap *);
 
 /* get and set a heap element's data directly (SC, Oct 24 2010) */
-void *fhe_data(struct fibheap_el *);
-void fhe_setdata(struct fibheap_el *, void *);
+THEA_API void *fhe_data(struct fibheap_el *);
+THEA_API void fhe_setdata(struct fibheap_el *, void *);
 
 #ifdef FH_STATS
-int fh_maxn(struct fibheap *);
-int fh_ninserts(struct fibheap *);
-int fh_nextracts(struct fibheap *);
+THEA_API int fh_maxn(struct fibheap *);
+THEA_API int fh_ninserts(struct fibheap *);
+THEA_API int fh_nextracts(struct fibheap *);
 #endif
 
 #endif /* _FIBONACCI_HEAP_HPP_ */

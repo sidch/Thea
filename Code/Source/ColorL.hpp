@@ -69,7 +69,7 @@ class ColorL8;
  * Monochrome luminance value in [0, 1], with automatic scaling by 255 when switching between integer (ColorL8) and floating
  * point (ColorL) formats. Derived from the G3D library: http://g3d.sourceforge.net
  */
-class ColorL
+class THEA_API ColorL
 {
   private:
     Real val;  ///< Luminance value.
@@ -80,6 +80,9 @@ class ColorL
 
     /** Initializing constructor. */
     explicit ColorL(Real v) : val(v) {}
+
+    /** Copy constructor. */
+    ColorL(ColorL const & other) : val(other.val) {}
 
     /** Initialize from an integer color, automatically dividing by 255. */
     ColorL(ColorL8 const & other);

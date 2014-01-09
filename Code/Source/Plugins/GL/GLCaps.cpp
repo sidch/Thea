@@ -158,7 +158,7 @@ GLCaps::getDriverVersion()
 
     // Interpret the VS_VERSIONINFO header pseudo-struct
     VS_VERSIONINFO * pVS = (VS_VERSIONINFO *)buffer;
-    debugAssert(!wcscmp(pVS->szKey, L"VS_VERSION_INFO"));
+    debugAssertM(!wcscmp(pVS->szKey, L"VS_VERSION_INFO"), "GLCaps: Version info not found");
 
     uint8 * pVt = (uint8 *) &pVS->szKey[wcslen(pVS->szKey) + 1];
 

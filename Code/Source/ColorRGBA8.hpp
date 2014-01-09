@@ -71,7 +71,7 @@ class ColorRGBA;
  * http://g3d.sourceforge.net
  */
 THEA_BEGIN_PACKED_CLASS(1)
-class ColorRGBA8
+class THEA_API ColorRGBA8
 {
   private:
     uint8 c[4];  ///< Four components: red, green, blue and alpha.
@@ -87,7 +87,10 @@ class ColorRGBA8
     ColorRGBA8(ColorRGB8 const & rgb_, uint8 a_ = 255) { c[0] = rgb_.r(); c[1] = rgb_.g(); c[2] = rgb_.b(); c[3] = a_; }
 
     /** Construct a color from three components in an array. */
-    explicit ColorRGBA8(uint8 v[4]) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+    explicit ColorRGBA8(uint8 v[4]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+
+    /** Copy constructor. */
+    ColorRGBA8(ColorRGBA8 const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; c[3] = other.c[3]; }
 
     /** Construct from a color with floating-point channels, with automatic scaling from [0, 1] to [0, 255]. */
     ColorRGBA8(ColorRGBA const & src);

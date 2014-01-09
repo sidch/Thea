@@ -120,17 +120,17 @@ THEA_API int tri_tri_intersect_with_isectline(Real const V0[3],Real const V1[3],
                                               Real isectpt1[3],Real isectpt2[3]);
 
 // Check if a point is inside a triangle.
-bool isPointInsideTriangle(Vector3 const &  v0,
-                           Vector3 const &  v1,
-                           Vector3 const &  v2,
-                           int              primary_axis,
-                           Vector3 const &  p);
+THEA_API bool isPointInsideTriangle(Vector3 const &  v0,
+                                    Vector3 const &  v1,
+                                    Vector3 const &  v2,
+                                    int              primary_axis,
+                                    Vector3 const &  p);
 
 // Closest point on the perimeter of a triangle.
-Vector3 closestPointOnTrianglePerimeter(const Vector3   &   v0,
-                                        const Vector3   &   v1,
-                                        const Vector3   &   v2,
-                                        const Vector3   &   point);
+THEA_API Vector3 closestPointOnTrianglePerimeter(const Vector3   &   v0,
+                                                 const Vector3   &   v1,
+                                                 const Vector3   &   v2,
+                                                 const Vector3   &   point);
 
 // Intersection time of a ray with a triangle. Returns a negative value if the ray does not intersect the triangle.
 THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02);

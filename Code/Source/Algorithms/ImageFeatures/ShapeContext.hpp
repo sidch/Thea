@@ -57,7 +57,7 @@ namespace ImageFeatures {
 
 namespace ShapeContextInternal {
 
-class QuadTree;
+struct QuadTree;
 
 } // namespace ShapeContextInternal
 
@@ -67,7 +67,7 @@ class QuadTree;
  *
  * Mori, Belongie and Malik, "Shape contexts enable efficient retrieval of similar shapes", CVPR 2001.
  */
-class ShapeContext
+class THEA_API ShapeContext
 {
   public:
     /** Constructor. */

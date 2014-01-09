@@ -251,7 +251,7 @@ main(int argc, char * argv[])
     TheaArray<Vector3> face_normals;
 
     MeshSampler<Mesh> sampler(mg);
-    sampler.sampleEvenlyByArea(MIN_SAMPLES - orig_num_samples, positions, &face_normals);
+    sampler.sampleEvenlyByArea((long)(MIN_SAMPLES - orig_num_samples), positions, &face_normals);
 
     for (array_size_t i = 0; i < positions.size(); ++i)
     {

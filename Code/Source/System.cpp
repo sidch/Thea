@@ -44,6 +44,7 @@
 
 #ifdef THEA_WINDOWS
 #  include <windows.h>
+#  include <sys/timeb.h>
 #else
 #  include <unistd.h>
 #endif
@@ -84,12 +85,18 @@ System::initTime()
 {
 #ifdef THEA_WINDOWS
 
-  LARGE_INTEGER cf = 0, st = 0;
-  if (QueryPerformanceFrequency(&cf))
-    QueryPerformanceCounter(&st);
+  m_counterFrequency = 0;
+  m_start = 0;
 
-  m_counterFrequency = (int64)cf.QuadPart;
-  m_start = (int64)st.QuadPart;
+  LARGE_INTEGER cf, st;
+  if (QueryPerformanceFrequency(&cf))
+  {
+    if (QueryPerformanceCounter(&st))
+    {
+      m_counterFrequency = (int64)cf.QuadPart;
+      m_start = (int64)st.QuadPart;
+    }
+  }
 
   struct _timeb t;
   _ftime(&t);

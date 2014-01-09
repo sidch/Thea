@@ -175,7 +175,7 @@ computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bi
     ImageFeatures::ShapeContext sc(image);
     sc.compute(num_radial_bins, num_polar_bins, values);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not compute shape context")
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not compute shape context")
 
   THEA_CONSOLE << "  -- done";
 

@@ -74,6 +74,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 
 ELSEIF(MSVC)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+  ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 ENDIF()
 
 # Specify that Triangle should be built as a library, use ANSI function declarations and not use a timer

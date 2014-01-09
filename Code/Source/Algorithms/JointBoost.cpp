@@ -995,7 +995,7 @@ JointBoost::SharedStump::deserialize(std::istream & in)
   for (std::size_t i = 0; i < k.size(); ++i)
     in >> k[i];
 
-  return (bool)in;
+  return !in.fail();
 }
 
 bool
@@ -1013,7 +1013,7 @@ JointBoost::SharedStump::serialize(std::ostream & out) const
 
   out << std::endl;
 
-  return (bool)out;
+  return !out.fail();
 }
 
 bool
@@ -1105,7 +1105,7 @@ JointBoost::serialize(std::ostream & out) const
     if (!stumps[i]->serialize(out))
       return false;
 
-  return (bool)out;
+  return !out.fail();
 }
 
 void

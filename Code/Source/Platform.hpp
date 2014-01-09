@@ -70,6 +70,9 @@
 #  pragma warning( disable: 4251 )
 #  pragma warning( disable: 4275 )
 
+   // Disable numerical type conversion "possible loss of precision" warnings
+#  pragma warning( disable: 4244 )
+
 #elif defined(__FreeBSD__)
 #  define THEA_FREEBSD 1
 #elif defined(__OpenBSD__)
@@ -126,6 +129,18 @@
 #  define THEA_BEGIN_PACKED_CLASS(byte_align)  PRAGMA( pack(push, byte_align) )
 #else
 #  define THEA_BEGIN_PACKED_CLASS(byte_align)
+#endif
+
+/**
+ * @def PRAGMA(expression)
+ * \#pragma may not appear inside a macro, so this uses the pragma operator to create an equivalent statement.
+ */
+#ifdef _MSC_VER
+// Microsoft's version http://msdn.microsoft.com/en-us/library/d9x1s805.aspx
+#  define PRAGMA(x) __pragma(x)
+#else
+// C99 standard http://www.delorie.com/gnu/docs/gcc/cpp_45.html
+#  define PRAGMA(x) _Pragma(#x)
 #endif
 
 /** Mark end of class that uses tight alignment. */

@@ -1233,7 +1233,7 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
   {
     // opts_.max_candidate_features = (long)std::ceil(num_features / 10.0);
     // opts_.max_candidate_features = num_features;
-    opts_.max_candidate_features = (long)std::ceil(std::sqrt(num_features));
+    opts_.max_candidate_features = (long)std::ceil(std::sqrt((double)num_features));
   }
 
   if (opts_.num_feature_expansions < 0)
