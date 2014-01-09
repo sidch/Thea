@@ -59,7 +59,7 @@ namespace Thea {
 namespace Algorithms {
 
 /** %Clustering methods. */
-class /* THEA_API */ Clustering
+class THEA_API Clustering
 {
   private:
 #ifdef THEA_ENABLE_CLUTO
@@ -70,7 +70,7 @@ class /* THEA_API */ Clustering
     THEA_DEF_POINTER_TYPES(Clustering, shared_ptr, weak_ptr)
 
     /** Flat clustering methods (enum class). */
-    struct /* THEA_API */ FlatMethod
+    struct THEA_API FlatMethod
     {
       /** Supported values. */
       enum Value
@@ -88,7 +88,7 @@ class /* THEA_API */ Clustering
     };
 
     /** Hierarchical clustering methods (enum class). */
-    struct /* THEA_API */ HierarchicalMethod
+    struct THEA_API HierarchicalMethod
     {
       /** Supported values. */
       enum Value
@@ -105,7 +105,7 @@ class /* THEA_API */ Clustering
     };
 
     /** Methods to build a hierarchy on top of an existing clustering (enum class). */
-    struct /* THEA_API */ HierarchyOverlayMethod
+    struct THEA_API HierarchyOverlayMethod
     {
       /** Supported values. */
       enum Value
@@ -121,7 +121,7 @@ class /* THEA_API */ Clustering
     };
 
     /** Metric for measuring similarity between two points. */
-    struct /* THEA_API */ SimilarityMeasure
+    struct THEA_API SimilarityMeasure
     {
       /** Supported values. */
       enum Value
@@ -137,7 +137,7 @@ class /* THEA_API */ Clustering
     };
 
     /** How to construct the graph for graph-based clustering. */
-    struct /* THEA_API */ GraphModel
+    struct THEA_API GraphModel
     {
       /** Supported values. */
       enum Value
@@ -173,7 +173,7 @@ class /* THEA_API */ Clustering
     };
 
     /** The function to optimize over all clusters. */
-    struct /* THEA_API */ ClusteringCriterion
+    struct THEA_API ClusteringCriterion
     {
       /** Supported values. */
       enum Value
@@ -204,7 +204,7 @@ class /* THEA_API */ Clustering
     };
 
     /** Priority order for choosing the next cluster to split (only for top-down clustering). */
-    struct /* THEA_API */ SplitPriority
+    struct THEA_API SplitPriority
     {
       /** Supported values. */
       enum Value
@@ -219,7 +219,7 @@ class /* THEA_API */ Clustering
     };
 
     /** %Options for flat clustering. */
-    struct /* THEA_API */ FlatOptions
+    struct THEA_API FlatOptions
     {
       FlatMethod           method;
       SimilarityMeasure    similarity_measure;
