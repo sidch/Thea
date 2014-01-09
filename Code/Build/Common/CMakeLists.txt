@@ -81,7 +81,29 @@ ENDIF()
 ADD_DEFINITIONS(-DTRILIBRARY -DANSI_DECLARATORS -DNO_TIMER)
 
 # Shared library flags
-ADD_DEFINITIONS(-DTHEA_DLL -DTHEA_DLL_EXPORTS)
+IF(THEA_DLL)
+  MESSAGE(WARNING "
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !                                                        !
+  !  WARNING!   WARNING!   WARNING!   WARNING!   WARNING!  !
+  !                                                        !
+  !  You're trying to build Thea as a shared library!      !
+  !                                                        !
+  !  This can be VERY DANGEROUS since things can break     !
+  !  mysteriously if you mix compilers/build settings (or  !
+  !  possibly even with the same compiler and settings).   !
+  !                                                        !
+  !  Thea uses STL classes and lots of templates in its    !
+  !  public interface. This is SUPER-BAD for shared        !
+  !  libraries.                                            !
+  !                                                        !
+  !  Proceed at your own risk. This is NOT recommended.    !
+  !                                                        !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ")
+
+  ADD_DEFINITIONS(-DTHEA_DLL -DTHEA_DLL_EXPORTS)
+ENDIF()
 
 # "extern template" support
 IF(NOT DEFINED THEA_EXTERN_TEMPLATES)
@@ -127,13 +149,13 @@ SET(TheaLibraries
     ${PLATFORM_LIBRARIES})
 
 # Build products
-ADD_LIBRARY(Thea SHARED ${TheaSources})
+ADD_LIBRARY(Thea STATIC ${TheaSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(Thea ${TheaLibraries})
 
 # Fix library install names on OS X
-IF(APPLE)
+IF(THEA_DLL AND APPLE)
   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
   OSX_FIX_DYLIB_REFERENCES(Thea "${TheaLibraries}")
 ENDIF()
