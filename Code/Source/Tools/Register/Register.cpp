@@ -332,7 +332,7 @@ alignNonRigid(SampleArray samples1, SampleArray samples2, TheaArray<Vector3> con
   if (salient1.size() != salient2.size())
   {
     THEA_ERROR << "Numbers of salient points in two sets don't match";
-    return -1;
+    return false;
   }
 
   TheaArray<array_size_t> salient_indices1, salient_indices2;

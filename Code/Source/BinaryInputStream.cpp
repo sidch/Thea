@@ -228,12 +228,12 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
   FILE * file = fopen(m_path.c_str(), "rb");
   debugAssertM(file, getName() + ": Could not open file");
 
-  int ret = fseek(file, (off_t)m_alreadyRead, SEEK_SET);
-  debugAssertM(ret == 0, getName() + ": Seek failed");
+  int ret_seek = fseek(file, (off_t)m_alreadyRead, SEEK_SET);
+  debugAssertM(ret_seek == 0, getName() + ": Seek failed");
 
   size_t toRead = (size_t)std::min(m_bufferLength, m_length - m_alreadyRead);
-  ret = fread(m_buffer, 1, toRead, file);
-  debugAssertM(ret == toRead, getName() + ": Read failed");
+  size_t ret_read = fread(m_buffer, 1, toRead, file);
+  debugAssertM(ret_read == toRead, getName() + ": Read failed");
 
   fclose(file);
   file = NULL;

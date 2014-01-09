@@ -17,7 +17,7 @@ if "%1"=="" (
   set THEA_PREFIX="%1"
 )
 
-cd ..\Thea\Code\Build
+cd ..\Build
 cmake "-DCMAKE_INSTALL_PREFIX=%THEA_PREFIX%" -G "Visual Studio 10" .
 
 devenv /Build Release Thea.sln

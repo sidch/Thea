@@ -447,7 +447,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
 
   TheaArray<LabelUnionFind::handle> handles(modes.size());
   for (array_size_t i = 0; i < modes.size(); ++i)
-    handles[i] = uf.push_back(i);  // indices into the modes array
+    handles[i] = uf.push_back((int)i);  // indices into the modes array
 
   // Combine all means that are within a small threshold of each other
   static double const THRESHOLD_SCALE = 1.3;

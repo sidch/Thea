@@ -320,7 +320,7 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real>
   int w = qtree->image.getWidth();
   int h = qtree->image.getHeight();
 
-  Real rad_limit = (max_radius <= 0 ? std::sqrt(w * w + h * h) : max_radius);
+  Real rad_limit = (max_radius <= 0 ? std::sqrt((Real)(w * w + h * h)) : max_radius);
   Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
   Real ang_step = Math::twoPi() / num_polar_bins;
 
@@ -395,7 +395,7 @@ const
   int w = qtree->image.getWidth();
   int h = qtree->image.getHeight();
 
-  Real rad_limit = (max_radius <= 0 ? std::sqrt(w * w + h * h) : max_radius);
+  Real rad_limit = (max_radius <= 0 ? std::sqrt((Real)(w * w + h * h)) : max_radius);
   Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
   Real ang_step = Math::twoPi() / num_polar_bins;
 

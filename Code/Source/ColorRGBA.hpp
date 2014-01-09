@@ -75,7 +75,7 @@ class ColorRGBA8;
  * A color with three floating-point channels: red, green and blue, each in [0, 1]. Derived from the G3D library:
  * http://g3d.sourceforge.net
  */
-class ColorRGBA
+class THEA_API ColorRGBA
 {
   private:
     Real c[4];  ///< Four components: red, gree, blue and alpha.
@@ -91,10 +91,13 @@ class ColorRGBA
     ColorRGBA(ColorRGB const & rgb_, Real a_ = 1) { c[0] = rgb_.r(); c[1] = rgb_.g(); c[2] = rgb_.b(); c[3] = a_; }
 
     /** Construct a color from a 4-vector. */
-    explicit ColorRGBA(Vector4 const & v) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+    explicit ColorRGBA(Vector4 const & v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
 
     /** Construct a color from three components in an array. */
-    explicit ColorRGBA(Real v[4]) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+    explicit ColorRGBA(Real v[4]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+
+    /** Copy constructor. */
+    ColorRGBA(ColorRGBA const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; c[3] = other.c[3]; }
 
     /** Construct from a color with byte channels, with automatic scaling from [0, 255] to [0, 1]. */
     ColorRGBA(ColorRGBA8 const & src);

@@ -70,7 +70,7 @@ class ColorRGB;
  * http://g3d.sourceforge.net
  */
 THEA_BEGIN_PACKED_CLASS(1)
-class ColorRGB8
+class THEA_API ColorRGB8
 {
   private:
     uint8 c[3];  ///< Three components: red, green and blue.
@@ -86,7 +86,10 @@ class ColorRGB8
     explicit ColorRGB8(uint8 v) { c[0] = c[1] = c[2] = v; }
 
     /** Construct a color from three components in an array. */
-    explicit ColorRGB8(uint8 v[3]) { c[0] = v[1]; c[1] = v[1]; c[2] = v[2]; }
+    explicit ColorRGB8(uint8 v[3]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
+
+    /** Copy constructor. */
+    ColorRGB8(ColorRGB8 const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; }
 
     /** Construct from a color with floating-point channels, with automatic scaling from [0, 1] to [0, 255]. */
     ColorRGB8(ColorRGB const & src);

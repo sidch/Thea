@@ -154,8 +154,8 @@ class Graph
         Edge * next;
 
         friend class IntrusiveList<Edge>;
-        friend class IntrusiveList<Edge>::iterator;
-        friend class IntrusiveList<Edge>::const_iterator;
+        friend typename IntrusiveList<Edge>::iterator;
+        friend typename IntrusiveList<Edge>::const_iterator;
         friend class Graph;
 
       public:
@@ -185,8 +185,8 @@ class Graph
         Vertex * next;
 
         friend class IntrusiveList<Vertex>;
-        friend class IntrusiveList<Vertex>::iterator;
-        friend class IntrusiveList<Vertex>::const_iterator;
+        friend typename IntrusiveList<Vertex>::iterator;
+        friend typename IntrusiveList<Vertex>::const_iterator;
         friend class Graph;
 
       public:

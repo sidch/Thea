@@ -96,6 +96,8 @@ MESSAGE(STATUS "Found OpenGL: headers at ${OpenGL_INCLUDE_DIRS}, libraries at ${
 # Additional platform-specific libraries
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   SET(PLATFORM_LIBRARIES "-framework Carbon")
+ELSEIF(WIN32)
+  SET(PLATFORM_LIBRARIES "version.lib")
 ENDIF()
 
 # Definitions, compiler switches etc.
@@ -116,6 +118,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 
 ELSEIF(MSVC)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+  ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 ENDIF()
 
 ADD_DEFINITIONS(-DGLEW_STATIC)

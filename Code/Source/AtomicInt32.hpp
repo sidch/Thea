@@ -58,6 +58,8 @@
 
 #if defined(THEA_OSX)
 #  include <libkern/OSAtomic.h>
+#elif defined(THEA_WINDOWS)
+#  include <windows.h>
 #endif
 
 namespace Thea {
@@ -70,14 +72,15 @@ class THEA_API AtomicInt32
 {
   private:
 #if defined(THEA_WINDOWS)
-    typedef volatile long    ImplT;
+    typedef long ImplT;
+    volatile ImplT m_value;
 #elif defined(THEA_OSX)
-    typedef int32_t          ImplT;
-#else
-    typedef volatile int32   ImplT;
-#endif
-
+    typedef int32_t ImplT;
     ImplT m_value;
+#else
+    typedef int32 ImplT;
+    volatile ImplT value;
+#endif
 
   public:
     /** Initial value is undefined. */

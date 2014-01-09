@@ -337,7 +337,7 @@ twoPi()
 inline float
 round(float x)
 {
-  return lrintf(x);
+  return (float)lrintf(x);
 }
 
 /** Round a real number to the nearest integer using the lrint() routine. */
@@ -394,10 +394,10 @@ radiansToDegrees(double rad)
 namespace MathInternal {
 
 int const NUM_TRIG_STEPS = 1024;
-extern float const TRIG_TABLE[NUM_TRIG_STEPS + 1][3];
+extern THEA_API float const TRIG_TABLE[NUM_TRIG_STEPS + 1][3];
 
 int const NUM_INV_TRIG_STEPS = 512;
-extern float const INV_TRIG_TABLE[NUM_INV_TRIG_STEPS + 1][3];
+extern THEA_API float const INV_TRIG_TABLE[NUM_INV_TRIG_STEPS + 1][3];
 
 inline int
 radiansToTrigIndex(float radians)
@@ -608,34 +608,34 @@ inline float
 fastMinuzExp_1(float x)
 {
   // err <= 3e-3
-  return 1
-         - x * (0.9664
-                - x * (0.3536));
+  return (float)(1
+                 - x * (0.9664
+                        - x * (0.3536)));
 }
 
 inline float
 fastMinuzExp_2(float x)
 {
   // err <= 3e-5
-  return 1
-         - x * (0.9998684
-                - x * (0.4982926
-                       - x * (0.1595332
-                              - x * (0.0293641))));
+  return (float)(1
+                 - x * (0.9998684
+                        - x * (0.4982926
+                               - x * (0.1595332
+                                      - x * (0.0293641)))));
 }
 
 inline float
 fastMinuzExp_3(float x)
 {
   // err <= 3e-10
-  return 1
-         - x * (0.9999999995
-                - x * (0.4999999206
-                       - x * (0.1666653019
-                              - x * (0.0416573475
-                                     - x * (0.0083013598
-                                         - x * (0.0013298820
-                                             - x * (0.0001413161)))))));
+  return (float)(1
+                 - x * (0.9999999995
+                        - x * (0.4999999206
+                               - x * (0.1666653019
+                                      - x * (0.0416573475
+                                             - x * (0.0083013598
+                                                    - x * (0.0013298820
+                                                           - x * (0.0001413161))))))));
 }
 
 // widen up fastMinuzExp

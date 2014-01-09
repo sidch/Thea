@@ -97,7 +97,7 @@ TextureFormat::TextureFormat(
   opaque(_opaque),
   floatingPoint(_floatingPoint)
 {
-  debugAssertM(_cpuBitsPerPixel <= _openGLBitsPerPixel, "TextureFormat: Too many packed bits");
+  debugAssertM(_cpuBitsPerPixel <= _glBitsPerPixel, "TextureFormat: Too many packed bits");
 }
 
 TextureFormat const *

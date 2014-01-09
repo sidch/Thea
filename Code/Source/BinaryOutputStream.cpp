@@ -372,7 +372,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
   {
     if (m_buffer != NULL && m_bufferLen > 0)
     {
-      int success = fwrite(m_buffer, m_bufferLen, 1, file);
+      size_t success = fwrite(m_buffer, m_bufferLen, 1, file);
       debugAssertM(success == 1, getName() + ": Could not write buffer contents to disk");
       (void)success;
 
@@ -493,10 +493,10 @@ BinaryOutputStream::writeString(char const * s)
   debugAssertM(m_beginEndBits == 0, getName() + ": Can't write strings in a beginBits/endBits block");
 
   // +1 is because strlen doesn't count the null
-  int len = strlen(s) + 1;
-  reserveBytes(len);
+  size_t len = strlen(s) + 1;
+  reserveBytes((int64)len);
   std::memcpy(m_buffer + m_pos, s, len);
-  m_pos += len;
+  m_pos += (int64)len;
 }
 
 void

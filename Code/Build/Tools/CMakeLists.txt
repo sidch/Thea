@@ -47,6 +47,7 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Locate Thea dependencies
+SET(Thea_FIND_CGAL       TRUE)
 SET(Thea_FIND_Lib3ds     TRUE)
 SET(Thea_FIND_FreeImage  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
@@ -102,6 +103,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
 
 ELSEIF(MSVC)
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+  ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 ENDIF()
 
 # Shared library flags
@@ -112,7 +114,8 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${CMAKE_CURRENT_BINARY_DIR}  # QT4_WRAP_UI generates ui_*.h files here
                     ${SourceRoot}
                     ${Boost_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS})
+                    ${Lib3ds_INCLUDE_DIRS}
+                    ${CGAL_INCLUDE_DIRS})
 
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib)

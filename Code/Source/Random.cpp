@@ -101,7 +101,7 @@ Random::bits()
   int32 localIndex = index;
 
   // Automatically checks for index < 0 if corrupted by unsynchronized threads.
-  if ((unsigned int32)localIndex >= (unsigned int32)N)
+  if ((uint32)localIndex >= (uint32)N)
   {
     generate();
     localIndex = 0;

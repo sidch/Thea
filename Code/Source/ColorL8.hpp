@@ -69,7 +69,7 @@ class ColorL;
  * (ColorL8) and floating point (ColorL) formats. Derived from the G3D library: http://g3d.sourceforge.net
  */
 THEA_BEGIN_PACKED_CLASS(1)
-class ColorL8
+class THEA_API ColorL8
 {
   private:
     uint8 val;  ///< Luminance value.
@@ -80,6 +80,9 @@ class ColorL8
 
     /** Initializing constructor. */
     explicit ColorL8(uint8 v) : val(v) {}
+
+    /** Copy constructor. */
+    ColorL8(ColorL8 const & other) : val(other.val) {}
 
     /** Initialize from a floating-point color, automatically multiplying by 255. */
     ColorL8(ColorL const & other);

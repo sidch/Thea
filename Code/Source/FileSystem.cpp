@@ -41,6 +41,7 @@
 
 #include "FileSystem.hpp"
 #include "StringAlg.hpp"
+#include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
 #include <cstdio>
 
@@ -67,8 +68,8 @@ FileSystem::directoryExists(std::string const & path)
 int64
 FileSystem::fileSize(std::string const & path)
 {
-  uintmax_t size = boost::filesystem::file_size(path);
-  if (size == static_cast<uintmax_t>(-1))
+  boost::uintmax_t size = boost::filesystem::file_size(path);
+  if (size == static_cast<boost::uintmax_t>(-1))
     return -1;
   else
     return static_cast<int64>(size);
@@ -119,8 +120,8 @@ FileSystem::readWholeFile(std::string const & path, std::string & ret)
     return false;
   }
 
-  int num_read = std::fread(buffer, 1, length, f);
-  if (num_read != length)
+  size_t num_read = std::fread(buffer, 1, length, f);
+  if ((int64)num_read != length)
   {
     THEA_ERROR << "FileSystem: Error reading from file '" << path << '\'';
     return false;
@@ -162,7 +163,12 @@ entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int 
 
   if (!patterns.empty())
   {
+#if BOOST_VERSION / 100000 > 1 || (BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 > 45)
     std::string name = entry.path().filename().string();
+#else
+    std::string name = entry.path().filename();
+#endif
+
     bool ok = false;
     for (array_size_t i = 0; !ok && i < patterns.size(); ++i)
       if (patternMatch(patterns[i], name))
@@ -211,13 +217,19 @@ FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> 
 bool
 FileSystem::remove(std::string const & path, bool recursive)
 {
-  boost::system::error_code error;
-  if (recursive)
-    boost::filesystem::remove_all(path, error);
-  else
-    boost::filesystem::remove(path, error);
+  try
+  {
+    if (recursive)
+      boost::filesystem::remove_all(path);
+    else
+      boost::filesystem::remove(path);
+  }
+  catch (...)
+  {
+    return false;
+  }
 
-  return (bool)error;
+  return true;
 }
 
 } // namespace Thea

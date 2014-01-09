@@ -17,7 +17,7 @@ if "%1"=="" (
   set THEA_PREFIX="%1"
 )
 
-cd ..\Thea\Code\Build
+cd ..\Build
 rem cmake "-DCMAKE_INSTALL_PREFIX=%THEA_PREFIX%" -DBOOST_ROOT=C:\Boost32 -DQT_QMAKE_EXECUTABLE=C:\Qt32\4.8.2\bin\qmake.exe -DCGAL_ROOT=C:\CGAL-3.7-32 -G "Visual Studio 10 Win64" .
 cmake "-DCMAKE_INSTALL_PREFIX=%THEA_PREFIX%" -G "Visual Studio 10 Win64" .
 
