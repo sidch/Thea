@@ -149,16 +149,11 @@ class Graph
       private:
         typedef Thea::AttributedObject<EdgeAttribute> BaseType;
 
+      public:
         Vertex * origin, * end;
         Edge * prev;
         Edge * next;
 
-        friend class IntrusiveList<Edge>;
-        friend typename IntrusiveList<Edge>::iterator;
-        friend typename IntrusiveList<Edge>::const_iterator;
-        friend class Graph;
-
-      public:
         Edge(Vertex * origin_, Vertex * end_, EdgeAttribute const & attrib)
         : BaseType(attrib), origin(origin_), end(end_), prev(NULL), next(NULL) {}
 
@@ -177,6 +172,8 @@ class Graph
     {
       private:
         typedef Thea::AttributedObject<VertexAttribute> BaseType;
+
+      public:
         typedef std::set<Edge *> EdgeSet;
 
         EdgeSet incoming_edges;
@@ -184,12 +181,6 @@ class Graph
         Vertex * prev;
         Vertex * next;
 
-        friend class IntrusiveList<Vertex>;
-        friend typename IntrusiveList<Vertex>::iterator;
-        friend typename IntrusiveList<Vertex>::const_iterator;
-        friend class Graph;
-
-      public:
         typedef typename EdgeSet::iterator EdgeIterator;
         typedef typename EdgeSet::const_iterator EdgeConstIterator;
 
