@@ -81,8 +81,8 @@ class /* THEA_API */ ProximityQueryStructureN
          */
         NeighborPair(long query_index_, long target_index_ = -1, double mon_approx_dist_ = 0)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_),
-          query_point(VectorT::zero()), target_point(VectorT::zero())  // else g++ 4.2.1 on OS X complains that fields of the
-        {}                                                             // boost::array superclass may be used uninitialized
+          query_point(VectorT::zero()), target_point(VectorT::zero())
+        {}
 
         /**
          * Construct from a pair of query and target indices, a monotone approximation to the distance between the elements, and

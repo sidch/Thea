@@ -63,19 +63,21 @@ ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * 
   }
 
   // Create the matrix
-  alwaysAssertM(MatrixUtil::isSquare(scm), getName() + ": Operator matrix is not square");
-  alwaysAssertM(scm.isValid(), getName() + ": Operator matrix has invalid internal state");
+  alwaysAssertM(MatrixUtil::isSquare(scm), std::string(getName()) + ": Operator matrix is not square");
+  alwaysAssertM(scm.isValid(), std::string(getName()) + ": Operator matrix has invalid internal state");
 
   TheaArray<int> irow(scm.getRowIndices().begin(),    scm.getRowIndices().end());
   TheaArray<int> pcol(scm.getColumnIndices().begin(), scm.getColumnIndices().end());
   int nnz = (int)scm.numSetElements();
 
   // Repeat the isValid() checks to check if something got screwed up during the conversion
-  alwaysAssertM(irow.size() == scm.getValues().size(), getName() + ": irow and nzval arrays should have same size");
+  alwaysAssertM(irow.size() == scm.getValues().size(),
+                std::string(getName()) + ": irow and nzval arrays should have same size");
   alwaysAssertM(pcol.size() == (array_size_t)scm.numRows() + 1,
                 getName() + format(": pcol array should have %d + 1 = %d entries, instead has %d entries", scm.numRows(),
                                    scm.numRows() + 1, (int)pcol.size()));
-  alwaysAssertM(nnz == pcol[pcol.size() - 1], getName() + ": (n + 1)th entry of pcol array should be number of non-zeros");
+  alwaysAssertM(nnz == pcol[pcol.size() - 1],
+                std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
 
   ARluNonSymMatrix<double, double> arm(scm.numRows(), nnz, const_cast<double *>(&scm.getValues()[0]), &irow[0], &pcol[0]);
 
@@ -107,7 +109,7 @@ ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * 
 
 #else
 
-  throw Error(getName() + ": Sparse linear solver (SuperLU) not available");
+  throw Error(std::string(getName()) + ": Sparse linear solver (SuperLU) not available");
 
 #endif
 }

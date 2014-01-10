@@ -69,6 +69,8 @@ namespace Algorithms {
  * the %eigenvalues and %eigenvectors of the operator matrix <b>A</b>, the solve() function reads the operator matrix <b>A</b>
  * from #matrix. The computed %eigenvalues, %eigenvectors and relative errors are placed in #eigenvalues, #eigenvectors and
  * #relative_errors respectively.
+ *
+ * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
 class THEA_API EigenSolver : private Noncopyable, public virtual NamedObject
 {
@@ -141,35 +143,23 @@ class THEA_API EigenSolverManager
 {
   public:
     /**
-     * <b>[Internal]</b> Initialization routine. Don't call this directly unless absolutely necessary, use PluginManager::init()
-     * instead.
-     */
-    static void _init();
-
-    /**
-     * <b>[Internal]</b> Termination routine. Don't call this directly unless absolutely necessary, use PluginManager::finish()
-     * instead.
-     */
-    static void _finish();
-
-    /**
      * Install a factory for a particular eigensolver type. The factory pointer should not be null.
      *
      * @return True if the factory was successfully installed, false if a factory of the specified type (with case-insensitive
      *   matching) is already installed.
      */
-    static bool installFactory(std::string const & type, EigenSolverFactory * factory);
+    bool installFactory(std::string const & type, EigenSolverFactory * factory);
 
     /** Uninstall a factory for a particular renderystem type. The match is case-insensitive. */
-    static void uninstallFactory(std::string const & type);
+    void uninstallFactory(std::string const & type);
 
     /** Get a factory for eigensolver of a given type. An error is thrown if no such factory has been installed. */
-    static EigenSolverFactory * getFactory(std::string const & type);
+    EigenSolverFactory * getFactory(std::string const & type);
 
   private:
     typedef TheaMap<std::string, EigenSolverFactory *> FactoryMap;  ///< Maps eigensolver types to factory instances.
 
-    static FactoryMap installed_factories;  ///< Set of installed factories, one for each eigensolver type.
+    FactoryMap installed_factories;  ///< Set of installed factories, one for each eigensolver type.
 
 }; // class EigenSolverManager
 

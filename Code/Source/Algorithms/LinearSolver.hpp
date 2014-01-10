@@ -73,6 +73,8 @@ namespace Algorithms {
  * the system <b>Ax = b</b>, the solve() function reads the coefficient matrix <b>A</b> from #coeffs and the constant vector
  * <b>b</b> from #constants. If the system is successfully solved, #has_solution is set to true and the %solution placed in
  * #solution. Else, #has_solution is set to false.
+ *
+ * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
 class THEA_API LinearSolver : private Noncopyable, public virtual NamedObject
 {
@@ -141,35 +143,23 @@ class THEA_API LinearSolverManager
 {
   public:
     /**
-     * <b>[Internal]</b> Initialization routine. Don't call this directly unless absolutely necessary, use PluginManager::init()
-     * instead.
-     */
-    static void _init();
-
-    /**
-     * <b>[Internal]</b> Termination routine. Don't call this directly unless absolutely necessary, use PluginManager::finish()
-     * instead.
-     */
-    static void _finish();
-
-    /**
      * Install a factory for a particular linear solver type. The factory pointer should not be null.
      *
      * @return True if the factory was successfully installed, false if a factory of the specified type (with case-insensitive
      *   matching) is already installed.
      */
-    static bool installFactory(std::string const & type, LinearSolverFactory * factory);
+    bool installFactory(std::string const & type, LinearSolverFactory * factory);
 
     /** Uninstall a factory for a particular renderystem type. The match is case-insensitive. */
-    static void uninstallFactory(std::string const & type);
+    void uninstallFactory(std::string const & type);
 
     /** Get a factory for linear solver of a given type. An error is thrown if no such factory has been installed. */
-    static LinearSolverFactory * getFactory(std::string const & type);
+    LinearSolverFactory * getFactory(std::string const & type);
 
   private:
     typedef TheaMap<std::string, LinearSolverFactory *> FactoryMap;  ///< Maps linear solver types to factory instances.
 
-    static FactoryMap installed_factories;  ///< Set of installed factories, one for each linear solver type.
+    FactoryMap installed_factories;  ///< Set of installed factories, one for each linear solver type.
 
 }; // class LinearSolverManager
 

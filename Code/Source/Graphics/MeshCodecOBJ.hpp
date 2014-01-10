@@ -170,7 +170,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       int64 size_pos = 0;
       if (prefix_info)
       {
-        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic().data());
+        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic());
 
         // Placeholder for the size field
         size_pos = output.getPosition();
@@ -268,7 +268,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           {
             vstr.get();
             if (!(vstr >> x >> y))
-              throw Error(getName() + ": Could not read texture coordinate on line '" + line + '\'');
+              throw Error(std::string(getName()) + ": Could not read texture coordinate on line '" + line + '\'');
 
             texcoords.push_back(Vector2((Real)x, (Real)y));
           }
@@ -276,14 +276,14 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           {
             vstr.get();
             if (!(vstr >> x >> y >> z))
-              throw Error(getName() + ": Could not read normal on line '" + line + '\'');
+              throw Error(std::string(getName()) + ": Could not read normal on line '" + line + '\'');
 
             normals.push_back(Vector3((Real)x, (Real)y, (Real)z));
           }
           else if (line[1] == ' ' || line[1] == '\t')  // vertex
           {
             if (!(vstr >> x >> y >> z))
-              throw Error(getName() + ": Could not read vertex position on line '" + line + '\'');
+              throw Error(std::string(getName()) + ": Could not read vertex position on line '" + line + '\'');
 
             vertices.push_back(Vector3((Real)x, (Real)y, (Real)z));
           }
@@ -315,7 +315,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               VTN vtn; vtn[0] = 0, vtn[1] = 0; vtn[2] = 0;
 
               if (!(fstr >> vtn[0]))
-                throw Error(getName() + ": Could not read index on line '" + line + '\'');
+                throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
 
               if (fstr.get() == '/')
               {
@@ -325,13 +325,13 @@ class CodecOBJ : public CodecOBJBase<MeshT>
                   {
                     fstr.get();
                     if (!(fstr >> vtn[2]))
-                      throw Error(getName() + ": Could not read index on line '" + line + '\'');
+                      throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
                   }
                 }
                 else
                 {
                   if (!(fstr >> vtn[1]))
-                    throw Error(getName() + ": Could not read index on line '" + line + '\'');
+                    throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
 
                   if (read_opts.ignore_texcoords)  // reset field
                     vtn[1] = 0;
@@ -339,7 +339,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
                   if (!read_opts.ignore_normals && fstr.get() == '/')
                   {
                     if (!(fstr >> vtn[2]))
-                      throw Error(getName() + ": Could not read index on line '" + line + '\'');
+                      throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
                   }
                 }
               }
@@ -373,7 +373,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
             else
             {
               if (!(fstr >> index))
-                throw Error(getName() + ": Could not read index on line '" + line + '\'');
+                throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
 
               --index;  // OBJ indices start from 1
 
@@ -542,7 +542,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       {
         typename Mesh::TexCoordArray const & texcoords = mesh.getTexCoords();
         alwaysAssertM(texcoords.size() == vertices.size(),
-                      getName() + ": Mesh has unequal numbers of vertices and texture coordinates");
+                      std::string(getName()) + ": Mesh has unequal numbers of vertices and texture coordinates");
 
         for (array_size_t i = 0; i < texcoords.size(); ++i)
         {
@@ -554,7 +554,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       if (!write_opts.ignore_normals && mesh.hasNormals())
       {
         typename Mesh::NormalArray const & normals = mesh.getNormals();
-        alwaysAssertM(normals.size() == vertices.size(), getName() + ": Mesh has unequal numbers of vertices and normals");
+        alwaysAssertM(normals.size() == vertices.size(),
+                      std::string(getName()) + ": Mesh has unequal numbers of vertices and normals");
 
         for (array_size_t i = 0; i < normals.size(); ++i)
         {
@@ -611,7 +612,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
         {
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-          alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
           if (!write_opts.ignore_normals)
             os << ' ' << ii->second << "//" << ii->second;
@@ -647,7 +648,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         do
         {
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-          alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
           if (!write_opts.ignore_normals)
             os << ' ' << ii->second << "//" << ii->second;
@@ -688,7 +689,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           for (array_size_t j = 0; j < step; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
             {
@@ -734,7 +735,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         do
         {
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-          alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
           os << ' ' << ii->second;
 

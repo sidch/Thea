@@ -146,7 +146,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       int64 size_pos = 0;
       if (prefix_info)
       {
-        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic().data());
+        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic());
 
         // Placeholder for the size field
         size_pos = output.getPosition();
@@ -215,7 +215,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       std::string header = trimWhitespace(in->readLine());
       if (header != "OFF" && !beginsWith(header, "OFF "))
-        throw Error(getName() + ": Invalid OFF stream (does not start with 'OFF')");
+        throw Error(std::string(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
 
       bool binary = (header == "OFF BINARY" || beginsWith(header, "OFF BINARY "));
       if (binary)
@@ -234,13 +234,13 @@ class CodecOFF : public CodecOFFBase<MeshT>
         if (in.hasMore())
           line = trimWhitespace(in.readLine());
         else
-          throw Error(getName() + ": Unexpected end of file");
+          throw Error(std::string(getName()) + ": Unexpected end of file");
       }
 
       std::istringstream counts(line);
       long num_vertices, num_faces, num_edges;
       if (!(counts >> num_vertices >> num_faces >> num_edges))
-        throw Error(getName() + ": Could not read mesh statistics on line '" + line + '\'');
+        throw Error(std::string(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
 
       THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
                    << " edges";
@@ -249,7 +249,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(mesh_group.getName() + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -268,12 +268,12 @@ class CodecOFF : public CodecOFFBase<MeshT>
           if (in.hasMore())
             line = trimWhitespace(in.readLine());
           else
-            throw Error(getName() + ": Unexpected end of file");
+            throw Error(std::string(getName()) + ": Unexpected end of file");
         }
 
         std::istringstream vstr(line);
         if (!(vstr >> x >> y >> z))
-          throw Error(getName() + ": Could not read vertex on line '" + line + '\'');
+          throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
 
         typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z));
         if (read_callback)
@@ -293,12 +293,12 @@ class CodecOFF : public CodecOFFBase<MeshT>
           if (in.hasMore())
             line = trimWhitespace(in.readLine());
           else
-            throw Error(getName() + ": Unexpected end of file");
+            throw Error(std::string(getName()) + ": Unexpected end of file");
         }
 
         std::istringstream vstr(line);
         if (!(vstr >> num_face_vertices))
-          throw Error(getName() + ": Could not read number of vertices in face on line '" + line + '\'');
+          throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
 
         if (num_face_vertices > 0)
         {
@@ -308,7 +308,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           for (long v = 0; v < num_face_vertices && !skip; ++v)
           {
             if (!(vstr >> index))
-              throw Error(getName() + ": Could not read vertex index on line '" + line + '\'');
+              throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
 
             if (index < 0 || index >= (long)vrefs.size())
               throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
@@ -352,7 +352,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(mesh_group.getName() + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -591,7 +591,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
           }
@@ -604,7 +604,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
           }
@@ -634,7 +634,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           do
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
             he = he->next();
@@ -652,7 +652,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           do
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
             he = he->next();
@@ -685,7 +685,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             for (array_size_t j = 0; j < step; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
-              alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+              alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               output.writeInt32((int32)ii->second);
             }
@@ -699,7 +699,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             for (array_size_t j = 0; j < step; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
-              alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+              alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               os << ' ' << ii->second;
             }
@@ -729,7 +729,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           do
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
 
@@ -745,7 +745,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           do
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-            alwaysAssertM(ii != vertex_indices.end(), getName() + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
 

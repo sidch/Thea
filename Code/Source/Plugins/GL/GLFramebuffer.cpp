@@ -74,8 +74,8 @@ GLFramebuffer__apToGLenum(Framebuffer::AttachmentPoint ap)
   return to_gl_enum[ap];
 }
 
-GLFramebuffer::GLFramebuffer(std::string const & name_)
-: NamedObject(name_), gl_fbid(0), num_attachments(0), width(0), height(0)
+GLFramebuffer::GLFramebuffer(char const * name_)
+: name(name_), gl_fbid(0), num_attachments(0), width(0), height(0)
 {
   if (!THEA_GL_SUPPORTS(EXT_framebuffer_object))
     throw Error("OpenGL framebuffer objects are not supported");
@@ -103,15 +103,16 @@ void
 GLFramebuffer::attach(AttachmentPoint ap, Texture * texture, Texture::Face face, int z_offset)
 {
   GLTexture * gl_texture = dynamic_cast<GLTexture *>(texture);
-  debugAssertM((texture && gl_texture) || (!texture && !gl_texture), getName() + ": Texture is not a valid OpenGL texture");
+  debugAssertM((texture && gl_texture) || (!texture && !gl_texture),
+               std::string(getName()) + ": Texture is not a valid OpenGL texture");
 
   if (gl_texture)
   {
     if (gl_texture->getDimension() == Texture::Dimension::DIM_3D && z_offset >= gl_texture->getDepth())
-      throw Error(getName() + ": Z-offset lies outside depth range of 3D texture");
+      throw Error(std::string(getName()) + ": Z-offset lies outside depth range of 3D texture");
 
     if (num_attachments > 0 && (gl_texture->getWidth() != width || gl_texture->getHeight() != height))
-      throw Error(getName() + ": Texture to attach does not have same size as existing attachments");
+      throw Error(std::string(getName()) + ": Texture to attach does not have same size as existing attachments");
   }
 
   GLTexture * current_attachment = attachment_table[ap];
@@ -159,7 +160,7 @@ GLFramebuffer::attach(AttachmentPoint ap, Texture * texture, Texture::Face face,
                                     0);
         break;
 
-        default: throw Error(getName() + ": Unsupported texture dimensionality");
+        default: throw Error(std::string(getName()) + ": Unsupported texture dimensionality");
       }
 
       THEA_CHECK_GL_OK
@@ -306,13 +307,24 @@ GLFramebuffer::use()
   switch (status)
   {
     case GL_FRAMEBUFFER_COMPLETE_EXT: break;
+
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
-    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT: throw Error(getName() + ": Framebuffer is not attachment-complete");
-    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT: throw Error(getName() + ": Framebuffer attachments aren't of the same size");
-    case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT: throw Error(getName() + ": Color attachments do not all have the same format");
-    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT: throw Error(getName() + ": Draw buffer doesn't have a valid bound texture");
-    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT: throw Error(getName() + ": Read buffer doesn't have a valid bound texture");
-    default: throw Error(getName() + ": Unknown/implementation-dependent framebuffer error");
+    case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
+      throw Error(std::string(getName()) + ": Framebuffer is not attachment-complete");
+
+    case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
+      throw Error(std::string(getName()) + ": Framebuffer attachments aren't of the same size");
+
+    case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
+      throw Error(std::string(getName()) + ": Color attachments do not all have the same format");
+
+    case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
+      throw Error(std::string(getName()) + ": Draw buffer doesn't have a valid bound texture");
+
+    case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
+      throw Error(std::string(getName()) + ": Read buffer doesn't have a valid bound texture");
+
+    default: throw Error(std::string(getName()) + ": Unknown/implementation-dependent framebuffer error");
   }
 
   glDrawBuffersARB((GLsizei)gl_draw_buffers.size(), &gl_draw_buffers[0]);

@@ -228,7 +228,7 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
   BYTE * data;                                                                                                                \
   DWORD size_in_bytes;                                                                                                        \
   if (!mem.acquire(&data, &size_in_bytes))                                                                                    \
-    throw Error(getName() + ": Error accessing the FreeImage memory stream");                                                 \
+    throw Error(std::string(getName()) + ": Error accessing the FreeImage memory stream");                                    \
                                                                                                                               \
   if (prefix_info)                                                                                                            \
   {                                                                                                                           \
@@ -293,18 +293,18 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
   fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);                                                                        \
   FIBITMAP * bitmap = mem.load(fip_format, flags);                                                                            \
   if (!bitmap)                                                                                                                \
-    throw Error(getName() + ": Could not decode image from memory stream");                                                   \
+    throw Error(std::string(getName()) + ": Could not decode image from memory stream");                                      \
                                                                                                                               \
   fipImage * fip_img = image._getFreeImage();                                                                                 \
-  debugAssertM(fip_img, getName() + ": Image does not wrap a valid FreeImage bitmap");                                        \
+  debugAssertM(fip_img, std::string(getName()) + ": Image does not wrap a valid FreeImage bitmap");                           \
                                                                                                                               \
   *fip_img = bitmap;  /* the FIP object will now manage the destruction of the bitmap */                                      \
                                                                                                                               \
-  Image::Type type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());                 \
+  Image::Type type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());         \
   if (type == Image::Type::UNKNOWN)                                                                                           \
   {                                                                                                                           \
     image.clear();                                                                                                            \
-    throw Error(getName()                                                                                                     \
+    throw Error(std::string(getName())                                                                                        \
             + ": Image was successfully decoded but it has a format for which this library does not provide an interface");   \
   }                                                                                                                           \
   image._setType(type);                                                                                                       \

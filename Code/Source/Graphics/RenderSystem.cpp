@@ -44,18 +44,6 @@
 namespace Thea {
 namespace Graphics {
 
-RenderSystemManager::FactoryMap RenderSystemManager::installed_factories;
-
-void
-RenderSystemManager::_init()
-{}
-
-void
-RenderSystemManager::_finish()
-{
-  installed_factories.clear();
-}
-
 RenderSystemFactory *
 RenderSystemManager::getFactory(std::string const & type)
 {

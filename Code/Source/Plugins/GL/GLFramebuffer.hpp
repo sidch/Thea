@@ -57,10 +57,12 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
 {
   public:
     /** Constructor. */
-    GLFramebuffer(std::string const & name_);
+    GLFramebuffer(char const * name_);
 
     /** Destructor. */
     ~GLFramebuffer();
+
+    char const * getName() const { return name.c_str(); }
 
     void attach(AttachmentPoint ap, Texture * texture, Texture::Face face = Texture::Face::POS_X, int z_offset = 0);
     void detach(AttachmentPoint ap);
@@ -76,6 +78,7 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
     void use();
 
   private:
+    std::string name;
     GLuint gl_fbid;
     GLTexture * attachment_table[AttachmentPoint::MAX_ATTACHMENTS];
     int num_attachments;

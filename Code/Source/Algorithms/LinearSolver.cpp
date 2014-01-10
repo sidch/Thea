@@ -44,18 +44,6 @@
 namespace Thea {
 namespace Algorithms {
 
-LinearSolverManager::FactoryMap LinearSolverManager::installed_factories;
-
-void
-LinearSolverManager::_init()
-{}
-
-void
-LinearSolverManager::_finish()
-{
-  installed_factories.clear();
-}
-
 LinearSolverFactory *
 LinearSolverManager::getFactory(std::string const & type)
 {

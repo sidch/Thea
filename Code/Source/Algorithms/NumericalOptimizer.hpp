@@ -61,6 +61,8 @@ class ScalarFunction;
  *
  * To create an instance of a NumericalOptimizer, one typically loads the plugin for the relevant implementation and calls
  * NumericalOptimizerFactory::createNumericalOptimizer().
+ *
+ * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
 class THEA_API NumericalOptimizer : private Noncopyable, public virtual NamedObject
 {
@@ -134,35 +136,24 @@ class THEA_API NumericalOptimizerManager
 {
   public:
     /**
-     * <b>[Internal]</b> Initialization routine. Don't call this directly unless absolutely necessary, use PluginManager::init()
-     * instead.
-     */
-    static void _init();
-
-    /**
-     * <b>[Internal]</b> Termination routine. Don't call this directly unless absolutely necessary, use PluginManager::finish()
-     * instead.
-     */
-    static void _finish();
-
-    /**
      * Install a factory for a particular numerical optimizer type. The factory pointer should not be null.
      *
      * @return True if the factory was successfully installed, false if a factory of the specified type (with case-insensitive
      *   matching) is already installed.
      */
-    static bool installFactory(std::string const & type, NumericalOptimizerFactory * factory);
+    bool installFactory(std::string const & type, NumericalOptimizerFactory * factory);
 
     /** Uninstall a factory for a particular renderystem type. The match is case-insensitive. */
-    static void uninstallFactory(std::string const & type);
+    void uninstallFactory(std::string const & type);
 
     /** Get a factory for numerical optimizer of a given type. An error is thrown if no such factory has been installed. */
-    static NumericalOptimizerFactory * getFactory(std::string const & type);
+    NumericalOptimizerFactory * getFactory(std::string const & type);
 
   private:
-    typedef TheaMap<std::string, NumericalOptimizerFactory *> FactoryMap;  ///< Maps numerical optimizer types to factory instances.
+    typedef TheaMap<std::string, NumericalOptimizerFactory *> FactoryMap;  /**< Maps numerical optimizer types to factory
+                                                                                instances. */
 
-    static FactoryMap installed_factories;  ///< Set of installed factories, one for each numerical optimizer type.
+    FactoryMap installed_factories;  ///< Set of installed factories, one for each numerical optimizer type.
 
 }; // class NumericalOptimizerManager
 

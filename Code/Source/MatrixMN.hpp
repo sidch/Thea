@@ -470,7 +470,7 @@ class /* THEA_API */ MatrixMN<N, N, T> : public Internal::SquareMatrixN<N, T>
      */
     void invert()
     {
-      boost::array<long, N> col_index, row_index, pivot;
+      long col_index[N], row_index[N], pivot[N];
       Internal::invertMatrix(*this, &col_index[0], &row_index[0], &pivot[0]);
     }
 

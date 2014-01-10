@@ -251,14 +251,14 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Get an iterator pointing to the position beyond the last edge. */
     EdgeConstIterator edgesEnd() const
     {
-      debugAssertM(numHalfedges() % 2 == 0, getName() + ": Number of halfedges is odd");
+      debugAssertM(numHalfedges() % 2 == 0, std::string(getName()) + ": Number of halfedges is odd");
       return halfedgesEnd();
     }
 
     /** Get an iterator pointing to the position beyond the last edge. */
     EdgeIterator edgesEnd()
     {
-      debugAssertM(numHalfedges() % 2 == 0, getName() + ": Number of halfedges is odd");
+      debugAssertM(numHalfedges() % 2 == 0, std::string(getName()) + ": Number of halfedges is odd");
       return halfedgesEnd();
     }
 
@@ -308,7 +308,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Get the number of edges. */
     long numEdges() const
     {
-      debugAssertM(halfedges.size() % 2 == 0, getName() + ": Number of halfedges is odd");
+      debugAssertM(halfedges.size() % 2 == 0, std::string(getName()) + ": Number of halfedges is odd");
       return (long)(halfedges.size() / 2);
     }
 
@@ -391,7 +391,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       array_size_t num_verts = 0;
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
-        debugAssertM(*vi, getName() + ": Null vertex pointer specified for new face");
+        debugAssertM(*vi, std::string(getName()) + ": Null vertex pointer specified for new face");
 
         if (num_verts >= face_vertices.size())
           face_vertices.resize(2 * face_vertices.size() + 1);
@@ -428,7 +428,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      */
     Vertex * splitEdge(Halfedge * edge, Real frac)
     {
-      alwaysAssertM(frac >= 0 && frac <= 1, getName() + ": Edge split fraction should be between 0 and 1")
+      alwaysAssertM(frac >= 0 && frac <= 1, std::string(getName()) + ": Edge split fraction should be between 0 and 1")
       if (edge)
       {
         THEA_ERROR << getName() << "Can't split null edge";
@@ -774,9 +774,10 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
           {
             // Just to be sure, check that prev->next() is a boundary edge
             debugAssertM(prev->isBoundary(),
-                         getName() + ": Previous halfedge of new face is not currently on the mesh boundary");
+                         std::string(getName()) + ": Previous halfedge of new face is not currently on the mesh boundary");
             debugAssertM(prev->next() && prev->next()->isBoundary(),
-                         getName() + ": Mesh has internal inconsistency (boundary halfedge not followed by boundary halfedge)");
+                         std::string(getName())
+                       + ": Mesh has internal inconsistency (boundary halfedge not followed by boundary halfedge)");
 
             // Twin of prev is predecessor of (i, next) around vertex i.
             edges[i] = prev;
@@ -837,13 +838,17 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
           this_exists = true;
 #endif
 
-          debugAssertM(e->getOrigin() == vi && e->getEnd() == vnext, getName() + ": Edge has wrong endpoints");
-          debugAssertM(e->isBoundary(), getName() + ": Can't stitch a face to a halfedge that already adjoins a face");
+          debugAssertM(e->getOrigin() == vi && e->getEnd() == vnext, std::string(getName()) + ": Edge has wrong endpoints");
+          debugAssertM(e->isBoundary(),
+                       std::string(getName()) + ": Can't stitch a face to a halfedge that already adjoins a face");
           new_e = e;
 
           // This edge is necessarily the predecessor of the edge we will add at the next vertex
           next_e = edges[next];
-          debugAssertM(next_e, getName() + ": Vertex has an existing edge, yet it was not found in search for predecessor");
+
+          debugAssertM(next_e, std::string(getName())
+                             + ": Vertex has an existing edge, yet it was not found in search for predecessor");
+
           if (next_e->origin != vnext)  // no existing next edge
             edges[next] = e;
         }
@@ -924,7 +929,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
           added_canonical_edge_to_face = true;
         }
 
-        debugAssertM(!last || last->next_he == new_e, getName() + ": Next pointers on face boundary not consistent");
+        debugAssertM(!last || last->next_he == new_e,
+                     std::string(getName()) + ": Next pointers on face boundary not consistent");
         last = new_e;
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -954,7 +960,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       if (next_halfedge_index > THRESHOLD)
       {
         if ((long)halfedges.size() > THRESHOLD)  // too many halfedges, we can't do anything!
-          throw Error(getName() + ": Too many halfedges, can't assign indices!");
+          throw Error(std::string(getName()) + ": Too many halfedges, can't assign indices!");
 
         next_halfedge_index = 0;
         for (HalfedgeIterator ei = halfedges.begin(); ei != halfedges.end(); ++ei)
@@ -1384,43 +1390,45 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
       {
         render_system.destroyVARArea(var_area);
 
-        var_area = render_system.createVARArea(getName() + " VAR area", num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-        if (!var_area) throw Error(getName() + ": Couldn't create VAR area");
+        std::string vararea_name = std::string(getName()) + " VAR area";
+        var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
+        if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
       }
       else
         var_area->reset();
     }
     else
     {
-      var_area = render_system.createVARArea(getName() + " VAR area", num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-      if (!var_area) throw Error(getName() + ": Couldn't create VAR area");
+      std::string vararea_name = std::string(getName()) + " VAR area";
+      var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
+      if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
     }
 
     if (!packed_vertex_positions.empty())
     {
       vertex_positions_var = var_area->createArray(vertex_position_bytes);
-      if (!vertex_positions_var) throw Error(getName() + ": Couldn't create vertices VAR");
+      if (!vertex_positions_var) throw Error(std::string(getName()) + ": Couldn't create vertices VAR");
       vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!packed_vertex_normals.empty())
     {
       vertex_normals_var = var_area->createArray(vertex_normal_bytes);
-      if (!vertex_normals_var) throw Error(getName() + ": Couldn't create normals VAR");
+      if (!vertex_normals_var) throw Error(std::string(getName()) + ": Couldn't create normals VAR");
       vertex_normals_var->updateVectors(0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!packed_vertex_colors.empty())
     {
       vertex_colors_var = var_area->createArray(vertex_color_bytes);
-      if (!vertex_colors_var) throw Error(getName() + ": Couldn't create colors VAR");
+      if (!vertex_colors_var) throw Error(std::string(getName()) + ": Couldn't create colors VAR");
       vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!packed_vertex_texcoords.empty())
     {
       vertex_texcoords_var = var_area->createArray(vertex_texcoord_bytes);
-      if (!vertex_texcoords_var) throw Error(getName() + ": Couldn't create texcoords VAR");
+      if (!vertex_texcoords_var) throw Error(std::string(getName()) + ": Couldn't create texcoords VAR");
       vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
 
@@ -1428,21 +1436,21 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
     if (!packed_tris.empty())
     {
       tris_var = var_area->createArray(tri_bytes);
-      if (!tris_var) throw Error(getName() + ": Couldn't create triangle indices VAR");
+      if (!tris_var) throw Error(std::string(getName()) + ": Couldn't create triangle indices VAR");
       tris_var->updateIndices(0, (long)packed_tris.size(), &packed_tris[0]);
     }
 
     if (!packed_quads.empty())
     {
       quads_var = var_area->createArray(quad_bytes);
-      if (!quads_var) throw Error(getName() + ": Couldn't create quad indices VAR");
+      if (!quads_var) throw Error(std::string(getName()) + ": Couldn't create quad indices VAR");
       quads_var->updateIndices(0, (long)packed_quads.size(), &packed_quads[0]);
     }
 
     if (!packed_edges.empty())
     {
       edges_var = var_area->createArray(edge_bytes);
-      if (!edges_var) throw Error(getName() + ": Couldn't create edge indices VAR");
+      if (!edges_var) throw Error(std::string(getName()) + ": Couldn't create edge indices VAR");
       edges_var->updateIndices(0, (long)packed_edges.size(), &packed_edges[0]);
     }
 #endif
@@ -1482,7 +1490,7 @@ inline void
 DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, RenderOptions const & options) const
 {
   if (options.drawEdges() && !buffered_wireframe)
-    throw Error(getName() + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
+    throw Error(std::string(getName()) + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
 
   const_cast<DCELMesh *>(this)->uploadToGraphicsSystem(render_system);
 

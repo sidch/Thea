@@ -58,35 +58,37 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
 {
   public:
     /** Constructor. */
-    GLRenderSystem(std::string const & name_);
+    GLRenderSystem(char const * name_);
 
     /** Destructor. */
     ~GLRenderSystem() {}
 
-    std::string describeSystem() const;
+    char const * getName() const { return name.c_str(); }
 
-    Framebuffer * createFramebuffer(std::string const & name_);
+    char const * describeSystem() const;
+
+    Framebuffer * createFramebuffer(char const * name_);
     void destroyFramebuffer(Framebuffer * framebuffer);
 
-    Shader * createShader(std::string const & name_);
+    Shader * createShader(char const * name_);
     void destroyShader(Shader * shader);
 
-    Texture * createTexture(std::string const & name_, int width, int height, int depth,
+    Texture * createTexture(char const * name_, int width, int height, int depth,
                             Texture::Format const * desired_format, Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                             Texture::Options const & options = Texture::Options::defaults());
 
-    Texture * createTexture(std::string const & name_, Image const & image,
+    Texture * createTexture(char const * name_, Image const & image,
                             Texture::Format const * desired_format = Texture::Format::AUTO(),
                             Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                             Texture::Options const & options = Texture::Options::defaults());
 
-    Texture * createTexture(std::string const & name_, Image::Ptr images[6],
+    Texture * createTexture(char const * name_, Image::Ptr images[6],
                             Texture::Format const * desired_format = Texture::Format::AUTO(),
                             Texture::Options const & options = Texture::Options::defaults());
 
     void destroyTexture(Texture * texture);
 
-    VARArea * createVARArea(std::string const & name_, long num_bytes, VARArea::Usage usage, bool gpu_memory = true);
+    VARArea * createVARArea(char const * name_, long num_bytes, VARArea::Usage usage, bool gpu_memory = true);
     void destroyVARArea(VARArea * area);
 
     void pushFramebuffer();
@@ -209,6 +211,9 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
      */
     void setIndexAreaFromVAR(GLVAR const & v);
 
+    std::string name;
+    mutable std::string desc;
+
     GLFramebuffer * current_framebuffer;
     FramebufferStack framebuffer_stack;
 
@@ -227,7 +232,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystemFactory : public RenderSystemFactory
     /** Destructor. */
     ~GLRenderSystemFactory();
 
-    RenderSystem * createRenderSystem(std::string const & name);
+    RenderSystem * createRenderSystem(char const * name);
     void destroyRenderSystem(RenderSystem * render_system);
 
     /** Destroy all rendersystems created with this factory. */

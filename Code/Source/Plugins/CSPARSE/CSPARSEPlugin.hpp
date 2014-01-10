@@ -56,17 +56,19 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSEPlugin : public Plugin
 {
   public:
     /** Default constructor. */
-    CSPARSEPlugin();
+    CSPARSEPlugin(FactoryRegistry * registry_);
 
     /** Destructor. */
     ~CSPARSEPlugin();
 
+    char const * getName() const;
     void install();
     void startup();
     void shutdown();
     void uninstall();
 
   private:
+    FactoryRegistry * registry;
     CSPARSELinearSolverFactory * factory;
     bool started;
 

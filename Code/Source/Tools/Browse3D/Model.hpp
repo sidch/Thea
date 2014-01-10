@@ -187,8 +187,8 @@ class Model : public QObject, public GraphicsWidget
     Real rayIntersectionTime(Ray3 const & ray, Real max_time = -1) const;
 
     /**
-     * Compute the intersection of a ray with the model, optionally restricting the search to a maximum hit time. If the ray does
-     * not intersect the model, an invalid intersection is returned.
+     * Compute the intersection of a ray with the model, optionally restricting the search to a maximum hit time. If the ray
+     * does not intersect the model, an invalid intersection is returned.
      */
     RayStructureIntersection3 rayIntersection(Ray3 const & ray, Real max_time = -1) const;
 

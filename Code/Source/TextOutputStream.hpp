@@ -231,12 +231,6 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     /** True if no errors have been encountered.*/
     bool ok() const;
 
-    /** Get the name of the current stream (filename if file, "<memory>" if memory stream). */
-    std::string const & getName() const
-    {
-      return NamedObject::getName();
-    }
-
     /** Get the path to the current file being written ("<memory>" for memory streams). */
     std::string getPath() const
     {

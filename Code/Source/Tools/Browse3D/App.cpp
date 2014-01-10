@@ -253,8 +253,6 @@ App::createMainWindow()
 void
 App::loadPlugins()
 {
-  PluginManager::init();
-
   // Try to load the OpenGL plugin
 #ifdef THEA_DEBUG_BUILD
   std::string s_plugin_dir         =  toStdString(opts.plugin_dir);
@@ -287,7 +285,7 @@ App::loadPlugins()
 #endif
 
   qDebug() << "Loading OpenGL plugin:" << plugin_path;
-  gl_plugin = PluginManager::load(plugin_path);
+  gl_plugin = Application::getPluginManager().load(plugin_path);
 
   // Start up the plugin (a GL context should already exist in a QGLWidget)
   gl_plugin->startup();
@@ -296,7 +294,7 @@ App::loadPlugins()
 void
 App::createRenderSystem()
 {
-  render_system_factory = Graphics::RenderSystemManager::getFactory("OpenGL");
+  render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
   render_system = render_system_factory->createRenderSystem("OpenGL");
   has_render_system = 1;
 }
@@ -315,7 +313,7 @@ App::cleanup()
   if (render_system_factory)
     render_system_factory->destroyRenderSystem(render_system);
 
-  PluginManager::finish();
+  Application::getPluginManager().unloadAllPlugins();
 }
 
 } // namespace Browse3D

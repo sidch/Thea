@@ -201,48 +201,13 @@ Polygon3::triangulate(TheaArray<long> & tri_indices) const
 
     // Compute a permutation of vertices that put the most significant axes of the triangle in X and Y
     Vector3 extent = bounds.getExtent();
-    int i1 = 0, i2 = 0, i3 = 0;
-    if (extent[0] > extent[1] && extent[0] > extent[2])
+    int i1 = (int)extent.maxAxis();
+    int i2 = 0;
+    switch (i1)
     {
-      i1 = 0;
-      if (extent[1] > extent[2])
-      {
-        i2 = 1;
-        i3 = 2;
-      }
-      else
-      {
-        i2 = 2;
-        i3 = 1;
-      }
-    }
-    else if (extent[1] > extent[0] && extent[1] > extent[2])
-    {
-      i1 = 1;
-      if (extent[0] > extent[2])
-      {
-        i2 = 0;
-        i3 = 2;
-      }
-      else
-      {
-        i2 = 2;
-        i3 = 0;
-      }
-    }
-    else
-    {
-      i1 = 2;
-      if (extent[0] > extent[1])
-      {
-        i2 = 0;
-        i3 = 1;
-      }
-      else
-      {
-        i2 = 1;
-        i3 = 0;
-      }
+      case 0  : i2 = (extent[1] > extent[2] ? 1 : 2); break;
+      case 1  : i2 = (extent[0] > extent[2] ? 0 : 2); break;
+      default : i2 = (extent[0] > extent[1] ? 0 : 1);
     }
 
     array_size_t n = vertices.size();

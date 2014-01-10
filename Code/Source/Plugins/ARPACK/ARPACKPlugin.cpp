@@ -48,10 +48,9 @@ static Algorithms::ARPACKPlugin * plugin = NULL;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_ARPACK_API Plugin *
-dllStartPlugin()
+dllStartPlugin(FactoryRegistry * registry_)
 {
-  plugin = new Algorithms::ARPACKPlugin();
-  PluginManager::install(plugin);
+  plugin = new Algorithms::ARPACKPlugin(registry);
   return plugin;
 }
 
@@ -59,22 +58,29 @@ dllStartPlugin()
 extern "C" THEA_ARPACK_API void
 dllStopPlugin()
 {
-  PluginManager::uninstall(plugin);
   delete plugin;
 }
 
 namespace Algorithms {
 
-static std::string const ARPACK_PLUGIN_NAME       =  "ARPACK EigenSolver";
-static std::string const ARPACK_EIGENSOLVER_NAME  =  "ARPACK";
+static char const * ARPACK_PLUGIN_NAME       =  "ARPACK EigenSolver";
+static char const * ARPACK_EIGENSOLVER_NAME  =  "ARPACK";
 
-ARPACKPlugin::ARPACKPlugin()
-: NamedObject(ARPACK_PLUGIN_NAME), factory(NULL), started(false)
-{}
+ARPACKPlugin::ARPACKPlugin(FactoryRegistry * registry_)
+: registry(registry_), factory(NULL), started(false)
+{
+  alwaysAssertM(registry, std::string(ARPACK_PLUGIN_NAME) + ": Factory registry must be non-null");
+}
 
 ARPACKPlugin::~ARPACKPlugin()
 {
   uninstall();
+}
+
+char const *
+ARPACKPlugin::getName() const
+{
+  return ARPACK_PLUGIN_NAME;
 }
 
 void
@@ -89,7 +95,7 @@ ARPACKPlugin::startup()
     if (!factory)
       factory = new ARPACKEigenSolverFactory;
 
-    EigenSolverManager::installFactory(ARPACK_EIGENSOLVER_NAME, factory);
+    registry->addEigenSolverFactory(ARPACK_EIGENSOLVER_NAME, factory);
     started = true;
   }
 }
@@ -100,7 +106,8 @@ ARPACKPlugin::shutdown()
   if (started)
   {
     factory->destroyAllEigenSolvers();
-    EigenSolverManager::uninstallFactory(ARPACK_EIGENSOLVER_NAME);
+
+    registry->removeEigenSolverFactory(ARPACK_EIGENSOLVER_NAME);
     started = false;
   }
 }

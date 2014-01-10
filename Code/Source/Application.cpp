@@ -40,8 +40,14 @@
 //============================================================================
 
 #include "Application.hpp"
+#include "Algorithms/EigenSolver.hpp"
+#include "Algorithms/LinearSolver.hpp"
+#include "Algorithms/NumericalOptimizer.hpp"
+#include "Graphics/RenderSystem.hpp"
+#include "DynLib.hpp"
 #include "FilePath.hpp"
 #include "FileSystem.hpp"
+#include "Plugin.hpp"
 #include "System.hpp"
 
 #if defined(THEA_WINDOWS)
@@ -60,6 +66,28 @@
 #endif
 
 namespace Thea {
+
+Application::Globals Application::globals;
+
+Application::Globals::Globals()
+{
+  eigen_solver_mgr = new Algorithms::EigenSolverManager;
+  linear_solver_mgr = new Algorithms::LinearSolverManager;
+  numerical_optimizer_mgr = new Algorithms::NumericalOptimizerManager;
+  render_system_mgr = new Graphics::RenderSystemManager;
+  dynlib_mgr = new DynLibManager;
+  plugin_mgr = new PluginManager;
+}
+
+Application::Globals::~Globals()
+{
+  delete plugin_mgr;
+  delete dynlib_mgr;
+  delete render_system_mgr;
+  delete numerical_optimizer_mgr;
+  delete linear_solver_mgr;
+  delete eigen_solver_mgr;
+}
 
 std::string
 Application::programPath()

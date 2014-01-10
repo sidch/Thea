@@ -63,7 +63,7 @@ namespace Graphics {
  * To create an instance of a RenderSystem, one typically loads the plugin for the relevant implementation and calls
  * RenderSystemFactory::createRenderSystem().
  */
-class THEA_API RenderSystem : public virtual NamedObject
+class THEA_API RenderSystem : public AbstractNamedObject
 {
   public:
     /** Basic drawing primitives (enum class). */
@@ -138,23 +138,26 @@ class THEA_API RenderSystem : public virtual NamedObject
     /** Destructor. */
     virtual ~RenderSystem() {}
 
-    /** Get a string describing the render system. */
-    virtual std::string describeSystem() const = 0;
+    /**
+     * Get a string describing the render system. The string is guaranteed to be valid only till the next operation on the
+     * object.
+     */
+    virtual char const * describeSystem() const = 0;
 
     /** Create a new, blank framebuffer with nothing attached. The framebuffer must be destroyed using destroyFramebuffer(). */
-    virtual Framebuffer * createFramebuffer(std::string const & name) = 0;
+    virtual Framebuffer * createFramebuffer(char const * name) = 0;
 
     /** Destroy a framebuffer created with createFramebuffer(). */
     virtual void destroyFramebuffer(Framebuffer * framebuffer) = 0;
 
     /** Create a new, uninitialized shader. The shader must be destroyed using destroyShader() */
-    virtual Shader * createShader(std::string const & name) = 0;
+    virtual Shader * createShader(char const * name) = 0;
 
     /** Destroy a shader created with createShader(). */
     virtual void destroyShader(Shader * shader) = 0;
 
     /** Create an empty texture of the specified format and size. The texture must be destroyed using destroyTexture(). */
-    virtual Texture * createTexture(std::string const & name, int width, int height, int depth,
+    virtual Texture * createTexture(char const * name, int width, int height, int depth,
                                     Texture::Format const * desired_format, Texture::Dimension dimension,
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
 
@@ -162,7 +165,7 @@ class THEA_API RenderSystem : public virtual NamedObject
      * Create a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. The texture must be
      * destroyed using destroyTexture().
      */
-    virtual Texture * createTexture(std::string const & name, Image const & image,
+    virtual Texture * createTexture(char const * name, Image const & image,
                                     Texture::Format const * desired_format = Texture::Format::AUTO(),
                                     Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
@@ -171,7 +174,7 @@ class THEA_API RenderSystem : public virtual NamedObject
      * Create a cube-map from six pixel buffers, representing 2D images of identical format and size. The texture must be
      * destroyed using destroyTexture().
      */
-    virtual Texture * createTexture(std::string const & name, Image::Ptr images[6],
+    virtual Texture * createTexture(char const * name, Image::Ptr images[6],
                                     Texture::Format const * desired_format = Texture::Format::AUTO(),
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
 
@@ -182,7 +185,7 @@ class THEA_API RenderSystem : public virtual NamedObject
      * Create a new, uninitialized area for storing vertex/normal/texture-coordinate/index arrays. The area must be destroyed
      * using destroyVARArea().
      */
-    virtual VARArea * createVARArea(std::string const & name, long num_bytes, VARArea::Usage usage, bool gpu_memory = true) = 0;
+    virtual VARArea * createVARArea(char const * name, long num_bytes, VARArea::Usage usage, bool gpu_memory = true) = 0;
 
     /** Destroy a memory area created with createVARArea(). */
     virtual void destroyVARArea(VARArea * area) = 0;
@@ -491,7 +494,7 @@ class THEA_API RenderSystemFactory
     virtual ~RenderSystemFactory() {}
 
     /** Create a rendersystem with the given name. The rendersystem must be destroyed using destroyRenderSystem(). */
-    virtual RenderSystem * createRenderSystem(std::string const & name) = 0;
+    virtual RenderSystem * createRenderSystem(char const * name) = 0;
 
     /** Destroy a rendersystem created with createRenderSystem(). */
     virtual void destroyRenderSystem(RenderSystem * render_system) = 0;
@@ -503,35 +506,23 @@ class THEA_API RenderSystemManager
 {
   public:
     /**
-     * <b>[Internal]</b> Initialization routine. Don't call this directly unless absolutely necessary, use PluginManager::init()
-     * instead.
-     */
-    static void _init();
-
-    /**
-     * <b>[Internal]</b> Termination routine. Don't call this directly unless absolutely necessary, use PluginManager::finish()
-     * instead.
-     */
-    static void _finish();
-
-    /**
      * Install a factory for a particular rendersystem type. The factory pointer should not be null.
      *
      * @return True if the factory was successfully installed, false if a factory of the specified type (with case-insensitive
      *   matching) is already installed.
      */
-    static bool installFactory(std::string const & type, RenderSystemFactory * factory);
+    bool installFactory(std::string const & type, RenderSystemFactory * factory);
 
     /** Uninstall a factory for a particular renderystem type. The match is case-insensitive. */
-    static void uninstallFactory(std::string const & type);
+    void uninstallFactory(std::string const & type);
 
     /** Get a factory for rendersystem of a given type. An error is thrown if no such factory has been installed. */
-    static RenderSystemFactory * getFactory(std::string const & type);
+    RenderSystemFactory * getFactory(std::string const & type);
 
   private:
     typedef TheaMap<std::string, RenderSystemFactory *> FactoryMap;  ///< Maps rendersystem types to factory instances.
 
-    static FactoryMap installed_factories;  ///< Set of installed factories, one for each rendersystem type.
+    FactoryMap installed_factories;  ///< Set of installed factories, one for each rendersystem type.
 
 }; // class RenderSystemManager
 

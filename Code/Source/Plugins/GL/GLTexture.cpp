@@ -103,9 +103,9 @@ GLTexture__setDefaultPackingOptions(int row_alignment)
   glPixelStorei(GL_PACK_ALIGNMENT, row_alignment);
 }
 
-GLTexture::GLTexture(std::string const & name_, int width_, int height_, int depth_, Format const * desired_format,
+GLTexture::GLTexture(char const * name_, int width_, int height_, int depth_, Format const * desired_format,
                      Dimension dimension_, Options const & options)
-: NamedObject(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
+: name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
 {
   setInternalFormat(NULL, desired_format);
   doSanityChecks();
@@ -139,12 +139,12 @@ GLTexture::GLTexture(std::string const & name_, int width_, int height_, int dep
   }
 }
 
-GLTexture::GLTexture(std::string const & name_, Image const & image, Format const * desired_format, Dimension dimension_,
+GLTexture::GLTexture(char const * name_, Image const & image, Format const * desired_format, Dimension dimension_,
                      Options const & options)
-: NamedObject(name_), dimension(dimension_), gl_target(GLTexture__dimensionToGLTarget(dimension))
+: name(name_), dimension(dimension_), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (dimension == Dimension::DIM_CUBE_MAP)
-    throw Error(getName() + ": This constructor cannot be used to create a cube map");
+    throw Error(std::string(getName()) + ": This constructor cannot be used to create a cube map");
 
   Format const * bytes_format = toTextureFormat(image.getType());
   setInternalFormat(bytes_format, desired_format);
@@ -155,11 +155,11 @@ GLTexture::GLTexture(std::string const & name_, Image const & image, Format cons
   _updateImage(image, Face::POS_X, &options);
 }
 
-GLTexture::GLTexture(std::string const & name_, Image::Ptr images[6], Format const * desired_format, Options const & options)
-: NamedObject(name_), dimension(Dimension::DIM_CUBE_MAP), gl_target(GLTexture__dimensionToGLTarget(dimension))
+GLTexture::GLTexture(char const * name_, Image::Ptr images[6], Format const * desired_format, Options const & options)
+: name(name_), dimension(Dimension::DIM_CUBE_MAP), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (!images[0] || !images[0]->isValid())
-    throw Error(getName() + ": All source images must be valid");
+    throw Error(std::string(getName()) + ": All source images must be valid");
 
   Image::Type type = images[0]->getType();
   width  = images[0]->getWidth();
@@ -169,10 +169,10 @@ GLTexture::GLTexture(std::string const & name_, Image::Ptr images[6], Format con
   for (int i = 1; i < 6; ++i)
   {
     if (!images[i] || !images[i]->isValid())
-      throw Error(getName() + "All source images must be valid");
+      throw Error(std::string(getName()) + ": All source images must be valid");
 
     if (images[i]->getType() != type || images[i]->getWidth() != width || images[i]->getHeight() != height)
-      throw Error(getName() + "All source images must have identical type and dimensions");
+      throw Error(std::string(getName()) + ": All source images must have identical type and dimensions");
   }
 
   Format const * bytes_format = toTextureFormat(type);
@@ -257,7 +257,7 @@ GLTexture::setInternalFormat(Format const * bytes_format, Format const * desired
   if (desired_format == Format::AUTO())
   {
     if (!bytes_format)
-      throw Error(getName() + ": Internal format cannot be automatically determined");
+      throw Error(std::string(getName()) + ": Internal format cannot be automatically determined");
 
     format = bytes_format;
   }
@@ -268,37 +268,38 @@ GLTexture::setInternalFormat(Format const * bytes_format, Format const * desired
     format = Format::RGBA8();
 
   if (!GLCaps::supportsTexture(format))
-    throw Error(getName() + ": Texture format not supported");
+    throw Error(std::string(getName()) + ": Texture format not supported");
 }
 
 void
 GLTexture::doSanityChecks()
 {
   if (dimension == Dimension::DIM_CUBE_MAP && !THEA_GL_SUPPORTS(ARB_texture_cube_map))
-    throw Error(getName() + ": Cube map textures are not supported");
+    throw Error(std::string(getName()) + ": Cube map textures are not supported");
 
   if (dimension == Dimension::DIM_RECTANGLE && !THEA_GL_SUPPORTS(ARB_texture_rectangle))
-    throw Error(getName() + ": Rectangular textures are not supported");
+    throw Error(std::string(getName()) + ": Rectangular textures are not supported");
 
   if (width < 1 || height < 1 || depth < 1)
-    throw Error(getName() + ": Texture must be at least one pixel wide in each dimension");
+    throw Error(std::string(getName()) + ": Texture must be at least one pixel wide in each dimension");
 
   if (depth > 1 && dimension != Dimension::DIM_3D)
-    throw Error(getName() + ": Only a 3D texture can have depth greater than one pixel");
+    throw Error(std::string(getName()) + ": Only a 3D texture can have depth greater than one pixel");
 
   if (dimension == Dimension::DIM_1D && (height > 1 || depth > 1))
-    throw Error(getName() + ": A 1D texture cannot have height or depth greater than one pixel");
+    throw Error(std::string(getName()) + ": A 1D texture cannot have height or depth greater than one pixel");
 
   if (!(Math::isPowerOf2(width) && Math::isPowerOf2(height) && Math::isPowerOf2(depth)) && dimension != Dimension::DIM_RECTANGLE
    && !THEA_GL_SUPPORTS(ARB_texture_non_power_of_two))  // rectangular textures can be npot by the spec
-    throw Error(getName() + ": Non-power-of-two textures are not supported");
+    throw Error(std::string(getName()) + ": Non-power-of-two textures are not supported");
 }
 
 void
 GLTexture::setOptions(Options const & options)
 {
   if (dimension == Dimension::DIM_RECTANGLE && options.wrapMode == WrapMode::TILE)
-    throw Error(getName() + ": Tiling is not supported for rectangular textures");  // see GL_ARB_texture_rectangle spec
+    throw Error(std::string(getName())
+              + ": Tiling is not supported for rectangular textures");  // see GL_ARB_texture_rectangle spec
 
   GLenum wrap = GL_REPEAT;
   switch (options.wrapMode)
@@ -312,7 +313,7 @@ GLTexture::setOptions(Options const & options)
       glTexParameterfv(gl_target, GL_TEXTURE_BORDER_COLOR, border_color);
       break;
     }
-    default: throw Error(getName() + ": Unsupported wrap mode");
+    default: throw Error(std::string(getName()) + ": Unsupported wrap mode");
   }
 
   glTexParameteri(gl_target, GL_TEXTURE_WRAP_S, wrap);
@@ -325,7 +326,8 @@ GLTexture::setOptions(Options const & options)
                    || options.interpolateMode == InterpolateMode::TRILINEAR);
 
   if (dimension == Dimension::DIM_RECTANGLE && has_mipmaps)
-    throw Error(getName() + ": Mipmapping is not supported for rectangular textures");  // see GL_ARB_texture_rectangle spec
+    throw Error(std::string(getName())
+              + ": Mipmapping is not supported for rectangular textures");  // see GL_ARB_texture_rectangle spec
 
   switch (options.interpolateMode)
   {
@@ -354,7 +356,7 @@ GLTexture::setOptions(Options const & options)
       glTexParameteri(gl_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       break;
 
-    default: throw Error(getName() + ": Unsupported texture interpolation mode");
+    default: throw Error(std::string(getName()) + ": Unsupported texture interpolation mode");
   }
 
   THEA_CHECK_GL_OK
@@ -367,7 +369,7 @@ GLTexture::setOptions(Options const & options)
       glTexParameteri(gl_target, GL_GENERATE_MIPMAP, GL_TRUE);
     else
     {
-      throw Error(getName() + ": Automatic mipmap generation not supported");
+      throw Error(std::string(getName()) + ": Automatic mipmap generation not supported");
       // TODO: Implement manual fallback (or replace everything with glGenerateMipmap for new versions of GL).
     }
   }
@@ -390,7 +392,7 @@ GLTexture::setOptions(Options const & options)
     }
   }
   else if (options.depthReadMode != DepthReadMode::NORMAL)
-    throw Error(getName() + ": Comparison-based depth read modes are not supported");
+    throw Error(std::string(getName()) + ": Comparison-based depth read modes are not supported");
 
   THEA_CHECK_GL_OK
 }
@@ -405,7 +407,7 @@ void
 GLTexture::_updateImage(Image const & image, Face face, Options const * options)
 {
   if (!image.isValid())
-    throw Error(getName() + ": Cannot update texture from invalid image");
+    throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
 
   { GLScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GLClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -433,17 +435,17 @@ GLTexture::updateSubImage(Image const & image, int src_x, int src_y, int src_wid
                           int dst_z, Face face)
 {
   if (!image.isValid())
-    throw Error(getName() + ": Cannot update texture from invalid image");
+    throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
 
   Format const * bytes_format = toTextureFormat(image.getType());
   int src_depth = 1;
 
   alwaysAssertM(src_x >= 0 && src_y >= 0
              && src_x + src_width <= image.getWidth() && src_y + src_height <= image.getHeight(),
-                getName() + ": All or part of subimage lies outside source image boundaries");
+                std::string(getName()) + ": All or part of subimage lies outside source image boundaries");
   alwaysAssertM(dst_x >= 0 && dst_y >= 0 && dst_z >= 0
              && dst_x + src_width <= width && dst_y + src_height <= height && dst_z + src_depth <= depth,
-                getName() + ": All or part of subimage lies outside texture boundaries");
+                std::string(getName()) + ": All or part of subimage lies outside texture boundaries");
 
   { GLScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GLClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -500,7 +502,7 @@ GLTexture::getImage(Image & image, Face face) const
 
     GLTexture__setDefaultPackingOptions(image.getRowAlignment());
 
-    if (depth > 1) throw Error(getName() + ": 3D images are not currently supported");
+    if (depth > 1) throw Error(std::string(getName()) + ": 3D images are not currently supported");
     image.resize(image.getType(), width, height);
 
     Format const * bytes_format = toTextureFormat(image.getType());
@@ -519,7 +521,7 @@ GLTexture::getSubImage(Image & image, int x, int y, int z, int subimage_width, i
                        Face face) const
 {
   // Until GL gets a GetTexSubImage function...
-  throw Error(getName() + ": Reading texture subimages is not supported");
+  throw Error(std::string(getName()) + ": Reading texture subimages is not supported");
 }
 
 } // namespace GL

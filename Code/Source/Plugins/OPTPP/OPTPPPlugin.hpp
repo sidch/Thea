@@ -55,18 +55,20 @@ class OPTPPNumericalOptimizerFactory;
 class THEA_OPTPP_DLL_LOCAL OPTPPPlugin : public Plugin
 {
   public:
-    /** Default constructor. */
-    OPTPPPlugin();
+    /** Constructor. */
+    OPTPPPlugin(FactoryRegistry * registry_);
 
     /** Destructor. */
     ~OPTPPPlugin();
 
+    char const * getName() const;
     void install();
     void startup();
     void shutdown();
     void uninstall();
 
   private:
+    FactoryRegistry * registry;
     OPTPPNumericalOptimizerFactory * factory;
     bool started;
 

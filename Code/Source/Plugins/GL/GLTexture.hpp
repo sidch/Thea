@@ -55,18 +55,20 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
 {
   public:
     /** Constructs an empty texture of the specified format and size. */
-    GLTexture(std::string const & name_, int width_, int height_, int depth_, Format const * desired_format,
+    GLTexture(char const * name_, int width_, int height_, int depth_, Format const * desired_format,
               Dimension dimension, Options const & options);
 
     /** Constructs a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. */
-    GLTexture(std::string const & name_, Image const & image, Format const * desired_format, Dimension dimension,
+    GLTexture(char const * name_, Image const & image, Format const * desired_format, Dimension dimension,
               Options const & options);
 
     /** Constructs a cube-map from six pixel buffers, representing 2D images of identical format and size. */
-    GLTexture(std::string const & name_, Image::Ptr images[6], Format const * desired_format, Options const & options);
+    GLTexture(char const * name_, Image::Ptr images[6], Format const * desired_format, Options const & options);
 
     /** Destructor. */
     ~GLTexture();
+
+    char const * getName() const { return name.c_str(); }
 
     int getWidth() const { return width; }
     int getHeight() const { return height; }
@@ -107,6 +109,7 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     /** Updates the texture image and optionally sets user-specified options while doing so. */
     void _updateImage(Image const & image, Face face, Options const * options);
 
+    std::string name;
     int width;
     int height;
     int depth;

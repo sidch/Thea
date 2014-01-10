@@ -48,10 +48,9 @@ static Graphics::GL::GLPlugin * plugin = NULL;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_GL_API Plugin *
-dllStartPlugin()
+dllStartPlugin(FactoryRegistry * registry_)
 {
-  plugin = new Graphics::GL::GLPlugin();
-  PluginManager::install(plugin);
+  plugin = new Graphics::GL::GLPlugin(registry_);
   return plugin;
 }
 
@@ -59,24 +58,31 @@ dllStartPlugin()
 extern "C" THEA_GL_API void
 dllStopPlugin()
 {
-  PluginManager::uninstall(plugin);
   delete plugin;
 }
 
 namespace Graphics {
 namespace GL {
 
-static std::string const GL_PLUGIN_NAME        =  "OpenGL RenderSystem";
-static std::string const GL_RENDERSYSTEM_NAME  =  "OpenGL";
+static char const * GL_PLUGIN_NAME        =  "OpenGL RenderSystem";
+static char const * GL_RENDERSYSTEM_NAME  =  "OpenGL";
 
-GLPlugin::GLPlugin()
-: NamedObject(GL_PLUGIN_NAME), factory(NULL), started(false)
-{}
+GLPlugin::GLPlugin(FactoryRegistry * registry_)
+: registry(registry_), factory(NULL), started(false)
+{
+  alwaysAssertM(registry, std::string(GL_PLUGIN_NAME) + ": Factory registry must be non-null");
+}
 
 GLPlugin::~GLPlugin()
 {
   uninstall();
   delete factory;
+}
+
+char const *
+GLPlugin::getName() const
+{
+  return GL_PLUGIN_NAME;
 }
 
 void
@@ -91,7 +97,7 @@ GLPlugin::startup()
     if (!factory)
       factory = new GLRenderSystemFactory;
 
-    RenderSystemManager::installFactory(GL_RENDERSYSTEM_NAME, factory);
+    registry->addRenderSystemFactory(GL_RENDERSYSTEM_NAME, factory);
     started = true;
   }
 }
@@ -102,7 +108,8 @@ GLPlugin::shutdown()
   if (started)
   {
     factory->destroyAllRenderSystems();
-    RenderSystemManager::uninstallFactory(GL_RENDERSYSTEM_NAME);
+
+    registry->removeRenderSystemFactory(GL_RENDERSYSTEM_NAME);
     started = false;
   }
 }

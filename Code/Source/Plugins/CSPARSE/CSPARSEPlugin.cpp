@@ -48,10 +48,9 @@ static Algorithms::CSPARSEPlugin * plugin = NULL;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_CSPARSE_API Plugin *
-dllStartPlugin()
+dllStartPlugin(FactoryRegistry * registry_)
 {
-  plugin = new Algorithms::CSPARSEPlugin();
-  PluginManager::install(plugin);
+  plugin = new Algorithms::CSPARSEPlugin(registry_);
   return plugin;
 }
 
@@ -59,22 +58,29 @@ dllStartPlugin()
 extern "C" THEA_CSPARSE_API void
 dllStopPlugin()
 {
-  PluginManager::uninstall(plugin);
   delete plugin;
 }
 
 namespace Algorithms {
 
-static std::string const CSPARSE_PLUGIN_NAME        =  "CSPARSE LinearSolver";
-static std::string const CSPARSE_LINEARSOLVER_NAME  =  "CSPARSE";
+static char const * CSPARSE_PLUGIN_NAME        =  "CSPARSE LinearSolver";
+static char const * CSPARSE_LINEARSOLVER_NAME  =  "CSPARSE";
 
-CSPARSEPlugin::CSPARSEPlugin()
-: NamedObject(CSPARSE_PLUGIN_NAME), factory(NULL), started(false)
-{}
+CSPARSEPlugin::CSPARSEPlugin(FactoryRegistry * registry_)
+: registry(registry_), factory(NULL), started(false)
+{
+  alwaysAssertM(registry, std::string(CSPARSE_PLUGIN_NAME) + ": Factory registry must be non-null");
+}
 
 CSPARSEPlugin::~CSPARSEPlugin()
 {
   uninstall();
+}
+
+char const *
+CSPARSEPlugin::getName() const
+{
+  return CSPARSE_PLUGIN_NAME;
 }
 
 void
@@ -89,7 +95,7 @@ CSPARSEPlugin::startup()
     if (!factory)
       factory = new CSPARSELinearSolverFactory;
 
-    LinearSolverManager::installFactory(CSPARSE_LINEARSOLVER_NAME, factory);
+    registry->addLinearSolverFactory(CSPARSE_LINEARSOLVER_NAME, factory);
     started = true;
   }
 }
@@ -100,7 +106,8 @@ CSPARSEPlugin::shutdown()
   if (started)
   {
     factory->destroyAllLinearSolvers();
-    LinearSolverManager::uninstallFactory(CSPARSE_LINEARSOLVER_NAME);
+
+    registry->removeLinearSolverFactory(CSPARSE_LINEARSOLVER_NAME);
     started = false;
   }
 }

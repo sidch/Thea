@@ -1,4 +1,5 @@
 #include "../Common.hpp"
+#include "../Application.hpp"
 #include "../FilePath.hpp"
 #include "../Plugin.hpp"
 #include "../System.hpp"
@@ -30,9 +31,6 @@ void init();
 int
 main(int argc, char * argv[])
 {
-  // We're going to use plugins, so we need to call this at the beginning of the program
-  PluginManager::init();
-
   // Do the OpenGL tests
   try
   {
@@ -60,7 +58,7 @@ testGL(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << plugin_path << endl;
-  Plugin * gl_plugin = PluginManager::load(plugin_path);
+  Plugin * gl_plugin = Application::getPluginManager().load(plugin_path);
 
   // Create a GL context via a GLUT window
   glutInit(&argc, argv);
@@ -72,7 +70,7 @@ testGL(int argc, char * argv[])
   gl_plugin->startup();
 
   // We should now have a GL rendersystem factory
-  RenderSystemFactory * factory = RenderSystemManager::getFactory("OpenGL");
+  RenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
 
   // Create a rendersystem
   RenderSystem * rs = factory->createRenderSystem("My OpenGL rendersystem");
@@ -100,7 +98,7 @@ testGL(int argc, char * argv[])
 int
 cleanup(int status)
 {
-  PluginManager::finish();
+  Application::getPluginManager().unloadAllPlugins();
   return status;
 }
 

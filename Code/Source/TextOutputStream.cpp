@@ -203,7 +203,7 @@ void
 TextOutputStream::setOptions(Settings const & _opt)
 {
   if (options.numColumns < 2)
-    throw Error(getName() + ": Must specify at least 2 columns in options");
+    throw Error(std::string(getName()) + ": Must specify at least 2 columns in options");
 
   options = _opt;
 

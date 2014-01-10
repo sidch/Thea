@@ -46,6 +46,18 @@
 
 namespace Thea {
 
+/** Interface for an object that has a name. */
+class THEA_API AbstractNamedObject
+{
+  public:
+    /** Destructor. */
+    virtual ~AbstractNamedObject() {}
+
+    /** Get the name of the object. */
+    virtual char const * getName() const = 0;
+
+}; // class AbstractNamedObject
+
 /**
  * An object wrapping a name string.
  *
@@ -61,7 +73,7 @@ namespace Thea {
  * This also means that a derived class in an inheritance hierarchy involving NamedObject must explicitly call the NamedObject
  * constructor if it wants to initialize the name.
  */
-class THEA_API NamedObject
+class THEA_API NamedObject : public AbstractNamedObject
 {
   public:
     THEA_DEF_POINTER_TYPES(NamedObject, shared_ptr, weak_ptr)
@@ -82,7 +94,7 @@ class THEA_API NamedObject
     NamedObject & operator=(NamedObject const & src) { name = src.name; return *this; }
 
     /** Get the name of the object. */
-    std::string const & getName() const { return name; }
+    char const * getName() const { return name.c_str(); }
 
     /** Set the name of the object. */
     void setName(std::string const & name_) { name = name_; }

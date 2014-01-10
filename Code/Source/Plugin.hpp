@@ -45,16 +45,33 @@
 #include "Common.hpp"
 #include "List.hpp"
 #include "Map.hpp"
-#include "NamedObject.hpp"
 
 namespace Thea {
 
+// Forward declarations
+namespace Algorithms {
+
+class EigenSolverFactory;
+class LinearSolverFactory;
+class NumericalOptimizerFactory;
+
+} // namespace Graphics
+
+namespace Graphics {
+
+class RenderSystemFactory;
+
+} // namespace Graphics
+
 /** The interface for a plugin that may be statically or dynamically loaded. */
-class THEA_API Plugin : public virtual NamedObject
+class THEA_API Plugin
 {
   public:
     /** Destructor. */
     virtual ~Plugin() {}
+
+    /** Get the name of the plugin. */
+    virtual char const * getName() const = 0;
 
     /**
      * Installation routine for the plugin. This is called when the plugin is first registered with the plugin manager, and
@@ -95,95 +112,155 @@ class THEA_API Plugin : public virtual NamedObject
 // Forward declaration
 class DynLib;
 
-/** Manages set of installed plugins (static or dynamic). */
-class THEA_API PluginManager
+/** Interface provided to DLL's for registering rendersystem factories etc. */
+class THEA_API FactoryRegistry
 {
   public:
-    /**
-     * Initialization routine. You must call this at the beginning of the program if you want to use any plugins. It's safe to
-     * call this function multiple times -- a second or later call will be ignored unless it was immediately preceded by
-     * finish().
-     *
-     * Once you call init(), you must call finish() at the end of your program to properly clean up.
-     *
-     * @see finish()
-     */
-    static void init();
+    /** Destructor. */
+    virtual ~FactoryRegistry() {}
+
+    /** Register an eigensolver factory. */
+    virtual void addEigenSolverFactory(char const * name, Algorithms::EigenSolverFactory * factory) = 0;
+
+    /** Unregister an eigensolver factory. */
+    virtual void removeEigenSolverFactory(char const * name) = 0;
+
+    /** Register a linear solver factory. */
+    virtual void addLinearSolverFactory(char const * name, Algorithms::LinearSolverFactory * factory) = 0;
+
+    /** Unregister a linear solver factory. */
+    virtual void removeLinearSolverFactory(char const * name) = 0;
+
+    /** Register a rendersystem factory. */
+    virtual void addRenderSystemFactory(char const * name, Graphics::RenderSystemFactory * factory) = 0;
+
+    /** Unregister a rendersystem factory. */
+    virtual void removeRenderSystemFactory(char const * name) = 0;
+
+    /** Register a numerical optimizer factory. */
+    virtual void addNumericalOptimizerFactory(char const * name, Algorithms::NumericalOptimizerFactory * factory) = 0;
+
+    /** Unregister a numerical optimizer factory. */
+    virtual void removeNumericalOptimizerFactory(char const * name) = 0;
+
+}; // class FactoryRegistry
+
+/** Manages set of installed plugins (static or dynamic). There should be exactly one active PluginManager per application. */
+class THEA_API PluginManager : public FactoryRegistry
+{
+  public:
+    /** Destructor. */
+    ~PluginManager();
 
     /**
-     * Termination routine. You must call this at the end of the program after using any plugins. It's safe to call this
-     * function multiple times -- a second or later call will be ignored unless it was immediately preceded by init(). It's also
-     * safe to call this function without ever having called init() first.
+     * Load a dynamically linked plugin from a path. The plugin will be automatically installed via install().
      *
-     * @see init()
-     */
-    static void finish();
-
-    /**
-     * Load a dynamically linked plugin from a path. The plugin's \link Plugin::install() install() \endlink function will be
-     * automatically called.
-     *
-     * @return A pointer to the new plugin on success, NULL on failure or if the plugin has already been loaded.
+     * @return A pointer to the new or previously loaded plugin on success, NULL on failure.
      *
      * @see unload()
      */
-    static Plugin * load(std::string const & path);
+    Plugin * load(std::string const & path);
 
     /**
-     * Unload a dynamically linked plugin, using the same path specified to load() it. The plugin's \link Plugin::uninstall()
-     * uninstall() \endlink function will be automatically called.
+     * Unload a dynamically linked plugin, using the same path specified to load() it. The plugin will be automatically
+     * uninstalled via uninstall().
      *
      * \warning This does <b>not</b> call the plugin's \link Plugin::shutdown() shutdown() \endlink routine, so be sure to call
      * it explicitly before calling this function.
      *
      * @see load()
      */
-    static void unload(std::string const & path);
+    void unload(std::string const & path);
 
     /**
-     * Execute the \link Plugin::startup() startup() \endlink routine of all plugins, in the order in which they were installed.
-     */
-    static void startupAllPlugins();
-
-    /**
-     * Execute the \link Plugin::shutdown() shutdown() \endlink routine of all plugins, in the reverse of the order in which
-     * they were installed.
-     */
-    static void shutdownAllPlugins();
-
-    /**
-     * Unload/uninstall plugins. This will initially call shutdownAllPlugins(), so if you want to shutdown the plugins in an
-     * order other than the reverse of the installation order, you should do it manually before calling this function.
-     */
-    static void unloadAllPlugins();
-
-    /**
-     * This function should be called by <code>dllStartPlugin()</code> to register the plugin. It may also be used to install
-     * statically linked plugins.
+     * Install a new plugin. The plugin is registered with the manager and its \link Plugin::install() install() \endlink
+     * function called.
+     *
+     * @note Do not use this function to install plugins from dynamic libraries: use load() instead.
      *
      * @param plugin A pointer to the plugin to be installed, which should not be null.
      *
      * @see uninstall()
      */
-    static void install(Plugin * plugin);
+    void install(Plugin * plugin);
 
     /**
-     * This function should be called by <code>dllStopPlugin()</code> to register the plugin. It may also be used to uninstall
-     * statically linked plugins.
+     * Uninstall a plugin. The plugin is deregistered from the manager and its \link Plugin::uninstall() uninstall() \endlink
+     * function called.
+     *
+     * @note Do not use this function to uninstall plugins from dynamic libraries: use unload() instead.
      *
      * @param plugin A pointer to the plugin to be uninstalled.
      *
      * @see install()
      */
-    static void uninstall(Plugin * plugin);
+    void uninstall(Plugin * plugin);
+
+    /**
+     * Execute the \link Plugin::startup() startup() \endlink routine of all plugins, in the order in which they were installed.
+     */
+    void startupAllPlugins();
+
+    /**
+     * Execute the \link Plugin::shutdown() shutdown() \endlink routine of all plugins, in the reverse of the order in which
+     * they were installed.
+     */
+    void shutdownAllPlugins();
+
+    /**
+     * Unload/uninstall plugins. This will initially call shutdownAllPlugins(), so if you want to shutdown the plugins in an
+     * order other than the reverse of the installation order, you should do it manually before calling this function.
+     */
+    void unloadAllPlugins();
+
+    void addEigenSolverFactory(char const * name, Algorithms::EigenSolverFactory * factory);
+    void addLinearSolverFactory(char const * name, Algorithms::LinearSolverFactory * factory);
+    void addRenderSystemFactory(char const * name, Graphics::RenderSystemFactory * factory);
+    void addNumericalOptimizerFactory(char const * name, Algorithms::NumericalOptimizerFactory * factory);
+
+    void removeEigenSolverFactory(char const * name);
+    void removeLinearSolverFactory(char const * name);
+    void removeRenderSystemFactory(char const * name);
+    void removeNumericalOptimizerFactory(char const * name);
 
   private:
-    typedef TheaMap<std::string, DynLib *>  DynLibMap;   ///< Maps paths to the corresponding dynamic libraries.
-    typedef TheaList<Plugin *>              PluginList;  ///< List of plugins.
+    /** Holds a plugin and its associated dynamic library. */
+    struct PluginDynLib
+    {
+      Plugin * plugin;
+      DynLib * dynlib;
 
-    static bool        initialized;  ///< Has the manager been initialized?
-    static DynLibMap   dynlibs;      ///< Set of dynamically loaded libraries.
-    static PluginList  plugins;      ///< Set of installed plugins.
+      PluginDynLib(Plugin * p = NULL, DynLib * d = NULL) : plugin(p), dynlib(d) {}
+
+    }; // struct PluginDynLib
+
+    typedef TheaMap<std::string, PluginDynLib>  DynLibMap;   ///< Maps paths to the corresponding dynamic libraries.
+    typedef TheaList<Plugin *>                  PluginList;  ///< List of plugins.
+
+    friend class DynLibManager;
+
+    /**
+     * Install a new plugin. The plugin is registered with the manager and its \link Plugin::install() install() \endlink
+     * function called.
+     *
+     * @param plugin A pointer to the plugin to be installed, which should not be null.
+     * @param dynlib A pointer to the dynamic library from which the plugin was loaded, if any.
+     * @param path The path to the dynamic library from which the plugin was loaded, if any.
+     */
+    void install(Plugin * plugin, DynLib * dynlib, std::string const & path);
+
+    /** Unload a plugin, given a handle to it in the dynlib map. */
+    void unload(DynLibMap::iterator lib);
+
+    /**
+     * Unload all plugins that were loaded from dynamic libraries.
+     *
+     * @see unloadAllPlugins()
+     */
+    void unloadAllDylibs();
+
+    DynLibMap   dynlibs;      ///< Set of dynamically loaded libraries.
+    PluginList  plugins;      ///< Set of installed plugins.
 
 }; // class PluginManager
 

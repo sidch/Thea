@@ -107,7 +107,7 @@ class MeshCodec : public Codec
      *
      * @see MAGIC_LENGTH
      */
-    virtual std::string const & getMagic() const = 0;
+    virtual char const * getMagic() const = 0;
 
     /** Get the filename extensions for the codec. */
     virtual TheaArray<std::string> const & getExtensions() const = 0;
@@ -136,13 +136,13 @@ MeshCodec<MeshT>::ReadCallback::~ReadCallback()
     public:                                                                                                                   \
       typedef MeshT Mesh;                                                                                                     \
                                                                                                                               \
-      std::string getName() const { return _getName(); }                                                                      \
-      std::string const & getMagic() const { return _getMagic(); }                                                            \
+      char const * getName() const { return _getName(); }                                                                     \
+      char const * getMagic() const { return _getMagic(); }                                                                   \
       TheaArray<std::string> const & getExtensions() const { return _getExtensions(); }                                       \
                                                                                                                               \
     protected:                                                                                                                \
-      static std::string const & _getName() { static std::string const name_ = desc + std::string(" codec"); return name_; }  \
-      static std::string const & _getMagic() { static std::string const magic_ = magic; return magic_; }                      \
+      static char const * _getName() { static std::string const name_ = desc + std::string(" codec"); return name_.c_str(); } \
+      static char const * _getMagic() { static char const * magic_ = magic; return magic_; }                                  \
       static TheaArray<std::string> const & _getExtensions()                                                                  \
       { static TheaArray<std::string> const exts_ = initExts(); return exts_; }                                               \
                                                                                                                               \
