@@ -425,52 +425,52 @@ GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix3,      Matrix3,    GL_FLOAT_MAT3_ARB,  
 GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix4,      Matrix4,    GL_FLOAT_MAT4_ARB, 16)
 
 void
-GLShader::setUniform(char const * uniform_name, TheaArray<float> const & value)
+GLShader::setUniform(char const * uniform_name, long num_values, float const * values)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
-  GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, value.size());
+  GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, num_values);
   if (entry->second.size < 2)
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
-  entry->second.value.f_array.resize(value.size());
-  std::memcpy(&entry->second.value.f_array[0], &value[0], value.size() * sizeof(float));
+  entry->second.value.f_array.resize((array_size_t)num_values);
+  std::memcpy(&entry->second.value.f_array[0], values, (size_t)(num_values * sizeof(float)));
   entry->second.valueChanged();
 }
 
 void
-GLShader::setUniform(char const * uniform_name, TheaArray<int> const & value)
+GLShader::setUniform(char const * uniform_name, long num_values, int const * values)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
-  GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, value.size());
+  GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, num_values);
   if (entry->second.size < 2)
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
-  entry->second.value.i_array.resize(value.size());
-  std::memcpy(&entry->second.value.i_array[0], &value[0], value.size() * sizeof(int));
+  entry->second.value.i_array.resize((array_size_t)num_values);
+  std::memcpy(&entry->second.value.i_array[0], values, (size_t)(num_values * sizeof(int)));
   entry->second.valueChanged();
 }
 
 void
-GLShader::setUniform(char const * uniform_name, TheaArray<Texture *> const & value)
+GLShader::setUniform(char const * uniform_name, long num_values, Texture * const * values)
 {
   throw Error(std::string(getName()) + ": OpenGL texture array uniforms are not supported");
 }
 
 #define GLShader__FLOAT_ARRAY_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(char const * uniform_name, TheaArray<uniform_type> const & value)                                      \
+  GLShader::setUniform(char const * uniform_name, long num_values, uniform_type const * values)                               \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
-    GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, value.size());                                                     \
+    GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, num_values);                                                       \
     if (entry->second.size < 2)                                                                                               \
       throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");                 \
                                                                                                                               \
-    entry->second.value.f_array.resize(num_components * value.size());                                                        \
+    entry->second.value.f_array.resize((array_size_t)(num_components * num_values));                                          \
                                                                                                                               \
     /* Copy elements one by one to avoid packing issues */                                                                    \
     static float * array_start = &entry->second.value.f_array[0];                                                             \
-    for (array_size_t i = 0; i < value.size(); ++i)                                                                           \
-      GLShaderInternal::toFloats(static_cast<uniform_convert_type>(value[i]), array_start + i * num_components);              \
+    for (long i = 0; i < num_values; ++i)                                                                                     \
+      GLShaderInternal::toFloats(static_cast<uniform_convert_type>(values[i]), array_start + i * num_components);             \
                                                                                                                               \
     entry->second.valueChanged();                                                                                             \
   }
