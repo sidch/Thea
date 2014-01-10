@@ -142,7 +142,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     /** Make sure at least \a num_bytes bytes can be written, resizing if necessary. */
     void reserveBytes(int64 num_bytes)
     {
-      debugAssertM(num_bytes > 0, std::string(getName()) + ": Can't reserve less than one byte");
+      debugAssertM(num_bytes > 0, getNameStr() + ": Can't reserve less than one byte");
       size_t oldBufferLen = (size_t)m_bufferLen;
       m_bufferLen = std::max(m_bufferLen, (m_pos + num_bytes));
 
@@ -237,7 +237,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
       n = n - m_alreadyWritten;
 
       if (n < 0)
-        throw Error(std::string(getName()) + ": Cannot resize huge files to be shorter");
+        throw Error(getNameStr() + ": Cannot resize huge files to be shorter");
       else if (n < m_bufferLen)
       {
         m_bufferLen = n;
@@ -266,7 +266,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
       int64 q = p - m_alreadyWritten;
 
       if (q < 0)
-        throw Error(std::string(getName()) + ": Cannot seek too far backwards in a huge file");
+        throw Error(getNameStr() + ": Cannot seek too far backwards in a huge file");
 
       if (q > m_bufferLen)
         setSize(p);
@@ -288,8 +288,8 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     {
       reserveBytes(n);
 
-      debugAssertM(m_pos >= 0, std::string(getName()) + ": Invalid write position");
-      debugAssertM(m_bufferLen >= n, getName() + format(": Could not reserve space to write %ld bytes", (long)n));
+      debugAssertM(m_pos >= 0, getNameStr() + ": Invalid write position");
+      debugAssertM(m_bufferLen >= n, getNameStr() + format(": Could not reserve space to write %ld bytes", (long)n));
 
       std::memcpy(m_buffer + m_pos, b, n);
       m_pos += n;
@@ -347,8 +347,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     /** Write a 32-bit floating point number. */
     void writeFloat32(float32 f)
     {
-      debugAssertM(m_beginEndBits == 0,
-                   std::string(getName()) + ": Byte-level writes not allowed in a beginBits/endBits block");
+      debugAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
 
       union
       {
@@ -362,8 +361,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     /** Write a 64-bit floating point number. */
     void writeFloat64(float64 f)
     {
-      debugAssertM(m_beginEndBits == 0,
-                   std::string(getName()) + ": Byte-level writes not allowed in a beginBits/endBits block");
+      debugAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
       union
       {
         float64 a;

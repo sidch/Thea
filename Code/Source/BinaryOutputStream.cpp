@@ -202,7 +202,7 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
 {
   if (m_path == "<memory>")
   {
-    throw Error(std::string(getName()) + ": Out of memory while writing to memory (no RAM left)");
+    throw Error(getNameStr() + ": Out of memory while writing to memory (no RAM left)");
   }
   else if ((int64)bytes > m_bufferCapacity)
   {
@@ -219,15 +219,15 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
       writeBytes = m_bufferLen;
     }
 
-    debugAssertM(writeBytes > 0, std::string(getName()) + ": No bytes to write");
+    debugAssertM(writeBytes > 0, getNameStr() + ": No bytes to write");
 
     // Write to the file
     char const * mode = (m_alreadyWritten > 0) ? "ab" : "wb";
     FILE * file = fopen(m_path.c_str(), mode);
-    debugAssertM(file, std::string(getName()) + ": Could not open file for writing");
+    debugAssertM(file, getNameStr() + ": Could not open file for writing");
 
     size_t count = fwrite(m_buffer, 1, (size_t)writeBytes, file);
-    debugAssertM((int64)count == writeBytes, std::string(getName()) + ": All bytes were not written");
+    debugAssertM((int64)count == writeBytes, getNameStr() + ": All bytes were not written");
     (void)count;  // avoid unused variable warning
 
     fclose(file);
@@ -238,10 +238,10 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
     m_bufferLen -= writeBytes;
     m_pos -= writeBytes;
 
-    debugAssertM(m_bufferLen < m_bufferCapacity, std::string(getName()) + ": Buffer exceeds maximum size");
-    debugAssertM(m_bufferLen >= 0, std::string(getName()) + ": Buffer has negative size");
-    debugAssertM(m_pos >= 0, std::string(getName()) + ": Write position is negative");
-    debugAssertM(m_pos <= m_bufferLen, std::string(getName()) + ": Write position is beyond end of buffer");
+    debugAssertM(m_bufferLen < m_bufferCapacity, getNameStr() + ": Buffer exceeds maximum size");
+    debugAssertM(m_bufferLen >= 0, getNameStr() + ": Buffer has negative size");
+    debugAssertM(m_pos >= 0, getNameStr() + ": Write position is negative");
+    debugAssertM(m_pos <= m_bufferLen, getNameStr() + ": Write position is beyond end of buffer");
 
     // Shift the unwritten data back appropriately in the buffer.
     std::memmove(m_buffer, m_buffer + writeBytes, m_bufferLen);
@@ -291,8 +291,8 @@ BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file
 void
 BinaryOutputStream::reset()
 {
-  debugAssertM(m_beginEndBits == 0, std::string(getName()) + ": Can't reset in beginBits/endBits block");
-  alwaysAssertM(m_path == "<memory>", std::string(getName()) + ": Can only reset a BinaryOutputStream that writes to memory");
+  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't reset in beginBits/endBits block");
+  alwaysAssertM(m_path == "<memory>", getNameStr() + ": Can only reset a BinaryOutputStream that writes to memory");
 
   // Do not reallocate, just clear the size of the buffer.
   m_pos = 0;
@@ -345,7 +345,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
   if (!force && m_bufferLen <= 0)
     return true;
 
-  debugAssertM(m_beginEndBits == 0, std::string(getName()) + ": Missing endBits before commit");
+  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Missing endBits before commit");
 
   // Make sure the directory exists
   std::string dir = FilePath::parent(m_path);
@@ -373,7 +373,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
     if (m_buffer != NULL && m_bufferLen > 0)
     {
       size_t success = fwrite(m_buffer, m_bufferLen, 1, file);
-      debugAssertM(success == 1, std::string(getName()) + ": Could not write buffer contents to disk");
+      debugAssertM(success == 1, getNameStr() + ": Could not write buffer contents to disk");
       (void)success;
 
       m_alreadyWritten += m_bufferLen;
@@ -394,7 +394,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
 void
 BinaryOutputStream::commit(uint8 * dst) const
 {
-  alwaysAssertM(m_path == "<memory>", std::string(getName()) + ": Can only commit buffer contents of memory streams to memory");
+  alwaysAssertM(m_path == "<memory>", getNameStr() + ": Can only commit buffer contents of memory streams to memory");
   std::memcpy(dst, m_buffer, m_bufferLen);
 }
 
@@ -427,7 +427,7 @@ BinaryOutputStream::writeUInt32(uint32 u)
 {
   reserveBytes(4);
   uint8 * convert = (uint8 *)&u;
-  debugAssertM(m_beginEndBits == 0, std::string(getName()) + ": Can't write non-bit data within beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't write non-bit data within beginBits/endBits block");
 
   if (m_swapBytes)
   {
@@ -490,7 +490,7 @@ BinaryOutputStream::writeUInt64(uint64 u)
 void
 BinaryOutputStream::writeString(char const * s)
 {
-  debugAssertM(m_beginEndBits == 0, std::string(getName()) + ": Can't write strings in a beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't write strings in a beginBits/endBits block");
 
   // +1 is because strlen doesn't count the null
   size_t len = strlen(s) + 1;
@@ -517,7 +517,7 @@ BinaryOutputStream::writeAlignedString(std::string const & s, int alignment)
 void
 BinaryOutputStream::beginBits()
 {
-  debugAssertM(m_beginEndBits == 0, std::string(getName()) + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 0, getNameStr() + ": beginBits/endBits mismatch");
 
   m_bitString = 0x00;
   m_bitPos = 0;
@@ -527,7 +527,7 @@ BinaryOutputStream::beginBits()
 void
 BinaryOutputStream::writeBits(int num_bits, uint32 value)
 {
-  debugAssertM(m_beginEndBits == 1, std::string(getName()) + ": Can't call writeBits outside beginBits/endBits block");
+  debugAssertM(m_beginEndBits == 1, getNameStr() + ": Can't call writeBits outside beginBits/endBits block");
 
   while (num_bits > 0)
   {
@@ -550,7 +550,7 @@ BinaryOutputStream::writeBits(int num_bits, uint32 value)
 void
 BinaryOutputStream::endBits()
 {
-  debugAssertM(m_beginEndBits == 1, std::string(getName()) + ": beginBits/endBits mismatch");
+  debugAssertM(m_beginEndBits == 1, getNameStr() + ": beginBits/endBits mismatch");
 
   if (m_bitPos > 0)
   {

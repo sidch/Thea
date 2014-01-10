@@ -365,7 +365,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       Vector3 v[3];
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
-        debugAssertM(*vi, std::string(getName()) + ": Null vertex pointer specified for new face");
+        debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
         if (num_verts < 3) v[num_verts] = (*vi)->getPosition();
       }
 
@@ -522,7 +522,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         return;
 
       debugAssertM(endpoint_to_preserve == 0 || endpoint_to_preserve == 1,
-                   std::string(getName()) + ": Endpoint to preserve during edge collapse must be indexed by 0 or 1");
+                   getNameStr() + ": Endpoint to preserve during edge collapse must be indexed by 0 or 1");
 
       Vertex * vertex_to_preserve  =  edge->getEndpoint(endpoint_to_preserve);
       Vertex * vertex_to_remove    =  edge->getEndpoint(1 - endpoint_to_preserve);
@@ -1320,45 +1320,45 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
       {
         render_system.destroyVARArea(var_area);
 
-        std::string vararea_name = std::string(getName()) + " VAR area";
+        std::string vararea_name = getNameStr() + " VAR area";
         var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-        if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
+        if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
       }
       else
         var_area->reset();
     }
     else
     {
-      std::string vararea_name = std::string(getName()) + " VAR area";
+      std::string vararea_name = getNameStr() + " VAR area";
       var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-      if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
+      if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
     }
 
     if (!packed_vertex_positions.empty())
     {
       vertex_positions_var = var_area->createArray(vertex_position_bytes);
-      if (!vertex_positions_var) throw Error(std::string(getName()) + ": Couldn't create vertices VAR");
+      if (!vertex_positions_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
       vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!packed_vertex_normals.empty())
     {
       vertex_normals_var = var_area->createArray(vertex_normal_bytes);
-      if (!vertex_normals_var) throw Error(std::string(getName()) + ": Couldn't create normals VAR");
+      if (!vertex_normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
       vertex_normals_var->updateVectors(0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!packed_vertex_colors.empty())
     {
       vertex_colors_var = var_area->createArray(vertex_color_bytes);
-      if (!vertex_colors_var) throw Error(std::string(getName()) + ": Couldn't create colors VAR");
+      if (!vertex_colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
       vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!packed_vertex_texcoords.empty())
     {
       vertex_texcoords_var = var_area->createArray(vertex_texcoord_bytes);
-      if (!vertex_texcoords_var) throw Error(std::string(getName()) + ": Couldn't create texcoords VAR");
+      if (!vertex_texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
       vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
 
@@ -1366,21 +1366,21 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     if (!packed_tris.empty())
     {
       tris_var = var_area->createArray(tri_bytes);
-      if (!tris_var) throw Error(std::string(getName()) + ": Couldn't create triangle indices VAR");
+      if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
       tris_var->updateIndices(0, (long)packed_tris.size(), &packed_tris[0]);
     }
 
     if (!packed_quads.empty())
     {
       quads_var = var_area->createArray(quad_bytes);
-      if (!quads_var) throw Error(std::string(getName()) + ": Couldn't create quad indices VAR");
+      if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
       quads_var->updateIndices(0, (long)packed_quads.size(), &packed_quads[0]);
     }
 
     if (!packed_edges.empty())
     {
       edges_var = var_area->createArray(edge_bytes);
-      if (!edges_var) throw Error(std::string(getName()) + ": Couldn't create edge indices VAR");
+      if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
       edges_var->updateIndices(0, (long)packed_edges.size(), &packed_edges[0]);
     }
 #endif
@@ -1420,7 +1420,7 @@ inline void
 GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, RenderOptions const & options) const
 {
   if (options.drawEdges() && !buffered_wireframe)
-    throw Error(std::string(getName()) + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
+    throw Error(getNameStr() + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
 
   const_cast<GeneralMesh *>(this)->uploadToGraphicsSystem(render_system);
 

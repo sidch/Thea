@@ -99,6 +99,10 @@ class THEA_API NamedObject : public AbstractNamedObject
     /** Set the name of the object. */
     void setName(std::string const & name_) { name = name_; }
 
+  protected:
+    /** Access the name string directly, for efficiency. */
+    std::string const & getNameStr() const { return name; }
+
   private:
     std::string name;
 
