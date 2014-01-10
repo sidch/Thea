@@ -157,7 +157,7 @@ GLRenderSystem::createTexture(char const * name_, Image const & image, Texture::
 }
 
 Texture *
-GLRenderSystem::createTexture(char const * name_, Image::Ptr images[6], Texture::Format const * desired_format,
+GLRenderSystem::createTexture(char const * name_, Image const * images[6], Texture::Format const * desired_format,
                               Texture::Options const & options)
 {
   return new GLTexture(name_, images, desired_format, options);

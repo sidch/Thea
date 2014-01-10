@@ -155,7 +155,7 @@ GLTexture::GLTexture(char const * name_, Image const & image, Format const * des
   _updateImage(image, Face::POS_X, &options);
 }
 
-GLTexture::GLTexture(char const * name_, Image::Ptr images[6], Format const * desired_format, Options const & options)
+GLTexture::GLTexture(char const * name_, Image const * images[6], Format const * desired_format, Options const & options)
 : name(name_), dimension(Dimension::DIM_CUBE_MAP), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (!images[0] || !images[0]->isValid())

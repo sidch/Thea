@@ -150,7 +150,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
     /** Destroy a framebuffer created with createFramebuffer(). */
     virtual void destroyFramebuffer(Framebuffer * framebuffer) = 0;
 
-    /** Create a new, uninitialized shader. The shader must be destroyed using destroyShader() */
+    /** Create a new, uninitialized shader. The shader must be destroyed using destroyShader(). */
     virtual Shader * createShader(char const * name) = 0;
 
     /** Destroy a shader created with createShader(). */
@@ -174,7 +174,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Create a cube-map from six pixel buffers, representing 2D images of identical format and size. The texture must be
      * destroyed using destroyTexture().
      */
-    virtual Texture * createTexture(char const * name, Image::Ptr images[6],
+    virtual Texture * createTexture(char const * name, Image const * images[6],
                                     Texture::Format const * desired_format = Texture::Format::AUTO(),
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
 
