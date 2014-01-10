@@ -86,21 +86,21 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     void setUniform(char const * uniform_name, Matrix4 const & value);
     void setUniform(char const * uniform_name, Texture * value);
 
-    void setUniform(char const * uniform_name, TheaArray<float> const & value);
-    void setUniform(char const * uniform_name, TheaArray<int> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Vector2> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Vector3> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Vector4> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorL8> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorL> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorRGB8> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorRGB> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorRGBA8> const & value);
-    void setUniform(char const * uniform_name, TheaArray<ColorRGBA> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Matrix2> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Matrix3> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Matrix4> const & value);
-    void setUniform(char const * uniform_name, TheaArray<Texture *> const & value);
+    void setUniform(char const * uniform_name, long num_values, float const * values);
+    void setUniform(char const * uniform_name, long num_values, int const * values);
+    void setUniform(char const * uniform_name, long num_values, Vector2 const * values);
+    void setUniform(char const * uniform_name, long num_values, Vector3 const * values);
+    void setUniform(char const * uniform_name, long num_values, Vector4 const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorL8 const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorL const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorRGB8 const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorRGB const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorRGBA8 const * values);
+    void setUniform(char const * uniform_name, long num_values, ColorRGBA const * values);
+    void setUniform(char const * uniform_name, long num_values, Matrix2 const * values);
+    void setUniform(char const * uniform_name, long num_values, Matrix3 const * values);
+    void setUniform(char const * uniform_name, long num_values, Matrix4 const * values);
+    void setUniform(char const * uniform_name, long num_values, Texture * const * values);
 
     /** Link the various modules of the shader into a single program. */
     void link();

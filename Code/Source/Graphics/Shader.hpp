@@ -135,49 +135,49 @@ class THEA_API Shader : public AbstractNamedObject
     virtual void setUniform(char const * uniform_name, Texture * value) = 0;
 
     /** Set a floating-point array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<float> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, float const * values) = 0;
 
     /** Set an integer array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<int> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, int const * values) = 0;
 
     /** Set a 2-vector array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Vector2> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Vector2 const * values) = 0;
 
     /** Set a 3-vector array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Vector3> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Vector3 const * values) = 0;
 
     /** Set a 4-vector array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Vector4> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Vector4 const * values) = 0;
 
     /** Set a single-channel byte color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorL8> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorL8 const * values) = 0;
 
     /** Set a single-channel floating-point color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorL> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorL const * values) = 0;
 
     /** Set a 3-channel byte color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorRGB8> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorRGB8 const * values) = 0;
 
     /** Set a 3-channel floating-point color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorRGB> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorRGB const * values) = 0;
 
     /** Set a 4-channel byte color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorRGBA8> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorRGBA8 const * values) = 0;
 
     /** Set a 4-channel floating-point color array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<ColorRGBA> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, ColorRGBA const * values) = 0;
 
     /** Set a 2x2 matrix array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Matrix2> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Matrix2 const * values) = 0;
 
     /** Set a 3x3 matrix array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Matrix3> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Matrix3 const * values) = 0;
 
     /** Set a 4x4 matrix array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Matrix4> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Matrix4 const * values) = 0;
 
     /** Set a texture array uniform. */
-    virtual void setUniform(char const * uniform_name, TheaArray<Texture *> const & value) = 0;
+    virtual void setUniform(char const * uniform_name, long num_values, Texture * const * values) = 0;
 
 }; // class Shader
 
