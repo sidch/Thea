@@ -289,9 +289,9 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
     background_shader = rs.createShader("Background shader");
 
     background_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
-                                            Application::getFullResourcePath("Materials/FlatTextureVert.glsl"));
+                                            Application::getFullResourcePath("Materials/FlatTextureVert.glsl").c_str());
     background_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
-                                            Application::getFullResourcePath("Materials/FlatTextureFrag.glsl"));
+                                            Application::getFullResourcePath("Materials/FlatTextureFrag.glsl").c_str());
 
     background_shader->setUniform("texture", background_texture);
   }

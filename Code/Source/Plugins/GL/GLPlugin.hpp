@@ -56,18 +56,20 @@ class GLRenderSystemFactory;
 class THEA_GL_DLL_LOCAL GLPlugin : public Plugin
 {
   public:
-    /** Default constructor. */
-    GLPlugin();
+    /** Constructor. */
+    GLPlugin(FactoryRegistry * registry_);
 
     /** Destructor. */
     ~GLPlugin();
 
+    char const * getName() const;
     void install();
     void startup();
     void shutdown();
     void uninstall();
 
   private:
+    FactoryRegistry * registry;
     GLRenderSystemFactory * factory;
     bool started;
 

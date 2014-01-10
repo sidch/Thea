@@ -87,7 +87,7 @@ ARPACKEigenSolver::solve(int num_requested_eigenpairs, Options const & options)
       return solveSparse(num_requested_eigenpairs, shift_invert, sigma, which, ncv, tol, maxit);
 
     default:
-      throw Error(getName() + ": Unknown format of cached matrix");
+      throw Error(std::string(getName()) + ": Unknown format of cached matrix");
   }
 }
 

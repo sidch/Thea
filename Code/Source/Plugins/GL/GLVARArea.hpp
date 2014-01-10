@@ -55,7 +55,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
 {
   public:
     /** Constructor. */
-    GLVARArea(std::string const & name_, long capacity_, Usage usage, bool gpu_memory_ = true);
+    GLVARArea(char const * name_, long capacity_, Usage usage, bool gpu_memory_ = true);
 
     /** Destructor. */
     ~GLVARArea();
@@ -63,6 +63,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     /** Get a string describing the storage area. */
     std::string toString() const;
 
+    char const * getName() const { return name.c_str(); }
     void reset();
     long getCapacity() const { return capacity; }
     long getAllocatedSize() const { return allocated_size; }
@@ -84,6 +85,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     void incrementAllocated(long inc) { allocated_size += inc; }
 
   private:
+    std::string name;
     long capacity;
     bool gpu_memory;
     GLuint gl_buffer;

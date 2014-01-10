@@ -54,7 +54,7 @@ namespace Graphics {
  *
  * @see VAR
  */
-class THEA_API VARArea : public virtual NamedObject
+class THEA_API VARArea : public AbstractNamedObject
 {
   public:
     /** How the storage will be used (enum class). */

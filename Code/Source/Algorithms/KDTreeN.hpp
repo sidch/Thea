@@ -402,7 +402,8 @@ class /* THEA_API */ KDTreeN
      *   down range searches since every positive result will only be obtained at the leaves.
      */
     template <typename InputIterator>
-    KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_in_leaf_ = -1, bool save_memory = false)
+    KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_in_leaf_ = -1,
+            bool save_memory = false)
     : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), valid_bounds(true)
     {
       init(begin, end, max_elems_in_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);

@@ -154,16 +154,16 @@ CSPARSELinearSolver::solve(Options const & options)
   {
     case MatrixFormat::DENSE_ROW_MAJOR:
     case MatrixFormat::DENSE_COLUMN_MAJOR:
-      throw Error(getName() + ": The CSPARSE linear solver does not support dense coefficient matrices");
+      throw Error(std::string(getName()) + ": The CSPARSE linear solver does not support dense coefficient matrices");
 
     case MatrixFormat::SPARSE_ROW_MAJOR:  // should never be encountered since we always cache as sparse column-major
-      throw Error(getName() + ": The CSPARSE linear solver does not support sparse row-major matrices");
+      throw Error(std::string(getName()) + ": The CSPARSE linear solver does not support sparse row-major matrices");
 
     case MatrixFormat::SPARSE_COLUMN_MAJOR:
     {
       MatrixWrapper<double>::SparseColumnMatrix const & scm = coeffs.getSparseColumnMatrix();
       alwaysAssertM(scm.numRows() == (int)constants.size(),
-                    getName() + ": Size of coefficient matrix does not match number of constants");
+                    std::string(getName()) + ": Size of coefficient matrix does not match number of constants");
 
       if (scm.isEmpty())
       {
@@ -176,7 +176,7 @@ CSPARSELinearSolver::solve(Options const & options)
 
       // Only QR factorization allows rectangular matrices, returning least-squares solutions
       alwaysAssertM(method == "QR" || MatrixUtil::isSquare(scm),
-                    getName() + ": Coefficient matrix for method '" + method + "' must be square");
+                    std::string(getName()) + ": Coefficient matrix for method '" + method + "' must be square");
 
       // Create the coefficient matrix
       // (The row indices are ints by default, but just in case the parent class changes the default format let's cache them in
@@ -215,7 +215,8 @@ CSPARSELinearSolver::solve(Options const & options)
           THEA_DEBUG << getName() << ": Trying to solve linear system by Cholesky factorization";
 
           if (!sym)
-            throw Error(getName() + ": Cholesky factorization requires a symmetric positive-definite coefficient matrix");
+            throw Error(std::string(getName())
+                      + ": Cholesky factorization requires a symmetric positive-definite coefficient matrix");
 
           ok = cs_cholsol(Ap, &solution[0], -1);
 
@@ -236,7 +237,7 @@ CSPARSELinearSolver::solve(Options const & options)
           ok = cs_lusol(Ap, &solution[0], -1, tol);
         }
         else
-          throw Error(getName() + ": Unknown solution method '" + method + '\'');
+          throw Error(std::string(getName()) + ": Unknown solution method '" + method + '\'');
       }
       catch (...)
       {
@@ -256,7 +257,7 @@ CSPARSELinearSolver::solve(Options const & options)
     }
 
     default:
-      throw Error(getName() + ": Unknown format of cached matrix");
+      throw Error(std::string(getName()) + ": Unknown format of cached matrix");
   }
 
   return has_solution;

@@ -80,7 +80,7 @@ class Mesh : public Graphics::DisplayMesh
             tri_face_indices.push_back(next_index);
 
           alwaysAssertM((long)tri_face_indices.size() == numTriangles(),
-                        getName() + ": Face indices and triangle list out of sync");
+                        std::string(getName()) + ": Face indices and triangle list out of sync");
         }
 
         if (face.hasQuads())
@@ -89,7 +89,8 @@ class Mesh : public Graphics::DisplayMesh
           for (long i = 0; i < num_quads; ++i)
             quad_face_indices.push_back(next_index);
 
-          alwaysAssertM((long)quad_face_indices.size() == numQuads(), getName() + ": Face indices and quad list out of sync");
+          alwaysAssertM((long)quad_face_indices.size() == numQuads(),
+                        std::string(getName()) + ": Face indices and quad list out of sync");
         }
       }
 

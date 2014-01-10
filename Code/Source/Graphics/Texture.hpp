@@ -51,7 +51,7 @@ namespace Thea {
 namespace Graphics {
 
 /** An interface for a texture. */
-class THEA_API Texture : public virtual NamedObject
+class THEA_API Texture : public AbstractNamedObject
 {
   public:
     /** %Texture dimensionality (enum class). */

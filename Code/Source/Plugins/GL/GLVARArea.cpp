@@ -47,11 +47,11 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
-GLVARArea::GLVARArea(std::string const & name_, long capacity_, Usage usage, bool gpu_memory_)
-: NamedObject(name_), capacity(capacity_), gpu_memory(gpu_memory_), generation(0), allocated_size(0)
+GLVARArea::GLVARArea(char const * name_, long capacity_, Usage usage, bool gpu_memory_)
+: name(name_), capacity(capacity_), gpu_memory(gpu_memory_), generation(0), allocated_size(0)
 {
   if (gpu_memory && !THEA_GL_SUPPORTS(ARB_vertex_buffer_object))
-    throw Error(getName() + ": OpenGL vertex/index buffers in GPU memory are not supported");
+    throw Error(std::string(getName()) + ": OpenGL vertex/index buffers in GPU memory are not supported");
 
   assert(capacity > 0);
 

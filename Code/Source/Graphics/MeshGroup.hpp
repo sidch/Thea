@@ -246,7 +246,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const
     {
       if (codec == Codec_AUTO())
-        throw Error(getName() + ": You must explicitly choose a codec for serializing mesh groups");
+        throw Error(std::string(getName()) + ": You must explicitly choose a codec for serializing mesh groups");
 
       try
       {
@@ -256,7 +256,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       catch (std::bad_cast &)
       {
         // Serious programming error
-        throw FatalError(getName() + ": Codec specified for mesh group serialization is not a mesh codec.");
+        throw FatalError(std::string(getName()) + ": Codec specified for mesh group serialization is not a mesh codec.");
       }
     }
 
@@ -279,7 +279,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         catch (std::bad_cast &)
         {
           // Serious programming error
-          throw FatalError(getName() + ": Codec specified for mesh group deserialization is not a mesh codec.");
+          throw FatalError(std::string(getName()) + ": Codec specified for mesh group deserialization is not a mesh codec.");
         }
       }
 
@@ -298,13 +298,13 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       {
         mesh_codec = codecFromPath(path);
         if (!mesh_codec)
-          throw Error(getName() + ": Could not autodetect codec for saving mesh group");
+          throw Error(std::string(getName()) + ": Could not autodetect codec for saving mesh group");
       }
       else
       {
         mesh_codec = dynamic_cast<MeshCodec<Mesh> const *>(&codec);
         if (!mesh_codec)
-          throw Error(getName() + ": Codec specified for saving mesh group is not a mesh codec");
+          throw Error(std::string(getName()) + ": Codec specified for saving mesh group is not a mesh codec");
       }
 
       BinaryOutputStream out(path, Endianness::LITTLE);
@@ -312,7 +312,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
 
       out.commit();
       if (!out.ok())
-        throw Error(getName() + ": Could not save mesh file");
+        throw Error(std::string(getName()) + ": Could not save mesh file");
     }
 
     /**
@@ -327,13 +327,13 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       {
         mesh_codec = codecFromPath(path);
         if (!mesh_codec)
-          throw Error(getName() + ": Could not autodetect codec for loading mesh group");
+          throw Error(std::string(getName()) + ": Could not autodetect codec for loading mesh group");
       }
       else
       {
         mesh_codec = dynamic_cast<MeshCodec<Mesh> const *>(&codec);
         if (!mesh_codec)
-          throw Error(getName() + ": Codec specified for loading mesh group is not a mesh codec");
+          throw Error(std::string(getName()) + ": Codec specified for loading mesh group is not a mesh codec");
       }
 
       BinaryInputStream in(path, Endianness::LITTLE);
@@ -374,7 +374,8 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         return;
       }
 
-      throw Error(getName() + ": Could not detect mesh encoding from input. Please specify the encoding explicitly.");
+      throw Error(std::string(getName())
+                + ": Could not detect mesh encoding from input. Please specify the encoding explicitly.");
     }
 
     /** Try to get the appropriate codec for a mesh, given the path to the mesh. */

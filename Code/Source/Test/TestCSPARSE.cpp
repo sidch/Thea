@@ -1,4 +1,5 @@
 #include "../Common.hpp"
+#include "../Application.hpp"
 #include "../Array.hpp"
 #include "../FilePath.hpp"
 #include "../Plugin.hpp"
@@ -17,9 +18,6 @@ int cleanup(int status);
 int
 main(int argc, char * argv[])
 {
-  // We're going to use plugins, so we need to call this at the beginning of the program
-  PluginManager::init();
-
   bool ok;
   try
   {
@@ -49,13 +47,13 @@ testCSPARSE(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << plugin_path << endl;
-  Plugin * plugin = PluginManager::load(plugin_path);
+  Plugin * plugin = Application::getPluginManager().load(plugin_path);
 
   // Start up the plugin
   plugin->startup();
 
   // We should now have a CSPARSE linear solver factory
-  LinearSolverFactory * factory = LinearSolverManager::getFactory("CSPARSE");
+  LinearSolverFactory * factory = Application::getLinearSolverManager().getFactory("CSPARSE");
 
   // Create a linear solver
   LinearSolver * ls = factory->createLinearSolver("My CSPARSE linear solver");
@@ -110,6 +108,6 @@ testCSPARSE(int argc, char * argv[])
 int
 cleanup(int status)
 {
-  PluginManager::finish();
+  Application::getPluginManager().unloadAllPlugins();
   return status;
 }

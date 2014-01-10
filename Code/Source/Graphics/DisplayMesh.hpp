@@ -279,11 +279,11 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     /** Mesh type tag. */
     struct DISPLAY_MESH_TAG {};
 
-    typedef TheaArray<Vector3>  VertexArray;    ///< Array of vertex positions.
-    typedef TheaArray<Vector3>  NormalArray;    ///< Array of normals.
-    typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<ColorRGBA>   ColorArray;     ///< Array of colors.
-    typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
+    typedef TheaArray<Vector3>    VertexArray;    ///< Array of vertex positions.
+    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
+    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
 
     typedef DisplayMeshVertex Vertex;  ///< A convenience wrapper for accessing a vertex's properties.
     typedef DisplayMeshIndexedVertex IndexedVertex;  ///< A reference to a vertex's properties via its index.
@@ -423,8 +423,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     bool hasTexCoords() const { return !texcoords.empty(); }
 
     /**
-     * Adds a color property to each vertex, initially initialized to ColorRGBA(0, 0, 0, 0). If a color property already exists, no
-     * action is taken.
+     * Adds a color property to each vertex, initially initialized to ColorRGBA(0, 0, 0, 0). If a color property already exists,
+     * no action is taken.
      */
     virtual void addColors();
 
@@ -541,7 +541,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     /** Set the position of a mesh vertex. */
     virtual void setVertex(long vertex_index, Vector3 const & position)
     {
-      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)vertices.size(), getName() + ": Vertex index out of bounds");
+      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)vertices.size(),
+                    std::string(getName()) + ": Vertex index out of bounds");
 
       vertices[(array_size_t)vertex_index] = position;
       invalidateBounds();
@@ -552,7 +553,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setNormal(long vertex_index, Vector3 const & normal)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)normals.size(),
-                    getName() + ": Vertex index out of bounds, or vertex does not have associated normal field");
+                    std::string(getName()) + ": Vertex index out of bounds, or vertex does not have associated normal field");
 
       normals[(array_size_t)vertex_index] = normal;
       invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
@@ -562,7 +563,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setColor(long vertex_index, ColorRGBA const & color)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)colors.size(),
-                    getName() + ": Vertex index out of bounds, or vertex does not have associated color field");
+                    std::string(getName()) + ": Vertex index out of bounds, or vertex does not have associated color field");
 
       colors[(array_size_t)vertex_index] = color;
       invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
@@ -572,7 +573,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setTexCoord(long vertex_index, Vector2 const & texcoord)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)texcoords.size(),
-                    getName() + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
+                    std::string(getName())
+                  + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
 
       texcoords[(array_size_t)vertex_index] = texcoord;
       invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);

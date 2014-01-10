@@ -376,7 +376,7 @@ class THEA_API ImageCodec : public Codec
 
 #define THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                 \
     public:                                                                                                                   \
-      std::string getName() const { static std::string const my_name = desc; return my_name; }                                \
+      char const * getName() const { static char const * my_name = desc; return my_name; }                                    \
       long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                          \
       void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;
 

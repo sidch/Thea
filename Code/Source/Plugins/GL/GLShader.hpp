@@ -57,48 +57,50 @@ namespace GL {
 class THEA_GL_DLL_LOCAL GLShader : public Shader
 {
   public:
-    GLShader(std::string const & name_);
+    GLShader(char const * name_);
 
     ~GLShader();
 
+    char const * getName() const { return name.c_str(); }
+
     bool isComplete() const { return complete; }
 
-    void attachModuleFromFile(ModuleType type, std::string const & path);
-    void attachModuleFromString(ModuleType type, std::string const & source);
+    void attachModuleFromFile(ModuleType type, char const * path);
+    void attachModuleFromString(ModuleType type, char const * source);
 
-    bool hasUniform(std::string const & uniform_name) const { return uniforms.find(uniform_name) != uniforms.end(); }
+    bool hasUniform(char const * uniform_name) const { return uniforms.find(uniform_name) != uniforms.end(); }
 
-    void setUniform(std::string const & uniform_name, float value);
-    void setUniform(std::string const & uniform_name, int value);
-    void setUniform(std::string const & uniform_name, Vector2 const & value);
-    void setUniform(std::string const & uniform_name, Vector3 const & value);
-    void setUniform(std::string const & uniform_name, Vector4 const & value);
-    void setUniform(std::string const & uniform_name, ColorL8 const & value);
-    void setUniform(std::string const & uniform_name, ColorL const & value);
-    void setUniform(std::string const & uniform_name, ColorRGB8 const & value);
-    void setUniform(std::string const & uniform_name, ColorRGB const & value);
-    void setUniform(std::string const & uniform_name, ColorRGBA8 const & value);
-    void setUniform(std::string const & uniform_name, ColorRGBA const & value);
-    void setUniform(std::string const & uniform_name, Matrix2 const & value);
-    void setUniform(std::string const & uniform_name, Matrix3 const & value);
-    void setUniform(std::string const & uniform_name, Matrix4 const & value);
-    void setUniform(std::string const & uniform_name, Texture * value);
+    void setUniform(char const * uniform_name, float value);
+    void setUniform(char const * uniform_name, int value);
+    void setUniform(char const * uniform_name, Vector2 const & value);
+    void setUniform(char const * uniform_name, Vector3 const & value);
+    void setUniform(char const * uniform_name, Vector4 const & value);
+    void setUniform(char const * uniform_name, ColorL8 const & value);
+    void setUniform(char const * uniform_name, ColorL const & value);
+    void setUniform(char const * uniform_name, ColorRGB8 const & value);
+    void setUniform(char const * uniform_name, ColorRGB const & value);
+    void setUniform(char const * uniform_name, ColorRGBA8 const & value);
+    void setUniform(char const * uniform_name, ColorRGBA const & value);
+    void setUniform(char const * uniform_name, Matrix2 const & value);
+    void setUniform(char const * uniform_name, Matrix3 const & value);
+    void setUniform(char const * uniform_name, Matrix4 const & value);
+    void setUniform(char const * uniform_name, Texture * value);
 
-    void setUniform(std::string const & uniform_name, TheaArray<float> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<int> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Vector2> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Vector3> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Vector4> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorL8> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorL> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorRGB8> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorRGB> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorRGBA8> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<ColorRGBA> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Matrix2> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Matrix3> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Matrix4> const & value);
-    void setUniform(std::string const & uniform_name, TheaArray<Texture *> const & value);
+    void setUniform(char const * uniform_name, TheaArray<float> const & value);
+    void setUniform(char const * uniform_name, TheaArray<int> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Vector2> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Vector3> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Vector4> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorL8> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorL> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorRGB8> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorRGB> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorRGBA8> const & value);
+    void setUniform(char const * uniform_name, TheaArray<ColorRGBA> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Matrix2> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Matrix3> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Matrix4> const & value);
+    void setUniform(char const * uniform_name, TheaArray<Texture *> const & value);
 
     /** Link the various modules of the shader into a single program. */
     void link();
@@ -150,6 +152,7 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     /** Check if a build step (compile or link) succeeded, and throw a custom error if it did not. */
     void checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string const & error_msg);
 
+    std::string name;
     bool complete;
     bool linked;
     bool has_vertex_module;

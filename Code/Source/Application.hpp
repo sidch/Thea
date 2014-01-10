@@ -46,6 +46,24 @@
 
 namespace Thea {
 
+// Forward declarations
+class DynLibManager;
+class PluginManager;
+
+namespace Algorithms {
+
+class EigenSolverManager;
+class LinearSolverManager;
+class NumericalOptimizerManager;
+
+} // namespace Graphics
+
+namespace Graphics {
+
+class RenderSystemManager;
+
+} // namespace Graphics
+
 /**
  * Access and modify global properties of the current application.
  */
@@ -68,12 +86,50 @@ class THEA_API Application
     /** Get the fully qualified path to a resource. */
     static std::string getFullResourcePath(std::string const & resource_name);
 
+    /** Get the global plugin manager. */
+    static PluginManager & getPluginManager() { return *globals.plugin_mgr; }
+
+    /** Get the global dynamic library manager. */
+    static DynLibManager & getDynLibManager() { return *globals.dynlib_mgr; }
+
+    /** Get the global eigensolver manager. */
+    static Algorithms::EigenSolverManager & getEigenSolverManager() { return *globals.eigen_solver_mgr; }
+
+    /** Get the global linear solver manager. */
+    static Algorithms::LinearSolverManager & getLinearSolverManager() { return *globals.linear_solver_mgr; }
+
+    /** Get the global numerical optimizer manager. */
+    static Algorithms::NumericalOptimizerManager & getNumericalOptimizerManager() { return *globals.numerical_optimizer_mgr; }
+
+    /** Get the global rendersystem manager. */
+    static Graphics::RenderSystemManager & getRenderSystemManager() { return *globals.render_system_mgr; }
+
   private:
+    /** Encapsulates global objects. */
+    struct Globals
+    {
+      PluginManager                          *  plugin_mgr;
+      DynLibManager                          *  dynlib_mgr;
+      Algorithms::EigenSolverManager         *  eigen_solver_mgr;
+      Algorithms::LinearSolverManager        *  linear_solver_mgr;
+      Algorithms::NumericalOptimizerManager  *  numerical_optimizer_mgr;
+      Graphics::RenderSystemManager          *  render_system_mgr;
+
+      /** Constructor. */
+      Globals();
+
+      /** Destructor. */
+      ~Globals();
+
+    }; // struct Globals
+
     /**
      * Wraps the resource archive variable to ensure that a) we don't need a separate implementation file and b) the variable is
      * initialized to the default value on first call and not earlier.
      */
     static std::string & _resourceArchive();
+
+    static Globals globals;  ///< Global objects.
 
 }; // class Application
 

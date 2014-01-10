@@ -40,84 +40,71 @@
 //============================================================================
 
 #include "Plugin.hpp"
+#include "Application.hpp"
 #include "DynLib.hpp"
-#include "Algorithms/LinearSolver.hpp"
 #include "Algorithms/EigenSolver.hpp"
+#include "Algorithms/LinearSolver.hpp"
+#include "Algorithms/NumericalOptimizer.hpp"
 #include "Graphics/RenderSystem.hpp"
 
 namespace Thea {
 
-typedef Plugin * (*THEA_DLL_START_PLUGIN)(void);
+typedef Plugin * (*THEA_DLL_START_PLUGIN)(FactoryRegistry *);
 typedef void     (*THEA_DLL_STOP_PLUGIN) (void);
 
-// Static variables
-bool                       PluginManager::initialized = false;
-PluginManager::DynLibMap   PluginManager::dynlibs;
-PluginManager::PluginList  PluginManager::plugins;
-
-void
-PluginManager::init()
+PluginManager::~PluginManager()
 {
-  if (initialized) return;
-
-  // Initialize all managers
-  Algorithms::LinearSolverManager::_init();
-  Algorithms::EigenSolverManager::_init();
-  Graphics::RenderSystemManager::_init();
-
-  initialized = true;
-}
-
-void
-PluginManager::finish()
-{
-  if (!initialized) return;
-
   unloadAllPlugins();
-
-  // Shutdown all managers
-  Graphics::RenderSystemManager::_finish();
-  Algorithms::EigenSolverManager::_finish();
-  Algorithms::LinearSolverManager::_finish();
-
-  initialized = false;
 }
 
 Plugin *
 PluginManager::load(std::string const & path)
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
-
   if (dynlibs.find(path) != dynlibs.end()) return NULL;
 
-  DynLib * dynlib = DynLibManager::load(path);
-  dynlibs[path] = dynlib;
+  DynLib * dynlib = Application::getDynLibManager().load(path);
 
   THEA_DLL_START_PLUGIN start_func = (THEA_DLL_START_PLUGIN)dynlib->getSymbol("dllStartPlugin");
-  return start_func();  // this must call install(), which adds the plugin to the installed list
+  Plugin * plugin = start_func(this);
+
+  if (!plugin)
+  {
+    Application::getDynLibManager().unload(dynlib);
+
+    THEA_ERROR << "PluginManager: Could not initialize plugin '" << path << '\'';
+    return NULL;
+  }
+
+  install(plugin, dynlib, path);
+
+  return plugin;
 }
 
 void
 PluginManager::unload(std::string const & path)
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
+  unload(dynlibs.find(path));
+}
 
-  DynLibMap::iterator dyn_loaded = dynlibs.find(path);
-  if (dyn_loaded != dynlibs.end())
+void
+PluginManager::unload(DynLibMap::iterator lib)
+{
+  if (lib != dynlibs.end())
   {
-    THEA_DLL_STOP_PLUGIN stop_func = (THEA_DLL_STOP_PLUGIN)dyn_loaded->second->getSymbol("dllStopPlugin");
-    stop_func();  // this must call uninstall(), which removes the plugin from the installed list
+    PluginDynLib pd = lib->second;  // the iterator won't be valid after the uninstall() below
 
-    DynLibManager::unload(dyn_loaded->second);
-    dynlibs.erase(dyn_loaded);
+    uninstall(pd.plugin);
+
+    THEA_DLL_STOP_PLUGIN stop_func = (THEA_DLL_STOP_PLUGIN)pd.dynlib->getSymbol("dllStopPlugin");
+    stop_func();
+
+    Application::getDynLibManager().unload(pd.dynlib);
   }
 }
 
 void
 PluginManager::startupAllPlugins()
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
-
   for (PluginList::iterator pi = plugins.begin(); pi != plugins.end(); ++pi)
     (*pi)->startup();
 }
@@ -125,8 +112,6 @@ PluginManager::startupAllPlugins()
 void
 PluginManager::shutdownAllPlugins()
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
-
   for (PluginList::reverse_iterator pi = plugins.rbegin(); pi != plugins.rend(); ++pi)
     (*pi)->shutdown();
 }
@@ -134,21 +119,8 @@ PluginManager::shutdownAllPlugins()
 void
 PluginManager::unloadAllPlugins()
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
-
   shutdownAllPlugins();
 
-  for (DynLibMap::iterator di = dynlibs.begin(); di != dynlibs.end(); ++di)
-  {
-    THEA_DLL_STOP_PLUGIN stop_func = (THEA_DLL_STOP_PLUGIN)di->second->getSymbol("dllStopPlugin");
-    stop_func();  // this must call uninstall(), which removes the plugin from the installed list
-
-    DynLibManager::unload(di->second);
-  }
-
-  dynlibs.clear();
-
-  // There should be only static libs left now
   for (PluginList::iterator pi = plugins.begin(); pi != plugins.end(); ++pi)
   {
     THEA_LOG << "PluginManager: Uninstalling plugin '" << (*pi)->getName() << '\'';
@@ -156,24 +128,58 @@ PluginManager::unloadAllPlugins()
   }
 
   plugins.clear();
+
+  for (DynLibMap::iterator di = dynlibs.begin(); di != dynlibs.end(); ++di)
+  {
+    THEA_DLL_STOP_PLUGIN stop_func = (THEA_DLL_STOP_PLUGIN)di->second.dynlib->getSymbol("dllStopPlugin");
+    stop_func();
+
+    Application::getDynLibManager().unload(di->second.dynlib);
+  }
+
+  dynlibs.clear();
+}
+
+void
+PluginManager::unloadAllDylibs()
+{
+  for (DynLibMap::iterator di = dynlibs.begin(); di != dynlibs.end(); )
+  {
+    DynLibMap::iterator curr = di++;
+    unload(curr);
+  }
+
+  dynlibs.clear();  // just in case, though the unload()'s should have taken care of this
 }
 
 void
 PluginManager::install(Plugin * plugin)
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
+  install(plugin, NULL, "");
+}
+
+void
+PluginManager::install(Plugin * plugin, DynLib * dynlib, std::string const & path)
+{
   alwaysAssertM(plugin, "PluginManager: Plugin pointer cannot be null");
+  alwaysAssertM(!dynlib || !path.empty(), "PluginManager: Plugin loaded from a dynamic library must have a non-empty path");
+
+  for (PluginList::iterator pi = plugins.begin(); pi != plugins.end(); ++pi)
+    if (*pi == plugin)  // already installed
+      return;
 
   THEA_LOG << "PluginManager: Installing plugin '" << plugin->getName() << '\'';
+
   plugins.push_back(plugin);
+  if (dynlib)
+    dynlibs[path] = PluginDynLib(plugin, dynlib);
+
   plugin->install();
 }
 
 void
 PluginManager::uninstall(Plugin * plugin)
 {
-  alwaysAssertM(initialized, "PluginManager: Manager not initialized");
-
   if (!plugin) return;
 
   THEA_LOG << "PluginManager: Uninstalling plugin '" << plugin->getName() << '\'';
@@ -185,6 +191,61 @@ PluginManager::uninstall(Plugin * plugin)
       plugins.erase(pi);
       break;
     }
+
+  for (DynLibMap::iterator di = dynlibs.begin(); di != dynlibs.end(); ++di)
+    if (di->second.plugin == plugin)
+    {
+      dynlibs.erase(di);
+      break;
+    }
+}
+
+void
+PluginManager::addEigenSolverFactory(char const * name, Algorithms::EigenSolverFactory * factory)
+{
+  Application::getEigenSolverManager().installFactory(name, factory);
+}
+
+void
+PluginManager::removeEigenSolverFactory(char const * name)
+{
+  Application::getEigenSolverManager().uninstallFactory(name);
+}
+
+void
+PluginManager::addLinearSolverFactory(char const * name, Algorithms::LinearSolverFactory * factory)
+{
+  Application::getLinearSolverManager().installFactory(name, factory);
+}
+
+void
+PluginManager::removeLinearSolverFactory(char const * name)
+{
+  Application::getLinearSolverManager().uninstallFactory(name);
+}
+
+void
+PluginManager::addRenderSystemFactory(char const * name, Graphics::RenderSystemFactory * factory)
+{
+  Application::getRenderSystemManager().installFactory(name, factory);
+}
+
+void
+PluginManager::removeRenderSystemFactory(char const * name)
+{
+  Application::getRenderSystemManager().uninstallFactory(name);
+}
+
+void
+PluginManager::addNumericalOptimizerFactory(char const * name, Algorithms::NumericalOptimizerFactory * factory)
+{
+  Application::getNumericalOptimizerManager().installFactory(name, factory);
+}
+
+void
+PluginManager::removeNumericalOptimizerFactory(char const * name)
+{
+  Application::getNumericalOptimizerManager().uninstallFactory(name);
 }
 
 } // namespace Thea

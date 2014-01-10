@@ -42,14 +42,15 @@
 #include "GLShader.hpp"
 #include "GLCaps.hpp"
 #include "../../FileSystem.hpp"
+#include <cstring>
 #include <fstream>
 
 namespace Thea {
 namespace Graphics {
 namespace GL {
 
-GLShader::GLShader(std::string const & name_)
-: NamedObject(name_), complete(false), linked(true), has_vertex_module(false), has_fragment_module(false)
+GLShader::GLShader(char const * name_)
+: name(name_), complete(false), linked(true), has_vertex_module(false), has_fragment_module(false)
 {
   if (!THEA_GL_SUPPORTS(ARB_shader_objects))
     throw Error("OpenGL programmable shaders are not supported");
@@ -64,18 +65,18 @@ GLShader::~GLShader()
 }
 
 void
-GLShader::attachModuleFromFile(ModuleType type, std::string const & path)
+GLShader::attachModuleFromFile(ModuleType type, char const * path)
 {
-  std::ifstream in(path.c_str());
+  std::ifstream in(path);
   if (!in)
-    throw Error(getName() + ": Shader module '" + path + "' not found");
+    throw Error(std::string(getName()) + ": Shader module '" + std::string(path) + "' not found");
 
   std::string source = FileSystem::readWholeFile(path);
-  attachModuleFromString(type, source);
+  attachModuleFromString(type, source.c_str());
 }
 
 void
-GLShader::attachModuleFromString(ModuleType type, std::string const & source)
+GLShader::attachModuleFromString(ModuleType type, char const * source)
 {
   GLenum gltype;
   switch (type)
@@ -89,19 +90,19 @@ GLShader::attachModuleFromString(ModuleType type, std::string const & source)
       else if (THEA_GL_SUPPORTS(ARB_geometry_shader4))
         gltype = GL_GEOMETRY_SHADER_ARB;  // this should have exactly the same value as the EXT version, but let's play safe
       else
-        throw Error(getName() + ": This OpenGL installation does not support geometry shaders");
+        throw Error(std::string(getName()) + ": This OpenGL installation does not support geometry shaders");
 
       break;
     }
     default:
-      throw Error(getName() + ": Unknown module type");
+      throw Error(std::string(getName()) + ": Unknown module type");
   }
 
   GLhandleARB module_id = glCreateShaderObjectARB(gltype);
   THEA_CHECK_GL_OK
 
-  int src_length = (int)source.length();
-  GLcharARB const * src_ptr = (GLcharARB const *)source.data();
+  int src_length = (int)std::strlen(source);
+  GLcharARB const * src_ptr = (GLcharARB const *)source;
   glShaderSourceARB(module_id, 1, &src_ptr, &src_length);
   THEA_CHECK_GL_OK
 
@@ -152,7 +153,7 @@ GLShader__toCanonicalType(GLenum type)
 void
 GLShader::readActiveUniforms()
 {
-  alwaysAssertM(complete, getName() + ": GL will throw an error unless the shader is complete");
+  alwaysAssertM(complete, std::string(getName()) + ": GL will throw an error unless the shader is complete");
 
   uniforms.clear();
   int last_texture_unit = 0;
@@ -194,7 +195,7 @@ GLShader::readActiveUniforms()
         if (GLShader__isSamplerType(data.type))
         {
           if (data.size > 1)
-            throw Error(getName() + ": Arrays of samplers are not supported");
+            throw Error(std::string(getName()) + ": Arrays of samplers are not supported");
 
           data.texunit = last_texture_unit++;
         }
@@ -219,7 +220,7 @@ GLShader::bindUniforms()
   for (Uniforms::iterator ui = uniforms.begin(); ui != uniforms.end(); ++ui)
   {
     if (!ui->second.has_value)
-      throw Error(getName() + ": Uniform '" + ui->first + "' has not been set");
+      throw Error(std::string(getName()) + ": Uniform '" + ui->first + "' has not been set");
 
     if (ui->second.requires_rebind)
     {
@@ -264,7 +265,10 @@ GLShader::bindUniforms()
           if (THEA_GL_SUPPORTS(ARB_multitexture))
             glActiveTextureARB(GL_TEXTURE0_ARB + ui->second.texunit);
           else
-          { debugAssertM(ui->second.texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero"); }
+          {
+            debugAssertM(ui->second.texunit == 0,
+                         std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
+          }
 
           glBindTexture(tex_type, ui->second.value.texture->getGLID());
           glUniform1iARB(ui->second.location, ui->second.texunit);
@@ -273,7 +277,7 @@ GLShader::bindUniforms()
         }
 
         default:
-          throw Error(getName() + ": Type of uniform '" + ui->first + "' not handled");
+          throw Error(std::string(getName()) + ": Type of uniform '" + ui->first + "' not handled");
       }
     }
   }
@@ -294,7 +298,7 @@ void
 GLShader::use()
 {
   if (!complete)
-    throw Error(getName() + ": Shader is incomplete");
+    throw Error(std::string(getName()) + ": Shader is incomplete");
 
   link();
   glUseProgramObjectARB(program_id);
@@ -316,10 +320,10 @@ GLShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
       TheaArray<char> infolog(infolog_length);
       GLsizei chars_written;
       glGetInfoLogARB(obj_id, (GLsizei)infolog_length, &chars_written, &infolog[0]);
-      throw Error(getName() + ": " + error_msg + " (" + &infolog[0] + ')');
+      throw Error(std::string(getName()) + ": " + error_msg + " (" + &infolog[0] + ')');
     }
     else
-      throw Error(getName() + ": " + error_msg + " (unknown error)");
+      throw Error(std::string(getName()) + ": " + error_msg + " (unknown error)");
   }
 }
 
@@ -331,10 +335,11 @@ GLShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
   }                                                                                                                           \
                                                                                                                               \
   if (GLShader__toCanonicalType(entry->second.type) != uniform_gl_type)                                                       \
-    throw Error(getName() + ": Argument does not match the declared type of uniform '" + uniform_name + '\'');                \
+    throw Error(std::string(getName()) + ": Argument does not match the declared type of uniform '"                           \
+              + std::string(uniform_name) + '\'');                                                                            \
                                                                                                                               \
   if (entry->second.size != (GLint)uniform_size)                                                                              \
-    throw Error(getName() + ": Uniform '" + uniform_name + format("' expects size %d", (int)(uniform_size)));
+    throw Error(std::string(getName()) + format(": Uniform '%s' expects size %d", uniform_name, (int)(uniform_size)));
 
 namespace GLShaderInternal {
 
@@ -353,7 +358,7 @@ static void toFloats(Matrix4 const & m, float * f) { m.getElementsRowMajor(f); }
 } // namespace GLShaderInternal
 
 void
-GLShader::setUniform(std::string const & uniform_name, float value)
+GLShader::setUniform(char const * uniform_name, float value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, 1);
@@ -362,7 +367,7 @@ GLShader::setUniform(std::string const & uniform_name, float value)
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, int value)
+GLShader::setUniform(char const * uniform_name, int value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, 1);
@@ -371,25 +376,25 @@ GLShader::setUniform(std::string const & uniform_name, int value)
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, ColorL const & value)
+GLShader::setUniform(char const * uniform_name, ColorL const & value)
 {
   setUniform(uniform_name, value.value());
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, ColorL8 const & value)
+GLShader::setUniform(char const * uniform_name, ColorL8 const & value)
 {
   setUniform(uniform_name, ColorL(value).value());
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, Texture * value)
+GLShader::setUniform(char const * uniform_name, Texture * value)
 {
   if (!value)
-    throw Error(getName() + ": Null argument passed for uniform '" + uniform_name + '\'');
+    throw Error(std::string(getName()) + ": Null argument passed for uniform '" + std::string(uniform_name) + '\'');
 
   GLTexture * gltex = dynamic_cast<GLTexture *>(value);
-  debugAssertM(gltex, getName() + ": Attempt to use a non-OpenGL texture with a GL rendersystem");
+  debugAssertM(gltex, std::string(getName()) + ": Attempt to use a non-OpenGL texture with a GL rendersystem");
 
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(gltex->getGLTarget(), 1);
@@ -399,7 +404,7 @@ GLShader::setUniform(std::string const & uniform_name, Texture * value)
 
 #define GLShader__MULTI_FLOAT_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(std::string const & uniform_name, uniform_type const & value)                                          \
+  GLShader::setUniform(char const * uniform_name, uniform_type const & value)                                          \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, 1);                                                                \
@@ -420,12 +425,12 @@ GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix3,      Matrix3,    GL_FLOAT_MAT3_ARB,  
 GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix4,      Matrix4,    GL_FLOAT_MAT4_ARB, 16)
 
 void
-GLShader::setUniform(std::string const & uniform_name, TheaArray<float> const & value)
+GLShader::setUniform(char const * uniform_name, TheaArray<float> const & value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, value.size());
   if (entry->second.size < 2)
-    throw Error("Attempting to set non-array uniform '" + uniform_name + "' from array type");
+    throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
   entry->second.value.f_array.resize(value.size());
   std::memcpy(&entry->second.value.f_array[0], &value[0], value.size() * sizeof(float));
@@ -433,12 +438,12 @@ GLShader::setUniform(std::string const & uniform_name, TheaArray<float> const & 
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, TheaArray<int> const & value)
+GLShader::setUniform(char const * uniform_name, TheaArray<int> const & value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, value.size());
   if (entry->second.size < 2)
-    throw Error("Attempting to set non-array uniform '" + uniform_name + "' from array type");
+    throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
   entry->second.value.i_array.resize(value.size());
   std::memcpy(&entry->second.value.i_array[0], &value[0], value.size() * sizeof(int));
@@ -446,19 +451,19 @@ GLShader::setUniform(std::string const & uniform_name, TheaArray<int> const & va
 }
 
 void
-GLShader::setUniform(std::string const & uniform_name, TheaArray<Texture *> const & value)
+GLShader::setUniform(char const * uniform_name, TheaArray<Texture *> const & value)
 {
-  throw Error(getName() + ": OpenGL texture array uniforms are not supported");
+  throw Error(std::string(getName()) + ": OpenGL texture array uniforms are not supported");
 }
 
 #define GLShader__FLOAT_ARRAY_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(std::string const & uniform_name, TheaArray<uniform_type> const & value)                               \
+  GLShader::setUniform(char const * uniform_name, TheaArray<uniform_type> const & value)                                      \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, value.size());                                                     \
     if (entry->second.size < 2)                                                                                               \
-      throw Error("Attempting to set non-array uniform '" + uniform_name + "' from array type");                              \
+      throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");                 \
                                                                                                                               \
     entry->second.value.f_array.resize(num_components * value.size());                                                        \
                                                                                                                               \

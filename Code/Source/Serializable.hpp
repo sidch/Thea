@@ -44,6 +44,7 @@
 
 #include "Common.hpp"
 #include "IOStream.hpp"
+#include "NamedObject.hpp"
 
 namespace Thea {
 
@@ -51,14 +52,11 @@ namespace Thea {
  * A serialization codec. Identified by an ID that is unique for a given run of the program (it is <b>not</b> guaranteed to
  * retain its value over different runs).
  */
-class THEA_API Codec
+class THEA_API Codec : public AbstractNamedObject
 {
   public:
     /** Destructor. */
     virtual ~Codec() {}
-
-    /** Get the name of the codec. */
-    virtual std::string getName() const = 0;
 
     /** Check if two codecs are equal. All instances of a codec class <b>must</b> be considered equal. */
     bool operator==(Codec const & other) const { return typeid(*this) == typeid(other); }
@@ -81,14 +79,14 @@ operator<<(std::ostream & os, Codec const & codec)
 class THEA_API Codec_AUTO : public Codec
 {
   public:
-    std::string getName() const { static std::string const my_name = "Auto"; return my_name; }
+    char const * getName() const { static char const * my_name = "Auto"; return my_name; }
 };
 
 /** Indicates that the codec is unknown. */
 class THEA_API Codec_UNKNOWN : public Codec
 {
   public:
-    std::string getName() const { static std::string const my_name = "Unknown"; return my_name; }
+    char const * getName() const { static char const * my_name = "Unknown"; return my_name; }
 };
 
 /** The interface for a serializable object. */

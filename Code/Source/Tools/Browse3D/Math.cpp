@@ -312,7 +312,8 @@ closestPtLineTriangle(Line3 const & line, Vector3 const & v0, Vector3 const & ed
   float tmp_s, t;
   for (int i0 = 2, i1 = 0; i1 < 3; i0 = i1++)
   {
-    Real sqdist = closestPtSegmentLine(v[i0], v[i1], line.getPoint(), line.getPoint() + line.getDirection(), t, tmp_s, tmp_c2, tmp_c1);
+    Real sqdist = closestPtSegmentLine(v[i0], v[i1], line.getPoint(), line.getPoint() + line.getDirection(),
+                                       t, tmp_s, tmp_c2, tmp_c1);
     if (min_sqdist < 0 || sqdist < min_sqdist)
     {
       min_sqdist = sqdist;

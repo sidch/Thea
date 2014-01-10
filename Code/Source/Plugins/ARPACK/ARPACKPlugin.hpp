@@ -55,18 +55,20 @@ class ARPACKEigenSolverFactory;
 class THEA_ARPACK_DLL_LOCAL ARPACKPlugin : public Plugin
 {
   public:
-    /** Default constructor. */
-    ARPACKPlugin();
+    /** Constructor. */
+    ARPACKPlugin(FactoryRegistry * registry_);
 
     /** Destructor. */
     ~ARPACKPlugin();
 
+    char const * getName() const;
     void install();
     void startup();
     void shutdown();
     void uninstall();
 
   private:
+    FactoryRegistry * registry;
     ARPACKEigenSolverFactory * factory;
     bool started;
 

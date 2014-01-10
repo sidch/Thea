@@ -1,6 +1,7 @@
 // #define USE_GENERAL_MESH
 
 #include "../Common.hpp"
+#include "../Application.hpp"
 #include "../Colors.hpp"
 #include "../FilePath.hpp"
 #include "../Math.hpp"
@@ -56,18 +57,12 @@ GLfloat view_rotx = 20.0, view_roty = 30.0, view_rotz = 0.0;
 int
 main(int argc, char * argv[])
 {
-  // We're going to use plugins, so we need to call this at the beginning of the program
-  PluginManager::init();
-
   int status = 0;
   try
   {
     status = testDisplayMesh(argc, argv);
   }
   THEA_STANDARD_CATCH_BLOCKS(return cleanup(-1);, ERROR, "%s", "An error occurred")
-
-  // We need to call this at the end of the program
-  PluginManager::finish();
 
   // Check if tests passed
   if (status == 0) cout << "Test completed" << endl;
@@ -181,7 +176,7 @@ testDisplayMesh(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << gl_plugin_path << endl;
-  Plugin * gl_plugin = PluginManager::load(gl_plugin_path);
+  Plugin * gl_plugin = Application::getPluginManager().load(gl_plugin_path);
 
   // Create a GL context via a GLUT window
   glutInit(&argc, argv);
@@ -199,7 +194,7 @@ testDisplayMesh(int argc, char * argv[])
   gl_plugin->startup();
 
   // We should now have a GL rendersystem factory
-  RenderSystemFactory * factory = RenderSystemManager::getFactory("OpenGL");
+  RenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
 
   // Create a rendersystem
   render_system = factory->createRenderSystem("My OpenGL rendersystem");
@@ -228,7 +223,7 @@ testDisplayMesh(int argc, char * argv[])
 int
 cleanup(int status)
 {
-  PluginManager::finish();
+  Application::getPluginManager().unloadAllPlugins();
   return status;
 }
 
@@ -328,7 +323,11 @@ reshape(int width, int height)
 void
 normalKey(unsigned char key, int x, int y)
 {
-  if (key == 27 || key == 'q' || key == 'Q') exit(0);
+  if (key == 27 || key == 'q' || key == 'Q')
+  {
+    Application::getPluginManager().unloadAllPlugins();
+    exit(0);
+  }
 }
 
 void

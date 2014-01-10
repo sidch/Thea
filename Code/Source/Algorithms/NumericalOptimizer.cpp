@@ -44,8 +44,6 @@
 namespace Thea {
 namespace Algorithms {
 
-NumericalOptimizerManager::FactoryMap NumericalOptimizerManager::installed_factories;
-
 NumericalOptimizer::NumericalOptimizer()
 : constraint_ndims(-1)
 {
@@ -61,7 +59,7 @@ NumericalOptimizer::addConstraint(LinearConstraint::ConstPtr constraint)
     else
     {
       alwaysAssertM(constraint->numDimensions() == constraint_ndims,
-                    getName() + ": Constraint dimensions don't match existing constraints");
+                    std::string(getName()) + ": Constraint dimensions don't match existing constraints");
     }
 
     linear_constraints.push_back(constraint);
@@ -78,7 +76,7 @@ NumericalOptimizer::addConstraint(NonlinearConstraint::ConstPtr constraint)
     else
     {
       alwaysAssertM(constraint->numDimensions() == constraint_ndims,
-                    getName() + ": Constraint dimensions don't match existing constraints");
+                    std::string(getName()) + ": Constraint dimensions don't match existing constraints");
     }
 
     nonlinear_constraints.push_back(constraint);
@@ -91,16 +89,6 @@ NumericalOptimizer::clearConstraints()
   linear_constraints.clear();
   nonlinear_constraints.clear();
   constraint_ndims = -1;
-}
-
-void
-NumericalOptimizerManager::_init()
-{}
-
-void
-NumericalOptimizerManager::_finish()
-{
-  installed_factories.clear();
 }
 
 NumericalOptimizerFactory *

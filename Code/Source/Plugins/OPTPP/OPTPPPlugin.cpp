@@ -48,10 +48,9 @@ static Algorithms::OPTPPPlugin * plugin = NULL;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_OPTPP_API Plugin *
-dllStartPlugin()
+dllStartPlugin(FactoryRegistry * registry_)
 {
-  plugin = new Algorithms::OPTPPPlugin();
-  PluginManager::install(plugin);
+  plugin = new Algorithms::OPTPPPlugin(registry_);
   return plugin;
 }
 
@@ -59,22 +58,29 @@ dllStartPlugin()
 extern "C" THEA_OPTPP_API void
 dllStopPlugin()
 {
-  PluginManager::uninstall(plugin);
   delete plugin;
 }
 
 namespace Algorithms {
 
-static std::string const OPTPP_PLUGIN_NAME              =  "OPT++ NumericalOptimizer";
-static std::string const OPTPP_NUMERICALOPTIMIZER_NAME  =  "OPT++";
+static char const * OPTPP_PLUGIN_NAME              =  "OPT++ NumericalOptimizer";
+static char const * OPTPP_NUMERICALOPTIMIZER_NAME  =  "OPT++";
 
-OPTPPPlugin::OPTPPPlugin()
-: NamedObject(OPTPP_PLUGIN_NAME), factory(NULL), started(false)
-{}
+OPTPPPlugin::OPTPPPlugin(FactoryRegistry * registry_)
+: registry(registry_), factory(NULL), started(false)
+{
+  alwaysAssertM(registry, std::string(OPTPP_PLUGIN_NAME) + ": Factory registry must be non-null");
+}
 
 OPTPPPlugin::~OPTPPPlugin()
 {
   uninstall();
+}
+
+char const *
+OPTPPPlugin::getName() const
+{
+  return OPTPP_PLUGIN_NAME;
 }
 
 void
@@ -89,7 +95,7 @@ OPTPPPlugin::startup()
     if (!factory)
       factory = new OPTPPNumericalOptimizerFactory;
 
-    NumericalOptimizerManager::installFactory(OPTPP_NUMERICALOPTIMIZER_NAME, factory);
+    registry->addNumericalOptimizerFactory(OPTPP_NUMERICALOPTIMIZER_NAME, factory);
     started = true;
   }
 }
@@ -100,7 +106,8 @@ OPTPPPlugin::shutdown()
   if (started)
   {
     factory->destroyAllNumericalOptimizers();
-    NumericalOptimizerManager::uninstallFactory(OPTPP_NUMERICALOPTIMIZER_NAME);
+
+    registry->removeNumericalOptimizerFactory(OPTPP_NUMERICALOPTIMIZER_NAME);
     started = false;
   }
 }

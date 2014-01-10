@@ -88,8 +88,8 @@ RenderSystem__depthTestToGLenum(RenderSystem::DepthTest depth_test)
   throw Error("GLRenderSystem: Unknown depth test");
 }
 
-GLRenderSystem::GLRenderSystem(std::string const & name_)
-: NamedObject(name_), current_framebuffer(NULL), current_shader(NULL)
+GLRenderSystem::GLRenderSystem(char const * name_)
+: name(name_), current_framebuffer(NULL), current_shader(NULL)
 {
   GLCaps::init();
 
@@ -111,14 +111,15 @@ GLRenderSystem::GLRenderSystem(std::string const & name_)
   THEA_CHECK_GL_OK
 }
 
-std::string
+char const *
 GLRenderSystem::describeSystem() const
 {
-  return GLCaps::describeSystem();
+  desc = GLCaps::describeSystem();
+  return desc.c_str();
 }
 
 Framebuffer *
-GLRenderSystem::createFramebuffer(std::string const & name_)
+GLRenderSystem::createFramebuffer(char const * name_)
 {
   return new GLFramebuffer(name_);
 }
@@ -130,7 +131,7 @@ GLRenderSystem::destroyFramebuffer(Framebuffer * framebuffer)
 }
 
 Shader *
-GLRenderSystem::createShader(std::string const & name_)
+GLRenderSystem::createShader(char const * name_)
 {
   return new GLShader(name_);
 }
@@ -142,22 +143,21 @@ GLRenderSystem::destroyShader(Shader * shader)
 }
 
 Texture *
-GLRenderSystem::createTexture(std::string const & name_, int width, int height, int depth,
-                              Texture::Format const * desired_format, Texture::Dimension dimension,
-                              Texture::Options const & options)
+GLRenderSystem::createTexture(char const * name_, int width, int height, int depth, Texture::Format const * desired_format,
+                              Texture::Dimension dimension, Texture::Options const & options)
 {
   return new GLTexture(name_, width, height, depth, desired_format, dimension, options);
 }
 
 Texture *
-GLRenderSystem::createTexture(std::string const & name_, Image const & image, Texture::Format const * desired_format,
+GLRenderSystem::createTexture(char const * name_, Image const & image, Texture::Format const * desired_format,
                               Texture::Dimension dimension, Texture::Options const & options)
 {
   return new GLTexture(name_, image, desired_format, dimension, options);
 }
 
 Texture *
-GLRenderSystem::createTexture(std::string const & name_, Image::Ptr images[6], Texture::Format const * desired_format,
+GLRenderSystem::createTexture(char const * name_, Image::Ptr images[6], Texture::Format const * desired_format,
                               Texture::Options const & options)
 {
   return new GLTexture(name_, images, desired_format, options);
@@ -170,7 +170,7 @@ GLRenderSystem::destroyTexture(Texture * texture)
 }
 
 VARArea *
-GLRenderSystem::createVARArea(std::string const & name_, long num_bytes, VARArea::Usage usage, bool gpu_memory)
+GLRenderSystem::createVARArea(char const * name_, long num_bytes, VARArea::Usage usage, bool gpu_memory)
 {
   return new GLVARArea(name_, num_bytes, usage, gpu_memory);
 }
@@ -196,7 +196,7 @@ GLRenderSystem::setFramebuffer(Framebuffer * framebuffer)
   if (framebuffer)
   {
     GLFramebuffer * glfb = dynamic_cast<GLFramebuffer *>(framebuffer);
-    debugAssertM(glfb, getName() + ": Attempt to use a non-OpenGL framebuffer with a GL rendersystem");
+    debugAssertM(glfb, std::string(getName()) + ": Attempt to use a non-OpenGL framebuffer with a GL rendersystem");
 
     if (glfb != current_framebuffer)
     {
@@ -230,7 +230,7 @@ GLRenderSystem::getFramebuffer()
 void
 GLRenderSystem::popFramebuffer()
 {
-  alwaysAssertM(!framebuffer_stack.empty(), getName() + ": No framebuffer to pop");
+  alwaysAssertM(!framebuffer_stack.empty(), std::string(getName()) + ": No framebuffer to pop");
 
   Framebuffer * fb = framebuffer_stack.top();
   framebuffer_stack.pop();
@@ -250,12 +250,13 @@ GLRenderSystem::pushShader()
 void
 GLRenderSystem::setShader(Shader * shader)
 {
-  alwaysAssertM(THEA_GL_SUPPORTS(ARB_shader_objects), getName() + ": This OpenGL installation does not support shader objects");
+  alwaysAssertM(THEA_GL_SUPPORTS(ARB_shader_objects),
+                std::string(getName()) + ": This OpenGL installation does not support shader objects");
 
   if (shader)
   {
     GLShader * glshader = dynamic_cast<GLShader *>(shader);
-    debugAssertM(glshader, getName() + ": Attempt to use a non-OpenGL shader with a GL rendersystem");
+    debugAssertM(glshader, std::string(getName()) + ": Attempt to use a non-OpenGL shader with a GL rendersystem");
 
     if (glshader != current_shader)
     {
@@ -289,7 +290,7 @@ GLRenderSystem::getShader()
 void
 GLRenderSystem::popShader()
 {
-  debugAssertM(!shader_stack.empty(), getName() + ": push/popShader calls not matched");
+  debugAssertM(!shader_stack.empty(), std::string(getName()) + ": push/popShader calls not matched");
 
   popTextures();  // must be called before binding shader below
 
@@ -309,12 +310,12 @@ GLRenderSystem::setTexture(int texunit, Texture * texture)
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glActiveTextureARB(GL_TEXTURE0_ARB + texunit);
   else if (texunit != 0)
-    throw Error(getName() + ": Non-zero texture unit specified but multitexturing is not supported by OpenGL");
+    throw Error(std::string(getName()) + ": Non-zero texture unit specified but multitexturing is not supported by OpenGL");
 
   if (texture)
   {
     GLTexture * gltex = dynamic_cast<GLTexture *>(texture);
-    debugAssertM(gltex, getName() + ": Attempt to use a non-OpenGL texture with a GL rendersystem");
+    debugAssertM(gltex, std::string(getName()) + ": Attempt to use a non-OpenGL texture with a GL rendersystem");
 
     GLenum target = gltex->getGLTarget();
     GLuint id     = gltex->getGLID();
@@ -354,7 +355,7 @@ void
 GLRenderSystem::setVertexAreaFromVAR(GLVAR const & v)
 {
   alwaysAssertM(!current_buffer_state.vertex_area || (v.getArea() == current_buffer_state.vertex_area),
-      getName() + ": All vertex arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
+      std::string(getName()) + ": All vertex arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
 
   if (v.getArea() != current_buffer_state.vertex_area)
   {
@@ -368,7 +369,8 @@ void
 GLRenderSystem::setIndexAreaFromVAR(GLVAR const & v)
 {
   alwaysAssertM(!current_buffer_state.index_area || (v.getArea() == current_buffer_state.index_area),
-      getName() + ": All index arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
+                std::string(getName())
+              + ": All index arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
 
   if (v.getArea() != current_buffer_state.index_area)
   {
@@ -419,7 +421,7 @@ GLRenderSystem::setTexCoordArray(int texunit, VAR const * texcoords)
   {
     assert(texcoords->isValid());
     debugAssertM(THEA_GL_SUPPORTS(ARB_multitexture) || (texunit == 0),
-                 getName() + ": Graphics card does not support multitexture");
+                 std::string(getName()) + ": Graphics card does not support multitexture");
 
     GLVAR const & g = dynamic_cast<GLVAR const &>(*texcoords);
 
@@ -481,7 +483,7 @@ GLRenderSystem::setIndexArray(VAR const * indices)
 void
 GLRenderSystem::endIndexedPrimitives()
 {
-  debugAssertM(!buffer_stack.empty(), getName() + ": begin/endIndexedPrimitives calls not matched");
+  debugAssertM(!buffer_stack.empty(), std::string(getName()) + ": begin/endIndexedPrimitives calls not matched");
 
   glPopClientAttrib();
 
@@ -500,7 +502,7 @@ GLRenderSystem::getMatrixMode() const
     case GL_PROJECTION:  return MatrixMode::PROJECTION;
     case GL_TEXTURE:     return MatrixMode::TEXTURE;
     case GL_COLOR:       return MatrixMode::COLOR;
-    default:             throw Error(getName() + "Unknown matrix mode");
+    default:             throw Error(std::string(getName()) + "Unknown matrix mode");
   }
 }
 
@@ -513,7 +515,7 @@ GLRenderSystem::setMatrixMode(MatrixMode mode)
     case MatrixMode::PROJECTION:  glMatrixMode(GL_PROJECTION); break;
     case MatrixMode::TEXTURE:     glMatrixMode(GL_TEXTURE); break;
     case MatrixMode::COLOR:       glMatrixMode(GL_COLOR); break;
-    default:                      throw Error(getName() + "Unsupported matrix mode");
+    default:                      throw Error(std::string(getName()) + "Unsupported matrix mode");
   }
 }
 
@@ -592,7 +594,7 @@ GLRenderSystem::sendSequentialIndices(Primitive primitive, int first_index, int 
 void
 GLRenderSystem::sendIndicesFromArray(Primitive primitive, long offset, long num_indices)
 {
-  alwaysAssertM(current_buffer_state.index_var.isValid(), getName() + ": No valid index array set");
+  alwaysAssertM(current_buffer_state.index_var.isValid(), std::string(getName()) + ": No valid index array set");
 
   uint8 * ptr = static_cast<uint8 *>(current_buffer_state.index_var.getBasePointer());
   int elem_size = current_buffer_state.index_var.getElementSize();
@@ -688,7 +690,7 @@ GLRenderSystem::sendTexCoord(int texunit, float texcoord)
     glMultiTexCoord1fARB(GL_TEXTURE0_ARB + texunit, texcoord);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord1f(texcoord);
   }
 }
@@ -700,7 +702,7 @@ GLRenderSystem::sendTexCoord(int texunit, double texcoord)
     glMultiTexCoord1dARB(GL_TEXTURE0_ARB + texunit, texcoord);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord1d(texcoord);
   }
 }
@@ -712,7 +714,7 @@ GLRenderSystem::sendTexCoord(int texunit, Vector2 const & texcoord)
     glMultiTexCoord2fARB(GL_TEXTURE0_ARB + texunit, (float)texcoord.x(), (float)texcoord.y());
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord2f((float)texcoord.x(), (float)texcoord.y());
   }
 }
@@ -724,7 +726,7 @@ GLRenderSystem::sendTexCoord(int texunit, float x, float y)
     glMultiTexCoord2fARB(GL_TEXTURE0_ARB + texunit, x, y);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord2f(x, y);
   }
 }
@@ -736,7 +738,7 @@ GLRenderSystem::sendTexCoord(int texunit, double x, double y)
     glMultiTexCoord2dARB(GL_TEXTURE0_ARB + texunit, x, y);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord2d(x, y);
   }
 }
@@ -748,7 +750,7 @@ GLRenderSystem::sendTexCoord(int texunit, Vector3 const & texcoord)
     glMultiTexCoord3fARB(GL_TEXTURE0_ARB + texunit, (float)texcoord.x(), (float)texcoord.y(), (float)texcoord.z());
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord3f((float)texcoord.x(), (float)texcoord.y(), (float)texcoord.z());
   }
 }
@@ -760,7 +762,7 @@ GLRenderSystem::sendTexCoord(int texunit, float x, float y, float z)
     glMultiTexCoord3fARB(GL_TEXTURE0_ARB + texunit, x, y, z);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord3f(x, y, z);
   }
 }
@@ -772,7 +774,7 @@ GLRenderSystem::sendTexCoord(int texunit, double x, double y, double z)
     glMultiTexCoord3dARB(GL_TEXTURE0_ARB + texunit, x, y, z);
   else
   {
-    debugAssertM(texunit == 0, getName() + ": Multitexturing not supported, texture unit must be zero");
+    debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
     glTexCoord3d(x, y, z);
   }
 }
@@ -981,7 +983,7 @@ GLRenderSystemFactory::~GLRenderSystemFactory()
 }
 
 RenderSystem *
-GLRenderSystemFactory::createRenderSystem(std::string const & name)
+GLRenderSystemFactory::createRenderSystem(char const * name)
 {
   if (singleton)
     throw Error("Only one OpenGL rendersystem can be created per process");

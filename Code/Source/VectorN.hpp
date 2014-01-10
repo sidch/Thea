@@ -44,8 +44,9 @@
 
 #include "Common.hpp"
 #include "Math.hpp"
-#include <boost/array.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <algorithm>
+#include <iterator>
 #include <limits>
 #include <sstream>
 
@@ -70,24 +71,21 @@ template <typename S, typename T> struct ScalarCheck
 
 /**
  * <b>[Internal]</b> Base class for fixed-size N-dimensional vectors, where N is any <b>positive</b> (non-zero) integer and T is
- * a field. Implemented as a wrapper for <code>boost::array</code>, with the same interface plus arithmetic operators.
+ * a field.
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
 template <long N, typename T>
-class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
+class /* THEA_DLL_LOCAL */ VectorNBase
 {
-  private:
-    typedef typename boost::array<T, N> BaseT;
-
   public:
-    typedef VectorN<N, T>                           VectorT;     ///< N-dimensional vector type.
-    typedef T                                       Value;       ///< Type of values stored in the vector.
-    typedef T                                       value_type;  ///< Type of values stored in the vector (STL convention).
-    typedef typename BaseT::iterator                Iterator;              ///< Forward iterator through elements.
-    typedef typename BaseT::const_iterator          ConstIterator;         ///< Forward const iterator through elements.
-    typedef typename BaseT::reverse_iterator        ReverseIterator;       ///< Reverse iterator through elements.
-    typedef typename BaseT::const_reverse_iterator  ConstReverseIterator;  ///< Reverse const iterator through elements.
+    typedef VectorN<N, T>                     VectorT;               ///< N-dimensional vector type.
+    typedef T                                 Value;                 ///< Type of values stored in the vector.
+    typedef T                                 value_type;            ///< Type of values stored in the vector (STL convention).
+    typedef T *                               Iterator;              ///< Forward iterator through elements.
+    typedef T const *                         ConstIterator;         ///< Forward const iterator through elements.
+    typedef std::reverse_iterator<T *>        ReverseIterator;       ///< Reverse iterator through elements.
+    typedef std::reverse_iterator<T const *>  ConstReverseIterator;  ///< Reverse const iterator through elements.
 
     THEA_DEF_POINTER_TYPES(VectorT, shared_ptr, weak_ptr)
 
@@ -95,16 +93,57 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     VectorNBase() {}
 
     /** Initialize all components to a single value. */
-    explicit VectorNBase(T const & fill_value) { BaseT::assign(fill_value); }
+    explicit VectorNBase(T const & fill_value) { fill(fill_value); }
 
     /** Copy constructor. */
-    template <typename U> VectorNBase(VectorNBase<N, U> const & src) { BaseT::operator=(src); }
+    template <typename U> VectorNBase(VectorNBase<N, U> const & src)
+    {
+      for (long i = 0; i < N; ++i)
+        values[i] = static_cast<T>(src[i]);
+    }
+
+    /** Set all elements of the vector to the same value. */
+    void fill(T const & fill_value)
+    {
+      for (long i = 0; i < N; ++i)
+        values[i] = fill_value;
+    }
+
+    /** Get an iterator pointing to the beginning of the vector. */
+    Iterator begin() { return &values[0]; }
+
+    /** Get a const iterator pointing to the beginning of the vector. */
+    ConstIterator begin() const { return &values[0]; }
+
+    /** Get an iterator pointing to the end of the vector. */
+    Iterator end() { return &values[0] + N; }
+
+    /** Get a const iterator pointing to the end of the vector. */
+    ConstIterator end() const { return &values[0] + N; }
+
+    /** Get a reverse iterator pointing to the beginning of the reversed vector. */
+    ReverseIterator rbegin() { return ReverseIterator(end()); }
+
+    /** Get a const iterator pointing to the beginning of the vector. */
+    ConstReverseIterator rbegin() const { return ConstReverseIterator(end()); }
+
+    /** Get an iterator pointing to the end of the vector. */
+    ReverseIterator rend() { return ReverseIterator(begin()); }
+
+    /** Get a const iterator pointing to the end of the vector. */
+    ConstReverseIterator rend() const { return ConstReverseIterator(begin()); }
+
+    /** Access an element of the vector immutably. */
+    template <typename IndexT> T const & operator[](IndexT i) const { return values[i]; }
+
+    /** Access an element of the vector mutably. */
+    template <typename IndexT> T & operator[](IndexT i) { return values[i]; }
 
     /** Equality test. */
     bool operator==(VectorT const & rhs) const
     {
       for (long i = 0; i < N; ++i)
-        if ((*this)[i] != rhs[i])
+        if (values[i] != rhs[i])
           return false;
 
       return true;
@@ -116,12 +155,36 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       return !operator==(rhs);
     }
 
+    /** Less-than operator (lexicographical comparison in order of increasing index). */
+    bool operator<(VectorT const & rhs) const
+    {
+      return std::lexicographical_compare(begin(), end(), rhs.begin(), rhs.end());
+    }
+
+    /** Greater-than operator (lexicographical comparison in order of increasing index). */
+    bool operator>(VectorT const & rhs) const
+    {
+      return std::lexicographical_compare(rhs.begin(), rhs.end(), begin(), end());
+    }
+
+    /** Less-than-or-equal-to operator (lexicographical comparison in order of increasing index). */
+    bool operator<=(VectorT const & rhs) const
+    {
+      return !(*this > rhs);
+    }
+
+    /** Greater-than-or-equal-to operator (lexicographical comparison in order of increasing index). */
+    bool operator>=(VectorT const & rhs) const
+    {
+      return !(rhs > *this);
+    }
+
     /** Negation. */
     VectorT operator-() const
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = -(*this)[i];
+        result[i] = -values[i];
 
       return result;
     }
@@ -131,7 +194,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = (*this)[i] + rhs[i];
+        result[i] = values[i] + rhs[i];
 
       return result;
     }
@@ -141,7 +204,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = (*this)[i] - rhs[i];
+        result[i] = values[i] - rhs[i];
 
       return result;
     }
@@ -151,7 +214,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = (*this)[i] * rhs[i];
+        result[i] = values[i] * rhs[i];
 
       return result;
     }
@@ -161,7 +224,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = static_cast<T>((*this)[i] * s);
+        result[i] = static_cast<T>(values[i] * s);
 
       return result;
     }
@@ -171,7 +234,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = (*this)[i] / rhs[i];
+        result[i] = values[i] / rhs[i];
 
       return result;
     }
@@ -181,7 +244,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = static_cast<T>((*this)[i] / s);
+        result[i] = static_cast<T>(values[i] / s);
 
       return result;
     }
@@ -190,7 +253,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     VectorT & operator+=(VectorT const & rhs)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] += rhs[i];
+        values[i] += rhs[i];
 
       return *static_cast<VectorT *>(this);
     }
@@ -199,7 +262,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     VectorT & operator-=(VectorT const & rhs)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] -= rhs[i];
+        values[i] -= rhs[i];
 
       return *static_cast<VectorT *>(this);
     }
@@ -208,7 +271,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     VectorT & operator*=(VectorT const & rhs)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] *= rhs[i];
+        values[i] *= rhs[i];
 
       return *static_cast<VectorT *>(this);
     }
@@ -217,7 +280,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type & operator*=(S const & s)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] = static_cast<T>((*this)[i] * s);
+        values[i] = static_cast<T>(values[i] * s);
 
       return *static_cast<VectorT *>(this);
     }
@@ -226,7 +289,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     VectorT & operator/=(VectorT const & rhs)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] /= rhs[i];
+        values[i] /= rhs[i];
 
       return *static_cast<VectorT *>(this);
     }
@@ -235,7 +298,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type & operator/=(S const & s)
     {
       for (long i = 0; i < N; ++i)
-        (*this)[i] = static_cast<T>((*this)[i] / s);
+        values[i] = static_cast<T>(values[i] / s);
 
       return *static_cast<VectorT *>(this);
     }
@@ -243,9 +306,9 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     /** Dot product. */
     T dot(VectorT const & rhs) const
     {
-      T result = (*this)[0] * rhs[0];  // safe if class precondition N > 0 is met
+      T result = values[0] * rhs[0];  // safe if class precondition N > 0 is met
       for (long i = 1; i < N; ++i)
-        result += ((*this)[i] * rhs[i]);
+        result += (values[i] * rhs[i]);
 
       return result;
     }
@@ -254,27 +317,27 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
      * Get the minimum component in the vector (according to signed comparison). To compare absolute values, use minAbs()
      * instead.
      */
-    T const & min() const { return (*this)[minAxis()]; }
+    T const & min() const { return values[minAxis()]; }
 
     /**
      * Get the (signed) component with the minimum absolute value.
      *
      * @see min()
      */
-    T const & minAbs() const { return (*this)[minAbsAxis()]; }
+    T const & minAbs() const { return values[minAbsAxis()]; }
 
     /**
      * Get the maximum component in the vector (according to signed comparison). To compare absolute values, use maxAbs()
      * instead.
      */
-    T const & max() const { return (*this)[maxAxis()]; }
+    T const & max() const { return values[maxAxis()]; }
 
     /**
      * Get the (signed) component with the maximum absolute value.
      *
      * @see max()
      */
-    T const & maxAbs() const { return (*this)[maxAbsAxis()]; }
+    T const & maxAbs() const { return values[maxAbsAxis()]; }
 
     /**
      * Get the index of the axis of the vector with the minimum coordinate (according to signed comparison). To compare absolute
@@ -285,7 +348,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       long min_axis = 0;
       for (long i = 1; i < N; ++i)
       {
-        if ((*this)[i] < (*this)[min_axis])
+        if (values[i] < values[min_axis])
           min_axis = i;
       }
 
@@ -301,10 +364,10 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     long minAbsAxis() const
     {
       long min_axis = 0;
-      T abs_pc = std::abs((*this)[0]);
+      T abs_pc = std::abs(values[0]);
       for (long i = 1; i < N; ++i)
       {
-        T abs_i = std::abs((*this)[i]);
+        T abs_i = std::abs(values[i]);
         if (abs_i < abs_pc)
         {
           min_axis = i;
@@ -324,7 +387,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
       long max_axis = 0;
       for (long i = 1; i < N; ++i)
       {
-        if ((*this)[i] > (*this)[max_axis])
+        if (values[i] > values[max_axis])
           max_axis = i;
       }
 
@@ -340,10 +403,10 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     long maxAbsAxis() const
     {
       long max_axis = 0;
-      T abs_pc = std::abs((*this)[0]);
+      T abs_pc = std::abs(values[0]);
       for (long i = 1; i < N; ++i)
       {
-        T abs_i = std::abs((*this)[i]);
+        T abs_i = std::abs(values[i]);
         if (abs_i > abs_pc)
         {
           max_axis = i;
@@ -359,7 +422,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = std::min((*this)[i], other[i]);
+        result[i] = std::min(values[i], other[i]);
 
       return result;
     }
@@ -369,7 +432,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
-        result[i] = std::max((*this)[i], other[i]);
+        result[i] = std::max(values[i], other[i]);
 
       return result;
     }
@@ -415,10 +478,10 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << '(' << (*this)[0];
+      oss << '(' << values[0];
 
       for (long i = 1; i < N; ++i)
-        oss << ", " << (*this)[i];
+        oss << ", " << values[i];
 
       oss << ')';
       return oss.str();
@@ -426,6 +489,9 @@ class /* THEA_DLL_LOCAL */ VectorNBase : public boost::array<T, N>
 
     /** Get a vector containing only zeroes. */
     static VectorT const & zero() { static VectorT const z(0); return z; }
+
+  private:
+    T values[N];  ///< Vector values.
 
 }; // class VectorNBase
 

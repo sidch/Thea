@@ -95,9 +95,6 @@ THE SOFTWARE.
 
 namespace Thea {
 
-// Static variables
-DynLibManager::DynLibMap DynLibManager::libs;
-
 static std::string
 DynLib_addExtension(std::string const & name)
 {
@@ -156,7 +153,7 @@ DynLib::unload()
   THEA_LOG << "Unloading library '" << getName() << '\'';
 
   if (THEA_DYNLIB_UNLOAD(h_inst))
-    throw Error("Could not unload dynamic library '" + getName() + "' (" + dynlibError() + ')');
+    throw Error("Could not unload dynamic library '" + std::string(getName()) + "' (" + dynlibError() + ')');
 
   h_inst = NULL;
   ref_count = 0;
@@ -214,19 +211,9 @@ DynLib::dynlibError() const
 #endif
 }
 
-void
-DynLibManager::init()
-{}
-
-void
-DynLibManager::finish()
+DynLibManager::~DynLibManager()
 {
-  // Unload & delete resources in turn
-  for (DynLibMap::iterator li = libs.begin(); li != libs.end(); ++li)
-    delete li->second;
-
-  // Empty the list
-  libs.clear();
+  unloadAll();
 }
 
 DynLib *
@@ -260,12 +247,22 @@ DynLibManager::unload(DynLib * lib)
     if (loaded != libs.end())
     {
       alwaysAssertM(loaded->second == lib,
-                    "DynLibManager: A different library was loaded with the same name (" + lib->getName() + ')');
+                    "DynLibManager: A different library was loaded with the same name (" + std::string(lib->getName()) + ')');
       libs.erase(loaded);
     }
 
     delete lib;
   }
+}
+
+void
+DynLibManager::unloadAll()
+{
+  // Get rid of all libraries
+  for (DynLibMap::iterator li = libs.begin(); li != libs.end(); ++li)
+    delete li->second;
+
+  libs.clear();
 }
 
 } // namespace Thea

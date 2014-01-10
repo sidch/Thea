@@ -136,11 +136,8 @@ class THEA_API DynLib : public virtual NamedObject
 class THEA_API DynLibManager
 {
   public:
-    /** Initialization routine. */
-    static void init();
-
-    /** Termination routine. */
-    static void finish();
+    /** Destructor. */
+    ~DynLibManager();
 
     /**
      * Loads a library, if it has not been loaded yet. If it has already been loaded, this function increments its reference
@@ -152,7 +149,7 @@ class THEA_API DynLibManager
      *
      * @see unload()
      */
-    static DynLib * load(std::string const & path);
+    DynLib * load(std::string const & path);
 
     /**
      * Unloads a library. This function decrements the reference count of the library. The library will be actually unlinked
@@ -162,12 +159,15 @@ class THEA_API DynLibManager
      *
      * @see load()
      */
-    static void unload(DynLib * lib);
+    void unload(DynLib * lib);
+
+    /** Unload all currently loaded libraries. */
+    void unloadAll();
 
   private:
     typedef TheaMap<std::string, DynLib *> DynLibMap;  ///< Maps paths to the corresponding library objects.
 
-    static DynLibMap libs;  ///< Set of loaded libraries.
+    DynLibMap libs;  ///< Set of loaded libraries.
 
 }; // class DynLibManager
 

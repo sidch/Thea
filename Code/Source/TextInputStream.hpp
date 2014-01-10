@@ -623,15 +623,6 @@ class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
     TextInputStream(FS fs, std::string const & str, Settings const & settings = Settings::defaults());
 
     /**
-     * Get the name of the file from which this input is drawn, or the first few characters of the string if created from a
-     * string.
-     */
-    std::string const & getName() const
-    {
-      return NamedObject::getName();
-    }
-
-    /**
      * Get the path to the file from which this input is drawn, or the first few characters of the string if created from a
      * string.
      */

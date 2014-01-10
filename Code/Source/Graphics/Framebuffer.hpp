@@ -50,7 +50,7 @@ namespace Thea {
 namespace Graphics {
 
 /** An interface for a framebuffer. */
-class THEA_API Framebuffer : public virtual NamedObject
+class THEA_API Framebuffer : public AbstractNamedObject
 {
   public:
     /** Attachment points (enum class). These are guaranteed to be consecutive integers starting from 0. */

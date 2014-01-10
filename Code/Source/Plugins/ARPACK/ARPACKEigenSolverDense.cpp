@@ -58,7 +58,7 @@ ARPACKEigenSolver::solveDense(int nev, bool shift_invert, double sigma, char * w
   }
 
   // Create the matrix
-  alwaysAssertM(MatrixUtil::isSquare(dcm), getName() + ": Operator matrix is not square");
+  alwaysAssertM(MatrixUtil::isSquare(dcm), std::string(getName()) + ": Operator matrix is not square");
   ARdsNonSymMatrix<double, double> arm(dcm.numRows(), const_cast<double *>(&dcm.data()[0]));
 
   // Setup the problem

@@ -44,18 +44,6 @@
 namespace Thea {
 namespace Algorithms {
 
-EigenSolverManager::FactoryMap EigenSolverManager::installed_factories;
-
-void
-EigenSolverManager::_init()
-{}
-
-void
-EigenSolverManager::_finish()
-{
-  installed_factories.clear();
-}
-
 EigenSolverFactory *
 EigenSolverManager::getFactory(std::string const & type)
 {
