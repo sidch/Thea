@@ -59,11 +59,11 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
               Dimension dimension, Options const & options);
 
     /** Constructs a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. */
-    GLTexture(char const * name_, Image const & image, Format const * desired_format, Dimension dimension,
+    GLTexture(char const * name_, AbstractImage const & image, Format const * desired_format, Dimension dimension,
               Options const & options);
 
     /** Constructs a cube-map from six pixel buffers, representing 2D images of identical format and size. */
-    GLTexture(char const * name_, Image const * images[6], Format const * desired_format, Options const & options);
+    GLTexture(char const * name_, AbstractImage const * images[6], Format const * desired_format, Options const & options);
 
     /** Destructor. */
     ~GLTexture();
@@ -76,12 +76,12 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     Format const * getFormat() const { return format; }
     Dimension getDimension() const { return dimension; }
 
-    void updateImage(Image const & image, Face face = Face::POS_X);
-    void updateSubImage(Image const & image, int src_x, int src_y, int src_width, int src_height, int dst_x, int dst_y,
+    void updateImage(AbstractImage const & image, Face face = Face::POS_X);
+    void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height, int dst_x, int dst_y,
                         int dst_z = 0, Face face = Face::POS_X);
 
-    void getImage(Image & image, Face face = Face::POS_X) const;
-    void getSubImage(Image & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
+    void getImage(AbstractImage & image, Face face = Face::POS_X) const;
+    void getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
                      Face face = Face::POS_X) const;
 
     /** Get the OpenGL target to which this texture is bound (e.g. GL_TEXTURE_2D). */
@@ -107,7 +107,7 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     void glTexImage(void const * bytes, Format const * bytes_format, Face face);
 
     /** Updates the texture image and optionally sets user-specified options while doing so. */
-    void _updateImage(Image const & image, Face face, Options const * options);
+    void _updateImage(AbstractImage const & image, Face face, Options const * options);
 
     std::string name;
     int width;

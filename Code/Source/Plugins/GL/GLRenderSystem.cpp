@@ -150,14 +150,14 @@ GLRenderSystem::createTexture(char const * name_, int width, int height, int dep
 }
 
 Texture *
-GLRenderSystem::createTexture(char const * name_, Image const & image, Texture::Format const * desired_format,
+GLRenderSystem::createTexture(char const * name_, AbstractImage const & image, Texture::Format const * desired_format,
                               Texture::Dimension dimension, Texture::Options const & options)
 {
   return new GLTexture(name_, image, desired_format, dimension, options);
 }
 
 Texture *
-GLRenderSystem::createTexture(char const * name_, Image const * images[6], Texture::Format const * desired_format,
+GLRenderSystem::createTexture(char const * name_, AbstractImage const * images[6], Texture::Format const * desired_format,
                               Texture::Options const & options)
 {
   return new GLTexture(name_, images, desired_format, options);

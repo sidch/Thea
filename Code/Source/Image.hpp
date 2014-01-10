@@ -51,12 +51,10 @@ class fipImage;
 
 namespace Thea {
 
-/** 2D images. */
-class THEA_API Image : public Serializable
+/** Abstract base class for images, useful for passes images across shared library boundaries. */
+class THEA_API AbstractImage
 {
   public:
-    THEA_DEF_POINTER_TYPES(Image, shared_ptr, weak_ptr)
-
     /**
      * Indices for the color channels in a single pixel. E.g. for a 24-bit RGB bitmap (8 bits per channel), the individual
      * components for the pixel at address <code>unsigned char * p</code> may be accessed as <code>p[Channel::RED]</code>,
@@ -134,6 +132,63 @@ class THEA_API Image : public Serializable
 
     }; // struct Type
 
+    /** Destructor. */
+    virtual ~AbstractImage() {}
+
+    /**
+     * Check if the image has been allocated non-zero memory space (hence has valid type and dimensions) or not. An image
+     * created by the default constructor is invalid and must be further initialized using deserialize() or a similar function.
+     */
+    virtual bool isValid() const = 0;
+
+    /**
+     * Destroy all image data, resetting the image to an invalid state.
+     *
+     * @see isValid()
+     */
+    virtual void clear() = 0;
+
+    /** Resize the image, changing its type and dimensions. All previous image data is discarded. */
+    virtual void resize(Type type, int width, int height) = 0;
+
+    /** Get the width of the image in pixels. */
+    virtual int getWidth() const = 0;
+
+    /** Get the height of the image in pixels. */
+    virtual int getHeight() const = 0;
+
+    /** Get the type of the image pixels. */
+    virtual Type getType() const = 0;
+
+    /** Get a pointer to the image data. */
+    virtual void const * getData() const = 0;
+
+    /** Get a pointer to the image data. */
+    virtual void * getData() = 0;
+
+    /** Get a pointer to the beginning of a specified row of pixels. */
+    virtual void const * getScanLine(int row) const = 0;
+
+    /** Get a pointer to the beginning of a specified row of pixels. */
+    virtual void * getScanLine(int row) = 0;
+
+    /**
+     * Get the number of bytes consumed by a row of pixels. Rows may be aligned to 32-bit (or other) boundaries for performance
+     * reasons, so this is <b>not</b> necessarily equal to the number of pixels in a row times the size of a pixel.
+     */
+    virtual int getScanWidth() const = 0;
+
+    /** Get the byte alignment of a pixel row. */
+    virtual int getRowAlignment() const = 0;
+
+}; // class AbstractImage
+
+/** 2D images. */
+class THEA_API Image : public AbstractImage, public Serializable
+{
+  public:
+    THEA_DEF_POINTER_TYPES(Image, shared_ptr, weak_ptr)
+
     /** Construct an empty image with no initial data. */
     Image();
 
@@ -163,29 +218,11 @@ class THEA_API Image : public Serializable
     /* Assignment operator. */
     Image & operator=(Image const & src);
 
-    /**
-     * Check if the image has been allocated non-zero memory space (hence has valid type and dimensions) or not. An image
-     * created by the default constructor is invalid and must be further initialized using deserialize() or a similar function.
-     */
     bool isValid() const;
-
-    /**
-     * Destroy all image data, resetting the image to an invalid state.
-     *
-     * @see isValid
-     */
     void clear();
-
-    /** Resize the image, changing its type and dimensions. All previous image data is discarded. */
     void resize(Type type, int width, int height);
-
-    /** Get the width of the image in pixels. */
     int getWidth() const;
-
-    /** Get the height of the image in pixels. */
     int getHeight() const;
-
-    /** Get the type of the image pixels. */
     Type getType() const { return type; }
 
     /**
@@ -245,25 +282,11 @@ class THEA_API Image : public Serializable
      */
     bool hasByteAlignedChannels() const { return has_byte_aligned_channels; }
 
-    /** Get a pointer to the image data. */
     void const * getData() const;
-
-    /** Get a pointer to the image data. */
     void * getData();
-
-    /** Get a pointer to the beginning of a specified row of pixels. */
     void const * getScanLine(int row) const;
-
-    /** Get a pointer to the beginning of a specified row of pixels. */
     void * getScanLine(int row);
-
-    /**
-     * Get the number of bytes consumed by a row of pixels. Rows may be aligned to 32-bit (or other) boundaries for performance
-     * reasons, so this is <b>not</b> necessarily equal to the number of pixels in a row times the size of a pixel.
-     */
     int getScanWidth() const;
-
-    /** Get the byte alignment of a pixel row. */
     int getRowAlignment() const;
 
     /**
