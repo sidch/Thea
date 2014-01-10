@@ -542,7 +542,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setVertex(long vertex_index, Vector3 const & position)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)vertices.size(),
-                    std::string(getName()) + ": Vertex index out of bounds");
+                    getNameStr() + ": Vertex index out of bounds");
 
       vertices[(array_size_t)vertex_index] = position;
       invalidateBounds();
@@ -553,7 +553,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setNormal(long vertex_index, Vector3 const & normal)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)normals.size(),
-                    std::string(getName()) + ": Vertex index out of bounds, or vertex does not have associated normal field");
+                    getNameStr() + ": Vertex index out of bounds, or vertex does not have associated normal field");
 
       normals[(array_size_t)vertex_index] = normal;
       invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
@@ -563,7 +563,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setColor(long vertex_index, ColorRGBA const & color)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)colors.size(),
-                    std::string(getName()) + ": Vertex index out of bounds, or vertex does not have associated color field");
+                    getNameStr() + ": Vertex index out of bounds, or vertex does not have associated color field");
 
       colors[(array_size_t)vertex_index] = color;
       invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
@@ -573,7 +573,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void setTexCoord(long vertex_index, Vector2 const & texcoord)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)texcoords.size(),
-                    std::string(getName())
+                    getNameStr()
                   + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
 
       texcoords[(array_size_t)vertex_index] = texcoord;

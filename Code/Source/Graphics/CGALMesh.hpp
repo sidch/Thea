@@ -183,7 +183,7 @@ class CGALMesh : public CGAL::Polyhedron_3< _CGALMeshPolyhedronTraits_3<PointT>,
       Builder & b = *bp;  // avoid repeated dereferencing of shared pointer
 
       b.begin_surface(0, 0, 0, Builder::ABSOLUTE_INDEXING);
-      if (b.error()) throw Error(std::string(getName()) + ": Builder error at start of construction from facets");
+      if (b.error()) throw Error(getNameStr() + ": Builder error at start of construction from facets");
 
         // Track the indices of copied vertices
         typedef TheaUnorderedMap<typename BaseT::Vertex const *, size_t> VertexIndexMap;
@@ -207,7 +207,7 @@ class CGALMesh : public CGAL::Polyhedron_3< _CGALMeshPolyhedronTraits_3<PointT>,
             if (existing_index == vertex_indices.end())
             {
               typename BaseT::Vertex_handle new_vertex = b.add_vertex(vp->point());
-              if (b.error()) throw Error(std::string(getName()) + ": Builder error adding vertex");
+              if (b.error()) throw Error(getNameStr() + ": Builder error adding vertex");
 
               // Copy vertex attribute
               new_vertex->setAttr(vp->attr());
@@ -222,14 +222,13 @@ class CGALMesh : public CGAL::Polyhedron_3< _CGALMeshPolyhedronTraits_3<PointT>,
           } while (++hc != (*fi)->facet_begin());
 
           typename BaseT::Halfedge_handle new_facet = b.add_facet(indices.begin(), indices.begin() + num_vertices);
-          if (b.error()) throw Error(std::string(getName()) + ": Builder error adding facet");
+          if (b.error()) throw Error(getNameStr() + ": Builder error adding facet");
 
           // Copy facet attribute
           new_facet->facet()->setAttr((*fi)->attr());
 
           // Map source halfedges to their images, for batched attribute copy at the end
-          debugAssertM(hc == (*fi)->facet_begin(),
-                       std::string(getName()) + ": Circulator has not looped back to beginning of facet");
+          debugAssertM(hc == (*fi)->facet_begin(), getNameStr() + ": Circulator has not looped back to beginning of facet");
 
           typename BaseT::Halfedge_around_facet_circulator new_hc = new_facet->facet_begin();
           do
@@ -247,7 +246,7 @@ class CGALMesh : public CGAL::Polyhedron_3< _CGALMeshPolyhedronTraits_3<PointT>,
           hi->second->setAttr(hi->first->attr());
 
       b.end_surface();
-      if (b.error()) throw Error(std::string(getName()) + ": Builder error constructing component");
+      if (b.error()) throw Error(getNameStr() + ": Builder error constructing component");
 
       updateBounds();
     }

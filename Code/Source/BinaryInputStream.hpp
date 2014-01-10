@@ -133,8 +133,8 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     /** Verifies that at least this number of bytes can be read.*/
     void prepareToRead(int64 nbytes)
     {
-      debugAssertM(m_length > 0, std::string(getName()) + ": Stream not found, empty or corrupt.");
-      debugAssertM(m_pos + nbytes + m_alreadyRead <= m_length, std::string(getName()) + ": Read past end of stream");
+      debugAssertM(m_length > 0, getNameStr() + ": Stream not found, empty or corrupt.");
+      debugAssertM(m_pos + nbytes + m_alreadyRead <= m_length, getNameStr() + ": Read past end of stream");
 
       if (m_pos + nbytes > m_bufferLength)
         loadIntoMemory(m_pos + m_alreadyRead, nbytes);

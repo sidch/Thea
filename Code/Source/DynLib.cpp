@@ -153,7 +153,7 @@ DynLib::unload()
   THEA_LOG << "Unloading library '" << getName() << '\'';
 
   if (THEA_DYNLIB_UNLOAD(h_inst))
-    throw Error("Could not unload dynamic library '" + std::string(getName()) + "' (" + dynlibError() + ')');
+    throw Error("Could not unload dynamic library '" + getNameStr() + "' (" + dynlibError() + ')');
 
   h_inst = NULL;
   ref_count = 0;

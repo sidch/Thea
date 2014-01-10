@@ -104,7 +104,7 @@ DisplayMesh::clear()
 DisplayMesh::Vertex
 DisplayMesh::getVertex(long i)
 {
-  debugAssertM(i >= 0 && i < (long)vertices.size(), std::string(getName()) + ": Vertex index out of bounds");
+  debugAssertM(i >= 0 && i < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
   array_size_t si = (array_size_t)i;
   return Vertex(this, vertices[si],
@@ -116,7 +116,7 @@ DisplayMesh::getVertex(long i)
 DisplayMesh::IndexTriple
 DisplayMesh::getTriangle(long tri_index) const
 {
-  debugAssertM(tri_index >= 0 && 3 * tri_index < (long)tris.size(), std::string(getName()) + ": Triangle index out of bounds");
+  debugAssertM(tri_index >= 0 && 3 * tri_index < (long)tris.size(), getNameStr() + ": Triangle index out of bounds");
 
   array_size_t base_index = (array_size_t)(3 * tri_index);
   IndexTriple tri;
@@ -130,7 +130,7 @@ DisplayMesh::getTriangle(long tri_index) const
 DisplayMesh::IndexQuad
 DisplayMesh::getQuad(long quad_index) const
 {
-  debugAssertM(quad_index >= 0 && 4 * quad_index < (long)quads.size(), std::string(getName()) + ": Quad index out of bounds");
+  debugAssertM(quad_index >= 0 && 4 * quad_index < (long)quads.size(), getNameStr() + ": Quad index out of bounds");
 
   array_size_t base_index = (array_size_t)(4 * quad_index);
   IndexQuad quad;
@@ -176,11 +176,11 @@ long
 DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, ColorRGBA const * color, Vector2 const * texcoord)
 {
   alwaysAssertM((normal && normals.size() == vertices.size()) || (!normal && normals.empty()),
-                std::string(getName()) + ": Mesh must have all or no normals");
+                getNameStr() + ": Mesh must have all or no normals");
   alwaysAssertM((color && colors.size() == vertices.size()) || (!color && colors.empty()),
-                std::string(getName()) + ": Mesh must have all or no vertex colors");
+                getNameStr() + ": Mesh must have all or no vertex colors");
   alwaysAssertM((texcoord && texcoords.size() == vertices.size()) || (!texcoord && texcoords.empty()),
-                std::string(getName()) + ": Mesh must have all or no texture coordinates");
+                getNameStr() + ": Mesh must have all or no texture coordinates");
 
   long index = (long)vertices.size();
 
@@ -203,7 +203,7 @@ DisplayMesh::addTriangle(long vi0, long vi1, long vi2)
   debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0
             && vi0 < (long)vertices.size()
             && vi1 < (long)vertices.size()
-            && vi2 < (long)vertices.size(), std::string(getName()) + ": Vertex index out of bounds");
+            && vi2 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
   long index = (long)(tris.size() / 3);
 
@@ -223,7 +223,7 @@ DisplayMesh::addQuad(long vi0, long vi1, long vi2, long vi3)
             && vi0 < (long)vertices.size()
             && vi1 < (long)vertices.size()
             && vi2 < (long)vertices.size()
-            && vi3 < (long)vertices.size(), std::string(getName()) + ": Vertex index out of bounds");
+            && vi3 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
   long index = (long)(quads.size() / 4);
 
@@ -280,7 +280,7 @@ DisplayMesh::addFace(int num_vertices, long const * vertex_indices)
 void
 DisplayMesh::removeTriangle(long tri_index)
 {
-  debugAssertM(tri_index >= 0 && 3 * tri_index < (long)tris.size(), std::string(getName()) + ": Triangle index out of bounds");
+  debugAssertM(tri_index >= 0 && 3 * tri_index < (long)tris.size(), getNameStr() + ": Triangle index out of bounds");
 
   IndexArray::iterator ii = tris.begin() + 3 * tri_index;
   tris.erase(ii, ii + 3);
@@ -291,7 +291,7 @@ DisplayMesh::removeTriangle(long tri_index)
 void
 DisplayMesh::removeTriangles(long begin, long num_triangles)
 {
-  debugAssertM(begin >= 0 && 3 * begin < (long)tris.size(), std::string(getName()) + ": Triangle index out of bounds");
+  debugAssertM(begin >= 0 && 3 * begin < (long)tris.size(), getNameStr() + ": Triangle index out of bounds");
 
   IndexArray::iterator ii = tris.begin() + 3 * begin;
   tris.erase(ii, ii + 3 * num_triangles);
@@ -302,7 +302,7 @@ DisplayMesh::removeTriangles(long begin, long num_triangles)
 void
 DisplayMesh::removeQuad(long quad_index)
 {
-  debugAssertM(quad_index >= 0 && 4 * quad_index < (long)quads.size(), std::string(getName()) + ": Quad index out of bounds");
+  debugAssertM(quad_index >= 0 && 4 * quad_index < (long)quads.size(), getNameStr() + ": Quad index out of bounds");
 
   IndexArray::iterator ii = quads.begin() + 4 * quad_index;
   quads.erase(ii, ii + 4);
@@ -313,7 +313,7 @@ DisplayMesh::removeQuad(long quad_index)
 void
 DisplayMesh::removeQuads(long begin, long num_quads)
 {
-  debugAssertM(begin >= 0 && 4 * begin < (long)quads.size(), std::string(getName()) + ": Quad index out of bounds");
+  debugAssertM(begin >= 0 && 4 * begin < (long)quads.size(), getNameStr() + ": Quad index out of bounds");
 
   IndexArray::iterator ii = quads.begin() + 4 * begin;
   quads.erase(ii, ii + 4 * num_quads);
@@ -327,7 +327,7 @@ DisplayMesh::removeFace(Face const & face)
   if (!face)
     return;
 
-  alwaysAssertM(face.getMesh() == this, std::string(getName()) + ": Face belongs to a different mesh");
+  alwaysAssertM(face.getMesh() == this, getNameStr() + ": Face belongs to a different mesh");
 
   if (face.hasTriangles())
     removeTriangles(face.getFirstTriangle(), face.numTriangles());
@@ -505,61 +505,61 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
       {
         render_system.destroyVARArea(var_area);
 
-        std::string vararea_name = std::string(getName()) + " VAR area";
+        std::string vararea_name = getNameStr() + " VAR area";
         var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-        if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
+        if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
       }
       else
         var_area->reset();
     }
     else
     {
-      std::string vararea_name = std::string(getName()) + " VAR area";
+      std::string vararea_name = getNameStr() + " VAR area";
       var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-      if (!var_area) throw Error(std::string(getName()) + ": Couldn't create VAR area");
+      if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
     }
 
     if (!vertices.empty())
     {
       vertices_var = var_area->createArray(vertex_bytes);
-      if (!vertices_var) throw Error(std::string(getName()) + ": Couldn't create vertices VAR");
+      if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
     }
 
     if (hasNormals())
     {
       normals_var = var_area->createArray(normal_bytes);
-      if (!normals_var) throw Error(std::string(getName()) + ": Couldn't create normals VAR");
+      if (!normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
     }
 
     if (hasColors())
     {
       colors_var = var_area->createArray(color_bytes);
-      if (!colors_var) throw Error(std::string(getName()) + ": Couldn't create colors VAR");
+      if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
     }
 
     if (hasTexCoords())
     {
       texcoords_var = var_area->createArray(texcoord_bytes);
-      if (!texcoords_var) throw Error(std::string(getName()) + ": Couldn't create texcoords VAR");
+      if (!texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
     }
 
 #ifndef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
     if (!tris.empty())
     {
       tris_var = var_area->createArray(tri_bytes);
-      if (!tris_var) throw Error(std::string(getName()) + ": Couldn't create triangle indices VAR");
+      if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
     }
 
     if (!quads.empty())
     {
       quads_var = var_area->createArray(quad_bytes);
-      if (!quads_var) throw Error(std::string(getName()) + ": Couldn't create quad indices VAR");
+      if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
     }
 
     if (!edges.empty())
     {
       edges_var = var_area->createArray(edge_bytes);
-      if (!edges_var) throw Error(std::string(getName()) + ": Couldn't create edge indices VAR");
+      if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
     }
 
     if (!tris.empty())  tris_var->updateIndices (0, (long)tris.size(),  &tris[0]);
@@ -594,7 +594,7 @@ void
 DisplayMesh::draw(RenderSystem & render_system, RenderOptions const & options) const
 {
   if (options.drawEdges() && !wireframe_enabled)
-    throw Error(std::string(getName()) + ": Can't draw mesh edges when wireframe mode is disabled");
+    throw Error(getNameStr() + ": Can't draw mesh edges when wireframe mode is disabled");
 
   const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(render_system);
 
