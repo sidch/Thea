@@ -139,7 +139,7 @@ GLTexture::GLTexture(char const * name_, int width_, int height_, int depth_, Fo
   }
 }
 
-GLTexture::GLTexture(char const * name_, Image const & image, Format const * desired_format, Dimension dimension_,
+GLTexture::GLTexture(char const * name_, AbstractImage const & image, Format const * desired_format, Dimension dimension_,
                      Options const & options)
 : name(name_), dimension(dimension_), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
@@ -155,13 +155,14 @@ GLTexture::GLTexture(char const * name_, Image const & image, Format const * des
   _updateImage(image, Face::POS_X, &options);
 }
 
-GLTexture::GLTexture(char const * name_, Image const * images[6], Format const * desired_format, Options const & options)
+GLTexture::GLTexture(char const * name_, AbstractImage const * images[6], Format const * desired_format,
+                     Options const & options)
 : name(name_), dimension(Dimension::DIM_CUBE_MAP), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (!images[0] || !images[0]->isValid())
     throw Error(std::string(getName()) + ": All source images must be valid");
 
-  Image::Type type = images[0]->getType();
+  AbstractImage::Type type = images[0]->getType();
   width  = images[0]->getWidth();
   height = images[0]->getHeight();
   depth = 1;
@@ -398,13 +399,13 @@ GLTexture::setOptions(Options const & options)
 }
 
 void
-GLTexture::updateImage(Image const & image, Face face)
+GLTexture::updateImage(AbstractImage const & image, Face face)
 {
   _updateImage(image, face, NULL);
 }
 
 void
-GLTexture::_updateImage(Image const & image, Face face, Options const * options)
+GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * options)
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
@@ -431,8 +432,8 @@ GLTexture::_updateImage(Image const & image, Face face, Options const * options)
 }
 
 void
-GLTexture::updateSubImage(Image const & image, int src_x, int src_y, int src_width, int src_height, int dst_x, int dst_y,
-                          int dst_z, Face face)
+GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height,
+                          int dst_x, int dst_y, int dst_z, Face face)
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
@@ -491,7 +492,7 @@ GLTexture::updateSubImage(Image const & image, int src_x, int src_y, int src_wid
 }
 
 void
-GLTexture::getImage(Image & image, Face face) const
+GLTexture::getImage(AbstractImage & image, Face face) const
 {
   { GLScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GLClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -500,12 +501,11 @@ GLTexture::getImage(Image & image, Face face) const
     glBindTexture(gl_target, gl_id);
     THEA_CHECK_GL_OK
 
-    GLTexture__setDefaultPackingOptions(image.getRowAlignment());
-
     if (depth > 1) throw Error(std::string(getName()) + ": 3D images are not currently supported");
     image.resize(image.getType(), width, height);
 
     Format const * bytes_format = toTextureFormat(image.getType());
+    GLTexture__setDefaultPackingOptions(image.getRowAlignment());
 
     if (gl_target == GL_TEXTURE_CUBE_MAP_ARB)
       glGetTexImage(toGLCubeMapFace(face), 0, bytes_format->openGLBaseFormat, bytes_format->openGLDataFormat, image.getData());
@@ -517,7 +517,7 @@ GLTexture::getImage(Image & image, Face face) const
 }
 
 void
-GLTexture::getSubImage(Image & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
+GLTexture::getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
                        Face face) const
 {
   // Until GL gets a GetTexSubImage function...

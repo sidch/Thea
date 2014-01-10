@@ -168,10 +168,10 @@ class THEA_API Texture : public AbstractNamedObject
     virtual Dimension getDimension() const = 0;
 
     /** Update (a face of) the texture from a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void updateImage(Image const & image, Face face = Face::POS_X) = 0;
+    virtual void updateImage(AbstractImage const & image, Face face = Face::POS_X) = 0;
 
     /** Update a part of (a face of) the texture from a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void updateSubImage(Image const & image, int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X)
+    virtual void updateSubImage(AbstractImage const & image, int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X)
     {
       updateSubImage(image, 0, 0, image.getWidth(), image.getHeight(), dst_x, dst_y, dst_z, face);
     }
@@ -181,32 +181,32 @@ class THEA_API Texture : public AbstractNamedObject
      * (\a src_x, \a src_y) and size \a src_width x \a src_height is copied to the corresponding block of the texture with
      * corner (\a dst_x, \a dst_y). The face argument is ignored for non-cube map textures.
      */
-    virtual void updateSubImage(Image const & image, int src_x, int src_y, int src_width, int src_height, int dst_x, int dst_y,
-                                int dst_z = 0, Face face = Face::POS_X) = 0;
+    virtual void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height,
+                                int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X) = 0;
 
     /** Copy (a face of) the texture into a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void getImage(Image & image, Face face = Face::POS_X) const = 0;
+    virtual void getImage(AbstractImage & image, Face face = Face::POS_X) const = 0;
 
     /** Copy a part of (a face of) the texture into a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void getSubImage(Image & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
-                             Face face = Face::POS_X) const = 0;
+    virtual void getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height,
+                             int subimage_depth, Face face = Face::POS_X) const = 0;
 
   protected:
     /** Internal convenience function to convert an image type to a texture storage format. */
-    static Format const * toTextureFormat(Image::Type type)
+    static Format const * toTextureFormat(AbstractImage::Type type)
     {
       switch (type)
       {
-        case Image::Type::LUMINANCE_8U  : return Format::L8();
-        case Image::Type::LUMINANCE_16U : return Format::L16();
-        case Image::Type::LUMINANCE_32F : return Format::L32F();
-        case Image::Type::RGB_8U        : return Format::RGB8();
-        case Image::Type::RGBA_8U       : return Format::RGBA8();
-        case Image::Type::RGB_16U       : return Format::RGB16();
-        case Image::Type::RGBA_16U      : return Format::RGBA16();
-        case Image::Type::RGB_32F       : return Format::RGB32F();
-        case Image::Type::RGBA_32F      : return Format::RGBA32F();
-        default                         : throw Error("No supported texture format corresponds to the specified image format");
+        case AbstractImage::Type::LUMINANCE_8U  : return Format::L8();
+        case AbstractImage::Type::LUMINANCE_16U : return Format::L16();
+        case AbstractImage::Type::LUMINANCE_32F : return Format::L32F();
+        case AbstractImage::Type::RGB_8U        : return Format::RGB8();
+        case AbstractImage::Type::RGBA_8U       : return Format::RGBA8();
+        case AbstractImage::Type::RGB_16U       : return Format::RGB16();
+        case AbstractImage::Type::RGBA_16U      : return Format::RGBA16();
+        case AbstractImage::Type::RGB_32F       : return Format::RGB32F();
+        case AbstractImage::Type::RGBA_32F      : return Format::RGBA32F();
+        default: throw Error("No supported texture format corresponds to the specified image format");
       }
     }
 

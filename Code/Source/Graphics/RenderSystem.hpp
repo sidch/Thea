@@ -165,7 +165,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Create a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. The texture must be
      * destroyed using destroyTexture().
      */
-    virtual Texture * createTexture(char const * name, Image const & image,
+    virtual Texture * createTexture(char const * name, AbstractImage const & image,
                                     Texture::Format const * desired_format = Texture::Format::AUTO(),
                                     Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
@@ -174,7 +174,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Create a cube-map from six pixel buffers, representing 2D images of identical format and size. The texture must be
      * destroyed using destroyTexture().
      */
-    virtual Texture * createTexture(char const * name, Image const * images[6],
+    virtual Texture * createTexture(char const * name, AbstractImage const * images[6],
                                     Texture::Format const * desired_format = Texture::Format::AUTO(),
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
 

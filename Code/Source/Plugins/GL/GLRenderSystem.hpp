@@ -77,12 +77,12 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
                             Texture::Format const * desired_format, Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                             Texture::Options const & options = Texture::Options::defaults());
 
-    Texture * createTexture(char const * name_, Image const & image,
+    Texture * createTexture(char const * name_, AbstractImage const & image,
                             Texture::Format const * desired_format = Texture::Format::AUTO(),
                             Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                             Texture::Options const & options = Texture::Options::defaults());
 
-    Texture * createTexture(char const * name_, Image const * images[6],
+    Texture * createTexture(char const * name_, AbstractImage const * images[6],
                             Texture::Format const * desired_format = Texture::Format::AUTO(),
                             Texture::Options const & options = Texture::Options::defaults());
 
