@@ -1,10 +1,12 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Curvature.hpp"
+#include "../../Algorithms/MeshFeatures/DistanceHistogram.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
+#include "../../Matrix.hpp"
 #include "../../Vector3.hpp"
 #include <boost/algorithm/string/trim.hpp>
 #include <cstdio>
@@ -36,10 +38,12 @@ smoothNormal(MeshTriangleT const & tri, Vector3 const & p)
   return b[0] * n0 + b[1] * n1 + b[2] * n2;
 }
 
-bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & pts, TheaArray<Vector3> const & normals,
-                TheaArray<Real> & values);
-bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & pts, TheaArray<Vector3> const & normals,
-                                TheaArray<Real> & values);
+bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
+                TheaArray<double> & values);
+bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
+                                TheaArray<double> & values);
+bool computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
+                               Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
 main(int argc, char * argv[])
@@ -72,7 +76,9 @@ main(int argc, char * argv[])
     THEA_CONSOLE << "    <featureN> must be one of:";
     THEA_CONSOLE << "        --sdf";
     THEA_CONSOLE << "        --projcurv";
+    THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>]";
     THEA_CONSOLE << "        --shift01 (not a feature, maps features in [-1, 1] to [0, 1])";
+    THEA_CONSOLE << "        --scale=<factor> (not a feature, scales feature values by the factor)";
 
     return 0;
   }
@@ -152,13 +158,13 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Snapped query points to mesh";
 
   // Compute features
-  TheaArray< TheaArray<Real> > features(positions.size());
+  TheaArray< TheaArray<double> > features(positions.size());
   TheaArray<string> feat_names;
 
   bool shift_to_01 = false;
   bool abs_values = false;
   bool scale = false;
-  Real scale_factor = 1;
+  double scale_factor = 1;
 
   for (int i = 1; i < argc; ++i)
   {
@@ -168,25 +174,62 @@ main(int argc, char * argv[])
     string feat = string(argv[i]).substr(2);
     if (feat == "sdf")
     {
-      TheaArray<Real> values;
+      TheaArray<double> values;
       if (!computeSDF(kdtree, positions, face_normals, values))
         return -1;
 
-      alwaysAssertM(values.size() == positions.size(), "Number of SDF values don't match number of points");
+      alwaysAssertM(values.size() == positions.size(), "Number of SDF values doesn't match number of points");
 
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
     else if (feat == "projcurv")
     {
-      TheaArray<Real> values;
+      TheaArray<double> values;
       if (!computeProjectedCurvatures(mg, positions, smooth_normals, values))
         return -1;
 
-      alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures don't match number of points");
+      alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures doesn't match number of points");
 
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
+    }
+    else if (beginsWith(feat, "dh="))
+    {
+      long num_bins;
+      double max_distance;
+
+      long num_params = sscanf(feat.c_str(), "dh=%ld,%lf", &num_bins, &max_distance);
+      if (num_params < 1)
+      {
+        THEA_ERROR << "Couldn't parse distance histogram parameters";
+        return -1;
+      }
+      else if (num_params == 1)
+      {
+        THEA_WARNING << "Distance limit for not specified for distance histogram, using default of mesh scale";
+        max_distance = -1;
+      }
+
+      if (num_bins <= 0)
+      {
+        THEA_ERROR << "Number of histogram bins must be > 0";
+        return -1;
+      }
+
+      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a histogram
+      if (!computeDistanceHistograms(mg, positions, num_bins, max_distance, values))
+        return -1;
+
+      alwaysAssertM(values.numRows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
+      alwaysAssertM(positions.empty() || values.numColumns() == num_bins,
+                    "Number of distance histogram bins doesn't match input parameter");
+
+      for (array_size_t j = 0; j < positions.size(); ++j)
+      {
+        double const * row_start = &values((long)j, 0);
+        features[j].insert(features[j].end(), row_start, row_start + num_bins);
+      }
     }
     else if (feat == "shift01")
     {
@@ -196,10 +239,15 @@ main(int argc, char * argv[])
     {
       abs_values = true;
     }
-    else if (beginsWith(feat, "scale"))
+    else if (beginsWith(feat, "scale="))
     {
-      if (sscanf(feat.c_str(), "scale=%f", &scale_factor) == 1)
+      if (sscanf(feat.c_str(), "scale=%lf", &scale_factor) == 1)
         scale = true;
+      else
+      {
+        THEA_ERROR << "Couldn't parse scale factor";
+        return -1;
+      }
     }
     else
     {
@@ -233,7 +281,7 @@ main(int argc, char * argv[])
 
     for (array_size_t j = 0; j < features[i].size(); ++j)
     {
-      Real f = features[i][j];
+      double f = features[i][j];
 
       if (scale) f *= scale_factor;
       if (shift_to_01) f = 0.5 * (1.0 + f);
@@ -252,13 +300,15 @@ main(int argc, char * argv[])
 
 bool
 computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-           TheaArray<Real> & values)
+           TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing SDF features";
 
-  values.clear();
+  values.resize(positions.size());
   MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
-  sdf.compute(positions, normals, values);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    values[i] = sdf.compute(positions[i], normals[i]);
 
   THEA_CONSOLE << "  -- done";
 
@@ -267,13 +317,32 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
 
 bool
 computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                           TheaArray<Real> & values)
+                           TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing projected curvatures";
 
-  values.clear();
+  values.resize(positions.size());
   MeshFeatures::Curvature<Mesh> projcurv(mg);
-  projcurv.computeProjectedCurvatures(positions, normals, values);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i]);
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
+                          Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+{
+  THEA_CONSOLE << "Computing distance histograms";
+
+  values.resize((long)positions.size(), num_bins);
+  MeshFeatures::DistanceHistogram<Mesh> dh(mg);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    dh.compute(positions[i], num_bins, &values((long)i, 0), max_distance);
 
   THEA_CONSOLE << "  -- done";
 

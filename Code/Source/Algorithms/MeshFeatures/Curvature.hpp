@@ -44,6 +44,7 @@
 
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../BestFitSphere3.hpp"
 #include "../KDTreeN.hpp"
 #include "../IntersectionTester.hpp"
 #include "../MeshSampler.hpp"
@@ -51,7 +52,6 @@
 #include "../PointTraitsN.hpp"
 #include "../../Math.hpp"
 #include "../../Vector3.hpp"
-#include <algorithm>
 
 namespace Thea {
 namespace Algorithms {
@@ -109,7 +109,7 @@ class Curvature
     typedef CurvatureInternal::SurfaceSample SurfaceSample;  ///< A point plus a normal.
     typedef KDTreeN<SurfaceSample, 3> SampleKDTree;  ///< A kd-tree on mesh samples.
 
-    static long const DEFAULT_NUM_SAMPLES = 50000;
+    static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
 
     /** Get the smoothed normal at a point on a triangle with vertex normals. */
     template <typename TriangleT>
@@ -150,41 +150,75 @@ class Curvature
     /**
      * Constructs the object to compute curvature at sample points on a given mesh. The mesh must persist as long as this object
      * does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
+     *
+     * @param mesh The mesh representing the shape.
+     * @param num_samples The number of samples to compute on the shape.
+     * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
+     *   diameter will be used.
      */
-    Curvature(Mesh const & mesh, long num_samples = -1) : kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(0)
+    Curvature(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    : kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
       MeshSampler<Mesh> sampler(mesh);
       TheaArray<SurfaceSample> samples;
       computeSamples(sampler, num_samples, samples);
 
       kdtree->init(samples.begin(), samples.end());
-      scale = kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+      {
+        BestFitSphere3 bsphere;
+        bsphere.addMesh(mesh);
+        scale = bsphere.getRadius();
+      }
     }
 
     /**
      * Constructs the object to compute curvature at sample points on a given mesh group. The mesh group must persist as long as
      * this object does. Initializes internal data structures that do not need to be recomputed for successive calls to
      * compute().
+     *
+     * @param mesh_group The mesh group representing the shape.
+     * @param num_samples The number of samples to compute on the shape.
+     * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
+     *   diameter will be used.
      */
-    Curvature(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1)
-    : kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(0)
+    Curvature(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    : kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
       MeshSampler<Mesh> sampler(mesh_group);
       TheaArray<SurfaceSample> samples;
       computeSamples(sampler, num_samples, samples);
 
       kdtree->init(samples.begin(), samples.end());
-      scale = kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+      {
+        BestFitSphere3 bsphere;
+        bsphere.addMeshGroup(mesh_group);
+        scale = bsphere.getRadius();
+      }
     }
 
     /**
-     * Constructs the object to compute curvature at sample points of a shape with a precomputed kd-tree. The kd-tree must
-     * persist as long as this object does.
+     * Constructs the object to compute curvature at sample points of a shape with a precomputed kd-tree on these points. The
+     * kd-tree must persist as long as this object does.
+     *
+     * @param kdtree_ The kd-tree representing the shape.
+     * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
+     *   diameter will be used.
      */
-    Curvature(ExternalSampleKDTree const * kdtree_) : kdtree(NULL), precomp_kdtree(kdtree_), scale(0)
+    Curvature(ExternalSampleKDTree const * kdtree_, Real normalization_scale = -1)
+    : kdtree(NULL), precomp_kdtree(kdtree_), scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "Curvature: Precomputed KD-tree cannot be null");
-      scale = precomp_kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+      {
+        BestFitSphere3 bsphere;
+        bsphere.addPoints(precomp_kdtree->getElements(), precomp_kdtree->getElements() + precomp_kdtree->numElements());
+        scale = bsphere.getRadius();
+      }
     }
 
     /** Destructor. */
@@ -194,64 +228,57 @@ class Curvature
     }
 
     /**
-     * Compute the <em>projected</em> curvatures at a given set of query points on the mesh. The projected curvature is an
-     * approximation to the actual curvature, obtained by projecting sample points in the neighborhood of the query point onto
-     * the normal.
+     * Compute the <em>projected</em> curvature at a query point on the mesh. The projected curvature is an approximation to the
+     * actual curvature, obtained by projecting sample points in the neighborhood of the query point onto the normal.
      *
-     * This version of the function explicitly computes the normal at each point -- the other version of the function should be
-     * used if the normals are known in advance. The normals are computed from samples, so <b>may be quite inaccurate</b>
+     * This version of the function explicitly computes the normal at the query point -- the other version of the function
+     * should be used if the normal is known in advance. The normal is computed from samples, so <b>may be quite inaccurate</b>
      * especially in thin areas.
      *
-     * @note The returned curvatures are signed. Positive curvature surfaces curve <em>away</em> from the normal.
+     * @note The returned curvature is signed. Positive curvature surfaces curve <em>away</em> from the normal.
      */
-    void computeProjectedCurvatures(TheaArray<Vector3> const & positions, TheaArray<Real> & curvatures, Real nbd_radius = -1)
-         const
+    double computeProjectedCurvature(Vector3 const & position, Real nbd_radius = -1) const
     {
-      TheaArray<Vector3> const & normals(positions.size());
-      for (array_size_t i = 0; i < positions.size(); ++i)
+      long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
+                                     : kdtree->template closestElement<MetricL2>(position);
+      if (nn_index < 0)
       {
-        long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(positions[i])
-                                       : kdtree->template closestElement<MetricL2>(positions[i]);
-        if (nn_index < 0)
-        {
-          THEA_WARNING << "Curvature: Query point cannot be mapped to mesh, all curvature values set to zero";
-          curvatures.resize(positions.size());
-          std::fill(curvatures.begin(), curvatures.end(), 0);
-          return;
-        }
-
-        normals[i] = precomp_kdtree ? NormalTraits<typename ExternalSampleKDTree::Element>
-                                              ::getNormal(precomp_kdtree->getElements()[(array_size_t)nn_index])
-                                    : kdtree->getElements()[(array_size_t)nn_index].getNormal();
+        THEA_WARNING << "Curvature: Query point cannot be mapped to mesh, curvature value set to zero";
+        return 0.0;
       }
 
-      computeProjectedCurvatures(positions, normals, curvatures, nbd_radius);
+      Vector3 normal = precomp_kdtree ? NormalTraits<typename ExternalSampleKDTree::Element>
+                                            ::getNormal(precomp_kdtree->getElements()[(array_size_t)nn_index])
+                                      : kdtree->getElements()[(array_size_t)nn_index].getNormal();
+
+      return computeProjectedCurvature(position, normal, nbd_radius);
     }
 
     /**
-     * Compute the <em>projected</em> curvatures at a given set of query points with known normals on the mesh. The projected
-     * curvature is an approximation to the actual curvature, obtained by projecting sample points in the neighborhood of the
-     * query point onto the normal.
+     * Compute the <em>projected</em> curvature at a query point with a known normal on the mesh. The projected curvature is an
+     * approximation to the actual curvature, obtained by projecting sample points in the neighborhood of the query point onto
+     * the normal.
      *
-     * @note The returned curvatures are signed. Positive curvature surfaces curve <em>away</em> from the normal.
+     * @note The returned curvature is signed. Positive curvature surfaces curve <em>away</em> from the normal.
      */
-    void computeProjectedCurvatures(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                                    TheaArray<Real> & curvatures, Real nbd_radius = -1) const
+    double computeProjectedCurvature(Vector3 const & position, Vector3 const & normal, Real nbd_radius = -1) const
     {
-      alwaysAssertM(positions.size() == normals.size(), "Curvature: Number of sample positions and normals do not match");
-      alwaysAssertM(kdtree || precomp_kdtree, "Curvature: KD-tree not initialized for mesh");
-
       if (nbd_radius <= 0)
         nbd_radius = 0.025f * scale;
 
-      curvatures.resize(positions.size());
+      ProjectedCurvatureFunctor func(position, normal);
+      Ball3 range(position, nbd_radius);
 
-      for (array_size_t i = 0; i < curvatures.size(); ++i)
-        curvatures[i] = computeProjectedCurvature(positions[i], normals[i], nbd_radius);
+      if (precomp_kdtree)
+        const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(range, &func);
+      else
+        kdtree->template processRangeUntil<IntersectionTester>(range, &func);
+
+      return func.getCurvature();
     }
 
   private:
-    /** Called for each point in neighborhood. */
+    /** Called for each point in the neighborhood. */
     struct ProjectedCurvatureFunctor
     {
       ProjectedCurvatureFunctor(Vector3 const & p, Vector3 const & n)
@@ -270,7 +297,7 @@ class Curvature
         return false;
       }
 
-      Real getCurvature() const
+      double getCurvature() const
       {
         return num_offsets > 0 ? -sum_offsets.dot(normal) / num_offsets : 0;
       }
@@ -280,20 +307,6 @@ class Curvature
       Vector3 sum_offsets;
 
     }; // struct ProjectedCurvatureFunctor
-
-    /** Compute the projected curvature at a point. */
-    Real computeProjectedCurvature(Vector3 const & p, Vector3 const & n, Real nbd_radius) const
-    {
-      ProjectedCurvatureFunctor func(p, n);
-      Ball3 range(p, nbd_radius);
-
-      if (precomp_kdtree)
-        const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(range, &func);
-      else
-        kdtree->template processRangeUntil<IntersectionTester>(range, &func);
-
-      return func.getCurvature();
-    }
 
     SampleKDTree * kdtree;  ///< KD-tree on mesh samples.
     ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
