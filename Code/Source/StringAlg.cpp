@@ -58,7 +58,7 @@
 #include <cstring>
 #include <sstream>
 
-// Not cstdio, to make sure we pull in the vsnprintf etc functions
+// Not cstdarg, to make sure we pull in the vsnprintf etc functions
 #include <stdarg.h>
 
 #ifdef _WIN32
@@ -279,7 +279,7 @@ stringSplit(std::string const & x, char split_char, TheaArray<std::string> & res
   char const * start = x.c_str();
   char const * stop = start;
 
-  while ((stop = strchr(start, split_char)))
+  while ((stop = std::strchr(start, split_char)))
   {
     if (!skip_empty_fields || stop != start)
       result.push_back(std::string(start, stop - start));

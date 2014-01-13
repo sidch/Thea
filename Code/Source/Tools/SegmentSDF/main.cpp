@@ -140,9 +140,10 @@ segmentSDF(int argc, char * argv[])
   THEA_CONSOLE << "Computed " << positions.size() << " sample points on the mesh";
 
   // Compute SDF values
-  TheaArray<Real> sdf_values;
+  TheaArray<Real> sdf_values(positions.size());
   MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
-  sdf.compute(positions, normals, sdf_values);
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
 
   // Undo normalization
   Real scale = sdf.getNormalizationScale();

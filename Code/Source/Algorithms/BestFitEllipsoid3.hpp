@@ -43,8 +43,11 @@
 #define __Thea_Algorithms_BestFitEllipsoid3_hpp__
 
 #include "../Common.hpp"
+#include "../Graphics/MeshGroup.hpp"
+#include "PointTraitsN.hpp"
 #include "../Array.hpp"
 #include "../Box3.hpp"
+#include <iterator>
 
 namespace Thea {
 namespace Algorithms {
@@ -63,6 +66,32 @@ class THEA_API BestFitEllipsoid3
 
     /** Add a point to the set. */
     void addPoint(Vector3 const & point);
+
+    /** Convenience function to add a group of points to the set. */
+    template <typename PointInputIterator> void addPoints(PointInputIterator points_begin, PointInputIterator points_end)
+    {
+      for (PointInputIterator pi = points_begin; pi != points_end; ++pi)
+        addPoint(PointTraitsN< typename std::iterator_traits<PointInputIterator>::value_type, 3 >::getPosition(*pi));
+    }
+
+    /** Convenience function to add all vertices of a mesh to the set. */
+    template <typename MeshT> void addMesh(MeshT const & mesh)
+    {
+      for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+        addPoint(vi->getPosition());
+    }
+
+    /** Convenience function to add all vertices of a mesh group to the set. */
+    template <typename MeshT> void addMeshGroup(Graphics::MeshGroup<MeshT> const & mesh_group)
+    {
+      for (typename Graphics::MeshGroup<MeshT>::MeshConstIterator mi = mesh_group.meshesBegin();
+           mi != mesh_group.meshesEnd(); ++mi)
+        addMesh(**mi);
+
+      for (typename Graphics::MeshGroup<MeshT>::GroupConstIterator ci = mesh_group.childrenBegin();
+           ci != mesh_group.childrenEnd(); ++ci)
+        addMeshGroup(**ci);
+    }
 
     /** Remove all data and (lazily) set the ellipsoid to null. */
     void clear();

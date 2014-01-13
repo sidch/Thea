@@ -44,6 +44,7 @@
 
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../BestFitSphere3.hpp"
 #include "../MeshKDTree.hpp"
 #include "../MetricL2.hpp"
 #include "../RayIntersectionTester.hpp"
@@ -77,34 +78,68 @@ class ShapeDiameter
     /**
      * Constructs the object to compute shape diameter at sample points on a given mesh. The mesh must persist as long as this
      * object does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
+     *
+     * @param mesh The mesh representing the shape.
+     * @param normalization_scale The scale of the shape, used to normalize shape diameters to [0, 1]. If <= 0, the bounding
+     *   sphere diameter will be used.
      */
-    ShapeDiameter(Mesh const & mesh) : kdtree(new KDTree), precomp_kdtree(NULL), scale(0)
+    ShapeDiameter(Mesh const & mesh, Real normalization_scale = -1)
+    : kdtree(new KDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
       kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
-      scale = kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+      {
+        BestFitSphere3 bsphere;
+        bsphere.addMesh(mesh);
+        scale = 2 * bsphere.getRadius();
+      }
     }
 
     /**
      * Constructs the object to compute the shape diameter at sample points on a given mesh group. The mesh group must persist
      * as long as this object does. Initializes internal data structures that do not need to be recomputed for successive calls
      * to compute().
+     *
+     * @param mesh_group The mesh group representing the shape.
+     * @param normalization_scale The scale of the shape, used to normalize shape diameters to [0, 1]. If <= 0, the bounding
+     *   sphere diameter will be used.
      */
-    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group) : kdtree(new KDTree), precomp_kdtree(NULL), scale(0)
+    ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group, Real normalization_scale = -1)
+    : kdtree(new KDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
       kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
-      scale = kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+      {
+        BestFitSphere3 bsphere;
+        bsphere.addMeshGroup(mesh_group);
+        scale = 2 * bsphere.getRadius();
+      }
     }
 
     /**
      * Constructs the object to compute the shape diameter at sample points of a shape with a precomputed kd-tree. The kd-tree
      * must persist as long as this object does.
+     *
+     * @param kdtree_ The precomputed kd-tree representing the shape.
+     * @param normalization_scale The scale of the shape, used to normalize shape diameters to [0, 1]. If <= 0, the bounding
+     *   box diagonal will be used.
+     *
+     * @warning This function uses the <b>bounding box diagonal</b> as the default normalization scale, instead of the bounding
+     *   sphere diameter as in the other constructors. This is because the latter cannot be computed from only a kd-tree. If you
+     *   want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute it separately
+     *   and pass it as a parameter to this function.
      */
-    ShapeDiameter(ExternalKDTree const * kdtree_) : kdtree(NULL), precomp_kdtree(kdtree_), scale(0)
+    ShapeDiameter(ExternalKDTree const * kdtree_, Real normalization_scale = -1)
+    : kdtree(NULL), precomp_kdtree(kdtree_), scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
-      scale = precomp_kdtree->getBounds().getExtent().length();
+
+      if (scale <= 0)
+        scale = precomp_kdtree->getBounds().getExtent().length();
     }
 
     /** Destructor. */
@@ -120,48 +155,33 @@ class ShapeDiameter
     Real getNormalizationScale() const { return scale; }
 
     /**
-     * Compute the shape diameter function at a given set of sample points on the mesh. This explicitly computes the normal at
-     * each point -- the other version of the function should be used if the normals are known in advance.
+     * Compute the shape diameter function at a query point on the mesh. This explicitly computes the normal at the sample point
+     * point -- the other version of the function should be used if the normal is known in advance. The shape diameter will be
+     * normalized by the mesh scale, as returned by getNormalizationScale().
      */
-    void compute(TheaArray<Vector3> const & positions, TheaArray<Real> & sdf_values) const
+    double compute(Vector3 const & position) const
     {
-      TheaArray<Vector3> const & normals(positions.size());
-      for (array_size_t i = 0; i < positions.size(); ++i)
+      long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
+                                     : kdtree->template closestElement<MetricL2>(position);
+      if (nn_index < 0)
       {
-        long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(positions[i])
-                                       : kdtree->template closestElement<MetricL2>(positions[i]);
-        if (nn_index < 0)
-        {
-          THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, all SDF values set to zero";
-          sdf_values.resize(positions.size());
-          std::fill(sdf_values.begin(), sdf_values.end(), 0);
-          return;
-        }
-
-        normals[i] = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
-                                    : kdtree->getElements()[(array_size_t)nn_index].getNormal();
+        THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, SDF value set to zero";
+        return 0.0;
       }
 
-      compute(positions, normals, sdf_values);
+      Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
+                                      : kdtree->getElements()[(array_size_t)nn_index].getNormal();
+
+      return compute(position, normal);
     }
 
-    /** Compute the shape diameter function at a given set of sample points with known normals on the mesh. */
-    void compute(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, TheaArray<Real> & sdf_values) const
+    /**
+     * Compute the shape diameter function at a query point with a known (outwards-pointing) normal on the mesh. The shape
+     * diameter will be normalized by the mesh scale, as returned by getNormalizationScale().
+     */
+    double compute(Vector3 const & position, Vector3 const & normal) const
     {
-      alwaysAssertM(positions.size() == normals.size(), "ShapeDiameter: Number of sample positions and normals do not match");
-      alwaysAssertM(kdtree || precomp_kdtree, "ShapeDiameter: KD-tree not initialized for mesh");
-
-      sdf_values.resize(positions.size());
-
-      for (array_size_t i = 0; i < positions.size(); ++i)
-        sdf_values[i] = computeSDF(positions[i], normals[i]);
-    }
-
-  private:
-    /** Compute the SDF at a point. */
-    Real computeSDF(Vector3 const & p, Vector3 const & n) const
-    {
-      Vector3 in = -n;
+      Vector3 in = -normal;
       Vector3 u, v;
       getTwoMutuallyPerpendicularAxes(in, u, v);
       Matrix3 rot(u[0], v[0], in[0],
@@ -204,13 +224,13 @@ class ShapeDiameter
         Vector3(-0.270612f, -0.809654f,  0.520797f),
       };
 
-      Real values[NUM_RAYS];
-      Real weights[NUM_RAYS];
+      double values[NUM_RAYS];
+      double weights[NUM_RAYS];
       int num_values = 0;
       for (int i = 0; i < NUM_RAYS; ++i)
       {
         Vector3 dir = rot * CONE_DIRS[i];
-        Ray3 ray(p + offset, dir);
+        Ray3 ray(position + offset, dir);
         RayStructureIntersection3 isec = precomp_kdtree
                                        ? precomp_kdtree->template rayStructureIntersection<RayIntersectionTester>(ray)
                                        : kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
@@ -231,18 +251,18 @@ class ShapeDiameter
       std::nth_element(values, values + mid, values + num_values);
 
       // Compute variance
-      Real sum_values = 0, sum_squares = 0;
+      double sum_values = 0, sum_squares = 0;
       for (int i = 0; i < num_values; ++i)
       {
         sum_values += values[i];
         sum_squares += (values[i] * values[i]);
       }
 
-      Real avg = sum_values / num_values;
-      Real var = sum_squares / num_values - avg * avg;
+      double avg = sum_values / num_values;
+      double var = sum_squares / num_values - avg * avg;
 
       sum_values = 0;
-      Real sum_weights = 0;
+      double sum_weights = 0;
       for (int i = 0; i < num_values; ++i)
         if (Math::square(values[i] - values[mid]) <= var)
         {
@@ -251,11 +271,12 @@ class ShapeDiameter
         }
 
       if (sum_weights > 0)
-        return Math::clamp(sum_values / (sum_weights * scale), (Real)0, (Real)1);
+        return Math::clamp((double)(sum_values / (sum_weights * scale)), 0.0, 1.0);
       else  // should never happen
-        return Math::clamp(values[mid] / scale, (Real)0, (Real)1);
+        return Math::clamp((double)(values[mid] / scale), 0.0, 1.0);
     }
 
+  private:
     /** Get two unit vectors perpendicular to a given vector and to each other. */
     static void
     getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
