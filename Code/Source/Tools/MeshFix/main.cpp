@@ -1,5 +1,6 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
+#include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -18,6 +19,7 @@
 using namespace std;
 using namespace Thea;
 using namespace Algorithms;
+using namespace MeshFeatures;
 using namespace Graphics;
 
 int meshFix(int argc, char * argv[]);
@@ -86,6 +88,7 @@ double t_juncts_tolerance = -1;
 int t_juncts_iters = -1;
 
 bool do_orient = false;
+bool do_orient_sdf = false;
 
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
@@ -93,6 +96,7 @@ bool zipper(Mesh & mesh);
 bool vWeld(Mesh & mesh);
 bool tJuncts(Mesh & mesh);
 bool orient(Mesh & mesh);
+void orientSDF(MG & mesh_group);
 bool checkProblems(Mesh & mesh);
 
 int
@@ -139,6 +143,12 @@ meshFix(int argc, char * argv[])
   if (do_orient)
   {
     mg.forEachMeshUntil(&orient);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
+  if (do_orient_sdf)
+  {
+    orientSDF(mg);
     mg.forEachMeshUntil(&checkProblems);
   }
 
@@ -195,6 +205,10 @@ parseArgs(int argc, char * argv[])
 
           ("orient",              "Consistently orient each edge-connected component of the mesh so that normals defined by"
                                   " counter-clockwise winding point inside-out")
+
+          ("orient-sdf",          "Consistently orient each edge-connected component of the mesh so that normals defined by"
+                                  " counter-clockwise winding point inside-out, using the direction of smaller shape diameter"
+                                  " as a heuristic")
   ;
 
   po::options_description desc;
@@ -273,6 +287,9 @@ parseArgs(int argc, char * argv[])
 
   if (vm.count("orient") > 0)
     do_orient = do_something = true;
+
+  if (vm.count("orient-sdf") > 0)
+    do_orient_sdf = do_something = true;
 
   if (!do_something)
   {
@@ -673,6 +690,54 @@ orient(Mesh & mesh)
   }
 
   return false;
+}
+
+struct SDFOrienter
+{
+  SDFOrienter(ShapeDiameter<Mesh> * sdf_) : sdf(sdf_) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    long num_flipped = 0;
+    for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    {
+      if (fi->numVertices() < 3)
+        continue;
+
+      Vector3 centroid = Vector3::zero();
+      for (Mesh::Face::VertexConstIterator fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
+        centroid += (*fvi)->getPosition();
+
+      centroid /= fi->numVertices();
+
+      Vector3 n = fi->getNormal();
+      double sdf_pos = sdf->compute(centroid,  n, false);
+      double sdf_neg = sdf->compute(centroid, -n, false);
+      if (sdf_neg >= 0 && (sdf_pos < 0 || sdf_neg < sdf_pos))
+      {
+        fi->reverseWinding();
+        num_flipped++;
+      }
+    }
+
+    if (verbose)
+    {
+      THEA_CONSOLE << "orient-sdf('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+    }
+
+    return false;
+  }
+
+  ShapeDiameter<Mesh> * sdf;
+
+}; // struct SDFOrienter
+
+void
+orientSDF(MG & mesh_group)
+{
+  ShapeDiameter<Mesh> sdf(mesh_group);
+  SDFOrienter func(&sdf);
+  mesh_group.forEachMeshUntil(&func);
 }
 
 bool
