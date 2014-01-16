@@ -157,30 +157,41 @@ class ShapeDiameter
     /**
      * Compute the shape diameter function at a query point on the mesh. This explicitly computes the normal at the sample point
      * point -- the other version of the function should be used if the normal is known in advance. The shape diameter will be
-     * normalized by the mesh scale, as returned by getNormalizationScale().
+     * normalized to [0, 1] by dividing by the mesh scale, as returned by getNormalizationScale(). If absolutely no query ray
+     * intersects the object, a negative value is returned.
+     *
+     * @param position The position of the query point.
+     * @param only_hit_interior_surfaces Only consider ray intersections with surfaces whose normals are in the same direction
+     *   as the ray.
      */
-    double compute(Vector3 const & position) const
+    double compute(Vector3 const & position, bool only_hit_interior_surfaces = true) const
     {
       long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
                                      : kdtree->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
-        THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, SDF value set to zero";
-        return 0.0;
+        THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, returning negative SDF value";
+        return -1.0;
       }
 
       // Use the face normal and not the smooth normal, to handle sharp edged slabs etc
       Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
                                       : kdtree->getElements()[(array_size_t)nn_index].getNormal();
 
-      return compute(position, normal);
+      return compute(position, normal, only_hit_interior_surfaces);
     }
 
     /**
      * Compute the shape diameter function at a query point with a known (outwards-pointing) normal on the mesh. The shape
-     * diameter will be normalized by the mesh scale, as returned by getNormalizationScale().
+     * diameter will be normalized to [0, 1] by dividing by the mesh scale, as returned by getNormalizationScale(). If
+     * absolutely no query ray intersects the object, a negative value is returned.
+     *
+     * @param position The position of the query point.
+     * @param normal The normal of the query point.
+     * @param only_hit_interior_surfaces Only consider ray intersections with surfaces whose normals are in the same direction
+     *   as the ray.
      */
-    double compute(Vector3 const & position, Vector3 const & normal) const
+    double compute(Vector3 const & position, Vector3 const & normal, bool only_hit_interior_surfaces = true) const
     {
       Vector3 in = -normal;
       Vector3 u, v;
@@ -236,7 +247,7 @@ class ShapeDiameter
                                        ? precomp_kdtree->template rayStructureIntersection<RayIntersectionTester>(ray)
                                        : kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
 
-        if (isec.isValid() && isec.getNormal().dot(dir) >= 0)
+        if (isec.isValid() && (!only_hit_interior_surfaces || isec.getNormal().dot(dir) >= 0))
         {
           values[num_values] = isec.getTime();
           weights[num_values] = CONE_DIRS[i][2];  // cos(angle) is just the z-component
@@ -245,7 +256,7 @@ class ShapeDiameter
       }
 
       if (num_values <= 0)
-        return 0;  // assumes flat plate
+        return -1.0;  // either the normal is in the wrong direction or this is a 2D surface
 
       // Outlier rejection: reject all values more than one standard deviation from the median
       int mid = num_values / 2;  // integer division takes floor
