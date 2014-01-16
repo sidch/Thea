@@ -93,7 +93,7 @@ class ShapeDiameter
       {
         BestFitSphere3 bsphere;
         bsphere.addMesh(mesh);
-        scale = 2 * bsphere.getRadius();
+        scale = bsphere.getDiameter();
       }
     }
 
@@ -116,7 +116,7 @@ class ShapeDiameter
       {
         BestFitSphere3 bsphere;
         bsphere.addMeshGroup(mesh_group);
-        scale = 2 * bsphere.getRadius();
+        scale = bsphere.getDiameter();
       }
     }
 
@@ -169,6 +169,7 @@ class ShapeDiameter
         return 0.0;
       }
 
+      // Use the face normal and not the smooth normal, to handle sharp edged slabs etc
       Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
                                       : kdtree->getElements()[(array_size_t)nn_index].getNormal();
 

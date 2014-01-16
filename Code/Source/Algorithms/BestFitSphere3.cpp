@@ -75,6 +75,13 @@ BestFitSphere3::getRadius() const
   return ball.getRadius();
 }
 
+Real
+BestFitSphere3::getDiameter() const
+{
+  update();
+  return ball.getDiameter();
+}
+
 Vector3 const &
 BestFitSphere3::getCenter() const
 {

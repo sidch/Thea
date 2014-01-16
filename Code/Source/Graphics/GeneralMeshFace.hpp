@@ -104,11 +104,83 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       return false;
     }
 
-    /** Get the predecessor of an edge around the vertex. Assumes the iterator points to a valid edge of the face. */
-    Edge const * getPredecessor(EdgeConstIterator edge) const
-    { return const_cast<GeneralMeshFace *>(this)->getPredecessor(edge); }
+    /** Get the predecessor of a vertex around the face. Assumes the iterator points to a valid vertex of the face. */
+    Vertex const * getPredecessor(VertexConstIterator vertex) const
+    {
+      return const_cast<GeneralMeshFace *>(this)->getPredecessor(vertex);
+    }
 
-    /** Get the predecessor of an edge around the vertex. Assumes the iterator points to a valid edge of the face. */
+    /** Get the predecessor of a vertex around the face. Assumes the iterator points to a valid vertex of the face. */
+    Vertex * getPredecessor(VertexConstIterator vertex)
+    {
+      if (vertices.empty())
+        return NULL;
+      else if (vertex == vertices.begin())
+        return vertices.back();
+      else
+      {
+        --vertex;
+        return *vertex;
+      }
+    }
+
+    /** Get the predecessor of a vertex around the face. Returns null if the vertex does not belong to the face. */
+    Vertex const * getPredecessor(Vertex const * vertex) const
+    {
+      return const_cast<GeneralMeshFace *>(this)->getPredecessor(vertex);
+    }
+
+    /** Get the predecessor of a vertex around the face. Returns null if the vertex does not belong to the face. */
+    Vertex * getPredecessor(Vertex const * vertex)
+    {
+      for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
+        if (*vi == vertex)
+          return getPredecessor(vi);
+
+      return NULL;
+    }
+
+    /** Get the successor of a vertex around the face. Assumes the iterator points to a valid vertex of the face. */
+    Vertex const * getSuccessor(VertexConstIterator vertex) const
+    {
+      return const_cast<GeneralMeshFace *>(this)->getSuccessor(vertex);
+    }
+
+    /** Get the successor of a vertex around the face. Assumes the iterator points to a valid vertex of the face. */
+    Vertex * getSuccessor(VertexConstIterator vertex)
+    {
+      if (vertices.empty())
+        return NULL;
+      else
+      {
+        ++vertex;
+        return vertex == vertices.end() ? vertices.front() : *vertex;
+      }
+    }
+
+    /** Get the successor of a vertex around the face. Returns null if the vertex does not belong to the face. */
+    Vertex const * getSuccessor(Vertex const * vertex) const
+    {
+      return const_cast<GeneralMeshFace *>(this)->getSuccessor(vertex);
+    }
+
+    /** Get the successor of a vertex around the face. Returns null if the vertex does not belong to the face. */
+    Vertex * getSuccessor(Vertex const * vertex)
+    {
+      for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
+        if (*vi == vertex)
+          return getSuccessor(vi);
+
+      return NULL;
+    }
+
+    /** Get the predecessor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
+    Edge const * getPredecessor(EdgeConstIterator edge) const
+    {
+      return const_cast<GeneralMeshFace *>(this)->getPredecessor(edge);
+    }
+
+    /** Get the predecessor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
     Edge * getPredecessor(EdgeConstIterator edge)
     {
       if (edges.empty())
@@ -122,10 +194,10 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       }
     }
 
-    /** Get the predecessor of an edge around the vertex. Returns null if the edge does not belong to the face. */
+    /** Get the predecessor of an edge around the face. Returns null if the edge does not belong to the face. */
     Edge const * getPredecessor(Edge const * edge) const { return const_cast<GeneralMeshFace *>(this)->getPredecessor(edge); }
 
-    /** Get the predecessor of an edge around the vertex. Returns null if the edge does not belong to the face. */
+    /** Get the predecessor of an edge around the face. Returns null if the edge does not belong to the face. */
     Edge * getPredecessor(Edge const * edge)
     {
       for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
@@ -135,10 +207,10 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       return NULL;
     }
 
-    /** Get the successor of an edge around the vertex. Assumes the iterator points to a valid edge of the face. */
+    /** Get the successor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
     Edge const * getSuccessor(EdgeConstIterator edge) const { return const_cast<GeneralMeshFace *>(this)->getSuccessor(edge); }
 
-    /** Get the successor of an edge around the vertex. Assumes the iterator points to a valid edge of the face. */
+    /** Get the successor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
     Edge * getSuccessor(EdgeConstIterator edge)
     {
       if (edges.empty())
@@ -150,10 +222,10 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       }
     }
 
-    /** Get the successor of an edge around the vertex. Returns null if the edge does not belong to the face. */
+    /** Get the successor of an edge around the face. Returns null if the edge does not belong to the face. */
     Edge const * getSuccessor(Edge const * edge) const { return const_cast<GeneralMeshFace *>(this)->getSuccessor(edge); }
 
-    /** Get the successor of an edge around the vertex. Returns null if the edge does not belong to the face. */
+    /** Get the successor of an edge around the face. Returns null if the edge does not belong to the face. */
     Edge * getSuccessor(Edge const * edge)
     {
       for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)

@@ -1,5 +1,6 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
+#include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
@@ -9,11 +10,14 @@
 #include "../../LineSegment3.hpp"
 #include "../../Math.hpp"
 #include <boost/program_options.hpp>
+#include <algorithm>
 #include <iostream>
+#include <queue>
 #include <string>
 
 using namespace std;
 using namespace Thea;
+using namespace Algorithms;
 using namespace Graphics;
 
 int meshFix(int argc, char * argv[]);
@@ -31,7 +35,17 @@ main(int argc, char * argv[])
   return status;
 }
 
-typedef GeneralMesh<> Mesh;
+struct FaceAttribute
+{
+  int flag;
+
+  void draw(RenderSystem & render_system, RenderOptions const & options) const {}  // noop
+};
+
+typedef GeneralMesh< Graphics::NullAttribute,  // vertex attribute
+                     Graphics::NullAttribute,  // edge attribute
+                     FaceAttribute             // face attribute
+                   > Mesh;
 typedef MeshGroup<Mesh> MG;
 
 namespace Thea {
@@ -71,11 +85,15 @@ bool do_t_juncts = false;
 double t_juncts_tolerance = -1;
 int t_juncts_iters = -1;
 
+bool do_orient = false;
+
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
 bool zipper(Mesh & mesh);
 bool vWeld(Mesh & mesh);
 bool tJuncts(Mesh & mesh);
+bool orient(Mesh & mesh);
+bool checkProblems(Mesh & mesh);
 
 int
 meshFix(int argc, char * argv[])
@@ -89,21 +107,40 @@ meshFix(int argc, char * argv[])
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())
   {
-    cerr << "Input mesh is empty, no output written" << endl;
+    THEA_ERROR << "Input mesh is empty, no output written";
     return -1;
   }
 
+  // The order of operations is important here -- e.g. it's better to do orient() after welding vertices
   if (do_del_danglers)
+  {
     mg.forEachMeshUntil(&delDanglers);
+    mg.forEachMeshUntil(&checkProblems);
+  }
 
   if (do_t_juncts)
+  {
     mg.forEachMeshUntil(&tJuncts);
+    mg.forEachMeshUntil(&checkProblems);
+  }
 
   if (do_v_weld)
+  {
     mg.forEachMeshUntil(&vWeld);
+    mg.forEachMeshUntil(&checkProblems);
+  }
 
   if (do_zipper)
+  {
     mg.forEachMeshUntil(&zipper);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
+  if (do_orient)
+  {
+    mg.forEachMeshUntil(&orient);
+    mg.forEachMeshUntil(&checkProblems);
+  }
 
   string lc_out = toLower(outfile);
   if (endsWith(lc_out, ".3ds"))
@@ -114,7 +151,7 @@ meshFix(int argc, char * argv[])
     mg.save(outfile, CodecOFF<Mesh>());
   else
   {
-    cerr << "Unrecognized mesh output format" << endl;
+    THEA_ERROR << "Unrecognized mesh output format";
     return -1;
   }
 
@@ -137,10 +174,11 @@ parseArgs(int argc, char * argv[])
           ("infile",              po::value<string>(&infile), "Path to input mesh file")
           ("outfile",             po::value<string>(&outfile), "Path to output mesh file")
 
-          ("del-danglers",          "Delete isolated vertices and edges, and empty faces")
+          ("del-danglers",        "Delete isolated vertices and edges, and empty faces")
 
           ("zipper",              po::value<double>(&zipper_tolerance),
-                                  "Seal pairs of boundary edges whose endpoints are equal upto the specified tolerance (implies --del-danglers)")
+                                  "Seal pairs of boundary edges whose endpoints are equal upto the specified tolerance"
+                                  " (implies --del-danglers)")
 
           ("v-weld",              po::value<double>(&v_weld_tolerance),
                                   "Merge vertices closer than the specified tolerance (implies --del-danglers)")
@@ -149,10 +187,14 @@ parseArgs(int argc, char * argv[])
                                   "Merge boundary vertices closer than the specified tolerance (implies --del-danglers)")
 
           ("t-juncts",            po::value<double>(&t_juncts_tolerance),
-                                  "Split boundary edges at t-junctions so they can be zippered properly (always executed before any welding or zippering)")
+                                  "Split boundary edges at t-junctions so they can be zippered properly (always executed before"
+                                  " any welding or zippering)")
 
           ("tj-iters",            po::value<int>(&t_juncts_iters),
                                   "Number of iterations for fixing t-junctions")
+
+          ("orient",              "Consistently orient each edge-connected component of the mesh so that normals defined by"
+                                  " counter-clockwise winding point inside-out")
   ;
 
   po::options_description desc;
@@ -174,16 +216,16 @@ parseArgs(int argc, char * argv[])
   bool quit = false;
   if (vm.count("version") > 0)
   {
-    cerr << "MeshFix version 0.1" << endl;
-    cerr << "Computer Graphics Lab, Stanford University, 2011" << endl;
+    THEA_CONSOLE << "MeshFix version 0.1";
+    THEA_CONSOLE << "Computer Graphics Lab, Stanford University, 2011";
     quit = true;
   }
 
   if (argc <= 2 || vm.count("help") > 0)
   {
-    if (quit) cerr << endl;
-    cerr << usage << endl;
-    cerr << visible << endl;
+    if (quit) THEA_CONSOLE << "";
+    THEA_CONSOLE << usage;
+    THEA_CONSOLE << visible;
     quit = true;
   }
 
@@ -192,14 +234,14 @@ parseArgs(int argc, char * argv[])
 
   if (vm.count("infile") <= 0 || vm.count("outfile") <= 0)
   {
-    cerr << "Both input and output files should be specified" << endl;
+    THEA_ERROR << "Both input and output files should be specified";
     return -1;
   }
 
   string lc_out = toLower(outfile);
   if (!(endsWith(lc_out, ".3ds") || endsWith(lc_out, ".obj") || endsWith(lc_out, ".off")))
   {
-    cerr << "Unrecognized mesh output format" << endl;
+    THEA_ERROR << "Unrecognized mesh output format";
     return -1;
   }
 
@@ -229,9 +271,12 @@ parseArgs(int argc, char * argv[])
   if (vm.count("t-juncts") > 0)
     do_t_juncts = do_something = true;
 
+  if (vm.count("orient") > 0)
+    do_orient = do_something = true;
+
   if (!do_something)
   {
-    cerr << "No repair operation specified, no output written" << endl;
+    THEA_WARNING << "No repair operation specified, no output written";
     return 0;
   }
 
@@ -253,8 +298,8 @@ delDanglers(Mesh & mesh)
 
   if (verbose)
   {
-    cout << "del-danglers('" << mesh.getName() << "'): Removed " << (nv - mesh.numVertices()) << " vertices, "
-         << (ne - mesh.numEdges()) << " edges and " << (nf - mesh.numFaces()) << " faces" << endl;
+    THEA_CONSOLE << "del-danglers('" << mesh.getName() << "'): Removed " << (nv - mesh.numVertices()) << " vertices, "
+                 << (ne - mesh.numEdges()) << " edges and " << (nf - mesh.numFaces()) << " faces";
   }
 
   return false;
@@ -267,18 +312,21 @@ zipper(Mesh & mesh)
   {
     zipper_tolerance = 0.001;
     if (verbose)
-      cout << "Using default zipper tolerance: " << zipper_tolerance << endl;
+      THEA_CONSOLE << "Using default zipper tolerance: " << zipper_tolerance;
   }
 
   long nv = mesh.numVertices(), ne = mesh.numEdges(), nf = mesh.numFaces();
 
   mesh.sealSeams((Real)scaledTolerance(mesh, zipper_tolerance));
+
+  // checkProblems(mesh);
+
   mesh.removeDanglers();
 
   if (verbose)
   {
-    cout << "zipper('" << mesh.getName() << "', " << zipper_tolerance << "): Removed " << (nv - mesh.numVertices())
-         << " vertices, " << (ne - mesh.numEdges()) << " edges and " << (nf - mesh.numFaces()) << " faces" << endl;
+    THEA_CONSOLE << "zipper('" << mesh.getName() << "', " << zipper_tolerance << "): Removed " << (nv - mesh.numVertices())
+                 << " vertices, " << (ne - mesh.numEdges()) << " edges and " << (nf - mesh.numFaces()) << " faces";
   }
 
   return false;
@@ -291,7 +339,7 @@ vWeld(Mesh & mesh)
   {
     v_weld_tolerance = 0.001;
     if (verbose)
-      cout << "Using default vertex welding tolerance: " << v_weld_tolerance << endl;
+      THEA_CONSOLE << "Using default vertex welding tolerance: " << v_weld_tolerance;
   }
 
   long nv = mesh.numVertices();
@@ -306,27 +354,57 @@ vWeld(Mesh & mesh)
 
     Mesh::Vertex * existing = (Mesh::Vertex *)welder.getVertex(vx->getPosition());
     if (existing)
-      mesh.replaceVertex(vx, existing);
+    {
+      // Don't weld vertices connected by an edge or a face
+      bool are_connected = false;
+      if (existing->hasEdgeTo(vx))
+        are_connected = true;
+
+      if (!are_connected)
+      {
+        for (Mesh::Vertex::FaceConstIterator vfi = vx->facesBegin(); vfi != vx->facesEnd(); ++vfi)
+          if (existing->hasIncidentFace(*vfi))
+          {
+            are_connected = true;
+            break;
+          }
+      }
+
+      if (!are_connected)
+        mesh.replaceVertex(vx, existing);
+    }
     else
       welder.addVertex(vx, vx->getPosition());
   }
+
+  // checkProblems(mesh);
 
   mesh.removeDanglers();
 
   if (verbose)
   {
-    cout << (v_weld_boundary_only ? "v-weld-boundary('" : "v-weld('") << mesh.getName() << "', " << v_weld_tolerance
-         << "): Removed " << (nv - mesh.numVertices()) << " vertices" << endl;
+    THEA_CONSOLE << (v_weld_boundary_only ? "v-weld-boundary('" : "v-weld('") << mesh.getName() << "', " << v_weld_tolerance
+                 << "): Removed " << (nv - mesh.numVertices()) << " vertices";
   }
 
   return false;
 }
 
-class VertexFilter : public Algorithms::Filter<Mesh::Vertex *>
+class VertexFilter : public Filter<Mesh::Vertex *>
 {
   public:
     VertexFilter(Mesh::Edge * edge_) : edge(edge_) {}
-    bool allows(Mesh::Vertex * const & vx) const { return !edge->hasEndpoint(vx); }
+    bool allows(Mesh::Vertex * const & vx) const
+    {
+      if (edge->hasEndpoint(vx))
+        return false;
+
+      for (Mesh::Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+        if ((*efi)->hasVertex(vx))
+          return false;
+
+      return true;
+    }
 
   private:
     Mesh::Edge * edge;
@@ -352,13 +430,11 @@ segFromEdge(Mesh::Edge const & edge, double tol, LineSegment3 & seg)
 bool
 tJuncts(Mesh & mesh)
 {
-  using namespace Algorithms;
-
   if (t_juncts_tolerance < 0)
   {
     t_juncts_tolerance = 0.001;
     if (verbose)
-      cout << "Using default t-junction tolerance: " << t_juncts_tolerance << endl;
+      THEA_CONSOLE << "Using default t-junction tolerance: " << t_juncts_tolerance;
   }
 
   double tol = scaledTolerance(mesh, t_juncts_tolerance);
@@ -393,7 +469,9 @@ tJuncts(Mesh & mesh)
   {
     for (array_size_t i = 0; i < boundary_segs.size(); ++i)
     {
-      VertexFilter filter(boundary_edges[i]);
+      Mesh::Edge * edge = boundary_edges[i];
+
+      VertexFilter filter(edge);
       kdtree.pushFilter(&filter);
         long index = kdtree.closestElement<MetricL2>(boundary_segs[i], 2 * tol);  // add 2 for a little safety margin
       kdtree.popFilter();
@@ -404,11 +482,10 @@ tJuncts(Mesh & mesh)
       Mesh::Vertex * vx = kdtree.getElements()[(size_t)index];
       Vector3 cp = boundary_segs[i].closestPoint(vx->getPosition());
 
-      if ((cp - boundary_edges[i]->getEndpoint(0)->getPosition()).squaredLength() > sqtol
-       && (cp - boundary_edges[i]->getEndpoint(1)->getPosition()).squaredLength() > sqtol
+      if ((cp - edge->getEndpoint(0)->getPosition()).squaredLength() > sqtol
+       && (cp - edge->getEndpoint(1)->getPosition()).squaredLength() > sqtol
        && (cp - vx->getPosition()).squaredLength() < sqtol)
       {
-        Mesh::Edge * edge = boundary_edges[i];
         Mesh::Edge * new_edge = mesh.splitEdge(edge, vx);
         if (!new_edge)
         {
@@ -430,13 +507,251 @@ tJuncts(Mesh & mesh)
     }
   }
 
+  // checkProblems(mesh);
+
   mesh.removeDanglers();
 
   if (verbose)
   {
-    cout << "t-juncts('" << mesh.getName() << "', " << t_juncts_tolerance << ", " << t_juncts_iters << "): Fixed " << num_fixed
-         << " t-junctions" << endl;
+    THEA_CONSOLE << "t-juncts('" << mesh.getName() << "', " << t_juncts_tolerance << ", " << t_juncts_iters << "): Fixed "
+                 << num_fixed << " t-junctions";
   }
+
+  return false;
+}
+
+bool
+consistentWinding(Mesh::Face const * face0, Mesh::Face const * face1, Mesh::Edge const * edge)
+{
+  Mesh::Face const * f[2] = { face0, face1 };
+  int in_order[2] = { -1, -1 };
+
+  for (int i = 0; i < 2; ++i)
+  {
+    for (Mesh::Face::VertexConstIterator fvj = f[i]->verticesBegin(); fvj != f[i]->verticesEnd(); ++fvj)
+    {
+      Mesh::Vertex const * v0 = *fvj;
+      Mesh::Vertex const * v1 = f[i]->getSuccessor(fvj);
+
+      if (edge->getEndpoint(0) == v0 && edge->getEndpoint(1) == v1)
+      {
+        in_order[i] = 1;
+        break;
+      }
+      else if (edge->getEndpoint(0) == v1 && edge->getEndpoint(1) == v0)
+      {
+        in_order[i] = 0;
+        break;
+      }
+    }
+
+    if (in_order[i] < 0)
+    {
+      THEA_CONSOLE << "face = " << f[i] << ", e[0] = " << edge->getEndpoint(0) << ", e[1] = " << edge->getEndpoint(1);
+      for (Mesh::Face::VertexConstIterator fvj = f[i]->verticesBegin(); fvj != f[i]->verticesEnd(); ++fvj)
+        THEA_CONSOLE << "v = " << *fvj;
+    }
+
+    alwaysAssertM(in_order[i] >= 0, "Edge not part of face");
+  }
+
+  return in_order[0] != in_order[1];
+}
+
+bool
+orient(Mesh & mesh)
+{
+  TheaArray< TheaArray<Mesh::Face *> > cc;
+  long num_cc = ConnectedComponents::findEdgeConnected(mesh, cc);
+
+  enum { NOT_VISITED, VISITED };
+
+  for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    fi->attr().flag = NOT_VISITED;
+
+  long num_flipped = 0;
+  for (array_size_t i = 0; i < cc.size(); ++i)
+  {
+    if (cc.empty())  // shouldn't happen, but check just in case
+    {
+      THEA_WARNING << mesh.getName() << ": Empty connected component";
+      continue;
+    }
+
+    // Find vertex with max X
+    Mesh::Vertex * xmax_vertex = NULL;
+    for (array_size_t j = 0; j < cc[i].size(); ++j)
+      for (Mesh::Face::VertexConstIterator fvi = cc[i][j]->verticesBegin(); fvi != cc[i][j]->verticesEnd(); ++fvi)
+        if (!xmax_vertex || (*fvi)->getPosition().x() > xmax_vertex->getPosition().x())
+          xmax_vertex = *fvi;
+
+    if (!xmax_vertex)  // shouldn't happen, but check just in case
+    {
+      THEA_WARNING << mesh.getName() << ": No vertex with maximum X found";
+      continue;
+    }
+
+    // Find the "most X-facing" face incident on xmax_vertex. This face should always have a normal with positive X-component.
+    Mesh::Face * xmax_face = NULL;
+    Real xmax_face_nx = -1;
+    for (Mesh::Vertex::FaceConstIterator vfi = xmax_vertex->facesBegin(); vfi != xmax_vertex->facesEnd(); ++vfi)
+    {
+      Mesh::Face * face = *vfi;
+      Real nx = fabs(face->getNormal().x());
+      if (!xmax_face || nx > xmax_face_nx)
+      {
+        xmax_face = face;
+        xmax_face_nx = nx;
+      }
+    }
+
+    if (!xmax_face)  // shouldn't happen, but check just in case
+    {
+      THEA_WARNING << mesh.getName() << ": No face with maximum X found";
+      continue;
+    }
+
+    // Fix the orientation of this face
+    if (xmax_face->getNormal().x() < 0)  // assume this is never zero... that would be a degenerate case
+    {
+      xmax_face->reverseWinding();
+      num_flipped++;
+    }
+
+    xmax_face->attr().flag = VISITED;
+
+    queue<Mesh::Face *> q;
+    q.push(xmax_face);
+    while (!q.empty())
+    {
+      Mesh::Face * face = q.front();
+      q.pop();
+
+      if (!face)
+      {
+        THEA_WARNING << mesh.getName() << ": Null face";
+        continue;
+      }
+
+      alwaysAssertM(face->attr().flag == VISITED, string(mesh.getName()) + ": Unvisited face in queue");
+
+      for (Mesh::Face::EdgeConstIterator fei = face->edgesBegin(); fei != face->edgesEnd(); ++fei)
+      {
+        Mesh::Edge * edge = *fei;
+        for (Mesh::Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+        {
+           Mesh::Face * adj_face = *efi;
+           if (adj_face->attr().flag == VISITED)
+             continue;
+
+           if (!consistentWinding(face, adj_face, edge))
+           {
+             adj_face->reverseWinding();
+             num_flipped++;
+           }
+
+           adj_face->attr().flag = VISITED;
+           q.push(adj_face);
+        }
+      }
+    }
+  }
+
+  for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    fi->updateNormal();
+
+  for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+    if (!vi->hasPrecomputedNormal())
+      vi->updateNormal();
+
+  // checkProblems(mesh);
+
+  if (verbose)
+  {
+    THEA_CONSOLE << "orient('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces in "
+                 << num_cc << " connected components";
+  }
+
+  return false;
+}
+
+bool
+checkProblems(Mesh & mesh)
+{
+  long num_faces_with_repeated_vertices = 0;
+  long num_faces_with_repeated_edges = 0;
+
+  long num_edges_with_repeated_vertices = 0;
+  long num_edges_with_repeated_faces = 0;
+
+  long num_vertices_with_repeated_edges = 0;
+  long num_vertices_with_repeated_faces = 0;
+
+  for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+  {
+    Mesh::Face const & face = *fi;
+
+    for (Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
+      if (std::count(face.verticesBegin(), face.verticesEnd(), *vi) > 1)
+      {
+        num_faces_with_repeated_vertices++;
+        break;
+      }
+
+    for (Mesh::Face::EdgeConstIterator ei = face.edgesBegin(); ei != face.edgesEnd(); ++ei)
+      if (std::count(face.edgesBegin(), face.edgesEnd(), *ei) > 1)
+      {
+        num_faces_with_repeated_edges++;
+        break;
+      }
+  }
+
+  for (Mesh::EdgeConstIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
+  {
+    Mesh::Edge const & edge = *ei;
+
+    if (edge.getEndpoint(0) == edge.getEndpoint(1))
+      num_edges_with_repeated_vertices++;
+
+    for (Mesh::Edge::FaceConstIterator fi = edge.facesBegin(); fi != edge.facesEnd(); ++fi)
+      if (std::count(edge.facesBegin(), edge.facesEnd(), *fi) > 1)
+      {
+        num_edges_with_repeated_faces++;
+        break;
+      }
+  }
+
+  for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+  {
+    Mesh::Vertex const & vertex = *vi;
+
+    for (Mesh::Vertex::EdgeConstIterator ei = vertex.edgesBegin(); ei != vertex.edgesEnd(); ++ei)
+      if (std::count(vertex.edgesBegin(), vertex.edgesEnd(), *ei) > 1)
+      {
+        num_vertices_with_repeated_edges++;
+        break;
+      }
+
+    for (Mesh::Vertex::FaceConstIterator fi = vertex.facesBegin(); fi != vertex.facesEnd(); ++fi)
+      if (std::count(vertex.facesBegin(), vertex.facesEnd(), *fi) > 1)
+      {
+        num_vertices_with_repeated_faces++;
+        break;
+      }
+  }
+
+  if (num_faces_with_repeated_vertices > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_faces_with_repeated_vertices << " faces with repeated vertices";
+  if (num_faces_with_repeated_edges > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_faces_with_repeated_edges << " faces with repeated edges";
+  if (num_edges_with_repeated_vertices > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_edges_with_repeated_vertices << " self-loop edges";
+  if (num_edges_with_repeated_faces > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_edges_with_repeated_faces << " edges with repeated faces";
+  if (num_vertices_with_repeated_edges > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_vertices_with_repeated_edges << " vertices with repeated edges";
+  if (num_vertices_with_repeated_faces > 0)
+    THEA_CONSOLE << mesh.getName() << ": " << num_vertices_with_repeated_faces << " vertices with repeated faces";
 
   return false;
 }

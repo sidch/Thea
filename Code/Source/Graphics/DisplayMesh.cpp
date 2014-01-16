@@ -345,6 +345,7 @@ DisplayMesh::computeAveragedVertexNormals()
   for (array_size_t i = 0; i < normals.size(); ++i)
     normals[i] = Vector3::zero();
 
+  // TODO: weight normals by face area?
   Vector3 n;
   uint32 i0, i1, i2, i3;
   for (array_size_t i = 0; i < tris.size(); i += 3)

@@ -99,6 +99,9 @@ class THEA_API BestFitSphere3
     /** Get the radius of the sphere. */
     Real getRadius() const;
 
+    /** Get the diameter of the sphere. */
+    Real getDiameter() const;
+
     /** Get the center of the sphere. */
     Vector3 const & getCenter() const;
 

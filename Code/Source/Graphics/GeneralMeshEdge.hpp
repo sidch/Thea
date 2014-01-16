@@ -256,6 +256,9 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
       }
     }
 
+    /** Remove a face incident on this edge. */
+    FaceIterator removeFace(FaceIterator loc) { return faces.erase(loc); }
+
     /** Replace all references to a face with references to another face. */
     void replaceFace(Face * old_face, Face * new_face)
     {
@@ -263,6 +266,9 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
         if (*fi == old_face)
           *fi = new_face;
     }
+
+    /** Is the edge a self-loop (both endpoints same)? */
+    bool isSelfLoop() const { return endpoints[0] == endpoints[1]; }
 
     /** Mark the edge. */
     void mark()

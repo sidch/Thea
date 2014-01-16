@@ -82,6 +82,9 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Get the radius of the ball. */
     T getRadius() const { return radius; }
 
+    /** Get the diameter of the ball. */
+    T getDiameter() const { return 2 * radius; }
+
     /** Set the radius of the ball. */
     void setRadius(T radius_) { radius = radius_; }
 
