@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <string>
 
 using namespace std;
@@ -89,6 +90,7 @@ int t_juncts_iters = -1;
 
 bool do_orient = false;
 bool do_orient_sdf = false;
+bool do_orient_majority = false;
 
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
@@ -96,6 +98,7 @@ bool zipper(Mesh & mesh);
 bool vWeld(Mesh & mesh);
 bool tJuncts(Mesh & mesh);
 bool orient(Mesh & mesh);
+bool orientMajority(Mesh & mesh);
 void orientSDF(MG & mesh_group);
 bool checkProblems(Mesh & mesh);
 
@@ -149,6 +152,12 @@ meshFix(int argc, char * argv[])
   if (do_orient_sdf)
   {
     orientSDF(mg);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
+  if (do_orient_majority)
+  {
+    mg.forEachMeshUntil(&orientMajority);
     mg.forEachMeshUntil(&checkProblems);
   }
 
@@ -209,6 +218,10 @@ parseArgs(int argc, char * argv[])
           ("orient-sdf",          "Consistently orient each edge-connected component of the mesh so that normals defined by"
                                   " counter-clockwise winding point inside-out, using the direction of smaller shape diameter"
                                   " as a heuristic")
+
+          ("orient-majority",     "Consistently orient each edge-connected component of the mesh so that normals defined by"
+                                  " counter-clockwise winding point inside-out, flipping faces that disagree most with their"
+                                  " neighbors first")
   ;
 
   po::options_description desc;
@@ -290,6 +303,9 @@ parseArgs(int argc, char * argv[])
 
   if (vm.count("orient-sdf") > 0)
     do_orient_sdf = do_something = true;
+
+  if (vm.count("orient-majority") > 0)
+    do_orient_majority = do_something = true;
 
   if (!do_something)
   {
@@ -713,6 +729,17 @@ struct SDFOrienter
       Vector3 n = fi->getNormal();
       double sdf_pos = sdf->compute(centroid,  n, false);
       double sdf_neg = sdf->compute(centroid, -n, false);
+#if 0
+      if ((sdf_neg < 0 || sdf_neg > 0.4) && (sdf_pos < 0 || sdf_pos > 0.4))
+      {
+        if (fi->getNormal().z() < 0)
+        {
+          fi->reverseWinding();
+          num_flipped++;
+        }
+      }
+      else
+#endif
       if (sdf_neg >= 0 && (sdf_pos < 0 || sdf_neg < sdf_pos))
       {
         fi->reverseWinding();
@@ -738,6 +765,93 @@ orientSDF(MG & mesh_group)
   ShapeDiameter<Mesh> sdf(mesh_group);
   SDFOrienter func(&sdf);
   mesh_group.forEachMeshUntil(&func);
+}
+
+struct CountComparator
+{
+  bool operator()(Mesh::Face const * f0, Mesh::Face const * f1)
+  {
+    return f0->attr().flag > f1->attr().flag || (f0->attr().flag == f1->attr().flag && f0 < f1);
+  }
+};
+
+bool
+orientMajority(Mesh & mesh)
+{
+  for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    fi->attr().flag = 0;
+
+  for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+  {
+    Mesh::Face * face = &(*fi);
+    for (Mesh::Face::EdgeIterator fei = face->edgesBegin(); fei != face->edgesEnd(); ++fei)
+    {
+      Mesh::Edge * edge = *fei;
+      for (Mesh::Edge::FaceIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+      {
+        Mesh::Face * nbr = *efi;
+        if (face == nbr)
+          continue;
+
+        if (!consistentWinding(face, nbr, edge))
+        {
+          face->attr().flag++;
+          nbr->attr().flag++;
+        }
+      }
+    }
+  }
+
+  typedef set<Mesh::Face *, CountComparator> FaceMaxHeap;
+  FaceMaxHeap heap;
+  for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    heap.insert(&(*fi));
+
+  long num_flipped = false;
+  while (!heap.empty())
+  {
+    Mesh::Face * face = *heap.begin();
+    heap.erase(face);
+
+    if (face->attr().flag <= 0)
+    {
+      face->attr().flag = -1;  // visited
+      continue;
+    }
+
+    face->attr().flag = -1;  // visited
+
+    for (Mesh::Face::EdgeIterator fei = face->edgesBegin(); fei != face->edgesEnd(); ++fei)
+    {
+      Mesh::Edge * edge = *fei;
+      for (Mesh::Edge::FaceIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+      {
+        Mesh::Face * nbr = *efi;
+        if (face == nbr || nbr->attr().flag < 0)
+          continue;
+
+        if (!consistentWinding(face, nbr, edge))
+        {
+          alwaysAssertM(nbr->attr().flag > 0,
+                        "orient-majority('" + string(mesh.getName()) + "): Expected > 0 neighbor consistency count");
+
+          heap.erase(nbr);
+          nbr->attr().flag--;
+          heap.insert(nbr);
+        }
+      }
+    }
+
+    face->reverseWinding();
+    num_flipped++;
+  }
+
+  if (verbose)
+  {
+    THEA_CONSOLE << "orient-majority('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+  }
+
+  return false;
 }
 
 bool

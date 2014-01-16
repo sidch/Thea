@@ -341,7 +341,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
     {
       switch (features.size())
       {
-        case 1:   render_system.setColor(ColorRGB::jetColorMap(features[0][i])); break;
+        case 1:   render_system.setColor(ColorRGB::jetColorMap(0.2 + 0.6 * features[0][i])); break;
         case 2:   render_system.setColor(ColorRGB(features[0][i], features[1][i], 1.0f)); break;
         default:  render_system.setColor(ColorRGB(features[0][i], features[1][i], features[2][i])); break;
       }

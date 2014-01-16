@@ -663,20 +663,20 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       if (edge->isSelfLoop())
       {
-        THEA_WARNING << getName() << ": Can't split self-loop edge";
+        THEA_DEBUG << getName() << ": Can't split self-loop edge";
         return NULL;
       }
 
       if (edge->hasEndpoint(vertex))
       {
-        THEA_WARNING << getName() << ": Can't split edge at existing endpoint";
+        THEA_DEBUG << getName() << ": Can't split edge at existing endpoint";
         return NULL;
       }
 
       for (typename Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
         if ((*efi)->hasVertex(vertex))
         {
-          THEA_WARNING << getName() << ": Can't split edge at vertex on the same face";
+          THEA_DEBUG << getName() << ": Can't split edge at vertex on the same face";
           return NULL;
         }
 
@@ -1111,13 +1111,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       if (old_v[0] == old_v[1])  // can't handle degenerate cases
       {
-        THEA_WARNING << getName() << ": Can't replace a self-loop";
+        THEA_DEBUG << getName() << ": Can't replace a self-loop";
         return false;
       }
 
       if (new_v[0] == new_v[1])  // can't handle degenerate cases
       {
-        THEA_WARNING << getName() << ": Can't replace with a self-loop";
+        THEA_DEBUG << getName() << ": Can't replace with a self-loop";
         return false;
       }
 
@@ -1130,14 +1130,14 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
        || (e10 && e10 != old_edge && e10 != new_edge)
        || (e11 && e11 != old_edge && e11 != new_edge))
       {
-        THEA_WARNING << getName() << ": Can't replace an edge with another to which it has a connecting edge";
+        THEA_DEBUG << getName() << ": Can't replace an edge with another to which it has a connecting edge";
         return false;
       }
 
       for (typename Edge::FaceConstIterator efi = old_edge->facesBegin(); efi != old_edge->facesEnd(); ++efi)
         if (new_edge->hasIncidentFace(*efi))
         {
-          THEA_WARNING << getName() << ": Can't replace an edge with another on the same face";
+          THEA_DEBUG << getName() << ": Can't replace an edge with another on the same face";
           return false;
         }
 
