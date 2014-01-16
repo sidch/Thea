@@ -193,7 +193,7 @@ class ShapeDiameter
      */
     double compute(Vector3 const & position, Vector3 const & normal, bool only_hit_interior_surfaces = true) const
     {
-      Vector3 in = -normal;
+      Vector3 in = -normal.unit();
       Vector3 u, v;
       getTwoMutuallyPerpendicularAxes(in, u, v);
       Matrix3 rot(u[0], v[0], in[0],

@@ -314,7 +314,18 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
   MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
-    values[i] = sdf.compute(positions[i], normals[i]);
+  {
+    double v0 = sdf.compute(positions[i],  normals[i], true);
+    if (v0 < 0)
+      v0 = sdf.compute(positions[i],  normals[i], false);
+
+    double v1 = sdf.compute(positions[i], -normals[i], true);
+    if (v1 < 0)
+      v1 = sdf.compute(positions[i], -normals[i], false);
+
+    double vmin = (v1 < 0 || (v0 >= 0 && v0 < v1)) ? v0 : v1;
+    values[i] = (vmin < 0 ? 0 : vmin) * sdf.getNormalizationScale();
+  }
 
   THEA_CONSOLE << "  -- done";
 
