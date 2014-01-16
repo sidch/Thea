@@ -205,7 +205,7 @@ class /* THEA_API */ GeneralMeshVertex
       {
         Vector3 sum_normals = Vector3::zero();
         for (FaceConstIterator fi = faces.begin(); fi != faces.end(); ++fi)
-          sum_normals += (*fi)->getNormal();
+          sum_normals += (*fi)->getNormal();  // weight by face area?
 
         normal_normalization_factor = sum_normals.length();
         setNormal(normal_normalization_factor < 1e-20f ? Vector3::zero() : sum_normals / normal_normalization_factor);

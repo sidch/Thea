@@ -57,7 +57,7 @@ namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
 
-/** Computes the histogram of pairwise distances from a query point to other points on a shape. */
+/** Computes the histogram of distances from a query point to other points on a shape. */
 template < typename MeshT,
            typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
 class DistanceHistogram
@@ -78,11 +78,11 @@ class DistanceHistogram
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
-     * @param normalization_scale The scale of the shape, used to define the size of histogram bins. If <= 0, the bounding
-     *   sphere diameter will be used.
+     * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
+     *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     DistanceHistogram(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
-    : kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
     {
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
@@ -93,7 +93,7 @@ class DistanceHistogram
       {
         BestFitSphere3 bsphere;
         bsphere.addMesh(mesh);
-        scale = bsphere.getRadius();
+        scale = bsphere.getDiameter();
       }
     }
 
@@ -103,11 +103,11 @@ class DistanceHistogram
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
-     * @param normalization_scale The scale of the shape, used to define the size of histogram bins. If <= 0, the bounding
-     *   sphere diameter will be used.
+     * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
+     *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     DistanceHistogram(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
-    : kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
     {
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
@@ -118,7 +118,7 @@ class DistanceHistogram
       {
         BestFitSphere3 bsphere;
         bsphere.addMeshGroup(mesh_group);
-        scale = bsphere.getRadius();
+        scale = bsphere.getDiameter();
       }
     }
 
@@ -126,12 +126,12 @@ class DistanceHistogram
      * Constructs the object to compute the histogram of distances to sample points of a shape with a precomputed kd-tree on
      * these points. The kd-tree must persist as long as this object does.
      *
-     * @param kdtree_ The kd-tree representing the shape.
-     * @param normalization_scale The scale of the shape, used to define the size of histogram bins. If <= 0, the bounding
-     *   sphere diameter will be used.
+     * @param sample_kdtree_ The kd-tree representing the shape.
+     * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
+     *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    DistanceHistogram(ExternalSampleKDTree const * kdtree_, Real normalization_scale = -1)
-    : kdtree(NULL), precomp_kdtree(kdtree_), scale(normalization_scale)
+    DistanceHistogram(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
+    : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "DistanceHistogram: Precomputed KD-tree cannot be null");
 
@@ -139,14 +139,14 @@ class DistanceHistogram
       {
         BestFitSphere3 bsphere;
         bsphere.addPoints(precomp_kdtree->getElements(), precomp_kdtree->getElements() + precomp_kdtree->numElements());
-        scale = bsphere.getRadius();
+        scale = bsphere.getDiameter();
       }
     }
 
     /** Destructor. */
     ~DistanceHistogram()
     {
-      delete kdtree;
+      delete sample_kdtree;
     }
 
     /**
@@ -183,8 +183,8 @@ class DistanceHistogram
       }
       else
       {
-        if (!precomp_kdtree && !kdtree)
-          kdtree = new SampleKDTree(samples.begin(), samples.end());
+        if (!precomp_kdtree && !sample_kdtree)
+          sample_kdtree = new SampleKDTree(samples.begin(), samples.end());
 
         DistanceHistogramFunctor func(position, num_bins, histogram, max_distance);
         Ball3 ball(position, max_distance);
@@ -192,7 +192,7 @@ class DistanceHistogram
         if (precomp_kdtree)
           const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(ball, &func);
         else
-          kdtree->template processRangeUntil<IntersectionTester>(ball, &func);
+          sample_kdtree->template processRangeUntil<IntersectionTester>(ball, &func);
       }
     }
 
@@ -229,7 +229,7 @@ class DistanceHistogram
     }; // struct DistanceHistogramFunctor
 
     TheaArray<Vector3> samples;  ///< Mesh sample points computed by this object.
-    mutable SampleKDTree * kdtree;  ///< KD-tree on mesh samples.
+    mutable SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
     ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
     Real scale;  ///< The normalization length.
 

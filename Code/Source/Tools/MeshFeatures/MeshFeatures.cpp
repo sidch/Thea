@@ -43,7 +43,7 @@ bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, The
 bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                                 TheaArray<double> & values);
 bool computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
-                               Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+                               long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
 main(int argc, char * argv[])
@@ -76,7 +76,7 @@ main(int argc, char * argv[])
     THEA_CONSOLE << "    <featureN> must be one of:";
     THEA_CONSOLE << "        --sdf";
     THEA_CONSOLE << "        --projcurv";
-    THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>]";
+    THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
     THEA_CONSOLE << "        --shift01 (not a feature, maps features in [-1, 1] to [0, 1])";
     THEA_CONSOLE << "        --scale=<factor> (not a feature, scales feature values by the factor)";
 
@@ -196,19 +196,25 @@ main(int argc, char * argv[])
     }
     else if (beginsWith(feat, "dh="))
     {
-      long num_bins;
+      long num_bins, num_samples;
       double max_distance;
 
-      long num_params = sscanf(feat.c_str(), "dh=%ld,%lf", &num_bins, &max_distance);
+      long num_params = sscanf(feat.c_str(), "dh=%ld,%lf,%ld", &num_bins, &max_distance, &num_samples);
       if (num_params < 1)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
         return -1;
       }
-      else if (num_params == 1)
+      else if (num_params < 3)
       {
-        THEA_WARNING << "Distance limit for not specified for distance histogram, using default of mesh scale";
-        max_distance = -1;
+        THEA_WARNING << "Approximate number of samples not specified for distance histogram, using default value";
+        num_samples = -1;
+
+        if (num_params < 2)
+        {
+          THEA_WARNING << "Distance limit for not specified for distance histogram, using default of mesh scale";
+          max_distance = -1;
+        }
       }
 
       if (num_bins <= 0)
@@ -218,7 +224,7 @@ main(int argc, char * argv[])
       }
 
       Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a histogram
-      if (!computeDistanceHistograms(mg, positions, num_bins, max_distance, values))
+      if (!computeDistanceHistograms(mg, positions, num_bins, max_distance, num_samples, values))
         return -1;
 
       alwaysAssertM(values.numRows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
@@ -265,7 +271,7 @@ main(int argc, char * argv[])
     feat_str << feat_names[i];
   }
 
-  THEA_CONSOLE << "Computed " << feat_names.size() << " features: " << feat_str.str();
+  THEA_CONSOLE << "Computed " << feat_names.size() << " feature(s): " << feat_str.str();
 
   // Write features to file
   ofstream out(out_path.c_str());
@@ -334,12 +340,12 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
 
 bool
 computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
-                          Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+                          long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing distance histograms";
 
   values.resize((long)positions.size(), num_bins);
-  MeshFeatures::DistanceHistogram<Mesh> dh(mg);
+  MeshFeatures::DistanceHistogram<Mesh> dh(mg, num_samples);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     dh.compute(positions[i], num_bins, &values((long)i, 0), max_distance);

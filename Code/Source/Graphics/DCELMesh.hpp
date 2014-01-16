@@ -939,7 +939,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 #endif
 
         // Update the normal at the vertex
-        vi->addFaceNormal(normal);
+        vi->addFaceNormal(normal);  // weight by face area?
 
         i = next;
         vi = vnext;

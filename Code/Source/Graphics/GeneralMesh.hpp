@@ -405,7 +405,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       // Update the face and vertex normals;
       face->updateNormal();
       for (typename Face::VertexIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
-        (*fvi)->addFaceNormal(face->getNormal());
+        (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
 
       invalidateGPUBuffers();
 
@@ -447,8 +447,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     }
 
     /**
-     * Weld boundary edges that are approximately coincident. This does <b>not</b> remove the duplicate edges and vertices, but
-     * isolates them so they can be manually deleted via removeIsolatedEdges() and removeIsolatedVertices().
+     * Weld boundary edges that are approximately coincident.
      *
      * @todo Test this properly.
      */
@@ -459,6 +458,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       for (EdgeIterator ei = edges.begin(); ei != edges.end(); ++ei)
       {
         if (!ei->isBoundary())
+          continue;
+
+        if (ei->isSelfLoop())
           continue;
 
         Edge * edge = &(*ei);
@@ -481,6 +483,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         else
           welder.addEdge(edge, edge->getEndpoint(0)->getPosition(), edge->getEndpoint(1)->getPosition());
       }
+
+      removeIsolatedEdges();
     }
 
     /**
@@ -489,24 +493,36 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      */
     void replaceVertex(Vertex * old_vertex, Vertex * new_vertex)
     {
-      for (typename Vertex::EdgeIterator ei = old_vertex->edgesBegin(); ei != old_vertex->edgesEnd(); ++ei)
+      if (new_vertex == old_vertex)  // nothing to do
+        return;
+
+      // Check if the vertices are connected by an edge
+      Edge * connecting_edge = new_vertex->getEdgeTo(old_vertex);
+      if (connecting_edge)
       {
-        (*ei)->replaceVertex(old_vertex, new_vertex);
-
-        if (!new_vertex->hasIncidentEdge(*ei))
-          new_vertex->addEdge(*ei);
+        collapseEdge(connecting_edge, connecting_edge->getEndpointIndex(new_vertex));
       }
-
-      for (typename Vertex::FaceIterator fi = old_vertex->facesBegin(); fi != old_vertex->facesEnd(); ++fi)
+      else
       {
-        (*fi)->replaceVertex(old_vertex, new_vertex);
+        for (typename Vertex::EdgeIterator ei = old_vertex->edgesBegin(); ei != old_vertex->edgesEnd(); ++ei)
+        {
+          (*ei)->replaceVertex(old_vertex, new_vertex);
 
-        if (!new_vertex->hasIncidentFace(*fi))
-          new_vertex->addFace(*fi);
+          if (!new_vertex->hasIncidentEdge(*ei))
+            new_vertex->addEdge(*ei);
+        }
+
+        for (typename Vertex::FaceIterator fi = old_vertex->facesBegin(); fi != old_vertex->facesEnd(); ++fi)
+        {
+          (*fi)->replaceVertex(old_vertex, new_vertex);
+
+          if (!new_vertex->hasIncidentFace(*fi))
+            new_vertex->addFace(*fi);
+        }
+
+        old_vertex->edges.clear();
+        old_vertex->faces.clear();
       }
-
-      old_vertex->edges.clear();
-      old_vertex->faces.clear();
     }
 
     /**
@@ -521,21 +537,100 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       if (!edge)
         return;
 
+      if (edge->isSelfLoop())
+      {
+        THEA_WARNING << getName() << ": Edge is self-loop";
+        return;
+      }
+
       debugAssertM(endpoint_to_preserve == 0 || endpoint_to_preserve == 1,
                    getNameStr() + ": Endpoint to preserve during edge collapse must be indexed by 0 or 1");
 
       Vertex * vertex_to_preserve  =  edge->getEndpoint(endpoint_to_preserve);
       Vertex * vertex_to_remove    =  edge->getEndpoint(1 - endpoint_to_preserve);
 
+      // Remove all references to this edge, and the vertex to remove, from all adjacent faces
+      bool preserve_edge = false;
+      for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); )
+      {
+        Face * face = *fi;
+        typename Face::EdgeIterator fei = face->edgesBegin();
+        typename Face::VertexIterator fvi = face->verticesBegin();
+
+        bool preserve_edge_ref_to_face = false;
+        while (fei != face->edgesEnd())
+        {
+          if (*fei == edge)
+          {
+            if (*fvi == vertex_to_remove)
+            {
+              fei = face->removeEdge(fei);
+              fvi = face->removeVertex(fvi);
+            }
+            else
+            {
+              // We expect the next vertex to be the one to remove. We'll have to advance the vertex iterator, delete the
+              // vertex, and then advance the edge iterator as well
+              typename Face::VertexIterator next = fvi; ++next;
+              if (next == face->verticesEnd())
+                next = face->verticesBegin();
+
+              if (*next == vertex_to_remove)
+              {
+                fei = face->removeEdge(fei);
+                fvi = face->removeVertex(next);
+
+                // Now we must skip over the next edge as well, else edge and vertex iterators will be out of sync
+                if (fei != face->edgesEnd())
+                {
+                  if (*fei == edge)  // somehow this has happened
+                  {
+                    THEA_WARNING << getName() << ": Face has repeated edge";
+
+                    preserve_edge_ref_to_face = true;
+                  }
+
+                  ++fei;
+                }
+              }
+              else
+              {
+                THEA_WARNING << getName() << ": Edge does not correspond to pair of consecutive vertices";
+
+                preserve_edge_ref_to_face = true;
+
+                ++fei;
+                ++fvi;
+              }
+            }
+          }
+          else
+          {
+            ++fei;
+            ++fvi;
+          }
+        }
+
+        if (!preserve_edge_ref_to_face)
+          fi = edge->removeFace(fi);
+        else
+        {
+          preserve_edge = true;
+          ++fi;
+        }
+      }
+
       // Update references of elements adjacent to the vertex that's going to be removed
       for (typename Vertex::EdgeIterator ei = vertex_to_remove->edgesBegin(); ei != vertex_to_remove->edgesEnd(); ++ei)
-        if (*ei != edge)  // no need to bother about this one
-        {
-          (*ei)->replaceVertex(vertex_to_remove, vertex_to_preserve);
+      {
+        // We do the replacement even for the edge that is getting collapsed, since if a face repeats this edge it is going to
+        // be present in the output (as a self-loop)
 
-          if (!(*ei)->hasEndpoint(vertex_to_preserve))
-            vertex_to_preserve->addEdge(*ei);
-        }
+        (*ei)->replaceVertex(vertex_to_remove, vertex_to_preserve);
+
+        if (!(*ei)->hasEndpoint(vertex_to_preserve))
+          vertex_to_preserve->addEdge(*ei);
+      }
 
       for (typename Vertex::FaceIterator fi = vertex_to_remove->facesBegin(); fi != vertex_to_remove->facesEnd(); ++fi)
       {
@@ -547,33 +642,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       // Remove references to this edge from the vertex that will be preserved (the other one will have its references deleted
       // wholesale later)
-      vertex_to_preserve->removeEdge(edge);
+      if (!preserve_edge)
+        vertex_to_preserve->removeEdge(edge);
 
-      // Remove all references to this edge from all adjacent faces
-      for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
-      {
-        Face * face = *fi;
-
-        // The vertex and edge sequences are synced, so we can prune them together (FIXME: We can't make this assumption in
-        // degenerate situations)
-        typename Face::EdgeIterator fei = face->edgesBegin();
-        typename Face::VertexIterator fvi = face->verticesBegin();
-        while (fei != face->edgesEnd())
-        {
-          if (*fei == edge)
-          {
-            fei = face->removeEdge(fei);
-            fvi = face->removeVertex(fvi);
-          }
-          else
-          {
-            ++fei;
-            ++fvi;
-          }
-        }
-      }
-
-      edge->faces.clear();
       vertex_to_remove->edges.clear();
       vertex_to_remove->faces.clear();
     }
@@ -587,11 +658,27 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      */
     Edge * splitEdge(Edge * edge, Vertex * vertex)
     {
-      if (edge->hasEndpoint(vertex))
+      if (!edge)
+        return NULL;
+
+      if (edge->isSelfLoop())
       {
-        THEA_DEBUG << getName() << ": Can't split edge at existing endpoint";
+        THEA_WARNING << getName() << ": Can't split self-loop edge";
         return NULL;
       }
+
+      if (edge->hasEndpoint(vertex))
+      {
+        THEA_WARNING << getName() << ": Can't split edge at existing endpoint";
+        return NULL;
+      }
+
+      for (typename Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+        if ((*efi)->hasVertex(vertex))
+        {
+          THEA_WARNING << getName() << ": Can't split edge at vertex on the same face";
+          return NULL;
+        }
 
       Vertex * old_e1 = edge->getEndpoint(1);
       edge->setEndpoint(1, vertex);
@@ -616,44 +703,35 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
       {
         Face * face = *fi;
-        for (typename Face::EdgeIterator ei = face->edgesBegin(); ei != face->edgesEnd(); ++ei)
+
+        typename Face::EdgeIterator ei = face->edgesBegin();
+        typename Face::VertexIterator vi = face->verticesBegin();
+
+        while (ei != face->edgesEnd())
         {
           if (*ei == edge)
           {
             // Insert before or after?
-            typename Face::EdgeIterator next = ei; ++next;
-            if (next == face->edgesEnd())
-              next = face->edgesBegin();
-
-            if ((*next)->hasEndpoint(old_e1))
-              face->edges.insert(next, new_edge);
-            else
+            if (*vi == old_e1)  // sequence is [v1, v0], insert before
+            {
               face->edges.insert(ei, new_edge);
+            }
+            else  // sequence is [v0, v1], insert after
+            {
+              typename Face::EdgeIterator next_ei = ei; ++next_ei;
+              face->edges.insert(next_ei, new_edge);
+            }
+
+            // Vertex goes in the middle, i.e. always after the current vertex
+            typename Face::VertexIterator next_vi = vi; ++next_vi;
+            face->vertices.insert(next_vi, vertex);
 
             break;
           }
-        }
-
-        // The vertex and edge sequences are almost certainly synced, but let's not take any chances and put this in the loop
-        // above
-        if (!face->hasVertex(vertex))
-        {
-          for (typename Face::VertexIterator vi = face->verticesBegin(); vi != face->verticesEnd(); ++vi)
+          else
           {
-            if (*vi == old_e1)
-            {
-              // Insert before or after?
-              typename Face::VertexIterator next = vi; ++next;
-              if (next == face->verticesEnd())
-                next = face->verticesBegin();
-
-              if (*next == edge->getEndpoint(0))
-                face->vertices.insert(next, vertex);
-              else
-                face->vertices.insert(vi, vertex);
-
-              break;
-            }
+            ++ei;
+            ++vi;
           }
         }
       }
@@ -684,41 +762,53 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Remove all isolated vertices and edges, and empty faces. */
     void removeDanglers()
     {
-      removeIsolatedVertices();
-      removeIsolatedEdges();
-      removeEmptyFaces();
+      // This sequence removes isolated edges and vertices twice, which is currently necessary
+      removeDegenerateEdges();
+      removeDegenerateFaces();
     }
 
-    /** Remove all isolated edges (no incident faces) from the mesh. */
-    void removeIsolatedEdges()
+    /** Remove degenerate edges (isolated or self-loops) from the mesh. */
+    void removeDegenerateEdges()
     {
-      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); )
+      // Remove self-loops
+      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
       {
-        if (ei->faces.empty())
+        if (!ei->isSelfLoop())
+          continue;
+
+        Edge * edge = &(*ei);
+        for (typename Edge::FaceIterator efi = edge->facesBegin(); efi != edge->facesEnd(); )
         {
-          ei->getEndpoint(0)->removeEdge(&(*ei));
-          ei->getEndpoint(1)->removeEdge(&(*ei));
-          ei = edges.erase(ei);
-        }
-        else
-          ++ei;
-      }
-    }
+          Face * face = *efi;
 
-    /** Remove all isolated vertices (no incident edges or faces) from the mesh. */
-    void removeIsolatedVertices()
-    {
-      for (VertexIterator vi = verticesBegin(); vi != verticesEnd(); )
-      {
-        if (vi->faces.empty() && vi->edges.empty())
-          vi = vertices.erase(vi);
-        else
-          ++vi;
+          typename Face::EdgeIterator fei = face->edgesBegin();
+          typename Face::VertexIterator fvi = face->verticesBegin();
+          while (fei != face->edgesEnd())
+          {
+            if (*fei == edge)
+            {
+              alwaysAssertM(*fvi == edge->getEndpoint(0), std::string(getName()) + ": Edge and vertex sequences out of sync");
+
+              fei = face->removeEdge(fei);
+              fvi = face->removeVertex(fvi);
+            }
+            else
+            {
+              ++fei;
+              ++fvi;
+            }
+          }
+
+          efi = edge->removeFace(efi);
+        }
       }
+
+      // Remove isolated edges, including those that became isolated above
+      removeIsolatedEdges();
     }
 
     /** Remove all empty faces (fewer than 3 edges) from the mesh. */
-    void removeEmptyFaces()
+    void removeDegenerateFaces()
     {
       for (FaceIterator fi = faces.begin(); fi != facesEnd(); )
       {
@@ -736,6 +826,38 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         }
         else
           ++fi;
+      }
+
+      removeIsolatedEdges();  // also removes isolated vertices
+    }
+
+    /** Remove all isolated edges (no incident faces) from the mesh. */
+    void removeIsolatedEdges()
+    {
+      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); )
+      {
+        if (ei->faces.empty())
+        {
+          ei->getEndpoint(0)->removeEdge(&(*ei));
+          ei->getEndpoint(1)->removeEdge(&(*ei));
+          ei = edges.erase(ei);
+        }
+        else
+          ++ei;
+      }
+
+      removeIsolatedVertices();  // some vertices might have become isolated because of edge removal
+    }
+
+    /** Remove all isolated vertices (no incident edges or faces) from the mesh. */
+    void removeIsolatedVertices()
+    {
+      for (VertexIterator vi = verticesBegin(); vi != verticesEnd(); )
+      {
+        if (vi->faces.empty() && vi->edges.empty())
+          vi = vertices.erase(vi);
+        else
+          ++vi;
       }
     }
 
@@ -987,11 +1109,37 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       Vertex * old_v[2] = { old_edge->getEndpoint(0), old_edge->getEndpoint(1) };
       Vertex * new_v[2] = { new_edge->getEndpoint(0), new_edge->getEndpoint(1) };
 
-      if (old_v[0] == old_v[1])  // can't handle this degenerate case
+      if (old_v[0] == old_v[1])  // can't handle degenerate cases
       {
-        THEA_WARNING << getName() << ": Can't replace  a degenerate edge";
+        THEA_WARNING << getName() << ": Can't replace a self-loop";
         return false;
       }
+
+      if (new_v[0] == new_v[1])  // can't handle degenerate cases
+      {
+        THEA_WARNING << getName() << ": Can't replace with a self-loop";
+        return false;
+      }
+
+      Edge const * e00 = old_v[0]->getEdgeTo(new_v[0]);
+      Edge const * e01 = old_v[0]->getEdgeTo(new_v[1]);
+      Edge const * e10 = old_v[1]->getEdgeTo(new_v[0]);
+      Edge const * e11 = old_v[1]->getEdgeTo(new_v[1]);
+      if ((e00 && e00 != old_edge && e00 != new_edge)
+       || (e01 && e01 != old_edge && e01 != new_edge)
+       || (e10 && e10 != old_edge && e10 != new_edge)
+       || (e11 && e11 != old_edge && e11 != new_edge))
+      {
+        THEA_WARNING << getName() << ": Can't replace an edge with another to which it has a connecting edge";
+        return false;
+      }
+
+      for (typename Edge::FaceConstIterator efi = old_edge->facesBegin(); efi != old_edge->facesEnd(); ++efi)
+        if (new_edge->hasIncidentFace(*efi))
+        {
+          THEA_WARNING << getName() << ": Can't replace an edge with another on the same face";
+          return false;
+        }
 
       bool swap_endpts = false;
       if (old_v[0] == new_v[0] || old_v[1] == new_v[1])
@@ -1002,8 +1150,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       {
         Real err0 = (old_v[0]->getPosition() - new_v[0]->getPosition()).squaredLength();
         Real err1 = (old_v[0]->getPosition() - new_v[1]->getPosition()).squaredLength();
-        if (err0 > err1)
-          swap_endpts = true;
+        swap_endpts = (err1 < err0);
       }
 
       if (swap_endpts)
@@ -1017,11 +1164,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       for (int i = 0; i < 2; ++i)
         if (old_v[i] != new_v[i])
         {
-          Edge * cross_edge = old_v[i]->getEdgeTo(new_v[i]);
-          if (cross_edge)
-            collapseEdge(cross_edge, cross_edge->getEndpointIndex(new_v[i]));
-          else
-            replaceVertex(old_v[i], new_v[i]);
+          replaceVertex(old_v[i], new_v[i]);
         }
 
       // Now there is a double edge, which we will remove
