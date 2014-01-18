@@ -51,11 +51,11 @@
 
 namespace Browse3D {
 
-PointCloud::PointCloud(std::string const & path)
+PointCloud::PointCloud(std::string const & path, std::string const & features_path)
 : has_normals(false), normals_are_normalized(false), has_graph(false)
 {
   if (!path.empty())
-    load(path);
+    load(path, features_path);
 }
 
 PointCloud::~PointCloud()
@@ -75,7 +75,7 @@ PointCloud::clear()
 }
 
 bool
-PointCloud::load(std::string const & path)
+PointCloud::load(std::string const & path, std::string const & features_path)
 {
   std::ifstream in(path.c_str());
   if (!in)
@@ -121,9 +121,9 @@ PointCloud::load(std::string const & path)
   THEA_CONSOLE << getName() << ": Loaded " << points.size() << " points with bounding box " << bounds.toString() << " from '"
                << path << '\'';
 
-  std::string feat_path = getFeaturesFilename(path);
-  if (!feat_path.empty() && loadFeatures(feat_path))
-    THEA_CONSOLE << getName() << ": Loaded " << features.size() << " features from '" << feat_path << '\'';
+  std::string features_file_path = getFeaturesFilename(path, features_path);
+  if (!features_file_path.empty() && loadFeatures(features_file_path))
+    THEA_CONSOLE << getName() << ": Loaded " << features.size() << " feature(s) from '" << features_file_path << '\'';
 
   std::string graph_path = FilePath::concat(FilePath::parent(path), FilePath::completeBaseName(path) + ".graph");
   if (FileSystem::exists(graph_path))
@@ -177,53 +177,155 @@ PointCloud::load(std::string const & path)
   return true;
 }
 
+namespace PointCloudInternal {
+
+bool
+readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<Real> > & features, bool has_point_prefix)
+{
+  std::ifstream in(path.c_str());
+  if (!in)
+    throw Error("TXT: Could not open file '" + path + '\'');
+
+  features.resize(1);
+  features[0].resize((array_size_t)num_points);
+
+  std::string line;
+  Vector3 p;
+  double f;
+
+  for (long i = 0; i < num_points; ++i)
+  {
+    if (!std::getline(in, line))
+      throw Error(format("TXT: Could not read feature for point %ld", i) + " from '" + path + '\'');
+
+    std::istringstream line_in(line);
+    if (has_point_prefix) line_in >> p[0] >> p[1] >> p[2];
+    if (!(line_in >> f))
+      throw Error(format("TXT: Could not read first feature for point %ld", i) + " from '" + path + '\'');
+
+    features[0][(array_size_t)i] = (Real)f;
+
+    if (i == 0)
+    {
+      while (line_in >> f)
+      {
+        features.push_back(TheaArray<Real>((long)num_points));
+        features.back()[0] = (Real)f;
+      }
+    }
+    else
+    {
+      for (array_size_t j = 1; j < features.size(); ++j)
+      {
+        if (!(line_in >> f))
+          throw Error(format("TXT: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
+
+        features[j][(array_size_t)i] = (Real)f;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool
+readFeaturesARFF(std::string const & path, long num_points, TheaArray< TheaArray<Real> > & features)
+{
+  std::ifstream in(path.c_str());
+  if (!in)
+    throw Error("ARFF: Could not open file '" + path + '\'');
+
+  features.clear();
+
+  std::string line;
+  long num_features = 0;
+  while (std::getline(in, line))
+  {
+    line = trimWhitespace(line);
+    if (line.empty())
+      continue;
+
+    line = toLower(line);
+    if (beginsWith(line, "$data"))
+      break;
+    else if (beginsWith(line, "@attribute"))
+    {
+      std::string field;
+      std::istringstream line_in(line);
+      line_in >> field; line_in >> field;
+      if (field == "class")
+        break;
+      else if (!endsWith(line, "numeric"))
+      {
+        THEA_ERROR << "ARFF: Non-numeric attribute not supported (" << path << ')';
+        return false;
+      }
+      else
+        num_features++;
+    }
+  }
+
+  if (num_features <= 0)
+  {
+    THEA_WARNING << "ARFF: No features found in '" << path << '\'';
+    return true;
+  }
+
+  features.resize((array_size_t)num_features);
+  for (array_size_t i = 0; i < features.size(); ++i)
+    features[i].resize((array_size_t)num_points);
+
+  TheaArray<std::string> fields;
+  double f;
+  for (long i = 0; i < num_points; ++i)
+  {
+    do
+    {
+      if (!std::getline(in, line))
+        throw Error(format("ARFF: Could not read features for point %ld", i) + " from '" + path + '\'');
+
+      line = trimWhitespace(line);
+    } while (line.empty());
+
+    stringSplit(line, ',', fields);
+    if ((long)fields.size() < num_features)
+    {
+      THEA_ERROR << "ARFF: Point " << i << " does not have enough features (" << path << ')';
+      return false;
+    }
+
+    for (array_size_t j = 0; j < features.size(); ++j)
+    {
+      std::istringstream field_in(fields[j]);
+      if (!(field_in >> f))
+        throw Error(format("ARFF: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
+
+      features[j][(array_size_t)i] = (Real)f;
+    }
+  }
+
+  return true;
+}
+
+} // namespace PointCloudInternal
+
 bool
 PointCloud::loadFeatures(std::string const & filename_)
 {
   bool status = true;
   try
   {
-    std::ifstream in(filename_.c_str());
-    if (!in)
-      throw Error("Could not open file");
+    std::string filename_lc = toLower(filename_);
+    bool status = true;
+    if (endsWith(filename_lc, ".arff"))
+      status = PointCloudInternal::readFeaturesARFF(filename_, (long)points.size(), features);
+    else if (endsWith(filename_lc, ".features"))
+      status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, true);
+    else
+      status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, false);
 
-    features.resize(1);
-    features[0].resize(points.size());
-
-    std::string line;
-    Vector3 p;
-    double f;
-
-    for (array_size_t i = 0; i < points.size(); ++i)
-    {
-      if (!std::getline(in, line))
-        throw Error(format("Could not read feature for point %ld", (long)i));
-
-      std::istringstream line_in(line);
-      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
-        throw Error(format("Could not read first feature for point %ld", (long)i));
-
-      features[0][i] = (Real)f;
-
-      if (i == 0)
-      {
-        while (line_in >> f)
-        {
-          features.push_back(TheaArray<Real>(points.size()));
-          features.back()[0] = (Real)f;
-        }
-      }
-      else
-      {
-        for (array_size_t j = 1; j < features.size(); ++j)
-        {
-          if (!(line_in >> f))
-            throw Error(format("Could not read feature %ld for point %ld", (long)j, (long)i));
-
-          features[j][i] = (Real)f;
-        }
-      }
-    }
+    if (!status)
+      return false;
 
     if (features[0].empty())
     {
@@ -277,19 +379,49 @@ PointCloud::loadFeatures(std::string const & filename_)
 }
 
 std::string
-PointCloud::getFeaturesFilename(std::string const & filename) const
+PointCloud::getFeaturesFilename(std::string const & filename, std::string const & features_path) const
 {
-  std::string ffn = filename + ".features";
-  if (FileSystem::exists(ffn))
-    return ffn;
-  else
+  if (FileSystem::fileExists(features_path))
+    return features_path;
+
+  std::string app_features_path = toStdString(app().options().features);
+  if (FileSystem::fileExists(app_features_path))
+    return app_features_path;
+
+  static std::string const EXTS[] = { ".arff", ".features" };  // in order of decreasing priority
+  static size_t NUM_EXTS = sizeof(EXTS) / sizeof(std::string);
+  static int const NUM_DIRS = 3;
+
+  for (int i = 0; i < NUM_DIRS; ++i)
   {
-    ffn = FilePath::concat(FilePath::parent(filename), FilePath::completeBaseName(filename) + ".features");
-    if (FileSystem::exists(ffn))
-      return ffn;
-    else
+    std::string dir;
+    switch (i)
     {
-      ffn = FilePath::concat(FilePath::parent(filename), FilePath::baseName(filename) + ".features");
+      case 0: dir = features_path; break;
+      case 1: dir = app_features_path; break;
+      default: dir = FilePath::parent(filename);
+    }
+
+    if (i < NUM_DIRS - 1 && !FileSystem::directoryExists(dir))
+      continue;
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, filename + EXTS[j]);
+      if (FileSystem::exists(ffn))
+        return ffn;
+    }
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, FilePath::completeBaseName(filename) + EXTS[j]);
+      if (FileSystem::exists(ffn))
+        return ffn;
+    }
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, FilePath::baseName(filename) + EXTS[j]);
       if (FileSystem::exists(ffn))
         return ffn;
     }

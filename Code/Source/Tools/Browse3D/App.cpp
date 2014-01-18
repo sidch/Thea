@@ -83,6 +83,7 @@ App::optsToString() const
       << "\n  resource-dir = " << opts.resource_dir
       << "\n  working-dir = " << opts.working_dir
       << "\n  model = " << opts.model
+      << "\n  features = " << opts.features
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
@@ -138,6 +139,7 @@ App::parseOptions(int argc, char * argv[])
   std::string s_resource_dir;
   std::string s_working_dir;
   std::string s_model;
+  std::string s_features;
   std::string s_bg_color;
 
   po::options_description visible("Allowed options");
@@ -149,6 +151,7 @@ App::parseOptions(int argc, char * argv[])
           ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
+          ("features",             po::value<std::string>(&s_features), "Directory or file containing features to load")
           ("bg-color",             po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
           ("accentuate-features",  po::value<bool>(&opts.accentuate_features)->default_value(false), "Make feature distributions easier to view?")
@@ -209,6 +212,7 @@ App::parseOptions(int argc, char * argv[])
     if (!s_resource_dir.empty())     opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
     if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
     if (!s_model.empty())            opts.model         =  toQString(s_model);
+    if (!s_features.empty())         opts.features      =  toQString(s_features);
 
     if (!s_bg_color.empty())
     {
