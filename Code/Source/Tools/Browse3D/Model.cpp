@@ -51,6 +51,8 @@
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
 #include "../../Colors.hpp"
+#include "../../FilePath.hpp"
+#include "../../FileSystem.hpp"
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMouseEvent>
@@ -673,7 +675,7 @@ struct VertexFeatureVisitor
         if (!feat_vals2)
         {
           if (!feat_vals1)
-            vx.setColor(ColorRGB::jetColorMap(feat_vals0[nn_index]));
+            vx.setColor(ColorRGB::jetColorMap(0.2 + 0.6 * feat_vals0[nn_index]));
           else
             vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], 1.0f));
         }
@@ -797,14 +799,43 @@ Model::loadFeatures(QString const & filename_)
 QString
 Model::getFeaturesFilename() const
 {
-  QString ffn = getFilename() + ".features";
-  if (QFileInfo(ffn).exists())
-    return ffn;
-  else
+  std::string features_path = toStdString(app().options().features);
+  if (FileSystem::fileExists(features_path));
+    return toQString(features_path);
+
+  static std::string const EXTS[] = { ".arff", ".features" };  // in order of decreasing priority
+  static size_t NUM_EXTS = sizeof(EXTS) / sizeof(std::string);
+
+  std::string model_path = toStdString(filename);
+  int iter_begin = FileSystem::directoryExists(features_path) ? 0 : 1;
+
+  for (int i = iter_begin; i < 2; ++i)
   {
-    QFileInfo info(getFilename());
-    return info.dir().filePath(info.baseName() + ".features");
+    std::string dir = (i == 0 ? features_path : FilePath::parent(model_path));
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, model_path + EXTS[j]);
+      if (FileSystem::exists(ffn))
+        return toQString(ffn);
+    }
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, FilePath::completeBaseName(model_path) + EXTS[j]);
+      if (FileSystem::exists(ffn))
+        return toQString(ffn);
+    }
+
+    for (size_t j = 0; j < NUM_EXTS; ++j)
+    {
+      std::string ffn = FilePath::concat(dir, FilePath::baseName(model_path) + EXTS[j]);
+      if (FileSystem::exists(ffn))
+        return toQString(ffn);
+    }
   }
+
+  return "";
 }
 
 AxisAlignedBox3 const &

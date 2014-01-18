@@ -66,7 +66,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     THEA_DEF_POINTER_TYPES(PointCloud, shared_ptr, weak_ptr)
 
     /** Constructor. */
-    PointCloud(std::string const & path = "");
+    PointCloud(std::string const & path = "", std::string const & features_path = "");
 
     /** Destructor. */
     ~PointCloud();
@@ -82,7 +82,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
      *
      * @return True if the model was successfully loaded, else false.
      */
-    bool load(std::string const & path);
+    bool load(std::string const & path, std::string const & features_path = "");
 
     AxisAlignedBox3 const & getBounds() const;
 
@@ -100,8 +100,11 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     /** Load features from a file. */
     bool loadFeatures(std::string const & filename_);
 
-    /** Get the path to the file in which features are stored, given the path to the point cloud. */
-    std::string getFeaturesFilename(std::string const & filename) const;
+    /**
+     * Get the path to the file in which features are stored, given the path to the point cloud and optionally a file/directory
+     * containing the features.
+     */
+    std::string getFeaturesFilename(std::string const & filename, std::string const & features_path) const;
 
     /** Reconstruct an approximate surface from the point cloud. */
     void reconstructSurface(Graphics::RenderSystem & render_system,
