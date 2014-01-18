@@ -79,7 +79,7 @@ class THEA_API AtomicInt32
     ImplT m_value;
 #else
     typedef int32 ImplT;
-    volatile ImplT value;
+    volatile ImplT m_value;
 #endif
 
   public:
