@@ -59,7 +59,7 @@
 namespace Browse3D {
 
 App::Options::Options()
-: bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), accentuate_features(false), show_graph(true)
+: bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), accentuate_features(false), show_graph(false)
 {
 }
 
@@ -151,11 +151,11 @@ App::parseOptions(int argc, char * argv[])
           ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
-          ("features",             po::value<std::string>(&s_features), "Directory or file containing features to load")
-          ("bg-color",             po::value<std::string>(&s_bg_color), "Background color")
+          ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
+          ("emph-features,e",      "Make feature distributions easier to view")
+          ("graph,g",              "Show point adjacency graph")
+          ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
-          ("accentuate-features",  po::value<bool>(&opts.accentuate_features)->default_value(false), "Make feature distributions easier to view?")
-          ("show-graph",           po::value<bool>(&opts.show_graph)->default_value(true), "Show point adjacency graph, if available?")
   ;
 
   po::options_description desc;
@@ -213,6 +213,9 @@ App::parseOptions(int argc, char * argv[])
     if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
     if (!s_model.empty())            opts.model         =  toQString(s_model);
     if (!s_features.empty())         opts.features      =  toQString(s_features);
+
+    opts.accentuate_features  =  (vm.count("emph-features") > 0);
+    opts.show_graph           =  (vm.count("graph") > 0);
 
     if (!s_bg_color.empty())
     {
