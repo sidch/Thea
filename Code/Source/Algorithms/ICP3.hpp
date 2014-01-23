@@ -109,6 +109,8 @@ class ICP3
         return AffineTransformT::identity();
 
       KDTreeN<ToT, 3> to_kdtree(to, to + to_num_pts);
+      to_kdtree.enableNearestNeighborAcceleration();
+
       return align(from_num_pts, from, from_weight_func, to_kdtree, error);
     }
 
@@ -151,6 +153,8 @@ class ICP3
         return AffineTransformT::identity();
 
       KDTreeN<ToT, 3> to_kdtree(to, to + to_num_pts);
+      to_kdtree.enableNearestNeighborAcceleration();
+
       return alignSymmetric(from_num_pts, from, from_weight_func, from_symmetry_plane, to_kdtree, to_symmetry_plane, error);
     }
 
@@ -212,9 +216,6 @@ class ICP3
 
         // Update the overall transform
         tr = inc_tr * tr;
-
-        THEA_CONSOLE << "tr = " << tr.toString();
-        THEA_CONSOLE << "inc_tr = " << inc_tr.toString();
 
         // Compute the new error and the new mapping between points
         if (i < max_iterations - 1 || error)
@@ -370,7 +371,7 @@ class ICP3
       for (long i = 0; i < from_num_pts; ++i)
       {
         long index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3>::getPosition(from[i]), -1, NULL,
-                                                                                              &to_points[(array_size_t)i]);
+                                                                                              &to_points[i]);
         if (index < 0)
           throw Error(format("ICP3: Couldn't get nearest neighbor of source point %ld", i));
       }
@@ -414,10 +415,10 @@ class ICP3
         }
       }
 
-      ScalarT err = (tr * p_mean - q_mean).squaredLength();
-
       p_mean /= sum_weights;
       q_mean /= sum_weights;
+
+      ScalarT err = (tr * p_mean - q_mean).squaredLength();
 
       for (long i = 0; i < num_pts; ++i)
       {

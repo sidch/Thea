@@ -24,7 +24,7 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
   typedef DisplayMesh Mesh;
   typedef MeshGroup<Mesh> MG;
 
-  static int const NUM_SAMPLES = 50000;
+  static int const NUM_SAMPLES = 5000;
 
   try
   {
@@ -204,6 +204,20 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Alignment error = " << error;
   THEA_CONSOLE << "Alignment = " << tr.toString();
+
+  if (!out_path.empty())
+  {
+    ofstream out(out_path.c_str());
+    if (!out)
+    {
+      THEA_ERROR << "Couldn't open output file " << out_path;
+      return -1;
+    }
+
+    out << tr.getLinear()(0, 0) << ' ' << tr.getLinear()(0, 1) << ' ' << tr.getLinear()(0, 2) << tr.getTranslation()[0] << '\n'
+        << tr.getLinear()(1, 0) << ' ' << tr.getLinear()(1, 1) << ' ' << tr.getLinear()(1, 2) << tr.getTranslation()[1] << '\n'
+        << tr.getLinear()(2, 0) << ' ' << tr.getLinear()(2, 1) << ' ' << tr.getLinear()(2, 2) << tr.getTranslation()[2] << '\n';
+  }
 
   return 0;
 }
