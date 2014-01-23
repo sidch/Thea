@@ -48,6 +48,7 @@
 #include "../AttributedObject.hpp"
 #include "../Math.hpp"
 #include "../Noncopyable.hpp"
+#include "../Random.hpp"
 #include "../Transformable.hpp"
 #include "BoundedObjectTraitsN.hpp"
 #include "Filter.hpp"
@@ -321,6 +322,9 @@ class /* THEA_API */ KDTreeN
     typedef typename RayQueryBaseT::RayStructureIntersectionT  RayStructureIntersectionT;  /**< Ray intersection structure in
                                                                                                 N-space. */
 
+    typedef KDTreeN<VectorT, N, ScalarT> NearestNeighborAccelerationStructure;  /**< Structure to speed up nearest neighbor
+                                                                                     queries. */
+
     /** A node of the kd-tree. Only immutable objects of this class should be exposed by the external kd-tree interface. */
     class Node : public AttributedObject<NodeAttributeT>
     {
@@ -387,7 +391,10 @@ class /* THEA_API */ KDTreeN
 
   public:
     /** Default constructor. */
-    KDTreeN() : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0) {}
+    KDTreeN()
+    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), accelerate_nn_queries(false),
+      valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
+    {}
 
     /**
      * Construct from a list of elements. InputIterator must dereference to type T.
@@ -404,7 +411,8 @@ class /* THEA_API */ KDTreeN
     template <typename InputIterator>
     KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_in_leaf_ = -1,
             bool save_memory = false)
-    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), valid_bounds(true)
+    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), accelerate_nn_queries(false),
+      valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
     {
       init(begin, end, max_elems_in_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
     }
@@ -569,11 +577,63 @@ class /* THEA_API */ KDTreeN
     /** Destructor. */
     ~KDTreeN() { clear(true); }
 
+    /**
+     * Enable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points.
+     *
+     * @see disableNearestNeighborAcceleration()
+     */
+    void enableNearestNeighborAcceleration(long num_acceleration_samples_ = -1)
+    {
+      accelerate_nn_queries = true;
+
+      if (valid_acceleration_structure && num_acceleration_samples != num_acceleration_samples_)
+        valid_acceleration_structure = false;
+
+      num_acceleration_samples = num_acceleration_samples_;
+    }
+
+    /** Disable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points off. */
+    void disableNearestNeighborAcceleration(bool deallocate_memory = true)
+    {
+      accelerate_nn_queries = false;
+      clearAccelerationStructure(deallocate_memory);
+    }
+
+    /** Check if nearest neighbor queries are accelerated by an auxiliary structure. */
+    bool hasNearestNeighborAcceleration() const
+    {
+      return accelerate_nn_queries;
+    }
+
+    /** Get the auxiliary structure to accelerate nearest neighbor queries, if available. */
+    template <typename MetricT> NearestNeighborAccelerationStructure const * getNearestNeighborAccelerationStructure() const
+    {
+      if (hasNearestNeighborAcceleration())
+      {
+        buildAccelerationStructure<MetricT>();
+        return acceleration_structure;
+      }
+      else
+        return NULL;
+    }
+
     void setTransform(Transform const & trans_)
     {
       TransformableBaseT::setTransform(trans_);
       transform_inverse_transpose = trans_.getLinear().inverse().transpose();
       invalidateBounds();
+
+      if (valid_acceleration_structure)
+        acceleration_structure->setTransform(trans_);
+    }
+
+    void clearTransform()
+    {
+      TransformableBaseT::clearTransform();
+      invalidateBounds();
+
+      if (valid_acceleration_structure)
+        acceleration_structure->clearTransform();
     }
 
     /**
@@ -582,6 +642,8 @@ class /* THEA_API */ KDTreeN
      */
     virtual void clear(bool deallocate_all_memory = true)
     {
+      clearAccelerationStructure(deallocate_all_memory);
+
       num_elems = 0;
       if (deallocate_all_memory)
         elems.clear();
@@ -711,6 +773,14 @@ class /* THEA_API */ KDTreeN
           return NeighborPair(-1);
       }
 
+      // If acceleration is enabled, set an upper limit to the distance to the nearest object
+      double accel_bound = accelerationBound<MetricT>(query, dist_bound);
+      if (accel_bound >= 0)
+      {
+        double fudge = 0.001 * getBoundsWorldSpace(*root).getExtent().fastLength();
+        mon_approx_dist_bound = MetricT::computeMonotoneApprox(accel_bound + fudge);
+      }
+
       NeighborPair pair(-1, -1, mon_approx_dist_bound);
       closestPair<MetricT>(root, query, query_bounds, pair, get_closest_points);
 
@@ -734,6 +804,9 @@ class /* THEA_API */ KDTreeN
      *   is chiefly for internal use and the default value of -1 should normally be left as is.
      *
      * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
+     *
+     * @note k-closest pairs <b>cannot</b> be accelerated by the auxiliary structure created by
+     *   enableNearestNeighborAcceleration().
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
     long kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
@@ -1494,6 +1567,91 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+    /** Build a structure to accelerate nearest neighbor queries. */
+    template <typename MetricT> void buildAccelerationStructure() const
+    {
+      if (valid_acceleration_structure) return;
+
+      delete acceleration_structure; acceleration_structure = NULL;
+
+      static int const DEFAULT_NUM_ACCELERATION_SAMPLES = 250;
+      TheaArray<Vector3> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
+                                                                            : num_acceleration_samples);
+      VectorT src_cp, dst_cp;
+      for (array_size_t i = 0; i < acceleration_samples.size(); ++i)
+      {
+        long elem_index = Random::common().integer(0, (int32)num_elems - 1);
+        VectorT p = BoundedObjectTraitsT::getCenter(elems[elem_index]);
+        MetricT::closestPoints(p, elems[elem_index], src_cp, dst_cp);  // snap point to element, else it's not a valid NN proxy
+        acceleration_samples[i] = dst_cp;
+      }
+
+      acceleration_structure = new NearestNeighborAccelerationStructure;
+      acceleration_structure->disableNearestNeighborAcceleration();
+      acceleration_structure->init(acceleration_samples.begin(), acceleration_samples.end());
+
+      if (this->hasTransform())
+        acceleration_structure->setTransform(this->getTransform());
+
+      valid_acceleration_structure = true;
+    }
+
+    /** Destroy any existing structure to accelerate nearest neighbor queries. */
+    void clearAccelerationStructure(bool deallocate_memory = true) const
+    {
+      valid_acceleration_structure = false;
+
+      if (deallocate_memory)
+      {
+        delete acceleration_structure;
+        acceleration_structure = NULL;
+      }
+    }
+
+    /** Get an upper bound on the distance to a query object, using the acceleration structure if it exists. */
+    template <typename MetricT, typename QueryT>
+    double accelerationBound(QueryT const & query, double dist_bound) const
+    {
+      NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
+      return accel ? accel->distance<MetricT>(query, dist_bound) : -1;
+    }
+
+    /**
+     * Get an upper bound on the distance to a query kd-tree, using the acceleration structures of both the query and of this
+     * object if they exist.
+     */
+    template <typename MetricT, typename E, typename S, typename A, typename B>
+    double accelerationBound(KDTreeN<E, N, S, A, B> const & query, double dist_bound) const
+    {
+      NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
+      if (accel)
+      {
+        if (query.hasNearestNeighborAcceleration())
+        {
+          typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
+              = query.getNearestNeighborAccelerationStructure<MetricT>();
+
+          if (query_accel)
+            return accel->distance<MetricT>(*query_accel, dist_bound);
+        }
+
+        return accel->distance<MetricT>(query, dist_bound);
+      }
+      else
+      {
+        if (query.hasNearestNeighborAcceleration())
+        {
+          typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
+              = query.getNearestNeighborAccelerationStructure<MetricT>();
+
+          if (query_accel)
+            return distance<MetricT>(*query_accel, dist_bound);
+        }
+
+        return -1;
+      }
+    }
+
     Node * root;
 
     long num_elems;  // elems.size() doesn't tell us how many elements there are, it's just the capacity of the elems array
@@ -1510,6 +1668,11 @@ class /* THEA_API */ KDTreeN
     Matrix3 transform_inverse_transpose;
 
     FilterStack filters;
+
+    bool accelerate_nn_queries;
+    long num_acceleration_samples;
+    mutable bool valid_acceleration_structure;
+    mutable NearestNeighborAccelerationStructure * acceleration_structure;
 
     mutable bool valid_bounds;
     mutable AxisAlignedBoxT bounds;
