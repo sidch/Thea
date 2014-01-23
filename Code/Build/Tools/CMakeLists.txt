@@ -486,6 +486,40 @@ ENDIF()
 SET(TheaAllTools ${TheaAllTools} SegmentSDF)
 
 #===========================================================
+# ShapeAlign
+#===========================================================
+
+# Source file lists
+FILE(GLOB ShapeAlignSources
+     ${SourceRoot}/Tools/ShapeAlign/*.cpp)
+
+# Libraries to link to
+SET(ShapeAlignLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(ShapeAlign ${ShapeAlignSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(ShapeAlign ${ShapeAlignLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(ShapeAlign PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(ShapeAlign "${ShapeAlignLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} ShapeAlign)
+
+#===========================================================
 # Target for all tools
 #===========================================================
 
