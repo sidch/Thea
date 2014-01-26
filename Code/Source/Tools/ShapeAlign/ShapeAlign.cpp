@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/ICP3.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
@@ -11,10 +12,17 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
+long num_mesh_samples = 5000;
+bool match_scale = false;
+
 int
 usage(int argc, char * argv[])
 {
-  THEA_CONSOLE << "Usage: " << argv[0] << " <from> <to> [<output>]";
+  THEA_CONSOLE << "Usage: " << argv[0] << " [<options>] <from> <to> [<output>]";
+  THEA_CONSOLE << "";
+  THEA_CONSOLE << "Options:";
+  THEA_CONSOLE << "  -n <num-mesh-samples>  :  Approximate #points to sample from mesh";
+  THEA_CONSOLE << "  -s                     :  Match shape scales";
   return -1;
 }
 
@@ -24,8 +32,6 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
   typedef DisplayMesh Mesh;
   typedef MeshGroup<Mesh> MG;
 
-  static int const NUM_SAMPLES = 5000;
-
   try
   {
     MG mg("MeshGroup");
@@ -33,7 +39,7 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
 
     MeshSampler<Mesh> sampler(mg);
     samples.clear();
-    sampler.sampleEvenlyByArea(NUM_SAMPLES, samples);
+    sampler.sampleEvenlyByArea(num_mesh_samples, samples);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "An error occurred")
 
@@ -46,8 +52,13 @@ bool
 loadPoints(string const & points_path, TheaArray<Vector3> & points)
 {
   string path_lc = toLower(points_path);
-  if (endsWith(path_lc, ".obj") || endsWith(path_lc, ".3ds") || endsWith(path_lc, ".ply"))  // this is a mesh file!
+  if (endsWith(path_lc, ".obj")
+   || endsWith(path_lc, ".3ds")
+   || endsWith(path_lc, ".ply")
+   || endsWith(path_lc, ".off.bin"))  // this is a mesh file!
+  {
     return sampleMesh(points_path, points);
+  }
 
   ifstream in(points_path.c_str());
   if (!in)
@@ -163,7 +174,7 @@ loadPoints(string const & points_path, TheaArray<Vector3> & points)
     }
   }
 
-  THEA_CONSOLE << "Read " << points.size() << " from " << points_path;
+  THEA_CONSOLE << "Read " << points.size() << " points from " << points_path;
 
   return true;
 }
@@ -174,9 +185,62 @@ main(int argc, char * argv[])
   if (argc < 3)
     return usage(argc, argv);
 
-  string from_path = argv[1];
-  string to_path = argv[2];
-  string out_path = (argc > 3 ? argv[3] : "");
+  int pos_arg = 0;
+  string from_path;
+  string to_path;
+  string out_path;
+  for (int i = 1; i < argc; ++i)
+  {
+    string arg = argv[i];
+    if (arg.empty())
+      continue;
+
+    if (arg[0] == '-')
+    {
+      if (arg == "-n")
+      {
+        if (i >= argc - 1)
+          return usage(argc, argv);
+
+        istringstream iss(argv[++i]);
+        if (!(iss >> num_mesh_samples))
+        {
+          THEA_ERROR << "Could not parse number of mesh samples";
+          return -1;
+        }
+
+        if (num_mesh_samples < 1)
+        {
+          THEA_ERROR << "Invalid number of samples: " << num_mesh_samples;
+          return -1;
+        }
+
+        THEA_CONSOLE << "Number of mesh samples: " << num_mesh_samples;
+      }
+      else if (arg == "-s")
+      {
+        match_scale = true;
+        THEA_CONSOLE << "Scales will be matched";
+      }
+      else
+        return usage(argc, argv);
+    }
+    else
+    {
+      switch (pos_arg)
+      {
+        case 0: from_path = arg; break;
+        case 1: to_path = arg; break;
+        case 2: out_path = arg; break;
+        default: return usage(argc, argv);
+      }
+
+      pos_arg++;
+    }
+  }
+
+  if (pos_arg < 2)
+    return usage(argc, argv);
 
   TheaArray<Vector3> from_pts;
   if (!loadPoints(from_path, from_pts))
@@ -198,8 +262,32 @@ main(int argc, char * argv[])
   }
   else
   {
+    double rescaling = 1.0;
+    if (match_scale)
+    {
+      if (from_pts.size() > 1 && to_pts.size() > 1)
+      {
+        BestFitSphere3 from_bsphere;
+        from_bsphere.addPoints(from_pts.begin(), from_pts.end());
+
+        BestFitSphere3 to_bsphere;
+        to_bsphere.addPoints(to_pts.begin(), to_pts.end());
+
+        if (from_bsphere.getRadius() > 0)
+          rescaling = (double)to_bsphere.getRadius() / (double)from_bsphere.getRadius();
+      }
+
+      THEA_CONSOLE << "Rescaling = " << rescaling;
+
+      for (array_size_t i = 0; i < from_pts.size(); ++i)
+        from_pts[i] *= rescaling;
+    }
+
     ICP3<double> icp(-1, -1, true);
     tr = icp.align((long)from_pts.size(), &from_pts[0], (long)to_pts.size(), &to_pts[0], &error);
+
+    if (match_scale)
+      tr = tr * AffineTransformN<3, double>::scaling(rescaling);
   }
 
   THEA_CONSOLE << "Alignment error = " << error;
