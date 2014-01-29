@@ -258,7 +258,7 @@ std::string
 toUpper(std::string const & x)
 {
   std::string result = x;
-  std::transform(result.begin(), result.end(), result.begin(), toupper);
+  std::transform(result.begin(), result.end(), result.begin(), ::toupper);
   return result;
 }
 
@@ -266,7 +266,7 @@ std::string
 toLower(std::string const & x)
 {
   std::string result = x;
-  std::transform(result.begin(), result.end(), result.begin(), tolower);
+  std::transform(result.begin(), result.end(), result.begin(), ::tolower);
   return result;
 }
 
@@ -519,7 +519,7 @@ rangeMatch(char const * pattern, char test, int flags, char ** newp)
     ++pattern;
 
   if (flags & FNM_CASEFOLD)
-    test = std::tolower((unsigned char)test);
+    test = ::tolower((unsigned char)test);
 
   /*
    * A right bracket shall lose its special meaning and represent
@@ -541,7 +541,7 @@ rangeMatch(char const * pattern, char test, int flags, char ** newp)
       return (THEA_RANGE_NOMATCH);
 
     if ((flags & FNM_CASEFOLD))
-      c = std::tolower((unsigned char)c);
+      c = ::tolower((unsigned char)c);
 
     if (*pattern == '-'
         && (c2 = *(pattern + 1)) != THEA_EOS && c2 != ']')
@@ -555,7 +555,7 @@ rangeMatch(char const * pattern, char test, int flags, char ** newp)
         return (THEA_RANGE_ERROR);
 
       if (flags & FNM_CASEFOLD)
-        c2 = std::tolower((unsigned char)c2);
+        c2 = ::tolower((unsigned char)c2);
 
       if (c <= test && test <= c2)
         ok = 1;
@@ -688,8 +688,8 @@ fnmatch(char const * pattern, char const * query, int flags)
       default:
 fnmatch_normal:
         if (c != *query && !((flags & FNM_CASEFOLD) &&
-                              (std::tolower((unsigned char)c) ==
-                               std::tolower((unsigned char)*query))))
+                              (::tolower((unsigned char)c) ==
+                               ::tolower((unsigned char)*query))))
           return (FNM_NOMATCH);
 
         ++query;
