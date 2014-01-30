@@ -64,10 +64,10 @@ class /* THEA_API */ BoundedObjectTraitsN
     static VectorN<N, ScalarT> getCenter(T const & t) { return t.getBounds().getCenter(); }
 
     /** Get the maximum position of the object along a particular coordinate axis. */
-    static Real getHigh(T const & t, long coord) { return t.getBounds().getHigh()[coord]; }
+    static ScalarT getHigh(T const & t, long coord) { return t.getBounds().getHigh()[coord]; }
 
     /** Get the minimum position of the object along a particular coordinate axis. */
-    static Real getLow(T const & t, long coord) { return t.getBounds().getLow()[coord]; }
+    static ScalarT getLow(T const & t, long coord) { return t.getBounds().getLow()[coord]; }
 
 }; // class BoundedObjectTraitsN
 
@@ -87,13 +87,13 @@ struct /* THEA_API */ BoundedObjectTraitsN<T *, N, ScalarT>
     return BoundedObjectTraitsN<T, N, ScalarT>::getCenter(*t);
   }
 
-  static Real getHigh(T const * t, long coord)
+  static ScalarT getHigh(T const * t, long coord)
   {
     debugAssertM(t, "BoundedObjectTraitsN: Can't get bounds of null object");
     return BoundedObjectTraitsN<T, N, ScalarT>::getHigh(*t, coord);
   }
 
-  static Real getLow(T const * t, long coord)
+  static ScalarT getLow(T const * t, long coord)
   {
     debugAssertM(t, "BoundedObjectTraitsN: Can't get bounds of null object");
     return BoundedObjectTraitsN<T, N, ScalarT>::getLow(*t, coord);
@@ -116,8 +116,8 @@ struct /* THEA_API */ BoundedObjectTraitsN<T, N, ScalarT, typename boost::enable
   }
 
   static VectorN<N, ScalarT> getCenter(T const & t) { return PointTraitsN<T, N, ScalarT>::getPosition(t); }
-  static Real getHigh(T const & t, long coord) { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord]; }
-  static Real getLow(T const & t, long coord)  { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord];  }
+  static ScalarT getHigh(T const & t, long coord) { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord]; }
+  static ScalarT getLow(T const & t, long coord)  { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord];  }
 };
 
 // Specialization for AxisAlignedBoxN
@@ -130,8 +130,8 @@ struct /* THEA_API */ BoundedObjectTraitsN< AxisAlignedBoxN<N, ScalarT>, N, Scal
   { bounds = BallN<N, ScalarT>(t.getCenter(), 0.5f * t.getExtent().length()); }
 
   static VectorN<N, ScalarT> getCenter(AxisAlignedBoxN<N, ScalarT> const & t) { return t.getCenter(); }
-  static Real getHigh(AxisAlignedBoxN<N, ScalarT> const & t, long coord) { return t.getHigh()[coord]; }
-  static Real getLow(AxisAlignedBoxN<N, ScalarT> const & t, long coord)  { return t.getLow()[coord];  }
+  static ScalarT getHigh(AxisAlignedBoxN<N, ScalarT> const & t, long coord) { return t.getHigh()[coord]; }
+  static ScalarT getLow(AxisAlignedBoxN<N, ScalarT> const & t, long coord)  { return t.getLow()[coord];  }
 };
 
 // Specialization for BallN
@@ -142,13 +142,13 @@ struct /* THEA_API */ BoundedObjectTraitsN< BallN<N, ScalarT>, N, ScalarT >
   static void getBounds(BallN<N, ScalarT> const & t, BallN<N, ScalarT> & bounds)           { bounds = t; }
 
   static VectorN<N, ScalarT> getCenter(BallN<N, ScalarT> const & t) { return t.getCenter(); }
-  static Real getHigh(BallN<N, ScalarT> const & t, long coord) { return t.getCenter()[coord] + t.getRadius(); }
-  static Real getLow(BallN<N, ScalarT> const & t, long coord)  { return t.getCenter()[coord] - t.getRadius(); }
+  static ScalarT getHigh(BallN<N, ScalarT> const & t, long coord) { return t.getCenter()[coord] + t.getRadius(); }
+  static ScalarT getLow(BallN<N, ScalarT> const & t, long coord)  { return t.getCenter()[coord] - t.getRadius(); }
 };
 
 // Specialization for Triangle3
-template <typename VertexTripleT>
-struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, Real >
+template <typename VertexTripleT, typename ScalarT>
+struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, ScalarT >
 {
   typedef Triangle3<VertexTripleT> Triangle;
 
@@ -156,15 +156,15 @@ struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, Real >
 
   // TODO: Make this tighter
   static void getBounds(Triangle const & t, Ball3 & bounds)
-  { BoundedObjectTraitsN<AxisAlignedBox3, 3>::getBounds(t.getBounds(), bounds); }
+  { BoundedObjectTraitsN<AxisAlignedBox3, 3, ScalarT>::getBounds(t.getBounds(), bounds); }
 
-  static Vector3 getCenter(Triangle const & t) { return (t.getVertex(0) + t.getVertex(1) + t.getVertex(2)) / 3.0f; }
+  static VectorN<3, ScalarT> getCenter(Triangle const & t) { return (t.getVertex(0) + t.getVertex(1) + t.getVertex(2)) / 3; }
 
-  static Real getHigh(Triangle const & t, long coord)
-  { return std::max(std::max(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
+  static ScalarT getHigh(Triangle const & t, long coord)
+  { return (ScalarT)std::max(std::max(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
 
-  static Real getLow(Triangle const & t, long coord)
-  { return std::min(std::min(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
+  static ScalarT getLow(Triangle const & t, long coord)
+  { return (ScalarT)std::min(std::min(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
 };
 
 } // namespace Algorithms

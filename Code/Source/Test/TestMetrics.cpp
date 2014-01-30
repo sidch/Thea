@@ -32,29 +32,28 @@ main(int argc, char * argv[])
 void
 testMetrics(int argc, char * argv[])
 {
-  cout << MetricL2::distance(0.0, 1.0) << endl;
-  cout << MetricL2::distance(Vector2::zero(), Vector2(1, 1)) << endl;
-  cout << MetricL2::distance(Vector3::zero(), Vector3(1, 1, 1)) << endl;
-  cout << MetricL2::distance(Vector4::zero(), Vector4(1, 1, 1, 1)) << endl;
+  cout << MetricL2::distance<2, Real>(Vector2::zero(), Vector2(1, 1)) << endl;
+  cout << MetricL2::distance<3, Real>(Vector3::zero(), Vector3(1, 1, 1)) << endl;
+  cout << MetricL2::distance<4, Real>(Vector4::zero(), Vector4(1, 1, 1, 1)) << endl;
 
   AxisAlignedBox3 aabb(Vector3::zero(), Vector3(1, 1, 1));
   Vector3 p(2, 2, 2);
 
-  cout << MetricL2::distance(aabb, p) << endl;
-  cout << MetricL2::distance(p, aabb) << endl;
-  cout << MetricL2::distance(aabb, aabb) << endl;
+  cout << MetricL2::distance<3, Real>(aabb, p) << endl;
+  cout << MetricL2::distance<3, Real>(p, aabb) << endl;
+  cout << MetricL2::distance<3, Real>(aabb, aabb) << endl;
 
   Ball3 ball(Vector3(-2, -2, -2), 1);
-  cout << MetricL2::distance(ball, p) << endl;
-  cout << MetricL2::distance(p, ball) << endl;
-  cout << MetricL2::distance(aabb, ball) << endl;
-  cout << MetricL2::distance(ball, aabb) << endl;
+  cout << MetricL2::distance<3, Real>(ball, p) << endl;
+  cout << MetricL2::distance<3, Real>(p, ball) << endl;
+  cout << MetricL2::distance<3, Real>(aabb, ball) << endl;
+  cout << MetricL2::distance<3, Real>(ball, aabb) << endl;
 
   LocalTriangle3 tri(Vector3(-1, -1, -1), Vector3(0.5, 0.5, 0), Vector3(0, 0.5, 0.5));
-  cout << MetricL2::distance(tri, p) << endl;
-  cout << MetricL2::distance(p, tri) << endl;
-  cout << MetricL2::distance(tri, ball) << endl;
-  cout << MetricL2::distance(ball, tri) << endl;
+  cout << MetricL2::distance<3, Real>(tri, p) << endl;
+  cout << MetricL2::distance<3, Real>(p, tri) << endl;
+  cout << MetricL2::distance<3, Real>(tri, ball) << endl;
+  cout << MetricL2::distance<3, Real>(ball, tri) << endl;
 
   Matrix4 m1 = Matrix4(Matrix3::rotationEulerAnglesXYZ(Math::degreesToRadians(30),
                                                        Math::degreesToRadians(30),
@@ -62,14 +61,14 @@ testMetrics(int argc, char * argv[])
   Matrix4 m2 = Matrix4::homTranslation(Vector3(1, 1, 1));
   RigidTransform3 rt = RigidTransform3::translation(Vector3(5, 5, 5))
                      * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), Math::degreesToRadians(45));
-  cout << MetricL2::distance(makeTransformedObject(&p, &m1),     makeTransformedObject(&p, &m2)) << endl;
-  cout << MetricL2::distance(p,                                  makeTransformedObject(&p, &m2)) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&p, &m1),     p) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&p, &m1),     makeTransformedObject(&ball, &rt)) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&ball, &rt),  makeTransformedObject(&p, &m2)) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&p, &m1),     makeTransformedObject(&tri, &m2)) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&tri, &m1),   makeTransformedObject(&p, &m2)) << endl;
-  cout << MetricL2::distance(makeTransformedObject(&tri, &m1),   makeTransformedObject(&tri, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     makeTransformedObject(&p, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(p,                                  makeTransformedObject(&p, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     p) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     makeTransformedObject(&ball, &rt)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&ball, &rt),  makeTransformedObject(&p, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     makeTransformedObject(&tri, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&tri, &m1),   makeTransformedObject(&p, &m2)) << endl;
+  cout << MetricL2::distance<3, Real>(makeTransformedObject(&tri, &m1),   makeTransformedObject(&tri, &m2)) << endl;
 
 #if 0
   cout << MetricL2::distance<VectorN<10, ot>, VectorN<10, T> >

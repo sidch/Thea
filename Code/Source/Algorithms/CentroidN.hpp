@@ -119,7 +119,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsPoint
       VectorT sum_points = VectorT::zero();
       long num_points = 0;
       for (InputIterator i = begin; i != end; ++i, ++num_points)
-        sum_points += PointTraitsN<T, N>::getPosition(*i);
+        sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*i);
 
       return num_points > 0 ? sum_points / num_points : VectorT::zero();
     }
@@ -133,7 +133,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsPoint
       WeightInputIterator wi = weights_begin;
       for (ObjectInputIterator pi = objects_begin; pi != objects_end; ++pi, ++wi)
       {
-        sum_points += PointTraitsN<T, N>::getPosition(*pi);
+        sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*pi);
         sum_weights += static_cast<double>(*wi);
       }
 

@@ -768,7 +768,7 @@ class /* THEA_API */ KDTreeN
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
       {
-        double lower_bound = MetricT::monotoneApproxDistance(getBoundsWorldSpace(*root), query_bounds);
+        double lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
         if (lower_bound > mon_approx_dist_bound)
           return NeighborPair(-1);
       }
@@ -823,7 +823,7 @@ class /* THEA_API */ KDTreeN
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
       {
-        double lower_bound = MetricT::monotoneApproxDistance(getBoundsWorldSpace(*root), query_bounds);
+        double lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
         if (lower_bound > mon_approx_dist_bound)
           return 0;
 
@@ -1152,8 +1152,8 @@ class /* THEA_API */ KDTreeN
       {
         // Figure out which child is closer (optimize for point queries?)
         Node const * n[2] = { start->lo, start->hi };
-        double mad[2] = { MetricT::monotoneApproxDistance(getBoundsWorldSpace(*n[0]), query_bounds),
-                          MetricT::monotoneApproxDistance(getBoundsWorldSpace(*n[1]), query_bounds) };
+        double mad[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_bounds),
+                          MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_bounds) };
 
         if (mad[1] > mad[0])
         {
@@ -1226,9 +1226,10 @@ class /* THEA_API */ KDTreeN
           continue;
 
         if (TransformableBaseT::hasTransform())
-          mad = MetricT::closestPoints(makeTransformedObject(&elem, &TransformableBaseT::getTransform()), query, tp, qp);
+          mad = MetricT::template closestPoints<N, ScalarT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
+                                                            query, tp, qp);
         else
-          mad = MetricT::closestPoints(elem, query, tp, qp);
+          mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
 
         if (pair.getMonotoneApproxDistance() < 0 || mad <= pair.getMonotoneApproxDistance())
           pair = NeighborPair(0, (long)index, mad, qp, tp);
@@ -1251,8 +1252,8 @@ class /* THEA_API */ KDTreeN
       {
         // Figure out which child is closer (optimize for point queries?)
         Node const * n[2] = { start->lo, start->hi };
-        double d[2] = { MetricT::monotoneApproxDistance(getBoundsWorldSpace(*n[0]), query_bounds),
-                        MetricT::monotoneApproxDistance(getBoundsWorldSpace(*n[1]), query_bounds) };
+        double d[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_bounds),
+                        MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_bounds) };
 
         if (d[1] > d[0])
         {
@@ -1338,9 +1339,10 @@ class /* THEA_API */ KDTreeN
           continue;
 
         if (TransformableBaseT::hasTransform())
-          mad = MetricT::closestPoints(makeTransformedObject(&elem, &TransformableBaseT::getTransform()), query, tp, qp);
+          mad = MetricT::template closestPoints<N, ScalarT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
+                                                            query, tp, qp);
         else
-          mad = MetricT::closestPoints(elem, query, tp, qp);
+          mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
 
         if (mon_approx_dist_bound < 0 || mad <= mon_approx_dist_bound)
         {
@@ -1376,7 +1378,7 @@ class /* THEA_API */ KDTreeN
     {
       // Early exit if the range and node are disjoint
       AxisAlignedBoxT tr_start_bounds = getBoundsWorldSpace(*start);
-      if (!IntersectionTesterT::intersects(range, tr_start_bounds))
+      if (!IntersectionTesterT::template intersects<N, ScalarT>(range, tr_start_bounds))
         return false;
 
       // If the entire node is contained in the range AND there are element references at this node (so it's either a leaf or we
@@ -1406,9 +1408,9 @@ class /* THEA_API */ KDTreeN
             continue;
 
           bool intersects = TransformableBaseT::hasTransform()
-                          ? IntersectionTesterT::intersects(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                            range)
-                          : IntersectionTesterT::intersects(elem, range);
+                          ? IntersectionTesterT::template intersects<N, ScalarT>(
+                                makeTransformedObject(&elem, &TransformableBaseT::getTransform()), range)
+                          : IntersectionTesterT::template intersects<N, ScalarT>(elem, range);
           if (intersects)
             if ((*functor)(static_cast<long>(index), elem))
               return true;
@@ -1461,7 +1463,7 @@ class /* THEA_API */ KDTreeN
           if (!elementPassesFilters(elem))
             continue;
 
-          Real time = RayIntersectionTesterT::rayIntersectionTime(ray, elem, best_time);
+          Real time = RayIntersectionTesterT::template rayIntersectionTime<N, ScalarT>(ray, elem, best_time);
           if (improvedRayTime(time, best_time))
           {
             best_time = time;
@@ -1522,7 +1524,7 @@ class /* THEA_API */ KDTreeN
           if (!elementPassesFilters(elem))
             continue;
 
-          RayIntersection3 isec = RayIntersectionTesterT::rayIntersection(ray, elem, best_isec.getTime());
+          RayIntersection3 isec = RayIntersectionTesterT::template rayIntersection<N, ScalarT>(ray, elem, best_isec.getTime());
           if (improvedRayTime(isec.getTime(), best_isec.getTime()))
           {
             best_isec = RayStructureIntersectionT(isec, (long)index);
@@ -1582,7 +1584,10 @@ class /* THEA_API */ KDTreeN
       {
         long elem_index = Random::common().integer(0, (int32)num_elems - 1);
         VectorT p = BoundedObjectTraitsT::getCenter(elems[elem_index]);
-        MetricT::closestPoints(p, elems[elem_index], src_cp, dst_cp);  // snap point to element, else it's not a valid NN proxy
+
+        // Snap point to element, else it's not a valid NN proxy
+        MetricT::template closestPoints<N, ScalarT>(p, elems[elem_index], src_cp, dst_cp);
+
         acceleration_samples[i] = dst_cp;
       }
 
@@ -1665,7 +1670,7 @@ class /* THEA_API */ KDTreeN
     long max_depth;
     long max_elems_in_leaf;
 
-    Matrix3 transform_inverse_transpose;
+    MatrixMN<3, 3, ScalarT> transform_inverse_transpose;
 
     FilterStack filters;
 

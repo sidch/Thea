@@ -48,188 +48,132 @@
 namespace Thea {
 namespace Algorithms {
 
-// Default to hard-transforming each shape, assuming 3-space, in the absence of anything smarter
-template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB>
-struct /* THEA_API */ MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB> >
+// Default to hard-transforming each shape, in the absence of anything smarter
+template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, long N, typename T>
+struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
   typedef TransformedObject<ObjectB, TransformB> TB;
 
-  static double distance(TA const & a, TB const & b)
+  static T distance(TA const & a, TB const & b)
   {
     if (a.hasTransform())
     {
       if (b.hasTransform())
-        return MetricL2::distance(Transformer::transform(a.getObject(), a.getTransform()),
-                                  Transformer::transform(b.getObject(), b.getTransform()));
+        return MetricL2::distance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                                 Transformer::transform<N, T>(b.getObject(), b.getTransform()));
       else
-        return MetricL2::distance(Transformer::transform(a.getObject(), a.getTransform()), b.getObject());
+        return MetricL2::distance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b.getObject());
     }
     else
     {
       if (b.hasTransform())
-        return MetricL2::distance(a.getObject(), Transformer::transform(b.getObject(), b.getTransform()));
+        return MetricL2::distance<N, T>(a.getObject(), Transformer::transform<N, T>(b.getObject(), b.getTransform()));
       else
-        return MetricL2::distance(a.getObject(), b.getObject());
+        return MetricL2::distance<N, T>(a.getObject(), b.getObject());
     }
   }
 
-  static double monotoneApproxDistance(TA const & a, TB const & b)
+  static T monotoneApproxDistance(TA const & a, TB const & b)
   {
     if (a.hasTransform())
     {
       if (b.hasTransform())
-        return MetricL2::monotoneApproxDistance(Transformer::transform(a.getObject(), a.getTransform()),
-                                                Transformer::transform(b.getObject(), b.getTransform()));
+        return MetricL2::monotoneApproxDistance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                                      Transformer::transform<N, T>(b.getObject(), b.getTransform()));
       else
-        return MetricL2::monotoneApproxDistance(Transformer::transform(a.getObject(), a.getTransform()), b.getObject());
+        return MetricL2::monotoneApproxDistance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                                      b.getObject());
     }
     else
     {
       if (b.hasTransform())
-        return MetricL2::monotoneApproxDistance(a.getObject(), Transformer::transform(b.getObject(), b.getTransform()));
+        return MetricL2::monotoneApproxDistance<N, T>(a.getObject(),
+                                                      Transformer::transform<N, T>(b.getObject(), b.getTransform()));
       else
-        return MetricL2::monotoneApproxDistance(a.getObject(), b.getObject());
+        return MetricL2::monotoneApproxDistance<N, T>(a.getObject(), b.getObject());
     }
   }
 
-  static double closestPoints(TA const & a, TB const & b, Vector3 & cpa, Vector3 & cpb)
+  static T closestPoints(TA const & a, TB const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
   {
     if (a.hasTransform())
     {
       if (b.hasTransform())
-        return MetricL2::closestPoints(Transformer::transform(a.getObject(), a.getTransform()),
-                                       Transformer::transform(b.getObject(), b.getTransform()), cpa, cpb);
+        return MetricL2::closestPoints<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                             Transformer::transform<N, T>(b.getObject(), b.getTransform()), cpa, cpb);
       else
-        return MetricL2::closestPoints(Transformer::transform(a.getObject(), a.getTransform()), b.getObject(), cpa, cpb);
+        return MetricL2::closestPoints<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b.getObject(),
+                                             cpa, cpb);
     }
     else
     {
       if (b.hasTransform())
-        return MetricL2::closestPoints(a.getObject(), Transformer::transform(b.getObject(), b.getTransform()), cpa, cpb);
+        return MetricL2::closestPoints<N, T>(a.getObject(), Transformer::transform<N, T>(b.getObject(), b.getTransform()),
+                                             cpa, cpb);
       else
-        return MetricL2::closestPoints(a.getObject(), b.getObject(), cpa, cpb);
+        return MetricL2::closestPoints<N, T>(a.getObject(), b.getObject(), cpa, cpb);
     }
   }
 };
 
-template <typename ObjectA, typename TransformA, typename B>
-struct /* THEA_API */ MetricL2Impl< TransformedObject<ObjectA, TransformA>, B >
+template <typename ObjectA, typename TransformA, typename B, long N, typename T>
+struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
 
-  static double distance(TA const & a, B const & b)
+  static T distance(TA const & a, B const & b)
   {
     if (a.hasTransform())
-      return MetricL2::distance(Transformer::transform(a.getObject(), a.getTransform()), b);
+      return MetricL2::distance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b);
     else
-      return MetricL2::distance(a.getObject(), b);
+      return MetricL2::distance<N, T>(a.getObject(), b);
   }
 
-  static double monotoneApproxDistance(TA const & a, B const & b)
+  static T monotoneApproxDistance(TA const & a, B const & b)
   {
     if (a.hasTransform())
-      return MetricL2::monotoneApproxDistance(Transformer::transform(a.getObject(), a.getTransform()), b);
+      return MetricL2::monotoneApproxDistance<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b);
     else
-      return MetricL2::monotoneApproxDistance(a.getObject(), b);
+      return MetricL2::monotoneApproxDistance<N, T>(a.getObject(), b);
   }
 
-  static double closestPoints(TA const & a, B const & b, Vector3 & cpa, Vector3 & cpb)
+  static T closestPoints(TA const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
   {
     if (a.hasTransform())
-      return MetricL2::closestPoints(Transformer::transform(a.getObject(), a.getTransform()), b, cpa, cpb);
+      return MetricL2::closestPoints<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b, cpa, cpb);
     else
-      return MetricL2::closestPoints(a.getObject(), b, cpa, cpb);
-  }
-};
-
-template <typename ObjectA, typename TransformA, typename B>
-struct /* THEA_API */ MetricL2Impl< TransformedObject<ObjectA, TransformA>, B * >
-{
-  typedef TransformedObject<ObjectA, TransformA> TA;
-
-  static double distance(TA const & a, B const * b)
-  {
-    if (a.hasTransform())
-      return MetricL2::distance(Transformer::transform(a.getObject(), a.getTransform()), *b);
-    else
-      return MetricL2::distance(a.getObject(), *b);
-  }
-
-  static double monotoneApproxDistance(TA const & a, B const * b)
-  {
-    if (a.hasTransform())
-      return MetricL2::monotoneApproxDistance(Transformer::transform(a.getObject(), a.getTransform()), *b);
-    else
-      return MetricL2::monotoneApproxDistance(a.getObject(), *b);
-  }
-
-  static double closestPoints(TA const & a, B const * b, Vector3 & cpa, Vector3 & cpb)
-  {
-    if (a.hasTransform())
-      return MetricL2::closestPoints(Transformer::transform(a.getObject(), a.getTransform()), *b, cpa, cpb);
-    else
-      return MetricL2::closestPoints(a.getObject(), *b, cpa, cpb);
+      return MetricL2::closestPoints<N, T>(a.getObject(), b, cpa, cpb);
   }
 };
 
-template <typename A, typename ObjectB, typename TransformB>
-struct /* THEA_API */ MetricL2Impl< A, TransformedObject<ObjectB, TransformB> >
+template <typename A, typename ObjectB, typename TransformB, long N, typename T>
+struct MetricL2Impl< A, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectB, TransformB> TB;
 
-  static double distance(A const & a, TB const & b)
+  static T distance(A const & a, TB const & b)
   {
     if (b.hasTransform())
-      return MetricL2::distance(a, Transformer::transform(b.getObject(), b.getTransform()));
+      return MetricL2::distance<N, T>(a, Transformer::transform<N, T>(b.getObject(), b.getTransform()));
     else
-      return MetricL2::distance(a, b.getObject());
+      return MetricL2::distance<N, T>(a, b.getObject());
   }
 
-  static double monotoneApproxDistance(A const & a, TB const & b)
+  static T monotoneApproxDistance(A const & a, TB const & b)
   {
     if (b.hasTransform())
-      return MetricL2::monotoneApproxDistance(a, Transformer::transform(b.getObject(), b.getTransform()));
+      return MetricL2::monotoneApproxDistance<N, T>(a, Transformer::transform<N, T>(b.getObject(), b.getTransform()));
     else
-      return MetricL2::monotoneApproxDistance(a, b.getObject());
+      return MetricL2::monotoneApproxDistance<N, T>(a, b.getObject());
   }
 
-  static double closestPoints(A const & a, TB const & b, Vector3 & cpa, Vector3 & cpb)
+  static T closestPoints(A const & a, TB const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
   {
     if (b.hasTransform())
-      return MetricL2::closestPoints(a, Transformer::transform(b.getObject(), b.getTransform()), cpa, cpb);
+      return MetricL2::closestPoints<N, T>(a, Transformer::transform<N, T>(b.getObject(), b.getTransform()), cpa, cpb);
     else
-      return MetricL2::closestPoints(a, b.getObject(), cpa, cpb);
-  }
-};
-
-template <typename A, typename ObjectB, typename TransformB>
-struct /* THEA_API */ MetricL2Impl< A *, TransformedObject<ObjectB, TransformB> >
-{
-  typedef TransformedObject<ObjectB, TransformB> TB;
-
-  static double distance(A const * a, TB const & b)
-  {
-    if (b.hasTransform())
-      return MetricL2::distance(*a, Transformer::transform(b.getObject(), b.getTransform()));
-    else
-      return MetricL2::distance(*a, b.getObject());
-  }
-
-  static double monotoneApproxDistance(A const * a, TB const & b)
-  {
-    if (b.hasTransform())
-      return MetricL2::monotoneApproxDistance(*a, Transformer::transform(b.getObject(), b.getTransform()));
-    else
-      return MetricL2::monotoneApproxDistance(*a, b.getObject());
-  }
-
-  static double closestPoints(A const * a, TB const & b, Vector3 & cpa, Vector3 & cpb)
-  {
-    if (b.hasTransform())
-      return MetricL2::closestPoints(*a, Transformer::transform(b.getObject(), b.getTransform()), cpa, cpb);
-    else
-      return MetricL2::closestPoints(*a, b.getObject(), cpa, cpb);
+      return MetricL2::closestPoints<N, T>(a, b.getObject(), cpa, cpb);
   }
 };
 

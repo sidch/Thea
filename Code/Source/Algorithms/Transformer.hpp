@@ -43,10 +43,10 @@
 #define __Thea_Algorithms_Transformer_hpp__
 
 #include "../Common.hpp"
-#include "../RigidTransform3.hpp"
-#include "../AxisAlignedBox3.hpp"
-#include "../Box3.hpp"
-#include "../Ball3.hpp"
+#include "../RigidTransformN.hpp"
+#include "../AxisAlignedBoxN.hpp"
+#include "../BoxN.hpp"
+#include "../BallN.hpp"
 #include "../Triangle3.hpp"
 #include "PointTraitsN.hpp"
 #include <boost/utility/enable_if.hpp>
@@ -63,11 +63,11 @@ namespace Algorithms {
  *
  * @see Transformer
  */
-template <typename ObjT, typename TransT, typename Enable = void>
+template <typename ObjT, typename TransT, long N, typename ScalarT, typename Enable = void>
 struct /* THEA_API */ TransformerImpl
 {
-  typedef char Result;
-  static Result transform(ObjT const & obj, TransT const & tr);
+  typedef ObjT Result;
+  static Result transform(ObjT const & obj, TransT const & tr) { return tr * obj; }
 
 }; // struct TransformerImpl
 
@@ -82,93 +82,99 @@ class THEA_API Transformer
 {
   public:
     /** Apply a transformation to an object. */
-    template <typename ObjT, typename TransT>
-    static typename TransformerImpl<ObjT, TransT>::Result transform(ObjT const & obj, TransT const & tr)
+    template <long N, typename ScalarT, typename ObjT, typename TransT>
+    static typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result transform(ObjT const & obj, TransT const & tr)
     {
-      return TransformerImpl<ObjT, TransT>::transform(obj, tr);
+      return TransformerImpl<ObjT, TransT, N, ScalarT>::transform(obj, tr);
     }
 
 }; // class Transformer
 
+//=============================================================================================================================
 // Support for pointer types
-template <typename ObjT, typename TransT>
-struct /* THEA_API */ TransformerImpl<ObjT *, TransT *>
-{
-  typedef typename TransformerImpl<ObjT, TransT>::Result Result;
-  static Result transform(ObjT const * obj, TransT const * tr) { return Transformer::transform(*obj, *tr); }
-};
+//=============================================================================================================================
 
-template <typename ObjT, typename TransT>
-struct /* THEA_API */ TransformerImpl<ObjT, TransT *>
+template <typename ObjT, typename TransT, long N, typename ScalarT>
+struct /* THEA_API */ TransformerImpl<ObjT *, TransT *, N, ScalarT>
 {
-  typedef typename TransformerImpl<ObjT, TransT>::Result Result;
-  static Result transform(ObjT const & obj, TransT const * tr) { return Transformer::transform(obj, *tr); }
-};
+  typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
 
-template <typename ObjT, typename TransT>
-struct /* THEA_API */ TransformerImpl<ObjT *, TransT>
-{
-  typedef typename TransformerImpl<ObjT, TransT>::Result Result;
-  static Result transform(ObjT const * obj, TransT const & tr) { return Transformer::transform(*obj, tr); }
-};
-
-// Default specializations
-template <typename ObjT, typename TransT>
-struct TransformerImpl<ObjT, TransT, typename boost::enable_if< IsPointN<ObjT, 2> >::type>
-{
-  typedef Vector2 Result;
-  static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, 2>::getPosition(obj); }
-};
-
-template <typename ObjT, typename TransT>
-struct THEA_API TransformerImpl<ObjT, TransT, typename boost::enable_if< IsPointN<ObjT, 3> >::type>
-{
-  typedef Vector3 Result;
-  static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, 3>::getPosition(obj); }
-};
-
-template <typename TransT>
-struct THEA_API TransformerImpl<Vector4, TransT>
-{
-  typedef Vector4 Result;
-  static Result transform(Vector4 const & v, TransT const & tr) { return tr * v; }
-};
-
-template <>
-struct THEA_API TransformerImpl<AxisAlignedBox3, RigidTransform3>
-{
-  typedef Box3 Result;
-  static Result transform(AxisAlignedBox3 const & aabb, RigidTransform3 const & tr)
-  { return Box3(aabb, CoordinateFrame3(tr)); }
-};
-
-template <>
-struct THEA_API TransformerImpl<Box3, RigidTransform3>
-{
-  typedef Box3 Result;
-  static Result transform(Box3 const & box, RigidTransform3 const & tr)
+  static Result transform(ObjT const * obj, TransT const * tr)
   {
-    return Box3(box.getLocalAAB(), CoordinateFrame3(tr) * box.getLocalFrame());
+    return TransformerImpl<ObjT, TransT, N, ScalarT>::transform(*obj, *tr);
   }
 };
 
-template <>
-struct THEA_API TransformerImpl<Ball3, RigidTransform3>
+template <typename ObjT, typename TransT, long N, typename ScalarT>
+struct /* THEA_API */ TransformerImpl<ObjT, TransT *, N, ScalarT>
 {
-  typedef Ball3 Result;
-  static Ball3 transform(Ball3 const & ball, RigidTransform3 const & tr)
-  { return Ball3(tr * ball.getCenter(), ball.getRadius()); }
+  typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
+
+  static Result transform(ObjT const & obj, TransT const * tr)
+  {
+    return TransformerImpl<ObjT, TransT, N, ScalarT>::transform(obj, *tr);
+  }
 };
 
-template <typename VertexTripleT, typename TransT>
-struct THEA_API TransformerImpl< Triangle3<VertexTripleT>, TransT >
+template <typename ObjT, typename TransT, long N, typename ScalarT>
+struct /* THEA_API */ TransformerImpl<ObjT *, TransT, N, ScalarT>
+{
+  typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
+
+  static Result transform(ObjT const * obj, TransT const & tr)
+  {
+    return TransformerImpl<ObjT, TransT, N, ScalarT>::transform(*obj, tr);
+  }
+};
+
+//=============================================================================================================================
+// Specializations
+//=============================================================================================================================
+
+template <typename ObjT, typename TransT, long N, typename ScalarT>
+struct TransformerImpl<ObjT, TransT, N, ScalarT, typename boost::enable_if< IsPointN<ObjT, N> >::type>
+{
+  typedef VectorN<N, ScalarT> Result;
+  static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, N, ScalarT>::getPosition(obj); }
+};
+
+template <long N, typename ScalarT>
+struct TransformerImpl< AxisAlignedBoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
+{
+  typedef BoxN<N, ScalarT> Result;
+  static Result transform(AxisAlignedBoxN<N, ScalarT> const & aabb, RigidTransformN<N, ScalarT> const & tr)
+  {
+    return Result(aabb, CoordinateFrameN<N, ScalarT>(tr));
+  }
+};
+
+template <long N, typename ScalarT>
+struct TransformerImpl< BoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
+{
+  typedef BoxN<N, ScalarT> Result;
+  static Result transform(BoxN<N, ScalarT> const & box, RigidTransformN<N, ScalarT> const & tr)
+  {
+    return Result(box.getLocalAAB(), CoordinateFrameN<N, ScalarT>(tr) * box.getLocalFrame());
+  }
+};
+
+template <long N, typename ScalarT>
+struct TransformerImpl< BallN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
+{
+  typedef BallN<N, ScalarT> Result;
+  static Result transform(BallN<N, ScalarT> const & ball, RigidTransformN<N, ScalarT> const & tr)
+  { return BallN<N, ScalarT>(tr * ball.getCenter(), ball.getRadius()); }
+};
+
+template <typename VertexTripleT, typename TransT, typename ScalarT>
+struct THEA_API TransformerImpl< Triangle3<VertexTripleT>, TransT, 3, ScalarT >
 {
   typedef LocalTriangle3 Result;
   static Result transform(Triangle3<VertexTripleT> const & tri, TransT const & tr)
   {
-    return LocalTriangle3(Transformer::transform(tri.getVertex(0), tr),
-                          Transformer::transform(tri.getVertex(1), tr),
-                          Transformer::transform(tri.getVertex(2), tr));
+    return LocalTriangle3(Transformer::transform<3, ScalarT>(tri.getVertex(0), tr),
+                          Transformer::transform<3, ScalarT>(tri.getVertex(1), tr),
+                          Transformer::transform<3, ScalarT>(tri.getVertex(2), tr));
   }
 };
 

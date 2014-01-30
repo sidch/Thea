@@ -43,7 +43,7 @@
 #define __Thea_Algorithms_RayIntersectionTester_hpp__
 
 #include "../Common.hpp"
-#include "../RayIntersectable3.hpp"
+#include "../RayIntersectableN.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -57,7 +57,7 @@ namespace Algorithms {
  *
  * @see RayIntersectionTester
  */
-template <typename T>
+template <typename T, long N, typename ScalarT>
 struct /* THEA_API */ RayIntersectionTesterImpl
 {
   /**
@@ -67,7 +67,7 @@ struct /* THEA_API */ RayIntersectionTesterImpl
    * @param obj The object to test for intersection with the ray.
    * @param max_time Maximum allowable hit time, ignored if negative.
    */
-  static Real rayIntersectionTime(Ray3 const & ray, T const & obj, Real max_time = -1)
+  static ScalarT rayIntersectionTime(RayN<N, ScalarT> const & ray, T const & obj, ScalarT const & max_time)
   { return obj.rayIntersectionTime(ray, max_time); }
 
   /**
@@ -77,7 +77,7 @@ struct /* THEA_API */ RayIntersectionTesterImpl
    * @param obj The object to test for intersection with the ray.
    * @param max_time Maximum allowable hit time, ignored if negative.
    */
-  static RayIntersection3 rayIntersection(Ray3 const & ray, T const & obj, Real max_time = -1)
+  static RayIntersectionN<N, ScalarT> rayIntersection(RayN<N, ScalarT> const & ray, T const & obj, ScalarT const & max_time)
   { return obj.rayIntersection(ray, max_time); }
 
 }; // struct RayIntersectionTesterImpl
@@ -101,9 +101,10 @@ class THEA_API RayIntersectionTester
      * @param obj The object to test for intersection with the ray.
      * @param max_time Maximum allowable hit time, ignored if negative.
      */
-    template <typename T> static Real rayIntersectionTime(Ray3 const & ray, T const & obj, Real max_time = -1)
+    template <long N, typename ScalarT, typename T>
+    static ScalarT rayIntersectionTime(RayN<N, ScalarT> const & ray, T const & obj, ScalarT max_time = -1)
     {
-      return RayIntersectionTesterImpl<T>::rayIntersectionTime(ray, obj, max_time);
+      return RayIntersectionTesterImpl<T, N, ScalarT>::rayIntersectionTime(ray, obj, max_time);
     }
 
     /**
@@ -114,22 +115,23 @@ class THEA_API RayIntersectionTester
      * @param obj The object to test for intersection with the ray.
      * @param max_time Maximum allowable hit time, ignored if negative.
      */
-    template <typename T> static RayIntersection3 rayIntersection(Ray3 const & ray, T const & obj, Real max_time = -1)
+    template <long N, typename ScalarT, typename T>
+    static RayIntersectionN<N, ScalarT> rayIntersection(RayN<N, ScalarT> const & ray, T const & obj, ScalarT max_time = -1)
     {
-      return RayIntersectionTesterImpl<T>::rayIntersection(ray, obj, max_time);
+      return RayIntersectionTesterImpl<T, N, ScalarT>::rayIntersection(ray, obj, max_time);
     }
 
 }; // class RayIntersectionTester
 
 // Support for pointer types
-template <typename T>
-struct /* THEA_API */ RayIntersectionTesterImpl<T *>
+template <typename T, long N, typename ScalarT>
+struct /* THEA_API */ RayIntersectionTesterImpl<T *, N, ScalarT>
 {
-  static Real rayIntersectionTime(Ray3 const & ray, T const * obj, Real max_time = -1)
-  { return RayIntersectionTester::rayIntersectionTime(ray, *obj, max_time); }
+  static ScalarT rayIntersectionTime(RayN<N, ScalarT> const & ray, T const * obj, ScalarT const & max_time)
+  { return RayIntersectionTester::rayIntersectionTime<N, ScalarT>(ray, *obj, max_time); }
 
-  static RayIntersection3 rayIntersection(Ray3 const & ray, T const * obj, Real max_time = -1)
-  { return RayIntersectionTester::rayIntersection(ray, *obj, max_time); }
+  static RayIntersectionN<N, ScalarT> rayIntersection(RayN<N, ScalarT> const & ray, T const * obj, ScalarT const & max_time)
+  { return RayIntersectionTester::rayIntersection<N, ScalarT>(ray, *obj, max_time); }
 };
 
 } // namespace Algorithms
