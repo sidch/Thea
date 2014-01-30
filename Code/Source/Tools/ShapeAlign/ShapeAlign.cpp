@@ -1,9 +1,13 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/BestFitSphere3.hpp"
+#include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ICP3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../AffineTransformN.hpp"
+#include "../../MatrixMN.hpp"
+#include "../../VectorN.hpp"
 #include <cstdio>
 #include <fstream>
 
@@ -14,6 +18,12 @@ using namespace Graphics;
 
 long num_mesh_samples = 5000;
 bool match_scale = false;
+bool prealign_centroids = false;
+bool rotate_axis_aligned = false;
+
+typedef VectorN<3, double> DVector3;
+typedef MatrixMN<3, 3, double> DMatrix3;
+typedef AffineTransformN<3, double> DAffineTransform3;
 
 int
 usage(int argc, char * argv[])
@@ -21,13 +31,16 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Usage: " << argv[0] << " [<options>] <from> <to> [<output>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Options:";
-  THEA_CONSOLE << "  -n <num-mesh-samples>  :  Approximate #points to sample from mesh";
-  THEA_CONSOLE << "  -s                     :  Match shape scales";
+  THEA_CONSOLE << "  -n <#mesh-samples>  :  Approximate #points to sample from mesh";
+  THEA_CONSOLE << "  -s                  :  Match shape scales";
+  THEA_CONSOLE << "  -c                  :  Align shape centroids before starting ICP";
+  THEA_CONSOLE << "  -x                  :  Test over various axis-aligned rotations";
+  // THEA_CONSOLE << "  -r                  :  Test over various rotations";
   return -1;
 }
 
 bool
-sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
+sampleMesh(string const & mesh_path, TheaArray<DVector3> & samples)
 {
   typedef DisplayMesh Mesh;
   typedef MeshGroup<Mesh> MG;
@@ -38,8 +51,12 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
     mg.load(mesh_path);
 
     MeshSampler<Mesh> sampler(mg);
-    samples.clear();
-    sampler.sampleEvenlyByArea(num_mesh_samples, samples);
+    TheaArray<Vector3> pts;
+    sampler.sampleEvenlyByArea(num_mesh_samples, pts);
+
+    samples.resize(pts.size());
+    for (array_size_t i = 0; i < samples.size(); ++i)
+      samples[i] = DVector3(pts[i]);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "An error occurred")
 
@@ -49,7 +66,7 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3> & samples)
 }
 
 bool
-loadPoints(string const & points_path, TheaArray<Vector3> & points)
+loadPoints(string const & points_path, TheaArray<DVector3> & points)
 {
   string path_lc = toLower(points_path);
   if (endsWith(path_lc, ".obj")
@@ -125,7 +142,7 @@ loadPoints(string const & points_path, TheaArray<Vector3> & points)
       return false;
     }
 
-    Vector3 p;
+    DVector3 p;
     string field;
     while (getline(in, line))
     {
@@ -155,7 +172,7 @@ loadPoints(string const & points_path, TheaArray<Vector3> & points)
   }
   else
   {
-    Vector3 p;
+    DVector3 p;
     string line;
     while (getline(in, line))
     {
@@ -179,6 +196,57 @@ loadPoints(string const & points_path, TheaArray<Vector3> & points)
   return true;
 }
 
+DAffineTransform3
+normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & to_pts)
+{
+  if (from_pts.empty() || to_pts.empty())
+    return DAffineTransform3::identity();
+
+  DVector3 from_center  =  CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+  DVector3 to_center    =  CentroidN<DVector3, 3, double>::compute(to_pts.begin(), to_pts.end());
+
+  double rescaling = 1.0;
+  if (match_scale)
+  {
+    // Measure average distance of from_pts to from_center
+    double from_avg_dist = 0;
+    for (array_size_t i = 0; i < from_pts.size(); ++i)
+      from_avg_dist += (from_pts[i] - from_center).length();
+
+    from_avg_dist /= from_pts.size();
+
+    // Measure average distance of to_pts to to_center
+    double to_avg_dist = 0;
+    for (array_size_t i = 0; i < to_pts.size(); ++i)
+      to_avg_dist += (to_pts[i] - to_center).length();
+
+    to_avg_dist /= to_pts.size();
+
+    if (from_avg_dist > 0 && to_avg_dist > 0)
+      rescaling = to_avg_dist / from_avg_dist;
+
+    THEA_CONSOLE << "Rescaling = " << rescaling;
+  }
+
+  if (match_scale)
+  {
+    DAffineTransform3 tr = DAffineTransform3::scaling(rescaling)
+                         * DAffineTransform3::translation(-from_center);
+
+    if (prealign_centroids)
+      return DAffineTransform3::translation(to_center) * tr;
+    else
+      return DAffineTransform3::translation(from_center) * tr;  // scale in place
+  }
+  else
+  {
+    if (prealign_centroids)
+      return DAffineTransform3::translation(to_center - from_center);
+    else
+      return DAffineTransform3::identity();
+  }
+}
+
 int
 main(int argc, char * argv[])
 {
@@ -189,6 +257,7 @@ main(int argc, char * argv[])
   string from_path;
   string to_path;
   string out_path;
+
   for (int i = 1; i < argc; ++i)
   {
     string arg = argv[i];
@@ -222,6 +291,16 @@ main(int argc, char * argv[])
         match_scale = true;
         THEA_CONSOLE << "Scales will be matched";
       }
+      else if (arg == "-c")
+      {
+        prealign_centroids = true;
+        THEA_CONSOLE << "Centroids will be pre-aligned";
+      }
+      else if (arg == "-x")
+      {
+        rotate_axis_aligned = true;
+        THEA_CONSOLE << "Alignment will search over axis-aligned rotations";
+      }
       else
         return usage(argc, argv);
     }
@@ -242,15 +321,15 @@ main(int argc, char * argv[])
   if (pos_arg < 2)
     return usage(argc, argv);
 
-  TheaArray<Vector3> from_pts;
+  TheaArray<DVector3> from_pts;
   if (!loadPoints(from_path, from_pts))
     return -1;
 
-  TheaArray<Vector3> to_pts;
+  TheaArray<DVector3> to_pts;
   if (!loadPoints(to_path, to_pts))
     return -1;
 
-  AffineTransformN<3, double> tr = AffineTransformN<3, double>::identity();
+  DAffineTransform3 tr = DAffineTransform3::identity();
   double error = 0;
   if (from_pts.empty())
   {
@@ -262,32 +341,62 @@ main(int argc, char * argv[])
   }
   else
   {
-    double rescaling = 1.0;
-    if (match_scale)
+    DAffineTransform3 init_tr = normalization(from_pts, to_pts);
+    for (array_size_t i = 0; i < from_pts.size(); ++i)
+      from_pts[i] = init_tr * from_pts[i];
+
+    KDTreeN<DVector3, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
+
+    if (rotate_axis_aligned)
     {
-      if (from_pts.size() > 1 && to_pts.size() > 1)
-      {
-        BestFitSphere3 from_bsphere;
-        from_bsphere.addPoints(from_pts.begin(), from_pts.end());
+      ICP3<double> icp(-1, -1, false);
+      DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+      TheaArray<DVector3> rot_from_pts(from_pts.size());
+      double rot_error;
+      bool first = true;
 
-        BestFitSphere3 to_bsphere;
-        to_bsphere.addPoints(to_pts.begin(), to_pts.end());
+      for (int u = 0; u < 2; ++u)
+        for (int su = -1; su <= 1; su += 2)
+          for (int v = 1; v < 2; ++v)
+            for (int sv = -1; sv <= 1; sv += 2)
+            {
+              DVector3 du(0, 0, 0); du[u] = su;
+              DVector3 dv(0, 0, 0); dv[(u + v) % 3] = sv;
+              DVector3 dw = du.cross(dv);
+              DMatrix3 rot(du[0], dv[0], dw[0],
+                           du[1], dv[1], dw[1],
+                           du[2], dv[2], dw[2]);
 
-        if (from_bsphere.getRadius() > 0)
-          rescaling = (double)to_bsphere.getRadius() / (double)from_bsphere.getRadius();
-      }
+              DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
+                                       * DAffineTransform3(rot)
+                                       * DAffineTransform3::translation(-from_center);
 
-      THEA_CONSOLE << "Rescaling = " << rescaling;
+              for (array_size_t i = 0; i < from_pts.size(); ++i)
+                rot_from_pts[i] = rot_tr * from_pts[i];
 
-      for (array_size_t i = 0; i < from_pts.size(); ++i)
-        from_pts[i] *= rescaling;
+              DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              if (first || rot_error < error)
+              {
+                error = rot_error;
+                tr = icp_tr * rot_tr;
+                first = false;
+
+                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
+              }
+              else
+                THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
+            }
+
+      alwaysAssertM(!first, "No alignment found after trying axis-aligned rotations");
+
+      tr = tr * init_tr;
     }
-
-    ICP3<double> icp(-1, -1, true);
-    tr = icp.align((long)from_pts.size(), &from_pts[0], (long)to_pts.size(), &to_pts[0], &error);
-
-    if (match_scale)
-      tr = tr * AffineTransformN<3, double>::scaling(rescaling);
+    else
+    {
+      ICP3<double> icp(-1, -1, true);
+      tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
+      tr = tr * init_tr;
+    }
   }
 
   THEA_CONSOLE << "Alignment error = " << error;

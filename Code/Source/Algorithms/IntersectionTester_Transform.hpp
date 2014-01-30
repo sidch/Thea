@@ -49,8 +49,8 @@ namespace Thea {
 namespace Algorithms {
 
 // Default specializations
-template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB>
-struct /* THEA_API */ IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB> >
+template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, long N, typename T>
+struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
   typedef TransformedObject<ObjectB, TransformB> TB;
@@ -60,74 +60,48 @@ struct /* THEA_API */ IntersectionTesterImpl< TransformedObject<ObjectA, Transfo
     if (a.hasTransform())
     {
       if (b.hasTransform())
-        return IntersectionTester::intersects(Transformer::transform(a.getObject(), a.getTransform()),
-                                              Transformer::transform(b.getObject(), b.getTransform()));
+        return IntersectionTester::intersects<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                                    Transformer::transform<N, T>(b.getObject(), b.getTransform()));
       else
-        return IntersectionTester::intersects(Transformer::transform(a.getObject(), a.getTransform()), b.getObject());
+        return IntersectionTester::intersects<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()),
+                                                    b.getObject());
     }
     else
     {
       if (b.hasTransform())
-        return IntersectionTester::intersects(a.getObject(), Transformer::transform(b.getObject(), b.getTransform()));
+        return IntersectionTester::intersects<N, T>(a.getObject(), Transformer::transform<N, T>(b.getObject(),
+                                                    b.getTransform()));
       else
-        return IntersectionTester::intersects(a.getObject(), b.getObject());
+        return IntersectionTester::intersects<N, T>(a.getObject(), b.getObject());
     }
   }
 };
 
-template <typename ObjectA, typename TransformA, typename B>
-struct /* THEA_API */ IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, B >
+template <typename ObjectA, typename TransformA, typename B, long N, typename T>
+struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, B, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
 
   static bool intersects(TA const & a, B const & b)
   {
     if (a.hasTransform())
-      return IntersectionTester::intersects(Transformer::transform(a.getObject(), a.getTransform()), b);
+      return IntersectionTester::intersects<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b);
     else
-      return IntersectionTester::intersects(a.getObject(), b);
+      return IntersectionTester::intersects<N, T>(a.getObject(), b);
   }
 };
 
-template <typename ObjectA, typename TransformA, typename B>
-struct /* THEA_API */ IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, B * >
-{
-  typedef TransformedObject<ObjectA, TransformA> TA;
-
-  static bool intersects(TA const & a, B const * b)
-  {
-    if (a.hasTransform())
-      return IntersectionTester::intersects(Transformer::transform(a.getObject(), a.getTransform()), *b);
-    else
-      return IntersectionTester::intersects(a.getObject(), *b);
-  }
-};
-
-template <typename A, typename ObjectB, typename TransformB>
-struct /* THEA_API */ IntersectionTesterImpl< A, TransformedObject<ObjectB, TransformB> >
+template <typename A, typename ObjectB, typename TransformB, long N, typename T>
+struct IntersectionTesterImpl< A, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectB, TransformB> TB;
 
   static bool intersects(A const & a, TB const & b)
   {
     if (b.hasTransform())
-      return IntersectionTester::intersects(a, Transformer::transform(b.getObject(), b.getTransform()));
+      return IntersectionTester::intersects<N, T>(a, Transformer::transform<N, T>(b.getObject(), b.getTransform()));
     else
-      return IntersectionTester::intersects(a, b.getObject());
-  }
-};
-
-template <typename A, typename ObjectB, typename TransformB>
-struct /* THEA_API */ IntersectionTesterImpl< A *, TransformedObject<ObjectB, TransformB> >
-{
-  typedef TransformedObject<ObjectB, TransformB> TB;
-
-  static bool intersects(A const * a, TB const & b)
-  {
-    if (b.hasTransform())
-      return IntersectionTester::intersects(*a, Transformer::transform(b.getObject(), b.getTransform()));
-    else
-      return IntersectionTester::intersects(*a, b.getObject());
+      return IntersectionTester::intersects<N, T>(a, b.getObject());
   }
 };
 

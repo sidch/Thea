@@ -43,11 +43,13 @@
 #define __Thea_Algorithms_IntersectionTester_hpp__
 
 #include "../Common.hpp"
-#include "../AxisAlignedBox3.hpp"
-#include "../Box3.hpp"
-#include "../Ball3.hpp"
+#include "../AxisAlignedBoxN.hpp"
+#include "../BallN.hpp"
+#include "../BoxN.hpp"
 #include "../Triangle3.hpp"
 #include "PointTraitsN.hpp"
+#include "TransformedObject.hpp"
+#include <boost/type_traits/is_pointer.hpp>
 #include <boost/utility/enable_if.hpp>
 
 namespace Thea {
@@ -60,7 +62,7 @@ namespace Algorithms {
  *
  * @see IntersectionTester
  */
-template <typename A, typename B, typename Enable = void>
+template <typename A, typename B, long N, typename T, typename Enable = void>
 struct /* THEA_API */ IntersectionTesterImpl
 {
   /** Check if two objects intersect. */
@@ -75,9 +77,9 @@ struct /* THEA_API */ IntersectionTesterImpl
  * IntersectionTesterImpl. This class is required because C++ does unexpected things with specialized and overloaded function
  * templates (see http://www.gotw.ca/publications/mill17.htm). Note that to commutatively support queries between distinct types
  * A and B, you must specialize both IntersectionTesterImpl<A, B> and IntersectionTesterImpl<B, A>. Do <b>not</b> try
- * specializing IntersectionTester::intersects().
+ * specializing IntersectionTester::intersects<N, T>().
  */
-class /* THEA_API */ IntersectionTester
+class THEA_API IntersectionTester
 {
   public:
     /**
@@ -86,78 +88,96 @@ class /* THEA_API */ IntersectionTester
      * on distinct types A and B, you must explicitly specialize both IntersectionTesterImpl<A, B> and
      * IntersectionTesterImpl<B, A>.
      */
-    template <typename A, typename B> static bool intersects(A const & a, B const & b)
-    { return IntersectionTesterImpl<A, B>::intersects(a, b); }
+    template <long N, typename T, typename A, typename B> static bool intersects(A const & a, B const & b)
+    { return IntersectionTesterImpl<A, B, N, T>::intersects(a, b); }
 
 }; // class IntersectionTester
 
+//=============================================================================================================================
 // Support for pointer types
-template <typename A, typename B>
-struct /* THEA_API */ IntersectionTesterImpl<A *, B *>
+//=============================================================================================================================
+
+template <typename A, typename B, long N, typename T>
+struct /* THEA_API */ IntersectionTesterImpl<A *, B *, N, T>
 {
-  static bool intersects(A const * a, B const * b) { return IntersectionTester::intersects(*a, *b); }
+  static bool intersects(A const * a, B const * b) { return IntersectionTester::intersects<N, T>(*a, *b); }
 };
 
-template <typename A, typename B>
-struct /* THEA_API */ IntersectionTesterImpl<A, B *>
+template <typename A, typename B, long N, typename T>
+struct /* THEA_API */ IntersectionTesterImpl<A, B *, N, T>
 {
-  static bool intersects(A const & a, B const * b) { return IntersectionTester::intersects(a, *b); }
+  static bool intersects(A const & a, B const * b) { return IntersectionTester::intersects<N, T>(a, *b); }
 };
 
-template <typename A, typename B>
-struct /* THEA_API */ IntersectionTesterImpl<A *, B>
+template <typename A, typename B, long N, typename T>
+struct /* THEA_API */ IntersectionTesterImpl<A *, B, N, T>
 {
-  static bool intersects(A const * a, B const & b) { return IntersectionTester::intersects(*a, b); }
+  static bool intersects(A const * a, B const & b) { return IntersectionTester::intersects<N, T>(*a, b); }
 };
 
+//=============================================================================================================================
 // Default specializations
-template <typename B>
-struct /* THEA_API */ IntersectionTesterImpl<AxisAlignedBox3, B, typename boost::enable_if< IsPointN<B, 3> >::type>
+//=============================================================================================================================
+
+namespace IntersectionTesterInternal {
+
+template <typename T> struct TransformedObjectCheck { static bool const value = false; };
+
+template <typename ObjT, typename TransT> struct TransformedObjectCheck< TransformedObject<ObjT, TransT> >
 {
-  static bool intersects(AxisAlignedBox3 const & a, B const & b) { return a.intersects(PointTraitsN<B, 3>::getPosition(b)); }
+  static bool const value = true;
 };
 
-template <typename A>
-struct /* THEA_API */ IntersectionTesterImpl<A, AxisAlignedBox3, typename boost::enable_if< IsPointN<A, 3> >::type>
+} // namespace IntersectionTesterInternal
+
+// Only the second object is a point
+template <typename A, typename B, long N, typename T>
+struct IntersectionTesterImpl<A, B, N, T,
+                              typename boost::enable_if_c< !IsPointN<A, N>::value
+                                                        && !IntersectionTesterInternal::TransformedObjectCheck<A>::value
+                                                        && !boost::is_pointer<A>::value
+                                                        && IsPointN<B, N>::value >::type>
 {
-  static bool intersects(A const & a, AxisAlignedBox3 const & b) { return IntersectionTester::intersects(b, a); }
+  static bool intersects(A const & a, B const & b) { return a.intersects(PointTraitsN<B, N, T>::getPosition(b)); }
 };
 
-template <typename B>
-struct /* THEA_API */ IntersectionTesterImpl<Box3, B, typename boost::enable_if< IsPointN<B, 3> >::type>
+// Only the first object is a point
+template <typename A, typename B, long N, typename T>
+struct IntersectionTesterImpl<A, B, N, T,
+                              typename boost::enable_if_c< IsPointN<A, N>::value
+                                                        && !IsPointN<B, N>::value
+                                                        && !IntersectionTesterInternal::TransformedObjectCheck<B>::value
+                                                        && !boost::is_pointer<B>::value >::type>
 {
-  static bool intersects(Box3 const & a, B const & b) { return a.intersects(PointTraitsN<B, 3>::getPosition(b)); }
+  static bool intersects(A const & a, B const & b) { return b.intersects(PointTraitsN<A, N, T>::getPosition(a)); }
 };
 
-template <typename A>
-struct /* THEA_API */ IntersectionTesterImpl<A, Box3, typename boost::enable_if< IsPointN<A, 3> >::type>
+//=============================================================================================================================
+// Specializations where the intersects() member function is not defined in both classes
+//=============================================================================================================================
+
+template <typename VertexTripleT, typename T>
+struct IntersectionTesterImpl<AxisAlignedBoxN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
-  static bool intersects(A const & a, Box3 const & b) { return IntersectionTester::intersects(b, a); }
+  static bool intersects(AxisAlignedBoxN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
 };
 
-template <typename B>
-struct /* THEA_API */ IntersectionTesterImpl<Ball3, B, typename boost::enable_if< IsPointN<B, 3> >::type>
+template <typename VertexTripleT, typename T>
+struct IntersectionTesterImpl<BallN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
-  static bool intersects(Ball3 const & a, B const & b) { return a.intersects(PointTraitsN<B, 3>::getPosition(b)); }
+  static bool intersects(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
 };
 
-template <typename A>
-struct /* THEA_API */ IntersectionTesterImpl<A, Ball3, typename boost::enable_if< IsPointN<A, 3> >::type>
+template <typename VertexTripleT, typename T>
+struct IntersectionTesterImpl<BoxN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
-  static bool intersects(A const & a, Ball3 const & b) { return IntersectionTester::intersects(b, a); }
+  static bool intersects(BoxN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
 };
 
-template <typename VertexTripleT, typename B>
-struct /* THEA_API */ IntersectionTesterImpl<Triangle3<VertexTripleT>, B, typename boost::enable_if< IsPointN<B, 3> >::type>
+template <long N, typename T>
+struct IntersectionTesterImpl<AxisAlignedBoxN<N, T>, BoxN<N, T>, N, T>
 {
-  static bool intersects(Triangle3<VertexTripleT> const & a, B const & b)
-  { return a.intersects(PointTraitsN<B, 3>::getPosition(b)); }
-};
-
-template <typename A, typename VertexTripleT>
-struct /* THEA_API */ IntersectionTesterImpl<A, Triangle3<VertexTripleT>, typename boost::enable_if< IsPointN<A, 3> >::type>
-{
-  static bool intersects(A const & a, Triangle3<VertexTripleT> const & b) { return IntersectionTester::intersects(b, a); }
+  static bool intersects(AxisAlignedBoxN<N, T> const & a, BoxN<N, T> const & b) { return b.intersects(a); }
 };
 
 } // namespace Algorithms
