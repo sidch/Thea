@@ -397,7 +397,7 @@ main(int argc, char * argv[])
                 tr = icp_tr * rot_tr;
                 first = false;
 
-                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced raw error to " << error;
+                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
               }
               else
                 THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
