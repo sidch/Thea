@@ -17,7 +17,7 @@ using namespace Algorithms;
 using namespace Graphics;
 
 long num_mesh_samples = 5000;
-bool match_scale = false;
+bool normalize_scales = false;
 bool prealign_centroids = false;
 bool rotate_axis_aligned = false;
 
@@ -32,7 +32,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -n <#mesh-samples>  :  Approximate #points to sample from mesh";
-  THEA_CONSOLE << "  -s                  :  Match shape scales";
+  THEA_CONSOLE << "  -s                  :  Normalize shape scales";
   THEA_CONSOLE << "  -c                  :  Align shape centroids before starting ICP";
   THEA_CONSOLE << "  -x                  :  Test over various axis-aligned rotations";
   // THEA_CONSOLE << "  -r                  :  Test over various rotations";
@@ -197,8 +197,10 @@ loadPoints(string const & points_path, TheaArray<DVector3> & points)
 }
 
 DAffineTransform3
-normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & to_pts)
+normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & to_pts, double & from_scale, double & to_scale)
 {
+  from_scale = to_scale = 1.0;
+
   if (from_pts.empty() || to_pts.empty())
     return DAffineTransform3::identity();
 
@@ -206,7 +208,7 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
   DVector3 to_center    =  CentroidN<DVector3, 3, double>::compute(to_pts.begin(), to_pts.end());
 
   double rescaling = 1.0;
-  if (match_scale)
+  if (normalize_scales)
   {
     // Measure average distance of from_pts to from_center
     double from_avg_dist = 0;
@@ -225,10 +227,13 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
     if (from_avg_dist > 0 && to_avg_dist > 0)
       rescaling = to_avg_dist / from_avg_dist;
 
+    from_scale  =  from_avg_dist;
+    to_scale    =  to_avg_dist;
+
     THEA_CONSOLE << "Rescaling = " << rescaling;
   }
 
-  if (match_scale)
+  if (normalize_scales)
   {
     DAffineTransform3 tr = DAffineTransform3::scaling(rescaling)
                          * DAffineTransform3::translation(-from_center);
@@ -245,6 +250,15 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
     else
       return DAffineTransform3::identity();
   }
+}
+
+double
+normalizeError(double err, double scale)
+{
+  if (normalize_scales && scale > 0)
+    return err / (4 * scale * scale);  // normalized scale makes average distance from centroid == 0.5
+  else
+    return err;
 }
 
 int
@@ -288,7 +302,7 @@ main(int argc, char * argv[])
       }
       else if (arg == "-s")
       {
-        match_scale = true;
+        normalize_scales = true;
         THEA_CONSOLE << "Scales will be matched";
       }
       else if (arg == "-c")
@@ -330,6 +344,7 @@ main(int argc, char * argv[])
     return -1;
 
   DAffineTransform3 tr = DAffineTransform3::identity();
+  double from_scale = 1.0, to_scale = 1.0;
   double error = 0;
   if (from_pts.empty())
   {
@@ -341,7 +356,7 @@ main(int argc, char * argv[])
   }
   else
   {
-    DAffineTransform3 init_tr = normalization(from_pts, to_pts);
+    DAffineTransform3 init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
     for (array_size_t i = 0; i < from_pts.size(); ++i)
       from_pts[i] = init_tr * from_pts[i];
 
@@ -375,13 +390,14 @@ main(int argc, char * argv[])
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
               DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              rot_error = normalizeError(rot_error, to_scale);
               if (first || rot_error < error)
               {
                 error = rot_error;
                 tr = icp_tr * rot_tr;
                 first = false;
 
-                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
+                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced raw error to " << error;
               }
               else
                 THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
@@ -396,6 +412,8 @@ main(int argc, char * argv[])
       ICP3<double> icp(-1, -1, true);
       tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
       tr = tr * init_tr;
+
+      error = normalizeError(error, to_scale);
     }
   }
 
