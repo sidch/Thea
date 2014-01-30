@@ -10,6 +10,7 @@
 #include "../../VectorN.hpp"
 #include <cstdio>
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 using namespace Thea;
@@ -253,12 +254,12 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
 }
 
 double
-normalizeError(double err, double scale)
+normalizeError(double err, double scale, long num_points)
 {
   if (normalize_scales && scale > 0)
-    return err / (4 * scale * scale);  // normalized scale makes average distance from centroid == 0.5
+    return err / (4 * scale * scale * num_points);  // normalized scale makes average distance from centroid == 0.5
   else
-    return err;
+    return err / num_points;
 }
 
 int
@@ -390,7 +391,7 @@ main(int argc, char * argv[])
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
               DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
-              rot_error = normalizeError(rot_error, to_scale);
+              rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
               if (first || rot_error < error)
               {
                 error = rot_error;
@@ -413,11 +414,11 @@ main(int argc, char * argv[])
       tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
       tr = tr * init_tr;
 
-      error = normalizeError(error, to_scale);
+      error = normalizeError(error, to_scale, (long)from_pts.size());
     }
   }
 
-  THEA_CONSOLE << "Alignment error = " << error;
+  THEA_CONSOLE << "Alignment error = " << std::setprecision(10) << error;
   THEA_CONSOLE << "Alignment = " << tr.toString();
 
   if (!out_path.empty())
