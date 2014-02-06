@@ -293,7 +293,7 @@ class ShapeDiameter
     static void
     getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
     {
-      u = (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
+      u = (dir.maxAbsAxis() == 0) ? Vector3(dir.y(), -dir.x(), 0) : Vector3(0, dir.z(), -dir.y());
       u.unitize();
       v = dir.cross(u).unit();
     }
