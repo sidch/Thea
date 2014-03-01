@@ -481,6 +481,27 @@ class /* THEA_API */ MatrixMN<N, N, T> : public Internal::SquareMatrixN<N, T>
      */
     MatrixMN inverse() const { MatrixMN result = *this; result.invert(); return result; }
 
+    /**
+     * Post-multiply by a vector of one lower dimension, using homogenous coordinates. The last (homogenous) coordinate of the
+     * vector is assumed to be 1, i.e. this is assumed to be a position vector.
+     */
+    VectorN<N - 1, T> operator*(VectorN<N - 1, T> const & v) const
+    {
+      VectorN<N - 1, T> result;
+      for (long i = 0; i < N - 1; ++i)
+      {
+        result[i] = (*this)(i, N - 1);
+        for (long j = 0; j < N - 1; ++j)
+          result[i] += (*this)(i, j) * v[j];
+      }
+
+      double w = (*this)(N - 1, N - 1);
+      for (long j = 0; j < N - 1; ++j)
+        w += (*this)(N - 1, j) * v[j];
+
+      return result / w;
+    }
+
 }; // class MatrixMN<M, M, T>
 
 /** Pre-multiply by a vector. */
