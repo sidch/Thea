@@ -7,7 +7,6 @@
 //============================================================================
 
 #include "GLCaps.hpp"
-#include "GLHeaders.hpp"
 #include "../../Map.hpp"
 #include "../../Math.hpp"
 #include <cstring>
@@ -39,6 +38,9 @@ bool GLCaps::_loadedExtensions   = false;
 bool GLCaps::_initialized        = false;
 bool GLCaps::_checkedForBugs     = false;
 bool GLCaps::_hasGLMajorVersion2 = false;
+
+bool GLCaps::has_headless_context = false;
+GLContext GLCaps::headless_context;
 
 int GLCaps::_numTextureCoords = 0;
 int GLCaps::_numTextures      = 0;
@@ -197,12 +199,151 @@ GLCaps::init()
 {
   if (!_initialized)
   {
+    if (!glGetCurrentContext())
+    {
+      if (!createHeadlessContext())
+      {
+        throw FatalError(Thea::format("%s:%ld: Error creating headless OpenGL context",  // FIXME: Should be plain Error?
+                         Thea::FilePath::nodeName(__FILE__).c_str(), (long)__LINE__));
+      }
+    }
+
+
     loadExtensions();
     THEA_CHECK_GL_OK
 
     checkAllBugs();
     THEA_CHECK_GL_OK
   }
+}
+
+bool
+GLCaps::createHeadlessContext()
+{
+  if (has_headless_context)
+    return true;
+
+#if defined(THEA_GL_OSMESA)
+
+  // TODO
+
+#elif defined(THEA_WINDOWS)
+
+  // TODO
+
+#elif defined(THEA_LINUX) || defined(THEA_BSD)
+
+  display = XOpenDisplay(0);
+  if (!display)
+  {
+    THEA_ERROR << "GLCaps: Could not open X display";
+    return false;
+  }
+
+  static int attribs[] = {
+    GLX_RGBA,
+    GLX_RED_SIZE,    8,
+    GLX_GREEN_SIZE,  8,
+    GLX_BLUE_SIZE,   8,
+    GLX_ALPHA_SIZE,  8,
+    GLX_DEPTH_SIZE, 24;
+    None
+  };
+
+  XVisualInfo * vi = glXChooseVisual(display, DefaultScreen(display), attribs);
+  if (!vi)
+  {
+    THEA_ERROR << "GLCaps: Could not choose X visual";
+    return false;
+  }
+
+  headless_context = glXCreateContext(display, vi, 0, GL_TRUE);
+  if (!headless_context)
+  {
+    THEA_ERROR << "GLCaps: Could not create X context";
+    return false;
+  }
+
+  // Bind to a small dummy pixmap instead of binding to a window
+  static int const DUMMY_FB_WIDTH   =  32;
+  static int const DUMMY_FB_HEIGHT  =  32;
+  pixmap = XCreatePixmap(display, DefaultRootWindow(display), DUMMY_FB_WIDTH, DUMMY_FB_HEIGHT, 24);
+  glx_pixmap = glXCreateGLXPixmap(display, vi, pixmap);
+  if (!glXMakeCurrent(display, glx_pixmap, headless_context))
+  {
+    THEA_ERROR << "GLCaps: Could not make new X context current";
+    return false;
+  }
+
+  has_headless_context = true;
+
+#elif defined(THEA_OSX)
+
+  CGLPixelFormatAttribute attribs[] = {
+    kCGLPFAColorSize,     (CGLPixelFormatAttribute)24,
+    kCGLPFAAlphaSize,     (CGLPixelFormatAttribute) 8,
+    kCGLPFADepthSize,     (CGLPixelFormatAttribute)24,
+    kCGLPFAAccelerated,
+    kCGLPFASampleBuffers, (CGLPixelFormatAttribute) 1,
+    kCGLPFASamples,       (CGLPixelFormatAttribute) 4,
+    (CGLPixelFormatAttribute)0
+  };
+
+  CGLError err;
+  CGLPixelFormatObj pix;
+  GLint npix;
+  if ((err = CGLChoosePixelFormat(attribs, &pix, &npix)) != kCGLNoError)
+  {
+    THEA_ERROR << "GLCaps: Could not choose CGL pixel format (error: " << CGLErrorString(err) << ')';
+    return false;
+  }
+
+  if ((err = CGLCreateContext(pix, 0, &headless_context)) != kCGLNoError)
+  {
+    THEA_ERROR << "GLCaps: Could not create CGL context (error: " << CGLErrorString(err) << ')';
+    return false;
+  }
+
+  if ((err = CGLSetCurrentContext(headless_context)) != kCGLNoError)
+  {
+    THEA_ERROR << "GLCaps: Could not make new CGL context current (error: " << CGLErrorString(err) << ')';
+    return false;
+  }
+
+  has_headless_context = true;
+
+#endif
+
+  return has_headless_context;
+}
+
+void
+GLCaps::destroyHeadlessContext()
+{
+  if (!has_headless_context)
+    return;
+
+#if defined(THEA_GL_OSMESA)
+
+  // TODO
+
+#elif defined(THEA_WINDOWS)
+
+  // TODO
+
+#elif defined(THEA_LINUX) || defined(THEA_BSD)
+
+  glXDestroyContext(display, headless_context);
+  glXDestroyPixmap(display, glx_pixmap);
+  XFreePixmap(display, pixmap);
+
+#elif defined(THEA_OSX)
+
+  CGLDestroyContext(headless_context);
+
+#endif
+
+  has_headless_context = false;
 }
 
 void
@@ -212,8 +353,6 @@ GLCaps::loadExtensions()
 
   if (_loadedExtensions)
     return;
-  else
-    _loadedExtensions = true;
 
   alwaysAssertM(!_initialized, "Attempt to initialize OpenGL twice");
   alwaysAssertM(glGetCurrentContext(), "Unable to load OpenGL extensions without a current context.");
@@ -221,6 +360,8 @@ GLCaps::loadExtensions()
   GLenum err = glewInit();
   if (err != GLEW_OK)
     throw FatalError(format("Couldn't load extensions via GLEW (%s)", glewGetErrorString(err)));
+
+  _loadedExtensions = true;
 
   // Initialize statically cached strings
   vendor();

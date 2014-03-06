@@ -11,6 +11,7 @@
 
 #include "../../Graphics/Texture.hpp"
 #include "GLCommon.hpp"
+#include "GLHeaders.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -139,6 +140,12 @@ class THEA_GL_DLL_LOCAL GLCaps
     static std::string describeSystem();
 
   private:
+    /** Create a headless rendering context, if possible. */
+    static bool createHeadlessContext();
+
+    /** Destroy the headless rendering context, if any. */
+    static void destroyHeadlessContext();
+
     /** Load all OpenGL extensions and get system info. */
     static void loadExtensions();
 
@@ -162,20 +169,34 @@ class THEA_GL_DLL_LOCAL GLCaps
     static void checkAllBugs();
 
     /** True when init has been called. */
-    static bool         _initialized;
+    static bool _initialized;
+
+    static bool has_headless_context;  ///< Has a headless context been created?
+    static GLContext headless_context;  ///< Handle to headless context, if any.
+
+#if defined(THEA_GL_OSMESA)
+#elif defined(THEA_WINDOWS)
+#elif defined(THEA_LINUX) || defined(THEA_BSD)
+    Display * display;
+    Pixmap pixmap;
+    GLXPixmap glx_pixmap;
+    GLContext context;
+#elif defined(THEA_OSX)
+    GLContext context;
+#endif
 
     /** True when loadExtensions has already been called. */
-    static bool         _loadedExtensions;
+    static bool _loadedExtensions;
 
     /** True if this is GL 2.0 or greater, which mandates certain extensions.*/
-    static bool         _hasGLMajorVersion2;
+    static bool _hasGLMajorVersion2;
 
-    static int          _numTextureCoords;
-    static int          _numTextures;
-    static int          _numTextureUnits;
+    static int  _numTextureCoords;
+    static int  _numTextures;
+    static int  _numTextureUnits;
 
     /** True when checkAllBugs has been called. */
-    static bool         _checkedForBugs;
+    static bool _checkedForBugs;
 
     static bool bug_glMultiTexCoord3fvARB;
     static bool bug_normalMapTexGen;
