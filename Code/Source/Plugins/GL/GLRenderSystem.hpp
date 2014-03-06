@@ -57,7 +57,7 @@ namespace GL {
 class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
 {
   public:
-    /** Constructor. */
+    /** Constructor. Creates a headless context for rendering if no rendering context currently exists. */
     GLRenderSystem(char const * name_);
 
     /** Destructor. */

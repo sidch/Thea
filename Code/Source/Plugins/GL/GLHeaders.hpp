@@ -77,7 +77,7 @@
 #endif
 
 // GUI compatibility. Requires a display device.
-#ifndef THEA_DISABLE_DISPLAY
+#ifndef THEA_GL_OSMESA
 #  ifdef THEA_WIN32
 #    include "wglew.h"
 #  elif defined(THEA_LINUX) || defined(THEA_BSD)
@@ -124,7 +124,7 @@ struct THEA_GL_DLL_LOCAL GLClientScope
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
     err_string = gluErrorString(err_code); \
-    throw FatalError(Thea::format("%s:%ld: OpenGL error: %s", /* FIXME: Should be plain Error? */ \
+    throw FatalError(Thea::format("%s:%ld: OpenGL error: %s",  /* FIXME: Should be plain Error? */ \
                      Thea::FilePath::nodeName(__FILE__).c_str(), (long)__LINE__, err_string)); \
   } \
 }
@@ -143,23 +143,14 @@ glGetInteger(GLenum which)
  * Get a handle to the current OpenGL context, if available. On platforms where we can't return a context, this function always
  * returns true.
  */
-#ifdef THEA_DISABLE_DISPLAY
-#  ifdef THEA_GL_OSMESA
+#if defined(THEA_GL_OSMESA)
+
   typedef OSMesaContext GLContext;
   inline THEA_GL_DLL_LOCAL GLContext glGetCurrentContext()
   {
     return OSMesaGetCurrentContext();
   }
 
-#  else
-
-  typedef bool GLContext;
-  inline THEA_GL_DLL_LOCAL GLContext glGetCurrentContext()
-  {
-    return true;  // pretend we always have a context, since we don't know how to do anything smarter here
-  }
-
-#  endif
 #elif defined(THEA_WINDOWS)
 
   typedef HGLRC GLContext;
@@ -183,6 +174,7 @@ glGetInteger(GLenum which)
   {
       return CGLGetCurrentContext();
   }
+
 #endif
 
 } // namespace GL
