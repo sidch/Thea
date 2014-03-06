@@ -7,6 +7,7 @@
 //============================================================================
 
 #include "GLCaps.hpp"
+#include "../../FilePath.hpp"
 #include "../../Map.hpp"
 #include "../../Math.hpp"
 #include <cstring>
@@ -203,11 +204,9 @@ GLCaps::init()
     {
       if (!createHeadlessContext())
       {
-        throw FatalError(Thea::format("%s:%ld: Error creating headless OpenGL context",  // FIXME: Should be plain Error?
-                         Thea::FilePath::nodeName(__FILE__).c_str(), (long)__LINE__));
+        throw FatalError("GLCaps: Error creating headless OpenGL context");
       }
     }
-
 
     loadExtensions();
     THEA_CHECK_GL_OK
