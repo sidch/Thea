@@ -45,6 +45,9 @@ class THEA_GL_DLL_LOCAL GLCaps
      */
     static void init();
 
+    /** Is the headless rendering context, if any, currently active? */
+    static bool isHeadless();
+
     /**
      * Check if the OpenGL implementation supports a set of extensions. The names of the extensions should be separated by
      * spaces and include the initial GL/WGL/GLX... prefix, e.g. <code>"GL_ARB_multitexture WGLEW_ARB_pbuffer"</code>.

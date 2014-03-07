@@ -418,6 +418,41 @@ ENDIF()
 SET(TheaAllTools ${TheaAllTools} Register)
 
 #===========================================================
+# RenderShape
+#===========================================================
+
+# Source file lists
+FILE(GLOB RenderShapeSources
+     ${SourceRoot}/Tools/RenderShape/*.cpp)
+
+# Libraries to link to
+SET(RenderShapeLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${OpenGL_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(RenderShape "${RenderShapeLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} RenderShape)
+
+#===========================================================
 # SampleGraph
 #===========================================================
 

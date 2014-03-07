@@ -47,6 +47,7 @@
 #include "../BestFitSphere3.hpp"
 #include "../MeshKDTree.hpp"
 #include "../MetricL2.hpp"
+#include "../PointCollectorN.hpp"
 #include "../RayIntersectionTester.hpp"
 #include "../../Math.hpp"
 #include "../../Matrix3.hpp"
@@ -92,7 +93,7 @@ class ShapeDiameter
       if (scale <= 0)
       {
         BestFitSphere3 bsphere;
-        bsphere.addMesh(mesh);
+        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh);
         scale = bsphere.getDiameter();
       }
     }
@@ -115,7 +116,7 @@ class ShapeDiameter
       if (scale <= 0)
       {
         BestFitSphere3 bsphere;
-        bsphere.addMeshGroup(mesh_group);
+        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh_group);
         scale = bsphere.getDiameter();
       }
     }

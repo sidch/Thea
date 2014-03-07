@@ -204,7 +204,7 @@ GLCaps::init()
     {
       if (!createHeadlessContext())
       {
-        throw FatalError("GLCaps: Error creating headless OpenGL context");
+        throw Error("GLCaps: Error creating headless OpenGL context");
       }
     }
 
@@ -285,6 +285,7 @@ GLCaps::createHeadlessContext()
     kCGLPFAAccelerated,
     kCGLPFASampleBuffers, (CGLPixelFormatAttribute) 1,
     kCGLPFASamples,       (CGLPixelFormatAttribute) 4,
+    kCGLPFAAllowOfflineRenderers,
     (CGLPixelFormatAttribute)0
   };
 
@@ -297,7 +298,8 @@ GLCaps::createHeadlessContext()
     return false;
   }
 
-  if ((err = CGLCreateContext(pix, 0, &headless_context)) != kCGLNoError)
+  err = CGLCreateContext(pix, 0, &headless_context);
+  if (err != kCGLNoError || !headless_context)
   {
     THEA_ERROR << "GLCaps: Could not create CGL context (error: " << CGLErrorString(err) << ')';
     return false;
@@ -345,10 +347,16 @@ GLCaps::destroyHeadlessContext()
   has_headless_context = false;
 }
 
+bool
+GLCaps::isHeadless()
+{
+  return has_headless_context && glGetCurrentContext() == headless_context;
+}
+
 void
 GLCaps::loadExtensions()
 {
-  alwaysAssertM(glGetString(GL_RENDERER) != NULL, "Fatal error initializing Open GL, please check your GL installation");
+  alwaysAssertM(glGetString(GL_RENDERER) != NULL, "Error initializing Open GL, please check your GL installation");
 
   if (_loadedExtensions)
     return;
@@ -358,7 +366,7 @@ GLCaps::loadExtensions()
 
   GLenum err = glewInit();
   if (err != GLEW_OK)
-    throw FatalError(format("Couldn't load extensions via GLEW (%s)", glewGetErrorString(err)));
+    throw Error(format("Couldn't load extensions via GLEW (%s)", glewGetErrorString(err)));
 
   _loadedExtensions = true;
 
@@ -438,14 +446,53 @@ GLCaps::checkAllBugs()
   if (_checkedForBugs)
     return;
 
-  _checkedForBugs = true;
-
   alwaysAssertM(_loadedExtensions, "Cannot check for OpenGL bugs before extensions are loaded.");
+
+  bool is_headless = isHeadless();
+  GLuint fb, color_tex, depth_rb;
+  if (is_headless)
+  {
+    static GLsizei const FB_SIZE = 32;
+
+    glGenTextures(1, &color_tex);
+    glBindTexture(GL_TEXTURE_2D, color_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, FB_SIZE, FB_SIZE, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+    THEA_CHECK_GL_OK
+
+    glGenRenderbuffersEXT(1, &depth_rb);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, depth_rb);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, FB_SIZE, FB_SIZE);
+    THEA_CHECK_GL_OK
+
+    glGenFramebuffersEXT(1, &fb);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb);
+    glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, color_tex, 0);
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, depth_rb);
+    THEA_CHECK_GL_OK
+
+    GLenum status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+    if (status != GL_FRAMEBUFFER_COMPLETE_EXT)
+      throw Error(format("GLCaps: Could not create offscreen framebuffer for checking bugs (error code %d)", (int)status));
+
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fb);
+    glViewport(0, 0, FB_SIZE, FB_SIZE);
+    THEA_CHECK_GL_OK
+  }
 
   checkBug_cubeMapBugs();
   checkBug_redBlueMipmapSwap();
   checkBug_mipmapGeneration();
   checkBug_slowVBO();
+
+  if (is_headless)
+  {
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+    glDeleteRenderbuffersEXT(1, &depth_rb);
+    glDeleteFramebuffersEXT(1, &color_tex);
+    glDeleteTextures(1, &color_tex);
+  }
+
+  _checkedForBugs = true;
 }
 
 bool
@@ -625,12 +672,17 @@ GLCaps::checkBug_cubeMapBugs()
   // Save current GL state
   unsigned int id;
   glGenTextures(1, &id);
+
   THEA_CHECK_GL_OK
 
   glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-    glDrawBuffer(GL_FRONT);  // GL_FRONT is guaranteed to be present regardless of what sort of output device we're using
-    glReadBuffer(GL_FRONT);
+    if (!isHeadless())
+    {
+      glDrawBuffer(GL_FRONT);  // GL_FRONT is guaranteed to be present regardless of what sort of output device we're using
+      glReadBuffer(GL_FRONT);
+    }
+
     glClearColor(0, 1, 1, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
@@ -656,7 +708,7 @@ GLCaps::checkBug_cubeMapBugs()
     THEA_CHECK_GL_OK
 
     {
-      int const N = 16;
+      static int const N = 16;
       unsigned int image[N * N];
       for (int f = 0; f < 6; ++f)
       {
@@ -668,7 +720,6 @@ GLCaps::checkBug_cubeMapBugs()
         // 2D texture, level of detail 0 (normal), internal format, x size from image, y size from image,
         // border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
         glTexImage2D(target[f], 0, GL_RGBA, N, N, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-        THEA_CHECK_GL_OK
       }
 
       glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -677,6 +728,8 @@ GLCaps::checkBug_cubeMapBugs()
       glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP);
       glTexParameteri(GL_TEXTURE_CUBE_MAP_ARB, GL_TEXTURE_WRAP_R, GL_CLAMP);
     }
+
+    THEA_CHECK_GL_OK
 
     // Set orthogonal projection
     float viewport[4];
