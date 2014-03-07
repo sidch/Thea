@@ -986,9 +986,17 @@ RenderSystem *
 GLRenderSystemFactory::createRenderSystem(char const * name)
 {
   if (singleton)
-    throw Error("Only one OpenGL rendersystem can be created per process");
+  {
+    THEA_ERROR << "GLRenderSystemFactory: Only one OpenGL rendersystem can be created per process";
+    return NULL;
+  }
 
-  singleton = new GLRenderSystem(name);
+  try
+  {
+    singleton = new GLRenderSystem(name);
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return NULL;, ERROR, "%s", "Could not create new OpenGL rendersystem")
+
   singleton_created = true;
   return singleton;
 }

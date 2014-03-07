@@ -49,6 +49,7 @@
 #include "../IntersectionTester.hpp"
 #include "../MeshSampler.hpp"
 #include "../MetricL2.hpp"
+#include "../PointCollectorN.hpp"
 #include "../PointTraitsN.hpp"
 #include "../../Math.hpp"
 #include "../../Vector3.hpp"
@@ -168,7 +169,7 @@ class Curvature
       if (scale <= 0)
       {
         BestFitSphere3 bsphere;
-        bsphere.addMesh(mesh);
+        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh);
         scale = bsphere.getDiameter();
       }
     }
@@ -195,7 +196,7 @@ class Curvature
       if (scale <= 0)
       {
         BestFitSphere3 bsphere;
-        bsphere.addMeshGroup(mesh_group);
+        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh_group);
         scale = bsphere.getDiameter();
       }
     }
@@ -216,7 +217,8 @@ class Curvature
       if (scale <= 0)
       {
         BestFitSphere3 bsphere;
-        bsphere.addPoints(precomp_kdtree->getElements(), precomp_kdtree->getElements() + precomp_kdtree->numElements());
+        PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(precomp_kdtree->getElements(),
+                                                               precomp_kdtree->getElements() + precomp_kdtree->numElements());
         scale = bsphere.getDiameter();
       }
     }
