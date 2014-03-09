@@ -50,15 +50,21 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
+// Forward declarations
+class GLRenderSystem;
+
 /** An OpenGL Vertex Area Range storage area in either main or GPU memory. Not threadsafe even when using main memory. */
 class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
 {
   public:
     /** Constructor. */
-    GLVARArea(char const * name_, long capacity_, Usage usage, bool gpu_memory_ = true);
+    GLVARArea(GLRenderSystem * render_system, char const * name_, long capacity_, Usage usage, bool gpu_memory_ = true);
 
     /** Destructor. */
     ~GLVARArea();
+
+    /** Get the parent rendersystem. */
+    GLRenderSystem * getRenderSystem() const { return render_system; }
 
     /** Get a string describing the storage area. */
     std::string toString() const;
@@ -85,6 +91,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     void incrementAllocated(long inc) { allocated_size += inc; }
 
   private:
+    GLRenderSystem * render_system;
     std::string name;
     long capacity;
     bool gpu_memory;

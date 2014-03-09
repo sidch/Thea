@@ -111,6 +111,29 @@ GLRenderSystem::GLRenderSystem(char const * name_)
   THEA_CHECK_GL_OK
 }
 
+GLRenderSystem::~GLRenderSystem()
+{
+  for (FramebufferSet::const_iterator fi = created_framebuffers.begin(); fi != created_framebuffers.end(); ++fi)
+    delete *fi;
+
+  created_framebuffers.clear();
+
+  for (TextureSet::const_iterator ti = created_textures.begin(); ti != created_textures.end(); ++ti)
+    delete *ti;
+
+  created_textures.clear();
+
+  for (ShaderSet::const_iterator si = created_shaders.begin(); si != created_shaders.end(); ++si)
+    delete *si;
+
+  created_shaders.clear();
+
+  for (VARAreaSet::const_iterator vi = created_varareas.begin(); vi != created_varareas.end(); ++vi)
+    delete *vi;
+
+  created_varareas.clear();
+}
+
 char const *
 GLRenderSystem::describeSystem() const
 {
@@ -121,24 +144,52 @@ GLRenderSystem::describeSystem() const
 Framebuffer *
 GLRenderSystem::createFramebuffer(char const * name_)
 {
-  return new GLFramebuffer(name_);
+  GLFramebuffer * fb = new GLFramebuffer(this, name_);
+  if (fb)
+    created_framebuffers.insert(fb);
+
+  return fb;
 }
 
 void
 GLRenderSystem::destroyFramebuffer(Framebuffer * framebuffer)
 {
+  if (!framebuffer)
+    return;
+
+  if (created_framebuffers.erase(dynamic_cast<GLFramebuffer *>(framebuffer)) < 1)
+  {
+    THEA_ERROR << getName() << ": Attempting to destroy framebuffer '" << framebuffer->getName()
+               << "' which was not created using this rendersystem";
+    return;
+  }
+
   delete framebuffer;
 }
 
 Shader *
 GLRenderSystem::createShader(char const * name_)
 {
-  return new GLShader(name_);
+  GLShader * shader = new GLShader(this, name_);
+  if (shader)
+    created_shaders.insert(shader);
+
+  return shader;
 }
 
 void
 GLRenderSystem::destroyShader(Shader * shader)
 {
+  if (!shader)
+    return;
+
+  if (created_shaders.erase(dynamic_cast<GLShader *>(shader)) < 1)
+  {
+    THEA_ERROR << getName() << ": Attempting to destroy shader '" << shader->getName()
+               << "' which was not created using this rendersystem";
+    return;
+  }
+
   delete shader;
 }
 
@@ -146,38 +197,74 @@ Texture *
 GLRenderSystem::createTexture(char const * name_, int width, int height, int depth, Texture::Format const * desired_format,
                               Texture::Dimension dimension, Texture::Options const & options)
 {
-  return new GLTexture(name_, width, height, depth, desired_format, dimension, options);
+  GLTexture * tex = new GLTexture(this, name_, width, height, depth, desired_format, dimension, options);
+  if (tex)
+    created_textures.insert(tex);
+
+  return tex;
 }
 
 Texture *
 GLRenderSystem::createTexture(char const * name_, AbstractImage const & image, Texture::Format const * desired_format,
                               Texture::Dimension dimension, Texture::Options const & options)
 {
-  return new GLTexture(name_, image, desired_format, dimension, options);
+  GLTexture * tex = new GLTexture(this, name_, image, desired_format, dimension, options);
+  if (tex)
+    created_textures.insert(tex);
+
+  return tex;
 }
 
 Texture *
 GLRenderSystem::createTexture(char const * name_, AbstractImage const * images[6], Texture::Format const * desired_format,
                               Texture::Options const & options)
 {
-  return new GLTexture(name_, images, desired_format, options);
+  GLTexture * tex = new GLTexture(this, name_, images, desired_format, options);
+  if (tex)
+    created_textures.insert(tex);
+
+  return tex;
 }
 
 void
 GLRenderSystem::destroyTexture(Texture * texture)
 {
+  if (!texture)
+    return;
+
+  if (created_textures.erase(dynamic_cast<GLTexture *>(texture)) < 1)
+  {
+    THEA_ERROR << getName() << ": Attempting to destroy texture '" << texture->getName()
+               << "' which was not created using this rendersystem";
+    return;
+  }
+
   delete texture;
 }
 
 VARArea *
 GLRenderSystem::createVARArea(char const * name_, long num_bytes, VARArea::Usage usage, bool gpu_memory)
 {
-  return new GLVARArea(name_, num_bytes, usage, gpu_memory);
+  GLVARArea * vararea = new GLVARArea(this, name_, num_bytes, usage, gpu_memory);
+  if (vararea)
+    created_varareas.insert(vararea);
+
+  return vararea;
 }
 
 void
 GLRenderSystem::destroyVARArea(VARArea * area)
 {
+  if (!area)
+    return;
+
+  if (created_varareas.erase(dynamic_cast<GLVARArea *>(area)) < 1)
+  {
+    THEA_ERROR << getName() << ": Attempting to destroy VAR area '" << area->getName()
+               << "' which was not created using this rendersystem";
+    return;
+  }
+
   delete area;
 }
 

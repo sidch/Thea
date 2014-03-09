@@ -50,23 +50,30 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
+// Forward declarations
+class GLRenderSystem;
+
 /** An OpenGL texture. */
 class THEA_GL_DLL_LOCAL GLTexture : public Texture
 {
   public:
     /** Constructs an empty texture of the specified format and size. */
-    GLTexture(char const * name_, int width_, int height_, int depth_, Format const * desired_format,
-              Dimension dimension, Options const & options);
+    GLTexture(GLRenderSystem * render_system_, char const * name_, int width_, int height_, int depth_,
+              Format const * desired_format, Dimension dimension, Options const & options);
 
     /** Constructs a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. */
-    GLTexture(char const * name_, AbstractImage const & image, Format const * desired_format, Dimension dimension,
-              Options const & options);
+    GLTexture(GLRenderSystem * render_system_, char const * name_, AbstractImage const & image, Format const * desired_format,
+              Dimension dimension, Options const & options);
 
     /** Constructs a cube-map from six pixel buffers, representing 2D images of identical format and size. */
-    GLTexture(char const * name_, AbstractImage const * images[6], Format const * desired_format, Options const & options);
+    GLTexture(GLRenderSystem * render_system_, char const * name_, AbstractImage const * images[6],
+              Format const * desired_format, Options const & options);
 
     /** Destructor. */
     ~GLTexture();
+
+    /** Get the parent rendersystem. */
+    GLRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * getName() const { return name.c_str(); }
 
@@ -109,6 +116,7 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     /** Updates the texture image and optionally sets user-specified options while doing so. */
     void _updateImage(AbstractImage const & image, Face face, Options const * options);
 
+    GLRenderSystem * render_system;
     std::string name;
     int width;
     int height;

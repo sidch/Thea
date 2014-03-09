@@ -44,6 +44,7 @@
 
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Stack.hpp"
+#include "../../UnorderedSet.hpp"
 #include "GLCommon.hpp"
 #include "GLFramebuffer.hpp"
 #include "GLShader.hpp"
@@ -61,7 +62,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     GLRenderSystem(char const * name_);
 
     /** Destructor. */
-    ~GLRenderSystem() {}
+    ~GLRenderSystem();
 
     char const * getName() const { return name.c_str(); }
 
@@ -199,6 +200,11 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     typedef TheaStack<BufferState>      BufferStack;
     typedef TheaStack<GLShader *>       ShaderStack;
 
+    typedef TheaUnorderedSet<GLFramebuffer *>  FramebufferSet;
+    typedef TheaUnorderedSet<GLTexture *>      TextureSet;
+    typedef TheaUnorderedSet<GLShader *>       ShaderSet;
+    typedef TheaUnorderedSet<GLVARArea *>      VARAreaSet;
+
     /**
      * Set the current vertex area to match the specified VAR. The vertex area used within a single
      * beginIndexedPrimitives()/endIndexedPrimitives() block must remain constant.
@@ -222,6 +228,11 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
 
     GLShader * current_shader;
     ShaderStack shader_stack;
+
+    FramebufferSet  created_framebuffers;
+    TextureSet      created_textures;
+    ShaderSet       created_shaders;
+    VARAreaSet      created_varareas;
 
 }; // class GLRenderSystem
 
