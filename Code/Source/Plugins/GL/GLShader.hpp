@@ -53,13 +53,21 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
+// Forward declarations
+class GLRenderSystem;
+
 /** An OpenGL shader. */
 class THEA_GL_DLL_LOCAL GLShader : public Shader
 {
   public:
-    GLShader(char const * name_);
+    /** Constructor. */
+    GLShader(GLRenderSystem * render_system_, char const * name_);
 
+    /** Destructor. */
     ~GLShader();
+
+    /** Get the parent rendersystem. */
+    GLRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * getName() const { return name.c_str(); }
 
@@ -152,6 +160,7 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     /** Check if a build step (compile or link) succeeded, and throw a custom error if it did not. */
     void checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string const & error_msg);
 
+    GLRenderSystem * render_system;
     std::string name;
     bool complete;
     bool linked;

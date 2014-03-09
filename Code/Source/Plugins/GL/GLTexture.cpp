@@ -103,9 +103,9 @@ GLTexture__setDefaultPackingOptions(int row_alignment)
   glPixelStorei(GL_PACK_ALIGNMENT, row_alignment);
 }
 
-GLTexture::GLTexture(char const * name_, int width_, int height_, int depth_, Format const * desired_format,
-                     Dimension dimension_, Options const & options)
-: name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
+GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, int width_, int height_, int depth_,
+                     Format const * desired_format, Dimension dimension_, Options const & options)
+: render_system(render_system_), name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
 {
   setInternalFormat(NULL, desired_format);
   doSanityChecks();
@@ -139,9 +139,9 @@ GLTexture::GLTexture(char const * name_, int width_, int height_, int depth_, Fo
   }
 }
 
-GLTexture::GLTexture(char const * name_, AbstractImage const & image, Format const * desired_format, Dimension dimension_,
-                     Options const & options)
-: name(name_), dimension(dimension_), gl_target(GLTexture__dimensionToGLTarget(dimension))
+GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, AbstractImage const & image,
+                     Format const * desired_format, Dimension dimension_, Options const & options)
+: render_system(render_system_), name(name_), dimension(dimension_), gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (dimension == Dimension::DIM_CUBE_MAP)
     throw Error(std::string(getName()) + ": This constructor cannot be used to create a cube map");
@@ -155,9 +155,10 @@ GLTexture::GLTexture(char const * name_, AbstractImage const & image, Format con
   _updateImage(image, Face::POS_X, &options);
 }
 
-GLTexture::GLTexture(char const * name_, AbstractImage const * images[6], Format const * desired_format,
-                     Options const & options)
-: name(name_), dimension(Dimension::DIM_CUBE_MAP), gl_target(GLTexture__dimensionToGLTarget(dimension))
+GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, AbstractImage const * images[6],
+                     Format const * desired_format, Options const & options)
+: render_system(render_system_), name(name_), dimension(Dimension::DIM_CUBE_MAP),
+  gl_target(GLTexture__dimensionToGLTarget(dimension))
 {
   if (!images[0] || !images[0]->isValid())
     throw Error(std::string(getName()) + ": All source images must be valid");

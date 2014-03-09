@@ -49,8 +49,9 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
-GLShader::GLShader(char const * name_)
-: name(name_), complete(false), linked(true), has_vertex_module(false), has_fragment_module(false)
+GLShader::GLShader(GLRenderSystem * render_system_, char const * name_)
+: render_system(render_system_), name(name_), complete(false), linked(true), has_vertex_module(false),
+  has_fragment_module(false)
 {
   if (!THEA_GL_SUPPORTS(ARB_shader_objects))
     throw Error("OpenGL programmable shaders are not supported");

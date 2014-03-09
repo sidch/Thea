@@ -62,6 +62,10 @@ namespace Graphics {
  *
  * To create an instance of a RenderSystem, one typically loads the plugin for the relevant implementation and calls
  * RenderSystemFactory::createRenderSystem().
+ *
+ * If no rendering context is available when a rendersystem is constructed, the new rendersystem will be set up for offscreen
+ * rendering if possible. In this case, you must explictly create and attach a framebuffer to the rendersystem before you can
+ * call any drawing functions.
  */
 class THEA_API RenderSystem : public AbstractNamedObject
 {
@@ -135,7 +139,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
       THEA_ENUM_CLASS_BODY(CullFace)
     };
 
-    /** Destructor. */
+    /** Destructor. Frees all resources (textures, shaders, framebuffers, VAR areas etc) created using this rendersystem. */
     virtual ~RenderSystem() {}
 
     /**
@@ -193,7 +197,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
     /** Save the current framebuffer by pushing it onto the stack. */
     virtual void pushFramebuffer() = 0;
 
-    /** Set the current framebuffer. */
+    /** Set the current framebuffer. The drawing viewport is set to the framebuffer's entire area. */
     virtual void setFramebuffer(Framebuffer * framebuffer) = 0;
 
     /**
@@ -493,7 +497,11 @@ class THEA_API RenderSystemFactory
     /** Destructor. */
     virtual ~RenderSystemFactory() {}
 
-    /** Create a rendersystem with the given name. The rendersystem must be destroyed using destroyRenderSystem(). */
+    /**
+     * Create a rendersystem with the given name. The rendersystem must be destroyed using destroyRenderSystem(). If no
+     * rendering context is available, the new rendersystem will be set up for offscreen rendering if possible. In this case,
+     * you must explictly create and attach a framebuffer to the rendersystem before you can call any drawing functions.
+     */
     virtual RenderSystem * createRenderSystem(char const * name) = 0;
 
     /** Destroy a rendersystem created with createRenderSystem(). */

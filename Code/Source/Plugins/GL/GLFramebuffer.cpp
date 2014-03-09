@@ -74,8 +74,8 @@ GLFramebuffer__apToGLenum(Framebuffer::AttachmentPoint ap)
   return to_gl_enum[ap];
 }
 
-GLFramebuffer::GLFramebuffer(char const * name_)
-: name(name_), gl_fbid(0), num_attachments(0), width(0), height(0)
+GLFramebuffer::GLFramebuffer(GLRenderSystem * render_system_, char const * name_)
+: render_system(render_system_), name(name_), gl_fbid(0), num_attachments(0), width(0), height(0)
 {
   if (!THEA_GL_SUPPORTS(EXT_framebuffer_object))
     throw Error("OpenGL framebuffer objects are not supported");

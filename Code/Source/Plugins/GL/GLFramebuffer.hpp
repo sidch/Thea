@@ -52,15 +52,21 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
+// Forward declarations
+class GLRenderSystem;
+
 /** An OpenGL framebuffer. */
 class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
 {
   public:
     /** Constructor. */
-    GLFramebuffer(char const * name_);
+    GLFramebuffer(GLRenderSystem * render_system_, char const * name_);
 
     /** Destructor. */
     ~GLFramebuffer();
+
+    /** Get the parent rendersystem. */
+    GLRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * getName() const { return name.c_str(); }
 
@@ -78,6 +84,7 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
     void use();
 
   private:
+    GLRenderSystem * render_system;
     std::string name;
     GLuint gl_fbid;
     GLTexture * attachment_table[AttachmentPoint::MAX_ATTACHMENTS];

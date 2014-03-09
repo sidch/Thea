@@ -75,7 +75,8 @@ getWorkingDir()
   return QString();
 }
 
-bool averageNormals(Mesh & mesh)
+bool
+averageNormals(Mesh & mesh)
 {
   if (!mesh.hasNormals())
     mesh.computeAveragedVertexNormals();
@@ -83,7 +84,8 @@ bool averageNormals(Mesh & mesh)
   return false;
 }
 
-bool enableWireframe(Mesh & mesh)
+bool
+enableWireframe(Mesh & mesh)
 {
   mesh.setWireframeEnabled(true);
   return false;
