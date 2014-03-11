@@ -73,6 +73,7 @@
 #include "Common.hpp"
 #include "Array.hpp"
 #include "AxisAlignedBox3.hpp"
+#include "Math.hpp"
 #include "Vector3.hpp"
 
 namespace Thea {
@@ -139,6 +140,75 @@ class THEA_API Polygon3
 
     /** Get the bounding box of the polygon. */
     AxisAlignedBox3 const & getBounds();
+
+    /**
+     * Utility function to split a (possibly non-convex) quadrilateral into a pair of triangles. The quadrilateral is assumed to
+     * be planar.
+     *
+     * @param p0 Position of the first vertex of the quadrilateral.
+     * @param p1 Position of the second vertex of the quadrilateral.
+     * @param p2 Position of the third vertex of the quadrilateral.
+     * @param p3 Position of the fourth vertex of the quadrilateral.
+     *
+     * @param i0 Used to return the index of the first vertex of the first triangle.
+     * @param j0 Used to return the index of the second vertex of the first triangle.
+     * @param k0 Used to return the index of the third vertex of the first triangle.
+     *
+     * @param i1 Used to return the index of the first vertex of the second triangle.
+     * @param j1 Used to return the index of the second vertex of the second triangle.
+     * @param k1 Used to return the index of the third vertex of the second triangle.
+     *
+     * @return The number of triangles produced (can be < 2 if the quadrilateral is degenerate).
+     *
+     * @note Might break in very very degenerate cases (not fully tested).
+     */
+    template <typename T>
+    static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
+                               VectorN<3, T> const & p2, VectorN<3, T> const & p3,
+                               int & i0, int & j0, int & k0,
+                               int & i1, int & j1, int & k1,
+                               T const & epsilon = Math::eps<T>() * Math::eps<T>())  // a bit smaller than usual, we're
+                                                                                     // comparing area^2
+    {
+      typedef VectorN<3, T> VectorT;
+
+      // We have two diagonals to split along. Try one and if it produces a triangle outside the polygon, pick the other one
+
+      // First diagonal is p0-p2
+      VectorT n0 = (p1 - p0).cross(p2 - p0);
+      VectorT n1 = (p2 - p0).cross(p3 - p0);
+
+      if (n0.dot(n1) < 0)
+      {
+        // Flip to diagonal p1-p3
+        n0 = (p2 - p1).cross(p3 - p1);
+        n1 = (p3 - p1).cross(p0 - p1);
+
+        i0 = 1; j0 = 2; k0 = 3;
+        i1 = 1; j1 = 3; k1 = 0;
+      }
+      else
+      {
+        i0 = 0; j0 = 1; k0 = 2;
+        i1 = 0; j1 = 2; k1 = 3;
+      }
+
+      // Check for degenerate triangles
+      if (n0.squaredLength() < epsilon)
+      {
+        if (n1.squaredLength() < epsilon)
+          return 0;
+        else
+        {
+          i0 = i1; j0 = j1; k0 = k1;  // the second triangle is the only non-degenerate one
+          return 1;
+        }
+      }
+      else if (n1.squaredLength() < epsilon)
+        return 1;
+      else
+        return 2;
+    }
 
   private:
     /** Signed area of projection onto primary coordinate plane. */
