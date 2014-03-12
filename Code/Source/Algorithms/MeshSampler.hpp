@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Graphics/MeshGroup.hpp"
-#include "MeshKDTree.hpp"
+#include "MeshTriangles.hpp"
 #include "../Random.hpp"
 #include "../Vector3.hpp"
 
@@ -56,19 +56,18 @@ template <typename MeshT>
 class MeshSampler
 {
   public:
-    typedef MeshT                      Mesh;      ///< The mesh class.
-    typedef MeshKDTree<Mesh>           KDTree;    ///< A kd-tree on the mesh.
-    typedef typename KDTree::Triangle  Triangle;  ///< A kd-tree triangle belonging to a face of the mesh.
+    typedef MeshT                         Mesh;       ///< The mesh class.
+    typedef MeshTriangles<Mesh>           Triangles;  ///< A set of mesh triangles.
+    typedef typename Triangles::Triangle  Triangle;   ///< A triangle belonging to a face of the mesh.
 
     /**
      * Constructs the object to compute sample points on a given mesh. The mesh must persist as long as this object does.
      * Initializes internal data structures that do not need to be recomputed for successive calls to functions that generate
      * samples on this mesh.
      */
-    MeshSampler(Mesh const & mesh) : kdtree(new KDTree), owns_kdtree(true)
+    MeshSampler(Mesh const & mesh) : num_external_tris(0), external_tris(NULL)
     {
-      kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
-      // don't init() the tree, we only need access to the triangle array;
+      tris.add(const_cast<Mesh &>(mesh));
     }
 
     /**
@@ -76,27 +75,22 @@ class MeshSampler
      * does. Initializes internal data structures that do not need to be recomputed for successive calls to functions that
      * generate samples on this mesh.
      */
-    MeshSampler(Graphics::MeshGroup<Mesh> const & mesh_group) : kdtree(new KDTree), owns_kdtree(true)
+    MeshSampler(Graphics::MeshGroup<Mesh> const & mesh_group) : num_external_tris(0), external_tris(NULL)
     {
-      kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
-      // don't init() the tree, we only need access to the triangle array;
+      tris.add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));
     }
 
     /**
-     * Constructs the object to compute sample points on a mesh with a precomputed kd-tree. The kd-tree must persist as long as
-     * this object does.
+     * Constructs the object to compute sample points on a mesh with a precomputed triangulation. The triangles must persist as
+     * long as this object does.
      */
-    MeshSampler(KDTree const * kdtree_) : kdtree(const_cast<KDTree *>(kdtree_)), owns_kdtree(false)
+    MeshSampler(long num_tris, Triangle const * tris) : num_external_tris(num_tris), external_tris(tris)
     {
-      alwaysAssertM(kdtree, "Curvature: Precomputed KD-tree cannot be null");
+      alwaysAssertM(num_tris <= 0 || tris, "MeshSampler: Triangle list cannot be null");
     }
 
     /** Destructor. */
-    ~MeshSampler()
-    {
-      if (owns_kdtree)
-        delete kdtree;
-    }
+    ~MeshSampler() {}
 
     /**
      * Samples points from the mesh evenly by area.
@@ -105,7 +99,7 @@ class MeshSampler
      *   actually computed (and returned by the function).
      * @param positions Used to return the sample positions.
      * @param face_normals If not null, used to return the normals of the parent faces of the samples.
-     * @param triangles If not null, used to return the kd-tree triangles from which the samples were selected.
+     * @param triangles If not null, used to return the mesh triangles from which the samples were selected.
      *
      * @return The number of samples computed.
      */
@@ -114,36 +108,47 @@ class MeshSampler
                             TheaArray<Vector3> * face_normals = NULL,
                             TheaArray<Triangle const *> * triangles = NULL) const
     {
-      typedef typename KDTree::Triangle Triangle;
-      typedef typename KDTree::TriangleArray TriangleArray;
-
       positions.clear();
       if (face_normals) face_normals->clear();
       if (triangles) triangles->clear();
 
-      TriangleArray const & all_tris = kdtree->getTriangles();  // computed even without call to kdtree->init()
-      if (all_tris.empty())
-        return 0;
+      Triangle const * tarray;
+      long tcount;
+      if (num_external_tris > 0)
+      {
+        tarray = external_tris;
+        tcount = num_external_tris;
+      }
+      else
+      {
+        if (tris.isEmpty())
+          return 0;
+        else
+        {
+          tarray = &tris.getTriangles()[0];
+          tcount = tris.numTriangles();
+        }
+      }
 
       double total_area = 0;
-      for (array_size_t i = 0; i < all_tris.size(); ++i)
-        total_area += all_tris[i].getArea();
+      for (long i = 0; i < tcount; ++i)
+        total_area += tarray[i].getArea();
 
       if (total_area <= 0)
         return 0;
 
-      for (array_size_t i = 0; i < all_tris.size(); ++i)
+      for (long i = 0; i < tcount; ++i)
       {
-        double frac_samples = (approx_num_samples * all_tris[i].getArea()) / total_area;
+        double frac_samples = (approx_num_samples * tarray[i].getArea()) / total_area;
         while (frac_samples > 0)
         {
           // Last (possible) sample?
           if (frac_samples < 1 && Random::common().uniform01() > frac_samples)
             break;
 
-          positions.push_back(all_tris[i].randomPoint());
-          if (face_normals) face_normals->push_back(all_tris[i].getNormal());
-          if (triangles) triangles->push_back(&all_tris[i]);
+          positions.push_back(tarray[i].randomPoint());
+          if (face_normals) face_normals->push_back(tarray[i].getNormal());
+          if (triangles) triangles->push_back(&tarray[i]);
 
           frac_samples -= 1.0;
         }
@@ -153,8 +158,9 @@ class MeshSampler
     }
 
   private:
-    KDTree * kdtree;  ///< KD-tree on the mesh.
-    bool owns_kdtree;  ///< Did this object create the kd-tree, or does it simply wrap a precomputed one?
+    Triangles tris;  ///< An internally computed triangulation of the mesh.
+    long num_external_tris;  ///< Number of externally supplied, precomputed mesh triangles.
+    Triangle const * external_tris;  ///< Array of externally supplied, precomputed mesh triangles.
 
 }; // class MeshSampler
 
