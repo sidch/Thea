@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
@@ -15,6 +16,7 @@
 #include "../../Plugin.hpp"
 #include "../../Vector3.hpp"
 #include <cstdio>
+#include <fstream>
 #include <sstream>
 
 using namespace std;
@@ -25,23 +27,42 @@ using namespace Graphics;
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
 
+struct Model
+{
+  Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
+  bool load(string const & path);
+  Camera fitCamera(Matrix4 const & transform, int width, int height);
+  bool render(ColorRGBA const & color);
+
+  bool convert_to_points;
+  MG mesh_group;
+  bool is_point_cloud;
+  TheaArray<Vector3> points;
+};
+
+enum PointUsage
+{
+  POINTS_NONE     = 0x0000,
+  POINTS_PRIMARY  = 0x0001,
+  POINTS_OVERLAY  = 0x0002,
+  POINTS_ALL      = 0xFFFF,
+};
+
 RenderSystem * render_system = NULL;
-TheaArray<string> mesh_paths;
+TheaArray<string> model_paths;
 TheaArray<Matrix4> transforms;
 string out_path;
 int out_width, out_height;
 Vector3 view_dir(1, -1, -1);
 Vector3 view_up(0, 1, 0);
-ColorRGBA mesh_color(1.0f, 0.9f, 0.8f, 1.0f);
+ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
 int antialiasing_level = 1;
+PointUsage show_points = POINTS_NONE;
 
 bool parseArgs(int argc, char * argv[]);
 bool loadPlugins(int argc, char * argv[]);
-bool averageNormals(Mesh & mesh);
-bool initShader(Shader & shader);
-Camera fitCameraToModel(MG const & mg, Matrix4 const & transform, int width, int height);
-bool render(MG const & mg, bool is_overlay);
+ColorRGBA getPaletteColor(long n);
 
 int
 main(int argc, char * argv[])
@@ -53,13 +74,9 @@ main(int argc, char * argv[])
     return -1;
 
   // Load the mesh
-  MG mg;
-  try
-  {
-    mg.load(mesh_paths[0]);
-    mg.forEachMeshUntil(averageNormals);
-  }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh from '%s'", mesh_paths[0].c_str())
+  Model model(show_points & POINTS_PRIMARY);
+  if (!model.load(model_paths[0]))
+    return -1;
 
   // Set up framebuffer for offscreen drawing
   int buffer_width   =  antialiasing_level * out_width;
@@ -96,32 +113,16 @@ main(int argc, char * argv[])
     fb->attach(Framebuffer::AttachmentPoint::DEPTH,   depth_tex);
 
     // Initialize the camera
-    Camera camera = fitCameraToModel(mg, transforms[0], buffer_width, buffer_height);
-
-    // Initialize the shader
-    Shader * shader = render_system->createShader("Shader");
-    if (!shader)
-    {
-      THEA_ERROR << "Could not create shader";
-      return -1;
-    }
-
-    if (!initShader(*shader))
-    {
-      THEA_ERROR << "Could not initialize shader";
-      return -1;
-    }
+    Camera camera = model.fitCamera(transforms[0], buffer_width, buffer_height);
 
     // Render the mesh to the offscreen framebuffer
     render_system->pushFramebuffer();
-    render_system->pushShader();
     render_system->pushDepthFlags();
     render_system->pushColorFlags();
     render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
     render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
 
       render_system->setFramebuffer(fb);
-      render_system->setShader(shader);
       render_system->setCamera(camera);
       render_system->setDepthTest(RenderSystem::DepthTest::LESS);
       render_system->setDepthWrite(true);
@@ -130,38 +131,32 @@ main(int argc, char * argv[])
       render_system->setColorClearValue(background_color);
       render_system->clear();
 
-      render_system->setColor(mesh_color);
-
+      // Draw primary model
       render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
         render_system->multMatrix(transforms[0]);
-
-        if (mesh_color.a() < 1)
-        {
-          // Enable alpha-blending
-          glPushAttrib(GL_COLOR_BUFFER_BIT);
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-            // First back faces
-            render_system->setCullFace(RenderSystem::CullFace::FRONT);
-            render(mg, false);
-
-            // Then front faces
-            render_system->setCullFace(RenderSystem::CullFace::BACK);
-            render(mg, false);
-
-          glPopAttrib();
-        }
-        else
-          render(mg, false);
-
+        model.render(primary_color);
       render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+
+      // Draw overlay models
+      for (array_size_t i = 1; i < model_paths.size(); ++i)
+      {
+        model.convert_to_points = (show_points & POINTS_OVERLAY);
+        if (!model.load(model_paths[i]))
+          return -1;
+
+        ColorRGBA overlay_color = getPaletteColor((long)i - 1);
+        overlay_color.a() = (model.is_point_cloud ? 1.0f : 0.5f);
+
+        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+          render_system->multMatrix(transforms[i]);
+          model.render(overlay_color);
+        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+      }
 
     render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
     render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
     render_system->popColorFlags();
     render_system->popDepthFlags();
-    render_system->popShader();
     render_system->popFramebuffer();
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render mesh")
@@ -186,13 +181,17 @@ main(int argc, char * argv[])
 }
 
 bool
-usage(int argc, char * argv[])
+usage()
 {
+  string app_path = FilePath::nodeName(Application::programPath());
+
   THEA_CONSOLE << "";
-  THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh> <output-image> <width> <height>";
+  THEA_CONSOLE << "Usage: " << app_path << " [OPTIONS] <mesh> <output-image> <width> <height>";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -o <overlay-shape>    (may be mesh or point set)";
+  THEA_CONSOLE << "  -p <scope>            (show 'none' | 'primary' | 'overlay' | 'all' shapes";
+  THEA_CONSOLE << "                         as points)";
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
   THEA_CONSOLE << "  -v <viewing-dir>      (3 chars, one for each coordinate, each one of";
@@ -328,6 +327,9 @@ parseColor(string const & s, ColorRGBA & c)
 
   c = ColorRGBA::fromARGB(argb);
 
+  if (trimWhitespace(s).length() <= 6)  // alpha channel not specified
+    c.a() = 1.0;
+
   return true;
 }
 
@@ -335,7 +337,7 @@ bool
 parseArgs(int argc, char * argv[])
 {
   if (argc < 5)
-    return usage(argc, argv);
+    return usage();
 
   Matrix4 current_transform = Matrix4::identity();
   bool has_up = false;
@@ -355,15 +357,36 @@ parseArgs(int argc, char * argv[])
     if (arg[0] == '-')
     {
       if (arg.length() != 2)
-        return usage(argc, argv);
+        return usage();
 
       switch (arg[1])
       {
         case 'o':
         {
           if (argc < 1) { THEA_ERROR << "-o: Overlay path not specified"; return false; }
-          mesh_paths.push_back(*argv);
+          model_paths.push_back(*argv);
           transforms.push_back(current_transform);
+          argv++; argc--; break;
+        }
+
+        case 'p':
+        {
+          if (argc < 1) { THEA_ERROR << "-p: Shapes to show as points not specified"; return false; }
+          string scope = toLower(*argv);
+          if (scope == "all")
+            show_points = POINTS_ALL;
+          else if (scope == "primary")
+            show_points = POINTS_PRIMARY;
+          else if (scope == "overlay")
+            show_points = POINTS_OVERLAY;
+          else if (scope == "none")
+            show_points = POINTS_NONE;
+          else
+          {
+            THEA_ERROR << "Unknown set of shapes to show as points: '" << scope << '\'';
+            return false;
+          }
+
           argv++; argc--; break;
         }
 
@@ -394,7 +417,7 @@ parseArgs(int argc, char * argv[])
         case 'c':
         {
           if (argc < 1) { THEA_ERROR << "-c: Mesh color not specified"; return false; }
-          if (!parseColor(*argv, mesh_color)) return false;
+          if (!parseColor(*argv, primary_color)) return false;
           argv++; argc--; break;
         }
 
@@ -430,7 +453,7 @@ parseArgs(int argc, char * argv[])
       {
         case 1:
         {
-          mesh_paths.insert(mesh_paths.begin(), arg);
+          model_paths.insert(model_paths.begin(), arg);
           transforms.insert(transforms.begin(), current_transform);
           break;
         }
@@ -468,10 +491,31 @@ parseArgs(int argc, char * argv[])
   if (pos < 4)
   {
     THEA_ERROR << "Too few positional arguments";
-    return usage(argc, argv);
+    return usage();
   }
 
   return true;
+}
+
+ColorRGBA
+getPaletteColor(long n)
+{
+  static ColorRGBA PALETTE[] = {
+    ColorRGBA::fromARGB(0xFFFF0000),
+    ColorRGBA::fromARGB(0xFF00FF00),
+    ColorRGBA::fromARGB(0xFF0000FF),
+    ColorRGBA::fromARGB(0xFF00FFFF),
+    ColorRGBA::fromARGB(0xFFFF00FF),
+    ColorRGBA::fromARGB(0xFFFFFF00),
+    ColorRGBA::fromARGB(0xFF800000),
+    ColorRGBA::fromARGB(0xFF008000),
+    ColorRGBA::fromARGB(0xFF000080),
+    ColorRGBA::fromARGB(0xFF008080),
+    ColorRGBA::fromARGB(0xFF800080),
+    ColorRGBA::fromARGB(0xFF808000),
+  };
+
+  return PALETTE[n % (sizeof(PALETTE) / sizeof(ColorRGBA))];
 }
 
 bool
@@ -481,6 +525,71 @@ averageNormals(Mesh & mesh)
     mesh.computeAveragedVertexNormals();
 
   return false;
+}
+
+bool
+Model::load(string const & path)
+{
+  mesh_group.clear();
+  points.clear();
+  is_point_cloud = false;
+
+  if (endsWith(toLower(path), ".pts"))
+  {
+    ifstream in(path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Could not open points file '" << path << '\'';
+      return false;
+    }
+
+    string line;
+    double x, y, z;
+    while (getline(in, line))
+    {
+      if (trimWhitespace(line).empty())
+        continue;
+
+      istringstream line_in(line);
+      if (!(line_in >> x >> y >> z))
+      {
+        THEA_ERROR << "Could not read point " << points.size() << " from '" << path << '\'';
+        return false;
+      }
+
+      points.push_back(Vector3((Real)x, (Real)y, (Real)z));
+    }
+
+    is_point_cloud = true;
+
+    THEA_CONSOLE << "Read " << points.size() << " points from '" << path << '\'';
+  }
+  else
+  {
+    try
+    {
+      mesh_group.load(path);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
+
+    if (convert_to_points)
+    {
+      MeshSampler<Mesh> sampler(mesh_group);
+
+      double out_scale = min(out_width, out_height);
+      long max_samples = ceil(10 * out_scale);
+      long npoints = sampler.sampleEvenlyByArea(max_samples, points);
+
+      THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
+
+      mesh_group.clear();
+      is_point_cloud = true;
+    }
+    else
+      mesh_group.forEachMeshUntil(averageNormals);
+  }
+
+  return true;
 }
 
 class FarthestPoint
@@ -511,25 +620,38 @@ class FarthestPoint
 };
 
 Ball3
-modelBSphere(MG const & mg, Matrix4 const & transform)
+modelBSphere(Model const & model, Matrix4 const & transform)
 {
-  MeshTriangles<Mesh> tris;
-  tris.add(const_cast<MG &>(mg));
-
   double sum_x = 0, sum_y = 0, sum_z = 0;
   double sum_w = 0;
 
-  MeshTriangles<Mesh>::TriangleArray const & tri_array = tris.getTriangles();
-  for (array_size_t i = 0; i < tri_array.size(); ++i)
+  if (model.is_point_cloud)
   {
-    Vector3 c = tri_array[i].getCentroid();
-    Real area = tri_array[i].getArea();
+    for (array_size_t i = 0; i < model.points.size(); ++i)
+    {
+      sum_x += model.points[i][0];
+      sum_y += model.points[i][1];
+      sum_z += model.points[i][2];
+      sum_w += 1;
+    }
+  }
+  else
+  {
+    MeshTriangles<Mesh> tris;
+    tris.add(const_cast<MG &>(model.mesh_group));
 
-    sum_x += (area * c[0]);
-    sum_y += (area * c[1]);
-    sum_z += (area * c[2]);
+    MeshTriangles<Mesh>::TriangleArray const & tri_array = tris.getTriangles();
+    for (array_size_t i = 0; i < tri_array.size(); ++i)
+    {
+      Vector3 c = tri_array[i].getCentroid();
+      Real area = tri_array[i].getArea();
 
-    sum_w += area;
+      sum_x += (area * c[0]);
+      sum_y += (area * c[1]);
+      sum_z += (area * c[2]);
+
+      sum_w += area;
+    }
   }
 
   Vector3 center(0, 0, 0);
@@ -542,18 +664,33 @@ modelBSphere(MG const & mg, Matrix4 const & transform)
 
   center = transform * center;
 
-  FarthestPoint fp(center, transform);
-  mg.forEachMeshUntil(&fp);
-  Real radius = fp.getFarthestDistance();
+  Real radius = 0;
+  if (model.is_point_cloud)
+  {
+    for (array_size_t i = 0; i < model.points.size(); ++i)
+    {
+      Real sqdist = (transform * model.points[i] - center).squaredLength();
+      if (i == 0 || sqdist > radius)
+        radius = sqdist;
+    }
+
+    radius = sqrt(radius);
+  }
+  else
+  {
+    FarthestPoint fp(center, transform);
+    model.mesh_group.forEachMeshUntil(&fp);
+    radius = fp.getFarthestDistance();
+  }
 
   return Ball3(center, radius);
 }
 
 Camera
-fitCameraToModel(MG const & mg, Matrix4 const & transform, int width, int height)
+Model::fitCamera(Matrix4 const & transform, int width, int height)
 {
   // Orientation
-  Ball3 bsphere = modelBSphere(mg, transform);
+  Ball3 bsphere = modelBSphere(*this, transform);
   Vector3 center = bsphere.getCenter();
   Real diameter = bsphere.getDiameter();
 
@@ -592,16 +729,175 @@ fitCameraToModel(MG const & mg, Matrix4 const & transform, int width, int height
 }
 
 bool
-render(MG const & mg, bool is_overlay)
+initPointShader(Shader & shader)
 {
-  if (is_overlay)
+  static string const VERTEX_SHADER =
+"void main()\n"
+"{\n"
+"  gl_Position = ftransform();\n"
+"  gl_FrontColor = gl_Color;\n"
+"  gl_BackColor = gl_Color;\n"
+"}\n";
+
+  static string const FRAGMENT_SHADER =
+"void main()\n"
+"{\n"
+"  gl_FragColor = gl_Color;\n"
+"}\n";
+
+  try
   {
-    return false;
+    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
+    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach point shader module")
+
+  return true;
+}
+
+bool
+initMeshShader(Shader & shader)
+{
+  static string const VERTEX_SHADER =
+"varying vec3 position;  // position in camera space\n"
+"varying vec3 normal;  // normal in camera space\n"
+"\n"
+"void main()\n"
+"{\n"
+"  gl_Position = ftransform();\n"
+"\n"
+"  position = vec3(gl_ModelViewMatrix * gl_Vertex);  // assume rigid transform, so we can drop w\n"
+"  normal = gl_NormalMatrix * gl_Normal;\n"
+"\n"
+"  gl_FrontColor = gl_Color;\n"
+"  gl_BackColor = gl_Color;\n"
+"}\n";
+
+  static string const FRAGMENT_SHADER =
+"uniform vec3 ambient_color;\n"
+"uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n"
+"uniform vec3 light_color;\n"
+"uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n"
+"uniform float two_sided;\n"
+"\n"
+"varying vec3 position;  // position in camera space\n"
+"varying vec3 normal;  // normal in camera space\n"
+"\n"
+"void main()\n"
+"{\n"
+"  vec3 N = normalize(normal);\n"
+"  vec3 L = normalize(light_dir);\n"
+"\n"
+"  vec3 ambt_color = material[0] * gl_Color.rgb * ambient_color;\n"
+"\n"
+"  float NdL = -dot(N, L);\n"
+"  vec3 lamb_color = (NdL >= -two_sided) ? material[1] * abs(NdL) * gl_Color.rgb * light_color : vec3(0.0, 0.0, 0.0);\n"
+"\n"
+"  gl_FragColor = vec4(ambt_color + lamb_color, gl_Color.a);\n"
+"}\n";
+
+  try
+  {
+    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
+    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach mesh shader module")
+
+  shader.setUniform("light_dir", Vector3(-1, -1, -2));
+  shader.setUniform("light_color", ColorRGB(1, 1, 1));
+  shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
+  shader.setUniform("two_sided", 1.0f);
+  shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
+
+  return true;
+}
+
+bool
+Model::render(ColorRGBA const & color)
+{
+  render_system->pushShader();
+  render_system->pushShapeFlags();
+  render_system->pushColorFlags();
+
+  render_system->setColor(color);
+
+  bool has_transparency = (color.a() < 1);
+  if (has_transparency)
+  {
+    // Enable alpha-blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  }
+
+  if (is_point_cloud)
+  {
+    // Initialize the shader
+    static Shader * point_shader = NULL;
+    if (!point_shader)
+    {
+      point_shader = render_system->createShader("Point shader");
+      if (!point_shader)
+      {
+        THEA_ERROR << "Could not create point shader";
+        return -1;
+      }
+
+      if (!initPointShader(*point_shader))
+      {
+        THEA_ERROR << "Could not initialize point shader";
+        return -1;
+      }
+    }
+
+    render_system->setShader(point_shader);
+
+    render_system->setPointSize(antialiasing_level);
+    render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
+
+      for (array_size_t i = 0; i < points.size(); ++i)
+        render_system->sendVertex(points[i]);
+
+    render_system->endPrimitive();
   }
   else
   {
-    mg.draw(*render_system);
+    // Initialize the shader
+    static Shader * mesh_shader = NULL;
+    if (!mesh_shader)
+    {
+      mesh_shader = render_system->createShader("Mesh shader");
+      if (!mesh_shader)
+      {
+        THEA_ERROR << "Could not create mesh shader";
+        return -1;
+      }
+
+      if (!initMeshShader(*mesh_shader))
+      {
+        THEA_ERROR << "Could not initialize mesh shader";
+        return -1;
+      }
+    }
+
+    render_system->setShader(mesh_shader);
+
+    if (has_transparency)
+    {
+      // First back faces
+      render_system->setCullFace(RenderSystem::CullFace::FRONT);
+      mesh_group.draw(*render_system);
+
+      // Then front faces
+      render_system->setCullFace(RenderSystem::CullFace::BACK);
+      mesh_group.draw(*render_system);
+    }
+    else
+      mesh_group.draw(*render_system);
   }
+
+  render_system->popColorFlags();
+  render_system->popShapeFlags();
+  render_system->popShader();
 
   return true;
 }
@@ -664,63 +960,6 @@ loadPlugins(int argc, char * argv[])
     THEA_ERROR << "Could not create OpenGL rendersystem";
     return false;
   }
-
-  return true;
-}
-
-bool
-initShader(Shader & shader)
-{
-  static string const VERTEX_SHADER =
-"varying vec3 position;  // position in camera space\n"
-"varying vec3 normal;  // normal in camera space\n"
-"\n"
-"void main()\n"
-"{\n"
-"  gl_Position = ftransform();\n"
-"\n"
-"  position = vec3(gl_ModelViewMatrix * gl_Vertex);  // assume rigid transform, so we can drop w\n"
-"  normal = gl_NormalMatrix * gl_Normal;\n"
-"\n"
-"  gl_FrontColor = gl_Color;\n"
-"  gl_BackColor = gl_Color;\n"
-"}\n";
-
-  static string const FRAGMENT_SHADER =
-"uniform vec3 ambient_color;\n"
-"uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n"
-"uniform vec3 light_color;\n"
-"uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n"
-"uniform float two_sided;\n"
-"\n"
-"varying vec3 position;  // position in camera space\n"
-"varying vec3 normal;  // normal in camera space\n"
-"\n"
-"void main()\n"
-"{\n"
-"  vec3 N = normalize(normal);\n"
-"  vec3 L = normalize(light_dir);\n"
-"\n"
-"  vec3 ambt_color = material[0] * gl_Color.rgb * ambient_color;\n"
-"\n"
-"  float NdL = -dot(N, L);\n"
-"  vec3 lamb_color = (NdL >= -two_sided) ? material[1] * abs(NdL) * gl_Color.rgb * light_color : vec3(0.0, 0.0, 0.0);\n"
-"\n"
-"  gl_FragColor = vec4(ambt_color + lamb_color, gl_Color.a);\n"
-"}\n";
-
-  try
-  {
-    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
-    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
-  }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach shader module")
-
-  shader.setUniform("light_dir", Vector3(-1, -1, -2));
-  shader.setUniform("light_color", ColorRGB(1, 1, 1));
-  shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
-  shader.setUniform("two_sided", 1.0f);
-  shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
 
   return true;
 }
