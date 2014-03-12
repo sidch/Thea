@@ -84,8 +84,31 @@ namespace Thea {
  */
 THEA_API void parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool strip_quotes = true);
 
-/** Split a string at each occurrence of a splitting character and return the number of fields found. */
-THEA_API long stringSplit(std::string const & x, char split_char, TheaArray<std::string> & result,
+/**
+ * Split a string at each occurrence of a splitting character.
+ *
+ * @param s The string to split.
+ * @param split_char The delimiting character.
+ * @param result Used to return the sequence of fields found.
+ * @param skip_empty_fields If true, a sequence of delimiters is treated as a single delimiter.
+ *
+ * @return The number of fields found.
+ */
+THEA_API long stringSplit(std::string const & s, char split_char, TheaArray<std::string> & result,
+                          bool skip_empty_fields = false);
+
+/**
+ * Split a string at each occurrence of any splitting character from a provided set.
+ *
+ * @param s The string to split.
+ * @param split_chars The set of delimiting characters. E.g. to split a string on whitespace, use
+ *   <tt>split_chars = " \t\n\f\r"</tt>.
+ * @param result Used to return the sequence of fields found.
+ * @param skip_empty_fields If true, a sequence of delimiters is treated as a single delimiter.
+ *
+ * @return The number of fields found.
+ */
+THEA_API long stringSplit(std::string const & s, std::string const & split_chars, TheaArray<std::string> & result,
                           bool skip_empty_fields = false);
 
 /** Concatenate a sequence of strings, separated by a joining character. */

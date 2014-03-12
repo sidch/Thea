@@ -43,11 +43,11 @@
   ORIGINAL HEADER
 
   @file Quat.h
- 
+
   Quaternion
-  
+
   @maintainer Morgan McGuire, http://graphics.cs.williams.edu
-  
+
   @created 2002-01-23
   @edited  2009-05-10
  */
@@ -77,8 +77,8 @@ namespace Thea {
  * Although quaternion-vector operations (eg. Quat + Vector3) are well defined, they are not supported by this class because
  * they typically are bugs when they appear in code.
  *
- * \cite Erik B. Dam, Martin Koch, Martin Lillholm, Quaternions, Interpolation and Animation. Technical Report DIKU-TR-98/5,
- * Department of Computer Science, University of Copenhagen, Denmark.  1998.
+ * @cite Dam98 Erik B. Dam, Martin Koch, Martin Lillholm, Quaternions, Interpolation and Animation. Technical Report
+ *   DIKU-TR-98/5, Department of Computer Science, University of Copenhagen, Denmark. 1998.
  */
 class THEA_API Quat
 {
@@ -263,7 +263,7 @@ class THEA_API Quat
      *
      * Should correctly rotate between 0 and Pi in the right order.
      *
-     * @cite Based on Game Physics -- David Eberly pg 538-540
+     * @cite Eberly Based on Game Physics -- David Eberly pg 538-540
      *
      * @param target Interpolation target.
      * @param alpha Interpolation parameter.
@@ -382,7 +382,7 @@ class THEA_API Quat
     /**
      * Generate a uniform random unit quaternion (a random "direction")
      *
-     * @cite From "Uniform Random Rotations", Ken Shoemake, Graphics Gems III.
+     * @cite Shoemake From "Uniform Random Rotations", Ken Shoemake, Graphics Gems III.
      */
     static Quat unitRandom();
 
@@ -1417,7 +1417,7 @@ class THEA_API Quat
 /**
  * Multiply a quaternion by a scalar.
  *
- * @cite Based on Watt & Watt, page 360
+ * @cite Watt Based on Watt & Watt, page 360
  */
 inline Quat
 operator*(Real s, Quat const & q)
