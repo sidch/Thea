@@ -255,31 +255,40 @@ wordWrap(std::string const & input, long num_cols, char const * newline)
 }
 
 std::string
-toUpper(std::string const & x)
+toUpper(std::string const & s)
 {
-  std::string result = x;
+  std::string result = s;
   std::transform(result.begin(), result.end(), result.begin(), ::toupper);
   return result;
 }
 
 std::string
-toLower(std::string const & x)
+toLower(std::string const & s)
 {
-  std::string result = x;
+  std::string result = s;
   std::transform(result.begin(), result.end(), result.begin(), ::tolower);
   return result;
 }
 
 long
-stringSplit(std::string const & x, char split_char, TheaArray<std::string> & result, bool skip_empty_fields)
+stringSplit(std::string const & s, char split_char, TheaArray<std::string> & result, bool skip_empty_fields)
+{
+  return stringSplit(s, std::string(1, split_char), result, skip_empty_fields);
+}
+
+long
+stringSplit(std::string const & s, std::string const & split_chars, TheaArray<std::string> & result, bool skip_empty_fields)
 {
   result.clear();
 
+  // Pointer to delimiters
+  char const * delims = split_chars.c_str();
+
   // Pointers to the beginning and end of the substring
-  char const * start = x.c_str();
+  char const * start = s.c_str();
   char const * stop = start;
 
-  while ((stop = std::strchr(start, split_char)))
+  while ((stop = std::strpbrk(start, delims)))
   {
     if (!skip_empty_fields || stop != start)
       result.push_back(std::string(start, stop - start));

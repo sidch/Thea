@@ -109,10 +109,10 @@ THEA_API bool endsWith(std::string const & test, std::string const & pattern);
 THEA_API std::string wordWrap(std::string const & input, long num_cols, char const * newline = NEWLINE);
 
 /** Get the uppercase version of a string. */
-THEA_API std::string toUpper(std::string const & x);
+THEA_API std::string toUpper(std::string const & s);
 
 /** Get the lowercase version of a string. */
-THEA_API std::string toLower(std::string const & x);
+THEA_API std::string toLower(std::string const & s);
 
 /** Strips whitespace from both ends of the string. */
 THEA_API std::string trimWhitespace(std::string const & s);

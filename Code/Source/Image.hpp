@@ -51,7 +51,7 @@ class fipImage;
 
 namespace Thea {
 
-/** Abstract base class for images, useful for passes images across shared library boundaries. */
+/** Abstract base class for images, useful for passing images across shared library boundaries. */
 class THEA_API AbstractImage
 {
   public:
@@ -62,10 +62,10 @@ class THEA_API AbstractImage
      */
     struct THEA_API Channel
     {
-      static int const RED;        ///< Index of red channel
-      static int const GREEN;      ///< Index of green channel
-      static int const BLUE;       ///< Index of blue channel
-      static int const ALPHA;      ///< Index of alpha channel
+      static int const RED;    ///< Index of red channel
+      static int const GREEN;  ///< Index of green channel
+      static int const BLUE;   ///< Index of blue channel
+      static int const ALPHA;  ///< Index of alpha channel
     };
 
     /**
@@ -131,6 +131,25 @@ class THEA_API AbstractImage
       bool hasByteAlignedChannels() const;
 
     }; // struct Type
+
+    /** Image resampling filters (enum class). */
+    struct Filter
+    {
+      /** Supported values (copied from FreeImage). */
+      enum Value
+      {
+        BOX,          ///< Box, pulse, Fourier window, 1st order (constant) B-Spline.
+        BILINEAR,     ///< Bilinear filter.
+        BSPLINE,      ///< 4th order (cubic) B-Spline.
+        BICUBIC,      ///< Mitchell and Netravali's two-parameter cubic filter.
+        CATMULL_ROM,  ///< Catmull-Rom spline, Overhauser spline.
+        LANCZOS3,     ///< Lanczos-windowed sinc filter.
+        AUTO,         ///< Automatically choose an appropriate filter.
+      };
+
+      THEA_ENUM_CLASS_BODY(Filter);
+
+    }; // struct Filter
 
     /** Destructor. */
     virtual ~AbstractImage() {}
@@ -319,6 +338,9 @@ class THEA_API Image : public AbstractImage, public Serializable
      * available.
      */
     bool convert(Type dst_type, Image & dst) const;
+
+    /** Rescale the image to a new width and height. */
+    bool rescale(int new_width, int new_height, Filter filter = Filter::AUTO);
 
     /**
      * {@inheritDoc}

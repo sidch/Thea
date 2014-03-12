@@ -60,10 +60,10 @@ THEA_INSTANTIATE_SMART_POINTERS(Thea::Image)
 
 namespace Thea {
 
-int const Image::Channel::RED    =  FI_RGBA_RED;
-int const Image::Channel::GREEN  =  FI_RGBA_GREEN;
-int const Image::Channel::BLUE   =  FI_RGBA_BLUE;
-int const Image::Channel::ALPHA  =  FI_RGBA_ALPHA;
+int const AbstractImage::Channel::RED    =  FI_RGBA_RED;
+int const AbstractImage::Channel::GREEN  =  FI_RGBA_GREEN;
+int const AbstractImage::Channel::BLUE   =  FI_RGBA_BLUE;
+int const AbstractImage::Channel::ALPHA  =  FI_RGBA_ALPHA;
 
 namespace ImageInternal {
 
@@ -586,6 +586,44 @@ int
 Image::getRowAlignment() const
 {
   return 4;  // the current FreeImage default
+}
+
+namespace ImageInternal {
+
+FREE_IMAGE_FILTER
+filterToFreeImageFilter(Image::Filter filter)
+{
+  switch (filter)
+  {
+    case Image::Filter::BOX          :  return FILTER_BOX; break;
+    case Image::Filter::BILINEAR     :  return FILTER_BILINEAR; break;
+    case Image::Filter::BSPLINE      :  return FILTER_BSPLINE; break;
+    case Image::Filter::BICUBIC      :  return FILTER_BICUBIC; break;
+    case Image::Filter::CATMULL_ROM  :  return FILTER_CATMULLROM; break;
+    case Image::Filter::LANCZOS3     :  return FILTER_LANCZOS3; break;
+    default                          :  return FILTER_BICUBIC;
+  }
+}
+
+} // namespace ImageInternal
+
+bool
+Image::rescale(int new_width, int new_height, Filter filter)
+{
+  if (!isValid())
+  {
+    THEA_ERROR << "Image: Attempting to rescale an invalid image";
+    return false;
+  }
+
+  if (new_width <= 0 || new_height <= 0)
+  {
+    THEA_ERROR << "Image: Attempting to rescale to invalid dimensions: " << new_width << " x " << new_height;
+    return false;
+  }
+
+  FREE_IMAGE_FILTER fi_filter = ImageInternal::filterToFreeImageFilter(filter);
+  return (fip_img->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
 }
 
 void
