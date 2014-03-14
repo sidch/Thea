@@ -905,7 +905,7 @@ Model::render(ColorRGBA const & color)
 bool
 loadPlugins(int argc, char * argv[])
 {
-  string app_path = FileSystem::resolve(argv[0]);
+  string app_path = FileSystem::resolve(Application::programPath());
   string plugin_dir = FilePath::concat(FilePath::parent(FilePath::parent(app_path)), "lib");
 
   // Try to load the OpenGL plugin
