@@ -60,8 +60,8 @@
 
 #elif defined(THEA_OSX)
 
-#  include <stdio.h>
-#  include <unistd.h>
+#  include <mach-o/dyld.h>
+#  include <stdlib.h>
 
 #endif
 
@@ -92,7 +92,7 @@ Application::Globals::~Globals()
 std::string
 Application::programPath()
 {
-  char path[2048];
+  char path[8192];
 
 #ifdef THEA_WINDOWS
   {
@@ -100,17 +100,13 @@ Application::programPath()
   }
 #elif defined(THEA_OSX)
   {
-    // Run the 'ps' program to extract the program name from the process ID.
-    int pid;
-    FILE * fd;
-    char cmd[80];
-    pid = getpid();
-    sprintf(cmd, "ps -p %d -o comm=\"\"", pid);
-    fd = popen(cmd, "r");
-    int s = fread(path, 1, sizeof(path), fd);
+    char unresolved_path[8192];
+    uint32_t size = (uint32_t)sizeof(unresolved_path);
+    if (_NSGetExecutablePath(unresolved_path, &size) != 0)
+      throw Error("Application: Executable path is longer than buffer size");
 
-    // Path will contain a newline: overwrite it
-    path[s - 1] = '\0';
+    if (!realpath(unresolved_path, path))
+      throw Error("Application: Could not resolve executable path");
   }
 #else
   {
@@ -120,7 +116,7 @@ Application::programPath()
     if (ret == -1)
       return "";
 
-    debugAssertM((int)sizeof(path) > ret, "System: String too short to store current program path");
+    debugAssertM((int)sizeof(path) > ret, "Application: String too short to store current program path");
     // Ensure proper NULL termination
     path[ret] = 0;
   }
