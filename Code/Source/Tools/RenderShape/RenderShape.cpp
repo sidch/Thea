@@ -53,7 +53,7 @@ TheaArray<string> model_paths;
 TheaArray<Matrix4> transforms;
 string out_path;
 int out_width, out_height;
-Vector3 view_dir(1, -1, -1);
+Vector3 view_dir(-1, -1, -1);
 Vector3 view_up(0, 1, 0);
 ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
