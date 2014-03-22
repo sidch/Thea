@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2012, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2012, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -61,7 +61,7 @@ namespace Algorithms {
 namespace MeshFeatures {
 
 /**
- * Computes the shape diameter function (SDF) at a given set of positions on a mesh.
+ * Compute the shape diameter function (SDF) at a point on a mesh.
  *
  * Gal, Shamir and Cohen-Or, "Pose-Oblivious Shape Signature", IEEE TVCG 2007.
  */

@@ -1,8 +1,12 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Curvature.hpp"
 #include "../../Algorithms/MeshFeatures/DistanceHistogram.hpp"
+#include "../../Algorithms/MeshFeatures/LocalPCA.hpp"
 #include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
+#include "../../Algorithms/BestFitSphere3.hpp"
+#include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -10,6 +14,7 @@
 #include "../../Vector3.hpp"
 #include <boost/algorithm/string/trim.hpp>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -38,12 +43,42 @@ smoothNormal(MeshTriangleT const & tri, Vector3 const & p)
   return b[0] * n0 + b[1] * n1 + b[2] * n2;
 }
 
+struct MeshScaleType
+{
+  enum Value
+  {
+    BSPHERE,
+    BBOX,
+    AVG_DIST,
+  };
+
+  THEA_ENUM_CLASS_BODY(MeshScaleType)
+
+  string toString() const
+  {
+    switch (*this)
+    {
+      case BSPHERE: return "bounding sphere";
+      case BBOX: return "bounding box";
+      case AVG_DIST: return "average distance from centroid";
+      default: return "unknown";
+    }
+  }
+};
+
+MeshScaleType mesh_scale_type = MeshScaleType::BSPHERE;
+bool normalize_by_mesh_scale = false;
+double mesh_scale = 1;
+
+int usage(int argv, char * argv[]);
+double meshScale(MG & mg, MeshScaleType mesh_scale_type);
 bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                 TheaArray<double> & values);
 bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                                 TheaArray<double> & values);
 bool computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
                                long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> & values);
 
 int
 main(int argc, char * argv[])
@@ -52,43 +87,87 @@ main(int argc, char * argv[])
   string pts_path;
   string out_path;
 
+  bool shift_to_01 = false;
+  bool abs_values = false;
+  bool feat_scale = false;
+  double feat_scale_factor = 1;
+
   int curr_opt = 0;
   for (int i = 1; i < argc; ++i)
   {
-    if (!beginsWith(argv[i], "--"))
+    string arg = argv[i];
+    if (!beginsWith(arg, "--"))
     {
       switch (curr_opt)
       {
-        case 0: mesh_path = argv[i]; break;
-        case 1: pts_path = argv[i]; break;
-        case 2: out_path = argv[i]; break;
+        case 0: mesh_path = arg; break;
+        case 1: pts_path = arg; break;
+        case 2: out_path = arg; break;
+        default:
+        {
+          THEA_ERROR << "Too many positional arguments";
+          return -1;
+        }
       }
 
       curr_opt++;
-      if (curr_opt >= 3)
-        break;
     }
+    else if (arg == "--shift01")
+    {
+      shift_to_01 = true;
+    }
+    else if (arg == "--abs")
+    {
+      abs_values = true;
+    }
+    else if (beginsWith(arg, "--featscale="))
+    {
+      if (sscanf(arg.c_str(), "--featscale=%lf", &feat_scale_factor) == 1)
+        feat_scale = true;
+      else
+      {
+        THEA_ERROR << "Couldn't parse feat_scale factor";
+        return -1;
+      }
+    }
+    else if (beginsWith(arg, "--meshscale="))
+    {
+      string type = arg.substr(strlen("--meshscale="));
+      if (type == "bsphere")
+        mesh_scale_type = MeshScaleType::BSPHERE;
+      else if (type == "bbox")
+        mesh_scale_type = MeshScaleType::BBOX;
+      else if (type == "avgdist")
+        mesh_scale_type = MeshScaleType::AVG_DIST;
+      else
+      {
+        THEA_ERROR << "Unsupported mesh scale type";
+        return -1;
+      }
+    }
+    else if (arg == "--normalize")
+    {
+      normalize_by_mesh_scale = true;
+    }
+    else
+      continue;
+
+    argv[i][0] = 0;  // zero out the argument so it won't be considered as a feature later
   }
 
   if (curr_opt < 3)
-  {
-    THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <points> <outfile> [<feature0> <feature1> ...]";
-    THEA_CONSOLE << "    <featureN> must be one of:";
-    THEA_CONSOLE << "        --sdf";
-    THEA_CONSOLE << "        --projcurv";
-    THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
-    THEA_CONSOLE << "        --shift01 (not a feature, maps features in [-1, 1] to [0, 1])";
-    THEA_CONSOLE << "        --scale=<factor> (not a feature, scales feature values by the factor)";
-
-    return 0;
-  }
+    return usage(argc, argv);
 
   MG mg;
   try
   {
     mg.load(mesh_path);
+    mesh_scale = meshScale(mg, mesh_scale_type);
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
+
+  THEA_CONSOLE << "Loaded mesh from " << mesh_path << " with scale " << mesh_scale << " (based on "
+               << mesh_scale_type.toString() << ')';
 
   // Load points
   TheaArray<Vector3> pts;
@@ -99,8 +178,6 @@ main(int argc, char * argv[])
       THEA_ERROR << "Could not load points from file " << pts_path;
       return -1;
     }
-
-    THEA_CONSOLE << "Loaded mesh from " << mesh_path;
 
     string line;
     long line_num = 0;
@@ -161,18 +238,10 @@ main(int argc, char * argv[])
   TheaArray< TheaArray<double> > features(positions.size());
   TheaArray<string> feat_names;
 
-  bool shift_to_01 = false;
-  bool abs_values = false;
-  bool scale = false;
-  double scale_factor = 1;
-
   for (int i = 1; i < argc; ++i)
   {
-    if (!beginsWith(argv[i], "--"))
-      continue;
-
-    string feat = string(argv[i]).substr(2);
-    if (feat == "sdf")
+    string feat = string(argv[i]);
+    if (feat == "--sdf")
     {
       TheaArray<double> values;
       if (!computeSDF(kdtree, positions, face_normals, values))
@@ -183,7 +252,7 @@ main(int argc, char * argv[])
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
-    else if (feat == "projcurv")
+    else if (feat == "--projcurv")
     {
       TheaArray<double> values;
       if (!computeProjectedCurvatures(mg, positions, smooth_normals, values))
@@ -194,12 +263,12 @@ main(int argc, char * argv[])
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
-    else if (beginsWith(feat, "dh="))
+    else if (beginsWith(feat, "--dh="))
     {
       long num_bins, num_samples;
       double max_distance;
 
-      long num_params = sscanf(feat.c_str(), "dh=%ld,%lf,%ld", &num_bins, &max_distance, &num_samples);
+      long num_params = sscanf(feat.c_str(), "--dh=%ld,%lf,%ld", &num_bins, &max_distance, &num_samples);
       if (num_params < 1)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
@@ -237,27 +306,26 @@ main(int argc, char * argv[])
         features[j].insert(features[j].end(), row_start, row_start + num_bins);
       }
     }
-    else if (feat == "shift01")
+    else if (feat == "--pca")
     {
-      shift_to_01 = true;
-    }
-    else if (feat == "abs")
-    {
-      abs_values = true;
-    }
-    else if (beginsWith(feat, "scale="))
-    {
-      if (sscanf(feat.c_str(), "scale=%lf", &scale_factor) == 1)
-        scale = true;
-      else
-      {
-        THEA_ERROR << "Couldn't parse scale factor";
+      TheaArray<Vector3> values;
+      if (!computeLocalPCA(mg, positions, values))
         return -1;
+
+      alwaysAssertM(values.size() == positions.size(), "Number of PCA feature vectors doesn't match number of points");
+
+      for (array_size_t j = 0; j < positions.size(); ++j)
+      {
+        features[j].push_back(values[j][0]);
+        features[j].push_back(values[j][1]);
+        features[j].push_back(values[j][2]);
       }
     }
     else
     {
-      THEA_WARNING << "Ignoring unsupported feature type: " << feat;
+      if (!feat.empty())
+        THEA_WARNING << "Ignoring unsupported option: " << feat;
+
       continue;
     }
 
@@ -289,7 +357,7 @@ main(int argc, char * argv[])
     {
       double f = features[i][j];
 
-      if (scale) f *= scale_factor;
+      if (feat_scale) f *= feat_scale_factor;
       if (shift_to_01) f = 0.5 * (1.0 + f);
       if (abs_values) f = fabs(f);
 
@@ -304,6 +372,65 @@ main(int argc, char * argv[])
   return 0;
 }
 
+int
+usage(int argc, char * argv[])
+{
+  THEA_CONSOLE << "";
+  THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <points> <outfile> [<feature0> <feature1> ...]";
+  THEA_CONSOLE << "    <featureN> must be one of:";
+  THEA_CONSOLE << "        --sdf";
+  THEA_CONSOLE << "        --projcurv";
+  THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
+  THEA_CONSOLE << "        --pca (eigenvalues in decreasing order)";
+  THEA_CONSOLE << "";
+  THEA_CONSOLE << "    The following options may also be specified:";
+  THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
+  THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
+  THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
+  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
+  THEA_CONSOLE << "";
+
+  return -1;
+}
+
+double
+meshScale(MG & mg, MeshScaleType mesh_scale_type)
+{
+  switch (mesh_scale_type)
+  {
+    case MeshScaleType::BBOX:
+    {
+      mg.updateBounds();
+      return mg.getBounds().getExtent().length();
+    }
+
+    case MeshScaleType::AVG_DIST:
+    {
+      MeshSampler<Mesh> sampler(mg);
+      TheaArray<Vector3> samples;
+      sampler.sampleEvenlyByArea(50000, samples);
+
+      if (samples.size() <= 1)
+        return 0.0;
+
+      Vector3 centroid = CentroidN<Vector3, 3>::compute(samples.begin(), samples.end());
+
+      double sum_dists = 0;
+      for (array_size_t i = 0; i < samples.size(); ++i)
+        sum_dists += (samples[i] - centroid).length();
+
+      return (3.0 * sum_dists) / samples.size();  // 3 instead of 2 since the avg is in general smaller than the max
+    }
+
+    default:
+    {
+      BestFitSphere3 bsphere;
+      PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mg);
+      return bsphere.getDiameter();
+    }
+  }
+}
+
 bool
 computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
            TheaArray<double> & values)
@@ -311,7 +438,8 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
   THEA_CONSOLE << "Computing SDF features";
 
   values.resize(positions.size());
-  MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
+  MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree, (Real)mesh_scale);
+  double scaling = (normalize_by_mesh_scale ? 1 : mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
@@ -324,7 +452,7 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
       v1 = sdf.compute(positions[i], -normals[i], false);
 
     double vmin = (v1 < 0 || (v0 >= 0 && v0 < v1)) ? v0 : v1;
-    values[i] = (vmin < 0 ? 0 : vmin) * sdf.getNormalizationScale();
+    values[i] = (vmin < 0 ? 0 : vmin) * scaling;
   }
 
   THEA_CONSOLE << "  -- done";
@@ -339,7 +467,7 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
   THEA_CONSOLE << "Computing projected curvatures";
 
   values.resize(positions.size());
-  MeshFeatures::Curvature<Mesh> projcurv(mg);
+  MeshFeatures::Curvature<Mesh> projcurv(mg, -1, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i]);
@@ -356,10 +484,29 @@ computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, l
   THEA_CONSOLE << "Computing distance histograms";
 
   values.resize((long)positions.size(), num_bins);
-  MeshFeatures::DistanceHistogram<Mesh> dh(mg, num_samples);
+  MeshFeatures::DistanceHistogram<Mesh> dh(mg, num_samples, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     dh.compute(positions[i], num_bins, &values((long)i, 0), max_distance);
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> & values)
+{
+  THEA_CONSOLE << "Computing local PCA features";
+
+  values.resize(positions.size());
+  MeshFeatures::LocalPCA<Mesh> pca(mg, -1, (Real)mesh_scale);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+  {
+    Vector3 evals = pca.compute(positions[i]);
+    values[i] = (normalize_by_mesh_scale ? evals / mesh_scale : evals);
+  }
 
   THEA_CONSOLE << "  -- done";
 

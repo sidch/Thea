@@ -45,8 +45,8 @@
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../BestFitSphere3.hpp"
-#include "../KDTreeN.hpp"
 #include "../IntersectionTester.hpp"
+#include "../KDTreeN.hpp"
 #include "../MeshSampler.hpp"
 #include "../PointCollectorN.hpp"
 #include "../PointTraitsN.hpp"
@@ -58,7 +58,7 @@ namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
 
-/** Computes the histogram of distances from a query point to other points on a shape. */
+/** Compute the histogram of distances from a query point to other points on a shape. */
 template < typename MeshT,
            typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
 class DistanceHistogram
