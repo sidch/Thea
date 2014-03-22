@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2013, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2013, Siddhartha Chaudhuri/Princeton University
 //
 // All rights reserved.
 //
@@ -45,13 +45,12 @@
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../BestFitSphere3.hpp"
-#include "../KDTreeN.hpp"
 #include "../IntersectionTester.hpp"
+#include "../KDTreeN.hpp"
 #include "../MeshSampler.hpp"
 #include "../MetricL2.hpp"
 #include "../PointCollectorN.hpp"
 #include "../PointTraitsN.hpp"
-#include "../../Math.hpp"
 #include "../../Vector3.hpp"
 
 namespace Thea {
@@ -97,7 +96,7 @@ PointTraitsN<MeshFeatures::CurvatureInternal::SurfaceSample, 3>::getPosition(
 
 namespace MeshFeatures {
 
-/** Computes the curvature at a given set of positions on a mesh. */
+/** Compute the curvature at a point on a mesh. */
 template < typename MeshT,
            typename ExternalSampleKDTreeT = KDTreeN<CurvatureInternal::SurfaceSample, 3> >
 class Curvature
