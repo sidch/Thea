@@ -10,6 +10,7 @@
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
+#include "../../IOStream.hpp"
 #include "../../Matrix.hpp"
 #include "../../Vector3.hpp"
 #include <boost/algorithm/string/trim.hpp>
@@ -78,7 +79,7 @@ bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positi
                                 TheaArray<double> & values);
 bool computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
                                long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> & values);
+bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -91,6 +92,7 @@ main(int argc, char * argv[])
   bool abs_values = false;
   bool feat_scale = false;
   double feat_scale_factor = 1;
+  bool binary = false;
 
   int curr_opt = 0;
   for (int i = 1; i < argc; ++i)
@@ -148,6 +150,10 @@ main(int argc, char * argv[])
     else if (arg == "--normalize")
     {
       normalize_by_mesh_scale = true;
+    }
+    else if (arg == "--binary")
+    {
+      binary = true;
     }
     else
       continue;
@@ -306,19 +312,23 @@ main(int argc, char * argv[])
         features[j].insert(features[j].end(), row_start, row_start + num_bins);
       }
     }
-    else if (feat == "--pca")
+    else if (beginsWith(feat, "--pca"))
     {
-      TheaArray<Vector3> values;
-      if (!computeLocalPCA(mg, positions, values))
+      bool pca_full = (feat == "--pca=full");
+
+      TheaArray<double> values;
+      if (!computeLocalPCA(mg, positions, pca_full, values))
         return -1;
 
-      alwaysAssertM(values.size() == positions.size(), "Number of PCA feature vectors doesn't match number of points");
+      array_size_t step = (pca_full ? 12 : 3);
+      alwaysAssertM(values.size() == step * positions.size(), "Number of PCA feature vectors doesn't match number of points");
 
       for (array_size_t j = 0; j < positions.size(); ++j)
       {
-        features[j].push_back(values[j][0]);
-        features[j].push_back(values[j][1]);
-        features[j].push_back(values[j][2]);
+        array_size_t base = step * j;
+
+        for (array_size_t k = 0; k < step; ++k)
+          features[j].push_back(values[base + k]);
       }
     }
     else
@@ -342,29 +352,62 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Computed " << feat_names.size() << " feature(s): " << feat_str.str();
 
   // Write features to file
-  ofstream out(out_path.c_str());
-  if (!out)
+  if (binary)
   {
-    THEA_ERROR << "Could not open output file " << out_path << " for writing features";
-    return -1;
-  }
-
-  for (array_size_t i = 0; i < features.size(); ++i)
-  {
-    out << pts[i][0] << ' ' << pts[i][1] << ' ' << pts[i][2];
-
-    for (array_size_t j = 0; j < features[i].size(); ++j)
+    BinaryOutputStream out(out_path, Endianness::LITTLE);
+    if (!out.ok())
     {
-      double f = features[i][j];
-
-      if (feat_scale) f *= feat_scale_factor;
-      if (shift_to_01) f = 0.5 * (1.0 + f);
-      if (abs_values) f = fabs(f);
-
-      out << ' ' << f;
+      THEA_ERROR << "Could not open output file " << out_path << " for writing features";
+      return -1;
     }
 
-    out << '\n';
+    out.writeInt64((int64)features.size());
+    out.writeInt64((int64)(features.empty() ? 0 : features[0].size()));
+
+    for (array_size_t i = 0; i < features.size(); ++i)
+    {
+      out.writeFloat32(pts[i][0]);
+      out.writeFloat32(pts[i][1]);
+      out.writeFloat32(pts[i][2]);
+
+      for (array_size_t j = 0; j < features[i].size(); ++j)
+      {
+        double f = features[i][j];
+
+        if (feat_scale) f *= feat_scale_factor;
+        if (shift_to_01) f = 0.5 * (1.0 + f);
+        if (abs_values) f = fabs(f);
+
+        out.writeFloat32((float32)f);
+      }
+    }
+  }
+  else
+  {
+    ofstream out(out_path.c_str());
+    if (!out)
+    {
+      THEA_ERROR << "Could not open output file " << out_path << " for writing features";
+      return -1;
+    }
+
+    for (array_size_t i = 0; i < features.size(); ++i)
+    {
+      out << pts[i][0] << ' ' << pts[i][1] << ' ' << pts[i][2];
+
+      for (array_size_t j = 0; j < features[i].size(); ++j)
+      {
+        double f = features[i][j];
+
+        if (feat_scale) f *= feat_scale_factor;
+        if (shift_to_01) f = 0.5 * (1.0 + f);
+        if (abs_values) f = fabs(f);
+
+        out << ' ' << f;
+      }
+
+      out << '\n';
+    }
   }
 
   THEA_CONSOLE << "Wrote " << features.size() << " feature vectors to " << out_path;
@@ -381,13 +424,14 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "        --projcurv";
   THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
-  THEA_CONSOLE << "        --pca (eigenvalues in decreasing order)";
+  THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
   THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
   THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
   THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
+  THEA_CONSOLE << "        --binary (outputs features in binary format)";
   THEA_CONSOLE << "";
 
   return -1;
@@ -495,17 +539,30 @@ computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, l
 }
 
 bool
-computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> & values)
+computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA features";
 
-  values.resize(positions.size());
+  values.clear();
   MeshFeatures::LocalPCA<Mesh> pca(mg, -1, (Real)mesh_scale);
 
+  Vector3 evecs[3];
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
-    Vector3 evals = pca.compute(positions[i]);
-    values[i] = (normalize_by_mesh_scale ? evals / mesh_scale : evals);
+    Vector3 evals = pca.compute(positions[i], evecs);
+    if (normalize_by_mesh_scale)
+      evals /= mesh_scale;
+
+    values.push_back(evals[0]);
+    values.push_back(evals[1]);
+    values.push_back(evals[2]);
+
+    if (pca_full)
+    {
+      for (array_size_t j = 0; j < 3; ++j)
+        for (array_size_t k = 0; k < 3; ++k)
+          values.push_back(evecs[j][k]);
+    }
   }
 
   THEA_CONSOLE << "  -- done";
