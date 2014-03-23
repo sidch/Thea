@@ -71,7 +71,7 @@ MeshScaleType mesh_scale_type = MeshScaleType::BSPHERE;
 bool normalize_by_mesh_scale = false;
 double mesh_scale = 1;
 
-int usage(int argv, char * argv[]);
+int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
 bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                 TheaArray<double> & values);
