@@ -339,7 +339,7 @@ main(int argc, char * argv[])
       continue;
     }
 
-    feat_names.push_back(feat);
+    feat_names.push_back(feat.substr(2));
   }
 
   ostringstream feat_str;
