@@ -117,46 +117,48 @@ main(int argc, char * argv[])
 
     // Render the mesh to the offscreen framebuffer
     render_system->pushFramebuffer();
-    render_system->pushDepthFlags();
-    render_system->pushColorFlags();
-    render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-    render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
-
       render_system->setFramebuffer(fb);
-      render_system->setCamera(camera);
-      render_system->setDepthTest(RenderSystem::DepthTest::LESS);
-      render_system->setDepthWrite(true);
-      render_system->setColorWrite(true, true, true, true);
 
-      render_system->setColorClearValue(background_color);
-      render_system->clear();
-
-      // Draw primary model
+      render_system->pushDepthFlags();
+      render_system->pushColorFlags();
       render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-        render_system->multMatrix(transforms[0]);
-        model.render(primary_color);
-      render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+      render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
 
-      // Draw overlay models
-      for (array_size_t i = 1; i < model_paths.size(); ++i)
-      {
-        model.convert_to_points = (show_points & POINTS_OVERLAY);
-        if (!model.load(model_paths[i]))
-          return -1;
+        render_system->setCamera(camera);
+        render_system->setDepthTest(RenderSystem::DepthTest::LESS);
+        render_system->setDepthWrite(true);
+        render_system->setColorWrite(true, true, true, true);
 
-        ColorRGBA overlay_color = getPaletteColor((long)i - 1);
-        overlay_color.a() = (model.is_point_cloud ? 1.0f : 0.5f);
+        render_system->setColorClearValue(background_color);
+        render_system->clear();
 
+        // Draw primary model
         render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-          render_system->multMatrix(transforms[i]);
-          model.render(overlay_color);
+          render_system->multMatrix(transforms[0]);
+          model.render(primary_color);
         render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
-      }
 
-    render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
-    render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
-    render_system->popColorFlags();
-    render_system->popDepthFlags();
+        // Draw overlay models
+        for (array_size_t i = 1; i < model_paths.size(); ++i)
+        {
+          model.convert_to_points = (show_points & POINTS_OVERLAY);
+          if (!model.load(model_paths[i]))
+            return -1;
+
+          ColorRGBA overlay_color = getPaletteColor((long)i - 1);
+          overlay_color.a() = (model.is_point_cloud ? 1.0f : 0.5f);
+
+          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+            render_system->multMatrix(transforms[i]);
+            model.render(overlay_color);
+          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+        }
+
+      render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
+      render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+      render_system->popColorFlags();
+      render_system->popDepthFlags();
+
     render_system->popFramebuffer();
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render mesh")
