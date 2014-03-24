@@ -20,11 +20,7 @@
 
 #include "glew.h"
 
-#ifdef THEA_GL_USE_FRAMEWORK
-
-#  include <OpenGL/OpenGL.h>  // required to pull in CGL, which OpenGL/gl.h does not
-
-#elif defined(THEA_GL_OSMESA)
+#if defined(THEA_GL_OSMESA)
 
 // glew.h undefs a bunch of visibility macros after it's done with them, but we need to restore them for osmesa.h
 #  if defined(_WIN32)
@@ -74,6 +70,10 @@
 
 #  include <GL/osmesa.h>
 
+#endif
+
+#if defined(THEA_OSX) && !defined(THEA_GL_OSMESA)
+#  include <OpenGL/OpenGL.h>  // required to pull in CGL, which OpenGL/gl.h does not
 #endif
 
 // GUI compatibility. Requires a display device.

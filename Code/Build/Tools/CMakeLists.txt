@@ -66,16 +66,6 @@ FIND_PACKAGE(Boost COMPONENTS program_options thread REQUIRED)
 
 # Dependency: OpenGL
 FIND_PACKAGE(OpenGL)
-SET(OpenGL_FOUND ${OPENGL_FOUND})
-SET(OpenGL_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
-SET(OpenGL_CFLAGS )
-SET(OpenGL_LIBRARIES    ${OPENGL_LIBRARIES})
-SET(OpenGL_LIBRARY_DIRS )
-SET(OpenGL_LDFLAGS )
-IF(APPLE)
-  ADD_DEFINITIONS(-DTHEA_GL_USE_FRAMEWORK)
-ENDIF()
-MESSAGE(STATUS "Found OpenGL: headers at ${OpenGL_INCLUDE_DIRS}, libraries at ${OpenGL_LIBRARIES}")
 
 # Dependency: Qt4
 FIND_PACKAGE(Qt4)
@@ -129,7 +119,7 @@ SET(TheaAllTools )
 # Browse3D
 #===========================================================
 
-IF(QT4_FOUND AND OpenGL_FOUND)
+IF(QT4_FOUND AND OPENGL_FOUND)
   # Run Qt .ui files through uic -- produces ui_*.h files in current directory
   QT4_WRAP_UI(Browse3D_QtUicSources
               ${SourceRoot}/Tools/Browse3D/MainWindow.ui)
@@ -430,7 +420,7 @@ SET(RenderShapeLibraries
     Thea
     ${Lib3ds_LIBRARIES}
     ${Boost_LIBRARIES}
-    ${OpenGL_LIBRARIES}
+    ${OPENGL_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
 # Build products

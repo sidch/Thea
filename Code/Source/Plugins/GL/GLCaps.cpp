@@ -43,9 +43,15 @@ bool GLCaps::_hasGLMajorVersion2 = false;
 bool GLCaps::has_headless_context = false;
 GLContext GLCaps::headless_context;
 
-Display * GLCaps::display = NULL;
-Pixmap GLCaps::pixmap;
-GLXPixmap GLCaps::glx_pixmap;
+#if defined(THEA_GL_OSMESA)
+  char * GLCaps::headless_buffer = NULL;
+#elif defined(THEA_WINDOWS)
+#elif defined(THEA_LINUX) || defined(THEA_BSD)
+  Display * GLCaps::display = NULL;
+  Pixmap GLCaps::pixmap;
+  GLXPixmap GLCaps::glx_pixmap;
+#elif defined(THEA_OSX)
+#endif
 
 int GLCaps::_numTextureCoords = 0;
 int GLCaps::_numTextures      = 0;
@@ -228,7 +234,28 @@ GLCaps::createHeadlessContext()
 
 #if defined(THEA_GL_OSMESA)
 
-  // TODO
+  headless_context = OSMesaCreateContext(GL_RGBA, NULL);
+  if (!headless_context)
+  {
+    THEA_ERROR << "GLCaps: Could not create OSMesa context";
+    return false;
+  }
+
+  // Bind to a small dummy pixmap instead of binding to a window
+  static int const DUMMY_FB_WIDTH   =  32;
+  static int const DUMMY_FB_HEIGHT  =  32;
+  headless_buffer = new char[DUMMY_FB_WIDTH * DUMMY_FB_HEIGHT];
+  if (!headless_buffer)
+  {
+    THEA_ERROR << "GLCaps: Could not allocate dummy OSMesa offscreen buffer";
+    return false;
+  }
+
+  if (!OSMesaMakeCurrent(headless_context, headless_buffer, GL_UNSIGNED_BYTE, DUMMY_FB_WIDTH, DUMMY_FB_HEIGHT))
+  {
+    THEA_ERROR << "GLCaps: Could not make new OSMesa context current";
+    return false;
+  }
 
 #elif defined(THEA_WINDOWS)
 
@@ -236,8 +263,8 @@ GLCaps::createHeadlessContext()
 
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
 
-  display = XOpenDisplay(0);
-  if (!display)
+  headless_display = XOpenDisplay(0);
+  if (!headless_display)
   {
     THEA_ERROR << "GLCaps: Could not open X display";
     return false;
@@ -253,14 +280,14 @@ GLCaps::createHeadlessContext()
     None
   };
 
-  XVisualInfo * vi = glXChooseVisual(display, DefaultScreen(display), attribs);
+  XVisualInfo * vi = glXChooseVisual(headless_display, DefaultScreen(headless_display), attribs);
   if (!vi)
   {
     THEA_ERROR << "GLCaps: Could not choose X visual";
     return false;
   }
 
-  headless_context = glXCreateContext(display, vi, 0, GL_TRUE);
+  headless_context = glXCreateContext(headless_display, vi, 0, GL_TRUE);
   if (!headless_context)
   {
     THEA_ERROR << "GLCaps: Could not create X context";
@@ -270,9 +297,9 @@ GLCaps::createHeadlessContext()
   // Bind to a small dummy pixmap instead of binding to a window
   static int const DUMMY_FB_WIDTH   =  32;
   static int const DUMMY_FB_HEIGHT  =  32;
-  pixmap = XCreatePixmap(display, DefaultRootWindow(display), DUMMY_FB_WIDTH, DUMMY_FB_HEIGHT, 24);
-  glx_pixmap = glXCreateGLXPixmap(display, vi, pixmap);
-  if (!glXMakeCurrent(display, glx_pixmap, headless_context))
+  headless_pixmap = XCreatePixmap(headless_display, DefaultRootWindow(headless_display), DUMMY_FB_WIDTH, DUMMY_FB_HEIGHT, 24);
+  headless_glx_pixmap = glXCreateGLXPixmap(headless_display, vi, headless_pixmap);
+  if (!glXMakeCurrent(headless_display, headless_glx_pixmap, headless_context))
   {
     THEA_ERROR << "GLCaps: Could not make new X context current";
     return false;
@@ -330,7 +357,8 @@ GLCaps::destroyHeadlessContext()
 
 #if defined(THEA_GL_OSMESA)
 
-  // TODO
+  delete [] headless_buffer;
+  OSMesaDestroyContext(headless_context);
 
 #elif defined(THEA_WINDOWS)
 
@@ -338,9 +366,9 @@ GLCaps::destroyHeadlessContext()
 
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
 
-  glXDestroyContext(display, headless_context);
-  glXDestroyPixmap(display, glx_pixmap);
-  XFreePixmap(display, pixmap);
+  glXDestroyContext(headless_display, headless_context);
+  glXDestroyPixmap(headless_display, headless_glx_pixmap);
+  XFreePixmap(headless_display, headless_pixmap);
 
 #elif defined(THEA_OSX)
 

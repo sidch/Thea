@@ -178,11 +178,12 @@ class THEA_GL_DLL_LOCAL GLCaps
     static GLContext headless_context;  ///< Handle to headless context, if any.
 
 #if defined(THEA_GL_OSMESA)
+    static char * headless_buffer;
 #elif defined(THEA_WINDOWS)
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
-    static Display * display;
-    static Pixmap pixmap;
-    static GLXPixmap glx_pixmap;
+    static Display * headless_display;
+    static Pixmap headless_pixmap;
+    static GLXPixmap headless_glx_pixmap;
 #elif defined(THEA_OSX)
 #endif
 
