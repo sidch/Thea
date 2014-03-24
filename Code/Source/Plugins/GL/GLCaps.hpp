@@ -180,12 +180,10 @@ class THEA_GL_DLL_LOCAL GLCaps
 #if defined(THEA_GL_OSMESA)
 #elif defined(THEA_WINDOWS)
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
-    Display * display;
-    Pixmap pixmap;
-    GLXPixmap glx_pixmap;
-    GLContext context;
+    static Display * display;
+    static Pixmap pixmap;
+    static GLXPixmap glx_pixmap;
 #elif defined(THEA_OSX)
-    GLContext context;
 #endif
 
     /** True when loadExtensions has already been called. */
