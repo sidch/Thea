@@ -43,6 +43,10 @@ bool GLCaps::_hasGLMajorVersion2 = false;
 bool GLCaps::has_headless_context = false;
 GLContext GLCaps::headless_context;
 
+Display * GLCaps::display = NULL;
+Pixmap GLCaps::pixmap;
+GLXPixmap GLCaps::glx_pixmap;
+
 int GLCaps::_numTextureCoords = 0;
 int GLCaps::_numTextures      = 0;
 int GLCaps::_numTextureUnits  = 0;
@@ -245,7 +249,7 @@ GLCaps::createHeadlessContext()
     GLX_GREEN_SIZE,  8,
     GLX_BLUE_SIZE,   8,
     GLX_ALPHA_SIZE,  8,
-    GLX_DEPTH_SIZE, 24;
+    GLX_DEPTH_SIZE, 24,
     None
   };
 
