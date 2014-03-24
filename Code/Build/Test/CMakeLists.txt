@@ -61,15 +61,6 @@ FIND_PACKAGE(OpenGL REQUIRED)
 IF(NOT OPENGL_GLU_FOUND)
   MESSAGE(FATAL_ERROR "GLU was not found")
 ENDIF()
-SET(OpenGL_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
-SET(OpenGL_CFLAGS )
-SET(OpenGL_LIBRARIES    ${OPENGL_LIBRARIES})
-SET(OpenGL_LIBRARY_DIRS )
-SET(OpenGL_LDFLAGS )
-IF(APPLE)
-  ADD_DEFINITIONS(-DTHEA_GL_USE_FRAMEWORK)
-ENDIF()
-MESSAGE(STATUS "Found OpenGL: headers at ${OpenGL_INCLUDE_DIRS}, libraries at ${OpenGL_LIBRARIES}")
 
 # Dependency: GLUT
 FIND_PACKAGE(GLUT REQUIRED)
@@ -109,7 +100,7 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
                     ${Boost_INCLUDE_DIRS}
                     ${GLUT_INCLUDE_DIR}
-                    ${OpenGL_INCLUDE_DIRS}
+                    ${OPENGL_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
                     ${CLUTO_INCLUDE_DIRS})
@@ -211,7 +202,7 @@ SET(TheaTestDisplayMeshLibraries
       Thea
       TheaPluginGL
       ${GLUT_LIBRARIES}
-      ${OpenGL_LIBRARIES}
+      ${OPENGL_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
@@ -239,7 +230,7 @@ SET(TheaTestGLLibraries
       Thea
       TheaPluginGL
       ${GLUT_LIBRARIES}
-      ${OpenGL_LIBRARIES}
+      ${OPENGL_LIBRARIES}
       ${PLATFORM_LIBRARIES})
 
 # Build products
