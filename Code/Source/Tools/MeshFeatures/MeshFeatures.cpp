@@ -80,6 +80,7 @@ bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positi
 bool computeDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
                                long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values);
+bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -314,20 +315,45 @@ main(int argc, char * argv[])
     }
     else if (beginsWith(feat, "--pca"))
     {
-      bool pca_full = (feat == "--pca=full");
+      enum { PCA_DEFAULT, PCA_FULL, PCA_RATIO } pca_type = PCA_DEFAULT;
+      array_size_t num_pca_features = 3;
+      string type_str = feat.substr(strlen("--pca"));
+      if (type_str == "=full")
+      {
+        pca_type = PCA_FULL;
+        num_pca_features = 12;
+      }
+      else if (type_str == "=ratio")
+      {
+        pca_type = PCA_RATIO;
+        num_pca_features = 2;
+      }
+      else if (!type_str.empty())
+      {
+        THEA_ERROR << "Unsupported PCA type: " << feat;
+        return -1;
+      }
 
       TheaArray<double> values;
-      if (!computeLocalPCA(mg, positions, pca_full, values))
-        return -1;
+      if (pca_type == PCA_RATIO)
+      {
+        if (!computeLocalPCARatios(mg, positions, values))
+          return -1;
+      }
+      else
+      {
+        if (!computeLocalPCA(mg, positions, (pca_type == PCA_FULL), values))
+          return -1;
+      }
 
-      array_size_t step = (pca_full ? 12 : 3);
-      alwaysAssertM(values.size() == step * positions.size(), "Number of PCA feature vectors doesn't match number of points");
+      alwaysAssertM(values.size() == num_pca_features * positions.size(),
+                    "Number of PCA feature vectors doesn't match number of points");
 
       for (array_size_t j = 0; j < positions.size(); ++j)
       {
-        array_size_t base = step * j;
+        array_size_t base = num_pca_features * j;
 
-        for (array_size_t k = 0; k < step; ++k)
+        for (array_size_t k = 0; k < num_pca_features; ++k)
           features[j].push_back(values[base + k]);
       }
     }
@@ -425,6 +451,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --projcurv";
   THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
   THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
+  THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
@@ -562,6 +589,34 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_fu
       for (array_size_t j = 0; j < 3; ++j)
         for (array_size_t k = 0; k < 3; ++k)
           values.push_back(evecs[j][k]);
+    }
+  }
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values)
+{
+  THEA_CONSOLE << "Computing local PCA ratios";
+
+  values.clear();
+  MeshFeatures::LocalPCA<Mesh> pca(mg, -1, (Real)mesh_scale);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+  {
+    Vector3 evals = pca.compute(positions[i]);
+    if (evals[0] > 0)
+    {
+      values.push_back(evals[1] / evals[0]);
+      values.push_back(evals[2] / evals[0]);
+    }
+    else
+    {
+      values.push_back(0);
+      values.push_back(0);
     }
   }
 
