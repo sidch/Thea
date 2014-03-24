@@ -234,7 +234,13 @@ GLCaps::createHeadlessContext()
 
 #if defined(THEA_GL_OSMESA)
 
-  headless_context = OSMesaCreateContext(GL_RGBA, NULL);
+#if OSMESA_MAJOR_VERSION * 100 + OSMESA_MINOR_VERSION >= 305
+  // specify Z, stencil, accum sizes
+  headless_context = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
+#else
+  headless_context = OSMesaCreateContext(OSMESA_RGBA, NULL);
+#endif
+
   if (!headless_context)
   {
     THEA_ERROR << "GLCaps: Could not create OSMesa context";
@@ -256,6 +262,8 @@ GLCaps::createHeadlessContext()
     THEA_ERROR << "GLCaps: Could not make new OSMesa context current";
     return false;
   }
+
+  has_headless_context = true;
 
 #elif defined(THEA_WINDOWS)
 
