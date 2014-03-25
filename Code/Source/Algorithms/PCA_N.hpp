@@ -88,8 +88,8 @@ class /* THEA_API */ PCA_N<T *, N, ScalarT>
                                                           ScalarT eigenvalues[N], VectorT eigenvectors[N],
                                                           VectorT * centroid = NULL)
     {
-      return PCA_N<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                           eigenvalues, eigenvectors, centroid);
+      PCA_N<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
+                                    eigenvalues, eigenvectors, centroid);
     }
 
 }; // class PCA_N<T *>
@@ -123,7 +123,11 @@ class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsPointN<T, 2> >::type>
       }
 
       if (n < 2)
-        throw Error("PCA2: At least two points must be specified");
+      {
+        eigenvalues[0]  = eigenvalues[1]  = 0;
+        eigenvectors[0] = eigenvectors[1] = VectorT::zero();
+        return;
+      }
 
       cov /= (n - 1);
 
@@ -185,7 +189,11 @@ class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsPointN<T, 3> >::type>
       }
 
       if (n < 2)
-        throw Error("PCA3: At least two points must be specified");
+      {
+        eigenvalues[0]  = eigenvalues[1]  = eigenvalues[2]  = 0;
+        eigenvectors[0] = eigenvectors[1] = eigenvectors[2] = VectorT::zero();
+        return;
+      }
 
       cov /= (n - 1);
 
