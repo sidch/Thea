@@ -63,7 +63,6 @@ PointUsage show_points = POINTS_NONE;
 bool parseArgs(int argc, char * argv[]);
 bool loadPlugins(int argc, char * argv[]);
 ColorRGBA getPaletteColor(long n);
-void swapRedBlue(Image & image);
 
 int
 main(int argc, char * argv[])
@@ -167,9 +166,6 @@ main(int argc, char * argv[])
   {
     Image image(Image::Type::RGB_8U, buffer_width, buffer_height);
     color_tex->getImage(image);
-#ifndef THEA_OSX
-    swapRedBlue(image);
-#endif
 
     if (antialiasing_level > 1 && !image.rescale(out_width, out_height, Image::Filter::BICUBIC))
     {
@@ -966,25 +962,4 @@ loadPlugins(int argc, char * argv[])
   }
 
   return true;
-}
-
-void
-swapRedBlue(Image & image)
-{
-  alwaysAssertM(image.getType() == Image::Type::RGB_8U || image.getType() == Image::Type::RGBA_8U,
-                "swapRedBlue(): Only 8-bit RGB and RGBA images supported");
-
-  int nc = image.numChannels();
-
-  for (int i = 0; i < image.getHeight(); ++i)
-  {
-    char * scanline = (char *)image.getScanLine(i);
-    for (int j = 0; j < image.getWidth(); ++j)
-    {
-      long offset = nc * j;
-      char tmp = scanline[offset + Image::Channel::RED];
-      scanline[offset + Image::Channel::RED] = scanline[offset + Image::Channel::BLUE];
-      scanline[offset + Image::Channel::BLUE] = tmp;
-    }
-  }
 }
