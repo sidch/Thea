@@ -53,6 +53,15 @@
 #include "TextureFormat.hpp"
 #include "../Plugins/GL/glew.h"
 
+// Let's hope the EXT versions exist at least... else we're on really really old GL
+#ifndef GL_BGR
+#  define GL_BGR GL_BGR_EXT
+#endif
+
+#ifndef GL_BGRA
+#  define GL_BGRA GL_BGRA_EXT
+#endif
+
 namespace Thea {
 namespace Graphics {
 
@@ -179,9 +188,6 @@ static std::string const nameArray[] =
 
   "RGBA8UI",
 
-  "ARGB8",
-  "BGR8",
-
   "R8",
 
   "RG8",
@@ -196,6 +202,14 @@ static std::string const nameArray[] =
   "RGBA32F",
 
   "RGBA32UI",
+
+  "BGR8",
+  "BGRA8",
+  "BGR16",
+  "BGRA16",
+  "BGR32F",
+  "BGRA32F",
+  "ARGB8",
 
   "BAYER_RGGB8",
   "BAYER_GRBG8",
@@ -349,6 +363,21 @@ TextureFormat::fromCode(Code code)
 
     case Code::BGR8:
       return BGR8();
+
+    case Code::BGRA8:
+      return BGRA8();
+
+    case Code::BGR16:
+      return BGR16();
+
+    case Code::BGRA16:
+      return BGRA16();
+
+    case Code::BGR32F:
+      return BGR32F();
+
+    case Code::BGRA32F:
+      return BGRA32F();
 
     case Code::R8:
       return R8();
@@ -558,8 +587,6 @@ THEA_TEXTURE_FORMAT(LA16F,      2, UNCOMP_FORMAT,   GL_LUMINANCE_ALPHA16F_ARB,  
 
 THEA_TEXTURE_FORMAT(LA32F,      2, UNCOMP_FORMAT,   GL_LUMINANCE_ALPHA32F_ARB,               GL_LUMINANCE_ALPHA,   32, 32,  0,  0,  0,  0,  0, 32 * 2, 32 * 2, GL_FLOAT, CLEAR_FORMAT, FLOAT_FORMAT, LA32F, NONE);
 
-THEA_TEXTURE_FORMAT(BGR8,       3, UNCOMP_FORMAT,   GL_RGB8,                                 GL_BGR,                0,  0,  8,  8,  8,  0,  0, 32, 24, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, BGR8, RGB);
-
 THEA_TEXTURE_FORMAT(R8,         1, UNCOMP_FORMAT,   GL_R8,                                   GL_RED,                0,  0,  8,  0,  0,  0,  0,  8, 8, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, R8, RGB);
 
 THEA_TEXTURE_FORMAT(RG8,        2, UNCOMP_FORMAT,   GL_RG8,                                  GL_RG,                 0,  0,  8,  8,  0,  0,  0, 16, 16, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, RG8, RGB);
@@ -610,6 +637,19 @@ THEA_TEXTURE_FORMAT(RGB8I,      3, UNCOMP_FORMAT,   GL_RGB8I_EXT,               
 THEA_TEXTURE_FORMAT(RGB8UI,     3, UNCOMP_FORMAT,   GL_RGB8UI_EXT,                           GL_RGB_INTEGER,        0,  0,  8,  8,  8,  0,  0, 32, 24, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, RGB8UI, RGB);
 
 THEA_TEXTURE_FORMAT(RGBA8UI,    4, UNCOMP_FORMAT,   GL_RGBA8UI_EXT,                          GL_RGBA_INTEGER,       0,  0,  8,  8,  8,  8,  0, 32, 32, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, RGBA8UI, RGB);
+
+
+THEA_TEXTURE_FORMAT(BGR8,       3, UNCOMP_FORMAT,   GL_RGB8,                                 GL_BGR,                0,  0,  8,  8,  8,  0,  0, 32, 24, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, BGR8, RGB);
+
+THEA_TEXTURE_FORMAT(BGRA8,      4, UNCOMP_FORMAT,   GL_RGBA8,                                GL_BGRA,               0,  8,  8,  8,  8,  0,  0, 32, 32, GL_UNSIGNED_BYTE, CLEAR_FORMAT, INT_FORMAT, BGRA8, RGB);
+
+THEA_TEXTURE_FORMAT(BGR16,      3, UNCOMP_FORMAT,   GL_RGB16,                                GL_BGR,                0,  0, 16, 16, 16,  0,  0, 16 * 3, 16 * 3, GL_UNSIGNED_SHORT, OPAQUE_FORMAT, INT_FORMAT, BGR16, RGB);
+
+THEA_TEXTURE_FORMAT(BGRA16,     4, UNCOMP_FORMAT,   GL_RGBA16,                               GL_BGRA,               0, 16, 16, 16, 16,  0,  0, 16 * 4, 16 * 4, GL_UNSIGNED_SHORT, CLEAR_FORMAT, INT_FORMAT, BGRA16, RGB);
+
+THEA_TEXTURE_FORMAT(BGR32F,     3, UNCOMP_FORMAT,   GL_RGB32F_ARB,                           GL_BGR,                0,  0, 32, 32, 32,  0,  0, 32 * 3, 32 * 3, GL_FLOAT, OPAQUE_FORMAT, FLOAT_FORMAT, BGR32F, RGB);
+
+THEA_TEXTURE_FORMAT(BGRA32F,    4, UNCOMP_FORMAT,   GL_RGBA32F_ARB,                          GL_BGRA,               0, 32, 32, 32, 32,  0,  0, 32 * 4, 32 * 4, GL_FLOAT, CLEAR_FORMAT, FLOAT_FORMAT, BGRA32F, RGB);
 
 
 THEA_TEXTURE_FORMAT(RGB_DXT1,   3, COMP_FORMAT,     GL_COMPRESSED_RGB_S3TC_DXT1_EXT,         GL_RGB,                0,  0,  0,  0,  0,  0,  0, 64, 64, GL_UNSIGNED_BYTE, OPAQUE_FORMAT, INT_FORMAT, RGB_DXT1, RGB);

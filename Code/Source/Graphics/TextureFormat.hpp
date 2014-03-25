@@ -108,9 +108,6 @@ class THEA_API TextureFormat
 
         RGBA8UI,
 
-        ARGB8,
-        BGR8,
-
         R8,
 
         RG8,
@@ -125,6 +122,14 @@ class THEA_API TextureFormat
         RGBA32F,
 
         RGBA32UI,
+
+        BGR8,
+        BGRA8,
+        BGR16,
+        BGRA16,
+        BGR32F,
+        BGRA32F,
+        ARGB8,
 
         BAYER_RGGB8,
         BAYER_GRBG8,
@@ -339,9 +344,6 @@ class THEA_API TextureFormat
     /** LA32F format. */
     static TextureFormat const * LA32F();
 
-    /** BGR8 format. */
-    static TextureFormat const * BGR8();
-
     /** R8 format. */
     static TextureFormat const * R8();
 
@@ -410,6 +412,24 @@ class THEA_API TextureFormat
 
     /** RGBA8UI format. */
     static TextureFormat const * RGBA8UI();
+
+    /** BGR8 format. */
+    static TextureFormat const * BGR8();
+
+    /** BGRA8 format. */
+    static TextureFormat const * BGRA8();
+
+    /** BGR16 format. */
+    static TextureFormat const * BGR16();
+
+    /** BGRA16 format. */
+    static TextureFormat const * BGRA16();
+
+    /** BGR32F format. */
+    static TextureFormat const * BGR32F();
+
+    /** BGRA32F format. */
+    static TextureFormat const * BGRA32F();
 
     /** RGB_DXT1 format. */
     static TextureFormat const * RGB_DXT1();
