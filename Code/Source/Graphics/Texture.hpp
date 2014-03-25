@@ -195,17 +195,20 @@ class THEA_API Texture : public AbstractNamedObject
     /** Internal convenience function to convert an image type to a texture storage format. */
     static Format const * toTextureFormat(AbstractImage::Type type)
     {
+      enum { COLOR_ORDER_RGB, COLOR_ORDER_BGR } color_order;
+      color_order = (AbstractImage::Channel::RED < AbstractImage::Channel::BLUE ? COLOR_ORDER_RGB : COLOR_ORDER_BGR);
+
       switch (type)
       {
         case AbstractImage::Type::LUMINANCE_8U  : return Format::L8();
         case AbstractImage::Type::LUMINANCE_16U : return Format::L16();
         case AbstractImage::Type::LUMINANCE_32F : return Format::L32F();
-        case AbstractImage::Type::RGB_8U        : return Format::RGB8();
-        case AbstractImage::Type::RGBA_8U       : return Format::RGBA8();
-        case AbstractImage::Type::RGB_16U       : return Format::RGB16();
-        case AbstractImage::Type::RGBA_16U      : return Format::RGBA16();
-        case AbstractImage::Type::RGB_32F       : return Format::RGB32F();
-        case AbstractImage::Type::RGBA_32F      : return Format::RGBA32F();
+        case AbstractImage::Type::RGB_8U        : return color_order == COLOR_ORDER_RGB ? Format::RGB8() : Format::BGR8();
+        case AbstractImage::Type::RGBA_8U       : return color_order == COLOR_ORDER_RGB ? Format::RGBA8() : Format::BGRA8();
+        case AbstractImage::Type::RGB_16U       : return color_order == COLOR_ORDER_RGB ? Format::RGB16() : Format::BGR16();
+        case AbstractImage::Type::RGBA_16U      : return color_order == COLOR_ORDER_RGB ? Format::RGBA16() : Format::BGRA16();
+        case AbstractImage::Type::RGB_32F       : return color_order == COLOR_ORDER_RGB ? Format::RGB32F() : Format::BGR32F();
+        case AbstractImage::Type::RGBA_32F      : return color_order == COLOR_ORDER_RGB ? Format::RGBA32F() : Format::BGRA32F();
         default: throw Error("No supported texture format corresponds to the specified image format");
       }
     }
