@@ -46,6 +46,15 @@
 #include "GraphicsWidget.hpp"
 #include "../../AxisAlignedBox3.hpp"
 
+namespace Thea {
+namespace Graphics {
+
+class VARArea;
+class VAR;
+
+} // namespace Graphics
+} // namespace Thea
+
 namespace Browse3D {
 
 /** The model manipulated by the user. */
@@ -114,6 +123,9 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     void drawSurface(Graphics::RenderSystem & render_system,
                      Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
+    /** Get the color of a point. */
+    ColorRGBA getColor(array_size_t point_index) const;
+
     TheaArray<Point> points;
 
     bool has_normals;
@@ -124,6 +136,11 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
 
     bool has_graph;
     TheaArray< TheaArray<long> > graph;
+
+    int changed_buffers;           ///< A bitwise OR of the flags of the buffers that have changed.
+    Graphics::VARArea * var_area;  ///< GPU buffer area.
+    Graphics::VAR * vertices_var;  ///< GPU buffer for vertex positions.
+    Graphics::VAR * colors_var;    ///< GPU buffer for vertex colors.
 
 }; // class PointCloud
 
