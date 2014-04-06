@@ -89,6 +89,8 @@ App::optsToString() const
       << "\n  two-sided = " << opts.two_sided
       << "\n  accentuate-features = " << opts.accentuate_features
       << "\n  show-graph = " << opts.show_graph
+      << "\n  fancy-points = " << opts.fancy_points
+      << "\n  fancy-colors = " << opts.fancy_colors
       << '\n';
 
   return oss.str();
@@ -156,6 +158,8 @@ App::parseOptions(int argc, char * argv[])
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
+          ("fancy-points",         "Draw points as shaded spheres?")
+          ("fancy-colors,c",       "Color points by a function of position?")
   ;
 
   po::options_description desc;
@@ -216,6 +220,8 @@ App::parseOptions(int argc, char * argv[])
 
     opts.accentuate_features  =  (vm.count("emph-features") > 0);
     opts.show_graph           =  (vm.count("graph") > 0);
+    opts.fancy_points         =  (vm.count("fancy-points") > 0);
+    opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
 
     if (!s_bg_color.empty())
     {
