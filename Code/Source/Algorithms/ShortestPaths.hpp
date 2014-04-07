@@ -358,9 +358,15 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, CallbackT * cal
 #endif
 
     data->flag = BLACK;
+
     if (limit >= 0 && data->dist > limit)  // all remaining distances will be greater than this
       break;
+
+    if ((*callback)(data->vertex, data->dist, data->has_pred, data->pred))
+      break;
   }
+
+  fh_deleteheap(dijkstra_queue);
 
 #ifdef THEA_SHORTEST_PATHS_TIMER
   timer.tock();
@@ -369,34 +375,6 @@ ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, CallbackT * cal
 
 #ifdef THEA_SHORTEST_PATHS_DO_STATS
   THEA_CONSOLE << "ShortestPaths: Enqueued " << num_enqueued << " samples after " << num_iters << " Dijkstra iterations";
-#endif
-
-#ifdef THEA_SHORTEST_PATHS_TIMER
-  timer.tick();
-#endif
-
-  fh_deleteheap(dijkstra_queue);
-
-  // Notify the caller of each final result
-  for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
-  {
-    VertexHandle vertex = graph.getVertex(vi);
-
-    typename Scratch::iterator loc = scratch.find(vertex);
-    debugAssertM(loc != scratch.end(), "ShortestPaths: No scratch entry found for vertex on second pass");
-
-    ScratchElement & data = loc->second;
-    if (data.flag != WHITE && (limit < 0 || data.dist <= limit))
-    {
-      bool stop = (*callback)(vertex, data.dist, data.has_pred, data.pred);
-      if (stop)
-        break;
-    }
-  }
-
-#ifdef THEA_SHORTEST_PATHS_TIMER
-  timer.tock();
-  THEA_CONSOLE << "ShortestPaths: Returning final results took " << 1000 * timer.elapsedTime() << "ms";
 #endif
 }
 

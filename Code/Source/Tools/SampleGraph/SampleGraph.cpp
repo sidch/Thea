@@ -25,6 +25,9 @@ using namespace Graphics;
 using namespace Algorithms;
 
 int max_nbrs = 8;
+long min_samples = 50000;
+bool consistent_normals = false;
+bool reachability = false;
 
 class SurfaceSample;
 
@@ -113,41 +116,73 @@ main(int argc, char * argv[])
   int curr_opt = 0;
   for (int i = 1; i < argc; ++i)
   {
-    if (!beginsWith(argv[i], "--"))
+    string arg = argv[i];
+    if (!beginsWith(arg, "--"))
     {
       switch (curr_opt)
       {
-        case 0: mesh_path = argv[i]; break;
-        case 1: samples_path = argv[i]; break;
-        case 2: out_path = argv[i]; break;
+        case 0: mesh_path = arg; break;
+        case 1: samples_path = arg; break;
+        case 2: out_path = arg; break;
       }
 
       curr_opt++;
-      if (curr_opt >= 3)
+      if (curr_opt > 3)
         break;
     }
     else
     {
-      if (beginsWith(argv[i], "--max-nbrs="))
+      if (beginsWith(arg, "--max-nbrs="))
       {
-        if (!sscanf(argv[i], "--max-nbrs=%d", &max_nbrs) == 1 || max_nbrs <= 0)
+        if (!sscanf(arg.c_str(), "--max-nbrs=%d", &max_nbrs) == 1 || max_nbrs <= 0)
         {
           THEA_ERROR << "Invalid --max-nbrs parameter";
           return -1;
         }
       }
+      else if (beginsWith(arg, "--min-samples="))
+      {
+        if (!sscanf(arg.c_str(), "--min-samples=%ld", &min_samples) == 1 || min_samples <= 0)
+        {
+          THEA_ERROR << "Invalid --min-samples parameter";
+          return -1;
+        }
+      }
+      else if (arg == "-n" || arg == "--normals")
+      {
+        consistent_normals = true;
+      }
+      else if (arg == "-r" || arg == "--reachability")
+      {
+        reachability = true;
+      }
       else
       {
-        THEA_ERROR << "Unknown parameter: " << argv[i];
+        THEA_ERROR << "Unknown parameter: " << arg;
         return -1;
       }
     }
   }
 
-  if (curr_opt < 3)
+  if (curr_opt != 3)
   {
-    THEA_CONSOLE << "Usage: " << argv[0] << " [--max-nbrs=N] <mesh> <points> <graph-outfile>";
-    return 0;
+    THEA_CONSOLE << "";
+    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh> <points> <graph-outfile>";
+    THEA_CONSOLE << "";
+    THEA_CONSOLE << "Options:";
+    THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity graph";
+    THEA_CONSOLE << "  --min-samples=N       Minimum number of original plus generated samples";
+    THEA_CONSOLE << "  --normals | -n        Run extra tests assuming consistently oriented mesh normals";
+    THEA_CONSOLE << "  --reachability | -r   Reachability test for adjacency (requires -n)";
+    THEA_CONSOLE << "";
+
+    return -1;
+  }
+
+  if (reachability && !consistent_normals)
+  {
+    THEA_ERROR << "Reachability test requires consistent normals";
+    return -1;
   }
 
   //===========================================================================================================================
@@ -241,17 +276,15 @@ main(int argc, char * argv[])
   // Augment the number of samples if necessary
   //===========================================================================================================================
 
-  static array_size_t const MIN_SAMPLES = 10000;
-
   orig_num_samples = samples.size();
   bool added_extra_samples = false;
-  if (orig_num_samples < MIN_SAMPLES)
+  if ((long)orig_num_samples < min_samples)
   {
     TheaArray<Vector3> positions;
     TheaArray<Vector3> face_normals;
 
     MeshSampler<Mesh> sampler(mg);
-    sampler.sampleEvenlyByArea((long)(MIN_SAMPLES - orig_num_samples), positions, &face_normals);
+    sampler.sampleEvenlyByArea((long)(min_samples - orig_num_samples), positions, &face_normals);
 
     for (array_size_t i = 0; i < positions.size(); ++i)
     {
@@ -358,9 +391,12 @@ validNeighbors(SurfaceSample const * sample1, SurfaceSample const * sample2, Rea
     return false;
 
   // Angle test
-  static Real const MIN_DOT = -0.5f;
-  if (sample1->n.dot(sample2->n) < MIN_DOT)
-    return false;
+  if (consistent_normals)
+  {
+    static Real const MIN_DOT = -0.5f;
+    if (sample1->n.dot(sample2->n) < MIN_DOT)
+      return false;
+  }
 
   // Duplication test
   for (int i = 0; i < sample1->nbrs.size(); ++i)
@@ -372,15 +408,19 @@ validNeighbors(SurfaceSample const * sample1, SurfaceSample const * sample2, Rea
   Real sqsep = diff.squaredLength();
   sep = Math::fastSqrt(sqsep);
 
-#if 1
-  // Reachability test: lift points off the surface by an amount proportional (currently, equal) to their separation, and
-  // see if the line connecting them is blocked by the surface
-  static Real const LIFT_FACTOR = 5;
-  Vector3 lift_dir = (sample1->n + sample2->n).fastUnit();
-  Ray3 ray(sample1->p + LIFT_FACTOR * sep * lift_dir, diff);
-  if (kdtree.rayIntersects<RayIntersectionTester>(ray, 1))
-    return false;
-#endif
+  // Reachability test: lift points off the surface by an amount proportional to their separation, and see if the line
+  // connecting them is blocked by the surface
+  if (reachability)
+  {
+    if (consistent_normals)
+    {
+      static Real const LIFT_FACTOR = 5;
+      Vector3 lift_dir = (sample1->n + sample2->n).fastUnit();
+      Ray3 ray(sample1->p + LIFT_FACTOR * sep * lift_dir, diff);
+      if (kdtree.rayIntersects<RayIntersectionTester>(ray, 1))
+        return false;
+    }
+  }
 
   return true;
 }
@@ -504,7 +544,7 @@ struct DijkstraCallback
     if (index < orig_num_samples && index != src_index)
       sample->nbrs.insert(Neighbor(vertex, (Real)distance));
 
-    return false;
+    return sample->nbrs.size() >= max_nbrs;
   }
 
   SurfaceSample * sample;
