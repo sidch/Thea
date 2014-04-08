@@ -84,6 +84,12 @@ class MainWindow : public QMainWindow
     /** Get the active model. */
     Model * getModel() { return model; }
 
+    /** Get the number of overlay models. */
+    long numOverlays() const { return (long)overlays.size(); }
+
+    /** Get the set of overlay models. */
+    Model const * const * getOverlays() const { return overlays.empty() ? NULL : &overlays[0]; }
+
     /** Check if point-picking is on. */
     bool pickPoints() const;
 
@@ -120,9 +126,13 @@ class MainWindow : public QMainWindow
     void closeEvent(QCloseEvent * event);
 
   private:
+    /** Get rid of all overlay models. */
+    void clearOverlays();
+
     Ui::MainWindow * ui;
     QActionGroup * view_type_action_group;
     Model * model;
+    TheaArray<Model *> overlays;
     ModelDisplay * model_display;
 
 }; // class MainWindow

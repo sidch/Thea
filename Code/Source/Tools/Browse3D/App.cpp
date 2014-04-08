@@ -55,6 +55,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
+#include <vector>
 
 namespace Browse3D {
 
@@ -83,6 +84,7 @@ App::optsToString() const
       << "\n  resource-dir = " << opts.resource_dir
       << "\n  working-dir = " << opts.working_dir
       << "\n  model = " << opts.model
+      << "\n  overlays = { " << opts.overlays.join(", ") << " }"
       << "\n  features = " << opts.features
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
@@ -141,6 +143,7 @@ App::parseOptions(int argc, char * argv[])
   std::string s_resource_dir;
   std::string s_working_dir;
   std::string s_model;
+  std::vector<std::string> s_overlays;
   std::string s_features;
   std::string s_bg_color;
 
@@ -153,6 +156,7 @@ App::parseOptions(int argc, char * argv[])
           ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
+          ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model to load on startup")
           ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("graph,g",              "Show point adjacency graph")
@@ -174,6 +178,7 @@ App::parseOptions(int argc, char * argv[])
 
   po::positional_options_description pdesc;
   pdesc.add("model", 1);
+  pdesc.add("overlay", -1);
 
   // Read cmdline options first (overrides conflicting config file values)
   po::parsed_options cmdline_parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).positional(pdesc).run();
@@ -217,6 +222,10 @@ App::parseOptions(int argc, char * argv[])
     if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
     if (!s_model.empty())            opts.model         =  toQString(s_model);
     if (!s_features.empty())         opts.features      =  toQString(s_features);
+
+    opts.overlays.clear();
+    for (size_t i = 0; i < s_overlays.size(); ++i)
+      opts.overlays << toQString(s_overlays[i]);
 
     opts.accentuate_features  =  (vm.count("emph-features") > 0);
     opts.show_graph           =  (vm.count("graph") > 0);

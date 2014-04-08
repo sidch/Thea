@@ -17,14 +17,18 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
-long num_mesh_samples = 5000;
-bool normalize_scales = false;
-bool prealign_centroids = false;
-bool rotate_axis_aligned = false;
-
 typedef VectorN<3, double> DVector3;
 typedef MatrixMN<3, 3, double> DMatrix3;
 typedef AffineTransformN<3, double> DAffineTransform3;
+
+long num_mesh_samples = 5000;
+bool normalize_scales = false;
+bool do_initial_placement = false;
+DVector3 initial_from_position(0, 0, 0);
+bool prealign_centroids = false;
+bool rotate_axis_aligned = false;
+bool has_up_vector = false;
+DVector3 up_vector;
 
 int
 usage(int argc, char * argv[])
@@ -34,8 +38,10 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -n <#mesh-samples>  :  Approximate #points to sample from mesh";
   THEA_CONSOLE << "  -s                  :  Normalize shape scales";
+  THEA_CONSOLE << "  -t x y z            :  Initial location for centroid of <from>";
   THEA_CONSOLE << "  -c                  :  Align shape centroids before starting ICP";
   THEA_CONSOLE << "  -x                  :  Test over various axis-aligned rotations";
+  THEA_CONSOLE << "  -u                  :  Up vector";
   // THEA_CONSOLE << "  -r                  :  Test over various rotations";
   return -1;
 }
@@ -306,6 +312,42 @@ main(int argc, char * argv[])
         normalize_scales = true;
         THEA_CONSOLE << "Scales will be matched";
       }
+      else if (arg == "-t")
+      {
+        if (i >= argc - 3)
+          return usage(argc, argv);
+
+        do_initial_placement = true;
+        for (int j = 0; j < 3; ++j)
+        {
+          istringstream iss(argv[++i]);
+          if (!(iss >> initial_from_position[j]))
+          {
+            THEA_ERROR << "Could not parse coordinate " << j << " of initial location";
+            return -1;
+          }
+        }
+
+        THEA_CONSOLE << "Source shape will be initially placed at " << initial_from_position;
+      }
+      else if (arg == "-u")
+      {
+        if (i >= argc - 3)
+          return usage(argc, argv);
+
+        has_up_vector = true;
+        for (int j = 0; j < 3; ++j)
+        {
+          istringstream iss(argv[++i]);
+          if (!(iss >> up_vector[j]))
+          {
+            THEA_ERROR << "Could not parse coordinate " << j << " of up vector";
+            return -1;
+          }
+        }
+
+        THEA_CONSOLE << "Up vector is " << up_vector;
+      }
       else if (arg == "-c")
       {
         prealign_centroids = true;
@@ -336,6 +378,12 @@ main(int argc, char * argv[])
   if (pos_arg < 2)
     return usage(argc, argv);
 
+  if (prealign_centroids && do_initial_placement)
+  {
+    THEA_ERROR << "Cannot prealign centroids AND do initial placement";
+    return -1;
+  }
+
   TheaArray<DVector3> from_pts;
   if (!loadPoints(from_path, from_pts))
     return -1;
@@ -361,12 +409,24 @@ main(int argc, char * argv[])
     for (array_size_t i = 0; i < from_pts.size(); ++i)
       from_pts[i] = init_tr * from_pts[i];
 
+    DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+    if (do_initial_placement)
+    {
+      DVector3 offset = initial_from_position - from_center;
+      init_tr = DAffineTransform3::translation(offset) * init_tr;
+
+      for (array_size_t i = 0; i < from_pts.size(); ++i)
+        from_pts[i] += offset;
+    }
+
     KDTreeN<DVector3, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
 
     if (rotate_axis_aligned)
     {
       ICP3<double> icp(-1, -1, false);
-      DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+      if (has_up_vector)
+        icp.setUpVector(up_vector);
+
       TheaArray<DVector3> rot_from_pts(from_pts.size());
       double rot_error;
       bool first = true;
@@ -411,6 +471,9 @@ main(int argc, char * argv[])
     else
     {
       ICP3<double> icp(-1, -1, true);
+      if (has_up_vector)
+        icp.setUpVector(up_vector);
+
       tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
       tr = tr * init_tr;
 

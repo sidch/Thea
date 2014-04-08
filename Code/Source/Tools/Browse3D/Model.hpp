@@ -285,6 +285,12 @@ class Model : public QObject, public GraphicsWidget
     // Display
     //========================================================================================================================
 
+    /** Get the default color of the model. */
+    ColorRGBA const & getColor() const { return color; }
+
+    /** Set the default color of the model. */
+    void setColor(ColorRGBA const & color_) { color = color_; }
+
     void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
 
     void draw(Graphics::RenderSystem & render_system,
@@ -345,6 +351,7 @@ class Model : public QObject, public GraphicsWidget
     PointCloudPtr point_cloud;
     QString filename;
 
+    ColorRGBA color;
     AxisAlignedBox3 bounds;
 
     TheaArray<Sample> samples;
