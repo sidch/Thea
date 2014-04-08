@@ -146,7 +146,27 @@ MainWindow::init()
   ui->pickPointsSnapToVertex->setChecked(true);
 
   // Load the initial model, if any
-  model->load(app().options().model);
+  bool loaded = model->load(app().options().model);
+  if (loaded)
+  {
+    // Load overlays
+    overlays.clear();
+    for (int i = 0; i < app().options().overlays.size(); ++i)
+    {
+      Model * overlay = new Model;
+      loaded = overlay->load(app().options().overlays[i]);
+      if (loaded)
+      {
+        overlays.push_back(overlay);
+      }
+      else
+      {
+        delete overlay;
+        clearOverlays();
+        break;
+      }
+    }
+  }
 }
 
 MainWindow::~MainWindow()
@@ -164,7 +184,8 @@ MainWindow::getRenderDisplay()
 void
 MainWindow::selectAndLoadModel()
 {
-  model->selectAndLoad();
+  if (model->selectAndLoad())
+    clearOverlays();
 }
 
 QStringList
@@ -197,6 +218,8 @@ MainWindow::loadPreviousModel()
   else if (files.size() == 1)
     return;
 
+  clearOverlays();
+
   if (index == 0)
     model->load(info.dir().filePath(files.last()));
   else
@@ -217,10 +240,21 @@ MainWindow::loadNextModel()
   else if (files.size() == 1)
     return;
 
+  clearOverlays();
+
   if (index == files.size() - 1)
     model->load(info.dir().filePath(files.first()));
   else
     model->load(info.dir().filePath(files[index + 1]));
+}
+
+void
+MainWindow::clearOverlays()
+{
+  for (array_size_t i = 0; i < overlays.size(); ++i)
+    delete overlays[i];
+
+  overlays.clear();
 }
 
 void

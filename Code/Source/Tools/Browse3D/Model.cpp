@@ -91,10 +91,13 @@ enableWireframe(Mesh & mesh)
   return false;
 }
 
+static ColorRGBA const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+
 } // namespace ModelInternal
 
 Model::Model(QString const & initial_mesh)
-: valid_pick(false),
+: color(ModelInternal::DEFAULT_COLOR),
+  valid_pick(false),
   selected_sample(-1),
   valid_kdtree(true),
   kdtree(new KDTree),
@@ -882,8 +885,6 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
-  static ColorRGBA const MESH_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
-  static ColorRGBA const POINT_COLOR(1.0f, 1.0f, 0.5f, 1.0f);
   GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
 
   render_system.pushShader();
@@ -911,10 +912,9 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         }
       }
 
-      render_system.setColor(MESH_COLOR);
-      if (mesh_group) mesh_group->draw(render_system, options);
+      render_system.setColor(color);
 
-      render_system.setColor(POINT_COLOR);
+      if (mesh_group) mesh_group->draw(render_system, options);
       if (point_cloud) point_cloud->draw(render_system, options);
 
     render_system.popColorFlags();

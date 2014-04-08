@@ -44,6 +44,7 @@
 
 #include "Common.hpp"
 #include <QObject>
+#include <QStringList>
 
 namespace Thea {
 
@@ -78,6 +79,7 @@ class App : public QObject
       QString resource_dir;         ///< Directory containing resources (shaders, textures, ...)
       QString working_dir;          ///< The application's initial working directory.
       QString model;                ///< The initial shape to load.
+      QStringList overlays;         ///< The initial overlays to load.
       QString features;             ///< The path to the directory or specific file containing features to load.
 
       bool bg_plain;                ///< Draw the background in a single plain color?

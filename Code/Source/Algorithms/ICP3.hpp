@@ -82,7 +82,7 @@ class ICP3
      * @param max_iterations_ The maximum number of iterations.
      */
     ICP3(ScalarT fractional_error_threshold_ = -1, long max_iterations_ = -1, bool verbose_ = false)
-    : fractional_error_threshold(fractional_error_threshold_), max_iterations(max_iterations_), verbose(verbose_)
+    : fractional_error_threshold(fractional_error_threshold_), max_iterations(max_iterations_), has_up(false), verbose(verbose_)
     {
       if (fractional_error_threshold < 0)
         fractional_error_threshold = 0.0001;
@@ -90,6 +90,22 @@ class ICP3
       if (max_iterations < 1)
         max_iterations = 10;
     }
+
+    /** Set the up vector. Subsequent alignments will only rotate around the up vector. */
+    void setUpVector(VectorT const & up_) { up = up_.unit(); has_up = true; }
+
+    /** Check if the up vector has been set. */
+    bool hasUpVector() const { return has_up; }
+
+    /**
+     * Get the up vector, if it has been set.
+     *
+     * @see hasUpVector();
+     */
+    VectorT const & getUpVector() const { return up; }
+
+    /** Clear the up vector. Subsequent alignments will be unconstrained. */
+    void clearUpVector() { has_up = false; }
 
     /** Find the transform that best aligns the point set \a from to the point set \a to. */
     template <typename FromT, typename ToT>
@@ -277,9 +293,9 @@ class ICP3
      * the first set in the structure.
      */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
-    static AffineTransformT alignOneStep(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
-                                         PlaneT const * from_sym_plane, ToProximityQueryStructureT const & to,
-                                         PlaneT const * to_sym_plane, VectorT * to_points)
+    AffineTransformT alignOneStep(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+                                  PlaneT const * from_sym_plane, ToProximityQueryStructureT const & to,
+                                  PlaneT const * to_sym_plane, VectorT * to_points) const
     {
       for (long i = 0; i < from_num_pts; ++i)
       {
@@ -294,8 +310,8 @@ class ICP3
 
     /** Align one point set to another, in one ICP step, with a known bijective mapping between the points. */
     template <typename FromT, typename FromWeightFuncT>
-    static AffineTransformT alignOneStep(long num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
-                                         PlaneT const * from_sym_plane, VectorT const * to, PlaneT const * to_sym_plane)
+    AffineTransformT alignOneStep(long num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+                                  PlaneT const * from_sym_plane, VectorT const * to, PlaneT const * to_sym_plane) const
     {
       // When both point sets have symmetry planes, we'll align the projections. This does *NOT* minimize the correct error
       // function, but provides a simple approximation to the true solution which is ok for now.
@@ -347,6 +363,13 @@ class ICP3
 
         VectorT dp = p - p_mean;
         VectorT dq = q - q_mean;
+
+        if (has_up)  // remove the component in the up direction
+        {
+          dp = dp - (dp.dot(up) * up);
+          dq = dq - (dq.dot(up) * up);
+        }
+
         if (from_weight_func)
         {
           ScalarT weight = (ScalarT)from_weight_func->getRotationWeight(from[i]);
@@ -463,6 +486,8 @@ class ICP3
 
     double fractional_error_threshold;  ///< Maximum fractional change in error to determine convergence.
     long max_iterations;  ///< Maximum number of iterations.
+    bool has_up;
+    VectorT up;
     bool verbose;  ///< Print lots of debugging information?
 
 }; // class ICP3
