@@ -227,6 +227,30 @@ Model::selectAndLoad()
 }
 
 void
+Model::setTransform(AffineTransform3 const & trans_)
+{
+  TransformableBaseT::setTransform(trans_);
+
+  if (valid_kdtree)
+    kdtree->setTransform(trans_);
+
+  if (valid_vertex_kdtree)
+    vertex_kdtree->setTransform(trans_);
+}
+
+void
+Model::clearTransform()
+{
+  TransformableBaseT::clearTransform();
+
+  if (valid_kdtree)
+    kdtree->clearTransform();
+
+  if (valid_vertex_kdtree)
+    vertex_kdtree->clearTransform();
+}
+
+void
 Model::invalidateAll()
 {
   invalidateVertexKDTree();
@@ -250,6 +274,9 @@ Model::updateKDTree() const
   {
     kdtree->add(*mesh_group);
     kdtree->init();
+
+    if (hasTransform())
+      kdtree->setTransform(getTransform());
 
     THEA_CONSOLE << getName() << ": Updated kd-tree";
   }
@@ -295,6 +322,9 @@ Model::updateVertexKDTree() const
   ModelInternal::CollectVerticesFunctor func(&verts);
   mesh_group->forEachMeshUntil(&func);
   vertex_kdtree->init(verts.begin(), verts.end());
+
+  if (hasTransform())
+    vertex_kdtree->setTransform(getTransform());
 
   valid_vertex_kdtree = true;
 }
@@ -849,6 +879,12 @@ Model::getBounds() const
   return bounds;
 }
 
+AxisAlignedBox3
+Model::getTransformedBounds() const
+{
+  return hasTransform() ? bounds.transformAndBound(getTransform()) : bounds;
+}
+
 void
 Model::updateBounds()
 {
@@ -887,6 +923,12 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
 
+  if (hasTransform())
+  {
+    render_system.setMatrixMode(Graphics::RenderSystem::MatrixMode::MODELVIEW); render_system.pushMatrix();
+    render_system.multMatrix(getTransform().toHomMatrix());
+  }
+
   render_system.pushShader();
     render_system.pushColorFlags();
 
@@ -919,6 +961,11 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
     render_system.popColorFlags();
   render_system.popShader();
+
+  if (hasTransform())
+  {
+    render_system.setMatrixMode(Graphics::RenderSystem::MatrixMode::MODELVIEW); render_system.popMatrix();
+  }
 }
 
 } // namespace Browse3D

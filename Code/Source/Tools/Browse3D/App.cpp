@@ -119,6 +119,57 @@ App::init(int argc, char * argv[])
 }
 
 bool
+parseModel(std::string const & str, QString & path, AffineTransform3 & transform)
+{
+  TheaArray<std::string> fields;
+  stringSplit(str, '|', fields);
+  if (fields.empty() || fields.size() > 2)
+  {
+    THEA_ERROR << "Could not parse overlay: " << str;
+    return false;
+  }
+
+  path = toQString(trimWhitespace(fields[0]));
+
+  if (fields.size() >= 2)
+  {
+    float m[3][4];
+    if (std::sscanf(fields[1].c_str(), " [ L : [ %f , %f , %f ; %f , %f , %f ; %f , %f , %f ] , T : ( %f , %f , %f ) ]",
+                    &m[0][0], &m[0][1], &m[0][2],
+                    &m[1][0], &m[1][1], &m[1][2],
+                    &m[2][0], &m[2][1], &m[2][2],
+                    &m[0][3], &m[1][3], &m[2][3]) == 12)
+    {}
+    else if (std::sscanf(fields[1].c_str(), " %f %f %f %f  %f %f %f %f  %f %f %f %f",
+                         &m[0][0], &m[0][1], &m[0][2], &m[0][3],
+                         &m[1][0], &m[1][1], &m[1][2], &m[1][3],
+                         &m[2][0], &m[2][1], &m[2][2], &m[2][3]) == 12)
+    {}
+    else if (std::sscanf(fields[1].c_str(), " %f %f %f", &m[0][3], &m[1][3], &m[2][3]) == 3)
+    {
+      m[0][0] = m[1][1] = m[2][2] = 1;
+      m[0][1] = m[0][2] = m[1][0] = m[1][2] = m[2][0] = m[2][1] = 0;
+    }
+    else
+    {
+      THEA_ERROR << "Could not parse overlay transformation: " << fields[1];
+      return false;
+    }
+
+    transform = AffineTransform3(Matrix3(m[0][0], m[0][1], m[0][2],
+                                         m[1][0], m[1][1], m[1][2],
+                                         m[2][0], m[2][1], m[2][2]),
+                                 Vector3(m[0][3], m[1][3], m[2][3]));
+  }
+  else
+  {
+    transform = AffineTransform3::identity();
+  }
+
+  return true;
+}
+
+bool
 App::parseOptions(int argc, char * argv[])
 {
   namespace po = boost::program_options;
@@ -215,44 +266,58 @@ App::parseOptions(int argc, char * argv[])
     quit = true;
   }
 
-  if (!quit)
+  if (quit)
+    return false;
+
+  if (!s_plugin_dir.empty())       opts.plugin_dir    =  QDir(QFile::decodeName(s_plugin_dir.c_str())).canonicalPath();
+  if (!s_resource_dir.empty())     opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
+  if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
+
+  if (!s_model.empty())
   {
-    if (!s_plugin_dir.empty())       opts.plugin_dir    =  QDir(QFile::decodeName(s_plugin_dir.c_str())).canonicalPath();
-    if (!s_resource_dir.empty())     opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
-    if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
-    if (!s_model.empty())            opts.model         =  toQString(s_model);
-    if (!s_features.empty())         opts.features      =  toQString(s_features);
-
-    opts.overlays.clear();
-    for (size_t i = 0; i < s_overlays.size(); ++i)
-      opts.overlays << toQString(s_overlays[i]);
-
-    opts.accentuate_features  =  (vm.count("emph-features") > 0);
-    opts.show_graph           =  (vm.count("graph") > 0);
-    opts.fancy_points         =  (vm.count("fancy-points") > 0);
-    opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
-
-    if (!s_bg_color.empty())
-    {
-      std::stringstream ss;
-      ss << std::hex << s_bg_color;
-
-      uint32 argb;
-      ss >> argb;
-
-      opts.bg_plain = true;
-      opts.bg_color = ColorRGB::fromARGB(argb);
-    }
-    else
-    {
-      opts.bg_plain = false;
-      opts.bg_color = ColorRGB::black();
-    }
-
-    Application::setResourceArchive(s_resource_dir);
+    if (!parseModel(s_model, opts.model, opts.model_transform))
+      return false;
   }
 
-  return !quit;
+  opts.overlays.clear();
+  opts.overlay_transforms.clear();
+  for (size_t i = 0; i < s_overlays.size(); ++i)
+  {
+    QString path;
+    AffineTransform3 transform;
+    if (!parseModel(s_overlays[i], path, transform))
+      return false;
+
+    opts.overlays << path;
+    opts.overlay_transforms.push_back(transform);
+  }
+
+  if (!s_features.empty()) opts.features = toQString(s_features);
+  opts.accentuate_features  =  (vm.count("emph-features") > 0);
+  opts.show_graph           =  (vm.count("graph") > 0);
+  opts.fancy_points         =  (vm.count("fancy-points") > 0);
+  opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
+
+  if (!s_bg_color.empty())
+  {
+    std::stringstream ss;
+    ss << std::hex << s_bg_color;
+
+    uint32 argb;
+    ss >> argb;
+
+    opts.bg_plain = true;
+    opts.bg_color = ColorRGB::fromARGB(argb);
+  }
+  else
+  {
+    opts.bg_plain = false;
+    opts.bg_color = ColorRGB::black();
+  }
+
+  Application::setResourceArchive(s_resource_dir);
+
+  return true;
 }
 
 void

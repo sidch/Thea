@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include <QObject>
 #include <QStringList>
+#include "../../AffineTransform3.hpp"
 
 namespace Thea {
 
@@ -75,21 +76,23 @@ class App : public QObject
       /** Constructor. */
       Options();
 
-      QString plugin_dir;           ///< Directory containing plugins.
-      QString resource_dir;         ///< Directory containing resources (shaders, textures, ...)
-      QString working_dir;          ///< The application's initial working directory.
-      QString model;                ///< The initial shape to load.
-      QStringList overlays;         ///< The initial overlays to load.
-      QString features;             ///< The path to the directory or specific file containing features to load.
+      QString plugin_dir;                              ///< Directory containing plugins.
+      QString resource_dir;                            ///< Directory containing resources (shaders, textures, ...)
+      QString working_dir;                             ///< The application's initial working directory.
+      QString model;                                   ///< The initial shape to load.
+      AffineTransform3 model_transform;                ///< The transformation of the initial shape.
+      QStringList overlays;                            ///< The initial overlays to load.
+      TheaArray<AffineTransform3> overlay_transforms;  ///< The transforms of the overlays.
+      QString features;                                ///< Path to directory or specific file containing features to load.
 
-      bool bg_plain;                ///< Draw the background in a single plain color?
-      ColorRGB bg_color;            ///< Background color.
-      bool two_sided;               ///< Use two-sided lighting?
-      bool fancy_points;            ///< Draw points as shaded spheres?
-      bool fancy_colors;            ///< Color points by a function of position?
+      bool bg_plain;                                   ///< Draw the background in a single plain color?
+      ColorRGB bg_color;                               ///< Background color.
+      bool two_sided;                                  ///< Use two-sided lighting?
+      bool fancy_points;                               ///< Draw points as shaded spheres?
+      bool fancy_colors;                               ///< Color points by a function of position?
 
-      bool accentuate_features;     ///< Make feature distributions easier to view?
-      bool show_graph;              ///< Show point adjacency graph, if available?
+      bool accentuate_features;                        ///< Make feature distributions easier to view?
+      bool show_graph;                                 ///< Show point adjacency graph, if available?
 
     }; // struct Options
 

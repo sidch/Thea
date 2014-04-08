@@ -49,6 +49,7 @@
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayQueryStructureN.hpp"
+#include "../../AffineTransform3.hpp"
 #include <QObject>
 
 class QMouseEvent;
@@ -99,9 +100,11 @@ struct PointTraitsN<Browse3D::IndexedMeshVertex, 3>
 namespace Browse3D {
 
 /** The model manipulated by the user. */
-class Model : public QObject, public GraphicsWidget
+class Model : public QObject, public GraphicsWidget, public Transformable<AffineTransform3>
 {
     Q_OBJECT
+
+    typedef Transformable<AffineTransform3> TransformableBaseT;
 
   public:
     typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
@@ -150,6 +153,10 @@ class Model : public QObject, public GraphicsWidget
 
     /** Invalidate all associated structures. */
     void invalidateAll();
+
+    void setTransform(AffineTransform3 const & trans_);
+
+    void clearTransform();
 
     //========================================================================================================================
     // KD-trees on mesh triangles and vertices
@@ -277,7 +284,11 @@ class Model : public QObject, public GraphicsWidget
     // Bounding boxes
     //========================================================================================================================
 
+    /** Get the bounding box in object coordinates. */
     AxisAlignedBox3 const & getBounds() const;
+
+    /** Get the bounding box in world coordinates. */
+    AxisAlignedBox3 getTransformedBounds() const;
 
     void updateBounds();
 
