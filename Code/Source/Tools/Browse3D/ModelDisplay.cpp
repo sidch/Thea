@@ -129,8 +129,8 @@ ModelDisplay::updateCameraFromModel()
 void
 ModelDisplay::updateCameraFrameFromModel()
 {
-  camera_look_at = model->getBounds().getCenter();
-  Real model_scale = model->getBounds().getExtent().fastLength();
+  camera_look_at = model->getTransformedBounds().getCenter();
+  Real model_scale = model->getTransformedBounds().getExtent().fastLength();
   Real camera_separation = model_scale > 1.0e-3f ? 2 * model_scale : 1.0e-3f;
 
   // Maintain current orientation
@@ -599,7 +599,7 @@ ModelDisplay::getModelDistance() const
 {
   // qDebug() << "getModelDistance";
 
-  return model ? (model->getBounds().getCenter() - camera.getPosition()).length()
+  return model ? (model->getTransformedBounds().getCenter() - camera.getPosition()).length()
                : (camera_look_at - camera.getPosition()).length();
 }
 

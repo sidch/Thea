@@ -149,6 +149,8 @@ MainWindow::init()
   bool loaded = model->load(app().options().model);
   if (loaded)
   {
+    model->setTransform(app().options().model_transform);
+
     // Load overlays
     overlays.clear();
     for (int i = 0; i < app().options().overlays.size(); ++i)
@@ -157,6 +159,8 @@ MainWindow::init()
       loaded = overlay->load(app().options().overlays[i]);
       if (loaded)
       {
+        overlay->setTransform(app().options().overlay_transforms[i]);
+        overlay->setColor(getPaletteColor(i));
         overlays.push_back(overlay);
       }
       else
