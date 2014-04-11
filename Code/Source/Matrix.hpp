@@ -337,6 +337,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       alwaysAssertM(L == MatrixLayout::COLUMN_MAJOR, "Matrix: Cannot append column(s) to a matrix that is not column-major");
       alwaysAssertM(owns_memory, "Matrix: Cannot append column(s) to a matrix that does not own its memory block");
+      alwaysAssertM(num_cols >= 0, "Matrix: Cannot append a row to a matrix with no columns");
       alwaysAssertM(num_cols_to_append >= 0, "Matrix: Cannot append a negative number of columns to a matrix");
 
       if (num_cols_to_append <= 0)

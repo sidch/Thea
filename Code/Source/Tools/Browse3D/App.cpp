@@ -125,7 +125,7 @@ parseModel(std::string const & str, QString & path, AffineTransform3 & transform
   stringSplit(str, '|', fields);
   if (fields.empty() || fields.size() > 2)
   {
-    THEA_ERROR << "Could not parse overlay: " << str;
+    THEA_ERROR << "Could not parse model: " << str;
     return false;
   }
 
@@ -152,7 +152,7 @@ parseModel(std::string const & str, QString & path, AffineTransform3 & transform
     }
     else
     {
-      THEA_ERROR << "Could not parse overlay transformation: " << fields[1];
+      THEA_ERROR << "Could not parse model transformation: " << fields[1];
       return false;
     }
 
@@ -207,7 +207,7 @@ App::parseOptions(int argc, char * argv[])
           ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
           ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
-          ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model to load on startup")
+          ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
           ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("graph,g",              "Show point adjacency graph")
