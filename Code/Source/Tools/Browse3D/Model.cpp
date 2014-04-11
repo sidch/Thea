@@ -182,7 +182,7 @@ Model::load(QString const & filename_)
     static CodecOBJ<Mesh> const obj_codec(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
     try
     {
-      if (filename_.endsWith("obj", Qt::CaseInsensitive))
+      if (filename_.endsWith(".obj", Qt::CaseInsensitive))
         new_mesh_group->load(toStdString(filename_), obj_codec);
       else
         new_mesh_group->load(toStdString(filename_));

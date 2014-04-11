@@ -43,9 +43,9 @@
 #define __Browse3D_App_hpp__
 
 #include "Common.hpp"
+#include "../../AffineTransform3.hpp"
 #include <QObject>
 #include <QStringList>
-#include "../../AffineTransform3.hpp"
 
 namespace Thea {
 

@@ -50,6 +50,7 @@
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayQueryStructureN.hpp"
 #include "../../AffineTransform3.hpp"
+#include "../../Transformable.hpp"
 #include <QObject>
 
 class QMouseEvent;
