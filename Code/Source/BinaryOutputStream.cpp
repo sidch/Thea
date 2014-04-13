@@ -270,7 +270,7 @@ BinaryOutputStream::BinaryOutputStream(Endianness endian)
 }
 
 BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file_endian)
-: NamedObject(FilePath::nodeName(path)),
+: NamedObject(FilePath::objectName(path)),
   m_path(FileSystem::resolve(path)),
   m_beginEndBits(0),
   m_bitString(0),

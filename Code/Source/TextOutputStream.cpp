@@ -91,7 +91,7 @@ TextOutputStream::TextOutputStream(TextOutputStream::Settings const & opt)
 }
 
 TextOutputStream::TextOutputStream(std::string const & path_, TextOutputStream::Settings const & opt)
-: NamedObject(FilePath::nodeName(path_)),
+: NamedObject(FilePath::objectName(path_)),
   startingNewLine(true),
   currentColumn(0),
   inDQuote(false),

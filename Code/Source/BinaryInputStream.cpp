@@ -296,7 +296,7 @@ BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endiann
 }
 
 BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_endian)
-: NamedObject(FilePath::nodeName(path)),
+: NamedObject(FilePath::objectName(path)),
   m_path(FileSystem::resolve(path)),
   m_bitPos(0),
   m_bitString(0),

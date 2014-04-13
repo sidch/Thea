@@ -57,37 +57,41 @@ class THEA_API FilePath
 {
   public:
     /**
-     * Get the basename of the node, consisting of the node name without the path, upto but not including the first period
-     * character.
+     * Get the basename of the object, consisting of the object name without the path, upto but not including the <i>first</i>
+     * period character.
+     *
+     * @see completeBaseName()
      */
     static std::string baseName(std::string const & path);
 
     /**
-     * Get the complete basename of the node, consisting of the node name without the path, upto but not including the last
-     * period character.
+     * Get the complete basename of the object, consisting of the object name without the path, upto but not including the
+     * <i>last</i> period character.
+     *
+     * @see baseName()
      */
     static std::string completeBaseName(std::string const & path);
 
     /**
-     * Get the extension of the node, consisting of all characters after the last period character (or null if no period
+     * Get the extension of the object, consisting of all characters after the last period character (or null if no period
      * exists).
      */
     static std::string suffix(std::string const & path);
 
     /**
-     * Get the complete extension of the node, consisting of all characters after the first period character (or null if no
+     * Get the complete extension of the object, consisting of all characters after the first period character (or null if no
      * period exists).
      */
     static std::string completeSuffix(std::string const & path);
 
-    /** Get the name of the node without the path. Ignores trailing slashes and isolated period characters. */
-    static std::string nodeName(std::string const & path);
+    /** Get the name of the object without the path. Ignores trailing slashes and isolated period characters. */
+    static std::string objectName(std::string const & path);
 
-    /** Get the path to the immediate parent of a node. Ignores trailing slashes and isolated period characters. */
+    /** Get the path to the immediate parent of an object. Ignores trailing slashes and isolated period characters. */
     static std::string parent(std::string const & path);
 
     /**
-     * Get the full path to a child node, given the path to the containing directory and the name of the child itself. If the
+     * Get the full path to a child object, given the path to the containing directory and the name of the child itself. If the
      * directory name is empty, just the child name is returned.
      */
     static std::string concat(std::string const & parent, std::string const & child);

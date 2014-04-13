@@ -47,7 +47,7 @@ namespace Thea {
 std::string
 FilePath::baseName(std::string const & path)
 {
-  std::string node = nodeName(path);
+  std::string node = objectName(path);
   size_t first_dot = node.find_first_of('.');
   return (first_dot == std::string::npos ? node : node.substr(0, first_dot));
 }
@@ -55,7 +55,7 @@ FilePath::baseName(std::string const & path)
 std::string
 FilePath::completeBaseName(std::string const & path)
 {
-  std::string node = nodeName(path);
+  std::string node = objectName(path);
   size_t last_dot = node.find_last_of('.');
   return (last_dot == std::string::npos ? node : node.substr(0, last_dot));
 }
@@ -63,7 +63,7 @@ FilePath::completeBaseName(std::string const & path)
 std::string
 FilePath::suffix(std::string const & path)
 {
-  std::string node = nodeName(path);
+  std::string node = objectName(path);
   size_t last_dot = node.find_last_of('.');
   return (last_dot == std::string::npos ? std::string() : node.substr(last_dot + 1));
 }
@@ -71,13 +71,13 @@ FilePath::suffix(std::string const & path)
 std::string
 FilePath::completeSuffix(std::string const & path)
 {
-  std::string node = nodeName(path);
+  std::string node = objectName(path);
   size_t first_dot = node.find_first_of('.');
   return (first_dot == std::string::npos ? std::string() : node.substr(first_dot + 1));
 }
 
 std::string
-FilePath::nodeName(std::string const & path)
+FilePath::objectName(std::string const & path)
 {
   boost::filesystem::path p(path);
   boost::filesystem::path n = p.filename();
