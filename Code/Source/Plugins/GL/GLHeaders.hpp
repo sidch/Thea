@@ -125,7 +125,7 @@ struct THEA_GL_DLL_LOCAL GLClientScope
   { \
     err_string = gluErrorString(err_code); \
     throw Error(Thea::format("%s:%ld: OpenGL error: %s", \
-                Thea::FilePath::nodeName(__FILE__).c_str(), (long)__LINE__, err_string)); \
+                Thea::FilePath::objectName(__FILE__).c_str(), (long)__LINE__, err_string)); \
   } \
 }
 

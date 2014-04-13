@@ -185,7 +185,7 @@ main(int argc, char * argv[])
 bool
 usage()
 {
-  string app_path = FilePath::nodeName(Application::programPath());
+  string app_path = FilePath::objectName(Application::programPath());
 
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Usage: " << app_path << " [OPTIONS] <mesh> <output-image> <width> <height>";

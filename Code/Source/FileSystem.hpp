@@ -54,8 +54,8 @@ namespace Thea {
 class THEA_API FileSystem
 {
   public:
-    /** Types of nodes (entries) in the filesystem. */
-    struct NodeType
+    /** Types of objects in the filesystem (enum class). */
+    struct ObjectType
     {
       /** Supported values. */
       enum Value
@@ -63,12 +63,12 @@ class THEA_API FileSystem
         FILE            =  0x0001,  ///< Ordinary file.
         DIRECTORY       =  0x0002,  ///< Directory.
         SYMLINK         =  0x0004,  ///< Symbolic link.
-        ALL             =  0xFFFF,  ///< Catch-all value for all types of filesystem nodes.
+        ALL             =  0xFFFF,  ///< Catch-all value for all types of filesystem objects.
       };
 
-      THEA_ENUM_CLASS_BODY(NodeType)
+      THEA_ENUM_CLASS_BODY(ObjectType)
 
-    }; // struct NodeType
+    }; // struct ObjectType
 
     /** Check if a file or directory exists. */
     static bool exists(std::string const & path);
@@ -110,26 +110,27 @@ class THEA_API FileSystem
     static bool readWholeFile(std::string const & path, std::string & ret);
 
     /**
-     * Get the entries in a directory, optionally recursing into subdirectories and filtering entries by type and name. Symbolic
-     * links are returned as symbolic links and are not dereferenced to the files or directories they point to.
+     * Get the objects (files, subdirectories etc) in a directory, optionally recursing into subdirectories and filtering
+     * objects by type and name. Symbolic links are returned as symbolic links and are not dereferenced to the files or
+     * directories they point to.
      *
      * @param dir The path to the directory.
-     * @param entries Used to return the full paths of all retrieved entries in the directory. Prior contents are discarded.
-     * @param types A bitwise-OR of NodeType flags (pass zero, negative or NodeType::ALL to allow all types of entries).
+     * @param objects Used to return the full paths of all retrieved objects in the directory. Prior contents are discarded.
+     * @param types A bitwise-OR of ObjectType flags (pass zero, negative or ObjectType::ALL to allow all types of objects).
      * @param patterns If this string is non-empty, it is split into fields separated by spaces and each field interpreted as a
-     *   shell wildcard pattern specified in the format of patternMatch(). The function will return only entries whose names
+     *   shell wildcard pattern specified in the format of patternMatch(). The function will return only objects whose names
      *   (without path) match at least one of the patterns. E.g. \a patterns = "*.txt *.png" will return only files with names
      *   ending in .txt or .png.
      * @param recursive If true, subdirectories are searched recursively. The name of each such subdirectory is also returned.
      *
-     * @return The number of entries found, equal to the size of \a entries. If the supplied path is not a directory, returns a
+     * @return The number of objects found, equal to the size of \a objects. If the supplied path is not a directory, returns a
      *   negative value.
      */
-    static long getDirectoryEntries(std::string const & dir,
-                                    TheaArray<std::string> & entries,
-                                    int types = -1,
-                                    std::string const & patterns = "",
-                                    bool recursive = false);
+    static long getDirectoryContents(std::string const & dir,
+                                     TheaArray<std::string> & objects,
+                                     int types = -1,
+                                     std::string const & patterns = "",
+                                     bool recursive = false);
 
     /**
      * Remove a file, a symbolic link, or a directory. If the path is a directory, the operation succeeds only if the directory
@@ -139,7 +140,7 @@ class THEA_API FileSystem
      * @param recursive If true, and if the path points to a directory, contents of the directory are recursively removed before
      *   the directory itself.
      *
-     * @return True if the entry was successfully removed or did not exist in the first place, false on error (e.g. directory
+     * @return True if the object was successfully removed or did not exist in the first place, false on error (e.g. directory
      *   not empty (with \a recursive == false) or operation not permitted).
      */
     static bool remove(std::string const & path, bool recursive = false);

@@ -109,7 +109,7 @@ meshFix(int argc, char * argv[])
   if (parse_status <= 0)
     return parse_status;
 
-  MG mg(FilePath::nodeName(infile));
+  MG mg(FilePath::objectName(infile));
   mg.load(infile);
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())

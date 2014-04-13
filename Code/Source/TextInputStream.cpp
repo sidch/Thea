@@ -1333,7 +1333,7 @@ TextInputStream::readSymbol(std::string const & symbol)
 }
 
 TextInputStream::TextInputStream(std::string const & path_, Settings const & opt)
-: NamedObject(FilePath::nodeName(path_)),
+: NamedObject(FilePath::objectName(path_)),
   path(FileSystem::resolve(path_)),
   options(opt)
 {

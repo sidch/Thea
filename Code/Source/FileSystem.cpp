@@ -138,23 +138,24 @@ FileSystem::readWholeFile(std::string const & path, std::string & ret)
 namespace FileSystemInternal {
 
 bool
-entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int types, TheaArray<std::string> const & patterns)
+objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, int types,
+                           TheaArray<std::string> const & patterns)
 {
-  if (types > 0 && types != FileSystem::NodeType::ALL)
+  if (types > 0 && types != FileSystem::ObjectType::ALL)
   {
-    boost::filesystem::file_status status = entry.symlink_status();
+    boost::filesystem::file_status status = object.symlink_status();
     if (!boost::filesystem::is_symlink(status))
-      status = entry.status();
+      status = object.status();
 
     bool ok = false;
 
-    if (!ok && (types & FileSystem::NodeType::FILE) && boost::filesystem::is_regular_file(status))
+    if (!ok && (types & FileSystem::ObjectType::FILE) && boost::filesystem::is_regular_file(status))
       ok = true;
 
-    if (!ok && (types & FileSystem::NodeType::DIRECTORY) && boost::filesystem::is_directory(status))
+    if (!ok && (types & FileSystem::ObjectType::DIRECTORY) && boost::filesystem::is_directory(status))
       ok = true;
 
-    if (!ok && (types & FileSystem::NodeType::SYMLINK) && boost::filesystem::is_symlink(status))
+    if (!ok && (types & FileSystem::ObjectType::SYMLINK) && boost::filesystem::is_symlink(status))
       ok = true;
 
     if (!ok)
@@ -164,9 +165,9 @@ entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int 
   if (!patterns.empty())
   {
 #if BOOST_VERSION / 100000 > 1 || (BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 > 45)
-    std::string name = entry.path().filename().string();
+    std::string name = object.path().filename().string();
 #else
-    std::string name = entry.path().filename();
+    std::string name = object.path().filename();
 #endif
 
     bool ok = false;
@@ -184,8 +185,8 @@ entrySatisfiesConstraints(boost::filesystem::directory_entry const & entry, int 
 } // namespace FileSystemInternal
 
 long
-FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> & entries, int types,
-                                std::string const & patterns, bool recursive)
+FileSystem::getDirectoryContents(std::string const & dir, TheaArray<std::string> & objects, int types,
+                                 std::string const & patterns, bool recursive)
 {
   if (!directoryExists(dir))
     return -1;
@@ -194,24 +195,24 @@ FileSystem::getDirectoryEntries(std::string const & dir, TheaArray<std::string> 
   if (!patterns.empty())
     stringSplit(patterns, ' ', patlist, true);
 
-  entries.clear();
+  objects.clear();
 
   if (recursive)
   {
-    boost::filesystem::recursive_directory_iterator entries_end;
-    for (boost::filesystem::recursive_directory_iterator iter(dir); iter != entries_end; ++iter)
-      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patlist))
-        entries.push_back(iter->path().string());
+    boost::filesystem::recursive_directory_iterator objects_end;
+    for (boost::filesystem::recursive_directory_iterator iter(dir); iter != objects_end; ++iter)
+      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist))
+        objects.push_back(iter->path().string());
   }
   else
   {
-    boost::filesystem::directory_iterator entries_end;
-    for (boost::filesystem::directory_iterator iter(dir); iter != entries_end; ++iter)
-      if (FileSystemInternal::entrySatisfiesConstraints(*iter, types, patlist))
-        entries.push_back(iter->path().string());
+    boost::filesystem::directory_iterator objects_end;
+    for (boost::filesystem::directory_iterator iter(dir); iter != objects_end; ++iter)
+      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist))
+        objects.push_back(iter->path().string());
   }
 
-  return (long)entries.size();
+  return (long)objects.size();
 }
 
 bool

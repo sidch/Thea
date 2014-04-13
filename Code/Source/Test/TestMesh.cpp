@@ -159,7 +159,7 @@ testManifold(int argc, char * argv[])
 
   string model_path = (argc < 2 ? "../../Data/Models/bunny-conformal.obj" : argv[1]);
 
-  MeshGroup<GM> input_mg(FilePath::nodeName(model_path));
+  MeshGroup<GM> input_mg(FilePath::objectName(model_path));
   input_mg.load(model_path);
 
   input_mg.forEachMeshUntil(isManifold);
