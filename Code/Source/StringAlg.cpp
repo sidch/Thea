@@ -643,7 +643,7 @@ fnmatch(char const * pattern, char const * query, int flags)
         /* General case, use recursion. */
         while ((test = *query) != THEA_EOS)
         {
-          if (!patternMatch(pattern, query, flags & ~FNM_PERIOD))
+          if (fnmatch(pattern, query, flags & ~FNM_PERIOD) == 0)
             return (0);
 
           if (test == '/' && (flags & FNM_PATHNAME))
