@@ -64,6 +64,22 @@ class THEA_API BestFitBox3
     /** Remove all data and (lazily) set the box to null. */
     void clear();
 
+    /** Set the up vector. The computed box will only consider orientations with the given up vector. */
+    void setUpVector(Vector3 const & up_) { up = up_.unit(); has_up = true; }
+
+    /** Check if the up vector has been set. */
+    bool hasUpVector() const { return has_up; }
+
+    /**
+     * Get the up vector, if it has been set.
+     *
+     * @see hasUpVector();
+     */
+    Vector3 const & getUpVector() const { return up; }
+
+    /** Clear the up vector. Subsequent alignments will be unconstrained. */
+    void clearUpVector() { has_up = false; }
+
     /** Remove all cached data to free memory, but do <b>not</b> mark the box for recomputation. */
     void releaseMemoryWithoutUpdate();
 
@@ -75,6 +91,9 @@ class THEA_API BestFitBox3
     void update() const;
 
     TheaArray<Vector3> points;
+    bool has_up;
+    Vector3 up;
+
     mutable Box3 box;
     mutable bool updated;
 

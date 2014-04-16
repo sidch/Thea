@@ -46,6 +46,7 @@
 #include "ui_MainWindow.h"
 #include "Util.hpp"
 #include "../../Application.hpp"
+#include <QActionGroup>
 #include <QDir>
 #include <QFileInfo>
 #include <QList>
