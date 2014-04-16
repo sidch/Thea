@@ -6,6 +6,7 @@
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../AffineTransformN.hpp"
+#include "../../FilePath.hpp"
 #include "../../MatrixMN.hpp"
 #include "../../VectorN.hpp"
 #include <cstdio>
@@ -27,6 +28,7 @@ bool do_initial_placement = false;
 DVector3 initial_from_position(0, 0, 0);
 bool prealign_centroids = false;
 bool rotate_axis_aligned = false;
+bool rotate_arbitrary = false;
 bool has_up_vector = false;
 DVector3 up_vector;
 
@@ -41,8 +43,8 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "  -t x y z            :  Initial location for centroid of <from>";
   THEA_CONSOLE << "  -c                  :  Align shape centroids before starting ICP";
   THEA_CONSOLE << "  -x                  :  Test over various axis-aligned rotations";
+  THEA_CONSOLE << "  -r                  :  Test over various rotations (currently requires -u)";
   THEA_CONSOLE << "  -u                  :  Up vector";
-  // THEA_CONSOLE << "  -r                  :  Test over various rotations";
   return -1;
 }
 
@@ -268,6 +270,200 @@ normalizeError(double err, double scale, long num_points)
     return err / num_points;
 }
 
+bool
+loadShapePaths(string const & path, TheaArray<string> & shape_paths)
+{
+  shape_paths.clear();
+
+  if (endsWith(toLower(path), ".txt"))
+  {
+    ifstream in(path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Couldn't open list of shape paths: " << path;
+      return false;
+    }
+
+    string dir = FilePath::parent(path);
+    string line;
+    while (getline(in, line))
+    {
+      line = trimWhitespace(line);
+      if (!line.empty())
+        shape_paths.push_back(FilePath::concat(dir, line));
+    }
+  }
+  else
+    shape_paths.push_back(path);
+
+  return true;
+}
+
+int
+alignShapes(string const & from_path, string const & to_path, std::ostream * out)
+{
+  TheaArray<DVector3> from_pts;
+  if (!loadPoints(from_path, from_pts))
+    return -1;
+
+  TheaArray<DVector3> to_pts;
+  if (!loadPoints(to_path, to_pts))
+    return -1;
+
+  DAffineTransform3 tr = DAffineTransform3::identity();
+  double from_scale = 1.0, to_scale = 1.0;
+  double error = 0;
+  if (from_pts.empty())
+  {
+    THEA_WARNING << "Source shape is empty: returning identity transform";
+  }
+  else if (to_pts.empty())
+  {
+    THEA_WARNING << "Target shape is empty: returning identity transform";
+  }
+  else
+  {
+    DAffineTransform3 init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
+    for (array_size_t i = 0; i < from_pts.size(); ++i)
+      from_pts[i] = init_tr * from_pts[i];
+
+    DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+    if (do_initial_placement)
+    {
+      DVector3 offset = initial_from_position - from_center;
+      init_tr = DAffineTransform3::translation(offset) * init_tr;
+
+      for (array_size_t i = 0; i < from_pts.size(); ++i)
+        from_pts[i] += offset;
+    }
+
+    KDTreeN<DVector3, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
+
+    if (rotate_axis_aligned)
+    {
+      ICP3<double> icp(-1, -1, false);
+      if (has_up_vector)
+        icp.setUpVector(up_vector);
+
+      TheaArray<DVector3> rot_from_pts(from_pts.size());
+      double rot_error;
+      bool first = true;
+
+      for (int u = 0; u < 2; ++u)
+        for (int su = -1; su <= 1; su += 2)
+          for (int v = 1; v < 2; ++v)
+            for (int sv = -1; sv <= 1; sv += 2)
+            {
+              DVector3 du(0, 0, 0); du[u] = su;
+              DVector3 dv(0, 0, 0); dv[(u + v) % 3] = sv;
+              DVector3 dw = du.cross(dv);
+              DMatrix3 rot(du[0], dv[0], dw[0],
+                           du[1], dv[1], dw[1],
+                           du[2], dv[2], dw[2]);
+
+              DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
+                                       * DAffineTransform3(rot)
+                                       * DAffineTransform3::translation(-from_center);
+
+              for (array_size_t i = 0; i < from_pts.size(); ++i)
+                rot_from_pts[i] = rot_tr * from_pts[i];
+
+              DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
+              if (first || rot_error < error)
+              {
+                error = rot_error;
+                tr = icp_tr * rot_tr;
+                first = false;
+
+                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
+              }
+              else
+                THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
+            }
+
+      alwaysAssertM(!first, "No alignment found after trying axis-aligned rotations");
+
+      tr = tr * init_tr;
+    }
+    else if (rotate_arbitrary)
+    {
+      if (!has_up_vector)
+      {
+        THEA_ERROR << "Testing rotations without a valid up vector not currently supported";
+        return -1;
+      }
+
+      ICP3<double> icp(-1, -1, false);
+      if (has_up_vector)
+        icp.setUpVector(up_vector);
+
+      TheaArray<DVector3> rot_from_pts(from_pts.size());
+      double rot_error;
+      bool first = true;
+
+      static int const NUM_ROTATIONS = 16;
+      for (int i = 0; i < NUM_ROTATIONS; ++i)
+      {
+        double angle = i * (Math::twoPi() / NUM_ROTATIONS);
+        DMatrix3 rot = DMatrix3::rotationAxisAngle(up_vector, angle);
+        DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
+                                 * DAffineTransform3(rot)
+                                 * DAffineTransform3::translation(-from_center);
+
+        for (array_size_t i = 0; i < from_pts.size(); ++i)
+          rot_from_pts[i] = rot_tr * from_pts[i];
+
+        DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+        rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
+        if (first || rot_error < error)
+        {
+          error = rot_error;
+          tr = icp_tr * rot_tr;
+          first = false;
+
+          THEA_CONSOLE << "-- rotation by " << Math::radiansToDegrees(angle) << " degrees reduced error to " << error;
+        }
+        else
+          THEA_CONSOLE << "-- rotation by " << Math::radiansToDegrees(angle) << " degrees, no reduction in error";
+      }
+
+      alwaysAssertM(!first, "No alignment found after trying axis-aligned rotations");
+
+      tr = tr * init_tr;
+    }
+    else
+    {
+      ICP3<double> icp(-1, -1, true);
+      if (has_up_vector)
+        icp.setUpVector(up_vector);
+
+      tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
+      tr = tr * init_tr;
+
+      error = normalizeError(error, to_scale, (long)from_pts.size());
+    }
+  }
+
+  THEA_CONSOLE << "Alignment error = " << std::setprecision(10) << error;
+  THEA_CONSOLE << "Alignment = " << tr.toString();
+
+  if (out)
+  {
+    DMatrix3 const & lin = tr.getLinear();
+    DVector3 const & trn = tr.getTranslation();
+
+    *out << from_path << '\n'
+         << to_path << '\n'
+         << error << '\n'
+         << lin(0, 0) << ' ' << lin(0, 1) << ' ' << lin(0, 2) << ' ' << trn[0] << '\n'
+         << lin(1, 0) << ' ' << lin(1, 1) << ' ' << lin(1, 2) << ' ' << trn[1] << '\n'
+         << lin(2, 0) << ' ' << lin(2, 1) << ' ' << lin(2, 2) << ' ' << trn[2] << endl;
+  }
+
+  return 0;
+}
+
 int
 main(int argc, char * argv[])
 {
@@ -358,6 +554,11 @@ main(int argc, char * argv[])
         rotate_axis_aligned = true;
         THEA_CONSOLE << "Alignment will search over axis-aligned rotations";
       }
+      else if (arg == "-r")
+      {
+        rotate_arbitrary = true;
+        THEA_CONSOLE << "Alignment will search over rotations";
+      }
       else
         return usage(argc, argv);
     }
@@ -384,119 +585,35 @@ main(int argc, char * argv[])
     return -1;
   }
 
-  TheaArray<DVector3> from_pts;
-  if (!loadPoints(from_path, from_pts))
-    return -1;
-
-  TheaArray<DVector3> to_pts;
-  if (!loadPoints(to_path, to_pts))
-    return -1;
-
-  DAffineTransform3 tr = DAffineTransform3::identity();
-  double from_scale = 1.0, to_scale = 1.0;
-  double error = 0;
-  if (from_pts.empty())
-  {
-    THEA_WARNING << "Source shape is empty: returning identity transform";
-  }
-  else if (to_pts.empty())
-  {
-    THEA_WARNING << "Target shape is empty: returning identity transform";
-  }
-  else
-  {
-    DAffineTransform3 init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
-    for (array_size_t i = 0; i < from_pts.size(); ++i)
-      from_pts[i] = init_tr * from_pts[i];
-
-    DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
-    if (do_initial_placement)
-    {
-      DVector3 offset = initial_from_position - from_center;
-      init_tr = DAffineTransform3::translation(offset) * init_tr;
-
-      for (array_size_t i = 0; i < from_pts.size(); ++i)
-        from_pts[i] += offset;
-    }
-
-    KDTreeN<DVector3, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
-
-    if (rotate_axis_aligned)
-    {
-      ICP3<double> icp(-1, -1, false);
-      if (has_up_vector)
-        icp.setUpVector(up_vector);
-
-      TheaArray<DVector3> rot_from_pts(from_pts.size());
-      double rot_error;
-      bool first = true;
-
-      for (int u = 0; u < 2; ++u)
-        for (int su = -1; su <= 1; su += 2)
-          for (int v = 1; v < 2; ++v)
-            for (int sv = -1; sv <= 1; sv += 2)
-            {
-              DVector3 du(0, 0, 0); du[u] = su;
-              DVector3 dv(0, 0, 0); dv[(u + v) % 3] = sv;
-              DVector3 dw = du.cross(dv);
-              DMatrix3 rot(du[0], dv[0], dw[0],
-                           du[1], dv[1], dw[1],
-                           du[2], dv[2], dw[2]);
-
-              DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
-                                       * DAffineTransform3(rot)
-                                       * DAffineTransform3::translation(-from_center);
-
-              for (array_size_t i = 0; i < from_pts.size(); ++i)
-                rot_from_pts[i] = rot_tr * from_pts[i];
-
-              DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
-              rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
-              if (first || rot_error < error)
-              {
-                error = rot_error;
-                tr = icp_tr * rot_tr;
-                first = false;
-
-                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
-              }
-              else
-                THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
-            }
-
-      alwaysAssertM(!first, "No alignment found after trying axis-aligned rotations");
-
-      tr = tr * init_tr;
-    }
-    else
-    {
-      ICP3<double> icp(-1, -1, true);
-      if (has_up_vector)
-        icp.setUpVector(up_vector);
-
-      tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
-      tr = tr * init_tr;
-
-      error = normalizeError(error, to_scale, (long)from_pts.size());
-    }
-  }
-
-  THEA_CONSOLE << "Alignment error = " << std::setprecision(10) << error;
-  THEA_CONSOLE << "Alignment = " << tr.toString();
-
+  ostream * out = NULL;
+  ofstream fout;
   if (!out_path.empty())
   {
-    ofstream out(out_path.c_str());
-    if (!out)
+    fout.open(out_path.c_str());
+    if (!fout)
     {
       THEA_ERROR << "Couldn't open output file " << out_path;
       return -1;
     }
 
-    out << tr.getLinear()(0, 0) << ' ' << tr.getLinear()(0, 1) << ' ' << tr.getLinear()(0, 2) << tr.getTranslation()[0] << '\n'
-        << tr.getLinear()(1, 0) << ' ' << tr.getLinear()(1, 1) << ' ' << tr.getLinear()(1, 2) << tr.getTranslation()[1] << '\n'
-        << tr.getLinear()(2, 0) << ' ' << tr.getLinear()(2, 1) << ' ' << tr.getLinear()(2, 2) << tr.getTranslation()[2] << '\n';
+    out = &fout;
   }
+
+  TheaArray<string> from_shape_paths, to_shape_paths;
+  if (!loadShapePaths(from_path, from_shape_paths) || !loadShapePaths(to_path, to_shape_paths))
+    return -1;
+
+  for (array_size_t i = 0; i < from_shape_paths.size(); ++i)
+    for (array_size_t j = 0; j < to_shape_paths.size(); ++j)
+    {
+      if (!(i == 0 && j == 0) && out)
+        *out << '\n';
+
+      THEA_CONSOLE << "*** Aligning " << from_shape_paths[i] << " to " << to_shape_paths[j] << " ***";
+      int status = alignShapes(from_shape_paths[i], to_shape_paths[j], out);
+      if (status != 0)
+        return -1;
+    }
 
   return 0;
 }
