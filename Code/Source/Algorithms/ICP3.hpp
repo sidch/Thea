@@ -235,17 +235,18 @@ class ICP3
       for (array_size_t i = 0; i < from_points.size(); ++i)
         from_points[i] = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
 
-      AffineTransformT tr = AffineTransformT::identity();
-      ScalarT old_error = measureError(tr, from_num_pts, &from_points[0], from_weight_func, to, &to_points[0]);
+      AffineTransformT old_tr = AffineTransformT::identity();
+      ScalarT old_error = measureError(old_tr, from_num_pts, &from_points[0], from_weight_func, to, &to_points[0]);
       if (verbose) THEA_CONSOLE << "Initial error: " << old_error;
 
       if (old_error <= std::numeric_limits<ScalarT>::min())
       {
         if (error) *error = old_error;
-        return tr;
+        return old_tr;
       }
 
       ScalarT new_error = old_error;
+      AffineTransformT new_tr = old_tr;
       for (long i = 0; i < max_iterations; ++i)
       {
         // Align using the point mapping created by the last call to measureError()
@@ -253,7 +254,7 @@ class ICP3
                                                &to_points[0], to_symmetry_plane);
 
         // Update the overall transform
-        tr = inc_tr * tr;
+        new_tr = inc_tr * old_tr;
 
         // Compute the new error and the new mapping between points
         if (i < max_iterations - 1 || error)
@@ -268,12 +269,20 @@ class ICP3
 
           if (frac_change < fractional_error_threshold)
           {
-            if (error) *error = new_error;
-            return tr;
+            if (frac_change > 0)  // we improved slightly
+            {
+              if (error) *error = new_error;
+              return new_tr;
+            }
+            else  // the previous alignment was better
+            {
+              if (error) *error = old_error;
+              return old_tr;
+            }
           }
 
           for (array_size_t j = 0; j < from_points.size(); ++j)  // transform original points to prevent drift
-            from_points[j] = tr * PointTraitsN<FromT, 3, ScalarT>::getPosition(from[j]);
+            from_points[j] = new_tr * PointTraitsN<FromT, 3, ScalarT>::getPosition(from[j]);
         }
         else
         {
@@ -282,10 +291,11 @@ class ICP3
         }
 
         old_error = new_error;
+        old_tr = new_tr;
       }
 
       if (error) *error = new_error;
-      return tr;
+      return new_tr;
     }
 
     /**
