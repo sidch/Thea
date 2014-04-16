@@ -40,6 +40,7 @@
 //============================================================================
 
 #include "BestFitBox3.hpp"
+#include "CentroidN.hpp"
 #include "LinearLeastSquares3.hpp"
 #include "../Quat.hpp"
 
@@ -130,7 +131,28 @@ planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 &
     rot = quat.toRotationMatrix();
   }
 
-  cframe = CoordinateFrame3(RigidTransform3::_fromAffine(AffineTransform3(rot, centroid)));
+  cframe = CoordinateFrame3::_fromAffine(AffineTransform3(rot, centroid));
+}
+
+Vector3
+getPerpendicularVector(Vector3 const & v)
+{
+  return (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
+}
+
+void
+getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
+{
+  u = getPerpendicularVector(dir).unit();
+  v = dir.cross(u).unit();
+}
+
+Matrix3
+basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
+{
+  return Matrix3(u.x(), v.x(), w.x(),
+                 u.y(), v.y(), w.y(),
+                 u.z(), v.z(), w.z());
 }
 
 struct OBB
@@ -175,7 +197,7 @@ computeOBB(TheaArray<Vector3> const & points, CoordinateFrame3 const & cframe, O
 }
 
 static void
-computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result)
+computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result, bool has_up, Vector3 const & up)
 {
   if (points.empty())
   {
@@ -188,15 +210,27 @@ computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result)
     return;
   }
 
-  Plane3 plane;
   Vector3 centroid;
-  LinearLeastSquares3<Vector3>::fitPlane(points.begin(), points.end(), plane, &centroid);
   CoordinateFrame3 cframe;
-  planeToCFrame(plane, centroid, cframe);
+
+  if (has_up)
+  {
+    centroid = CentroidN<Vector3, 3>::compute(points.begin(), points.end());
+    Vector3 u, v;
+    getTwoMutuallyPerpendicularAxes(up, u, v);
+    cframe = CoordinateFrame3::_fromAffine(AffineTransform3(basisMatrix(u, v, up), centroid));
+  }
+  else
+  {
+    Plane3 plane;
+    LinearLeastSquares3<Vector3>::fitPlane(points.begin(), points.end(), plane, &centroid);
+    planeToCFrame(plane, centroid, cframe);
+  }
+
   OBB best_obb;
   computeOBB(points, cframe, best_obb, true);
 
-  Matrix3 rot = Matrix3::rotationAxisAngle(Vector3::unitY(), Math::degreesToRadians(10));
+  Matrix3 rot = Matrix3::rotationAxisAngle((has_up ? up : Vector3::unitY()), Math::degreesToRadians(10));
   for (int a = 10;  a < 180; a += 10)
   {
     cframe._setRotation(cframe.getRotation() * rot);
@@ -209,7 +243,7 @@ computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result)
 } // namespace BestFitBox3Internal
 
 BestFitBox3::BestFitBox3()
-: updated(true)
+: has_up(false), updated(true)
 {}
 
 void
@@ -245,7 +279,7 @@ BestFitBox3::update() const
   if (updated)
     return;
 
-  BestFitBox3Internal::computeBestFitOBB(points, box);
+  BestFitBox3Internal::computeBestFitOBB(points, box, has_up, up);
   updated = true;
 }
 
