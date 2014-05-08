@@ -225,7 +225,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
      * Constructs a zero matrix of the specified size. If the number of columns is omitted or zero, a square matrix is created.
      */
     CompressedSparseMatrix(int size1_ = 0, int size2_ = 0)
-    : size1(size1_), size2(size2_ ? size2_ : size1_), indices1((array_size_t)size1_ + 1, 0)
+    : size1(size1_), size2(size2_ > 0 ? size2_ : size1_), indices1((size1_ >= 0 ? (array_size_t)size1_ + 1 : 0), 0)
     {
       alwaysAssertM(size1_ >= 0 && size2_ >= 0, "CompressedSparseMatrix: Dimensions must be non-negative");
     }

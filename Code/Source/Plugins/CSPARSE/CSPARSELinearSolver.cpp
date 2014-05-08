@@ -204,8 +204,10 @@ CSPARSELinearSolver::solve(Options const & options)
       }
 
       // Initialize the solutions vector with the constants vector. This will be overwritten by the solver.
-      solution.resize(constants.size());
+      solution.resize(std::max(constants.size(), (array_size_t)scm.numColumns()));
       Algorithms::fastCopy(constants.begin(), constants.end(), solution.begin());
+      if (solution.size() > constants.size())
+        std::fill(solution.begin() + constants.size(), solution.end(), 0);
 
       int ok = 0;
       try
@@ -218,7 +220,7 @@ CSPARSELinearSolver::solve(Options const & options)
             throw Error(std::string(getName())
                       + ": Cholesky factorization requires a symmetric positive-definite coefficient matrix");
 
-          ok = cs_cholsol(Ap, &solution[0], -1);
+          ok = cs_cholsol(Ap, &solution[0], 1);
 
           THEA_DEBUG << getName() << ": Solution by Cholesky factorization failed:"
                                      " please check that the coefficient matrix is symmetric positive-definite";
@@ -227,14 +229,14 @@ CSPARSELinearSolver::solve(Options const & options)
         {
           THEA_DEBUG << getName() << ": Trying to solve linear system by QR factorization";
 
-          ok = cs_qrsol(Ap, &solution[0], -1);
+          ok = cs_qrsol(Ap, &solution[0], 3);
         }
         else if (method == "LU")
         {
           THEA_DEBUG << getName() << ": Trying to solve linear system by LU factorization";
 
           double tol = options.get<double>("tol", 1e-10);
-          ok = cs_lusol(Ap, &solution[0], -1, tol);
+          ok = cs_lusol(Ap, &solution[0], 1, tol);
         }
         else
           throw Error(std::string(getName()) + ": Unknown solution method '" + method + '\'');
