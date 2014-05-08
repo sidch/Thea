@@ -63,14 +63,13 @@ template <typename T, typename Index2DT, typename Index1DT> class CompressedColu
 template <typename T, MatrixLayout::Value L = MatrixLayout::ROW_MAJOR>
 class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatrix<T>
 {
+  private:
     typedef AddressableMatrix<T> AddressableBaseT;
 
   public:
     THEA_DEF_POINTER_TYPES(Matrix, shared_ptr, weak_ptr)
 
     static MatrixLayout::Value const Layout = L;  ///< The layout of the matrix (row-major or column-major).
-    typedef T *       Iterator;                   ///< Iterator over matrix elements.
-    typedef T const * ConstIterator;              ///< Const iterator over matrix elements.
 
     /** Constructs an empty matrix. */
     Matrix() : num_rows(0), num_cols(0), values(NULL), owns_memory(true) {}
@@ -220,7 +219,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
                       "Matrix: A wrapper matrix cannot be assigned a value of different dimensions");
       }
 
-      Algorithms::fastCopy(src.begin(), src.end(), values);
+      Algorithms::fastCopy(src.values, src.values + numElements(), values);
       return *this;
     }
 
@@ -300,7 +299,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (!this->isEmpty())
       {
-        Algorithms::fastCopy(begin(), end(), new_values);
+        Algorithms::fastCopy(values, values + numElements(), new_values);
         delete [] values;
       }
 
@@ -349,7 +348,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (!this->isEmpty())
       {
-        Algorithms::fastCopy(begin(), end(), new_values);
+        Algorithms::fastCopy(values, values + numElements(), new_values);
         delete [] values;
       }
 
@@ -422,18 +421,6 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
     /** Get the storage block of the matrix. */
     T * data() { return values; }
-
-    /** Get an iterator pointing to the beginning of the matrix. */
-    ConstIterator begin() const { return values; }
-
-    /** Get an iterator pointing to the beginning of the matrix. */
-    Iterator begin() { return values; }
-
-    /** Get an iterator pointing to one position past the end of the matrix. */
-    ConstIterator end() const { return values + numElements(); }
-
-    /** Get an iterator pointing to one position past the end of the matrix. */
-    Iterator end() { return values + numElements(); }
 
     /**
      * Get the inverse of the matrix (assertion failure if matrix is not square). All computations are done using type T, so do
