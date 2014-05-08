@@ -409,7 +409,8 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       }
 
       VectorT max_t(-1), location;
-      VectorT const & origin = ray.getOrigin(), dir = ray.getDirection();
+      VectorT const & origin = ray.getOrigin();
+      VectorT const & dir = ray.getDirection();
       bool inside = true;
 
       // Find candidate planes.

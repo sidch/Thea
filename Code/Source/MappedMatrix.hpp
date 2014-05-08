@@ -43,8 +43,9 @@
 #define __Thea_MappedMatrix_hpp__
 
 #include "AddressableMatrix.hpp"
+#include "IteratableMatrix.hpp"
 #include "ResizableMatrix.hpp"
-#include "UnorderedMap.hpp"
+#include "Map.hpp"
 #include <utility>
 
 namespace Thea {
@@ -54,19 +55,19 @@ namespace Thea {
  * well-ordered field, pipeable to a <code>std::ostream</code>. The matrix is stored as a collection of "set" elements, which
  * are stored in a map that maps (row, column) pairs to values. All other elements are "unset" and assumed to be zero. Note that
  * set elements may have zero values as well. The map type MapT should have the interface of
- * <code>std::map<std::pair<long, long>, T></code>, but need not have any ordering of keys.
+ * <code>std::map<IndexPair, T></code>, but need not have any ordering of keys.
  */
-template < typename T, typename MapT = TheaUnorderedMap< std::pair<long, long>, T > >
+template < typename T, typename MapT = TheaMap< std::pair<long, long>, T > >
 class /* THEA_API */ MappedMatrix : public AddressableMatrix<T>, public ResizableMatrix<T>
 {
   public:
     THEA_DEF_POINTER_TYPES(MappedMatrix, shared_ptr, weak_ptr)
 
-    typedef std::pair<long, long> IndexPair;  ///< A pair of indices specifying the row (first element) and column (second
-                                              ///< element) of a matrix value.
     typedef MapT Map;  ///< The underlying map type used to store elements.
-    typedef typename MapT::iterator Iterator;  ///< Iterator over elements (hides AddressableMatrix::Iterator).
-    typedef typename MapT::const_iterator ConstIterator;  ///< Const iterator over elements.
+    typedef typename MapT::key_type IndexPair;  ///< A (row, column) index pair.
+    typedef typename MapT::value_type Entry;  ///< An entry in the matrix, mapping a (row, column) pair to a value.
+    typedef typename MapT::iterator Iterator;  ///< Iterator over elements.
+    typedef typename MapT::const_iterator ConstIterator;  ///< Const iterator over elements (hides AddressableMatrix::Iterator).
 
     /** Constructor. */
     MappedMatrix(long num_rows = 0, long num_cols = 0) : nrows(0), ncols(0)

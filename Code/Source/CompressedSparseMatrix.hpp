@@ -45,7 +45,7 @@
 #include "Common.hpp"
 #include "AddressableMatrix.hpp"
 #include "Array.hpp"
-#include "BasicMatrix.hpp"
+#include "IteratableMatrix.hpp"
 #include "Map.hpp"
 #include "ResizableMatrix.hpp"
 #include "Algorithms/FastCopy.hpp"
@@ -73,7 +73,7 @@ struct Base {};
  * the same as the Boost.uBLAS convention, where 1 always stands for rows and 2 for columns.
  */
 template <typename T, MatrixLayout::Value L, typename Index2DT = int, typename Index1DT = long>
-class /* THEA_API */ CompressedSparseMatrix : public virtual BasicMatrix<T>, public CompressedSparseMatrixInternal::Base
+class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>, public CompressedSparseMatrixInternal::Base
 {
   public:
     THEA_DEF_POINTER_TYPES(CompressedSparseMatrix, shared_ptr, weak_ptr)
@@ -82,10 +82,84 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual BasicMatrix<T>, pub
     typedef Index2DT  Index2D;                    ///< The type of 2D element indices.
     typedef Index1DT  Index1D;                    ///< The type of 1D (flat) element indices.
 
+    typedef std::pair<long, long> IndexPair;      ///< A (row, column) index pair.
+    typedef std::pair<IndexPair, T> Entry;        ///< An entry in the matrix, mapping a (row, column) pair to a value.
+
+    /** Read-only iterator for a compressed sparse matrix. */
+    class ConstIterator
+    {
+      public:
+        /** Constructor. */
+        ConstIterator(CompressedSparseMatrix const & m_,
+                      long i1_ = 0,  // index of current element in indices1
+                      long i2_ = 0)  // index of current element in indices2/values
+        : m(m_), i1(i1_), i2(i2_)
+        {}
+
+        /** Get the row of the current element. */
+        long getRow() const { return (L == MatrixLayout::ROW_MAJOR ? (long)i1 : (long)m.indices2[i2]); }
+
+        /** Get the column of the current element. */
+        long getColumn() const { return (L == MatrixLayout::COLUMN_MAJOR ? (long)i1 : (long)m.indices2[i2]); }
+
+        /** Get the value of the current element. */
+        Entry const & operator*() const
+        {
+          if (L == MatrixLayout::ROW_MAJOR)
+            entry = Entry(IndexPair((long)i1, (long)m.indices2[i2]), m.values[i2]);
+          else
+            entry = Entry(IndexPair((long)m.indices2[i2], (long)i1), m.values[i2]);
+
+          return entry;
+        }
+
+        Entry const * operator->() const
+        {
+          return &(this->operator*());
+        }
+
+        /** Pre-increment. */
+        ConstIterator & operator++()
+        {
+          ++i2;
+          while ((long)i1 + 1 < m.size1 && m.indices1[i1 + 1] <= (Index1D)i2)
+            ++i1;
+
+          return *this;
+        }
+
+        /** Post-increment. */
+        ConstIterator operator++(int)
+        {
+          ConstIterator old = *this;
+          this->operator++();
+          return old;
+        }
+
+        /** Test for equality. */
+        bool operator==(ConstIterator const & rhs) const
+        {
+          return !(*this != rhs);
+        }
+
+        /** Test for inequality. */
+        bool operator!=(ConstIterator const & rhs) const
+        {
+          debugAssertM(&m == &rhs.m, "CompressedSparseMatrix: Comparing iterators from different matrices for equality");
+          return (i1 != rhs.i1 || i2 != rhs.i2);
+        }
+
+      private:
+        CompressedSparseMatrix const & m;
+        array_size_t i1, i2;
+        mutable Entry entry;
+
+    }; // class ConstIterator
+
     // Since this class can't be directly instantiated (protected constructors), we might as well make these public, to avoid
     // access issues for some templated constructors
-    long                 size1;
-    long                 size2;
+    long                size1;
+    long                size2;
     TheaArray<Index1D>  indices1;
     TheaArray<Index2D>  indices2;
     TheaArray<T>        values;
@@ -101,6 +175,20 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual BasicMatrix<T>, pub
 
       return *this;
     }
+
+    /** Get an iterator pointing to the beginning of the matrix. */
+    ConstIterator begin() const
+    {
+      // Find the first non-zero row/column
+      array_size_t i1 = 0;
+      while ((long)i1 + 1 < size1 && indices1[i1 + 1] <= 0)
+        ++i1;
+
+      return ConstIterator(*this, i1, 0);
+    }
+
+    /** Get an iterator pointing to the end of the matrix. */
+    ConstIterator end() const { return ConstIterator(*this, size1, indices2.size()); }
 
     /** Get the layout of the matrix (row or column major) */
     static MatrixLayout getLayout() { return L; }
@@ -147,83 +235,30 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual BasicMatrix<T>, pub
     : size1(src.size1), size2(src.size2), indices1(src.indices1), indices2(src.indices2), values(src.values)
     {}
 
-    /** Initialize from another compressed sparse matrix. */
-    template <typename MatrixT> explicit
-    CompressedSparseMatrix(MatrixT const & src,
-                           typename boost::enable_if< boost::is_base_of< CompressedSparseMatrixInternal::Base,
-                                                                         MatrixT > >::type * dummy = NULL)
+    /** Initialize from another compressed sparse matrix with the same layout. */
+    template <typename S, typename Index2DS, typename Index1DS> explicit
+    CompressedSparseMatrix(CompressedSparseMatrix<S, L, Index1DS, Index2DS> const & src)
     : size1(0), size2(0)
     {
-      if (src.getLayout() == L)
-      {
-        size1 = src.size1;
-        size2 = src.size2;
+      size1 = src.size1;
+      size2 = src.size2;
 
-        indices1.resize(src.indices1.size());
-        Algorithms::fastCopy(src.indices1.begin(), src.indices1.end(), indices1.begin());
+      indices1.resize(src.indices1.size());
+      Algorithms::fastCopy(src.indices1.begin(), src.indices1.end(), indices1.begin());
 
-        indices2.resize(src.indices2.size());
-        Algorithms::fastCopy(src.indices2.begin(), src.indices2.end(), indices2.begin());
+      indices2.resize(src.indices2.size());
+      Algorithms::fastCopy(src.indices2.begin(), src.indices2.end(), indices2.begin());
 
-        values.resize(src.values.size());
-        Algorithms::fastCopy(src.values.begin(), src.values.end(), values.begin());
-      }
-      else
-      {
-        size1 = src.size2;
-        size2 = src.size1;
-
-        indices1.resize(src.size2 + 1);
-        std::fill(indices1.begin(), indices1.end(), 0);
-
-        indices2.resize(src.indices1.size());
-        values.resize(src.values.size());
-
-        typedef std::pair<typename MatrixT::Index2D, int> IndexPair;
-        typedef TheaMap<IndexPair, typename MatrixT::Value> ValueMap;
-
-        // Put all the source values into a map, with indices swapped so they can be read off using the inverse layout
-        ValueMap src_values;
-        array_size_t curr_pos = 0;
-        for (int i = 0; i < src.size1; ++i)
-        {
-          int num_elems = (int)(src.indices1[(array_size_t)i + 1] - src.indices1[(array_size_t)i]);
-          for (int e = 0; e < num_elems; ++e, ++curr_pos)
-          {
-            typename MatrixT::Index2D j = src.indices2[curr_pos];
-            src_values[IndexPair(j, i)] = src.values[curr_pos];
-          }
-        }
-
-        // Now read back the values in lexicographic order
-        long i, last_index1 = -1;
-        curr_pos = 0;
-        for (typename ValueMap::const_iterator vi = src_values.begin(); vi != src_values.end(); ++vi, ++curr_pos)
-        {
-          i = (long)vi->first.first;
-          if (i != last_index1)  // change of primary index since last iteration
-          {
-            for (long k = last_index1 + 1; k <= i; ++k)
-              indices1[(array_size_t)k] = curr_pos;
-
-            last_index1 = i;
-          }
-
-          indices2[curr_pos] = static_cast<Index2D>(vi->first.second);
-          values  [curr_pos] = static_cast<T>(vi->second);
-        }
-      }
+      values.resize(src.values.size());
+      Algorithms::fastCopy(src.values.begin(), src.values.end(), values.begin());
     }
 
-    /** Initialize from an addressable matrix. */
+    /** Initialize from an iteratable matrix. */
     template <typename MatrixT> explicit
     CompressedSparseMatrix(MatrixT const & src,
-                           typename boost::enable_if< boost::is_base_of< AddressableMatrix<typename MatrixT::Value>,
+                           typename boost::enable_if< boost::is_base_of< IteratableMatrix<typename MatrixT::Value>,
                                                                          MatrixT > >::type * dummy = NULL)
-    : size1(src.numRows()), size2(src.numColumns())
     {
-      // All the conditionals on layout will hopefully be optimized out by the compiler
-
       if (L == MatrixLayout::ROW_MAJOR)
       {
         size1 = src.numRows();
@@ -235,25 +270,42 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual BasicMatrix<T>, pub
         size2 = src.numRows();
       }
 
-      indices1.resize((array_size_t)size1 + 1);
-      indices2.clear();
-      values.clear();
+      typedef TheaMap<typename MatrixT::IndexPair, typename MatrixT::Value> EntryMap;
+      EntryMap src_entries;
 
-      Index1D curr_pos = 0;  // current position in value array
-      for (int i = 0; i < size1; ++i)
+      for (typename MatrixT::ConstIterator si = src.begin(); si != src.end(); ++si)
       {
-        indices1[(array_size_t)i] = curr_pos;
-
-        for (int j = 0; j < size2; ++j)
+        if (si->second != 0)
         {
-          T value = static_cast<T>(L == MatrixLayout::ROW_MAJOR ? src.get(i, j) : src.get(j, i));
-          if (value != 0)  // only retain non-zero values
-          {
-            indices2.push_back((Index1D)j);
-            values.push_back(value);
-            curr_pos++;
-          }
+          typename MatrixT::IndexPair indices =
+              (L == MatrixLayout::ROW_MAJOR ? si->first : typename MatrixT::IndexPair(si->first.second, si->first.first));
+
+          src_entries[indices] = si->second;
         }
+      }
+
+      indices1.resize(size1 + 1);
+      std::fill(indices1.begin(), indices1.end(), 0);
+
+      indices2.resize((array_size_t)src_entries.size());
+      values.resize((array_size_t)src_entries.size());
+
+      // Now read back the values in lexicographic order
+      long i, last_index1 = -1;
+      array_size_t curr_pos = 0;
+      for (typename EntryMap::const_iterator ei = src_entries.begin(); ei != src_entries.end(); ++ei, ++curr_pos)
+      {
+        i = (long)ei->first.first;
+        if (i != last_index1)  // change of primary index since last iteration
+        {
+          for (long k = last_index1 + 1; k <= i; ++k)
+            indices1[(array_size_t)k] = static_cast<Index1D>(curr_pos);
+
+          last_index1 = i;
+        }
+
+        indices2[curr_pos] = static_cast<Index2D>(ei->first.second);
+        values  [curr_pos] = static_cast<T>(ei->second);
       }
 
       // One beyond last position, stores number of non-zeros

@@ -269,9 +269,9 @@ App::parseOptions(int argc, char * argv[])
   if (quit)
     return false;
 
-  if (!s_plugin_dir.empty())       opts.plugin_dir    =  QDir(QFile::decodeName(s_plugin_dir.c_str())).canonicalPath();
-  if (!s_resource_dir.empty())     opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
-  if (!s_working_dir.empty())      opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
+  if (!s_plugin_dir.empty())    opts.plugin_dir    =  QDir(QFile::decodeName(s_plugin_dir.c_str())).canonicalPath();
+  if (!s_resource_dir.empty())  opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
+  if (!s_working_dir.empty())   opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
 
   if (!s_model.empty())
   {

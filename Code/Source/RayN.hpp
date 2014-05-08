@@ -60,7 +60,7 @@ class /* THEA_API */ RayN
     /** Default constructor. Does not initialize anything. */
     RayN() {}
 
-    /** Initialize with an origin and a direction. */
+    /** Initialize with an origin and a direction. The direction will <b>NOT</b> be normalized. */
     RayN(VectorT const & origin_, VectorT direction_) : origin(origin_), direction(direction_) {}
 
     /** Copy constructor. */
@@ -75,7 +75,7 @@ class /* THEA_API */ RayN
     /** Get the direction of the ray. */
     VectorT const & getDirection() const { return direction; }
 
-    /** Set the direction of the ray. */
+    /** Set the direction of the ray. The direction will <b>NOT</b> be normalized. */
     void setDirection(VectorT const & direction_) { direction = direction_; }
 
     /** Make the direction vector unit length. */

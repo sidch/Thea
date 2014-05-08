@@ -42,7 +42,7 @@
 #ifndef __Thea_AddressableMatrix_hpp__
 #define __Thea_AddressableMatrix_hpp__
 
-#include "BasicMatrix.hpp"
+#include "IteratableMatrix.hpp"
 
 namespace Thea {
 
@@ -51,58 +51,87 @@ namespace Thea {
  * well-ordered field, pipeable to a <code>std::ostream</code>.
  */
 template <typename T>
-class /* THEA_API */ AddressableMatrix : public virtual BasicMatrix<T>
+class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
 {
-  private:
-    typedef BasicMatrix<T> BaseType;
-
   public:
     THEA_DEF_POINTER_TYPES(AddressableMatrix, shared_ptr, weak_ptr)
 
-    /** Generic iterator for an addressable matrix. */
-    class Iterator
+    typedef std::pair<long, long> IndexPair;  ///< A (row, column) index pair.
+    typedef std::pair<IndexPair, T> Entry;    ///< An entry in the matrix, mapping a (row, column) pair to a value.
+
+    /** Generic read-only iterator for an addressable matrix. */
+    class ConstIterator
     {
       public:
         /** Constructor. */
-        Iterator(AddressableMatrix const & m_, long r = 0, long c = 0)
-        : m(m_), row(r), col(c), nrows(m_.numRows()), ncols(m_.numColumns())
+        ConstIterator(AddressableMatrix const & m_, long r = 0, long c = 0)
+        : m(m_), nrows(m_.numRows()), ncols(m_.numColumns()), entry(IndexPair(r, c), 0)
         {}
 
         /** Get the row of the current element. */
-        long getRow() const { return row; }
+        long getRow() const { return entry.first.first; }
 
         /** Get the column of the current element. */
-        long getColumn() const { return col; }
+        long getColumn() const { return entry.first.second; }
 
-        /** Get the value of the current element. */
-        T const & operator*() const { return m.get(row, col); }
+        /** Dereference to the current element. */
+        Entry const & operator*() const
+        {
+          entry.second = m.get(entry.first.first, entry.first.second);
+          return entry;
+        }
+
+        /** Arrow operator for dereferencing. */
+        Entry const * operator->() const
+        {
+          return &(this->operator*());
+        }
 
         /** Pre-increment. */
-        Iterator & operator++()
+        ConstIterator & operator++()
         {
-          if (++col >= ncols)
+          if (++entry.first.second >= ncols)
           {
-            ++row;
-            col = 0;
+            ++entry.first.first;
+            entry.first.second = 0;
           }
 
           return *this;
         }
 
         /** Post-increment. */
-        Iterator operator++(int)
+        ConstIterator operator++(int)
         {
-          Iterator old = *this;
+          ConstIterator old = *this;
           this->operator++();
           return old;
         }
 
+        /** Test for equality. */
+        bool operator==(ConstIterator const & rhs) const
+        {
+          return !(*this != rhs);
+        }
+
+        /** Test for inequality. */
+        bool operator!=(ConstIterator const & rhs) const
+        {
+          debugAssertM(&m == &rhs.m, "Matrix: Comparing iterators from different matrices for equality");
+          return (entry.first != rhs.entry.first);
+        }
+
       private:
         AddressableMatrix const & m;
-        long row, col;
         long nrows, ncols;
+        mutable Entry entry;
 
-    }; // class Iterator
+    }; // class ConstIterator
+
+    /** Get an iterator pointing to the beginning of the matrix. */
+    ConstIterator begin() const { return ConstIterator(*this, 0, 0); }
+
+    /** Get an iterator pointing to the end of the matrix. */
+    ConstIterator end() const { return ConstIterator(*this, (this->numColumns() > 0 ? this->numRows() : 0), 0); }
 
     /**
      * Get element. Most derived classes define operator() to access an element quicker, without the virtual function overhead.
