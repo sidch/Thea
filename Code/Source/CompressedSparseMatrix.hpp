@@ -188,7 +188,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
     }
 
     /** Get an iterator pointing to the end of the matrix. */
-    ConstIterator end() const { return ConstIterator(*this, size1, indices2.size()); }
+    ConstIterator end() const { return ConstIterator(*this, (size1 > 0 ? size1 - 1 : 0), indices2.size()); }
 
     /** Get the layout of the matrix (row or column major) */
     static MatrixLayout getLayout() { return L; }
