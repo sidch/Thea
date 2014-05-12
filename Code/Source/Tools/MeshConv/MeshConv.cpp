@@ -15,7 +15,7 @@ main(int argc, char * argv[])
 {
   if (argc < 3)
   {
-    std::cerr << "Usage: " << argv[0] << " <infile> <outfile>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <infile> [<infile> ...] <outfile>" << std::endl;
     return -1;
   }
 
@@ -26,25 +26,40 @@ main(int argc, char * argv[])
 
   try
   {
-    MG mg("MeshGroup");
+    MG::Ptr main_group;
 
-    std::string infile = toLower(argv[1]);
-    if (endsWith(infile, ".obj"))
-      mg.load(argv[1], codec_obj);
-    else if (endsWith(infile, ".3ds"))
-      mg.load(argv[1], codec_3ds);
-    else
-      mg.load(argv[1]);  // use whatever other fallback we may have
+    for (int i = 1; i < argc - 1; ++i)
+    {
+      MG::Ptr mg(new MG("MeshGroup"));
 
-    std::string outfile = toLower(argv[2]);
+      std::string infile = toLower(argv[i]);
+      if (endsWith(infile, ".obj"))
+        mg->load(argv[i], codec_obj);
+      else if (endsWith(infile, ".3ds"))
+        mg->load(argv[i], codec_3ds);
+      else
+        mg->load(argv[i]);  // use whatever other fallback we may have
+
+      if (argc == 3)
+        main_group = mg;
+      else
+      {
+        if (!main_group)
+          main_group = MG::Ptr(new MG("MeshGroup"));
+
+        main_group->addChild(mg);
+      }
+    }
+
+    std::string outfile = toLower(argv[argc - 1]);
     if (endsWith(outfile, ".obj"))
-      mg.save(argv[2], codec_obj);
+      main_group->save(argv[argc - 1], codec_obj);
     else if (endsWith(outfile, ".off.bin"))
-      mg.save(argv[2], codec_off_bin);
+      main_group->save(argv[argc - 1], codec_off_bin);
     else if (endsWith(outfile, ".off"))
-      mg.save(argv[2], codec_off);
+      main_group->save(argv[argc - 1], codec_off);
     else if (endsWith(outfile, ".3ds"))
-      mg.save(argv[2], codec_3ds);
+      main_group->save(argv[argc - 1], codec_3ds);
     else
       throw Error("Output format not recognized");
   }
