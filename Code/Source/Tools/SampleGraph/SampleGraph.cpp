@@ -8,6 +8,7 @@
 #include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../AffineTransform3.hpp"
 #include "../../Array.hpp"
 #include "../../Ball3.hpp"
 #include "../../BoundedSortedArray.hpp"
@@ -30,6 +31,8 @@ bool consistent_normals = false;
 bool reachability = false;
 
 class SurfaceSample;
+
+enum { LOAD_ERROR = 1, PARSE_ERROR, UNSUPPORTED_FORMAT };
 
 struct Neighbor
 {
@@ -102,9 +105,24 @@ KDTree kdtree;
 SampleKDTree sample_kdtree;
 Real sample_nbd_radius;
 
+int loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls, bool & has_normals);
 void computeSampleNeighborhoodRadius();
 void computeSampleNeighbors(SurfaceSample & sample);
 void extractOriginalAdjacencies();
+
+struct MeshTransformer
+{
+  MeshTransformer(AffineTransform3 const & tr_) : tr(tr_) {}
+  bool operator()(Mesh & mesh)
+  {
+    for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+      vi->setPosition(tr * vi->getPosition());
+
+    return false;
+  }
+
+  AffineTransform3 tr;
+};
 
 int
 main(int argc, char * argv[])
@@ -167,7 +185,7 @@ main(int argc, char * argv[])
   if (curr_opt != 3)
   {
     THEA_CONSOLE << "";
-    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points|-> <points> <graph-outfile>";
+    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points> <points> <graph-outfile>";
     THEA_CONSOLE << "";
     THEA_CONSOLE << "Options:";
     THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity graph";
@@ -189,41 +207,51 @@ main(int argc, char * argv[])
   // Load points
   //===========================================================================================================================
 
-  if (!loadSamples(samples_path, samples))
+  bool has_normals = false;
+  if (loadSamples(samples_path, samples, has_normals))
     return -1;
 
-  THEA_CONSOLE << "Loaded " << smpls.size() << " sample(s) from " << samples_path;
+  if (consistent_normals && !has_normals)
+  {
+    THEA_ERROR << "Samples loaded from " << samples_path << " do not have normals for consistency test";
+    return -1;
+  }
+
+  orig_num_samples = samples.size();
+
+  THEA_CONSOLE << "Loaded " << samples.size() << " sample(s) from " << samples_path;
 
   //===========================================================================================================================
   // Load mesh or dense samples
   //===========================================================================================================================
 
+  bool added_extra_samples = false;
   if (mesh_path != "-")
   {
     // First try to load the file as a set of points
-    string mesh_path_lc = toLower(mesh_path);
-    bool loaded_dense_samples = false;
-    if (endsWith(mesh_path_lc, ".pts"))
-    {
-      TheaArray<SurfaceSample> dense_samples;
-      if (!loadSamples(mesh_path, dense_samples))
-        return false;
+    TheaArray<SurfaceSample> dense_samples;
+    bool dense_has_normals = false;
+    int dense_load_status = loadSamples(mesh_path, dense_samples, dense_has_normals);
 
-      if (!dense_samples.empty())
+    if (dense_load_status != 0 && dense_load_status != UNSUPPORTED_FORMAT)
+    {
+      return -1;
+    }
+    else if (dense_load_status == 0)
+    {
+      if (consistent_normals && !has_normals)
       {
-        samples.insert(samples.end(), dense_samples.begin(), dense_samples.end());
-        THEA_CONSOLE << dense_samples.size() << " extra samples added from: " << mesh_path;
+        THEA_ERROR << "Dense samples loaded from " << mesh_path << " do not have normals for consistency test";
+        return -1;
       }
 
-      loaded_dense_samples = true;
-    }
-    else if (endsWith(mesh_path_lc, ".off"))
-    {
-      ifstream in(mesh_path.c_str()
-    }
+      samples.insert(samples.end(), dense_samples.begin(), dense_samples.end());
+      has_normals = has_normals && dense_has_normals;
+      added_extra_samples = (dense_samples.size() > 0);
 
-    // Now try to load the file as a mesh, if the above failed
-    if (!loaded_dense_samples)
+      THEA_CONSOLE << dense_samples.size() << " extra samples added from: " << mesh_path;
+    }
+    else  // Now try to load the file as a mesh, if the above failed
     {
       MG mg;
       try
@@ -233,6 +261,31 @@ main(int argc, char * argv[])
       THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
 
       THEA_CONSOLE << "Loaded mesh from " << mesh_path;
+
+      // Make sure the mesh is properly scaled
+      AxisAlignedBox3 mesh_bounds = mg.getBounds();
+      AxisAlignedBox3 samples_bounds;
+      for (array_size_t i = 0; i < samples.size(); ++i)
+        samples_bounds.merge(samples[i].p);
+
+      Real scale_error = (mesh_bounds.getLow()  - samples_bounds.getLow()).length()
+                       + (mesh_bounds.getHigh() - samples_bounds.getHigh()).length();
+      if (scale_error > 0.01 * mesh_bounds.getExtent().length())
+      {
+        // Rescale the mesh
+        Real scale = (samples_bounds.getExtent() / mesh_bounds.getExtent()).max();  // samples give a smaller bound than the
+                                                                                    // true bound, so take the axis in which
+                                                                                    // the approximation is best
+
+        AffineTransform3 tr = AffineTransform3::translation(samples_bounds.getCenter())
+                            * AffineTransform3::scaling(scale)
+                            * AffineTransform3::translation(-mesh_bounds.getCenter());
+        MeshTransformer func(tr);
+        mg.forEachMeshUntil(&func);
+        mg.updateBounds();
+
+        THEA_CONSOLE << "Matched scale of source mesh and original samples";
+      }
 
       kdtree.add(mg);
       kdtree.init();
@@ -256,8 +309,6 @@ main(int argc, char * argv[])
       }
 
       // Augment the number of samples if necessary
-      orig_num_samples = samples.size();
-      bool added_extra_samples = false;
       if ((long)orig_num_samples < min_samples)
       {
         TheaArray<Vector3> positions;
@@ -266,6 +317,7 @@ main(int argc, char * argv[])
         MeshSampler<Mesh> sampler(mg);
         sampler.sampleEvenlyByArea((long)(min_samples - orig_num_samples), positions, &face_normals);
 
+        SurfaceSample s;
         for (array_size_t i = 0; i < positions.size(); ++i)
         {
           s.p = positions[i];
@@ -344,7 +396,7 @@ main(int argc, char * argv[])
 }
 
 int
-loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls)
+loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls, bool & has_normals)
 {
   ifstream in(samples_path.c_str());
   if (!in)
@@ -354,6 +406,7 @@ loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls)
   }
 
   smpls.clear();
+  has_normals = false;
 
   SurfaceSample s;
 
@@ -362,7 +415,6 @@ loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls)
   {
     string line;
     long line_num = 0;
-    bool has_normals = false;
     while (getline(in, line))
     {
       line_num++;
@@ -409,7 +461,21 @@ loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls)
       return PARSE_ERROR;
     }
 
-    if (nv > 0
+    if (nf == 0)
+    {
+      for (long i = 0; i < nv; ++i)
+      {
+        if (!(in >> s.p[0] >> s.p[1] >> s.p[2]))
+        {
+          THEA_ERROR << "Could not parse point " << i << " from OFF file " << samples_path;
+          return PARSE_ERROR;
+        }
+
+        smpls.push_back(s);
+      }
+    }
+    else
+      return UNSUPPORTED_FORMAT;
   }
   else
     return UNSUPPORTED_FORMAT;
