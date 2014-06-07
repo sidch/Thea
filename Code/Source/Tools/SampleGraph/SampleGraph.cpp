@@ -117,7 +117,7 @@ main(int argc, char * argv[])
   for (int i = 1; i < argc; ++i)
   {
     string arg = argv[i];
-    if (!beginsWith(arg, "--"))
+    if (!beginsWith(arg, "-"))
     {
       switch (curr_opt)
       {
@@ -167,7 +167,7 @@ main(int argc, char * argv[])
   if (curr_opt != 3)
   {
     THEA_CONSOLE << "";
-    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh> <points> <graph-outfile>";
+    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points|-> <points> <graph-outfile>";
     THEA_CONSOLE << "";
     THEA_CONSOLE << "Options:";
     THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity graph";
@@ -186,116 +186,98 @@ main(int argc, char * argv[])
   }
 
   //===========================================================================================================================
-  // Load mesh
-  //===========================================================================================================================
-
-  MG mg;
-  try
-  {
-    mg.load(mesh_path);
-  }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
-
-  //===========================================================================================================================
   // Load points
   //===========================================================================================================================
 
-  ifstream in(samples_path.c_str());
-  if (!in)
-  {
-    THEA_ERROR << "Could not load points from file " << samples_path;
+  if (!loadSamples(samples_path, samples))
     return -1;
-  }
 
-  THEA_CONSOLE << "Loaded mesh from " << mesh_path;
+  THEA_CONSOLE << "Loaded " << smpls.size() << " sample(s) from " << samples_path;
 
-  SurfaceSample s;
-  string line;
-  long line_num = 0;
-  bool has_normals = false;
-  while (getline(in, line))
+  //===========================================================================================================================
+  // Load mesh or dense samples
+  //===========================================================================================================================
+
+  if (mesh_path != "-")
   {
-    line_num++;
-
-    boost::trim(line);
-    if (line.empty())
-      continue;
-
-    istringstream line_in(line);
-    if (!(line_in >> s.p[0] >> s.p[1] >> s.p[2]))
+    // First try to load the file as a set of points
+    string mesh_path_lc = toLower(mesh_path);
+    bool loaded_dense_samples = false;
+    if (endsWith(mesh_path_lc, ".pts"))
     {
-      THEA_ERROR << "Could not read point on line " << line_num << " of file " << samples_path;
-      return -1;
-    }
-
-    if (samples.empty() && (line_in >> s.n[0] >> s.n[1] >> s.n[2]))
-      has_normals = true;
-    else if (has_normals)
-    {
-      if (!(line_in >> s.n[0] >> s.n[1] >> s.n[2]))
-      {
-        THEA_ERROR << "Could not read normal on line " << line_num << " of file " << samples_path;
-        return -1;
-      }
-    }
-
-    samples.push_back(s);
-  }
-
-  THEA_CONSOLE << "Loaded " << samples.size() << " samples(s) from " << samples_path;
-
-  //===========================================================================================================================
-  // KD-tree on mesh
-  //===========================================================================================================================
-
-  kdtree.add(mg);
-  kdtree.init();
-
-  //===========================================================================================================================
-  // If the samples have no normals, compute them
-  //===========================================================================================================================
-
-  if (!has_normals)
-  {
-    for (array_size_t i = 0; i < samples.size(); ++i)
-    {
-      long elem = kdtree.closestElement<MetricL2>(samples[i].p);
-      if (elem < 0)
-      {
-        THEA_ERROR << "Could not find nearest neighbor of sample " << i << " on mesh";
+      TheaArray<SurfaceSample> dense_samples;
+      if (!loadSamples(mesh_path, dense_samples))
         return false;
+
+      if (!dense_samples.empty())
+      {
+        samples.insert(samples.end(), dense_samples.begin(), dense_samples.end());
+        THEA_CONSOLE << dense_samples.size() << " extra samples added from: " << mesh_path;
       }
 
-      samples[i].n = kdtree.getElements()[(array_size_t)elem].getNormal();
+      loaded_dense_samples = true;
     }
-
-    THEA_CONSOLE << "Computed sample normals";
-  }
-
-  //===========================================================================================================================
-  // Augment the number of samples if necessary
-  //===========================================================================================================================
-
-  orig_num_samples = samples.size();
-  bool added_extra_samples = false;
-  if ((long)orig_num_samples < min_samples)
-  {
-    TheaArray<Vector3> positions;
-    TheaArray<Vector3> face_normals;
-
-    MeshSampler<Mesh> sampler(mg);
-    sampler.sampleEvenlyByArea((long)(min_samples - orig_num_samples), positions, &face_normals);
-
-    for (array_size_t i = 0; i < positions.size(); ++i)
+    else if (endsWith(mesh_path_lc, ".off"))
     {
-      s.p = positions[i];
-      s.n = face_normals[i];
-      samples.push_back(s);
+      ifstream in(mesh_path.c_str()
     }
 
-    added_extra_samples = (samples.size() > orig_num_samples);
-    if (added_extra_samples)
-      THEA_CONSOLE << samples.size() - orig_num_samples << " extra samples added to original set, for density";
+    // Now try to load the file as a mesh, if the above failed
+    if (!loaded_dense_samples)
+    {
+      MG mg;
+      try
+      {
+        mg.load(mesh_path);
+      }
+      THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
+
+      THEA_CONSOLE << "Loaded mesh from " << mesh_path;
+
+      kdtree.add(mg);
+      kdtree.init();
+
+      // If the samples have no normals, compute them
+      if (!has_normals)
+      {
+        for (array_size_t i = 0; i < samples.size(); ++i)
+        {
+          long elem = kdtree.closestElement<MetricL2>(samples[i].p);
+          if (elem < 0)
+          {
+            THEA_ERROR << "Could not find nearest neighbor of sample " << i << " on mesh";
+            return false;
+          }
+
+          samples[i].n = kdtree.getElements()[(array_size_t)elem].getNormal();
+        }
+
+        THEA_CONSOLE << "Computed sample normals";
+      }
+
+      // Augment the number of samples if necessary
+      orig_num_samples = samples.size();
+      bool added_extra_samples = false;
+      if ((long)orig_num_samples < min_samples)
+      {
+        TheaArray<Vector3> positions;
+        TheaArray<Vector3> face_normals;
+
+        MeshSampler<Mesh> sampler(mg);
+        sampler.sampleEvenlyByArea((long)(min_samples - orig_num_samples), positions, &face_normals);
+
+        for (array_size_t i = 0; i < positions.size(); ++i)
+        {
+          s.p = positions[i];
+          s.n = face_normals[i];
+          samples.push_back(s);
+        }
+
+        added_extra_samples = (samples.size() > orig_num_samples);
+        if (added_extra_samples)
+          THEA_CONSOLE << samples.size() - orig_num_samples << " extra samples added to original set, for density";
+      }
+    }
   }
 
   //===========================================================================================================================
@@ -357,6 +339,80 @@ main(int argc, char * argv[])
   }
 
   THEA_CONSOLE << "Wrote sample graph of average degree " << sum_degrees / orig_num_samples << " to " << out_path;
+
+  return 0;
+}
+
+int
+loadSamples(string const & samples_path, TheaArray<SurfaceSample> & smpls)
+{
+  ifstream in(samples_path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not load points from file " << samples_path;
+    return LOAD_ERROR;
+  }
+
+  smpls.clear();
+
+  SurfaceSample s;
+
+  string path_lc = toLower(samples_path);
+  if (endsWith(path_lc, ".pts"))
+  {
+    string line;
+    long line_num = 0;
+    bool has_normals = false;
+    while (getline(in, line))
+    {
+      line_num++;
+
+      boost::trim(line);
+      if (line.empty())
+        continue;
+
+      istringstream line_in(line);
+      if (!(line_in >> s.p[0] >> s.p[1] >> s.p[2]))
+      {
+        THEA_ERROR << "Could not read point on line " << line_num << " of file " << samples_path;
+        return PARSE_ERROR;
+      }
+
+      if (smpls.empty() && (line_in >> s.n[0] >> s.n[1] >> s.n[2]))
+        has_normals = true;
+      else if (has_normals)
+      {
+        if (!(line_in >> s.n[0] >> s.n[1] >> s.n[2]))
+        {
+          THEA_ERROR << "Could not read normal on line " << line_num << " of file " << samples_path;
+          return PARSE_ERROR;
+        }
+      }
+
+      smpls.push_back(s);
+    }
+  }
+  else if (endsWith(path_lc, ".off"))
+  {
+    string magic;
+    in >> magic;
+    if (magic != "OFF")
+    {
+      THEA_ERROR << "Could not read OFF header from file " << samples_path;
+      return PARSE_ERROR;
+    }
+
+    long nv, nf, ne;
+    if (!(in >> nv >> nf >> ne))
+    {
+      THEA_ERROR << "Could not read element counts from OFF file " << samples_path;
+      return PARSE_ERROR;
+    }
+
+    if (nv > 0
+  }
+  else
+    return UNSUPPORTED_FORMAT;
 
   return 0;
 }
