@@ -607,7 +607,6 @@ computeSampleNeighbors(SurfaceSample & sample)
 struct Graph
 {
   typedef TheaArray<SurfaceSample> NodeArray;
-  typedef SurfaceSample::NeighborSet NeighborSet;
 
   NodeArray * nodes;
 
