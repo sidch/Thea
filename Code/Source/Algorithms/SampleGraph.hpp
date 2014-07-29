@@ -43,9 +43,16 @@
 #define __Thea_Algorithms_SampleGraph_hpp__
 
 #include "../Common.hpp"
+#include "Filter.hpp"
+#include "KDTreeN.hpp"
+#include "IntersectionTester.hpp"
+#include "MetricL2.hpp"
+#include "PointTraitsN.hpp"
+#include "RayIntersectionTester.hpp"
+#include "RayQueryStructureN.hpp"
 #include "../BoundedSortedArray.hpp"
 #include "../Vector3.hpp"
-#include "PointTraitsN.hpp"
+#include <boost/type_traits/has_trivial_assign.hpp>
 
 namespace Thea {
 namespace Algorithms {
@@ -75,8 +82,6 @@ class NeighboringSample
     }
 
   private:
-    friend class SampleGraph;
-
     SurfaceSample * sample;  ///< Reference to this sample.
     Real separation;         ///< Separation from the source sample.
 
@@ -97,7 +102,7 @@ namespace Algorithms {
 namespace SampleGraphInternal {
 
 /**
- * A class used to internal store surface samples with adjacency information. Encapsulates a sample position, normal and list of
+ * A class used to store surface samples with adjacency information. Encapsulates a sample position, normal and list of
  * neighboring samples.
  */
 class SurfaceSample
@@ -136,12 +141,10 @@ class SurfaceSample
     /** Get the set of neighboring samples. */
     NeighborSet const & getNeighbors() const { return nbrs; }
 
-  private:
     /** Get a non-const reference to the set of neighboring samples. */
     NeighborSet & getNeighbors() { return nbrs; }
 
-    friend class SampleGraph;
-
+  private:
     long index;        ///< Index of the sample.
     Vector3 p;         ///< Sample position.
     Vector3 n;         ///< Sample normal.
@@ -151,14 +154,35 @@ class SurfaceSample
 
 } // namespace SampleGraphInternal
 
-/** Proximity graph on surface samples. */
+template <>
+class IsPointN<SampleGraphInternal::SurfaceSample, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+template <>
+inline Vector3
+PointTraitsN<SampleGraphInternal::SurfaceSample, 3>::getPosition(SampleGraphInternal::SurfaceSample const & sample)
+{
+  return sample.getPosition();
+}
+
+/**
+ * Proximity graph on surface samples. Satisfies the IsAdjacencyGraph concept. Typical usage is to first specify the sample
+ * positions (and optionally normals) via setSamples(). Then, specify an optional dense oversampling via setOversampling() --
+ * the oversampling makes it easier to verify if two samples are actually adjacent on the surface. Finally, call init(),
+ * optionally with a representation of the underlying surface, to compute the sample adjacencies (graph edges).
+ *
+ * @note The graph is <b>not created</b> until init() is called.
+ */
 class SampleGraph
 {
   private:
     /** Dummy surface representation used to disambiguate specialization of init(). */
     struct DummyRayQueryStructure3 : public RayQueryStructureN<3, Real>
     {
-      typename RayQueryStructureN<3, Real> BaseT;
+      typedef RayQueryStructureN<3, Real> BaseT;
 
       template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, Real max_time = -1) const
       { return false; }
@@ -167,8 +191,8 @@ class SampleGraph
       { return -1; }
 
       template <typename RayIntersectionTesterT>
-      BaseT::RayStructureIntersectionT rayStructureIntersection(RayT const & ray, Real max_time = -1) const
-      { return BaseT::RayStructureIntersectionT; }
+      typename BaseT::RayStructureIntersectionT rayStructureIntersection(RayT const & ray, Real max_time = -1) const
+      { return typename BaseT::RayStructureIntersectionT(); }
 
     }; // struct DummyRayQueryStructure3
 
@@ -196,6 +220,10 @@ class SampleGraph
     typedef SampleGraphInternal::SurfaceSample  SurfaceSample;          ///< Point sampled from a surface.
     typedef TheaArray<SurfaceSample>            SampleArray;            ///< Array of samples.
 
+  private:
+    typedef KDTreeN<SurfaceSample *, 3>         SampleKDTree;           ///< KD-tree on surface samples.
+
+  public:
     //=========================================================================================================================
     //
     // Types and functions required to make this a bona fide graph satisfying the IsAdjacencyGraph concept.
@@ -206,8 +234,8 @@ class SampleGraph
     typedef SurfaceSample const *               VertexConstHandle;      ///< Const handle to a graph vertex (a sample).
     typedef SampleArray::iterator               VertexIterator;         ///< Iterator over vertices.
     typedef SampleArray::const_iterator         VertexConstIterator;    ///< Const iterator over vertices.
-    typedef Neighbor *                          NeighborIterator;       ///< Iterator over neighbors of a vertex.
-    typedef Neighbor const *                    NeighborConstIterator;  ///< Const iterator over neighbors of a vertex.
+    typedef SurfaceSample::Neighbor *           NeighborIterator;       ///< Iterator over neighbors of a vertex.
+    typedef SurfaceSample::Neighbor const *     NeighborConstIterator;  ///< Const iterator over neighbors of a vertex.
 
     /** Get the number of vertices (samples) in the graph. */
     long numVertices() const { return (long)samples.size(); }
@@ -231,18 +259,18 @@ class SampleGraph
     VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
 
     /** Get the number of neighbors of a vertex. */
-    long numNeighbors(VertexConstHandle vertex) const { return vertex->nbrs.size(); }
+    long numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
 
     /** Get an iterator to the first neighbor of a vertex. */
     NeighborIterator neighborsBegin(VertexHandle vertex)
     {
-      return vertex->nbrs.isEmpty() ? NULL : const_cast<Neighbor *>(&vertex->nbrs[0]);
+      return vertex->getNeighbors().isEmpty() ? NULL : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
     }
 
     /** Get a const iterator to the first neighbor of a vertex. */
     NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
     {
-      return vertex->nbrs.isEmpty() ? NULL : &vertex->nbrs[0];
+      return vertex->getNeighbors().isEmpty() ? NULL : &vertex->getNeighbors()[0];
     }
 
     /** Get an iterator to the one position beyond the last neighbor of a vertex. */
@@ -267,8 +295,8 @@ class SampleGraph
     //=========================================================================================================================
 
     /** Construct with a set of options for creating the graph. */
-    SampleGraph(Options const & options_ = Options::default())
-    : options(options_), has_normals(false)
+    SampleGraph(Options const & options_ = Options::defaults())
+    : options(options_), has_normals(false), initialized(false)
     {
       alwaysAssertM(options.max_degree > 0, "SampleGraph: Maximum degree must be positive");
     }
@@ -276,29 +304,34 @@ class SampleGraph
     /** Get the number of samples in the graph. */
     long numSamples() const { return (long)samples.size(); }
 
-    /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
-    void setPositions(TheaArray<Vector3> const & positions, TheaArray<Vector3> const * normals = NULL)
-    {
-      alwaysAssertM(!normals || normals->size() == positions.size(),
-                    "SampleGraph: Number of normals does not match number of samples");
+    /** Get the set of samples in the graph. */
+    SampleArray const & getSamples() const { return samples; }
 
-      samples.resize(positions.size());
+    /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
+    void setSamples(long num_samples, Vector3 const * positions, Vector3 const * normals = NULL)
+    {
+      alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of samples");
+      alwaysAssertM(num_samples == 0 || positions, "SampleGraph: Sample positions must be specified");
+
+      samples.resize((array_size_t)num_samples);
       for (array_size_t i = 0; i < samples.size(); ++i)
       {
-        samples[i].index = (long)i;
-        samples[i].p = positions[i];
-        samples[i].nbrs.setCapacity(options.max_degree);
+        samples[i].setIndex((long)i);
+        samples[i].setPosition(positions[i]);
+        samples[i].getNeighbors().setCapacity(options.max_degree);
       }
 
-      if (normals)
+      if (normals && num_samples > 0)
       {
         for (array_size_t i = 0; i < samples.size(); ++i)
-          samples[i].n = (*normals)[i];
+          samples[i].setNormal(normals[i]);
 
         has_normals = true;
       }
       else
         has_normals = false;
+
+      initialized = false;
     }
 
     /**
@@ -306,25 +339,26 @@ class SampleGraph
      * final graph, but will be used to more accurately compute adjacencies. If normals are not specified, they must also not
      * have been specified for the main samples.
      */
-    void setOversampling(TheaArray<Vector3> const & dense_positions, TheaArray<Vector3> const * dense_normals = NULL)
+    void setOversampling(long num_samples, Vector3 const * dense_positions, Vector3 const * dense_normals = NULL)
     {
-      alwaysAssertM(!has_normals || dense_normals != NULL,
+      alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of dense samples");
+      alwaysAssertM(!has_normals || dense_normals,
                     "SampleGraph: Main samples have normals, so oversampling must also have normals");
-      alwaysAssertM(!dense_normals || dense_normals->size() == dense_positions.size(),
-                    "SampleGraph: Number of normals does not match number of samples");
 
-      dense_samples.resize(dense_positions.size());
+      dense_samples.resize((array_size_t)num_samples);
       for (array_size_t i = 0; i < dense_samples.size(); ++i)
       {
-        dense_samples[i].p = dense_positions[i];
-        dense_samples[i].nbrs.setCapacity(options.max_degree);
+        dense_samples[i].setPosition(dense_positions[i]);
+        dense_samples[i].getNeighbors().setCapacity(options.max_degree);
       }
 
-      if (dense_normals)
+      if (dense_normals && has_normals)
       {
         for (array_size_t i = 0; i < dense_samples.size(); ++i)
-          dense_samples[i].n = (*dense_normals)[i];
+          dense_samples[i].setNormal(dense_normals[i]);
       }
+
+      initialized = false;
     }
 
     /** Construct the sample graph from a set of samples, without tests that require access to the underlying surface. */
@@ -340,6 +374,10 @@ class SampleGraph
      */
     template <typename RayQueryStructureT> void init(RayQueryStructureT const * surface)
     {
+      if (initialized)  // don't initialize twice
+        return;
+
+      // Aggregate samples
       TheaArray<SurfaceSample *> sample_ptrs(samples.size() + dense_samples.size());
 
       for (array_size_t i = 0; i < samples.size(); ++i)
@@ -347,17 +385,167 @@ class SampleGraph
 
       for (array_size_t i = 0; i < dense_samples.size(); ++i)
       {
-        dense_samples[i].index = (long)(samples.size() + i);
+        dense_samples[i].setIndex((long)(samples.size() + i));
         sample_ptrs[samples.size() + i] = &dense_samples[i];
       }
 
-      typedef KDTreeN<3, SurfaceSample *> SampleKDTree;
+      // Clear any prior adjacency data
+      for (array_size_t i = 0; i < sample_ptrs.size(); ++i)
+        sample_ptrs[i]->getNeighbors().clear();
+
+      if (sample_ptrs.size() <= 1)  // nothing to do
+        return;
+
+      // Create kd-tree on samples
       SampleKDTree sample_kdtree(sample_ptrs.begin(), sample_ptrs.end());
+
+      // Get a measure of the average pairwise separation of samples
+      Real avg_sep = 0;
+      long num_trials = std::min(100L, (long)sample_ptrs.size());
+      for (long i = 0; i < num_trials; ++i)
+      {
+        array_size_t index = (array_size_t)Random::common().integer(0, (long)sample_ptrs.size() - 1);
+        FilterSelf filter(sample_ptrs[index]);
+        sample_kdtree.pushFilter(&filter);
+          long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
+          alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
+          avg_sep += (sample_ptrs[(array_size_t)nn_index]->getPosition() - sample_ptrs[index]->getPosition()).squaredLength();
+        sample_kdtree.popFilter();
+      }
+
+      avg_sep = std::sqrt(avg_sep / num_trials);  // RMS average
+
+      // Find the neighbors of each sample
+      Real sep_scale = std::sqrt((Real)options.max_degree);  // assume uniform distribution on 2D surface
+      for (array_size_t i = 0; i < sample_ptrs.size(); ++i)
+        findSampleNeighbors(sample_ptrs[i], sample_kdtree, sep_scale * avg_sep, surface);
+
+     // Extract adjacencies between original set of samples
+     if (!dense_samples.empty())
+       extractOriginalAdjacencies(sample_ptrs);
+
+      initialized = true;
     }
 
-    Options options;      ///< Options for creating the graph.
-    bool has_normals;     ///< Do the samples have associated surface normals?
-    SampleArray samples;  ///< Array of samples constituting the vertex set of the graph.
+  private:
+    /** Allows every sample except one. */
+    struct FilterSelf : public Filter<SurfaceSample *>
+    {
+      FilterSelf(SurfaceSample * self_) : self(self_) {}
+      bool allows(SurfaceSample * const & s) const { return s != self; }
+
+      SurfaceSample * self;
+
+    }; // struct FilterSelf
+
+    /** Functor that validates and adds neighbors to a given sample. */
+    template <typename RayQueryStructureT> class NeighborFunctor
+    {
+      public:
+        /** Constructor. */
+        NeighborFunctor(SurfaceSample * sample_, bool has_normals_, RayQueryStructureT const * surface_)
+        : sample(sample_), has_normals(has_normals_), surface(surface_)
+        {
+          debugAssertM(sample, "SampleGraph: Can't create neighbor functor without valid source sample");
+        }
+
+        /** Called for every candidate neighbor. */
+        bool operator()(long index, SurfaceSample * nbr)
+        {
+          Real sep = 0;
+          if (isValidNeighbor(nbr, sep))
+            sample->getNeighbors().insert(SurfaceSample::Neighbor(nbr, sep));
+
+          return false;
+        }
+
+      private:
+        /**
+         * Check if a candidate neighboring sample is a valid neighbor, that is, if if it is near the original sample as
+         * measured on the surface.
+         */
+        bool isValidNeighbor(SurfaceSample const * nbr, Real & sep)
+        {
+          // Tests are (hopefully) in decreasing order of speed
+
+          // Identity test
+          if (sample == nbr)
+            return false;
+
+          // Angle test
+          if (has_normals)
+          {
+            static Real const MIN_DOT = -0.5f;
+            if (sample->getNormal().dot(nbr->getNormal()) < MIN_DOT)
+              return false;
+          }
+
+          // Duplication test which compares only the samples themselves (since numerical error can cause multiple attempts to
+          // insert the same sample with slightly different separations)
+          for (int i = 0; i < sample->numNeighbors(); ++i)
+            if (nbr == sample->getNeighbors()[i].getSample())
+              return false;
+
+          // Compute the separation of the samples
+          Vector3 diff = nbr->getPosition() - sample->getPosition();
+          Real sqsep = diff.squaredLength();
+          sep = Math::fastSqrt(sqsep);
+
+          // Reachability test: lift points off the surface by an amount proportional to their separation, and see if the line
+          // connecting them is blocked by the surface
+          if (surface && has_normals)
+          {
+            static Real const LIFT_FACTOR = 5;
+            Vector3 lift_dir = (sample->getNormal() + nbr->getNormal()).fastUnit();
+            typename RayQueryStructureT::RayT ray(sample->getPosition() + LIFT_FACTOR * sep * lift_dir, diff);
+            if (surface->template rayIntersects<RayIntersectionTester>(ray, 1))
+              return false;
+          }
+
+          return true;
+        }
+
+        SurfaceSample * sample;
+        bool has_normals;
+        RayQueryStructureT const * surface;
+
+    }; // struct NeighborFunctor
+
+    /** Find the samples adjacent to a given sample. */
+    template <typename RayQueryStructureT>
+    void findSampleNeighbors(SurfaceSample * sample, SampleKDTree & sample_kdtree, Real init_radius,
+                             RayQueryStructureT const * surface)
+    {
+      static int const MAX_ITERS = 3;
+      static Real const RADIUS_EXPANSION_FACTOR = 2.0f;
+      int min_degree = Math::clamp((int)(0.25 * options.max_degree), 4, options.max_degree);
+
+      Real radius = init_radius;
+      for (int i = 0; i < MAX_ITERS; ++i)
+      {
+        sample->getNeighbors().clear();
+        NeighborFunctor<RayQueryStructureT> func(sample, has_normals, surface);
+
+        Ball3 nbd(sample->getPosition(), radius);
+        sample_kdtree.processRangeUntil<IntersectionTester>(nbd, &func);
+
+        if (sample->getNeighbors().size() >= min_degree)
+          break;
+        else
+          radius *= RADIUS_EXPANSION_FACTOR;
+      }
+    }
+
+    /**
+     * Extract adjacencies between the original set of samples, by following geodesic paths in the graph of oversampled points.
+     */
+    void extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs);
+
+    Options options;            ///< Options for creating the graph.
+    bool has_normals;           ///< Do the samples have associated surface normals?
+    SampleArray samples;        ///< Array of samples constituting the vertex set of the graph.
+    SampleArray dense_samples;  ///< Array of samples constituting the vertex set of the graph.
+    bool initialized;           ///< Has the graph been initialized?
 
 }; // class SampleGraph
 
