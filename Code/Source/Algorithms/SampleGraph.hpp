@@ -203,7 +203,7 @@ class SampleGraph
     }; // struct DummyRayQueryStructure3
 
   public:
-    /** Options for constructing the sample graph. */
+    /** %Options for constructing the sample graph. */
     class Options
     {
       public:
