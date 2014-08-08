@@ -72,8 +72,14 @@ class NeighboringSample
     /** Get a reference to this sample. */
     SurfaceSample * getSample() const { return sample; }
 
+    /** Set the reference to the neighboring sample. */
+    void setSample(SurfaceSample * sample_) { sample = sample_; }
+
     /** Get the separation of this sample from the source sample. */
     Real getSeparation() const { return separation; }
+
+    /** Set the separation of this sample from the source sample. */
+    void setSeparation(Real separation_) { separation = separation_; }
 
     /** Compare neighbors by their separation from the source. */
     bool operator<(NeighboringSample const & rhs) const
@@ -296,16 +302,29 @@ class SampleGraph
 
     /** Construct with a set of options for creating the graph. */
     SampleGraph(Options const & options_ = Options::defaults())
-    : options(options_), has_normals(false), initialized(false)
+    : options(options_), has_normals(false), avg_separation(0), initialized(false)
     {
       alwaysAssertM(options.max_degree > 0, "SampleGraph: Maximum degree must be positive");
     }
+
+    /** Copy constructor. */
+    SampleGraph(SampleGraph const & src);
+
+    /** Assignment operator. */
+    SampleGraph & operator=(SampleGraph const & src);
 
     /** Get the number of samples in the graph. */
     long numSamples() const { return (long)samples.size(); }
 
     /** Get the set of samples in the graph. */
     SampleArray const & getSamples() const { return samples; }
+
+    /** Get a sample by its index. */
+    SurfaceSample const & getSample(long index) const
+    {
+      debugAssertM(index >= 0 && index < (long)samples.size(), "SampleGraph: Sample index out of bounds");
+      return samples[(array_size_t)index];
+    }
 
     /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
     void setSamples(long num_samples, Vector3 const * positions, Vector3 const * normals = NULL)
@@ -400,32 +419,55 @@ class SampleGraph
       SampleKDTree sample_kdtree(sample_ptrs.begin(), sample_ptrs.end());
 
       // Get a measure of the average pairwise separation of samples
-      Real avg_sep = 0;
+      avg_separation = 0;
       long num_trials = std::min(100L, (long)sample_ptrs.size());
       for (long i = 0; i < num_trials; ++i)
       {
-        array_size_t index = (array_size_t)Random::common().integer(0, (long)sample_ptrs.size() - 1);
+        array_size_t index = (array_size_t)Random::common().integer(0, (int32)sample_ptrs.size() - 1);
         FilterSelf filter(sample_ptrs[index]);
         sample_kdtree.pushFilter(&filter);
           long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
-          avg_sep += (sample_ptrs[(array_size_t)nn_index]->getPosition() - sample_ptrs[index]->getPosition()).squaredLength();
+          avg_separation += (sample_ptrs[(array_size_t)nn_index]->getPosition() - sample_ptrs[index]->getPosition()).squaredLength();
         sample_kdtree.popFilter();
       }
 
-      avg_sep = std::sqrt(avg_sep / num_trials);  // RMS average
+      avg_separation = std::sqrt(avg_separation / num_trials);  // RMS average
 
       // Find the neighbors of each sample
       Real sep_scale = std::sqrt((Real)options.max_degree);  // assume uniform distribution on 2D surface
       for (array_size_t i = 0; i < sample_ptrs.size(); ++i)
-        findSampleNeighbors(sample_ptrs[i], sample_kdtree, sep_scale * avg_sep, surface);
+        findSampleNeighbors(sample_ptrs[i], sample_kdtree, sep_scale * avg_separation, surface);
 
-     // Extract adjacencies between original set of samples
-     if (!dense_samples.empty())
-       extractOriginalAdjacencies(sample_ptrs);
+      // Extract adjacencies between original set of samples
+      if (!dense_samples.empty())
+        extractOriginalAdjacencies(sample_ptrs);
+
+      // Update the average separation to the correct value. We'll compute this by brute force instead of sampling since we're
+      // doing much more computation above.
+      avg_separation = 0;
+      long num_edges = 0;  // double-counts, but we'll ignore that for now
+      for (array_size_t i = 0; i < samples.size(); ++i)
+      {
+        SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
+        for (int j = 0; j < nbrs.size(); ++j)
+          avg_separation += nbrs[j].getSeparation();
+
+        num_edges += (long)nbrs.size();
+      }
+
+      if (num_edges > 0)
+        avg_separation /= num_edges;
 
       initialized = true;
     }
+
+    /**
+     * Get the average separation of samples from their neighbors, that is, the average edge length of the graph. This may be
+     * computed by sampling and hence should not be assumed to be a true average, just a representative value. Has a meaningful
+     * value <b>only after graph initialization<b>, i.e. calling init(). It should not be called before then.
+     */
+    Real getAverageSeparation() const { return avg_separation; }
 
   private:
     /** Allows every sample except one. */
@@ -461,8 +503,8 @@ class SampleGraph
 
       private:
         /**
-         * Check if a candidate neighboring sample is a valid neighbor, that is, if if it is near the original sample as
-         * measured on the surface.
+         * Check if a candidate neighboring sample is a valid neighbor, that is, if it is near the original sample as measured
+         * on the surface.
          */
         bool isValidNeighbor(SurfaceSample const * nbr, Real & sep)
         {
@@ -544,7 +586,8 @@ class SampleGraph
     Options options;            ///< Options for creating the graph.
     bool has_normals;           ///< Do the samples have associated surface normals?
     SampleArray samples;        ///< Array of samples constituting the vertex set of the graph.
-    SampleArray dense_samples;  ///< Array of samples constituting the vertex set of the graph.
+    SampleArray dense_samples;  ///< Array of samples constituting an oversampling of the surface.
+    Real avg_separation;        ///< Average separation of samples.
     bool initialized;           ///< Has the graph been initialized?
 
 }; // class SampleGraph
