@@ -64,7 +64,7 @@ class SampleGraph;
 class DiscreteExponentialMap : private Noncopyable
 {
   public:
-    /** Options for computing the discrete exponential map of a surface around a point. */
+    /** %Options for computing the discrete exponential map of a surface around a point. */
     class Options
     {
       public:
@@ -117,8 +117,7 @@ class DiscreteExponentialMap : private Noncopyable
     Vector2 getParameters(long sample_index, bool & has_parameters) const;
 
     /**
-     * Get the full map from sample indices to parameters. Samples that were not parametrized (outside radius) are not
-     * included.
+     * Get the full map from sample indices to parameters. Samples that were not parametrized (outside radius) are not included.
      *
      * @see parametrize()
      */
