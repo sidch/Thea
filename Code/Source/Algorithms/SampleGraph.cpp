@@ -45,6 +45,53 @@
 namespace Thea {
 namespace Algorithms {
 
+SampleGraph::SampleGraph(SampleGraph const & src)
+{
+  *this = src;
+}
+
+namespace SampleGraphInternal {
+
+void
+updateNeighborPointers(SampleGraph::SampleArray & samples, SampleGraph::SampleArray const & src_samples)
+{
+  alwaysAssertM(samples.size() == src_samples.size(),
+                "SampleGraph: Can't update sample neighbor pointers from source array of different size");
+
+  for (array_size_t i = 0; i < samples.size(); ++i)
+  {
+    SurfaceSample::NeighborSet & nbrs = samples[i].getNeighbors();
+    for (int j = 0; j < nbrs.size(); ++j)
+    {
+      array_size_t index = nbrs[j].getSample() - &src_samples[0];  // take advantage of array storage (this is NOT getIndex())
+      debugAssertM(index >= 0 && index < samples.size(), "SampleGraph: Can't get array index of neighboring sample");
+
+      // Again, because of array storage, this should not break the relative ordering of neighbors with equal separation, since
+      // pointer less-than is preserved
+      const_cast<SurfaceSample::Neighbor &>(nbrs[j]).setSample(&samples[index]);
+    }
+  }
+}
+
+} // namespace SampleGraphInternal
+
+SampleGraph &
+SampleGraph::operator=(SampleGraph const & src)
+{
+  options = src.options;
+  has_normals = src.has_normals;
+  samples = src.samples;
+  dense_samples = src.dense_samples;
+  avg_separation = src.avg_separation;
+  initialized = src.initialized;
+
+  // Update neighbor pointers
+  updateNeighborPointers(samples, src.samples);
+  updateNeighborPointers(dense_samples, src.dense_samples);
+
+  return *this;
+}
+
 namespace SampleGraphInternal {
 
 // A graph on samples specified as pointers, using the adjacency information already in the samples.
@@ -127,7 +174,7 @@ SampleGraph::extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs
   {
     samples_with_new_nbrs[i] = samples[i];
     DijkstraCallback callback(&samples_with_new_nbrs[i], (long)samples.size(), options.max_degree);
-    shortest_paths.dijkstra(graph, &samples[i], &callback);
+    shortest_paths.dijkstraWithCallback(graph, &samples[i], &callback);
   }
 
   for (array_size_t i = 0; i < samples.size(); ++i)

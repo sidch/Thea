@@ -145,7 +145,7 @@ class /* THEA_API */ ShortestPaths
     {
       result.clear();
       MapCallback callback(result);
-      dijkstra(graph, src, &callback, limit, src_region);
+      dijkstraWithCallback(graph, src, &callback, limit, src_region);
     }
 
     /**
@@ -180,8 +180,8 @@ class /* THEA_API */ ShortestPaths
      *   is absent, unless a shorter path to the vertex is found.
      */
     template <typename CallbackT>
-    void dijkstra(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
-                  TheaUnorderedMap<VertexHandle, double> const * src_region = NULL);
+    void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
+                              TheaUnorderedMap<VertexHandle, double> const * src_region = NULL);
 
   private:
     /** Status of vertex during Dijkstra traversal. */
@@ -217,8 +217,8 @@ class /* THEA_API */ ShortestPaths
 template <typename GraphT>
 template <typename CallbackT>
 void
-ShortestPaths<GraphT>::dijkstra(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
-                                TheaUnorderedMap<VertexHandle, double> const * src_region)
+ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
+                                            TheaUnorderedMap<VertexHandle, double> const * src_region)
 {
   if (graph.numVertices() <= 0 || !callback)
     return;
