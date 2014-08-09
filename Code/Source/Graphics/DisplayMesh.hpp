@@ -67,7 +67,7 @@ class THEA_API DisplayMeshVertex
     DisplayMesh  *  mesh;
     Vector3      *  point;
     Vector3      *  normal;
-    ColorRGBA       *  color;
+    ColorRGBA    *  color;
     Vector2      *  texcoord;
 
   public:
