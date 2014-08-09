@@ -469,6 +469,9 @@ class SampleGraph
      */
     Real getAverageSeparation() const { return avg_separation; }
 
+    /** Clear the graph. */
+    void clear();
+
   private:
     /** Allows every sample except one. */
     struct FilterSelf : public Filter<SurfaceSample *>

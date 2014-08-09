@@ -92,6 +92,16 @@ SampleGraph::operator=(SampleGraph const & src)
   return *this;
 }
 
+void
+SampleGraph::clear()
+{
+  has_normals = false;
+  samples.clear();
+  dense_samples.clear();
+  avg_separation = 0;
+  initialized = false;
+}
+
 namespace SampleGraphInternal {
 
 // A graph on samples specified as pointers, using the adjacency information already in the samples.
