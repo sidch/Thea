@@ -145,7 +145,7 @@ DisplayMesh::getQuad(long quad_index) const
 void
 DisplayMesh::addColors()
 {
-  if (colors.empty() && !vertices.empty())
+  if (colors.size() < vertices.size())
   {
     colors.resize(vertices.size(), ColorRGBA(0, 0, 0, 0));
     invalidateGPUBuffers();
@@ -155,7 +155,7 @@ DisplayMesh::addColors()
 void
 DisplayMesh::addNormals()
 {
-  if (normals.empty() && !vertices.empty())
+  if (normals.size() < vertices.size())
   {
     normals.resize(vertices.size(), Vector3::zero());
     invalidateGPUBuffers();
@@ -165,7 +165,7 @@ DisplayMesh::addNormals()
 void
 DisplayMesh::addTexCoords()
 {
-  if (texcoords.empty() && !vertices.empty())
+  if (texcoords.size() < vertices.size())
   {
     texcoords.resize(vertices.size(), Vector2::zero());
     invalidateGPUBuffers();
