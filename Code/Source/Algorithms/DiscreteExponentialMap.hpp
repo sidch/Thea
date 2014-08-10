@@ -123,6 +123,9 @@ class DiscreteExponentialMap : private Noncopyable
      */
     ParameterMap const & getParameterMap() const;
 
+    /** Clear any existing parametrization. */
+    void clear();
+
   private:
     DiscreteExponentialMapInternal::Impl * impl;
 

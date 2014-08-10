@@ -77,8 +77,7 @@ class Impl
     void parametrize(SampleGraph const & sample_graph, long origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
                      Real radius_)
     {
-      params.clear();
-      param_data.clear();
+      clear();
 
       SurfaceSample * origin_sample = const_cast<SurfaceSample *>(&sample_graph.getSamples()[(array_size_t)origin_index_]);
       origin = origin_sample->getPosition();
@@ -108,6 +107,12 @@ class Impl
     ParameterMap const & getParameterMap() const
     {
       return params;
+    }
+
+    void clear()
+    {
+      params.clear();
+      param_data.clear();
     }
 
     // This class also acts as the callback during Dijkstra search. VertexHandle is a pointer to a sample.
@@ -276,6 +281,12 @@ DiscreteExponentialMap::ParameterMap const &
 DiscreteExponentialMap::getParameterMap() const
 {
   return impl->getParameterMap();
+}
+
+void
+DiscreteExponentialMap::clear()
+{
+  impl->clear();
 }
 
 } // namespace Algorithms
