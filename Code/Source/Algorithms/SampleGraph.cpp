@@ -41,6 +41,8 @@
 
 #include "SampleGraph.hpp"
 #include "ShortestPaths.hpp"
+#include <fstream>
+#include <sstream>
 
 namespace Thea {
 namespace Algorithms {
@@ -189,6 +191,160 @@ SampleGraph::extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs
 
   for (array_size_t i = 0; i < samples.size(); ++i)
     samples[i].getNeighbors() = samples_with_new_nbrs[i].getNeighbors();
+}
+
+bool
+SampleGraph::load(std::string const & graph_path, std::string const & samples_path)
+{
+  clear();
+
+  // Load samples
+  std::ifstream sin(samples_path.c_str());
+  if (!sin)
+  {
+    THEA_ERROR << "SampleGraph: Could not open samples file '" << samples_path << "' for reading";
+    return false;
+  }
+
+  has_normals = false;
+
+  std::string line;
+  Vector3 p, n;
+  while (std::getline(sin, line))
+  {
+    std::istringstream line_in(line);
+    if (!(line_in >> p[0] >> p[1] >> p[2]))
+    {
+      THEA_ERROR << "Could not read sample " << samples.size() << " from '" << samples_path << '\'';
+      return false;
+    }
+
+    bool sample_has_normal = (bool)(line_in >> n[0] >> n[1] >> n[2]);
+    if (samples.empty())
+      has_normals = sample_has_normal;
+    else if (has_normals != sample_has_normal)
+    {
+      THEA_ERROR << "SampleGraph: Some samples in '" << samples_path << "' have normals and some don't";
+      return false;
+    }
+
+    samples.push_back(SurfaceSample((long)samples.size(), 0));
+    samples.back().setPosition(p);
+    if (has_normals) samples.back().setNormal(n);
+  }
+
+  // Load graph
+  std::ifstream gin(samples_path.c_str());
+  if (!gin)
+  {
+    THEA_ERROR << "SampleGraph: Could not open graph file '" << graph_path << "' for reading";
+    return false;
+  }
+
+  if (std::getline(gin, line))
+  {
+    std::istringstream line_in(line);
+    long max_nbrs;
+    if (!(line_in >> max_nbrs) || max_nbrs < 0)
+    {
+      THEA_ERROR << "SampleGraph: Could not read valid maximum degree from '" << graph_path << '\'';
+      return false;
+    }
+
+    options.setMaxDegree(max_nbrs);
+  }
+  else
+  {
+    THEA_ERROR << "SampleGraph: Could not read maximum degree from '" << graph_path << '\'';
+    return false;
+  }
+
+  long num_nbrs, nbr_index;
+  for (array_size_t i = 0; i < samples.size(); ++i)
+  {
+    if (!std::getline(gin, line))
+    {
+      THEA_ERROR << "SampleGraph: Could not read neighbors of vertex " << i << " from '" << graph_path << '\'';
+      return false;
+    }
+
+    std::istringstream line_in(line);
+    if (!(line_in >> num_nbrs) || num_nbrs < 0)
+    {
+      THEA_ERROR << "SampleGraph: Could not read valid degree of vertex " << i << " from '" << graph_path << '\'';
+      return false;
+    }
+
+    for (long j = 0; j < num_nbrs; ++j)
+    {
+      if (!(line_in >> nbr_index) || nbr_index < 0 || nbr_index >= (long)samples.size())
+      {
+        THEA_ERROR << "SampleGraph: Could not read valid neighbor " << j << " of vertex " << i << " from '" << graph_path
+                   << '\'';
+        return false;
+      }
+
+      SurfaceSample * nbr_sample = &samples[(array_size_t)nbr_index];
+      Real sep = (samples[i].getPosition() - nbr_sample->getPosition()).length();
+      samples[i].getNeighbors().insert(SurfaceSample::Neighbor(nbr_sample, sep));
+    }
+  }
+
+  updateAverageSeparation();
+  initialized = true;
+
+  return true;
+}
+
+bool
+SampleGraph::save(std::string const & graph_path, std::string const & samples_path) const
+{
+  // Save graph
+  std::ofstream gout(graph_path.c_str(), std::ios::binary);
+  if (!gout)
+  {
+    THEA_ERROR << "SampleGraph: Could not open graph file '" << graph_path << "' for writing";
+    return false;
+  }
+
+  gout << options.max_degree << '\n';
+
+  for (array_size_t i = 0; i < samples.size(); ++i)
+  {
+    SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
+    gout << nbrs.size();
+
+    for (int j = 0; j < nbrs.size(); ++j)
+      gout << ' ' << nbrs[j].getSample()->getIndex();
+
+    gout << '\n';
+  }
+
+  // Save samples
+  if (!samples_path.empty())
+  {
+    std::ofstream sout(samples_path.c_str(), std::ios::binary);
+    if (!sout)
+    {
+      THEA_ERROR << "SampleGraph: Could not open samples file '" << samples_path << "' for writing";
+      return false;
+    }
+
+    for (array_size_t i = 0; i < samples.size(); ++i)
+    {
+      Vector3 const & p = samples[i].getPosition();
+      sout << p[0] << ' ' << p[1] << ' ' << p[2];
+      if (has_normals)
+      {
+        Vector3 const & n = samples[i].getNormal();
+        sout << ' ' << n[0] << ' ' << n[1] << ' ' << n[2];
+      }
+
+      sout << '\n';
+    }
+  }
+
+  return true;
 }
 
 } // namespace Algorithms
