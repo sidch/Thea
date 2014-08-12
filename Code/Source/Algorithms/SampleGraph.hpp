@@ -443,21 +443,8 @@ class SampleGraph
       if (!dense_samples.empty())
         extractOriginalAdjacencies(sample_ptrs);
 
-      // Update the average separation to the correct value. We'll compute this by brute force instead of sampling since we're
-      // doing much more computation above.
-      avg_separation = 0;
-      long num_edges = 0;  // double-counts, but we'll ignore that for now
-      for (array_size_t i = 0; i < samples.size(); ++i)
-      {
-        SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
-        for (int j = 0; j < nbrs.size(); ++j)
-          avg_separation += nbrs[j].getSeparation();
-
-        num_edges += (long)nbrs.size();
-      }
-
-      if (num_edges > 0)
-        avg_separation /= num_edges;
+      // Update the average separation to the correct value
+      updateAverageSeparation();
 
       initialized = true;
     }
@@ -471,6 +458,12 @@ class SampleGraph
 
     /** Clear the graph. */
     void clear();
+
+    /** Load the graph and samples from disk files. */
+    bool load(std::string const & graph_path, std::string const & samples_path);
+
+    /** Save the graph (and optionally the samples) to disk. */
+    bool save(std::string const & graph_path, std::string const & samples_path = "") const;
 
   private:
     /** Allows every sample except one. */
@@ -585,6 +578,24 @@ class SampleGraph
      * Extract adjacencies between the original set of samples, by following geodesic paths in the graph of oversampled points.
      */
     void extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs);
+
+    /** Update the average separation to the correct value. We'll compute this by brute force instead of sampling for now. */
+    void updateAverageSeparation()
+    {
+      avg_separation = 0;
+      long num_edges = 0;  // double-counts, but we'll ignore that for now
+      for (array_size_t i = 0; i < samples.size(); ++i)
+      {
+        SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
+        for (int j = 0; j < nbrs.size(); ++j)
+          avg_separation += nbrs[j].getSeparation();
+
+        num_edges += (long)nbrs.size();
+      }
+
+      if (num_edges > 0)
+        avg_separation /= num_edges;
+    }
 
     Options options;            ///< Options for creating the graph.
     bool has_normals;           ///< Do the samples have associated surface normals?

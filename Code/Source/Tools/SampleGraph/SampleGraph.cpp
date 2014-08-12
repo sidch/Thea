@@ -268,26 +268,13 @@ main(int argc, char * argv[])
   // Write graph to file
   //===========================================================================================================================
 
-  ofstream out(out_path.c_str());
-  if (!out)
-  {
-    THEA_ERROR << "Could not open output file " << out_path << " for writing features";
+  if (!graph.save(out_path))
     return -1;
-  }
 
   double sum_degrees = 0;
   SampleGraph::SampleArray const & samples = graph.getSamples();
   for (array_size_t i = 0; i < samples.size(); ++i)
-  {
-    out << samples[i].getNeighbors().size();
-
-    for (int j = 0; j < samples[i].getNeighbors().size(); ++j)
-      out << ' ' << samples[i].getNeighbors()[j].getSample()->getIndex();
-
-    out << '\n';
-
     sum_degrees += samples[i].getNeighbors().size();
-  }
 
   THEA_CONSOLE << "Wrote sample graph of average degree " << sum_degrees / samples.size() << " to " << out_path;
 
