@@ -43,6 +43,7 @@
 #define __Thea_Algorithms_DiscreteExponentialMap_hpp__
 
 #include "../Common.hpp"
+#include "../CoordinateFrame3.hpp"
 #include "../Noncopyable.hpp"
 #include "../UnorderedMap.hpp"
 #include "../Vector3.hpp"
@@ -122,6 +123,12 @@ class DiscreteExponentialMap : private Noncopyable
      * @see parametrize()
      */
     ParameterMap const & getParameterMap() const;
+
+    /** Get the coordinate frame centered at the parametrization origin and having X and Y axes in the tangent plane. */
+    CoordinateFrame3 getTangentFrame() const;
+
+    /** Get the bounding radius of the region which is parametrized. */
+    Real getRadius() const;
 
     /** Clear any existing parametrization. */
     void clear();

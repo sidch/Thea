@@ -72,7 +72,7 @@ class Impl
     typedef TheaMap<Geodesics::VertexHandle, ParamData> ParamDataMap;  // FIXME: Can we use UnorderedMap?
 
   public:
-    Impl(Options const & options_) : options(options_) {}
+    Impl(Options const & options_) : options(options_), radius(0) {}
 
     void parametrize(SampleGraph const & sample_graph, long origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
                      Real radius_)
@@ -84,9 +84,10 @@ class Impl
       u_axis = u_axis_.unit();  // renormalize to be safe
       v_axis = v_axis_.unit();
       tangent_plane = Plane3::fromPointAndNormal(origin, u_axis.cross(v_axis));
+      radius = radius_;
       blend_bandwidth_squared = (options.getBlendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
 
-      geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, this, radius_);
+      geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, this, radius);
     }
 
     Vector2 getParameters(long sample_index, bool & has_parameters) const
@@ -107,6 +108,16 @@ class Impl
     ParameterMap const & getParameterMap() const
     {
       return params;
+    }
+
+    CoordinateFrame3 getTangentFrame() const
+    {
+      return CoordinateFrame3::_fromAffine(AffineTransform3(u_axis, v_axis, u_axis.cross(v_axis), origin));
+    }
+
+    Real getRadius() const
+    {
+      return radius;
     }
 
     void clear()
@@ -249,6 +260,7 @@ class Impl
     Plane3 tangent_plane;
     Vector3 origin;
     Vector3 u_axis, v_axis;
+    Real radius;
     Real blend_bandwidth_squared;
 
 }; // class Impl
@@ -281,6 +293,18 @@ DiscreteExponentialMap::ParameterMap const &
 DiscreteExponentialMap::getParameterMap() const
 {
   return impl->getParameterMap();
+}
+
+CoordinateFrame3
+DiscreteExponentialMap::getTangentFrame() const
+{
+  return impl->getTangentFrame();
+}
+
+Real
+DiscreteExponentialMap::getRadius() const
+{
+  return impl->getRadius();
 }
 
 void
