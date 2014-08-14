@@ -14,24 +14,83 @@ typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
 
 int
+usage(int argc, char * argv[])
+{
+  THEA_CONSOLE << "Usage: " << argv[0] << " [options] <mesh> <out-pts>";
+  THEA_CONSOLE << "Options:";
+  THEA_CONSOLE << " -n N : Generate approximately N samples [=5000]";
+  THEA_CONSOLE << " -v   : Generate samples at mesh vertices (ignores -n) [=false]";
+  return 0;
+}
+
+struct VertexCollector
+{
+  VertexCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_) : positions(positions_), normals(normals_) {}
+
+  bool operator()(Mesh const & mesh)
+  {
+    for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+    {
+      positions->push_back(vi->getPosition());
+      normals->push_back(vi->getNormal());
+    }
+
+    return false;
+  }
+
+  TheaArray<Vector3> * positions;
+  TheaArray<Vector3> * normals;
+};
+
+int
 main(int argc, char * argv[])
 {
-  if (argc < 4)
+  if (argc < 3)
+    return usage(argc, argv);
+
+  string mesh_path;
+  string out_path;
+  long approx_num_samples = 5000;
+  bool vertex_samples = false;
+
+  int curr_pos_arg = 0;
+  for (int i = 1; i < argc; ++i)
   {
-    THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <approx-num-samples> <out-pts>";
-    return 0;
+    string arg = argv[i];
+    if (arg.length() >= 2 && arg[0] == '-')
+    {
+      if (arg == "-v")
+        vertex_samples = true;
+      else if (arg == "-n")
+      {
+        ++i;
+        if (i >= argc)
+          return usage(argc, argv);
+
+        if (sscanf(argv[i], "%ld", &approx_num_samples) != 1 || approx_num_samples < 0)
+        {
+          THEA_ERROR << "Invalid number of samples";
+          return -1;
+        }
+      }
+      else
+        return usage(argc, argv);
+    }
+    else
+    {
+      switch (curr_pos_arg)
+      {
+        case 0: mesh_path = arg; break;
+        case 1: out_path = arg; break;
+        default: return usage(argc, argv);
+      }
+
+      curr_pos_arg++;
+    }
   }
 
-  string mesh_path = argv[1];
-  string nsamples_str = argv[2];
-  string out_path = argv[3];
-
-  long approx_num_samples = 0;
-  if (sscanf(nsamples_str.c_str(), "%ld", &approx_num_samples) != 1 || approx_num_samples < 0)
-  {
-    THEA_ERROR << "Invalid number of samples";
-    return -1;
-  }
+  if (curr_pos_arg < 2)
+    return usage(argc, argv);
 
   try
   {
@@ -39,16 +98,24 @@ main(int argc, char * argv[])
     mg.load(mesh_path);
 
     TheaArray<Vector3> positions;
-    TheaArray<Vector3> face_normals;
+    TheaArray<Vector3> normals;
 
-    MeshSampler<Mesh> sampler(mg);
-    sampler.sampleEvenlyByArea(approx_num_samples, positions, &face_normals);
+    if (vertex_samples)
+    {
+      VertexCollector collector(&positions, &normals);
+      mg.forEachMeshUntil(&collector);
+    }
+    else
+    {
+      MeshSampler<Mesh> sampler(mg);
+      sampler.sampleEvenlyByArea(approx_num_samples, positions, &normals);
+    }
 
     ofstream out(out_path.c_str());
     for (size_t i = 0; i < positions.size(); ++i)
     {
       out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
-          << face_normals[i].x() << ' ' << face_normals[i].y() << ' ' << face_normals[i].z() << '\n';
+          << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z() << '\n';
     }
     out.flush();
 

@@ -143,31 +143,41 @@ PointCloud::load(std::string const & path, std::string const & features_path)
     {
       graph.resize(points.size());
 
-      for (array_size_t i = 0; i < points.size(); ++i)
+      long max_nbrs;
+      if (!(gin >> max_nbrs) || max_nbrs < 0)
       {
-        long num_nbrs;
-        if (!(gin >> num_nbrs) || num_nbrs < 0 || num_nbrs >= (long)points.size())
+        THEA_WARNING << getName() << ": Error reading maximum number of neighbors in graph '" << graph_path << '\'';
+        has_graph = false;
+      }
+      else
+      {
+        for (array_size_t i = 0; i < points.size(); ++i)
         {
-          THEA_WARNING << getName() << ": Error reading number of neighbors of point " << i << " from '" << graph_path << '\'';
-          has_graph = false;
-          break;
-        }
-
-        graph[i].resize((array_size_t)num_nbrs);
-
-        for (array_size_t j = 0; j < graph[i].size(); ++j)
-        {
-          if (!(gin >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
+          long num_nbrs;
+          if (!(gin >> num_nbrs) || num_nbrs < 0 || num_nbrs > max_nbrs || num_nbrs >= (long)points.size())
           {
-            THEA_WARNING << getName() << ": Error reading neighbor" << j << " of point " << i << " from '" << graph_path
+            THEA_WARNING << getName() << ": Error reading valid number of neighbors of point " << i << " from '" << graph_path
                          << '\'';
             has_graph = false;
             break;
           }
-        }
 
-        if (!has_graph)
-          break;
+          graph[i].resize((array_size_t)num_nbrs);
+
+          for (array_size_t j = 0; j < graph[i].size(); ++j)
+          {
+            if (!(gin >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
+            {
+              THEA_WARNING << getName() << ": Error reading valid neighbor" << j << " of point " << i << " from '" << graph_path
+                           << '\'';
+              has_graph = false;
+              break;
+            }
+          }
+
+          if (!has_graph)
+            break;
+        }
       }
 
       if (!has_graph)

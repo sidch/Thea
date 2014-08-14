@@ -234,7 +234,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
   }
 
   // Load graph
-  std::ifstream gin(samples_path.c_str());
+  std::ifstream gin(graph_path.c_str());
   if (!gin)
   {
     THEA_ERROR << "SampleGraph: Could not open graph file '" << graph_path << "' for reading";
@@ -274,6 +274,8 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
       THEA_ERROR << "SampleGraph: Could not read valid degree of vertex " << i << " from '" << graph_path << '\'';
       return false;
     }
+
+    samples[i].getNeighbors().setCapacity(options.max_degree);
 
     for (long j = 0; j < num_nbrs; ++j)
     {
