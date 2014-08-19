@@ -78,14 +78,21 @@ class DiscreteExponentialMap : private Noncopyable
         /** Check if the predecessor's parameters should be computed as a weighted average of nearby points or not. */
         bool getBlendUpwind() const { return blend_upwind; }
 
+        /** Select if parameters should be normalized to [-1, 1] or not. */
+        Options & setNormalize(bool normalize_) { normalize = normalize_; return *this; }
+
+        /** Check if parameters should be normalized to [-1, 1] or not. */
+        bool getNormalize() const { return normalize; }
+
         /** Construct with default values. */
-        Options() : blend_upwind(true) {}
+        Options() : blend_upwind(true), normalize(true) {}
 
         /** Get a set of options with default values. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
         bool blend_upwind;  ///< Compute predecessor's parameters as a weighted average of nearby points.
+        bool normalize;  ///< Normalize parameters to [-1, 1].
 
     }; // class Options
 
