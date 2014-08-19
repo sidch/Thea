@@ -169,7 +169,7 @@ class Impl
         curr_data.uv = Vector2(offset.dot(u_axis), offset.dot(v_axis));
         curr_data.pred_data = &pred_data;  // hopefully the map class guarantees this will be preserved
 
-        params[vertex->getIndex()] = curr_data.uv;
+        params[vertex->getIndex()] = (options.getNormalize() ? curr_data.uv / radius : curr_data.uv);
 
         // THEA_CONSOLE << "Assigned params " << curr_data.uv;
       }
@@ -180,7 +180,7 @@ class Impl
         curr_data.uv = Vector2(offset.dot(u_axis), offset.dot(v_axis));
         curr_data.pred_data = NULL;
 
-        params[vertex->getIndex()] = curr_data.uv;
+        params[vertex->getIndex()] = (options.getNormalize() ? curr_data.uv / radius : curr_data.uv);
 
         // THEA_CONSOLE << "Assigned params " << curr_data.uv << " (no pred)";
       }

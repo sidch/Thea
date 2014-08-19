@@ -186,6 +186,9 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       }
     }
 
+    /** Grow to include a point. Alias for merge(VectorT const &), for use with PointCollectorN. */
+    void addPoint(VectorT const & p) { merge(p); }
+
     /** Grow to include a box. Equivalent to assignment if this box is initially null. No-op if the argument is a null box. */
     void merge(AxisAlignedBoxT const & aab)
     {
