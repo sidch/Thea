@@ -277,20 +277,34 @@ ColorRGB::toHSV() const
   return hsv;
 }
 
+namespace ColorRGBInternal {
+
+// http://stackoverflow.com/questions/7706339/grayscale-to-red-green-blue-matlab-jet-color-scale
+Real
+interpolate(Real val, Real y0, Real x0, Real y1, Real x1)
+{
+  return (val - x0) * (y1 - y0) / (x1 - x0) + y0;
+}
+
+Real
+base(Real val)
+{
+  if      (val <= -0.75) return 0;
+  else if (val <= -0.25) return interpolate(val, 0.0, -0.75, 1.0, -0.25);
+  else if (val <=  0.25) return 1.0;
+  else if (val <=  0.75) return interpolate(val, 1.0,  0.25, 0.0,  0.75);
+  else                   return 0.0;
+}
+
+} // namespace ColorRGBInternal
+
 ColorRGB
 ColorRGB::jetColorMap(Real val)
 {
-  debugAssertM(val >= 0.0f && val <= 1.0f , "value should be in [0,1]");
-
-  // Truncated triangles where sides have slope 4
-  ColorRGB jet;
-  jet.c[0] = std::min(4.0f * val - 1.5f, -4.0f * val + 4.5f);
-  jet.c[1] = std::min(4.0f * val - 0.5f, -4.0f * val + 3.5f);
-  jet.c[2] = std::min(4.0f * val + 0.5f, -4.0f * val + 2.5f);
-  jet.c[0] = Math::clamp(jet.c[0], (Real)0, (Real)1);
-  jet.c[1] = Math::clamp(jet.c[1], (Real)0, (Real)1);
-  jet.c[2] = Math::clamp(jet.c[2], (Real)0, (Real)1);
-  return jet;
+  val = Math::clamp(val, 0, 1);
+  return ColorRGB(ColorRGBInternal::base(val - 0.5),
+                  ColorRGBInternal::base(val),
+                  ColorRGBInternal::base(val + 0.5));
 }
 
 std::string
