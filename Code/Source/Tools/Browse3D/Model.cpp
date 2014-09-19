@@ -784,7 +784,7 @@ Model::loadFeatures(QString const & filename_)
       for (array_size_t i = 0; i < feat_vals.size(); ++i)
       {
         TheaArray<Real> sorted = feat_vals[i];
-        std::sort(feat_vals.begin(), feat_vals.end());
+        std::sort(sorted.begin(), sorted.end());
 
         array_size_t tenth = (int)(0.1 * sorted.size());
         Real lo = *(sorted.begin() + tenth);
