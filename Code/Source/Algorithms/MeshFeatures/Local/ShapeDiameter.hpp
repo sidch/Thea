@@ -39,26 +39,29 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_ShapeDiameter_hpp__
-#define __Thea_Algorithms_MeshFeatures_ShapeDiameter_hpp__
+#ifndef __Thea_Algorithms_MeshFeatures_Local_ShapeDiameter_hpp__
+#define __Thea_Algorithms_MeshFeatures_Local_ShapeDiameter_hpp__
 
-#include "../../Common.hpp"
-#include "../../Graphics/MeshGroup.hpp"
-#include "../BestFitSphere3.hpp"
-#include "../MeshKDTree.hpp"
-#include "../MetricL2.hpp"
-#include "../PointCollectorN.hpp"
-#include "../RayIntersectionTester.hpp"
-#include "../../Math.hpp"
-#include "../../Matrix3.hpp"
-#include "../../Vector3.hpp"
+#include "../../../Common.hpp"
+#include "../../../Graphics/MeshGroup.hpp"
+#include "../../BestFitSphere3.hpp"
+#include "../../MeshKDTree.hpp"
+#include "../../MetricL2.hpp"
+#include "../../PointCollectorN.hpp"
+#include "../../RayIntersectionTester.hpp"
+#include "../../../Math.hpp"
+#include "../../../Matrix3.hpp"
+#include "../../../Vector3.hpp"
 #include <algorithm>
 
 namespace Thea {
 namespace Algorithms {
 
-/** Namespace for classes that compute features on a mesh. */
+/** Namespace for classes that compute mesh features. */
 namespace MeshFeatures {
+
+/** Namespace for classes that compute local features on a mesh. */
+namespace Local {
 
 /**
  * Compute the shape diameter function (SDF) at a point on a mesh.
@@ -305,6 +308,7 @@ class ShapeDiameter
 
 }; // class ShapeDiameter
 
+} // namespace Local
 } // namespace MeshFeatures
 } // namespace Algorithms
 } // namespace Thea

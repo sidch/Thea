@@ -39,23 +39,24 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_Curvature_hpp__
-#define __Thea_Algorithms_MeshFeatures_Curvature_hpp__
+#ifndef __Thea_Algorithms_MeshFeatures_Local_Curvature_hpp__
+#define __Thea_Algorithms_MeshFeatures_Local_Curvature_hpp__
 
-#include "../../Common.hpp"
-#include "../../Graphics/MeshGroup.hpp"
-#include "../BestFitSphere3.hpp"
-#include "../IntersectionTester.hpp"
-#include "../KDTreeN.hpp"
-#include "../MeshSampler.hpp"
-#include "../MetricL2.hpp"
-#include "../PointCollectorN.hpp"
-#include "../PointTraitsN.hpp"
-#include "../../Vector3.hpp"
+#include "../../../Common.hpp"
+#include "../../../Graphics/MeshGroup.hpp"
+#include "../../BestFitSphere3.hpp"
+#include "../../IntersectionTester.hpp"
+#include "../../KDTreeN.hpp"
+#include "../../MeshSampler.hpp"
+#include "../../MetricL2.hpp"
+#include "../../PointCollectorN.hpp"
+#include "../../PointTraitsN.hpp"
+#include "../../../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
+namespace Local {
 
 namespace CurvatureInternal {
 
@@ -76,10 +77,11 @@ class SurfaceSample
 };
 
 } // namespace CurvatureInternal
+} // namespace Local
 } // namespace MeshFeatures
 
 template <>
-class IsPointN<MeshFeatures::CurvatureInternal::SurfaceSample, 3>
+class IsPointN<MeshFeatures::Local::CurvatureInternal::SurfaceSample, 3>
 {
   public:
     static bool const value = true;
@@ -87,14 +89,15 @@ class IsPointN<MeshFeatures::CurvatureInternal::SurfaceSample, 3>
 
 template <>
 inline Vector3
-PointTraitsN<MeshFeatures::CurvatureInternal::SurfaceSample, 3>::getPosition(
-  MeshFeatures::CurvatureInternal::SurfaceSample const & sample
+PointTraitsN<MeshFeatures::Local::CurvatureInternal::SurfaceSample, 3>::getPosition(
+  MeshFeatures::Local::CurvatureInternal::SurfaceSample const & sample
 )
 {
   return sample.getPosition();
 }
 
 namespace MeshFeatures {
+namespace Local {
 
 /** Compute the curvature at a point on a mesh. */
 template < typename MeshT,
@@ -315,6 +318,7 @@ class Curvature
 
 }; // class Curvature
 
+} // namespace Local
 } // namespace MeshFeatures
 } // namespace Algorithms
 } // namespace Thea

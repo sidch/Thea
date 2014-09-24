@@ -39,29 +39,30 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_DistanceHistogram_hpp__
-#define __Thea_Algorithms_MeshFeatures_DistanceHistogram_hpp__
+#ifndef __Thea_Algorithms_MeshFeatures_Local_LocalDistanceHistogram_hpp__
+#define __Thea_Algorithms_MeshFeatures_Local_LocalDistanceHistogram_hpp__
 
-#include "../../Common.hpp"
-#include "../../Graphics/MeshGroup.hpp"
-#include "../BestFitSphere3.hpp"
-#include "../IntersectionTester.hpp"
-#include "../KDTreeN.hpp"
-#include "../MeshSampler.hpp"
-#include "../PointCollectorN.hpp"
-#include "../PointTraitsN.hpp"
-#include "../../Ball3.hpp"
-#include "../../Math.hpp"
-#include "../../Vector3.hpp"
+#include "../../../Common.hpp"
+#include "../../../Graphics/MeshGroup.hpp"
+#include "../../BestFitSphere3.hpp"
+#include "../../IntersectionTester.hpp"
+#include "../../KDTreeN.hpp"
+#include "../../MeshSampler.hpp"
+#include "../../PointCollectorN.hpp"
+#include "../../PointTraitsN.hpp"
+#include "../../../Ball3.hpp"
+#include "../../../Math.hpp"
+#include "../../../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
+namespace Local {
 
 /** Compute the histogram of distances from a query point to other points on a shape. */
 template < typename MeshT,
            typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class DistanceHistogram
+class LocalDistanceHistogram
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
@@ -82,7 +83,7 @@ class DistanceHistogram
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    DistanceHistogram(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    LocalDistanceHistogram(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
     {
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
@@ -107,7 +108,7 @@ class DistanceHistogram
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    DistanceHistogram(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    LocalDistanceHistogram(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
     {
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
@@ -131,10 +132,10 @@ class DistanceHistogram
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    DistanceHistogram(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
+    LocalDistanceHistogram(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), scale(normalization_scale)
     {
-      alwaysAssertM(precomp_kdtree, "DistanceHistogram: Precomputed KD-tree cannot be null");
+      alwaysAssertM(precomp_kdtree, "LocalDistanceHistogram: Precomputed KD-tree cannot be null");
 
       if (scale <= 0)
       {
@@ -146,7 +147,7 @@ class DistanceHistogram
     }
 
     /** Destructor. */
-    ~DistanceHistogram()
+    ~LocalDistanceHistogram()
     {
       delete sample_kdtree;
     }
@@ -167,7 +168,7 @@ class DistanceHistogram
       if (max_distance < 0)
       {
         max_distance = scale;
-        DistanceHistogramFunctor func(position, num_bins, histogram, max_distance);
+        LocalDistanceHistogramFunctor func(position, num_bins, histogram, max_distance);
 
         if (precomp_kdtree)
         {
@@ -188,7 +189,7 @@ class DistanceHistogram
         if (!precomp_kdtree && !sample_kdtree)
           sample_kdtree = new SampleKDTree(samples.begin(), samples.end());
 
-        DistanceHistogramFunctor func(position, num_bins, histogram, max_distance);
+        LocalDistanceHistogramFunctor func(position, num_bins, histogram, max_distance);
         Ball3 ball(position, max_distance);
 
         if (precomp_kdtree)
@@ -200,13 +201,13 @@ class DistanceHistogram
 
   private:
     /** Called for each point in the neighborhood. */
-    struct DistanceHistogramFunctor
+    struct LocalDistanceHistogramFunctor
     {
-      DistanceHistogramFunctor(Vector3 const & position_, long num_bins_, double * histogram_, Real max_distance_)
+      LocalDistanceHistogramFunctor(Vector3 const & position_, long num_bins_, double * histogram_, Real max_distance_)
       : position(position_), num_bins(num_bins_), histogram(histogram_), bin_scale(0)
       {
-        alwaysAssertM(num_bins_ > 0, "DistanceHistogram: Number of bins must be positive");
-        alwaysAssertM(max_distance_ >= 0, "DistanceHistogram: Maximum distance must be non-negative");
+        alwaysAssertM(num_bins_ > 0, "LocalDistanceHistogram: Number of bins must be positive");
+        alwaysAssertM(max_distance_ >= 0, "LocalDistanceHistogram: Maximum distance must be non-negative");
 
         bin_scale = std::max(max_distance_ / num_bins_, 1.0e-30f);
 
@@ -228,15 +229,16 @@ class DistanceHistogram
       double * histogram;
       Real bin_scale;
 
-    }; // struct DistanceHistogramFunctor
+    }; // struct LocalDistanceHistogramFunctor
 
     TheaArray<Vector3> samples;  ///< Mesh sample points computed by this object.
     mutable SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
     ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
     Real scale;  ///< The normalization length.
 
-}; // class DistanceHistogram
+}; // class LocalDistanceHistogram
 
+} // namespace Local
 } // namespace MeshFeatures
 } // namespace Algorithms
 } // namespace Thea
