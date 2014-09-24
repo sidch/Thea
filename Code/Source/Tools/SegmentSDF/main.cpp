@@ -1,7 +1,7 @@
 #include "Graph.hpp"
 
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
+#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 
 #ifndef THEA_OSX
 #  define THEA_ENABLE_CLUTO
@@ -141,7 +141,7 @@ segmentSDF(int argc, char * argv[])
 
   // Compute SDF values
   TheaArray<Real> sdf_values(positions.size());
-  MeshFeatures::ShapeDiameter<Mesh> sdf(&kdtree);
+  MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
   for (array_size_t i = 0; i < positions.size(); ++i)
     sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
 

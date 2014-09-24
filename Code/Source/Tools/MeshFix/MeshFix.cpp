@@ -1,6 +1,6 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
-#include "../../Algorithms/MeshFeatures/ShapeDiameter.hpp"
+#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -710,7 +710,7 @@ orient(Mesh & mesh)
 
 struct SDFOrienter
 {
-  SDFOrienter(ShapeDiameter<Mesh> * sdf_) : sdf(sdf_) {}
+  SDFOrienter(Local::ShapeDiameter<Mesh> * sdf_) : sdf(sdf_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -755,14 +755,14 @@ struct SDFOrienter
     return false;
   }
 
-  ShapeDiameter<Mesh> * sdf;
+  Local::ShapeDiameter<Mesh> * sdf;
 
 }; // struct SDFOrienter
 
 void
 orientSDF(MG & mesh_group)
 {
-  ShapeDiameter<Mesh> sdf(mesh_group);
+  Local::ShapeDiameter<Mesh> sdf(mesh_group);
   SDFOrienter func(&sdf);
   mesh_group.forEachMeshUntil(&func);
 }

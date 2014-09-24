@@ -39,22 +39,23 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_LocalPCA_hpp__
-#define __Thea_Algorithms_MeshFeatures_LocalPCA_hpp__
+#ifndef __Thea_Algorithms_MeshFeatures_Local_LocalPCA_hpp__
+#define __Thea_Algorithms_MeshFeatures_Local_LocalPCA_hpp__
 
-#include "../../Common.hpp"
-#include "../../Graphics/MeshGroup.hpp"
-#include "../BestFitSphere3.hpp"
-#include "../IntersectionTester.hpp"
-#include "../KDTreeN.hpp"
-#include "../MeshSampler.hpp"
-#include "../PCA_N.hpp"
-#include "../PointCollectorN.hpp"
-#include "../../Vector3.hpp"
+#include "../../../Common.hpp"
+#include "../../../Graphics/MeshGroup.hpp"
+#include "../../BestFitSphere3.hpp"
+#include "../../IntersectionTester.hpp"
+#include "../../KDTreeN.hpp"
+#include "../../MeshSampler.hpp"
+#include "../../PCA_N.hpp"
+#include "../../PointCollectorN.hpp"
+#include "../../../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
+namespace Local {
 
 /**
  * Compute local PCA features at a point on a mesh. The local PCA features are eigenvalues of the distribution of samples in the
@@ -230,6 +231,7 @@ class LocalPCA
 
 }; // class LocalPCA
 
+} // namespace Local
 } // namespace MeshFeatures
 } // namespace Algorithms
 } // namespace Thea
