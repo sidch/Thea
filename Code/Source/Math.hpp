@@ -414,13 +414,13 @@ valueToInvTrigIndex(float value)
 
 } // namespace MathInternal
 
-/** Fast approximation of sine function using a lookup table. */
+/** Fast approximation of sine function using a lookup table, requires \a radians in [0, 2 pi]. */
 inline float fastSin(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][0]; }
 
-/** Fast approximation of cosine function using a lookup table. */
+/** Fast approximation of cosine function using a lookup table, requires \a radians in [0, 2 pi]. */
 inline float fastCos(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][1]; }
 
-/** Fast approximation of tangent function using a lookup table. */
+/** Fast approximation of tangent function using a lookup table, requires \a radians in [0, 2 pi]. */
 inline float fastTan(float radians) { return MathInternal::TRIG_TABLE[MathInternal::radiansToTrigIndex(radians)][2]; }
 
 /**
