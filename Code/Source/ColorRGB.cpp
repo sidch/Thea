@@ -280,6 +280,7 @@ ColorRGB::toHSV() const
 namespace ColorRGBInternal {
 
 // http://stackoverflow.com/questions/7706339/grayscale-to-red-green-blue-matlab-jet-color-scale
+// (solution there is for val in [-1, 1])
 Real
 interpolate(Real val, Real y0, Real x0, Real y1, Real x1)
 {
@@ -289,10 +290,10 @@ interpolate(Real val, Real y0, Real x0, Real y1, Real x1)
 Real
 base(Real val)
 {
-  if      (val <= -0.75) return 0;
-  else if (val <= -0.25) return interpolate(val, 0.0, -0.75, 1.0, -0.25);
-  else if (val <=  0.25) return 1.0;
-  else if (val <=  0.75) return interpolate(val, 1.0,  0.25, 0.0,  0.75);
+  if      (val <= 0.125) return 0;
+  else if (val <= 0.375) return interpolate(val, 0.0, 0.125, 1.0, 0.375);
+  else if (val <= 0.625) return 1.0;
+  else if (val <= 0.875) return interpolate(val, 1.0, 0.625, 0.0, 0.875);
   else                   return 0.0;
 }
 
@@ -302,9 +303,9 @@ ColorRGB
 ColorRGB::jetColorMap(Real val)
 {
   val = Math::clamp(val, 0, 1);
-  return ColorRGB(ColorRGBInternal::base(val - 0.5),
+  return ColorRGB(ColorRGBInternal::base(val - 0.25),
                   ColorRGBInternal::base(val),
-                  ColorRGBInternal::base(val + 0.5));
+                  ColorRGBInternal::base(val + 0.25));
 }
 
 std::string
