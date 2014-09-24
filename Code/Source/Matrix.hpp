@@ -552,7 +552,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     }
 
     /** Post-multiply by a scalar and assign. */
-    Matrix & operator*(T const & s)
+    Matrix & operator*=(T const & s)
     {
       for (T * v = values, * e = values + numElements(); v != e; ++v)
         (*v) *= s;
@@ -647,6 +647,26 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
      * @see postmulVector()
      */
     template <typename U> void MultMv(U const * v, U * w) const { postmulVector(v, w); }
+
+    /** Post-divide by a scalar. */
+    Matrix operator/(T const & s) const
+    {
+      Matrix result(numRows(), numColumns());
+      T * u = result.values;
+      for (T const * v = values, * e = values + numElements(); v != e; ++v, ++u)
+        *u = s / (*v);
+
+      return result;
+    }
+
+    /** Post-divide by a scalar and assign. */
+    Matrix & operator/=(T const & s)
+    {
+      for (T * v = values, * e = values + numElements(); v != e; ++v)
+        (*v) /= s;
+
+      return *this;
+    }
 
     T const & min() const { return AddressableBaseT::min(); }
     T const & max() const { return AddressableBaseT::max(); }

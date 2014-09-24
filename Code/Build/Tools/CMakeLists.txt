@@ -272,38 +272,72 @@ ENDIF()
 SET(TheaAllTools ${TheaAllTools} MeshConv)
 
 #===========================================================
-# MeshFeatures
+# MeshGlobalFeatures
 #===========================================================
 
 # Source file lists
-FILE(GLOB MeshFeaturesSources
-     ${SourceRoot}/Tools/MeshFeatures/*.cpp)
+FILE(GLOB MeshGlobalFeaturesSources
+     ${SourceRoot}/Tools/MeshGlobalFeatures/*.cpp)
 
 # Libraries to link to
-SET(MeshFeaturesLibraries
+SET(MeshGlobalFeaturesLibraries
     Thea
     ${Lib3ds_LIBRARIES}
     ${Boost_LIBRARIES}
     ${PLATFORM_LIBRARIES})
 
 # Build products
-ADD_EXECUTABLE(MeshFeatures ${MeshFeaturesSources})
+ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
 
 # Additional libraries to be linked
-TARGET_LINK_LIBRARIES(MeshFeatures ${MeshFeaturesLibraries})
+TARGET_LINK_LIBRARIES(MeshGlobalFeatures ${MeshGlobalFeaturesLibraries})
 
 # Linker flags
 IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+  SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
 ENDIF()
 
 # Fix library install names on OS X
 IF(APPLE)
   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
-  OSX_FIX_DYLIB_REFERENCES(MeshFeatures "${MeshFeaturesLibraries}")
+  OSX_FIX_DYLIB_REFERENCES(MeshGlobalFeatures "${MeshGlobalFeaturesLibraries}")
 ENDIF()
 
-SET(TheaAllTools ${TheaAllTools} MeshFeatures)
+SET(TheaAllTools ${TheaAllTools} MeshGlobalFeatures)
+
+#===========================================================
+# MeshLocalFeatures
+#===========================================================
+
+# Source file lists
+FILE(GLOB MeshLocalFeaturesSources
+     ${SourceRoot}/Tools/MeshLocalFeatures/*.cpp)
+
+# Libraries to link to
+SET(MeshLocalFeaturesLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(MeshLocalFeatures ${MeshLocalFeaturesSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(MeshLocalFeatures ${MeshLocalFeaturesLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(MeshLocalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(MeshLocalFeatures "${MeshLocalFeaturesLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} MeshLocalFeatures)
 
 #===========================================================
 # MeshFix
