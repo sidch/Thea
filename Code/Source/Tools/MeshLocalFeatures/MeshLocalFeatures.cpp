@@ -70,6 +70,7 @@ struct MeshScaleType
 MeshScaleType mesh_scale_type = MeshScaleType::BSPHERE;
 bool normalize_by_mesh_scale = false;
 double mesh_scale = 1;
+bool is_oriented = false;  // all normals point outwards
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
@@ -151,6 +152,10 @@ main(int argc, char * argv[])
     else if (arg == "--normalize")
     {
       normalize_by_mesh_scale = true;
+    }
+    else if (arg == "--is-oriented")
+    {
+      is_oriented = true;
     }
     else if (arg == "--binary")
     {
@@ -518,12 +523,17 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
     if (v0 < 0)
       v0 = sdf.compute(positions[i],  normals[i], false);
 
-    double v1 = sdf.compute(positions[i], -normals[i], true);
-    if (v1 < 0)
-      v1 = sdf.compute(positions[i], -normals[i], false);
+    if (is_oriented)
+      values[i] = v0 * scaling;
+    else
+    {
+      double v1 = sdf.compute(positions[i], -normals[i], true);
+      if (v1 < 0)
+        v1 = sdf.compute(positions[i], -normals[i], false);
 
-    double vmin = (v1 < 0 || (v0 >= 0 && v0 < v1)) ? v0 : v1;
-    values[i] = (vmin < 0 ? 0 : vmin) * scaling;
+      double vmin = (v1 < 0 || (v0 >= 0 && v0 < v1)) ? v0 : v1;
+      values[i] = (vmin < 0 ? 0 : vmin) * scaling;
+    }
   }
 
   THEA_CONSOLE << "  -- done";
