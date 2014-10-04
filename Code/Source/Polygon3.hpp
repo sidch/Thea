@@ -143,7 +143,7 @@ class THEA_API Polygon3
 
     /**
      * Utility function to split a (possibly non-convex) quadrilateral into a pair of triangles. The quadrilateral is assumed to
-     * be planar.
+     * be planar and a default tolerance threshold is used for checking degeneracy.
      *
      * @param p0 Position of the first vertex of the quadrilateral.
      * @param p1 Position of the second vertex of the quadrilateral.
@@ -161,14 +161,48 @@ class THEA_API Polygon3
      * @return The number of triangles produced (can be < 2 if the quadrilateral is degenerate).
      *
      * @note Might break in very very degenerate cases (not fully tested).
+     * @note Have to have two versions of this function -- one with a default tolerance and one with a caller-specified
+     *   tolerance, since Visual Studio (and other compilers?) has some problems with template resolution of default arguments.
+     */
+    template <typename T>
+    static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
+                               VectorN<3, T> const & p2, VectorN<3, T> const & p3,
+                               int & i0, int & j0, int & k0,
+                               int & i1, int & j1, int & k1)
+    {
+      // Tolerance a bit smaller than for linear quantities, we're comparing area^2
+      return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, Math::eps<T>() * Math::eps<T>());
+    }
+
+    /**
+     * Utility function to split a (possibly non-convex) quadrilateral into a pair of triangles. The quadrilateral is assumed to
+     * be planar.
+     *
+     * @param p0 Position of the first vertex of the quadrilateral.
+     * @param p1 Position of the second vertex of the quadrilateral.
+     * @param p2 Position of the third vertex of the quadrilateral.
+     * @param p3 Position of the fourth vertex of the quadrilateral.
+     *
+     * @param i0 Used to return the index of the first vertex of the first triangle.
+     * @param j0 Used to return the index of the second vertex of the first triangle.
+     * @param k0 Used to return the index of the third vertex of the first triangle.
+     *
+     * @param i1 Used to return the index of the first vertex of the second triangle.
+     * @param j1 Used to return the index of the second vertex of the second triangle.
+     * @param k1 Used to return the index of the third vertex of the second triangle.
+     *
+     * @param epsilon A tolerance threshold for checking degeneracy.
+     *
+     * @return The number of triangles produced (can be < 2 if the quadrilateral is degenerate).
+     *
+     * @note Might break in very very degenerate cases (not fully tested).
      */
     template <typename T>
     static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
                                VectorN<3, T> const & p2, VectorN<3, T> const & p3,
                                int & i0, int & j0, int & k0,
                                int & i1, int & j1, int & k1,
-                               T const & epsilon = Math::eps<T>() * Math::eps<T>())  // a bit smaller than usual, we're
-                                                                                     // comparing area^2
+                               T const & epsilon)
     {
       typedef VectorN<3, T> VectorT;
 
