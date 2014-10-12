@@ -18,7 +18,7 @@ usage(int argc, char * argv[])
 {
   THEA_CONSOLE << "Usage: " << argv[0] << " [options] <mesh> <out-pts>";
   THEA_CONSOLE << "Options:";
-  THEA_CONSOLE << " -n N : Generate approximately N samples [=5000]";
+  THEA_CONSOLE << " -n N : Generate N samples [=5000]";
   THEA_CONSOLE << " -v   : Generate samples at mesh vertices (ignores -n) [=false]";
   return 0;
 }
@@ -50,7 +50,7 @@ main(int argc, char * argv[])
 
   string mesh_path;
   string out_path;
-  long approx_num_samples = 5000;
+  long num_samples = 5000;
   bool vertex_samples = false;
 
   int curr_pos_arg = 0;
@@ -67,7 +67,7 @@ main(int argc, char * argv[])
         if (i >= argc)
           return usage(argc, argv);
 
-        if (sscanf(argv[i], "%ld", &approx_num_samples) != 1 || approx_num_samples < 0)
+        if (sscanf(argv[i], "%ld", &num_samples) != 1 || num_samples < 0)
         {
           THEA_ERROR << "Invalid number of samples";
           return -1;
@@ -108,7 +108,7 @@ main(int argc, char * argv[])
     else
     {
       MeshSampler<Mesh> sampler(mg);
-      sampler.sampleEvenlyByArea(approx_num_samples, positions, &normals);
+      sampler.sampleEvenlyByArea(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT);
     }
 
     ofstream out(out_path.c_str());

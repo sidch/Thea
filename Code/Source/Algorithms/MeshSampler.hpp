@@ -47,6 +47,8 @@
 #include "MeshTriangles.hpp"
 #include "../Random.hpp"
 #include "../Vector3.hpp"
+#include <algorithm>
+#include <cmath>
 
 namespace Thea {
 namespace Algorithms {
@@ -59,6 +61,19 @@ class MeshSampler
     typedef MeshT                         Mesh;       ///< The mesh class.
     typedef MeshTriangles<Mesh>           Triangles;  ///< A set of mesh triangles.
     typedef typename Triangles::Triangle  Triangle;   ///< A triangle belonging to a face of the mesh.
+
+    /** Whether to return exactly or approximately the desired number of sampled points. */
+    struct CountMode
+    {
+      /** Supported values. */
+      enum Value
+      {
+        EXACT,       ///< Return exactly the desired number of samples.
+        APPROXIMATE  ///< Return approximately the desired number of samples (likely to be faster than EXACT).
+      };
+
+      THEA_ENUM_CLASS_BODY(CountMode)
+    };
 
     /**
      * Constructs the object to compute sample points on a given mesh. The mesh must persist as long as this object does.
@@ -95,22 +110,28 @@ class MeshSampler
     /**
      * Samples points from the mesh evenly by area.
      *
-     * @param approx_num_samples The approximate number of samples to compute. This need <em>not</em> be exactly the number
-     *   actually computed (and returned by the function).
+     * @param desired_num_samples The number of samples desired. This need <em>not</em> be exactly the number actually computed
+     *   (and returned by the function), unless \a count_mode == CountMode::EXACT.
      * @param positions Used to return the sample positions.
      * @param face_normals If not null, used to return the normals of the parent faces of the samples.
      * @param triangles If not null, used to return the mesh triangles from which the samples were selected.
+     * @param count_mode If CountMode::EXACT, exactly \a desired_num_samples samples are returned. Else, approximately
+     *   \a desired_num_samples samples are returned. The latter is likely to be faster.
      *
      * @return The number of samples computed.
      */
-    long sampleEvenlyByArea(long approx_num_samples,
+    long sampleEvenlyByArea(long desired_num_samples,
                             TheaArray<Vector3> & positions,
                             TheaArray<Vector3> * face_normals = NULL,
-                            TheaArray<Triangle const *> * triangles = NULL) const
+                            TheaArray<Triangle const *> * triangles = NULL,
+                            CountMode count_mode = CountMode::EXACT) const
     {
       positions.clear();
       if (face_normals) face_normals->clear();
       if (triangles) triangles->clear();
+
+      if (desired_num_samples <= 0)
+        return 0;
 
       Triangle const * tarray;
       long tcount;
@@ -130,6 +151,9 @@ class MeshSampler
         }
       }
 
+      if (tcount <= 0)
+        return 0;
+
       double total_area = 0;
       for (long i = 0; i < tcount; ++i)
         total_area += tarray[i].getArea();
@@ -137,20 +161,47 @@ class MeshSampler
       if (total_area <= 0)
         return 0;
 
-      for (long i = 0; i < tcount; ++i)
+      if (count_mode == CountMode::EXACT)
       {
-        double frac_samples = (approx_num_samples * tarray[i].getArea()) / total_area;
-        while (frac_samples > 0)
+        TheaArray<double> cum_areas((array_size_t)tcount);
+        cum_areas[0] = tarray[0].getArea();
+        for (array_size_t i = 1; i < cum_areas.size(); ++i)
+          cum_areas[i] = cum_areas[i - 1] + tarray[i].getArea();
+
+        positions.resize((array_size_t)desired_num_samples);
+        if (face_normals) face_normals->resize(positions.size());
+        if (triangles) triangles->resize(positions.size());
+
+        // Sample N triangles with replacement, weighted by area
+        double const * first = &cum_areas[0];
+        double const * last = first + cum_areas.size();
+        for (array_size_t i = 0; i < positions.size(); ++i)
         {
-          // Last (possible) sample?
-          if (frac_samples < 1 && Random::common().uniform01() > frac_samples)
-            break;
+          double t = Random::common().uniform01() * total_area;
+          long tri_index = std::min((long)(std::lower_bound(first, last, t) - first), tcount - 1);
 
-          positions.push_back(tarray[i].randomPoint());
-          if (face_normals) face_normals->push_back(tarray[i].getNormal());
-          if (triangles) triangles->push_back(&tarray[i]);
+          positions[i] = tarray[tri_index].randomPoint();
+          if (face_normals) (*face_normals)[i] = tarray[tri_index].getNormal();
+          if (triangles) (*triangles)[i] = &tarray[tri_index];
+        }
+      }
+      else
+      {
+        for (long i = 0; i < tcount; ++i)
+        {
+          double frac_samples = (desired_num_samples * tarray[i].getArea()) / total_area;
+          while (frac_samples > 0)
+          {
+            // Last (possible) sample?
+            if (frac_samples < 1 && Random::common().uniform01() > frac_samples)
+              break;
 
-          frac_samples -= 1.0;
+            positions.push_back(tarray[i].randomPoint());
+            if (face_normals) face_normals->push_back(tarray[i].getNormal());
+            if (triangles) triangles->push_back(&tarray[i]);
+
+            frac_samples -= 1.0;
+          }
         }
       }
 
