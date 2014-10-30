@@ -237,7 +237,6 @@ App::parseOptions(int argc, char * argv[])
   po::store(cmdline_parsed, vm);
 
   // Now read the config file, if it is found
-  if (vm.count("conf") > 0) conf_file = vm["conf"].as<std::string>();
   if (QFile::exists(QFile::decodeName(conf_file.c_str())))
   {
     qDebug() << "Reading options from config file: " << conf_file;
