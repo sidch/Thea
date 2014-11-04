@@ -51,6 +51,7 @@
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <algorithm>
+#include <memory>
 
 namespace Thea {
 
@@ -60,11 +61,13 @@ template <typename T, typename Index2DT, typename Index1DT> class CompressedRowM
 template <typename T, typename Index2DT, typename Index1DT> class CompressedColumnMatrix;
 
 /** A standard dense 2D matrix, either row-major or column-major. */
-template <typename T, MatrixLayout::Value L = MatrixLayout::ROW_MAJOR>
+template < typename T, MatrixLayout::Value L = MatrixLayout::ROW_MAJOR, typename AllocT = std::allocator<T> >
 class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatrix<T>
 {
   private:
     typedef AddressableMatrix<T> AddressableBaseT;
+
+    AllocT allocator;
 
   public:
     THEA_DEF_POINTER_TYPES(Matrix, shared_ptr, weak_ptr)
@@ -205,7 +208,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Destructor. */
     ~Matrix()
     {
-      if (owns_memory) delete [] values;
+      if (owns_memory) allocator.deallocate(values, (size_t)numElements());
     }
 
     /** Assignment operator. */
@@ -239,12 +242,13 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (num_rows != num_rows_ || num_cols != num_cols_)
       {
+        long old_num_elems = numElements();
         long new_num_elems = num_rows_ * num_cols_;
-        if (numElements() != new_num_elems)
+        if (old_num_elems != new_num_elems)
         {
-          delete [] values;
+          allocator.deallocate(values, (size_t)old_num_elems);
 
-          if (new_num_elems > 0) values = new T[new_num_elems];
+          if (new_num_elems > 0) values = allocator.allocate((size_t)new_num_elems);
           else                   values = NULL;
         }
 
@@ -295,12 +299,13 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       long new_num_rows = num_rows + num_rows_to_append;
       long new_num_elems = new_num_rows * num_cols;
-      T * new_values = new T[new_num_elems];
+      T * new_values = allocator.allocate((size_t)new_num_elems);
 
       if (!this->isEmpty())
       {
-        Algorithms::fastCopy(values, values + numElements(), new_values);
-        delete [] values;
+        size_t old_num_elems = (size_t)numElements();
+        Algorithms::fastCopy(values, values + old_num_elems, new_values);
+        allocator.deallocate(values, old_num_elems);
       }
 
       values = new_values;
@@ -344,12 +349,13 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       long new_num_cols = num_cols + num_cols_to_append;
       long new_num_elems = num_rows * new_num_cols;
-      T * new_values = new T[new_num_elems];
+      T * new_values = allocator.allocate((size_t)new_num_elems);
 
       if (!this->isEmpty())
       {
-        Algorithms::fastCopy(values, values + numElements(), new_values);
-        delete [] values;
+        size_t old_num_elems = (size_t)numElements();
+        Algorithms::fastCopy(values, values + old_num_elems, new_values);
+        allocator.deallocate(values, old_num_elems);
       }
 
       values = new_values;
