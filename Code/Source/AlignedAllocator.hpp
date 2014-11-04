@@ -61,15 +61,15 @@ template <typename T, size_t N = 16>
 class AlignedAllocator
 {
   public:
-    typedef T value_type;
-    typedef std::size_t size_type;
-    typedef std::ptrdiff_t difference_type;
+    typedef T value_type;                    ///< Type of allocated objects.
+    typedef std::size_t size_type;           ///< Type of block sizes.
+    typedef std::ptrdiff_t difference_type;  ///< Type of difference of two pointers.
 
-    typedef T * pointer;
-    typedef const T * const_pointer;
+    typedef T * pointer;                     ///< Pointer to an allocated object/block.
+    typedef T const * const_pointer;         ///< Const pointer to an allocated object/block.
 
-    typedef T & reference;
-    typedef const T & const_reference;
+    typedef T & reference;                   ///< Reference to an allocated object.
+    typedef T const & const_reference;       ///< Const reference to an allocated object.
 
   public:
     /** Default Constructor. */
