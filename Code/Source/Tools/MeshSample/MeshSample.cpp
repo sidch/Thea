@@ -19,6 +19,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Usage: " << argv[0] << " [options] <mesh> <out-pts>";
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << " -n N : Generate N samples [=5000]";
+  THEA_CONSOLE << " -s   : Generate approximately uniformly separated samples [=false]";
   THEA_CONSOLE << " -v   : Generate samples at mesh vertices (ignores -n) [=false]";
   return 0;
 }
@@ -51,6 +52,7 @@ main(int argc, char * argv[])
   string mesh_path;
   string out_path;
   long num_samples = 5000;
+  bool uniformly_separated = false;
   bool vertex_samples = false;
 
   int curr_pos_arg = 0;
@@ -61,6 +63,8 @@ main(int argc, char * argv[])
     {
       if (arg == "-v")
         vertex_samples = true;
+      else if (arg == "-s")
+        uniformly_separated = true;
       else if (arg == "-n")
       {
         ++i;
@@ -108,7 +112,10 @@ main(int argc, char * argv[])
     else
     {
       MeshSampler<Mesh> sampler(mg);
-      sampler.sampleEvenlyByArea(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT);
+      if (uniformly_separated)
+        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT, -1, true);
+      else
+        sampler.sampleEvenlyByArea(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT, true);
     }
 
     ofstream out(out_path.c_str());
