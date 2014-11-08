@@ -18,9 +18,10 @@ usage(int argc, char * argv[])
 {
   THEA_CONSOLE << "Usage: " << argv[0] << " [options] <mesh> <out-pts>";
   THEA_CONSOLE << "Options:";
-  THEA_CONSOLE << " -n N : Generate N samples [=5000]";
-  THEA_CONSOLE << " -s   : Generate approximately uniformly separated samples [=false]";
-  THEA_CONSOLE << " -v   : Generate samples at mesh vertices (ignores -n) [=false]";
+  THEA_CONSOLE << " -nN   : Generate N samples [=5000]";
+  THEA_CONSOLE << " -s[F] : Generate approximately uniformly separated samples";
+  THEA_CONSOLE << "         with an initial oversampling factor of F";
+  THEA_CONSOLE << " -v    : Generate samples only at mesh vertices (ignores -n)";
   return 0;
 }
 
@@ -53,6 +54,7 @@ main(int argc, char * argv[])
   string out_path;
   long num_samples = 5000;
   bool uniformly_separated = false;
+  float oversampling_factor = -1;
   bool vertex_samples = false;
 
   int curr_pos_arg = 0;
@@ -63,15 +65,25 @@ main(int argc, char * argv[])
     {
       if (arg == "-v")
         vertex_samples = true;
-      else if (arg == "-s")
-        uniformly_separated = true;
-      else if (arg == "-n")
+      else if (beginsWith(arg, "-s"))
       {
-        ++i;
-        if (i >= argc)
+        uniformly_separated = true;
+
+        if (arg.length() > 2)
+        {
+          if (sscanf(arg.substr(2).c_str(), "%f", &oversampling_factor) != 1)
+          {
+            THEA_ERROR << "Invalid oversampling factor";
+            return -1;
+          }
+        }
+      }
+      else if (beginsWith(arg, "-n"))
+      {
+        if (arg.length() <= 2)
           return usage(argc, argv);
 
-        if (sscanf(argv[i], "%ld", &num_samples) != 1 || num_samples < 0)
+        if (sscanf(arg.substr(2).c_str(), "%ld", &num_samples) != 1 || num_samples < 0)
         {
           THEA_ERROR << "Invalid number of samples";
           return -1;
@@ -113,9 +125,14 @@ main(int argc, char * argv[])
     {
       MeshSampler<Mesh> sampler(mg);
       if (uniformly_separated)
-        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT, -1, true);
+      {
+        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT,
+                                         oversampling_factor, true);
+      }
       else
+      {
         sampler.sampleEvenlyByArea(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT, true);
+      }
     }
 
     ofstream out(out_path.c_str());

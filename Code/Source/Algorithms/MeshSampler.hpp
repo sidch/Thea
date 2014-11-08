@@ -300,7 +300,7 @@ class MeshSampler
                                   TheaArray<Vector3> * face_normals = NULL,
                                   TheaArray<Triangle const *> * triangles = NULL,
                                   CountMode count_mode = CountMode::EXACT,
-                                  int oversampling_factor = -1,
+                                  Real oversampling_factor = -1,
                                   bool verbose = false) const
     {
       positions.clear();
@@ -318,14 +318,15 @@ class MeshSampler
       TheaArray<Vector3> orig_face_normals;
       TheaArray<Triangle const *> orig_triangles;
 
-      static int const DEFAULT_OVERSAMPLING_FACTOR = 3;
+      static Real const DEFAULT_OVERSAMPLING_FACTOR = 3;
       if (oversampling_factor < 0)
         oversampling_factor = DEFAULT_OVERSAMPLING_FACTOR;
 
-      long orig_num_samples = sampleEvenlyByArea(oversampling_factor * desired_num_samples, orig_positions,
+      long num_oversampling = (long)std::ceil(oversampling_factor * desired_num_samples);
+      long orig_num_samples = sampleEvenlyByArea(num_oversampling, orig_positions,
                                                  face_normals ? &orig_face_normals : NULL,
                                                  triangles ? &orig_triangles : NULL, CountMode::EXACT);
-      if (orig_num_samples < oversampling_factor * desired_num_samples)
+      if (orig_num_samples < num_oversampling)
       {
         THEA_ERROR << "MeshSampler: Could not compute oversampling";
         return 0;
