@@ -47,9 +47,9 @@ GLContext GLCaps::headless_context;
   char * GLCaps::headless_buffer = NULL;
 #elif defined(THEA_WINDOWS)
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
-  Display * GLCaps::display = NULL;
-  Pixmap GLCaps::pixmap;
-  GLXPixmap GLCaps::glx_pixmap;
+  Display * GLCaps::headless_display = NULL;
+  Pixmap GLCaps::headless_pixmap;
+  GLXPixmap GLCaps::headless_glx_pixmap;
 #elif defined(THEA_OSX)
 #endif
 
