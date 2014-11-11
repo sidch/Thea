@@ -217,7 +217,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
       indices2.clear();
       values.clear();
       for (typename TheaArray<Index1D>::iterator i = indices1.begin(); i != indices1.end(); ++i)
-        *i = static_cast<T>(0);
+        *i = static_cast<Index1D>(0);
     }
 
   protected:
