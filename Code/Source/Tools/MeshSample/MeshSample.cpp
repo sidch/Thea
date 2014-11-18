@@ -2,6 +2,7 @@
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 
@@ -135,8 +136,26 @@ main(int argc, char * argv[])
       }
     }
 
+    // Sanitize outputs, sometimes this is a problem with values smaller than 32-bit float precision like 4.01752e-42 getting
+    // written to the output stream. This seems to be a GCC bug (feature?) where the optimizer is allowed to use higher
+    // precision registers for floating point numbers unless -ffloat-store is enabled
+    //
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=10644
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+    //
+    for (array_size_t i = 0; i < positions.size(); ++i)
+    {
+      if (std::fabs(positions[i].x()) < 1e-35) positions[i].x() = 0;
+      if (std::fabs(positions[i].y()) < 1e-35) positions[i].y() = 0;
+      if (std::fabs(positions[i].z()) < 1e-35) positions[i].z() = 0;
+
+      if (std::fabs(normals[i].x()) < 1e-35) normals[i].x() = 0;
+      if (std::fabs(normals[i].y()) < 1e-35) normals[i].y() = 0;
+      if (std::fabs(normals[i].z()) < 1e-35) normals[i].z() = 0;
+    }
+
     ofstream out(out_path.c_str());
-    for (size_t i = 0; i < positions.size(); ++i)
+    for (array_size_t i = 0; i < positions.size(); ++i)
     {
       out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
           << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z() << '\n';
