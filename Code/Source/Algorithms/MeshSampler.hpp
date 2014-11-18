@@ -214,7 +214,7 @@ class MeshSampler
 
           if (verbose)
           {
-            int curr_percent = std::floor(100 * (i / (float)desired_num_samples));
+            int curr_percent = (int)std::floor(100 * (i / (float)desired_num_samples));
             if (curr_percent >= prev_percent + 2)
             {
               for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
@@ -250,7 +250,7 @@ class MeshSampler
 
             if (verbose)
             {
-              int curr_percent = std::floor(100 * (positions.size() / (float)desired_num_samples));
+              int curr_percent = (int)std::floor(100 * (positions.size() / (float)desired_num_samples));
               if (curr_percent >= prev_percent + 2 && curr_percent < 100)
               {
                 for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
@@ -389,7 +389,7 @@ class MeshSampler
 
         if (verbose)
         {
-          int curr_percent = std::floor(100 * (i / (float)desired_num_samples));
+          int curr_percent = (int)std::floor(100 * (i / (float)desired_num_samples));
           if (curr_percent >= prev_percent + 2)
           {
             for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
