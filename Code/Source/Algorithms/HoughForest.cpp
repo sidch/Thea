@@ -952,7 +952,7 @@ class HoughTree
 
       TheaArray<double> sum((array_size_t)num_classes, 0.0);
       TheaArray<double> sum_squares((array_size_t)num_classes, 0.0);
-      TheaArray<double> class_freq((array_size_t)num_classes, 0);
+      TheaArray<long>   class_freq((array_size_t)num_classes, 0);
 
       for (array_size_t i = 0; i < elems.size(); ++i)
       {
