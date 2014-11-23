@@ -47,6 +47,39 @@
 #include <sstream>
 
 namespace Thea {
+
+LockedOutputStream::LockedOutputStream(std::ostream & stream_, bool append_newline_)
+: stream(&stream_), append_newline(append_newline_)
+{
+  setOutputLock(true);
+}
+
+LockedOutputStream::LockedOutputStream(std::ostream & stream_, std::string const & prefix, bool append_newline_)
+: stream(&stream_), append_newline(append_newline_)
+{
+  setOutputLock(true);
+  getStream() << prefix;
+}
+
+LockedOutputStream::~LockedOutputStream()
+{
+  if (append_newline)
+    getStream() << std::endl;
+
+  setOutputLock(false);
+}
+
+void
+LockedOutputStream::setOutputLock(bool value)
+{
+  static Spinlock lock;  // one lock for ALL output streams -- can't be bothered to implement a shared lock for each stream
+
+  if (value)
+    lock.lock();
+  else
+    lock.unlock();
+}
+
 namespace LogInternal {
 
 std::string
@@ -75,35 +108,6 @@ currentDateTimeToString()
   return os.str();
 }
 
-LockedOutputStream::LockedOutputStream(std::ostream & stream_)
-: stream(&stream_)
-{
-  setOutputLock(true);
-}
-
-LockedOutputStream::LockedOutputStream(std::ostream & stream_, std::string const & prefix)
-: stream(&stream_)
-{
-  setOutputLock(true);
-  getStream() << prefix;
-}
-
-LockedOutputStream::~LockedOutputStream()
-{
-  getStream() << std::endl;
-  setOutputLock(false);
-}
-
-void
-LockedOutputStream::setOutputLock(bool value)
-{
-  static Spinlock lock;  // one lock for ALL output streams -- can't be bothered to implement a shared lock for each stream
-
-  if (value)
-    lock.lock();
-  else
-    lock.unlock();
-}
-
 } // namespace LogInternal
+
 } // namespace Thea

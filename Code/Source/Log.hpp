@@ -48,6 +48,43 @@
 #include <string>
 
 namespace Thea {
+
+/**
+ * A temporary object that locks an output stream on construction and unlocks it (after optionally writing a newline) on
+ * destruction. All objects piped to the object in a single line are written atomically. Useful e.g. for writing log messages to
+ * the same file/console from multiple threads.
+ *
+ * Example:
+ * \code
+ *   LockedOutputStream(std::cout).getStream() << "This " << " line " << " will " << " be " << " written " << " atomically";
+ * \endcode
+ *
+ * @note Currently, all objects of this class share the same lock, regardless of the wrapped stream.
+ */
+class THEA_API LockedOutputStream
+{
+  public:
+    /** Constructor. */
+    LockedOutputStream(std::ostream & stream_, bool append_newline_ = false);
+
+    /** Constructor. Writes a prefix to the stream after acquiring the output lock. */
+    LockedOutputStream(std::ostream & stream_, std::string const & prefix, bool append_newline_ = false);
+
+    /** Destructor. Writes a newline to the output stream if the object was constructed with <tt>append_newline = true</tt>. */
+    ~LockedOutputStream();
+
+    /** Get the locked stream. */
+    std::ostream & getStream() { return *stream; }
+
+  private:
+    std::ostream * stream;  ///< The wrapped output stream.
+    bool append_newline;  ///< If true, a newline is written to the output stream when this object is destroyed.
+
+    /** Lock/unlock the common lock */
+    void setOutputLock(bool value);
+
+}; // class LockedOutputStream
+
 namespace LogInternal {
 
 // Extract the filename from a full path.
@@ -56,32 +93,8 @@ THEA_API std::string stripPathFromFilename(std::string const & fullPath);
 // Get the current date and time as a string (not threadsafe).
 THEA_API std::string currentDateTimeToString();
 
-// A temporary object that locks an output stream on construction and unlocks it (after writing a newline) on destruction. All
-// objects of this class share the same lock, regardless of the wrapped stream.
-class THEA_API LockedOutputStream
-{
-  public:
-    // Constructor.
-    LockedOutputStream(std::ostream & stream_);
-
-    // Constructor. Writes a prefix string to the stream after acquiring the output lock.
-    LockedOutputStream(std::ostream & stream_, std::string const & prefix);
-
-    // Destructor.
-    ~LockedOutputStream();
-
-    // Get the locked stream.
-    std::ostream & getStream() { return *stream; }
-
-  private:
-    std::ostream * stream;
-
-    // Lock/unlock the common lock
-    void setOutputLock(bool value);
-
-}; // class LockedOutputStream
-
 } // namespace LogInternal
+
 } // namespace Thea
 
 // Fully qualify references in #defines so they can be used in client programs in non-Thea namespaces without namespace errors.
@@ -95,13 +108,13 @@ class THEA_API LockedOutputStream
  * Synchronized console output stream, with no line prefix. Outputs a newline at the end of every sequence of stream operations
  * (i.e. after every stack such as <code>THEA_CONSOLE << a << b << c;</code>).
  */
-#define THEA_CONSOLE Thea::LogInternal::LockedOutputStream(std::cout).getStream()
+#define THEA_CONSOLE Thea::LockedOutputStream(std::cout, true).getStream()
 
 /**
  * Synchronized logging stream, with a prefix indicating the time, source file and line number. Outputs a newline at the end of
  * every sequence of stream operations (i.e. after every stack such as <code>THEA_LOG << a << b << c;</code>).
  */
-#define THEA_LOG Thea::LogInternal::LockedOutputStream(std::cout, THEA_LOG_STANDARD_PREFIX).getStream()
+#define THEA_LOG Thea::LockedOutputStream(std::cout, THEA_LOG_STANDARD_PREFIX, true).getStream()
 
 #ifdef THEA_DEBUG_BUILD
 /**
@@ -110,7 +123,7 @@ class THEA_API LockedOutputStream
  *
  * Deactivated in release mode.
  */
-#  define THEA_DEBUG Thea::LogInternal::LockedOutputStream(std::cout, THEA_LOG_STANDARD_PREFIX).getStream()
+#  define THEA_DEBUG Thea::LockedOutputStream(std::cout, THEA_LOG_STANDARD_PREFIX, true).getStream()
 #else
 /**
  * Synchronized stream for debug messages, with a prefix indicating the time, source file and line number. Outputs a newline at
@@ -125,12 +138,12 @@ class THEA_API LockedOutputStream
  * Synchronized stream for error messages, with a prefix indicating the time, source file and line number. Outputs a newline at
  * the end of every sequence of stream operations (i.e. after every stack such as <code>THEA_ERROR << a << b << c;</code>).
  */
-#define THEA_ERROR Thea::LogInternal::LockedOutputStream(std::cerr, THEA_LOG_STANDARD_PREFIX + "ERROR: ").getStream()
+#define THEA_ERROR Thea::LockedOutputStream(std::cerr, THEA_LOG_STANDARD_PREFIX + "ERROR: ", true).getStream()
 
 /**
  * Synchronized stream for warning messages, with a prefix indicating the time, source file and line number. Outputs a newline
  * at the end of every sequence of stream operations (i.e. after every stack such as <code>THEA_WARNING << a << b << c;</code>).
  */
-#define THEA_WARNING Thea::LogInternal::LockedOutputStream(std::cerr, THEA_LOG_STANDARD_PREFIX + "WARNING: ").getStream()
+#define THEA_WARNING Thea::LockedOutputStream(std::cerr, THEA_LOG_STANDARD_PREFIX + "WARNING: ", true).getStream()
 
 #endif
