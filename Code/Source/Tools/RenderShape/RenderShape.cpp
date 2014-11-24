@@ -579,7 +579,7 @@ Model::load(string const & path)
       MeshSampler<Mesh> sampler(mesh_group);
 
       double out_scale = min(out_width, out_height);
-      long max_samples = ceil(10 * out_scale);
+      long max_samples = (long)ceil(10 * out_scale);
       long npoints = sampler.sampleEvenlyByArea(max_samples, points);
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
