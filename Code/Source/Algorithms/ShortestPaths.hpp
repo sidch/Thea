@@ -139,13 +139,15 @@ class /* THEA_API */ ShortestPaths
      * @param src_region If non-empty, specifies a set of source vertices and the initial distances
      *   <b>(must be non-negative)</b> to them. In this case the \a src argument is ignored. The predecessor of each such vertex
      *   is absent, unless a shorter path to the vertex is found.
+     * @param include_unreachable If true, vertices unreachable from the source vertex are also returned, mapped to negative
+     *   distances and without predecessors.
      */
     void dijkstra(Graph & graph, VertexHandle src, TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result, double limit = -1,
-                  TheaUnorderedMap<VertexHandle, double> const * src_region = NULL)
+                  TheaUnorderedMap<VertexHandle, double> const * src_region = NULL, bool include_unreachable = false)
     {
       result.clear();
       MapCallback callback(result);
-      dijkstraWithCallback(graph, src, &callback, limit, src_region);
+      dijkstraWithCallback(graph, src, &callback, limit, src_region, include_unreachable);
     }
 
     /**
@@ -178,10 +180,13 @@ class /* THEA_API */ ShortestPaths
      * @param src_region If non-empty, specifies a set of source vertices and the initial distances
      *   <b>(must be non-negative)</b> to them. In this case the \a src argument is ignored. The predecessor of each such vertex
      *   is absent, unless a shorter path to the vertex is found.
+     * @param include_unreachable If true, vertices unreachable from the source vertex are also returned, mapped to negative
+     *   distances and without predecessors.
      */
     template <typename CallbackT>
     void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
-                              TheaUnorderedMap<VertexHandle, double> const * src_region = NULL);
+                              TheaUnorderedMap<VertexHandle, double> const * src_region = NULL,
+                              bool include_unreachable = false);
 
   private:
     /** Status of vertex during Dijkstra traversal. */
@@ -218,7 +223,7 @@ template <typename GraphT>
 template <typename CallbackT>
 void
 ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
-                                            TheaUnorderedMap<VertexHandle, double> const * src_region)
+                                            TheaUnorderedMap<VertexHandle, double> const * src_region, bool include_unreachable)
 {
   if (graph.numVertices() <= 0 || !callback)
     return;
@@ -364,6 +369,20 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
 
     if ((*callback)(data->vertex, data->dist, data->has_pred, data->pred))
       break;
+  }
+
+  if (include_unreachable)
+  {
+    for (typename GraphT::VertexIterator vi = graph.verticesBegin(); vi != graph.verticesEnd(); ++vi)
+    {
+      VertexHandle vertex = graph.getVertex(vi);
+      ScratchElement & data = scratch[vertex];  // no new allocs if the element already exists
+      if (data.flag != BLACK)
+      {
+        if ((*callback)(data.vertex, -1, false, NULL))
+          break;
+      }
+    }
   }
 
   fh_deleteheap(dijkstra_queue);

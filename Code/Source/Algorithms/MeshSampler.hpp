@@ -364,7 +364,7 @@ class MeshSampler
         else
         {
           DijkstraCallback callback;
-          shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region);
+          shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region, /* include_unreachable = */ true);
           if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
           {
             THEA_WARNING << "MeshSampler: Could not return enough uniformly separated samples";
