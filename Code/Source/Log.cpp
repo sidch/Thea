@@ -68,7 +68,7 @@ currentDateTimeToString()
   timeInfo = std::localtime(&rawTime);  // break it down into components w.r.t. the current locale
   std::ostringstream os;
   os << 1900 + timeInfo->tm_year << '-'
-     << std::setw(2) << std::right << std::setfill('0') << timeInfo->tm_mon << '-'
+     << std::setw(2) << std::right << std::setfill('0') << 1 + timeInfo->tm_mon << '-'
      << std::setw(2) << std::right << std::setfill('0') << timeInfo->tm_mday << ' '
      << std::setw(2) << std::right << std::setfill('0') << timeInfo->tm_hour << ':'
      << std::setw(2) << std::right << std::setfill('0') << timeInfo->tm_min  << ':'
