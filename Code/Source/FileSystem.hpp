@@ -145,6 +145,18 @@ class THEA_API FileSystem
      */
     static bool remove(std::string const & path, bool recursive = false);
 
+    /**
+     * Make a copy of a file. Fails, returning false, if the destination already exists.
+     *
+     * @param from The source path.
+     * @param to The destination path.
+     *
+     * @return True if the file was successfully copied, else false.
+     *
+     * @todo Document the behaviour properly for files/symlinks/directories, on different platforms.
+     */
+    static bool copyFile(std::string const & from, std::string const & to);
+
 }; // class FileSystem
 
 } // namespace Thea

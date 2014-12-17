@@ -233,4 +233,19 @@ FileSystem::remove(std::string const & path, bool recursive)
   return true;
 }
 
+bool
+FileSystem::copyFile(std::string const & from, std::string const & to)
+{
+  try
+  {
+    boost::filesystem::copy_file(from, to);
+  }
+  catch (...)
+  {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace Thea
