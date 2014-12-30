@@ -266,7 +266,8 @@ MainWindow::loadNextModel()
 void
 MainWindow::loadPreviousFeatures()
 {
-  if (!QFileInfo(app().options().features).isDir())
+  QFileInfo fdir(app().options().features);
+  if (!fdir.isDir())
     return;
 
   QStringList patterns; getFeaturePatterns(patterns);
@@ -282,9 +283,15 @@ MainWindow::loadPreviousFeatures()
     return;
 
   if (index == 0)
-    model->loadFeatures(info.dir().filePath(files.last()));
+  {
+    model->loadFeatures(fdir.dir().filePath(files.last()));
+    qDebug() << info.dir().filePath(files.last());
+  }
   else
-    model->loadFeatures(info.dir().filePath(files[index - 1]));
+  {
+    model->loadFeatures(fdir.dir().filePath(files[index - 1]));
+    qDebug() << info.dir().filePath(files.last());
+  }
 
   qDebug() << "Loaded features " << model->getFeaturesFilename();
 }
@@ -292,7 +299,8 @@ MainWindow::loadPreviousFeatures()
 void
 MainWindow::loadNextFeatures()
 {
-  if (!QFileInfo(app().options().features).isDir())
+  QFileInfo fdir(app().options().features);
+  if (!fdir.isDir())
     return;
 
   QStringList patterns; getFeaturePatterns(patterns);
@@ -308,9 +316,9 @@ MainWindow::loadNextFeatures()
     return;
 
   if (index == files.size() - 1)
-    model->loadFeatures(info.dir().filePath(files.first()));
+    model->loadFeatures(fdir.dir().filePath(files.first()));
   else
-    model->loadFeatures(info.dir().filePath(files[index + 1]));
+    model->loadFeatures(fdir.dir().filePath(files[index + 1]));
 
   qDebug() << "Loaded features " << model->getFeaturesFilename();
 }

@@ -124,7 +124,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
   THEA_CONSOLE << getName() << ": Loaded " << points.size() << " points with bounding box " << bounds.toString() << " from '"
                << path << '\'';
 
-  std::string features_file_path = getFeaturesFilename(path, features_path);
+  std::string features_file_path = getDefaultFeaturesFilename(path, features_path);
   if (!features_file_path.empty() && loadFeatures(features_file_path))
     THEA_CONSOLE << getName() << ": Loaded " << features.size() << " feature(s) from '" << features_file_path << '\'';
 
@@ -349,39 +349,62 @@ PointCloud::loadFeatures(std::string const & filename_)
 
     if (app().options().accentuate_features)
     {
-      for (array_size_t i = 0; i < features.size(); ++i)
+      if (app().options().color_cube_features && features.size() == 3)
       {
-        TheaArray<Real> sorted = features[i];
-        std::sort(features.begin(), features.end());
-
-        array_size_t tenth = (int)(0.1 * sorted.size());
-        Real lo = *(sorted.begin() + tenth);
-
-        array_size_t ninetieth = (int)(0.9 * sorted.size());
-        Real hi = *(sorted.begin() + ninetieth);
-
-        Real range = hi - lo;
-
-        if (range < 1e-20)
+        Real abs_max = -1;
+        for (array_size_t i = 0; i < features.size(); ++i)
         {
-          lo = sorted.front();
-          hi = sorted.back();
-          range = hi - lo;
+          for (array_size_t j = 0; j < features[i].size(); ++j)
+          {
+            Real abs_feat_val = std::fabs(features[i][j]);
+            if (abs_feat_val > abs_max)
+              abs_max = abs_feat_val;
+          }
+        }
+
+        if (abs_max > 0)
+        {
+          for (array_size_t i = 0; i < features.size(); ++i)
+            for (array_size_t j = 0; j < features[i].size(); ++j)
+              features[i][j] = Math::clamp(0.5 * (features[i][j]  / abs_max + 1), (Real)0, (Real)1);
+        }
+      }
+      else
+      {
+        for (array_size_t i = 0; i < features.size(); ++i)
+        {
+          TheaArray<Real> sorted = features[i];
+          std::sort(features.begin(), features.end());
+
+          array_size_t tenth = (int)(0.1 * sorted.size());
+          Real lo = *(sorted.begin() + tenth);
+
+          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          Real hi = *(sorted.begin() + ninetieth);
+
+          Real range = hi - lo;
 
           if (range < 1e-20)
-            continue;
-        }
+          {
+            lo = sorted.front();
+            hi = sorted.back();
+            range = hi - lo;
 
-        if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
-        {
-          for (array_size_t j = 0; j < features[i].size(); ++j)
-            features[i][j] = Math::clamp((features[i][j] - lo) / range, (Real)0, (Real)1);
-        }
-        else
-        {
-          Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
-          for (array_size_t j = 0; j < features[i].size(); ++j)
-            features[i][j] = Math::clamp((features[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+            if (range < 1e-20)
+              continue;
+          }
+
+          if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
+          {
+            for (array_size_t j = 0; j < features[i].size(); ++j)
+              features[i][j] = Math::clamp((features[i][j] - lo) / range, (Real)0, (Real)1);
+          }
+          else
+          {
+            Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
+            for (array_size_t j = 0; j < features[i].size(); ++j)
+              features[i][j] = Math::clamp((features[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+          }
         }
       }
     }
@@ -393,7 +416,7 @@ PointCloud::loadFeatures(std::string const & filename_)
 }
 
 std::string
-PointCloud::getFeaturesFilename(std::string const & filename, std::string const & features_path) const
+PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string const & features_path) const
 {
   if (FileSystem::fileExists(features_path))
     return features_path;
@@ -593,7 +616,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
   {
     bool has_colors = (!features.empty() || has_normals || app().options().fancy_colors);
     Real scale = getBounds().getExtent().length();
-    Real point_radius = Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
+    Real point_radius = app().options().point_scale * Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
     for (array_size_t i = 0; i < points.size(); ++i)
     {
       if (has_colors)
@@ -616,7 +639,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         if (colors_var) render_system.setColorArray(colors_var);
 
         render_system.pushShapeFlags();
-        render_system.setPointSize(2);
+        render_system.setPointSize(2 * app().options().point_scale);
 
           render_system.sendSequentialIndices(Graphics::RenderSystem::Primitive::POINTS, 0, (long)points.size());
 

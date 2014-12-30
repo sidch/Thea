@@ -737,6 +737,12 @@ Model::loadFeatures(QString const & filename_)
 
   features_filename = filename_;
 
+  if (point_cloud && !point_cloud->loadFeatures(toStdString(filename_)))
+    return false;
+
+  if (!mesh_group)
+    return true;
+
   TheaArray<Vector3> feat_pts;
   TheaArray< TheaArray<Real> > feat_vals(1);
   bool status = true;
@@ -786,39 +792,62 @@ Model::loadFeatures(QString const & filename_)
 
     if (app().options().accentuate_features)
     {
-      for (array_size_t i = 0; i < feat_vals.size(); ++i)
+      if (app().options().color_cube_features && feat_vals.size() == 3)
       {
-        TheaArray<Real> sorted = feat_vals[i];
-        std::sort(sorted.begin(), sorted.end());
-
-        array_size_t tenth = (int)(0.1 * sorted.size());
-        Real lo = *(sorted.begin() + tenth);
-
-        array_size_t ninetieth = (int)(0.9 * sorted.size());
-        Real hi = *(sorted.begin() + ninetieth);
-
-        Real range = hi - lo;
-
-        if (range < 1e-20)
+        Real abs_max = -1;
+        for (array_size_t i = 0; i < feat_vals.size(); ++i)
         {
-          lo = sorted.front();
-          hi = sorted.back();
-          range = hi - lo;
+          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          {
+            Real abs_feat_val = std::fabs(feat_vals[i][j]);
+            if (abs_feat_val > abs_max)
+              abs_max = abs_feat_val;
+          }
+        }
+
+        if (abs_max > 0)
+        {
+          for (array_size_t i = 0; i < feat_vals.size(); ++i)
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp(0.5 * (feat_vals[i][j]  / abs_max + 1), (Real)0, (Real)1);
+        }
+      }
+      else
+      {
+        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        {
+          TheaArray<Real> sorted = feat_vals[i];
+          std::sort(sorted.begin(), sorted.end());
+
+          array_size_t tenth = (int)(0.1 * sorted.size());
+          Real lo = *(sorted.begin() + tenth);
+
+          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          Real hi = *(sorted.begin() + ninetieth);
+
+          Real range = hi - lo;
 
           if (range < 1e-20)
-            continue;
-        }
+          {
+            lo = sorted.front();
+            hi = sorted.back();
+            range = hi - lo;
 
-        if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
-        {
-          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
-            feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
-        }
-        else
-        {
-          Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
-          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
-            feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+            if (range < 1e-20)
+              continue;
+          }
+
+          if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
+          {
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
+          }
+          else
+          {
+            Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+          }
         }
       }
     }

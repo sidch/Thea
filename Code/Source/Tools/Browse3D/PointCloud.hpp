@@ -93,6 +93,9 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
      */
     bool load(std::string const & path, std::string const & features_path = "");
 
+    /** Load features from a file. */
+    bool loadFeatures(std::string const & filename_);
+
     AxisAlignedBox3 const & getBounds() const;
 
     void updateBounds();
@@ -106,14 +109,11 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     /** Invalidate the bounding box of the point cloud. */
     void invalidateBounds();
 
-    /** Load features from a file. */
-    bool loadFeatures(std::string const & filename_);
-
     /**
      * Get the path to the file in which features are stored, given the path to the point cloud and optionally a file/directory
      * containing the features.
      */
-    std::string getFeaturesFilename(std::string const & filename, std::string const & features_path) const;
+    std::string getDefaultFeaturesFilename(std::string const & filename, std::string const & features_path) const;
 
     /** Reconstruct an approximate surface from the point cloud. */
     void reconstructSurface(Graphics::RenderSystem & render_system,

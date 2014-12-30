@@ -90,9 +90,11 @@ App::optsToString() const
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
       << "\n  accentuate-features = " << opts.accentuate_features
+      << "\n  color-cube-features = " << opts.color_cube_features
       << "\n  show-graph = " << opts.show_graph
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
+      << "\n  point-scale = " << opts.point_scale
       << '\n';
 
   return oss.str();
@@ -210,11 +212,13 @@ App::parseOptions(int argc, char * argv[])
           ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
           ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
           ("emph-features,e",      "Make feature distributions easier to view")
+          ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
           ("fancy-points",         "Draw points as shaded spheres?")
           ("fancy-colors,c",       "Color points by a function of position?")
+          ("point-scale,s",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
   ;
 
   po::options_description desc;
@@ -294,6 +298,7 @@ App::parseOptions(int argc, char * argv[])
 
   if (!s_features.empty()) opts.features = toQString(s_features);
   opts.accentuate_features  =  (vm.count("emph-features") > 0);
+  opts.color_cube_features  =  (vm.count("color-cube") > 0);
   opts.show_graph           =  (vm.count("graph") > 0);
   opts.fancy_points         =  (vm.count("fancy-points") > 0);
   opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
