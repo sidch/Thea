@@ -78,8 +78,6 @@ MainWindow::init()
   ui->actionFileOpen->setShortcuts(QKeySequence::Open);
   ui->actionFileSaveAs->setShortcuts(QKeySequence::SaveAs);
   ui->actionFileQuit->setShortcuts(QKeySequence::Quit);
-  ui->actionGoPrevious->setShortcuts(QKeySequence::MoveToPreviousPage);
-  ui->actionGoNext->setShortcuts(QKeySequence::MoveToNextPage);
 
   // Icons for menu options/buttons
   ui->actionFileOpen->setIcon(QIcon::fromTheme("document-open",
@@ -125,6 +123,9 @@ MainWindow::init()
 
   connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
   connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
+
+  connect(ui->actionGoPreviousFeatures, SIGNAL(triggered(bool)), this, SLOT(loadPreviousFeatures()));
+  connect(ui->actionGoNextFeatures,     SIGNAL(triggered(bool)), this, SLOT(loadNextFeatures()));
 
   connect(ui->actionToolsSaveScreenshot, SIGNAL(triggered(bool)), model_display, SLOT(saveScreenshot()));
   connect(ui->actionToolsPickPoints, SIGNAL(toggled(bool)), this, SLOT(setPickPoints(bool)));
@@ -193,18 +194,25 @@ MainWindow::selectAndLoadModel()
     clearOverlays();
 }
 
+void
+getMeshPatterns(QStringList & patterns)
+{
+  patterns << "*.3ds" << "*.obj" << "*.off" << "*.off.bin" << "*.pts";
+}
+
+void
+getFeaturePatterns(QStringList & patterns)
+{
+  patterns << "*.arff" << "*.arff.*" << "*.features" << "*.features.*";
+}
+
 QStringList
-getDirFiles(QString const & filename)
+getDirFiles(QString const & filename, QStringList const & patterns)
 {
   QFileInfo info(filename);
   QDir dir = info.dir();
   if (dir.exists())
-  {
-    QStringList name_filter;
-    name_filter << "*.3ds" << "*.obj" << "*.off" << "*.off.bin" << "*.pts";
-
-    return dir.entryList(name_filter, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
-  }
+    return dir.entryList(patterns, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
   else
     return QStringList();
 }
@@ -212,7 +220,8 @@ getDirFiles(QString const & filename)
 void
 MainWindow::loadPreviousModel()
 {
-  QStringList files = getDirFiles(model->getFilename());
+  QStringList patterns; getMeshPatterns(patterns);
+  QStringList files = getDirFiles(model->getFilename(), patterns);
   if (files.isEmpty())
     return;
 
@@ -234,7 +243,8 @@ MainWindow::loadPreviousModel()
 void
 MainWindow::loadNextModel()
 {
-  QStringList files = getDirFiles(model->getFilename());
+  QStringList patterns; getMeshPatterns(patterns);
+  QStringList files = getDirFiles(model->getFilename(), patterns);
   if (files.isEmpty())
     return;
 
@@ -251,6 +261,58 @@ MainWindow::loadNextModel()
     model->load(info.dir().filePath(files.first()));
   else
     model->load(info.dir().filePath(files[index + 1]));
+}
+
+void
+MainWindow::loadPreviousFeatures()
+{
+  if (!QFileInfo(app().options().features).isDir())
+    return;
+
+  QStringList patterns; getFeaturePatterns(patterns);
+  QStringList files = getDirFiles(app().options().features, patterns);
+  if (files.isEmpty())
+    return;
+
+  QFileInfo info(model->getFeaturesFilename());
+  int index = files.indexOf(info.fileName());
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+    index = 0;
+  else if (files.size() == 1)
+    return;
+
+  if (index == 0)
+    model->loadFeatures(info.dir().filePath(files.last()));
+  else
+    model->loadFeatures(info.dir().filePath(files[index - 1]));
+
+  qDebug() << "Loaded features " << model->getFeaturesFilename();
+}
+
+void
+MainWindow::loadNextFeatures()
+{
+  if (!QFileInfo(app().options().features).isDir())
+    return;
+
+  QStringList patterns; getFeaturePatterns(patterns);
+  QStringList files = getDirFiles(app().options().features, patterns);
+  if (files.isEmpty())
+    return;
+
+  QFileInfo info(model->getFeaturesFilename());
+  int index = files.indexOf(info.fileName());
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+    index = 0;
+  else if (files.size() == 1)
+    return;
+
+  if (index == files.size() - 1)
+    model->loadFeatures(info.dir().filePath(files.first()));
+  else
+    model->loadFeatures(info.dir().filePath(files[index + 1]));
+
+  qDebug() << "Loaded features " << model->getFeaturesFilename();
 }
 
 void

@@ -103,6 +103,12 @@ class MainWindow : public QMainWindow
     /** Load the next model in the directory. */
     void loadNextModel();
 
+    /** Load the previous set of features in the features directory. */
+    void loadPreviousFeatures();
+
+    /** Load the next set of features in the features directory. */
+    void loadNextFeatures();
+
     /** Set the window title. */
     void setWindowTitle(QString const & title);
 

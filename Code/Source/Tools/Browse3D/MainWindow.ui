@@ -127,6 +127,9 @@
     </property>
     <addaction name="actionGoPrevious"/>
     <addaction name="actionGoNext"/>
+    <addaction name="separator"/>
+    <addaction name="actionGoPreviousFeatures"/>
+    <addaction name="actionGoNextFeatures"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -245,6 +248,9 @@
    <property name="toolTip">
     <string>Go to previous 3D file in the directory</string>
    </property>
+   <property name="shortcut">
+    <string>,</string>
+   </property>
   </action>
   <action name="actionGoNext">
    <property name="text">
@@ -252,6 +258,9 @@
    </property>
    <property name="toolTip">
     <string>Go to next 3D file in the directory</string>
+   </property>
+   <property name="shortcut">
+    <string>.</string>
    </property>
   </action>
   <action name="actionViewWireframe">
@@ -309,6 +318,22 @@
    </property>
    <property name="toolTip">
     <string>Turn two-sided lighting on/off</string>
+   </property>
+  </action>
+  <action name="actionGoPreviousFeatures">
+   <property name="text">
+    <string>Previous Features</string>
+   </property>
+   <property name="shortcut">
+    <string>[</string>
+   </property>
+  </action>
+  <action name="actionGoNextFeatures">
+   <property name="text">
+    <string>Next Features</string>
+   </property>
+   <property name="shortcut">
+    <string>]</string>
    </property>
   </action>
  </widget>
