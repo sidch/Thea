@@ -278,8 +278,8 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Load features from a file. */
     bool loadFeatures(QString const & filename_);
 
-    /** Get the path to the file in which features are stored. */
-    QString getFeaturesFilename() const;
+    /** Get the filename of the currently loaded features. */
+    QString const & getFeaturesFilename() const { return features_filename; }
 
     //========================================================================================================================
     // Bounding boxes
@@ -359,9 +359,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Clear the point cloud. */
     void clearPoints();
 
+    /** Get the default path to the file in which features are stored. */
+    QString getDefaultFeaturesFilename() const;
+
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
     QString filename;
+    QString features_filename;
 
     ColorRGBA color;
     AxisAlignedBox3 bounds;

@@ -204,7 +204,7 @@ Model::load(QString const & filename_)
     filename = filename_;
 
     loadSamples(getSamplesFilename());
-    loadFeatures(getFeaturesFilename());
+    loadFeatures(getDefaultFeaturesFilename());
   }
 
   emit filenameChanged(filename);
@@ -735,6 +735,8 @@ Model::loadFeatures(QString const & filename_)
 {
   using namespace ModelInternal;
 
+  features_filename = filename_;
+
   TheaArray<Vector3> feat_pts;
   TheaArray< TheaArray<Real> > feat_vals(1);
   bool status = true;
@@ -777,7 +779,10 @@ Model::loadFeatures(QString const & filename_)
     }
 
     if (feat_pts.empty())
+    {
+      emit needsRedraw(this);
       return true;
+    }
 
     if (app().options().accentuate_features)
     {
@@ -828,11 +833,13 @@ Model::loadFeatures(QString const & filename_)
   THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model features from '%s'",
                              toStdString(filename_).c_str())
 
+  emit needsRedraw(this);
+
   return status;
 }
 
 QString
-Model::getFeaturesFilename() const
+Model::getDefaultFeaturesFilename() const
 {
   std::string features_path = toStdString(app().options().features);
   if (FileSystem::fileExists(features_path));
