@@ -90,8 +90,11 @@ class App : public QObject
       bool two_sided;                                  ///< Use two-sided lighting?
       bool fancy_points;                               ///< Draw points as shaded spheres?
       bool fancy_colors;                               ///< Color points by a function of position?
+      Real point_scale;                                ///< Scale point sizes by this factor.
 
       bool accentuate_features;                        ///< Make feature distributions easier to view?
+      bool color_cube_features;                        /**< Map 0-centered 3D feature sets to RGB color-cube, if
+                                                            accentuate_features == true; */
       bool show_graph;                                 ///< Show point adjacency graph, if available?
 
     }; // struct Options
