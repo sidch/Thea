@@ -256,24 +256,28 @@ Random::hemi(Real & x, Real & y, Real & z)
 void
 Random::sphere(Real & x, Real & y, Real & z)
 {
-  // Squared magnitude
-  Real m2;
+  // Adapted from: Robert E. Knop, "Algorithm 381: Random Vectors Uniform in Solid Angle", CACM, 13, p326, 1970.
+  // It uses the fact that the projection of the uniform 2-sphere distribution onto any axis (in this case the Z axis) is
+  // uniform.
 
-  // Rejection sample
+  Real m2;  // squared magnitude
   do
   {
-    x = uniform01() * 2 - 1,
-    y = uniform01() * 2 - 1,
-    z = uniform01() * 2 - 1;
-    m2 = x * x + y * y + z * z;
-  }
-  while (m2 >= 1);
+    x = 2 * uniform01() - 1;
+    y = 2 * uniform01() - 1;
+    m2 = x * x + y * y;
 
-  // Divide by magnitude to produce a unit vector
-  Real s = 1 / std::sqrt(m2);
+  } while (m2 > 1 || m2 < 1e-10);
+
+  // The squared length happens to be uniformly distributed in [0, 1]. Since the projection of the 2-sphere distribution onto
+  // the Z axis is uniform (can be derived from the observation that the area of a spherical cap is linear in its height), we
+  // can use the squared length, rescaled to [-1, 1], as the Z value (latitude).
+  z = 2 * m2 - 1;
+
+  // x and y now locate the longitude of the point after scaling to lie on the sphere
+  Real s = 2 * std::sqrt(1 - m2);  // this factor ensures x^2 + y^2 + z^2 = 1
   x *= s;
   y *= s;
-  z *= s;
 }
 
 void
