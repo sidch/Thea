@@ -248,10 +248,10 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     bool commit(bool flush = true);
 
     /** Commit the buffered data to a string. */
-    void commitString(std::string & str);
+    void commitToString(std::string & str);
 
     /** Commit the buffered data to a string and return it. */
-    std::string commitString();
+    std::string commitToString();
 
     /**
      * Increase indent level by one.

@@ -1283,7 +1283,7 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
   {
     TextOutputStream opts_out;
     full_opts.serialize(opts_out);
-    THEA_CONSOLE << "HoughForest: Options:\n" << opts_out.commitString();
+    THEA_CONSOLE << "HoughForest: Options:\n" << opts_out.commitToString();
   }
 
   clear();
