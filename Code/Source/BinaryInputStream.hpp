@@ -133,8 +133,8 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     /** Verifies that at least this number of bytes can be read.*/
     void prepareToRead(int64 nbytes)
     {
-      debugAssertM(m_length > 0, getNameStr() + ": Stream not found, empty or corrupt.");
-      debugAssertM(m_pos + nbytes + m_alreadyRead <= m_length, getNameStr() + ": Read past end of stream");
+      if (m_pos + nbytes + m_alreadyRead > m_length)
+        throw Error(getNameStr() + ": Read past end of stream");
 
       if (m_pos + nbytes > m_bufferLength)
         loadIntoMemory(m_pos + m_alreadyRead, nbytes);
@@ -203,7 +203,9 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      */
     void setPosition(int64 p)
     {
-      debugAssertM(p <= m_length, "Read past end of stream");
+      if (p > m_length)
+        throw Error("Read past end of stream");
+
       m_pos = p - m_alreadyRead;
 
       if ((m_pos < 0) || (m_pos > m_bufferLength))
@@ -352,18 +354,21 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     void readBytes(int64 n, void * bytes);
 
     /**
-     * Reads an \a n character string.  The string is not required to end in NULL in the file but will always be a proper
-     * std::string when returned.
-     */
-    std::string readString(int64 n);
-
-    /** Read a string until NULL or the end of the file is encountered. */
-    std::string readString();
-
-    /**
      * Reads until any newline character (\\r, \\r\\n, \\n\\r, \\n) or the end of the file is encountered. Consumes the newline.
      */
     std::string readLine();
+
+    /**
+     * Read a string. The format is:
+     * - Length of string (32-bit integer)
+     * - Characters of string ('length' bytes, no null termination)
+     *
+     * @see BinaryOutputStream::writeString()
+     */
+    std::string readString()
+    {
+      return readAlignedString(1);
+    }
 
     /**
      * Read an aligned string. The format is:
@@ -374,6 +379,17 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      * @see BinaryOutputStream::writeAlignedString()
      */
     std::string readAlignedString(int alignment = 4);
+
+    /**
+     * Read an \a n character string.  The string is not required to end in NULL in the file but will always be a proper
+     * std::string when returned.
+     */
+    std::string readString(int64 n);
+
+    /**
+     * Read a null-terminated string. This is an <b>INHERENTLY UNSAFE</b> method and should be used with <b>GREAT CAUTION</b>!
+     */
+    std::string readNullTerminatedString();
 
     /**
      * Prepare for reading individual bits via readBits(). Only readBits() can be called between beginBits() and endBits()

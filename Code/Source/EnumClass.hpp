@@ -65,6 +65,22 @@ namespace Thea {
                                                                                                                               \
     public:
 
+// Serialize and deserialize enums from binary I/O streams (requires explicitly including Serialization.hpp)
+#define THEA_ENUM_CLASS_SERIALIZATION(name)                                                                                   \
+    public:                                                                                                                   \
+      void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const                                   \
+      {                                                                                                                       \
+        output.setEndianness(Endianness::LITTLE);                                                                             \
+        output.writeInt32(static_cast<int>(value));                                                                           \
+      }                                                                                                                       \
+                                                                                                                              \
+      void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO())                                         \
+      {                                                                                                                       \
+        input.setEndianness(Endianness::LITTLE);                                                                              \
+        int v = (int)input.readInt32();                                                                                       \
+        value = static_cast<Value>(v);                                                                                        \
+      }
+
 // Put quotes around the result of a macro expansion.
 #define THEA_ENUM_CLASS_STRINGIFY_(x) #x
 #define THEA_ENUM_CLASS_STRINGIFY(x) THEA_ENUM_CLASS_STRINGIFY_(x)
