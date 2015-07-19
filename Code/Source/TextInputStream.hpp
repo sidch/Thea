@@ -80,16 +80,16 @@ class THEA_API Token
       /** Supported values. */
       enum Value
       {
-        DOUBLE_QUOTED,
-        SINGLE_QUOTED,
-        SYMBOL,
-        FLOATING_POINT,
-        INTEGER,
-        BOOLEAN,
-        LINE_COMMENT,
-        BLOCK_COMMENT,
-        NEWLINE,
-        END
+        DOUBLE_QUOTED,   ///< Double-quoted string.
+        SINGLE_QUOTED,   ///< Single-quoted string.
+        SYMBOL,          ///< Symbol (sequence of characters not fitting the other types).
+        FLOATING_POINT,  ///< Floating-point number.
+        INTEGER,         ///< Integer.
+        BOOLEAN,         ///< Boolean value (true/false).
+        LINE_COMMENT,    ///< Single-line comment.
+        BLOCK_COMMENT,   ///< Multi-line (block) comment.
+        NEWLINE,         ///< Newline character.
+        END              ///< End-of-stream.
       };
 
       THEA_ENUM_CLASS_BODY(ExtendedType)
@@ -101,13 +101,13 @@ class THEA_API Token
       /** Supported values. */
       enum Value
       {
-        STRING   =  ExtendedType::DOUBLE_QUOTED,
-        SYMBOL   =  ExtendedType::SYMBOL,
-        NUMBER   =  ExtendedType::FLOATING_POINT,
-        BOOLEAN  =  ExtendedType::BOOLEAN,
-        COMMENT  =  ExtendedType::LINE_COMMENT,
-        NEWLINE  =  ExtendedType::NEWLINE,
-        END      =  ExtendedType::END
+        STRING   =  ExtendedType::DOUBLE_QUOTED,   ///< Quoted string.
+        SYMBOL   =  ExtendedType::SYMBOL,          ///< Symbol (sequence of characters not fitting the other types).
+        NUMBER   =  ExtendedType::FLOATING_POINT,  ///< Number.
+        BOOLEAN  =  ExtendedType::BOOLEAN,         ///< Boolean value (true/false).
+        COMMENT  =  ExtendedType::LINE_COMMENT,    ///< Single or multi-line comment.
+        NEWLINE  =  ExtendedType::NEWLINE,         ///< Newline character.
+        END      =  ExtendedType::END              ///< End-of-stream.
       };
 
       THEA_ENUM_CLASS_BODY(Type)
@@ -144,11 +144,13 @@ class THEA_API Token
       _extendedType(ExtendedType::END)
     {}
 
+    /** Get the type of the token. */
     Type type() const
     {
       return _type;
     }
 
+    /** Get the extended type of the token. */
     ExtendedType extendedType() const
     {
       return _extendedType;
