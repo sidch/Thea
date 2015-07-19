@@ -211,32 +211,32 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
   else
   {
     // Dump the contents to disk. In order to enable seeking backwards, we keep the last 10 MB in memory.
-    int64 writeBytes = m_bufferLen - 10 * 1024 * 1024;
+    int64 bytesToWrite = m_bufferLen - 10 * 1024 * 1024;
 
-    if (writeBytes < m_bufferLen / 3)
+    if (bytesToWrite < m_bufferLen / 3)
     {
       // We're going to write less than 1/3 of the file; give up and just write the whole thing.
-      writeBytes = m_bufferLen;
+      bytesToWrite = m_bufferLen;
     }
 
-    debugAssertM(writeBytes > 0, getNameStr() + ": No bytes to write");
+    debugAssertM(bytesToWrite > 0, getNameStr() + ": No bytes to write");
 
     // Write to the file
     char const * mode = (m_alreadyWritten > 0) ? "ab" : "wb";
     FILE * file = fopen(m_path.c_str(), mode);
     debugAssertM(file, getNameStr() + ": Could not open file for writing");
 
-    size_t count = fwrite(m_buffer, 1, (size_t)writeBytes, file);
-    debugAssertM((int64)count == writeBytes, getNameStr() + ": All bytes were not written");
+    size_t count = fwrite(m_buffer, 1, (size_t)bytesToWrite, file);
+    debugAssertM((int64)count == bytesToWrite, getNameStr() + ": All bytes were not written");
     (void)count;  // avoid unused variable warning
 
     fclose(file);
     file = NULL;
 
     // Record that we saved this data.
-    m_alreadyWritten += writeBytes;
-    m_bufferLen -= writeBytes;
-    m_pos -= writeBytes;
+    m_alreadyWritten += bytesToWrite;
+    m_bufferLen -= bytesToWrite;
+    m_pos -= bytesToWrite;
 
     debugAssertM(m_bufferLen < m_bufferCapacity, getNameStr() + ": Buffer exceeds maximum size");
     debugAssertM(m_bufferLen >= 0, getNameStr() + ": Buffer has negative size");
@@ -244,7 +244,7 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
     debugAssertM(m_pos <= m_bufferLen, getNameStr() + ": Write position is beyond end of buffer");
 
     // Shift the unwritten data back appropriately in the buffer.
-    std::memmove(m_buffer, m_buffer + writeBytes, m_bufferLen);
+    std::memmove(m_buffer, m_buffer + bytesToWrite, m_bufferLen);
 
     // *Now* we allocate bytes (there should presumably be enough space in the buffer; if not, we'll come back through this code
     // and dump the last 10MB to disk as well.  Note that the bytes > maxBufferLen case above would already have triggered if
@@ -485,18 +485,6 @@ BinaryOutputStream::writeUInt64(uint64 u)
   }
 
   m_pos += 8;
-}
-
-void
-BinaryOutputStream::writeString(char const * s)
-{
-  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't write strings in a beginBits/endBits block");
-
-  // +1 is because strlen doesn't count the null
-  size_t len = strlen(s) + 1;
-  reserveBytes((int64)len);
-  std::memcpy(m_buffer + m_pos, s, len);
-  m_pos += (int64)len;
 }
 
 void

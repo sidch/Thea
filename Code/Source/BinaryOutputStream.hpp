@@ -371,14 +371,20 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
       writeUInt64(b);
     }
 
-    /** Write a string. */
+    /**
+     * Write a string. The format is:
+     * - Length of string (32-bit integer)
+     * - Characters of string ('length' bytes, no null termination)
+     *
+     * @see BinaryInputStream::readString
+     *
+     * @note This version explicitly writes the length of the string and does not rely on null termination, making this a safer
+     * option than the original G3D version. To write a null-terminated string, use writeBytes.
+     */
     void writeString(std::string const & s)
     {
-      writeString(s.c_str());
+      writeAlignedString(s, 1);
     }
-
-    /** Write a string with null termination. */
-    void writeString(char const * s);
 
     /**
      * Write an aligned string. The format is:
