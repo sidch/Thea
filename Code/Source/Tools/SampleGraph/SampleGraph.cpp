@@ -74,7 +74,7 @@ main(int argc, char * argv[])
     {
       if (beginsWith(arg, "--max-nbrs="))
       {
-        if (!sscanf(arg.c_str(), "--max-nbrs=%d", &max_nbrs) == 1 || max_nbrs <= 0)
+        if (sscanf(arg.c_str(), "--max-nbrs=%d", &max_nbrs) != 1 || max_nbrs <= 0)
         {
           THEA_ERROR << "Invalid --max-nbrs parameter";
           return -1;
@@ -82,7 +82,7 @@ main(int argc, char * argv[])
       }
       else if (beginsWith(arg, "--min-samples="))
       {
-        if (!sscanf(arg.c_str(), "--min-samples=%ld", &min_samples) == 1 || min_samples <= 0)
+        if (sscanf(arg.c_str(), "--min-samples=%ld", &min_samples) != 1 || min_samples <= 0)
         {
           THEA_ERROR << "Invalid --min-samples parameter";
           return -1;
