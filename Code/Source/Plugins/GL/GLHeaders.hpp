@@ -111,6 +111,33 @@ struct THEA_GL_DLL_LOCAL GLClientScope
   ~GLClientScope() { glPopClientAttrib(); }
 };
 
+/** Replacement for deprecated gluErrorString(). */
+inline GLubyte const *
+theaGLErrorString(GLuint error)
+{
+  switch (error)
+  {
+#define THEA_GL_ERROR_STRING_BRANCH(p) case(p): return (GLubyte const *)#p;
+    THEA_GL_ERROR_STRING_BRANCH(GL_NO_ERROR)
+    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_ENUM)
+    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_VALUE)
+    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_OPERATION)
+    THEA_GL_ERROR_STRING_BRANCH(GL_STACK_OVERFLOW)
+    THEA_GL_ERROR_STRING_BRANCH(GL_STACK_UNDERFLOW)
+    THEA_GL_ERROR_STRING_BRANCH(GL_OUT_OF_MEMORY)
+    THEA_GL_ERROR_STRING_BRANCH(GL_TABLE_TOO_LARGE)
+    default: break;
+#undef THEA_GL_ERROR_STRING_BRANCH
+  }
+
+  if ((error >= GLU_NURBS_ERROR1) && (error <= GLU_NURBS_ERROR37))
+    return (GLubyte const *)"NURBS error";
+  if ((error >= GLU_TESS_ERROR1) && (error <= GLU_TESS_ERROR8))
+    return (GLubyte const *)"tessellation error";
+
+  return (GLubyte const *)"unknown error";
+}
+
 /**
  * Check if the OpenGL state is error-free.
  *
@@ -123,7 +150,7 @@ struct THEA_GL_DLL_LOCAL GLClientScope
 \
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
-    err_string = gluErrorString(err_code); \
+    err_string = theaGLErrorString(err_code); \
     throw Error(Thea::format("%s:%ld: OpenGL error: %s", \
                 Thea::FilePath::objectName(__FILE__).c_str(), (long)__LINE__, err_string)); \
   } \

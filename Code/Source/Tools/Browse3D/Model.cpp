@@ -871,7 +871,7 @@ QString
 Model::getDefaultFeaturesFilename() const
 {
   std::string features_path = toStdString(app().options().features);
-  if (FileSystem::fileExists(features_path));
+  if (FileSystem::fileExists(features_path))
     return toQString(features_path);
 
   static std::string const EXTS[] = { ".arff", ".features" };  // in order of decreasing priority

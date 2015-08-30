@@ -76,8 +76,8 @@ class AccelKDTree : public KDTreeN<T, 3>
     long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, Vector3 * closest_point = NULL)
     const
     {
-      double ubound = coarse_kdtree.distance<MetricT>(query, dist_bound);
-      return static_cast<BaseType const *>(this)->closestElement<MetricT>(query, ubound, dist, closest_point);
+      double ubound = coarse_kdtree.template distance<MetricT>(query, dist_bound);
+      return static_cast<BaseType const *>(this)->template closestElement<MetricT>(query, ubound, dist, closest_point);
     }
 
   private:

@@ -1618,7 +1618,7 @@ class /* THEA_API */ KDTreeN
     double accelerationBound(QueryT const & query, double dist_bound) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
-      return accel ? accel->distance<MetricT>(query, dist_bound) : -1;
+      return accel ? accel->template distance<MetricT>(query, dist_bound) : -1;
     }
 
     /**
@@ -1634,20 +1634,20 @@ class /* THEA_API */ KDTreeN
         if (query.hasNearestNeighborAcceleration())
         {
           typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
-              = query.getNearestNeighborAccelerationStructure<MetricT>();
+              = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
-            return accel->distance<MetricT>(*query_accel, dist_bound);
+            return accel->template distance<MetricT>(*query_accel, dist_bound);
         }
 
-        return accel->distance<MetricT>(query, dist_bound);
+        return accel->template distance<MetricT>(query, dist_bound);
       }
       else
       {
         if (query.hasNearestNeighborAcceleration())
         {
           typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
-              = query.getNearestNeighborAccelerationStructure<MetricT>();
+              = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
             return distance<MetricT>(*query_accel, dist_bound);

@@ -305,7 +305,6 @@ closestPtLineTriangle(Line3 const & line, Vector3 const & v0, Vector3 const & ed
   // triangle or (2) the line and triangle are parallel.  Regardless, the
   // closest point on the triangle is on an edge of the triangle.  Compare
   // the line to all three edges of the triangle.
-  Vector3 normal = edge01.cross(edge02).unit();
   Real min_sqdist = -1;
   Vector3 v[3] = { v0, v0 + edge01, v0 + edge02 };
   Vector3 tmp_c1, tmp_c2;

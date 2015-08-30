@@ -347,7 +347,7 @@ class THEA_API Quat
 
       Real imag_len = v.length();
       Vector3 u = v / imag_len;
-      return Quat(std::sin(imag_len) * v, std::cos(imag_len));
+      return Quat(std::sin(imag_len) * u, std::cos(imag_len));
     }
 
     /**
