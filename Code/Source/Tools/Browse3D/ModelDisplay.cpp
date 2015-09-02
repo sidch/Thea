@@ -108,7 +108,7 @@ QPointF
 ModelDisplay::project(Vector3 const & p) const
 {
   Vector3 proj_p = camera.project(p);
-  return QPointF(0.5 * (p.x() + 1) * width(), 0.5 * (p.y() + 1) * height());
+  return QPointF(0.5 * (proj_p.x() + 1) * width(), 0.5 * (proj_p.y() + 1) * height());
 }
 
 void
