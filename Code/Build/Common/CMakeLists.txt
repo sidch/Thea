@@ -12,9 +12,9 @@ PROJECT(Thea)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 # See cmake --help-policy CMP0003 for details on this one
-IF(COMMAND CMAKE_POLICY)
+IF(POLICY CMP0003)
   CMAKE_POLICY(SET CMP0003 NEW)
-ENDIF(COMMAND CMAKE_POLICY)
+ENDIF(POLICY CMP0003)
 
 # If you don't want the full compiler output, remove the following line
 SET(CMAKE_VERBOSE_MAKEFILE ON)
