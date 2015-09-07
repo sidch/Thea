@@ -357,7 +357,10 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
   if (!m_buffer)
     throw Error(getNameStr() + ": Could not allocate buffer");
 
-  fread(m_buffer, m_bufferLength, sizeof(int8), file);
+  size_t num_read = fread(m_buffer, sizeof(int8), (size_t)m_bufferLength, file);
+  if (num_read != (size_t)m_bufferLength)
+    throw Error(getNameStr() + ": Could not initialize file buffer");
+
   fclose(file);
   file = NULL;
 }
