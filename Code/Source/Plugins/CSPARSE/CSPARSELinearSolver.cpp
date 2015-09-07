@@ -77,7 +77,7 @@ isSymmetric(cs * A)
   }
 
   if (is_upper) return 2;
-  if (is_upper) return 3;
+  if (is_lower) return 3;
 
   // Checking for symmetric is relatively slower since we compute the transpose first
   static double const EPSILON = 1.0e-200;
