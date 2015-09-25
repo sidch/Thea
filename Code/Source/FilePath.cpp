@@ -61,7 +61,7 @@ FilePath::completeBaseName(std::string const & path)
 }
 
 std::string
-FilePath::suffix(std::string const & path)
+FilePath::extension(std::string const & path)
 {
   std::string node = objectName(path);
   size_t last_dot = node.find_last_of('.');
@@ -69,7 +69,7 @@ FilePath::suffix(std::string const & path)
 }
 
 std::string
-FilePath::completeSuffix(std::string const & path)
+FilePath::completeExtension(std::string const & path)
 {
   std::string node = objectName(path);
   size_t first_dot = node.find_first_of('.');
@@ -112,6 +112,18 @@ FilePath::concat(std::string const & parent_name, std::string const & child_name
   boost::filesystem::path p(parent_name);
   p /= child_name;
   return p.string();
+}
+
+std::string
+FilePath::changeExtension(std::string const & path, std::string const & new_ext)
+{
+  return concat(parent(path), completeBaseName(path) + '.' + new_ext);
+}
+
+std::string
+FilePath::changeCompleteExtension(std::string const & path, std::string const & new_ext)
+{
+  return concat(parent(path), baseName(path) + '.' + new_ext);
 }
 
 } // namespace Thea

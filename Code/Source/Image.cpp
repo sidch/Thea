@@ -209,7 +209,7 @@ codecFromPath(std::string const & path)
 {
   static ImageCodec const * UNKNOWN_CODEC = initCodecMap();
 
-  CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::suffix(path)));
+  CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::extension(path)));
   if (existing == codec_map.end())
     return UNKNOWN_CODEC;
   else
