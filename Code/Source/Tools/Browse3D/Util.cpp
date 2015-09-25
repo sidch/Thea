@@ -399,7 +399,10 @@ loadImage(Image & image, QString const & filename)
   image.load(toStdString(filename));
   if (image.isValid())
   {
-    fixChannelOrdering(image);
+    // This used to be necessary on Linux. No longer, since we've fixed Graphics::Texture::toTextureFormat() to detect and
+    // handle BGR images.
+    // fixChannelOrdering(image);
+
     return true;
   }
 
@@ -409,8 +412,7 @@ loadImage(Image & image, QString const & filename)
 void
 fixChannelOrdering(Image & image)
 {
-  // Make sure the red and blue channels are in the right places -- they get swapped on Linux, but let's do this on other
-  // platforms too, for safety
+  // Make sure the red channel is at pixel[0] and the blue channel at pixel[2]
   int bytes_pp = 0;
   switch (image.getType())
   {
@@ -427,6 +429,7 @@ fixChannelOrdering(Image & image)
       for (int c = 0; c < image.getWidth(); ++c)
       {
         uint8 * pixel = pixels + bytes_pp * c;
+
         uint8 red    =  pixel[Image::Channel::RED];
         uint8 green  =  pixel[Image::Channel::GREEN];
         uint8 blue   =  pixel[Image::Channel::BLUE];
