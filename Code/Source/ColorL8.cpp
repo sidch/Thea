@@ -52,11 +52,12 @@
 
 #include "ColorL8.hpp"
 #include "ColorL.hpp"
+#include "Math.hpp"
 
 namespace Thea {
 
 ColorL8::ColorL8(ColorL const & c)
-: val((uint8)Math::clamp((Real)std::floor(c.value() * 256), (Real)0, (Real)255))
+: val((uint8)Math::clamp((Real)Math::round(c.value() * 255), (Real)0, (Real)255))
 {}
 
 std::string
