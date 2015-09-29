@@ -3,6 +3,7 @@
 #include "../../Algorithms/MeshTriangles.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
+#include "../../Graphics/MeshCodec.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Plugins/GL/GLHeaders.hpp"
 #include "../../Application.hpp"
@@ -14,15 +15,19 @@
 #include "../../Math.hpp"
 #include "../../Matrix4.hpp"
 #include "../../Plugin.hpp"
+#include "../../UnorderedMap.hpp"
 #include "../../Vector3.hpp"
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
+
+// #define DRAW_EDGES
 
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
@@ -55,6 +60,7 @@ string out_path;
 int out_width, out_height;
 Vector3 view_dir(-1, -1, -1);
 Vector3 view_up(0, 1, 0);
+bool color_by_face_id = false;
 ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
 int antialiasing_level = 1;
@@ -199,7 +205,7 @@ usage()
   THEA_CONSOLE << "  -v <viewing-dir>      (3 chars, one for each coordinate, each one of";
   THEA_CONSOLE << "                         +, - or 0)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
-  THEA_CONSOLE << "  -c <argb>             (mesh color)";
+  THEA_CONSOLE << "  -c <argb>             (mesh color, or 'fid' to color faces by ID)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
@@ -419,7 +425,16 @@ parseArgs(int argc, char * argv[])
         case 'c':
         {
           if (argc < 1) { THEA_ERROR << "-c: Mesh color not specified"; return false; }
-          if (!parseColor(*argv, primary_color)) return false;
+
+          if (toLower(trimWhitespace(*argv)) == "fid")
+            color_by_face_id = true;
+          else
+          {
+            color_by_face_id = false;
+            if (!parseColor(*argv, primary_color))
+              return false;
+          }
+
           argv++; argc--; break;
         }
 
@@ -520,6 +535,108 @@ getPaletteColor(long n)
   return PALETTE[n % (sizeof(PALETTE) / sizeof(ColorRGBA))];
 }
 
+typedef std::pair<Mesh const *, long> FaceRef;
+typedef TheaUnorderedMap<FaceRef, uint32> FaceIndexMap;
+
+struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
+{
+  FaceIndexMap & tri_ids;
+  FaceIndexMap & quad_ids;
+
+  MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
+
+  void faceAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::FaceHandle face)
+  {
+    if (face.hasTriangles())
+    {
+      long base_tri = face.getFirstTriangle();
+      for (long i = 0; i < face.numTriangles(); ++i)
+      {
+        FaceRef ref(mesh, base_tri + i);
+        tri_ids[ref] = (uint32)index;
+
+        // THEA_CONSOLE << ref.first->getName() << ": Triangle " << ref.second << " has id " << index;
+      }
+    }
+
+    if (face.hasQuads())
+    {
+      long base_quad = face.getFirstQuad();
+      for (long i = 0; i < face.numQuads(); ++i)
+      {
+        FaceRef ref(mesh, base_quad + i);
+        quad_ids[ref] = (uint32)index;
+
+        // THEA_CONSOLE << ref.first->getName() << ": Quad " << ref.second << " has id " << index;
+      }
+    }
+  }
+};
+
+bool
+enableWireframe(Mesh & mesh)
+{
+  mesh.setWireframeEnabled(true);
+  return false;
+}
+
+struct FaceIndexColorizer
+{
+  FaceIndexMap const & tri_ids;
+  FaceIndexMap const & quad_ids;
+
+  FaceIndexColorizer(FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    mesh.isolateFaces();
+    mesh.addColors();
+
+    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+    for (array_size_t i = 0; i < tris.size(); i += 3)
+    {
+      FaceRef face(&mesh, (long)i / 3);
+      FaceIndexMap::const_iterator existing = tri_ids.find(face);
+      if (existing == tri_ids.end())
+        throw Error(format("Could not find index of triangle %ld in mesh '%s'", (long)i / 3, mesh.getName()));
+
+      uint32 id = existing->second;
+
+      ColorRGBA8 color((uint8)((id      ) & 0xFF),
+                       (uint8)((id >>  8) & 0xFF),
+                       (uint8)((id >> 16) & 0xFF),
+                       1);
+
+      mesh.setColor((long)tris[i    ], color);
+      mesh.setColor((long)tris[i + 1], color);
+      mesh.setColor((long)tris[i + 2], color);
+    }
+
+    Mesh::IndexArray const & quads = mesh.getQuadIndices();
+    for (array_size_t i = 0; i < quads.size(); i += 4)
+    {
+      FaceRef face(&mesh, (long)i / 4);
+      FaceIndexMap::const_iterator existing = quad_ids.find(face);
+      if (existing == quad_ids.end())
+        throw Error(format("Could not find index of quad %ld in mesh '%s'", (long)i / 4, mesh.getName()));
+
+      uint32 id = existing->second;
+
+      ColorRGBA8 color((uint8)((id      ) & 0xFF),
+                       (uint8)((id >>  8) & 0xFF),
+                       (uint8)((id >> 16) & 0xFF),
+                       1);
+
+      mesh.setColor((long)quads[i    ], color);
+      mesh.setColor((long)quads[i + 1], color);
+      mesh.setColor((long)quads[i + 2], color);
+      mesh.setColor((long)quads[i + 3], color);
+    }
+
+    return false;
+  }
+};
+
 bool
 averageNormals(Mesh & mesh)
 {
@@ -568,9 +685,26 @@ Model::load(string const & path)
   }
   else
   {
+    FaceIndexMap tri_ids, quad_ids;
     try
     {
-      mesh_group.load(path);
+      MeshReadCallback callback(tri_ids, quad_ids);
+      Codec3DS<Mesh> codec_3ds(&callback);
+      CodecOBJ<Mesh> codec_obj(&callback);
+      CodecOFF<Mesh> codec_off(&callback);
+
+      string ext = toLower(FilePath::completeExtension(path));
+      if (ext == "3ds")
+        mesh_group.load(path, codec_3ds);
+      else if (ext == "obj")
+        mesh_group.load(path, codec_obj);
+      else if (ext == "off" || ext == "off.bin")
+        mesh_group.load(path, codec_off);
+      else
+      {
+        THEA_ERROR << "Unsupported file type: " << path;
+        return false;
+      }
     }
     THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
 
@@ -588,7 +722,19 @@ Model::load(string const & path)
       is_point_cloud = true;
     }
     else
-      mesh_group.forEachMeshUntil(averageNormals);
+    {
+      if (color_by_face_id)
+      {
+        FaceIndexColorizer id_colorizer(tri_ids, quad_ids);
+        mesh_group.forEachMeshUntil(&id_colorizer);
+      }
+      else
+        mesh_group.forEachMeshUntil(averageNormals);
+
+#ifdef DRAW_EDGES
+      mesh_group.forEachMeshUntil(enableWireframe);
+#endif
+    }
   }
 
   return true;
@@ -761,14 +907,14 @@ bool
 initMeshShader(Shader & shader)
 {
   static string const VERTEX_SHADER =
-"varying vec3 position;  // position in camera space\n"
+// "varying vec3 position;  // position in camera space\n"
 "varying vec3 normal;  // normal in camera space\n"
 "\n"
 "void main()\n"
 "{\n"
 "  gl_Position = ftransform();\n"
 "\n"
-"  position = vec3(gl_ModelViewMatrix * gl_Vertex);  // assume rigid transform, so we can drop w\n"
+// "  position = vec3(gl_ModelViewMatrix * gl_Vertex);  // assume rigid transform, so we can drop w\n"
 "  normal = gl_NormalMatrix * gl_Normal;\n"
 "\n"
 "  gl_FrontColor = gl_Color;\n"
@@ -782,7 +928,7 @@ initMeshShader(Shader & shader)
 "uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n"
 "uniform float two_sided;\n"
 "\n"
-"varying vec3 position;  // position in camera space\n"
+// "varying vec3 position;  // position in camera space\n"
 "varying vec3 normal;  // normal in camera space\n"
 "\n"
 "void main()\n"
@@ -810,6 +956,34 @@ initMeshShader(Shader & shader)
   shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
   shader.setUniform("two_sided", 1.0f);
   shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
+
+  return true;
+}
+
+bool
+initFaceIndexShader(Shader & shader)
+{
+  static string const VERTEX_SHADER =
+"\n"
+"void main()\n"
+"{\n"
+"  gl_Position = ftransform();\n"
+"  gl_FrontColor = gl_Color;\n"
+"  gl_BackColor = gl_Color;\n"
+"}\n";
+
+  static string const FRAGMENT_SHADER =
+"void main()\n"
+"{\n"
+"  gl_FragColor = gl_Color;\n"
+"}\n";
+
+  try
+  {
+    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
+    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach face index shader module")
 
   return true;
 }
@@ -874,27 +1048,49 @@ Model::render(ColorRGBA const & color)
         return -1;
       }
 
-      if (!initMeshShader(*mesh_shader))
+      if (color_by_face_id)
       {
-        THEA_ERROR << "Could not initialize mesh shader";
-        return -1;
+        if (!initFaceIndexShader(*mesh_shader))
+        {
+          THEA_ERROR << "Could not initialize face index shader";
+          return -1;
+        }
+      }
+      else
+      {
+        if (!initMeshShader(*mesh_shader))
+        {
+          THEA_ERROR << "Could not initialize mesh shader";
+          return -1;
+        }
       }
     }
 
     render_system->setShader(mesh_shader);
 
-    if (has_transparency)
-    {
-      // First back faces
-      render_system->setCullFace(RenderSystem::CullFace::FRONT);
-      mesh_group.draw(*render_system);
+    RenderOptions opts = RenderOptions::defaults();
+    if (color_by_face_id)
+      opts.useVertexData() = true;
 
-      // Then front faces
+#ifdef DRAW_EDGES
+    opts.drawEdges() = true;
+    opts.edgeColor() = ColorRGB(0.5, 0.5, 1);
+#endif
+
+    if (has_transparency && !color_by_face_id)
+    {
+      // First back faces...
+      render_system->setCullFace(RenderSystem::CullFace::FRONT);
+      mesh_group.draw(*render_system, opts);
+
+      // ... then front faces
       render_system->setCullFace(RenderSystem::CullFace::BACK);
-      mesh_group.draw(*render_system);
+      mesh_group.draw(*render_system, opts);
     }
     else
-      mesh_group.draw(*render_system);
+    {
+      mesh_group.draw(*render_system, opts);
+    }
   }
 
   render_system->popColorFlags();

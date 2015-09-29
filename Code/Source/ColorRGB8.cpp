@@ -52,14 +52,15 @@
 
 #include "ColorRGB8.hpp"
 #include "ColorRGB.hpp"
+#include "Math.hpp"
 
 namespace Thea {
 
 ColorRGB8::ColorRGB8(ColorRGB const & src)
 {
-  c[0] = (uint8)Math::clamp((Real)std::floor(src.r() * 256), (Real)0, (Real)255);
-  c[1] = (uint8)Math::clamp((Real)std::floor(src.g() * 256), (Real)0, (Real)255);
-  c[2] = (uint8)Math::clamp((Real)std::floor(src.b() * 256), (Real)0, (Real)255);
+  c[0] = (uint8)Math::clamp((Real)Math::round(src.r() * 255), (Real)0, (Real)255);
+  c[1] = (uint8)Math::clamp((Real)Math::round(src.g() * 255), (Real)0, (Real)255);
+  c[2] = (uint8)Math::clamp((Real)Math::round(src.b() * 255), (Real)0, (Real)255);
 }
 
 ColorRGB8

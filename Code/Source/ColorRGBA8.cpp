@@ -47,15 +47,16 @@
 
 #include "ColorRGBA8.hpp"
 #include "ColorRGBA.hpp"
+#include "Math.hpp"
 
 namespace Thea {
 
 ColorRGBA8::ColorRGBA8(ColorRGBA const & src)
 {
-  c[0] = (uint8)Math::clamp((Real)std::floor(src.r() * 256), (Real)0, (Real)255);
-  c[1] = (uint8)Math::clamp((Real)std::floor(src.g() * 256), (Real)0, (Real)255);
-  c[2] = (uint8)Math::clamp((Real)std::floor(src.b() * 256), (Real)0, (Real)255);
-  c[3] = (uint8)Math::clamp((Real)std::floor(src.a() * 256), (Real)0, (Real)255);
+  c[0] = (uint8)Math::clamp((Real)Math::round(src.r() * 255), (Real)0, (Real)255);
+  c[1] = (uint8)Math::clamp((Real)Math::round(src.g() * 255), (Real)0, (Real)255);
+  c[2] = (uint8)Math::clamp((Real)Math::round(src.b() * 255), (Real)0, (Real)255);
+  c[3] = (uint8)Math::clamp((Real)Math::round(src.a() * 255), (Real)0, (Real)255);
 }
 
 ColorRGBA8

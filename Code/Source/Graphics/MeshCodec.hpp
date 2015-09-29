@@ -72,13 +72,13 @@ class MeshCodec : public Codec
          * Called after a vertex has been read and added to the mesh. \a index is the sequential index of the vertex in the mesh
          * file, and need not correspond to the sequence in which vertices are added to the mesh.
          */
-        virtual void vertexAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::VertexHandle vertex) {};
+        virtual void vertexAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::VertexHandle vertex) {}
 
         /**
          * Called after a face has been read and added to the mesh. \a index is the sequential index of the face in the mesh
          * file, and need not correspond to the sequence in which faces are added to the mesh.
          */
-        virtual void faceAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::FaceHandle face) {};
+        virtual void faceAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::FaceHandle face) {}
 
     }; // class ReadCallback
 

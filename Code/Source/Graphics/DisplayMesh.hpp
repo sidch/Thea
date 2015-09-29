@@ -587,6 +587,13 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void flipNormals();
 
     /**
+     * Duplicate vertices (and normals, colors and texture coordinates) as necessary to ensure no two faces share vertex-level
+     * data. Necessary for drawing faces with per-face information. The faces retain their sequence, but reference new sets of
+     * vertex data.
+     */
+    virtual void isolateFaces();
+
+    /**
      * Enable/disable drawing the edges of the mesh. Enabling this function will <b>not</b> draw any edges unless you turn on
      * the appropriate RenderOptions flag. The edges will be uploaded to the graphics system on the next call to
      * uploadToGraphicsSystem().

@@ -450,6 +450,104 @@ DisplayMesh::updateEdges()
 }
 
 void
+DisplayMesh::isolateFaces()
+{
+  VertexArray    new_vertices;
+  NormalArray    new_normals;
+  ColorArray     new_colors;
+  TexCoordArray  new_texcoords;
+
+  for (array_size_t i = 0; i < tris.size(); i += 3)
+  {
+    array_size_t i0 = (array_size_t)tris[i    ];
+    array_size_t i1 = (array_size_t)tris[i + 1];
+    array_size_t i2 = (array_size_t)tris[i + 2];
+
+    uint32 new_vindex = (uint32)new_vertices.size();
+
+    new_vertices.push_back(vertices[i0]);
+    new_vertices.push_back(vertices[i1]);
+    new_vertices.push_back(vertices[i2]);
+
+    if (!normals.empty())
+    {
+      new_normals.push_back(normals[i0]);
+      new_normals.push_back(normals[i1]);
+      new_normals.push_back(normals[i2]);
+    }
+
+    if (!colors.empty())
+    {
+      new_colors.push_back(colors[i0]);
+      new_colors.push_back(colors[i1]);
+      new_colors.push_back(colors[i2]);
+    }
+
+    if (!texcoords.empty())
+    {
+      new_texcoords.push_back(texcoords[i0]);
+      new_texcoords.push_back(texcoords[i1]);
+      new_texcoords.push_back(texcoords[i2]);
+    }
+
+    tris[i    ]  =  new_vindex;
+    tris[i + 1]  =  new_vindex + 1;
+    tris[i + 2]  =  new_vindex + 2;
+  }
+
+  for (array_size_t i = 0; i < quads.size(); i += 4)
+  {
+    array_size_t i0 = (array_size_t)tris[i    ];
+    array_size_t i1 = (array_size_t)tris[i + 1];
+    array_size_t i2 = (array_size_t)tris[i + 2];
+    array_size_t i3 = (array_size_t)tris[i + 3];
+
+    uint32 new_vindex = (uint32)new_vertices.size();
+
+    new_vertices.push_back(vertices[i0]);
+    new_vertices.push_back(vertices[i1]);
+    new_vertices.push_back(vertices[i2]);
+    new_vertices.push_back(vertices[i3]);
+
+    if (!normals.empty())
+    {
+      new_normals.push_back(normals[i0]);
+      new_normals.push_back(normals[i1]);
+      new_normals.push_back(normals[i2]);
+      new_normals.push_back(normals[i3]);
+    }
+
+    if (!colors.empty())
+    {
+      new_colors.push_back(colors[i0]);
+      new_colors.push_back(colors[i1]);
+      new_colors.push_back(colors[i2]);
+      new_colors.push_back(colors[i3]);
+    }
+
+    if (!texcoords.empty())
+    {
+      new_texcoords.push_back(texcoords[i0]);
+      new_texcoords.push_back(texcoords[i1]);
+      new_texcoords.push_back(texcoords[i2]);
+      new_texcoords.push_back(texcoords[i3]);
+    }
+
+    tris[i    ]  =  new_vindex;
+    tris[i + 1]  =  new_vindex + 1;
+    tris[i + 2]  =  new_vindex + 2;
+    tris[i + 3]  =  new_vindex + 3;
+  }
+
+  vertices   =  new_vertices;
+  normals    =  new_normals;
+  colors     =  new_colors;
+  texcoords  =  new_texcoords;
+
+  invalidateGPUBuffers(BufferID::ALL);
+}
+
+void
 DisplayMesh::updateBounds()
 {
   if (valid_bounds) return;
