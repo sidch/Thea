@@ -76,6 +76,11 @@ struct PointTraitsN<Mesh::Vertex, 3>
 bool verbose = false;
 string infile, outfile;
 
+bool no_normals = false;
+bool no_texcoords = false;
+bool no_empty = false;
+bool flatten = false;
+
 bool do_del_danglers = false;
 
 bool do_del_dup_faces = false;
@@ -114,8 +119,38 @@ meshFix(int argc, char * argv[])
   if (parse_status <= 0)
     return parse_status;
 
+  Codec3DS<Mesh>::Options opts_3ds = Codec3DS<Mesh>::Options::defaults();
+  opts_3ds.setIgnoreTexCoords(no_texcoords)
+          .setSkipEmptyMeshes(no_empty)
+          .setFlatten(flatten);
+  Codec3DS<Mesh> codec_3ds(NULL, opts_3ds, opts_3ds);
+
+  CodecOBJ<Mesh>::Options opts_obj = CodecOBJ<Mesh>::Options::defaults();
+  opts_obj.setIgnoreTexCoords(no_texcoords)
+          .setIgnoreNormals(no_normals)
+          .setSkipEmptyMeshes(no_empty)
+          .setFlatten(flatten);
+  CodecOBJ<Mesh> codec_obj(NULL, opts_obj, opts_obj);
+
+  CodecOFF<Mesh>::ReadOptions opts_off = CodecOFF<Mesh>::ReadOptions::defaults();
+  opts_off.setSkipEmptyMeshes(no_empty);
+  CodecOFF<Mesh> codec_off(NULL, opts_off);
+
   MG mg(FilePath::objectName(infile));
-  mg.load(infile);
+
+  string lc_in = toLower(infile);
+  if (endsWith(lc_in, ".3ds"))
+    mg.load(infile, codec_3ds);
+  else if (endsWith(lc_in, ".obj"))
+    mg.load(infile, codec_obj);
+  else if (endsWith(lc_in, ".off") || endsWith(lc_in, ".off.bin"))
+    mg.load(infile, codec_off);
+  else
+  {
+    THEA_ERROR << "Unrecognized mesh input format";
+    return -1;
+  }
+
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())
   {
@@ -174,11 +209,19 @@ meshFix(int argc, char * argv[])
 
   string lc_out = toLower(outfile);
   if (endsWith(lc_out, ".3ds"))
-    mg.save(outfile, Codec3DS<Mesh>());
+    mg.save(outfile, codec_3ds);
   else if (endsWith(lc_out, ".obj"))
-    mg.save(outfile, CodecOBJ<Mesh>());
+    mg.save(outfile, codec_obj);
   else if (endsWith(lc_out, ".off"))
-    mg.save(outfile, CodecOFF<Mesh>());
+    mg.save(outfile, codec_off);
+  else if (endsWith(lc_out, ".off.bin"))
+  {
+    CodecOFF<Mesh>::WriteOptions write_opts_off = CodecOFF<Mesh>::WriteOptions::defaults();
+    write_opts_off.setBinary(true);
+    CodecOFF<Mesh> write_codec_off(NULL, opts_off, write_opts_off);
+
+    mg.save(outfile, write_codec_off);
+  }
   else
   {
     THEA_ERROR << "Unrecognized mesh output format";
@@ -203,6 +246,14 @@ parseArgs(int argc, char * argv[])
           ("verbose",             "Print extra status information")
           ("infile",              po::value<string>(&infile), "Path to input mesh file")
           ("outfile",             po::value<string>(&outfile), "Path to output mesh file")
+
+          ("no-normals",          "Ignore vertex and face normals in the input, and don't write any to output")
+
+          ("no-texcoords",        "Ignore vertex and face texture coordinates in the input, and don't write any to output")
+
+          ("no-empty",            "Ignore empty sub-meshes")
+
+          ("flatten",             "Flatten the object to a single sub-mesh when reading")
 
           ("del-danglers",        "Delete isolated vertices and edges, and empty faces")
 
@@ -287,9 +338,17 @@ parseArgs(int argc, char * argv[])
 
   bool do_something = false;
 
-  //============================================================================================================================
-  // del_danglers
-  //============================================================================================================================
+  if (vm.count("no-normals") > 0)
+    no_normals = do_something = true;
+
+  if (vm.count("no-texcoords") > 0)
+    no_texcoords = do_something = true;
+
+  if (vm.count("no-empty") > 0)
+    no_empty = do_something = true;
+
+  if (vm.count("flatten") > 0)
+    flatten = do_something = true;
 
   if (vm.count("del-danglers") > 0)
     do_del_danglers = do_something = true;
@@ -385,14 +444,15 @@ typedef TheaUnorderedSet<FaceSeq> FaceSet;
 
 struct DupFaceDeleter
 {
-  FaceSet seqs;
   bool sorted;
-  long num_deleted;
 
-  DupFaceDeleter(bool sorted_) : sorted(sorted_), num_deleted(0) {}
+  DupFaceDeleter(bool sorted_) : sorted(sorted_) {}
 
   bool operator()(Mesh & mesh)
   {
+    FaceSet seqs;
+    long num_deleted = 0;
+
     for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); )
     {
       FaceSeq s(*fi, sorted);
