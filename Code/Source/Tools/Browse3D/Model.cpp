@@ -92,6 +92,7 @@ enableWireframe(Mesh & mesh)
 }
 
 static ColorRGBA const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 } // namespace ModelInternal
 
@@ -99,6 +100,7 @@ Model::Model(QString const & initial_mesh)
 : color(ModelInternal::DEFAULT_COLOR),
   valid_pick(false),
   selected_sample(-1),
+  selected_segment(-1),
   valid_kdtree(true),
   kdtree(new KDTree),
   valid_vertex_kdtree(true),
@@ -145,6 +147,7 @@ Model::clearMesh()
 {
   if (mesh_group) mesh_group->clear();
   samples.clear();
+  segments.clear();
 }
 
 void
@@ -204,6 +207,7 @@ Model::load(QString const & filename_)
     filename = filename_;
 
     loadSamples(getSamplesFilename());
+    loadSegments(getSegmentsFilename());
     loadFeatures(getDefaultFeaturesFilename());
   }
 
@@ -444,6 +448,22 @@ Model::mouseReleaseEvent(QMouseEvent * event)
   // Currently no-op
 }
 
+namespace ModelInternal {
+
+std::istream &
+getNextNonBlankLine(std::istream & in, std::string & line)
+{
+  while (std::getline(in, line))
+  {
+    if (!trimWhitespace(line).empty())
+      break;
+  }
+
+  return in;
+}
+
+} // namespace ModelInternal
+
 void
 Model::addSample(Sample const & sample)
 {
@@ -456,6 +476,12 @@ Model::addPickedSample(QString const & label, bool snap_to_vertex)
 {
   if (valid_pick)
   {
+//     if (label.isEmpty())
+//     {
+//       THEA_WARNING << getName() << ": Empty label, cannot add sample";
+//       return false;
+//     }
+
     Sample sample = picked_sample;
     sample.label = label;
 
@@ -528,6 +554,8 @@ Model::selectSample(long index)
 bool
 Model::loadSamples(QString const & filename_)
 {
+  using namespace ModelInternal;
+
   samples.clear();
   bool status = true;
   try
@@ -537,7 +565,7 @@ Model::loadSamples(QString const & filename_)
       throw Error("Could not open file");
 
     std::string line;
-    if (!std::getline(in, line))
+    if (!getNextNonBlankLine(in, line))
       throw Error("Could not read first line");
 
     std::istringstream header_iss(line);
@@ -556,7 +584,7 @@ Model::loadSamples(QString const & filename_)
 
     for (long i = 0; i < n; ++i)
     {
-      if (!std::getline(in, line))
+      if (!getNextNonBlankLine(in, line))
         throw Error("Could not read line");
 
       std::istringstream iss(line);
@@ -608,19 +636,6 @@ Model::loadSamples(QString const & filename_)
 
   emit needsSyncSamples(this);
   return status;
-}
-
-QString
-Model::getSamplesFilename() const
-{
-  QString sfn = getFilename() + ".picked";
-  if (QFileInfo(sfn).exists())
-    return sfn;
-  else
-  {
-    QFileInfo info(getFilename());
-    return info.dir().filePath(info.baseName() + ".picked");
-  }
 }
 
 bool
@@ -686,6 +701,214 @@ Model::saveSamples(QString const & filename_) const
   }
 
   return true;
+}
+
+QString
+Model::getSamplesFilename() const
+{
+  QString sfn = getFilename() + ".picked";
+  if (QFileInfo(sfn).exists())
+    return sfn;
+  else
+  {
+    QFileInfo info(getFilename());
+    return info.dir().filePath(info.baseName() + ".picked");
+  }
+}
+
+Real
+Model::togglePickMesh(Ray3 const & ray)
+{
+  RayStructureIntersection3 isec = rayIntersection(ray);
+  if (isec.isValid())
+  {
+    array_size_t index = (array_size_t)isec.getElementIndex();
+    KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
+    Mesh * mesh = triple.getMesh();
+
+    Segment const * existing = getSegment(mesh);
+    if (existing)
+    {
+      THEA_WARNING << "Cannot pick mesh, it is already in another segment with label '" << existing->getLabel() << '\'';
+      return -1;
+    }
+
+    if (picked_segment.hasMesh(mesh))
+    {
+      picked_segment.removeMesh(mesh);
+      THEA_CONSOLE << "Removed mesh '" << mesh->getName() << "' from picked segment";
+    }
+    else
+    {
+      picked_segment.addMesh(mesh);
+      THEA_CONSOLE << "Added mesh '" << mesh->getName() << "' to picked segment";
+    }
+
+    emit needsRedraw(this);
+  }
+
+  return isec.getTime();
+}
+
+void
+Model::addSegment(Segment const & segment)
+{
+  segments.push_back(segment);
+  emit needsRedraw(this);
+}
+
+bool
+Model::addPickedSegment(QString const & label)
+{
+  if (label.isEmpty())
+  {
+    THEA_WARNING << getName() << ": Empty label, cannot add segment";
+    return false;
+  }
+
+  if (picked_segment.numMeshes() <= 0)
+  {
+    THEA_WARNING << getName() << ": Empty selection, cannot add segment";
+    return false;
+  }
+
+  picked_segment.setLabel(label);
+  segments.push_back(picked_segment);
+  saveSegments(getSegmentsFilename());
+
+  return true;
+}
+
+void
+Model::removeSegment(long index)
+{
+  if (index >= 0 && index < (long)segments.size())
+  {
+    segments.erase(segments.begin() + index);
+    saveSegments(getSegmentsFilename());
+    emit needsRedraw(this);
+  }
+}
+
+Segment *
+Model::getSegment(Mesh const * mesh)
+{
+  for (array_size_t i = 0; i < segments.size(); ++i)
+    if (segments[i].hasMesh(mesh))
+      return &segments[i];
+
+  return NULL;
+}
+
+void
+Model::selectSegment(long index)
+{
+  selected_segment = index;
+  emit needsRedraw(this);
+}
+
+bool
+Model::loadSegments(QString const & filename_)
+{
+  using namespace ModelInternal;
+
+  segments.clear();
+
+  bool status = true;
+  try
+  {
+    std::ifstream in(toStdString(filename_).c_str());
+    if (!in)
+      throw Error("Could not open file");
+
+    segments.clear();
+
+    std::string line;
+    while (getNextNonBlankLine(in, line))
+    {
+      QString label = toQString(trimWhitespace(line));
+      Segment seg(label);
+
+      if (!getNextNonBlankLine(in, line))
+        throw Error("Could not read list of representative faces");
+
+      std::istringstream iss(line);
+      long face_index = -1;
+      while (iss >> face_index)
+      {
+        Mesh::Face const & face = Mesh::mapIndexToFace(face_index);
+        if (!face)
+          throw Error(format("Mesh face with index %ld not found", face_index));
+
+        Mesh * mesh = (Mesh *)face.getMesh();
+        seg.addMesh(mesh);
+      }
+
+      if (seg.numMeshes() > 0)
+        segments.push_back(seg);
+    }
+  }
+  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model segments from '%s'", toStdString(filename_).c_str())
+
+  if (!status)
+    segments.clear();
+
+  emit needsSyncSegments(this);
+  return status;
+}
+
+bool
+Model::saveSegments(QString const & filename_) const
+{
+  std::ofstream out(toStdString(filename_).c_str(), std::ios::binary);
+  if (!out)
+    return false;
+
+  for (array_size_t i = 0; i < segments.size(); ++i)
+  {
+    Segment const & seg = segments[i];
+    out << toStdString(seg.getLabel()) << '\n';
+
+    Segment::MeshSet const & meshes = seg.getMeshes();
+    for (Segment::MeshSet::const_iterator mj = meshes.begin(); mj != meshes.end(); ++mj)
+    {
+      Mesh const * mesh = *mj;
+      if (!mesh || mesh->numFaces() <= 0)
+        continue;
+
+      long face_index = -1;
+      if (mesh->numTriangles() > 0)
+        face_index = mesh->getTriFaceIndex(0);  // the first triangle
+      else
+        face_index = mesh->getQuadFaceIndex(0);  // the first quad
+
+      if (mj != meshes.begin())
+        out << ' ';
+
+      out << face_index;
+    }
+
+    if (!meshes.empty())
+      out << '\n';
+
+    if (i + 1 < segments.size())
+      out << '\n';
+  }
+
+  return true;
+}
+
+QString
+Model::getSegmentsFilename() const
+{
+  QString sfn = getFilename() + ".seg";
+  if (QFileInfo(sfn).exists())
+    return sfn;
+  else
+  {
+    QFileInfo info(getFilename());
+    return info.dir().filePath(info.baseName() + ".seg");
+  }
 }
 
 namespace ModelInternal {
@@ -755,7 +978,7 @@ Model::loadFeatures(QString const & filename_)
     std::string line;
     Vector3 p;
     Real f;
-    while (std::getline(in, line))
+    while (getNextNonBlankLine(in, line))
     {
       std::istringstream line_in(line);
       if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
@@ -950,6 +1173,30 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 }
 
 void
+Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, Graphics::RenderSystem & render_system,
+                              Graphics::RenderOptions const & options) const
+{
+  for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi)
+  {
+    Mesh const * mesh = mi->get();
+    if (!mesh) continue;
+
+    Segment const * seg = getSegment(mesh);
+    if (seg)
+      render_system.setColor(getLabelColor(seg->getLabel()));
+    else if (picked_segment.hasMesh(mesh))
+      render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR);
+    else
+      render_system.setColor(color);
+
+    mesh->draw(render_system, options);
+  }
+
+  for (MeshGroup::GroupConstIterator ci = mesh_group->childrenBegin(); ci != mesh_group->childrenEnd(); ++ci)
+    drawSegmentedMeshGroup(*ci, render_system, options);
+}
+
+void
 Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
 {
   if (isEmpty())
@@ -992,7 +1239,14 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
       render_system.setColor(color);
 
-      if (mesh_group) mesh_group->draw(render_system, options);
+      if (mesh_group)
+      {
+        if (app().getMainWindow()->pickSegments())
+          drawSegmentedMeshGroup(mesh_group, render_system, options);
+        else
+          mesh_group->draw(render_system, options);
+      }
+
       if (point_cloud) point_cloud->draw(render_system, options);
 
     render_system.popColorFlags();

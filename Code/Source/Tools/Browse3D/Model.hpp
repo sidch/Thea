@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include "GraphicsWidget.hpp"
 #include "MeshFwd.hpp"
+#include "Segment.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
@@ -272,6 +273,56 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     QString getSamplesFilename() const;
 
     //========================================================================================================================
+    // Segments
+    //========================================================================================================================
+
+    /**
+     * Flip the selection status of the submesh along a ray.
+     *
+     * @return The distance, in multiples of ray length, to the picked point.
+     */
+    Real togglePickMesh(Ray3 const & ray);
+
+    /** Check if a mesh is currently selected by picking. */
+    bool isPicked(Mesh const * mesh) const { return picked_segment.hasMesh(mesh); }
+
+    /** Invalidate the currently picked segment selection. */
+    void invalidatePickedSegment() { picked_segment.clear(); }
+
+    /** Get the number of labeled segments. */
+    long numSegments() const { return (long)segments.size(); }
+
+    /** Get the set of labeled segments. */
+    TheaArray<Segment> const & getSegments() const { return segments; }
+
+    /** Add a segment. */
+    void addSegment(Segment const & segment);
+
+    /** Add the currently picked segment to the set of labeled segments. */
+    bool addPickedSegment(QString const & label);
+
+    /** Remove a segment from the list of labeled segments. */
+    void removeSegment(long index);
+
+    /** Get the segment containing a given mesh, or null if there is no such segment. */
+    Segment const * getSegment(Mesh const * mesh) const { return const_cast<Model *>(this)->getSegment(mesh); }
+
+    /** Get the segment containing a given mesh, or null if there is no such segment. */
+    Segment * getSegment(Mesh const * mesh);
+
+    /** Select a particular segment. */
+    void selectSegment(long index);
+
+    /** Load labeled segments from a file. */
+    bool loadSegments(QString const & filename_);
+
+    /** Save labeled segments to a file. */
+    bool saveSegments(QString const & filename_) const;
+
+    /** Get the path to the file in which labeled segments are stored. */
+    QString getSegmentsFilename() const;
+
+    //========================================================================================================================
     // Features
     //========================================================================================================================
 
@@ -352,6 +403,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
      */
     void needsSyncSamples(Model const * model);
 
+    /**
+     * Emitted when a displayed list of segments needs to be synced with the model.
+     *
+     * @param model Always points to the emitting model.
+     */
+    void needsSyncSegments(Model const * model);
+
   private:
     /** Clear the model mesh. */
     void clearMesh();
@@ -361,6 +419,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     /** Get the default path to the file in which features are stored. */
     QString getDefaultFeaturesFilename() const;
+
+    /** Draw the mesh group colored by segment. */
+    void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, Graphics::RenderSystem & render_system,
+                                Graphics::RenderOptions const & options) const;
 
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
@@ -374,6 +436,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     bool valid_pick;
     Sample picked_sample;
     long selected_sample;
+
+    TheaArray<Segment> segments;
+    Segment picked_segment;
+    long selected_segment;
 
     mutable bool valid_kdtree;
     mutable KDTree * kdtree;

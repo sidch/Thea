@@ -14,75 +14,127 @@
    <string>Browse3D</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="4,0">
     <item>
-     <layout class="QHBoxLayout" name="mainLayout" stretch="4,1">
-      <item>
-       <layout class="QVBoxLayout" name="modelLayout">
-        <property name="sizeConstraint">
-         <enum>QLayout::SetMinimumSize</enum>
-        </property>
-       </layout>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="pickPointsPane">
-        <property name="title">
-         <string>Pick Points</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QTableWidget" name="pointsTable">
-           <property name="showGrid">
-            <bool>false</bool>
-           </property>
-           <property name="columnCount">
-            <number>1</number>
-           </property>
-           <attribute name="horizontalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>true</bool>
-           </attribute>
-           <column/>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="pointLabel"/>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="pickPointsControlLayout">
-           <item>
-            <layout class="QHBoxLayout" name="pickPointsButtonLayout">
-             <item>
-              <widget class="QPushButton" name="buttonAddPoint">
-               <property name="text">
-                <string>Add Point</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="buttonRemovePoint">
-               <property name="text">
-                <string>Remove Point</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="pickPointsSnapToVertex">
-             <property name="text">
-              <string>Snap to vertex</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
+     <layout class="QVBoxLayout" name="modelLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
      </layout>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="toolBox">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="pickPointsPage">
+       <attribute name="title">
+        <string>Points</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QTableWidget" name="pointsTable">
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <property name="columnCount">
+           <number>1</number>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <column/>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="pointLabel"/>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="pickPointsControlLayout">
+          <item>
+           <layout class="QHBoxLayout" name="pickPointsButtonLayout">
+            <item>
+             <widget class="QPushButton" name="buttonAddPoint">
+              <property name="text">
+               <string>Add Point</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="buttonRemovePoint">
+              <property name="text">
+               <string>Remove Point</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="pickPointsSnapToVertex">
+            <property name="text">
+             <string>Snap to vertex</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="pickSegmentsPage">
+       <attribute name="title">
+        <string>Segments</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="margin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QTableWidget" name="segmentsTable">
+          <property name="showGrid">
+           <bool>false</bool>
+          </property>
+          <property name="columnCount">
+           <number>1</number>
+          </property>
+          <attribute name="horizontalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <column/>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="segmentLabel"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="pickSegmentsButtonLayout">
+          <item>
+           <widget class="QPushButton" name="buttonAddSegment">
+            <property name="text">
+             <string>Add Segment</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="buttonRemoveSegment">
+            <property name="text">
+             <string>Remove Segment</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -136,7 +188,7 @@
      <string>Tools</string>
     </property>
     <addaction name="actionToolsSaveScreenshot"/>
-    <addaction name="actionToolsPickPoints"/>
+    <addaction name="actionToolsToolbox"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -192,7 +244,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionToolsPickPoints"/>
+   <addaction name="actionToolsToolbox"/>
   </widget>
   <action name="actionFileOpen">
    <property name="text">
@@ -287,17 +339,6 @@
     <string>Show shaded faces and edges</string>
    </property>
   </action>
-  <action name="actionToolsPickPoints">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Pick Points</string>
-   </property>
-   <property name="toolTip">
-    <string>Pick 3D points on the mesh</string>
-   </property>
-  </action>
   <action name="actionToolsSaveScreenshot">
    <property name="text">
     <string>Save Screenshot</string>
@@ -334,6 +375,14 @@
    </property>
    <property name="shortcut">
     <string>]</string>
+   </property>
+  </action>
+  <action name="actionToolsToolbox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Toolbox</string>
    </property>
   </action>
  </widget>

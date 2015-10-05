@@ -93,6 +93,9 @@ class MainWindow : public QMainWindow
     /** Check if point-picking is on. */
     bool pickPoints() const;
 
+    /** Check if segment-selection is on. */
+    bool pickSegments() const;
+
   public slots:
     /** Select and load a model. */
     void selectAndLoadModel();
@@ -124,8 +127,26 @@ class MainWindow : public QMainWindow
     /** Sync the displayed list of samples with the model. */
     void syncSamples();
 
+    /** Add the currently picked segment to the set of segments. */
+    void addPickedSegment();
+
+    /** Select the segment indicated by the table selection. */
+    void selectSegment();
+
+    /** Remove the selected segment. */
+    void removeSelectedSegment();
+
+    /** Sync the displayed list of segments with the model. */
+    void syncSegments();
+
+    /** Show/hide the toolbox. */
+    void setShowToolbox(bool value);
+
     /** Turn point-picking on/off. */
     void setPickPoints(bool value);
+
+    /** Turn segment-picking on/off. */
+    void setPickSegments(bool value);
 
   protected:
     /** Called just before the window is closed. */
