@@ -247,7 +247,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       {
         std::string line = trimWhitespace(in->readLine());
         bool done = false;
-        while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'g'))
+        while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'g' || line[0] == 'o'))
         {
           if (in->hasMore())
             line = trimWhitespace(in->readLine());
@@ -405,7 +405,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
           num_faces++;
         }
-        else if (!read_opts.flatten && (line[0] == 'g' && (line.length() < 2 || line[1] == ' ' || line[1] == '\t')))  // group
+        else if (!read_opts.flatten
+              && ((line[0] == 'g' || line[0] == 'o') && (line.length() < 2 || line[1] == ' ' || line[1] == '\t')))  // group
         {
           // Add the previous mesh to the mesh group
           if (builder)
