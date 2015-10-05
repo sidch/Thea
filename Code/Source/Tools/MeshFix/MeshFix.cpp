@@ -330,7 +330,7 @@ parseArgs(int argc, char * argv[])
   }
 
   string lc_out = toLower(outfile);
-  if (!(endsWith(lc_out, ".3ds") || endsWith(lc_out, ".obj") || endsWith(lc_out, ".off")))
+  if (!(endsWith(lc_out, ".3ds") || endsWith(lc_out, ".obj") || endsWith(lc_out, ".off") || endsWith(lc_out, ".off.bin")))
   {
     THEA_ERROR << "Unrecognized mesh output format";
     return -1;
@@ -848,7 +848,7 @@ orient(Mesh & mesh)
 
   if (verbose)
   {
-    THEA_CONSOLE << "orient('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces in "
+    THEA_CONSOLE << "orient('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces in "
                  << num_cc << " connected components";
   }
 
@@ -896,7 +896,7 @@ struct SDFOrienter
 
     if (verbose)
     {
-      THEA_CONSOLE << "orient-sdf('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+      THEA_CONSOLE << "orient-sdf('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
     }
 
     return false;
@@ -980,7 +980,7 @@ orientMajority(Mesh & mesh)
         if (!consistentWinding(face, nbr, edge))
         {
           alwaysAssertM(nbr->attr().flag > 0,
-                        "orient-majority('" + string(mesh.getName()) + "): Expected > 0 neighbor consistency count");
+                        "orient-majority('" + string(mesh.getName()) + "'): Expected > 0 neighbor consistency count");
 
           heap.erase(nbr);
           nbr->attr().flag--;
@@ -995,7 +995,7 @@ orientMajority(Mesh & mesh)
 
   if (verbose)
   {
-    THEA_CONSOLE << "orient-majority('" << mesh.getName() << "): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+    THEA_CONSOLE << "orient-majority('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
   }
 
   return false;
