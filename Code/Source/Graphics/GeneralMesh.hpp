@@ -413,6 +413,52 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     }
 
     /**
+     * Remove a face of the mesh. This does NOT remove any vertices or edges. Use removeIsolatedEdges() and
+     * removeIsolatedVertices() after calling this function one or more times. Iterators to the face list remain valid unless
+     * the iterator pointed to the removed face.
+     *
+     * This is a relatively slow operation since the face needs to be looked up in the face list
+     * (linear in number of faces). For speed, use removeFace(FaceIterator).
+     *
+     * @return True if the face was found and removed, else false.
+     */
+    bool removeFace(Face * face)
+    {
+      for (FaceIterator fi = faces.begin(); fi != faces.end(); ++fi)
+        if (&(*fi) == face)
+        {
+          removeFace(fi);
+          return true;
+        }
+
+      return false;
+    }
+
+    /**
+     * Remove a face of the mesh. This does NOT remove any vertices or edges. Use removeIsolatedEdges() and
+     * removeIsolatedVertices() after calling this function one or more times. Iterators to the face list remain valid unless
+     * the iterator pointed to the removed face.
+     *
+     * Use this version in preference to removeFace(Face const *) where possible.
+     *
+     * @return True if the face was found and removed, else false.
+     */
+    bool removeFace(FaceIterator face)
+    {
+      Face * fp = &(*face);
+
+      for (typename Face::VertexIterator fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
+        (*fvi)->removeFace(fp);
+
+      for (typename Face::EdgeIterator fei = face->edges.begin(); fei != face->edges.end(); ++fei)
+        (*fei)->removeFace(fp);
+
+      faces.erase(face);
+
+      return true;
+    }
+
+    /**
      * Check if the mesh represents a topological manifold.
      *
      * @param require_closed If true, the mesh cannot have boundary edges.
