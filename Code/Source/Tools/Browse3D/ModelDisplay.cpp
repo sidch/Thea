@@ -456,12 +456,21 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
   bool ctrl_only   =  !shift &&  ctrl && !alt;
   bool alt_only    =  !shift && !ctrl &&  alt;
 
-  bool edit_model = app().getMainWindow()->pickPoints();
+  bool pick_points = app().getMainWindow()->pickPoints();
+  bool pick_segments = app().getMainWindow()->pickSegments();
+  bool edit_model = (pick_points || pick_segments);
 
   if (edit_model && (right || (ctrl && left)))
   {
     Ray3 ray = computePickRay(event->pos());
-    if (model->pick(ray) >= 0)
+
+    bool success = false;
+    if (pick_points)
+      success = (model->pick(ray) >= 0);
+    else if (pick_segments)
+      success = (model->togglePickMesh(ray) >= 0);
+
+    if (success)
     {
       model->mousePressEvent(event);
       if (event->isAccepted())

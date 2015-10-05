@@ -104,55 +104,6 @@ bool loadImage(Image & image, QString const & filename);
 // Make sure image channels are in order RGB[A]. Currently works only for RGB_8U and RGBA_8U.
 void fixChannelOrdering(Image & image);
 
-// A wrapper for an iterator that, when dereferenced, returns a mutable pointer to the current object instead of a reference to
-// it.
-template <typename RefIterator>
-struct RefToPtrIterator : public RefIterator
-{
-  RefToPtrIterator(RefIterator i) : RefIterator(i) {}
-
-  typename RefIterator::value_type * operator*() const { return &(this->RefIterator::operator*()); }
-
-}; // struct RefToPtrIterator
-
-// Specialization when the iterator is a pointer to T.
-template <typename T>
-class RefToPtrIterator<T *> : public std::iterator<std::random_access_iterator_tag, T *, std::ptrdiff_t, T **, T *>
-{
-  public:
-    explicit RefToPtrIterator(T * ii_ = NULL) : ii(ii_) {}
-    RefToPtrIterator(RefToPtrIterator const & src) : ii(src.ii) {}
-
-    T * operator*() const { return ii; }
-    template <typename IntegerType> T * operator[](IntegerType n) { return &ii[n]; }
-
-    RefToPtrIterator & operator++() { ++ii; return *this; }
-    RefToPtrIterator & operator++(int) { RefToPtrIterator tmp(*this); operator++(); return *this; }
-    RefToPtrIterator & operator--() { --ii; return *this; }
-    RefToPtrIterator & operator--(int) { RefToPtrIterator tmp(*this); operator--(); return *this; }
-
-    RefToPtrIterator & operator=(RefToPtrIterator const & src) { ii = src.ii; return *this; }
-    template <typename IntegerType> RefToPtrIterator & operator+=(IntegerType n) { ii += n; return *this; }
-    template <typename IntegerType> RefToPtrIterator & operator-=(IntegerType n) { ii -= n; return *this; }
-
-    template <typename IntegerType> RefToPtrIterator operator+(IntegerType n) const { return RefToPtrIterator(ii + n); }
-    template <typename IntegerType> RefToPtrIterator operator-(IntegerType n) const { return RefToPtrIterator(ii - n); }
-
-    std::ptrdiff_t operator-(RefToPtrIterator const & rhs) const { return ii - rhs.ii; }
-
-    bool operator==(RefToPtrIterator const & rhs) const { return ii == rhs.ii; }
-    bool operator!=(RefToPtrIterator const & rhs) const { return ii != rhs.ii; }
-
-    bool operator< (RefToPtrIterator const & rhs) const { return ii <  rhs.ii; }
-    bool operator> (RefToPtrIterator const & rhs) const { return ii >  rhs.ii; }
-    bool operator<=(RefToPtrIterator const & rhs) const { return ii <= rhs.ii; }
-    bool operator>=(RefToPtrIterator const & rhs) const { return ii >= rhs.ii; }
-
-  private:
-    T * ii;
-
-}; // class RefToPtrIterator<T, T*>
-
 } // namespace Browse3D
 
 #endif

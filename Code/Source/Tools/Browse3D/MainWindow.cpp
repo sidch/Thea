@@ -56,6 +56,9 @@
 
 namespace Browse3D {
 
+static int const POINTS_TAB_INDEX    =  0;
+static int const SEGMENTS_TAB_INDEX  =  1;
+
 MainWindow::MainWindow(QWidget * parent)
 : QMainWindow(parent),
   ui(new Ui::MainWindow),
@@ -107,9 +110,13 @@ MainWindow::init()
   ui->modelLayout->addWidget(model_display);
   model_display->show();
 
-  // Point picked interface
+  // Point picking interface
   ui->pointsTable->setColumnCount(1);
   ui->pointsTable->horizontalHeader()->setStretchLastSection(true);
+
+  // Segment picking interface
+  ui->segmentsTable->setColumnCount(1);
+  ui->segmentsTable->horizontalHeader()->setStretchLastSection(true);
 
   // Setup signal/slot connections
   connect(ui->actionFileOpen, SIGNAL(triggered(bool)), this, SLOT(selectAndLoadModel()));
@@ -128,14 +135,21 @@ MainWindow::init()
   connect(ui->actionGoNextFeatures,     SIGNAL(triggered(bool)), this, SLOT(loadNextFeatures()));
 
   connect(ui->actionToolsSaveScreenshot, SIGNAL(triggered(bool)), model_display, SLOT(saveScreenshot()));
-  connect(ui->actionToolsPickPoints, SIGNAL(toggled(bool)), this, SLOT(setPickPoints(bool)));
+  connect(ui->actionToolsToolbox, SIGNAL(toggled(bool)), this, SLOT(setShowToolbox(bool)));
 
   connect(model, SIGNAL(filenameChanged(QString const &)), this, SLOT(setWindowTitle(QString const &)));
   connect(model, SIGNAL(needsSyncSamples(Model const *)), this, SLOT(syncSamples()));
+  connect(model, SIGNAL(needsSyncSegments(Model const *)), this, SLOT(syncSegments()));
+
+  connect(ui->toolBox, SIGNAL(currentChanged(int)), this, SLOT(update()));
 
   connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
   connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
   connect(ui->pointsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSample()));
+
+  connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
+  connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
+  connect(ui->segmentsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
 
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
@@ -144,8 +158,9 @@ MainWindow::init()
   model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
 
   setPickPoints(false);
-  ui->actionToolsPickPoints->setChecked(false);
-  ui->pickPointsSnapToVertex->setChecked(true);
+  setPickSegments(false);
+  ui->actionToolsToolbox->setChecked(false);
+  ui->pickPointsSnapToVertex->setChecked(false);
 
   // Load the initial model, if any
   bool loaded = model->load(app().options().model);
@@ -348,10 +363,10 @@ void
 MainWindow::addPickedSample()
 {
   QString label = ui->pointLabel->text();
+  qDebug() << "Adding sample with label" << label;
+
   model->addPickedSample(label, ui->pickPointsSnapToVertex->isChecked());
   model->invalidatePick();
-
-  qDebug() << "Adding sample with label" << label;
 
   QTableWidgetItem * item = new QTableWidgetItem(label);
   item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -406,13 +421,99 @@ MainWindow::selectSample()
 bool
 MainWindow::pickPoints() const
 {
-  return ui->actionToolsPickPoints->isChecked();
+  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == POINTS_TAB_INDEX;
 }
 
 void
 MainWindow::setPickPoints(bool value)
 {
-  ui->pickPointsPane->setVisible(value);
+  ui->toolBox->setVisible(value);
+  if (value)
+    ui->toolBox->setCurrentIndex(POINTS_TAB_INDEX);
+
+  update();
+}
+
+void
+MainWindow::addPickedSegment()
+{
+  QString label = ui->segmentLabel->text();
+  qDebug() << "Adding segment with label" << label;
+
+  model->addPickedSegment(label);
+  model->invalidatePickedSegment();
+
+  QTableWidgetItem * item = new QTableWidgetItem(label);
+  item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+  ui->segmentsTable->setRowCount((int)model->numSegments());
+  ui->segmentsTable->setItem((int)model->numSegments() - 1, 0, item);
+}
+
+void
+MainWindow::syncSegments()
+{
+  ui->segmentsTable->setRowCount((int)model->numSegments());
+  TheaArray<Segment> const & segments = model->getSegments();
+  for (array_size_t i = 0; i < segments.size(); ++i)
+  {
+    qDebug() << "Adding segment with label" << segments[i].getLabel();
+
+    QTableWidgetItem * item = new QTableWidgetItem(segments[i].getLabel());
+    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+    ui->segmentsTable->setItem((int)i, 0, item);
+  }
+}
+
+void
+MainWindow::removeSelectedSegment()
+{
+  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
+  if (sel.isEmpty())
+    return;
+
+  QTableWidgetItem * item = sel.front();
+  qDebug() << "Removing segment" << item->row() << "with label" << item->text();
+
+  model->removeSegment(item->row());
+  ui->segmentsTable->removeRow(item->row());
+}
+
+void
+MainWindow::selectSegment()
+{
+  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
+  if (sel.isEmpty())
+    model->selectSegment(-1);
+  else
+  {
+    QTableWidgetItem * item = sel.front();
+    model->selectSegment(item->row());  // ignore column
+  }
+}
+
+bool
+MainWindow::pickSegments() const
+{
+  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == SEGMENTS_TAB_INDEX;
+}
+
+void
+MainWindow::setPickSegments(bool value)
+{
+  ui->toolBox->setVisible(value);
+  if (value)
+    ui->toolBox->setCurrentIndex(SEGMENTS_TAB_INDEX);
+
+  update();
+}
+
+void
+MainWindow::setShowToolbox(bool value)
+{
+  ui->toolBox->setVisible(value);
+  update();
 }
 
 void
