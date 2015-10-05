@@ -10,6 +10,7 @@
 #include "../../Graphics/VertexWelder.hpp"
 #include "../../LineSegment3.hpp"
 #include "../../Math.hpp"
+#include "../../UnorderedSet.hpp"
 #include <boost/program_options.hpp>
 #include <algorithm>
 #include <iostream>
@@ -77,6 +78,9 @@ string infile, outfile;
 
 bool do_del_danglers = false;
 
+bool do_del_dup_faces = false;
+bool del_dup_faces_sorted = true;
+
 bool do_v_weld = false;
 bool v_weld_boundary_only = true;
 double v_weld_tolerance = -1;
@@ -94,6 +98,7 @@ bool do_orient_majority = false;
 
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
+void delDuplicateFaces(MG & mesh_group, bool sorted);
 bool zipper(Mesh & mesh);
 bool vWeld(Mesh & mesh);
 bool tJuncts(Mesh & mesh);
@@ -122,6 +127,12 @@ meshFix(int argc, char * argv[])
   if (do_del_danglers)
   {
     mg.forEachMeshUntil(&delDanglers);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
+  if (do_del_dup_faces)
+  {
+    delDuplicateFaces(mg, del_dup_faces_sorted);
     mg.forEachMeshUntil(&checkProblems);
   }
 
@@ -194,6 +205,8 @@ parseArgs(int argc, char * argv[])
           ("outfile",             po::value<string>(&outfile), "Path to output mesh file")
 
           ("del-danglers",        "Delete isolated vertices and edges, and empty faces")
+
+          ("del-dup-faces",       "Delete duplicate faces, regardless of orientation")
 
           ("zipper",              po::value<double>(&zipper_tolerance),
                                   "Seal pairs of boundary edges whose endpoints are equal upto the specified tolerance"
@@ -281,6 +294,9 @@ parseArgs(int argc, char * argv[])
   if (vm.count("del-danglers") > 0)
     do_del_danglers = do_something = true;
 
+  if (vm.count("del-dup-faces") > 0)
+    do_del_dup_faces = do_something = true;
+
   if (vm.count("zipper") > 0)
     do_zipper = do_something = true;
 
@@ -336,6 +352,77 @@ delDanglers(Mesh & mesh)
   }
 
   return false;
+}
+
+struct FaceSeq
+{
+  TheaArray<Mesh::Vertex const *> seq;
+
+  FaceSeq(Mesh::Face const & face, bool sorted)
+  {
+    for (Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
+      seq.push_back(*vi);
+
+    if (sorted)
+      std::sort(seq.begin(), seq.end());
+  }
+};
+
+bool
+operator==(FaceSeq const & lhs, FaceSeq const & rhs)
+{
+  return lhs.seq.size() == rhs.seq.size()
+      && std::equal(lhs.seq.begin(), lhs.seq.end(), rhs.seq.begin());
+}
+
+std::size_t
+hash_value(FaceSeq const & f)
+{
+  return boost::hash_range(f.seq.begin(), f.seq.end());
+}
+
+typedef TheaUnorderedSet<FaceSeq> FaceSet;
+
+struct DupFaceDeleter
+{
+  FaceSet seqs;
+  bool sorted;
+  long num_deleted;
+
+  DupFaceDeleter(bool sorted_) : sorted(sorted_), num_deleted(0) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); )
+    {
+      FaceSeq s(*fi, sorted);
+      if (seqs.find(s) == seqs.end())
+      {
+        seqs.insert(s);
+        ++fi;
+      }
+      else  // delete the duplicated face
+      {
+        Mesh::FaceIterator curr = fi; ++fi;
+        mesh.removeFace(curr);
+        num_deleted++;
+      }
+    }
+
+    if (verbose)
+    {
+      THEA_CONSOLE << "del-dup-faces('" << mesh.getName() << "'): Removed " << num_deleted << " faces";
+    }
+
+    return false;
+  }
+};
+
+void
+delDuplicateFaces(MG & mesh_group, bool sorted)
+{
+  DupFaceDeleter func(sorted);
+  mesh_group.forEachMeshUntil(&func);
 }
 
 bool
