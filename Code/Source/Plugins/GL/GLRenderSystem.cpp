@@ -1008,7 +1008,7 @@ GLRenderSystem::setPolygonOffset(bool enable, Real offset)
   if (enable)
   {
     glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1, offset);
+    glPolygonOffset(offset, offset);
   }
   else
     glDisable(GL_POLYGON_OFFSET_FILL);

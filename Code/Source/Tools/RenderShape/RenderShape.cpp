@@ -36,7 +36,7 @@ struct Model
 {
   Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
   bool load(string const & path);
-  Camera fitCamera(Matrix4 const & transform, int width, int height);
+  Camera fitCamera(Matrix4 const & transform, Real zoom, int width, int height);
   bool render(ColorRGBA const & color);
 
   bool convert_to_points;
@@ -56,11 +56,12 @@ enum PointUsage
 RenderSystem * render_system = NULL;
 TheaArray<string> model_paths;
 TheaArray<Matrix4> transforms;
+Real zoom = 1.0f;
 string out_path;
 int out_width, out_height;
 Vector3 view_dir(-1, -1, -1);
 Vector3 view_up(0, 1, 0);
-bool color_by_face_id = false;
+bool color_by_id = false;
 ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
 int antialiasing_level = 1;
@@ -119,7 +120,7 @@ main(int argc, char * argv[])
     fb->attach(Framebuffer::AttachmentPoint::DEPTH,   depth_tex);
 
     // Initialize the camera
-    Camera camera = model.fitCamera(transforms[0], buffer_width, buffer_height);
+    Camera camera = model.fitCamera(transforms[0], zoom, buffer_width, buffer_height);
 
     // Render the mesh to the offscreen framebuffer
     render_system->pushFramebuffer();
@@ -127,6 +128,7 @@ main(int argc, char * argv[])
 
       render_system->pushDepthFlags();
       render_system->pushColorFlags();
+      render_system->pushShapeFlags();
       render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
       render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
 
@@ -154,6 +156,8 @@ main(int argc, char * argv[])
           ColorRGBA overlay_color = getPaletteColor((long)i - 1);
           overlay_color.a() = (model.is_point_cloud ? 1.0f : 0.5f);
 
+          render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
+
           render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
             render_system->multMatrix(transforms[i]);
             model.render(overlay_color);
@@ -162,6 +166,7 @@ main(int argc, char * argv[])
 
       render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
       render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+      render_system->popShapeFlags();
       render_system->popColorFlags();
       render_system->popDepthFlags();
 
@@ -202,10 +207,12 @@ usage()
   THEA_CONSOLE << "                         as points)";
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
+  THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
   THEA_CONSOLE << "  -v <viewing-dir>      (3 chars, one for each coordinate, each one of";
   THEA_CONSOLE << "                         +, - or 0)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
-  THEA_CONSOLE << "  -c <argb>             (mesh color, or 'fid' to color faces by ID)";
+  THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
+  THEA_CONSOLE << "                         points by point ID)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
@@ -405,6 +412,22 @@ parseArgs(int argc, char * argv[])
           argv++; argc--; break;
         }
 
+        case 'z':
+        {
+          if (argc < 1) { THEA_ERROR << "-z: Zoom not specified"; return false; }
+          if (sscanf(*argv, " %f", &zoom) != 1)
+          {
+            THEA_ERROR << "Could not parse zoom '" << *argv << '\'';
+            return false;
+          }
+          if (zoom <= 0)
+          {
+            THEA_ERROR << "Invalid zoom " << zoom;
+            return false;
+          }
+          argv++; argc--; break;
+        }
+
         case 'v':
         {
           if (argc < 1) { THEA_ERROR << "-v: View direction not specified"; return false; }
@@ -426,11 +449,11 @@ parseArgs(int argc, char * argv[])
         {
           if (argc < 1) { THEA_ERROR << "-c: Mesh color not specified"; return false; }
 
-          if (toLower(trimWhitespace(*argv)) == "fid")
-            color_by_face_id = true;
+          if (toLower(trimWhitespace(*argv)) == "id")
+            color_by_id = true;
           else
           {
-            color_by_face_id = false;
+            color_by_id = false;
             if (!parseColor(*argv, primary_color))
               return false;
           }
@@ -580,6 +603,25 @@ enableWireframe(Mesh & mesh)
   return false;
 }
 
+ColorRGBA8
+indexToColor(uint32 index, bool is_point)
+{
+  ColorRGBA8 color((uint8)((index      ) & 0xFF),
+                   (uint8)((index >>  8) & 0xFF),
+                   (uint8)((index >> 16) & 0xFF),
+                   1);
+
+  if (is_point)
+  {
+    if (color.g() & 0x80)
+      THEA_WARNING << "Too many points -- point IDs will overflow and not be one-to-one!";
+
+    color.g() = (color.g() | 0x80);
+  }
+
+  return color;
+}
+
 struct FaceIndexColorizer
 {
   FaceIndexMap const & tri_ids;
@@ -601,11 +643,7 @@ struct FaceIndexColorizer
         throw Error(format("Could not find index of triangle %ld in mesh '%s'", (long)i / 3, mesh.getName()));
 
       uint32 id = existing->second;
-
-      ColorRGBA8 color((uint8)((id      ) & 0xFF),
-                       (uint8)((id >>  8) & 0xFF),
-                       (uint8)((id >> 16) & 0xFF),
-                       1);
+      ColorRGBA8 color = indexToColor(id, false);
 
       mesh.setColor((long)tris[i    ], color);
       mesh.setColor((long)tris[i + 1], color);
@@ -621,11 +659,7 @@ struct FaceIndexColorizer
         throw Error(format("Could not find index of quad %ld in mesh '%s'", (long)i / 4, mesh.getName()));
 
       uint32 id = existing->second;
-
-      ColorRGBA8 color((uint8)((id      ) & 0xFF),
-                       (uint8)((id >>  8) & 0xFF),
-                       (uint8)((id >> 16) & 0xFF),
-                       1);
+      ColorRGBA8 color = indexToColor(id, false);
 
       mesh.setColor((long)quads[i    ], color);
       mesh.setColor((long)quads[i + 1], color);
@@ -723,7 +757,7 @@ Model::load(string const & path)
     }
     else
     {
-      if (color_by_face_id)
+      if (color_by_id)
       {
         FaceIndexColorizer id_colorizer(tri_ids, quad_ids);
         mesh_group.forEachMeshUntil(&id_colorizer);
@@ -835,7 +869,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
 }
 
 Camera
-Model::fitCamera(Matrix4 const & transform, int width, int height)
+Model::fitCamera(Matrix4 const & transform, Real zoom, int width, int height)
 {
   // Orientation
   Ball3 bsphere = modelBSphere(*this, transform);
@@ -866,11 +900,11 @@ Model::fitCamera(Matrix4 const & transform, int width, int height)
     hh = HALF_WIDTH;
   }
 
-  Real near_dist = 0.01 * camera_separation;
-  Real far_dist  = 5 * camera_separation;
+  Real near_dist = 0.01f * camera_separation;
+  Real far_dist  = 2 * camera_separation + 2 * diameter;
 
-  hw *= (0.5f * near_dist);
-  hh *= (0.5f * near_dist);
+  hw = (hw / zoom) * (0.5f * near_dist);
+  hh = (hh / zoom) * (0.5f * near_dist);
 
   return Camera(cframe,
                 Camera::ProjectionType::PERSPECTIVE, -hw, hw, -hh, hh, near_dist, far_dist, Camera::ProjectedYDirection::UP);
@@ -1031,7 +1065,12 @@ Model::render(ColorRGBA const & color)
     render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
 
       for (array_size_t i = 0; i < points.size(); ++i)
+      {
+        if (color_by_id)
+          render_system->setColor(indexToColor((uint32)i, true));
+
         render_system->sendVertex(points[i]);
+      }
 
     render_system->endPrimitive();
   }
@@ -1048,7 +1087,7 @@ Model::render(ColorRGBA const & color)
         return -1;
       }
 
-      if (color_by_face_id)
+      if (color_by_id)
       {
         if (!initFaceIndexShader(*mesh_shader))
         {
@@ -1069,7 +1108,7 @@ Model::render(ColorRGBA const & color)
     render_system->setShader(mesh_shader);
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_face_id)
+    if (color_by_id)
       opts.useVertexData() = true;
 
 #ifdef DRAW_EDGES
@@ -1077,7 +1116,7 @@ Model::render(ColorRGBA const & color)
     opts.edgeColor() = ColorRGB(0.5, 0.5, 1);
 #endif
 
-    if (has_transparency && !color_by_face_id)
+    if (has_transparency && !color_by_id)
     {
       // First back faces...
       render_system->setCullFace(RenderSystem::CullFace::FRONT);
