@@ -1173,27 +1173,49 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 }
 
 void
-Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, Graphics::RenderSystem & render_system,
+Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
                               Graphics::RenderOptions const & options) const
 {
-  for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi)
+  Graphics::RenderOptions & ro = const_cast<Graphics::RenderOptions &>(options);
+
+  bool old_draw_edges = ro.drawEdges();
+  bool old_override_edge_color = ro.overrideEdgeColor();
+  ColorRGBA old_edge_color = ro.edgeColor();
+
+  ro.overrideEdgeColor() = true;
+
+  for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi, ++node_index)
   {
     Mesh const * mesh = mi->get();
     if (!mesh) continue;
 
     Segment const * seg = getSegment(mesh);
     if (seg)
+    {
+      ro.drawEdges() = false;
       render_system.setColor(getLabelColor(seg->getLabel()));
+    }
     else if (picked_segment.hasMesh(mesh))
+    {
+      ro.drawEdges() = false;
       render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR);
+    }
     else
+    {
+      ro.drawEdges() = true;
+      ro.edgeColor() = getPaletteColor(node_index);
       render_system.setColor(color);
+    }
 
     mesh->draw(render_system, options);
   }
 
+  ro.drawEdges() = old_draw_edges;
+  ro.overrideEdgeColor() = old_override_edge_color;
+  ro.edgeColor() = old_edge_color;
+
   for (MeshGroup::GroupConstIterator ci = mesh_group->childrenBegin(); ci != mesh_group->childrenEnd(); ++ci)
-    drawSegmentedMeshGroup(*ci, render_system, options);
+    drawSegmentedMeshGroup(*ci, depth + 1, node_index, render_system, options);
 }
 
 void
@@ -1242,7 +1264,10 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
       if (mesh_group)
       {
         if (app().getMainWindow()->pickSegments())
-          drawSegmentedMeshGroup(mesh_group, render_system, options);
+        {
+          int node_index = 0;
+          drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
+        }
         else
           mesh_group->draw(render_system, options);
       }

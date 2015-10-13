@@ -87,6 +87,26 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     /** Check if the mesh group is empty. */
     bool isEmpty() const { return meshes.empty() && children.empty(); }
 
+    /** Get the parent group of this mesh group, or null if this is the root of the hierarchy. */
+    MeshGroup * getParent() const { return parent; }
+
+    /**
+     * Get the depth of the mesh group in the hierarchy (the root is at depth 0, its children at depth 1, and so on). The
+     * function takes time proportional to the depth.
+     */
+    long getDepth() const
+    {
+      long depth = 0;
+      MeshGroup const * p = parent;
+      while (p)
+      {
+        p = p->parent;
+        depth++;
+      }
+
+      return depth;
+    }
+
     /** Number of meshes in the group. */
     long numMeshes() const { return (long)meshes.size(); }
 
@@ -127,13 +147,33 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     GroupConstIterator childrenEnd() const { return children.end(); }
 
     /** Add a child to the group. No-op if the pointer is null. */
-    void addChild(Ptr child) { if (child) children.insert(child); }
+    void addChild(Ptr child)
+    {
+      if (child)
+      {
+        children.insert(child);
+        child->parent = this;
+      }
+    }
 
     /** Remove a mesh from the group. */
-    void removeChild(Ptr child) { children.erase(child); }
+    void removeChild(Ptr child)
+    {
+      if (child)
+      {
+        children.erase(child);
+        child->parent = NULL;
+      }
+    }
 
     /** Remove all children of the group. */
-    void clearChildren() { children.clear(); }
+    void clearChildren()
+    {
+      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
+        (*ci)->parent = NULL;
+
+      children.clear();
+    }
 
     /** Remove all meshes and children of the group. */
     void clear() { clearMeshes(); clearChildren(); }
@@ -409,6 +449,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         return NULL;
     }
 
+    MeshGroup * parent;  // not a smart pointer, to avoid circular references
     MeshSet meshes;
     GroupSet children;
     AxisAlignedBox3 bounds;

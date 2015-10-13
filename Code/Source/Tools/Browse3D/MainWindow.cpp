@@ -56,8 +56,8 @@
 
 namespace Browse3D {
 
-static int const POINTS_TAB_INDEX    =  0;
-static int const SEGMENTS_TAB_INDEX  =  1;
+static int const SEGMENTS_TAB_INDEX  =  0;
+static int const POINTS_TAB_INDEX    =  1;
 
 MainWindow::MainWindow(QWidget * parent)
 : QMainWindow(parent),
@@ -110,13 +110,13 @@ MainWindow::init()
   ui->modelLayout->addWidget(model_display);
   model_display->show();
 
-  // Point picking interface
-  ui->pointsTable->setColumnCount(1);
-  ui->pointsTable->horizontalHeader()->setStretchLastSection(true);
-
   // Segment picking interface
   ui->segmentsTable->setColumnCount(1);
   ui->segmentsTable->horizontalHeader()->setStretchLastSection(true);
+
+  // Point picking interface
+  ui->pointsTable->setColumnCount(1);
+  ui->pointsTable->horizontalHeader()->setStretchLastSection(true);
 
   // Setup signal/slot connections
   connect(ui->actionFileOpen, SIGNAL(triggered(bool)), this, SLOT(selectAndLoadModel()));
@@ -143,13 +143,13 @@ MainWindow::init()
 
   connect(ui->toolBox, SIGNAL(currentChanged(int)), this, SLOT(update()));
 
-  connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
-  connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
-  connect(ui->pointsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSample()));
-
   connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
   connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
   connect(ui->segmentsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
+
+  connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
+  connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
+  connect(ui->pointsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSample()));
 
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
@@ -157,8 +157,8 @@ MainWindow::init()
   ui->actionViewTwoSidedLighting->setChecked(app().options().two_sided);
   model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
 
-  setPickPoints(false);
   setPickSegments(false);
+  setPickPoints(false);
   ui->actionToolsToolbox->setChecked(false);
   ui->pickPointsSnapToVertex->setChecked(false);
 

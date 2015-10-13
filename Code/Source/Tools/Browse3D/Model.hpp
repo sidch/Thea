@@ -421,7 +421,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     QString getDefaultFeaturesFilename() const;
 
     /** Draw the mesh group colored by segment. */
-    void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, Graphics::RenderSystem & render_system,
+    void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
                                 Graphics::RenderOptions const & options) const;
 
     MeshGroupPtr mesh_group;
