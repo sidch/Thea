@@ -58,7 +58,7 @@ class Mesh : public Graphics::DisplayMesh
   public:
     THEA_DEF_POINTER_TYPES(Mesh, shared_ptr, weak_ptr)
 
-    Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name) {}
+    Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name), parent(NULL) {}
 
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
@@ -124,6 +124,42 @@ class Mesh : public Graphics::DisplayMesh
       return indexToFace()[(array_size_t)face];
     }
 
+    void setParent(MeshGroup * p) { parent = p; }
+    MeshGroup * getParent() const { return parent; }
+
+    // Ancestor at generations = 1 is the parent. If the hierarchy is not deep enough, returns the root.
+    MeshGroup * getAncestor(long generations) const
+    {
+      if (generations < 1)
+      {
+        THEA_ERROR << getName() << ": Ancestor generation gap must be >= 1";
+        return NULL;
+      }
+
+      MeshGroup * anc = parent;
+      if (!anc)
+          return anc;
+
+      while (--generations > 0 && anc->getParent())
+        anc = anc->getParent();
+
+      return anc;
+    }
+
+    bool hasAncestor(MeshGroup const * anc) const
+    {
+      MeshGroup const * a = parent;
+      while (a)
+      {
+        if (anc == a)
+          return true;
+
+        a = a->getParent();
+      }
+
+      return false;
+    }
+
   private:
     static TheaArray<Face> & indexToFace()
     {
@@ -133,6 +169,7 @@ class Mesh : public Graphics::DisplayMesh
 
     TheaArray<long> tri_face_indices;
     TheaArray<long> quad_face_indices;
+    MeshGroup * parent;
 
 }; // class Mesh
 

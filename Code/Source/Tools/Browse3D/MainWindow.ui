@@ -56,18 +56,32 @@
          <widget class="QLineEdit" name="segmentLabel"/>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="pickSegmentsButtonLayout">
-          <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="1">
+           <widget class="QPushButton" name="buttonRemoveSegment">
+            <property name="text">
+             <string>Remove Segment</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
            <widget class="QPushButton" name="buttonAddSegment">
             <property name="text">
              <string>Add Segment</string>
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QPushButton" name="buttonRemoveSegment">
+          <item row="1" column="0">
+           <widget class="QPushButton" name="buttonExpandSegment">
             <property name="text">
-             <string>Remove Segment</string>
+             <string>Expand</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QPushButton" name="buttonContractSegment">
+            <property name="text">
+             <string>Contract</string>
             </property>
            </widget>
           </item>
@@ -144,7 +158,7 @@
      <x>0</x>
      <y>0</y>
      <width>784</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

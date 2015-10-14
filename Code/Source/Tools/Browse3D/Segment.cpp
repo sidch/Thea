@@ -39,61 +39,75 @@
 //
 //============================================================================
 
-#ifndef __Browse3D_Segment_hpp__
-#define __Browse3D_Segment_hpp__
-
-#include "Common.hpp"
-#include "MeshFwd.hpp"
-#include "../../UnorderedSet.hpp"
-#include <QString>
+#include "Segment.hpp"
+#include "Mesh.hpp"
 
 namespace Browse3D {
 
-/** A labeled segment. */
-class Segment
+
+void
+Segment::removeMesh(Mesh const * mesh, long depth_promotion)
 {
-  public:
-    typedef TheaUnorderedSet<Mesh *> MeshSet;  ///< A set of meshes
+  if (!mesh)
+    return;
 
-    /** Default constructor. */
-    Segment() : label("AnonymousSegment") {}
+  // Always remove this mesh
+  meshes.erase(const_cast<Mesh *>(mesh));
 
-    /** Create a segment with the given label. */
-    Segment(QString const & label_) : label(label_) {}
+  if (depth_promotion <= 0)
+    return;
 
-    /** Get the segment label. */
-    QString const & getLabel() const { return label; }
+  // Remove every mesh in the segment that has a common ancestor with this mesh
+  for (MeshSet::iterator mi = meshes.begin(); mi != meshes.end(); )
+  {
+    MeshGroup const * anc = (*mi)->getAncestor(depth_promotion);
+    if (anc && mesh->hasAncestor(anc))
+    {
+      MeshSet::iterator to_remove = mi;
+      ++mi;
+      meshes.erase(to_remove);
+    }
+    else
+      ++mi;
+  }
+}
 
-    /** Set the segment label. */
-    void setLabel(QString const & label_) { label = label_; }
+bool
+Segment::hasMesh(Mesh const * mesh, long depth_promotion) const
+{
+  if (!mesh)
+    return NULL;
 
-    /** Get the number of meshes in the segment. */
-    long numMeshes() const { return (long)meshes.size(); }
+  if (depth_promotion <= 0)
+    return meshes.find(const_cast<Mesh *>(mesh)) != meshes.end();
 
-    /** Get the set of meshes. */
-    MeshSet const & getMeshes() const { return meshes; }
+  // Check if any mesh in the segment has a common ancestor with the query mesh
+  for (MeshSet::const_iterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+  {
+    MeshGroup * anc = (*mi)->getAncestor(depth_promotion);
+    if (anc && mesh->hasAncestor(anc))
+      return true;
+  }
 
-    /** Add a mesh to the segment. */
-    void addMesh(Mesh * mesh) { meshes.insert(mesh); }
+  return false;
+}
 
-    /** Remove a mesh from the segment. */
-    void removeMesh(Mesh const * mesh, long depth_promotion = 0);
+long
+Segment::minDepth() const
+{
+  long min_depth = 0;
+  for (MeshSet::const_iterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+  {
+    MeshGroup const * p = (*mi)->getParent();
+    if (!p)
+      continue;
 
-    /** Check if the (possibly hierarchically expanded) segment contains a given mesh. */
-    bool hasMesh(Mesh const * mesh, long depth_promotion = 0) const;
+    long d = p->getDepth() + 1;  // mesh is one level below parent
+    if (min_depth <= 0 || d < min_depth)
+      min_depth = d;
+  }
 
-    /** Get the minimum depth (from the root) of a mesh in the segment. */
-    long minDepth() const;
-
-    /** Clear the segment. */
-    void clear() { meshes.clear(); }
-
-  private:
-    MeshSet meshes;
-    QString label;
-
-}; // class Segment
+  return min_depth;
+}
 
 } // namespace Browse3D
-
-#endif

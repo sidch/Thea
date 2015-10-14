@@ -283,6 +283,9 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
      */
     Real togglePickMesh(Ray3 const & ray);
 
+    /** Expand/contract the selection by \a offset steps in the mesh group hierarchy. */
+    void promotePickedSegment(long offset = 1);
+
     /** Check if a mesh is currently selected by picking. */
     bool isPicked(Mesh const * mesh) const { return picked_segment.hasMesh(mesh); }
 
@@ -321,6 +324,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     /** Get the path to the file in which labeled segments are stored. */
     QString getSegmentsFilename() const;
+
 
     //========================================================================================================================
     // Features
@@ -439,6 +443,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     TheaArray<Segment> segments;
     Segment picked_segment;
+    long segment_depth_promotion;
     long selected_segment;
 
     mutable bool valid_kdtree;

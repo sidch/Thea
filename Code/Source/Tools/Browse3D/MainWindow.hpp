@@ -130,6 +130,12 @@ class MainWindow : public QMainWindow
     /** Add the currently picked segment to the set of segments. */
     void addPickedSegment();
 
+    /** Expand the picked segment by one level in the hierarchy. */
+    void expandPickedSegment();
+
+    /** Contract the picked segment by one level in the hierarchy. */
+    void contractPickedSegment();
+
     /** Select the segment indicated by the table selection. */
     void selectSegment();
 
