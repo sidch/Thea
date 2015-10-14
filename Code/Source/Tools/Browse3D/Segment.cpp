@@ -76,7 +76,7 @@ bool
 Segment::hasMesh(Mesh const * mesh, long depth_promotion) const
 {
   if (!mesh)
-    return NULL;
+    return false;
 
   if (depth_promotion <= 0)
     return meshes.find(const_cast<Mesh *>(mesh)) != meshes.end();
