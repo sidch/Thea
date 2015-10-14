@@ -73,10 +73,10 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     typedef typename GroupSet::const_iterator  GroupConstIterator;
 
     /** Default constructor. */
-    MeshGroup() {}
+    MeshGroup() : parent(NULL) {}
 
     /** Constructor. */
-    MeshGroup(std::string const & name_) : NamedObject(name_) {}
+    MeshGroup(std::string const & name_) : NamedObject(name_), parent(NULL) {}
 
     /**
      * Construct a flat group (no children) from a set of meshes. The input iterator must dereference to a pointer to a mesh.

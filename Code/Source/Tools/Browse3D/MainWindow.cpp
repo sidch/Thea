@@ -143,6 +143,8 @@ MainWindow::init()
 
   connect(ui->toolBox, SIGNAL(currentChanged(int)), this, SLOT(update()));
 
+  connect(ui->buttonExpandSegment, SIGNAL(clicked()), this, SLOT(expandPickedSegment()));
+  connect(ui->buttonContractSegment, SIGNAL(clicked()), this, SLOT(contractPickedSegment()));
   connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
   connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
   connect(ui->segmentsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
@@ -448,6 +450,18 @@ MainWindow::addPickedSegment()
 
   ui->segmentsTable->setRowCount((int)model->numSegments());
   ui->segmentsTable->setItem((int)model->numSegments() - 1, 0, item);
+}
+
+void
+MainWindow::expandPickedSegment()
+{
+  model->promotePickedSegment(1);
+}
+
+void
+MainWindow::contractPickedSegment()
+{
+  model->promotePickedSegment(-1);
 }
 
 void

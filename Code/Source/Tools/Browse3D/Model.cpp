@@ -91,6 +91,16 @@ enableWireframe(Mesh & mesh)
   return false;
 }
 
+void
+linkMeshesToParent(MeshGroupPtr mesh_group)
+{
+  for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi)
+    (*mi)->setParent(mesh_group.get());
+
+  for (MeshGroup::GroupConstIterator ci = mesh_group->childrenBegin(); ci != mesh_group->childrenEnd(); ++ci)
+    linkMeshesToParent(*ci);
+}
+
 static ColorRGBA const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
 static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
@@ -100,6 +110,7 @@ Model::Model(QString const & initial_mesh)
 : color(ModelInternal::DEFAULT_COLOR),
   valid_pick(false),
   selected_sample(-1),
+  segment_depth_promotion(0),
   selected_segment(-1),
   valid_kdtree(true),
   kdtree(new KDTree),
@@ -196,6 +207,7 @@ Model::load(QString const & filename_)
 
     new_mesh_group->forEachMeshUntil(ModelInternal::averageNormals);
     new_mesh_group->forEachMeshUntil(ModelInternal::enableWireframe);
+    ModelInternal::linkMeshesToParent(new_mesh_group);
 
     mesh_group = new_mesh_group;
     clearPoints();
@@ -733,9 +745,9 @@ Model::togglePickMesh(Ray3 const & ray)
       return -1;
     }
 
-    if (picked_segment.hasMesh(mesh))
+    if (picked_segment.hasMesh(mesh, segment_depth_promotion))
     {
-      picked_segment.removeMesh(mesh);
+      picked_segment.removeMesh(mesh, segment_depth_promotion);
       THEA_CONSOLE << "Removed mesh '" << mesh->getName() << "' from picked segment";
     }
     else
@@ -748,6 +760,23 @@ Model::togglePickMesh(Ray3 const & ray)
   }
 
   return isec.getTime();
+}
+
+void
+Model::promotePickedSegment(long offset)
+{
+  segment_depth_promotion += offset;
+
+  if (segment_depth_promotion < 0)
+    segment_depth_promotion = 0;
+
+  long min_depth = picked_segment.minDepth();
+  if (min_depth >= 0 && segment_depth_promotion >= min_depth)
+    segment_depth_promotion = std::max(min_depth - 1, 0L);
+
+  THEA_CONSOLE << getName() << ": Segment depth promotion set to " << segment_depth_promotion;
+
+  emit needsRedraw(this);
 }
 
 void
@@ -794,7 +823,7 @@ Segment *
 Model::getSegment(Mesh const * mesh)
 {
   for (array_size_t i = 0; i < segments.size(); ++i)
-    if (segments[i].hasMesh(mesh))
+    if (segments[i].hasMesh(mesh, segment_depth_promotion))
       return &segments[i];
 
   return NULL;
@@ -1195,7 +1224,7 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
       ro.drawEdges() = false;
       render_system.setColor(getLabelColor(seg->getLabel()));
     }
-    else if (picked_segment.hasMesh(mesh))
+    else if (picked_segment.hasMesh(mesh, segment_depth_promotion))
     {
       ro.drawEdges() = false;
       render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR);
