@@ -141,12 +141,6 @@ kernelFastGaussianSqDistUnscaled(float squared_dist, float squared_bandwidth)
   return fastMinusExp(squared_dist / squared_bandwidth);
 }
 
-/** Get a unit vector perpendicular to a given vector. The given vector need not be unit length. */
-Vector3 getPerpendicularDirection(Vector3 const & dir);
-
-/** Get two unit vectors perpendicular to a given vector. The given vector need not be unit length. */
-void getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v);
-
 /** Get a matrix whose columns are three given vectors. The resulting matrix transforms *from* basis space *to* world space. */
 Matrix3 basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w);
 

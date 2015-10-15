@@ -156,14 +156,17 @@ Polygon3_insideTriangle2(Vector2 const & A, Vector2 const & B, Vector2 const & C
 bool
 Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices) const
 {
-  static Real const epsilon = 1e-10f;
+  static Real const EPSILON = 1e-10f;
 
   Vector2 const & A = proj_vertices[indices[u]];
   Vector2 const & B = proj_vertices[indices[v]];
   Vector2 const & C = proj_vertices[indices[w]];
 
-  if (epsilon > (((B.x() - A.x()) * (C.y() - A.y())) - ((B.y() - A.y()) * (C.x() - A.x()))))
+  if (EPSILON > (((B.x() - A.x()) * (C.y() - A.y())) - ((B.y() - A.y()) * (C.x() - A.x()))))
+  {
+    // THEA_DEBUG << "Polygon3: Epsilon test failed: A = " << A << ", B = " << B << ", C = " << C << ", eps = " << EPSILON;
     return false;
+  }
 
   for (array_size_t p = 0; p < n; ++p)
   {
@@ -172,15 +175,34 @@ Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, T
 
     Vector2 const & P = proj_vertices[indices[p]];
     if (Polygon3_insideTriangle2(A, B, C, P))
+    {
+      // THEA_DEBUG << "Polygon3: Triangle test failed: A = " << A << ", B = " << B << ", C = " << C << ", P = " << P;
       return false;
+    }
   }
 
   return true;
 }
 
-// Triangulation happens in 2d.  We could inverse transform the polygon around the normal direction, or we just use the two most
-// signficant axes. Here we find the two longest axes and use them to triangulate.  Inverse transforming them would introduce
-// more doubling point error and isn't worth it.
+// Original comment:
+//   Triangulation happens in 2d. We could inverse transform the polygon around the normal direction, or we just use the two
+//   most signficant axes. Here we find the two longest axes and use them to triangulate.  Inverse transforming them would
+//   introduce more doubling point error and isn't worth it.
+//
+// SC says:
+//   This doesn't work: the vertices can be collinear when projected onto the plane of the two longest axes of the bounding box.
+//   Example (from real data):
+//
+//     v[0] = (-13.7199, 4.45725, -8.00059)
+//     v[1] = (-0.115787, 12.3116, -4.96109)
+//     v[2] = (0.88992, 12.8922, -3.80342)
+//     v[3] = (-0.115787, 12.3116, -2.64576)
+//     v[4] = (-13.7199, 4.45725, 0.393742)
+//     v[5] = (-13.7199, 4.45725, -0.856258)
+//     v[6] = (-12.5335, 5.14221, -3.80342)
+//     v[7] = (-13.7199, 4.45725, -6.75059)
+//
+//   Instead, we will project onto the plane of the polygon.
 long
 Polygon3::triangulate(TheaArray<long> & tri_indices) const
 {
@@ -199,23 +221,18 @@ Polygon3::triangulate(TheaArray<long> & tri_indices) const
   {
     tri_indices.clear();
 
-    // Compute a permutation of vertices that put the most significant axes of the triangle in X and Y
-    Vector3 extent = bounds.getExtent();
-    int i1 = (int)extent.maxAxis();
-    int i2 = 0;
-    switch (i1)
-    {
-      case 0  : i2 = (extent[1] > extent[2] ? 1 : 2); break;
-      case 1  : i2 = (extent[0] > extent[2] ? 0 : 2); break;
-      default : i2 = (extent[0] > extent[1] ? 0 : 1);
-    }
-
     array_size_t n = vertices.size();
     proj_vertices.resize(n);
+
+    Vector3 normal = getNormal();
+    Vector3 axis0, axis1;
+    normal.createOrthonormalBasis(axis0, axis1);
+
+    Vector3 v0 = vertices[0].position;  // a reference point for the plane of the polygon
     for (array_size_t i = 0; i < n; ++i)
     {
-      Vector3 const & v = vertices[i].position;
-      proj_vertices[i] = Vector2(v[i1], v[i2]);
+      Vector3 v = vertices[i].position - v0;
+      proj_vertices[i] = Vector2(v.dot(axis0), v.dot(axis1));
     }
 
     TheaArray<array_size_t> indices(n);
@@ -302,11 +319,14 @@ Polygon3::area() const
   if (n < 3)
     return 0;
 
-  Vector3 normal = (vertices[2].position - vertices[1].position).cross(vertices[0].position - vertices[1].position);
-  if (vertices.size() == 3)
-    return 0.5f * normal.length();
+  if (n == 3)
+    return 0.5f * (vertices[2].position - vertices[1].position).cross(vertices[0].position - vertices[1].position).length();
 
-  normal.unitize();
+  static Real const EPSILON = 1e-10f;
+
+  Vector3 normal = getNormal();
+  if (normal.squaredLength() < EPSILON)
+    return 0;
 
   Real a = 0;
   Vector3 const & last = vertices[n - 1].position;
@@ -319,6 +339,28 @@ Polygon3::area() const
   }
 
   return std::fabs(0.5f * a);
+}
+
+Vector3
+Polygon3::getNormal() const
+{
+  array_size_t n = vertices.size();
+  if (n < 3)
+    return Vector3::zero();
+
+  static Real const EPSILON = 1e-10f;
+
+  for (array_size_t i = 0; i < n; ++i)
+  {
+    array_size_t i1 = (i + 1) % n;
+    array_size_t i2 = (i + 2) % n;
+    Vector3 normal = (vertices[i2].position - vertices[i1].position).cross(vertices[i].position - vertices[i1].position);
+
+    if (normal.squaredLength() >= EPSILON)
+      return normal.unit();
+  }
+
+  return Vector3::zero();
 }
 
 } // namespace Thea

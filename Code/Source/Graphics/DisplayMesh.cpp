@@ -262,10 +262,17 @@ DisplayMesh::addFace(int num_vertices, long const * vertex_indices)
   }
 
   long num_tris = poly.triangulate(triangulated_indices);
-  // alwaysAssertM((long)triangulated_indices.size() == 3 * (num_vertices - 2),
-  //               getName()
-  //             + format(": Triangulation of polygonal face with %d vertices yielded %f triangles, whereas %d were expected",
-  //                      num_vertices, (long)triangulated_indices.size() / 3.0f, num_vertices - 2));
+
+//   if ((long)triangulated_indices.size() != 3 * (num_vertices - 2))
+//   {
+//     THEA_ERROR << getName() << ": Triangulation of polygonal face with " << num_vertices << " vertices yielded "
+//                << triangulated_indices.size() / 3.0f << " triangles, whereas " << num_vertices - 2 << " were expected";
+//
+//     for (int i = 0; i < num_vertices; ++i)
+//       THEA_CONSOLE << "v[" << i << "] = " << vertices[vertex_indices[i]];
+//
+//     throw FatalError("Triangulation error");
+//   }
 
   long starting_index = numTriangles();
 

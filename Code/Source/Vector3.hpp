@@ -96,6 +96,23 @@ class /* THEA_API */ VectorN<3, T> : public Internal::VectorNBase<3, T>
                      (*this)[0] * rhs[1] - (*this)[1] * rhs[0]);
     }
 
+    /** Get a unit vector perpendicular to this one. */
+    VectorN getOrthogonalDirection() const
+    {
+      return ((this->maxAbsAxis() == 0) ? VectorN(y(), -x(), 0) : VectorN(0, z(), -y())).unit();
+    }
+
+    /**
+     * Get two unit vectors perpendicular to this one and to each other, forming a right-handed orthonormal basis
+     * (\a u, \a v, this->unit()). In other words, if this is the Z axis of the local frame, then the function returns the X and
+     * Y axes.
+     */
+    void createOrthonormalBasis(VectorN & u, VectorN & v) const
+    {
+      u = getOrthogonalDirection();
+      v = this->cross(u).unit();
+    }
+
     /** Get a unit vector along positive X. */
     static VectorN const & unitX() { static VectorN const ux(1, 0, 0); return ux; }
 

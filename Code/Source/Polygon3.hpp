@@ -138,6 +138,9 @@ class THEA_API Polygon3
     /** Compute the area of the polygon. */
     Real area() const;
 
+    /** Compute the unit normal of the polygon. */
+    Vector3 getNormal() const;
+
     /** Get the bounding box of the polygon. */
     AxisAlignedBox3 const & getBounds();
 
