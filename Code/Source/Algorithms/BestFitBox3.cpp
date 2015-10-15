@@ -134,19 +134,6 @@ planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 &
   cframe = CoordinateFrame3::_fromAffine(AffineTransform3(rot, centroid));
 }
 
-Vector3
-getPerpendicularVector(Vector3 const & v)
-{
-  return (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
-}
-
-void
-getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
-{
-  u = getPerpendicularVector(dir).unit();
-  v = dir.cross(u).unit();
-}
-
 Matrix3
 basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
 {
@@ -217,7 +204,7 @@ computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result, bool has_up,
   {
     centroid = CentroidN<Vector3, 3>::compute(points.begin(), points.end());
     Vector3 u, v;
-    getTwoMutuallyPerpendicularAxes(up, u, v);
+    up.createOrthonormalBasis(u, v);
     cframe = CoordinateFrame3::_fromAffine(AffineTransform3(basisMatrix(u, v, up), centroid));
   }
   else

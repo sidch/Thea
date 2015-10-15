@@ -47,25 +47,6 @@
 
 namespace Browse3D {
 
-Vector3
-getPerpendicularVector(Vector3 const & v)
-{
-  return (v.maxAbsAxis() == 0) ? Vector3(v.y(), -v.x(), 0) : Vector3(0, v.z(), -v.y());
-}
-
-Vector3
-getPerpendicularDirection(Vector3 const & dir)
-{
-  return getPerpendicularVector(dir).fastUnit();
-}
-
-void
-getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
-{
-  u = getPerpendicularDirection(dir);
-  v = dir.cross(u).fastUnit();
-}
-
 Matrix3
 basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
 {

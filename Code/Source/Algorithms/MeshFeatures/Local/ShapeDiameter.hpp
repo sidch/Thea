@@ -199,7 +199,7 @@ class ShapeDiameter
     {
       Vector3 in = -normal.unit();
       Vector3 u, v;
-      getTwoMutuallyPerpendicularAxes(in, u, v);
+      in.createOrthonormalBasis(u, v);
       Matrix3 rot(u[0], v[0], in[0],
                   u[1], v[1], in[1],
                   u[2], v[2], in[2]);
@@ -293,15 +293,6 @@ class ShapeDiameter
     }
 
   private:
-    /** Get two unit vectors perpendicular to a given vector and to each other. */
-    static void
-    getTwoMutuallyPerpendicularAxes(Vector3 const & dir, Vector3 & u, Vector3 & v)
-    {
-      u = (dir.maxAbsAxis() == 0) ? Vector3(dir.y(), -dir.x(), 0) : Vector3(0, dir.z(), -dir.y());
-      u.unitize();
-      v = dir.cross(u).unit();
-    }
-
     KDTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
     ExternalKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
     Real scale;  ///< The normalization length.

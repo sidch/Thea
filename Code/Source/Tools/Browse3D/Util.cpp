@@ -173,7 +173,7 @@ drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center,
 {
   Vector3 w = (top_center - base_center).fastUnit();
   Vector3 u, v;
-  getTwoMutuallyPerpendicularAxes(w, u, v);
+  w.createOrthonormalBasis(u, v);
 
   // Sides
   drawCylinder(render_system, base_center, top_center, u, v, radius, num_steps);
