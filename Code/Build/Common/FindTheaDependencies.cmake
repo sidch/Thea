@@ -100,9 +100,9 @@ ENDIF()
 # Additional platform-specific libraries
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   SET(PLATFORM_LIBRARIES "-framework Carbon")
-ELSEIF(NOT WIN32)
-  SET(PLATFORM_LIBRARIES dl)
 ENDIF()
+
+SET(PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES} ${CMAKE_DL_LIBS})  # for loading plugins with DynLib
 
 # Unset parameters
 SET(Thea_FIND_Boost      FALSE)
