@@ -728,8 +728,55 @@ Model::getSamplesFilename() const
   }
 }
 
+namespace ModelInternal {
+
+struct SimilarComponentCollector
+{
+  SimilarComponentCollector() : query_mesh(NULL), query_group(NULL) {}
+
+  void setQuery(Mesh const * mesh) { query_mesh = mesh; }
+  void setQuery(MeshGroup const * group) { query_group = group; }
+
+  void collectSimilarIn(MeshGroup const & root)
+  {
+    if (!query_mesh && !query_group)
+      return;
+
+    bool is_similar = (query_group ? isSimilarTo(root, *query_group) : isSimilarTo(root, *query_mesh));
+    if (is_similar)
+    {
+      similar_groups.push_back(&root);
+      return;
+    }
+
+    for (MeshGroup::GroupConstIterator ci = root.childrenBegin(); ci != root.childrenEnd(); ++ci)
+    {
+      is_similar = (query_group ? isSimilarTo(**ci, *query_group) : isSimilarTo(**ci, *query_mesh));
+      if (is_similar)
+        similar_groups.push_back(ci->get());
+      else
+        collectSimilarIn(**ci);
+    }
+
+    for (MeshGroup::MeshConstIterator mi = root.meshesBegin(); mi != root.meshesEnd(); ++mi)
+    {
+      is_similar = (query_group ? isSimilarTo(**mi, *query_group) : isSimilarTo(**mi, *query_mesh));
+      if (is_similar)
+        similar_meshes.push_back(mi->get());
+    }
+  }
+
+  Mesh const * query_mesh;
+  MeshGroup const * query_group;
+
+  TheaArray<Mesh const *> similar_meshes;
+  TheaArray<MeshGroup const *> similar_groups;
+};
+
+} // namespace ModelInternal
+
 Real
-Model::togglePickMesh(Ray3 const & ray)
+Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
 {
   RayStructureIntersection3 isec = rayIntersection(ray);
   if (isec.isValid())
@@ -745,15 +792,47 @@ Model::togglePickMesh(Ray3 const & ray)
       return -1;
     }
 
+    bool add = true;
     if (picked_segment.hasMesh(mesh, segment_depth_promotion))
     {
       picked_segment.removeMesh(mesh, segment_depth_promotion);
+      add = false;
       THEA_CONSOLE << "Removed mesh '" << mesh->getName() << "' from picked segment";
     }
     else
     {
       picked_segment.addMesh(mesh);
       THEA_CONSOLE << "Added mesh '" << mesh->getName() << "' to picked segment";
+    }
+
+    if (extend_to_similar)
+    {
+      ModelInternal::SimilarComponentCollector scc;
+      if (segment_depth_promotion <= 0)
+        scc.setQuery(mesh);
+      else
+      {
+        MeshGroup const * ancestor = mesh->getAncestor(segment_depth_promotion);
+        scc.setQuery(ancestor);
+      }
+
+      scc.collectSimilarIn(*mesh_group);
+
+      for (array_size_t i = 0; i < scc.similar_meshes.size(); ++i)
+      {
+        if (add)
+          picked_segment.addMesh(const_cast<Mesh *>(scc.similar_meshes[i]));
+        else
+          picked_segment.removeMesh(scc.similar_meshes[i]);
+      }
+
+      for (array_size_t i = 0; i < scc.similar_groups.size(); ++i)
+      {
+        if (add)
+          picked_segment.addMeshGroup(const_cast<MeshGroup *>(scc.similar_groups[i]));
+        else
+          picked_segment.removeMeshGroup(scc.similar_groups[i]);
+      }
     }
 
     emit needsRedraw(this);

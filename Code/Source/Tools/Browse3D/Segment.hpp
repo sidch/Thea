@@ -79,6 +79,12 @@ class Segment
     /** Remove a mesh from the segment. */
     void removeMesh(Mesh const * mesh, long depth_promotion = 0);
 
+    /** Add a mesh group to the segment. */
+    void addMeshGroup(MeshGroup * mg);
+
+    /** Remove a mesh group from the segment. */
+    void removeMeshGroup(MeshGroup const * mg);
+
     /** Check if the (possibly hierarchically expanded) segment contains a given mesh. */
     bool hasMesh(Mesh const * mesh, long depth_promotion = 0) const;
 

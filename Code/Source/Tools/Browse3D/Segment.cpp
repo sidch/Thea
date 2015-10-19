@@ -72,6 +72,40 @@ Segment::removeMesh(Mesh const * mesh, long depth_promotion)
   }
 }
 
+namespace SegmentInternal {
+
+struct MeshGroupAdder
+{
+  MeshGroupAdder(Segment & seg_) : seg(seg_) {}
+  bool operator()(Mesh & mesh) { seg.addMesh(&mesh); return false; }
+
+  Segment & seg;
+};
+
+struct MeshGroupRemover
+{
+  MeshGroupRemover(Segment & seg_) : seg(seg_) {}
+  bool operator()(Mesh const & mesh) { seg.removeMesh(&mesh); return false; }
+
+  Segment & seg;
+};
+
+} // namespace SegmentInternal
+
+void
+Segment::addMeshGroup(MeshGroup * mg)
+{
+  SegmentInternal::MeshGroupAdder adder(*this);
+  if (mg) mg->forEachMeshUntil(&adder);
+}
+
+void
+Segment::removeMeshGroup(MeshGroup const * mg)
+{
+  SegmentInternal::MeshGroupRemover remover(*this);
+  if (mg) mg->forEachMeshUntil(&remover);
+}
+
 bool
 Segment::hasMesh(Mesh const * mesh, long depth_promotion) const
 {
