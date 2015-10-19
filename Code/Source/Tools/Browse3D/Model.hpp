@@ -279,9 +279,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /**
      * Flip the selection status of the submesh along a ray.
      *
+     * @param ray The ray to use for picking.
+     * @param extend_to_similar If true, all meshes similar to the picked mesh have their selection states set to match the
+     *   latter.
+     *
      * @return The distance, in multiples of ray length, to the picked point.
      */
-    Real togglePickMesh(Ray3 const & ray);
+    Real togglePickMesh(Ray3 const & ray, bool extend_to_similar = false);
 
     /** Expand/contract the selection by \a offset steps in the mesh group hierarchy. */
     void promotePickedSegment(long offset = 1);

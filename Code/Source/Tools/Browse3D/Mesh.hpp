@@ -58,7 +58,7 @@ class Mesh : public Graphics::DisplayMesh
   public:
     THEA_DEF_POINTER_TYPES(Mesh, shared_ptr, weak_ptr)
 
-    Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name), parent(NULL) {}
+    Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name), parent(NULL), valid_features(false) {}
 
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
@@ -128,37 +128,11 @@ class Mesh : public Graphics::DisplayMesh
     MeshGroup * getParent() const { return parent; }
 
     // Ancestor at generations = 1 is the parent. If the hierarchy is not deep enough, returns the root.
-    MeshGroup * getAncestor(long generations) const
-    {
-      if (generations < 1)
-      {
-        THEA_ERROR << getName() << ": Ancestor generation gap must be >= 1";
-        return NULL;
-      }
+    MeshGroup * getAncestor(long generations) const;
+    bool hasAncestor(MeshGroup const * anc) const;
 
-      MeshGroup * anc = parent;
-      if (!anc)
-          return anc;
-
-      while (--generations > 0 && anc->getParent())
-        anc = anc->getParent();
-
-      return anc;
-    }
-
-    bool hasAncestor(MeshGroup const * anc) const
-    {
-      MeshGroup const * a = parent;
-      while (a)
-      {
-        if (anc == a)
-          return true;
-
-        a = a->getParent();
-      }
-
-      return false;
-    }
+    TheaArray<double> const & getFeatures() const { updateFeatures(); return features; }
+    void invalidateFeatures() { valid_features = false; }
 
   private:
     static TheaArray<Face> & indexToFace()
@@ -167,11 +141,21 @@ class Mesh : public Graphics::DisplayMesh
       return index_to_face;
     }
 
+    void updateFeatures() const;
+
     TheaArray<long> tri_face_indices;
     TheaArray<long> quad_face_indices;
     MeshGroup * parent;
 
+    mutable bool valid_features;
+    mutable TheaArray<double> features;
+
 }; // class Mesh
+
+bool isSimilarTo(Mesh const & lhs, Mesh const & rhs);
+bool isSimilarTo(Mesh const & lhs, MeshGroup const & rhs);
+bool isSimilarTo(MeshGroup const & lhs, Mesh const & rhs);
+bool isSimilarTo(MeshGroup const & lhs, MeshGroup const & rhs);
 
 } // namespace Browse3D
 

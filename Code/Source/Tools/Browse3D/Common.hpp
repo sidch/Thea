@@ -52,8 +52,9 @@
 #include <QDebug>
 #include <QtDebug>
 #include <QString>
-#include <string>
 #include <iostream>
+#include <sstream>
+#include <string>
 
 /** Allow a std::string to be piped to a Qt debug stream. */
 inline QDebug
@@ -101,6 +102,24 @@ inline std::string getFullPath(std::string const & dir, std::string const & file
 
 /** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
 QString getFullPath(QString const & dir, QString const & filename);
+
+/** Print a sequence of values as a comma-separated list to a string. */
+template <typename Iterator> std::string seqStr(Iterator begin, Iterator end)
+{
+  std::ostringstream oss;
+  bool first = true;
+  for (Iterator ii = begin; ii != end; ++ii)
+  {
+    if (first)
+      first = false;
+    else
+      oss << ", ";
+
+    oss << *ii;
+  }
+
+  return oss.str();
+}
 
 } // namespace Browse3D
 

@@ -468,7 +468,7 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
     if (pick_points)
       success = (model->pick(ray) >= 0);
     else if (pick_segments)
-      success = (model->togglePickMesh(ray) >= 0);
+      success = (model->togglePickMesh(ray, shift) >= 0);
 
     if (success)
     {
