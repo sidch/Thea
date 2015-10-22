@@ -62,12 +62,10 @@ namespace Local {
  * neighborhood of the point, sorted in decreasing order. Optionally, the eigenvectors (principal components) of the
  * distribution may also be returned.
  */
-template < typename MeshT,
-           typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
+template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
 class LocalPCA
 {
   public:
-    typedef MeshT Mesh;  ///< The mesh class.
     typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
 
   private:
@@ -76,7 +74,8 @@ class LocalPCA
     static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
 
     /** Compute sample points with normals on the mesh. */
-    void computeSamples(MeshSampler<Mesh> & sampler, long num_samples, TheaArray<Vector3> & samples)
+    template <typename MeshT>
+    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, TheaArray<Vector3> & samples)
     {
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
@@ -94,10 +93,11 @@ class LocalPCA
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    LocalPCA(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    template <typename MeshT>
+    LocalPCA(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
-      MeshSampler<Mesh> sampler(mesh);
+      MeshSampler<MeshT> sampler(mesh);
       TheaArray<Vector3> samples;
       computeSamples(sampler, num_samples, samples);
 
@@ -121,10 +121,11 @@ class LocalPCA
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    LocalPCA(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    template <typename MeshT>
+    LocalPCA(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
-      MeshSampler<Mesh> sampler(mesh_group);
+      MeshSampler<MeshT> sampler(mesh_group);
       TheaArray<Vector3> samples;
       computeSamples(sampler, num_samples, samples);
 

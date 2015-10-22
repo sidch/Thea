@@ -99,13 +99,11 @@ PointTraitsN<MeshFeatures::Local::CurvatureInternal::SurfaceSample, 3>::getPosit
 namespace MeshFeatures {
 namespace Local {
 
-/** Compute the curvature at a point on a mesh. */
-template < typename MeshT,
-           typename ExternalSampleKDTreeT = KDTreeN<CurvatureInternal::SurfaceSample, 3> >
+/** Compute the curvature at a point on a shape. */
+template < typename ExternalSampleKDTreeT = KDTreeN<CurvatureInternal::SurfaceSample, 3> >
 class Curvature
 {
   public:
-    typedef MeshT Mesh;  ///< The mesh class.
     typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
 
   private:
@@ -128,9 +126,10 @@ class Curvature
     }
 
     /** Compute sample points with normals on the mesh. */
-    void computeSamples(MeshSampler<Mesh> & sampler, long num_samples, TheaArray<SurfaceSample> & samples)
+    template <typename MeshT>
+    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, TheaArray<SurfaceSample> & samples)
     {
-      typedef typename MeshSampler<Mesh>::Triangle Triangle;
+      typedef typename MeshSampler<MeshT>::Triangle Triangle;
 
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
@@ -159,10 +158,11 @@ class Curvature
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    Curvature(Mesh const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    template <typename MeshT>
+    Curvature(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
-      MeshSampler<Mesh> sampler(mesh);
+      MeshSampler<MeshT> sampler(mesh);
       TheaArray<SurfaceSample> samples;
       computeSamples(sampler, num_samples, samples);
 
@@ -186,10 +186,11 @@ class Curvature
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    Curvature(Graphics::MeshGroup<Mesh> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    template <typename MeshT>
+    Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
     {
-      MeshSampler<Mesh> sampler(mesh_group);
+      MeshSampler<MeshT> sampler(mesh_group);
       TheaArray<SurfaceSample> samples;
       computeSamples(sampler, num_samples, samples);
 

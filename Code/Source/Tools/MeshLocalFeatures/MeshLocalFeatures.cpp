@@ -548,7 +548,7 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
   THEA_CONSOLE << "Computing projected curvatures";
 
   values.resize(positions.size());
-  MeshFeatures::Local::Curvature<Mesh> projcurv(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::Curvature<> projcurv(mg, -1, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i]);
@@ -565,7 +565,7 @@ computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positio
   THEA_CONSOLE << "Computing distance histograms";
 
   values.resize((long)positions.size(), num_bins);
-  MeshFeatures::Local::LocalDistanceHistogram<Mesh> dh(mg, num_samples, (Real)mesh_scale);
+  MeshFeatures::Local::LocalDistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     dh.compute(positions[i], num_bins, &values((long)i, 0), max_distance);
@@ -581,7 +581,7 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_fu
   THEA_CONSOLE << "Computing local PCA features";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<Mesh> pca(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPCA<> pca(mg, -1, (Real)mesh_scale);
 
   Vector3 evecs[3];
   for (array_size_t i = 0; i < positions.size(); ++i)
@@ -613,7 +613,7 @@ computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaA
   THEA_CONSOLE << "Computing local PCA ratios";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<Mesh> pca(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPCA<> pca(mg, -1, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
