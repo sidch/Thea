@@ -104,6 +104,12 @@ class DistanceHistogram
     : ldh(sample_kdtree, normalization_scale)
     {}
 
+    /** Get the number of surface samples. */
+    long numSamples() const { return ldh.numSamples(); }
+
+    /** Get the position of the surface sample with index \a index. */
+    Vector3 getSamplePosition(long index) const { return ldh.getSamplePosition(index); }
+
     /**
      * Compute the histogram of distances between sample points on the shape. The histogram bins uniformly subdivide the range
      * of distances from zero to \a max_distance. If \a max_distance is negative, the shape scale specified in the constructor
@@ -157,6 +163,9 @@ class DistanceHistogram
         local_histogram[0] -= 1.0;
         local_sum_values -= 1.0;
 
+        for (array_size_t j = 0; j < local_histogram.size(); ++j)
+          histogram[j] += local_histogram[j];
+
         sum_values += local_sum_values;
       }
 
@@ -164,7 +173,7 @@ class DistanceHistogram
     }
 
   private:
-    LocalDistanceHistogram ldh;  ///< Used to compute histograms from a single query point.
+    Local::LocalDistanceHistogram<ExternalSampleKDTree> ldh;  ///< Used to compute histograms from a single query point.
 
 }; // class DistanceHistogram
 

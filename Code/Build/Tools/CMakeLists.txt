@@ -275,35 +275,35 @@ SET(TheaAllTools ${TheaAllTools} MeshConv)
 # MeshGlobalFeatures
 #===========================================================
 
-# # Source file lists
-# FILE(GLOB MeshGlobalFeaturesSources
-#      ${SourceRoot}/Tools/MeshGlobalFeatures/*.cpp)
-#
-# # Libraries to link to
-# SET(MeshGlobalFeaturesLibraries
-#     Thea
-#     ${Lib3ds_LIBRARIES}
-#     ${Boost_LIBRARIES}
-#     ${PLATFORM_LIBRARIES})
-#
-# # Build products
-# ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
-#
-# # Additional libraries to be linked
-# TARGET_LINK_LIBRARIES(MeshGlobalFeatures ${MeshGlobalFeaturesLibraries})
-#
-# # Linker flags
-# IF(Thea_LDFLAGS)
-#   SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-# ENDIF()
-#
-# # Fix library install names on OS X
-# IF(APPLE)
-#   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
-#   OSX_FIX_DYLIB_REFERENCES(MeshGlobalFeatures "${MeshGlobalFeaturesLibraries}")
-# ENDIF()
-#
-# SET(TheaAllTools ${TheaAllTools} MeshGlobalFeatures)
+# Source file lists
+FILE(GLOB MeshGlobalFeaturesSources
+     ${SourceRoot}/Tools/MeshGlobalFeatures/*.cpp)
+
+# Libraries to link to
+SET(MeshGlobalFeaturesLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(MeshGlobalFeatures ${MeshGlobalFeaturesLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(MeshGlobalFeatures "${MeshGlobalFeaturesLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} MeshGlobalFeatures)
 
 #===========================================================
 # MeshLocalFeatures

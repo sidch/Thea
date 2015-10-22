@@ -78,8 +78,9 @@ bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, The
                 TheaArray<double> & values);
 bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                                 TheaArray<double> & values);
-bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
-                                    long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
+                                    double max_distance, double reduction_ratio,
+                                    Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values);
 bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values);
 
@@ -279,33 +280,34 @@ main(int argc, char * argv[])
     {
       long num_bins, num_samples;
       double max_distance;
+      double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--dh=%ld,%lf,%ld", &num_bins, &max_distance, &num_samples);
+      long num_params = sscanf(feat.c_str(), "--dh=%ld,%ld,%lf,%lf", &num_bins, &num_samples, &max_distance, &reduction_ratio);
       if (num_params < 1)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
         return -1;
       }
-      else if (num_params < 3)
+      else if (num_params < 4)
       {
-        THEA_WARNING << "Approximate number of samples not specified for distance histogram, using default value";
-        num_samples = -1;
+        THEA_WARNING << "Sample reduction ratio not specified for distance histogram, using default value";
+        reduction_ratio = -1;
 
-        if (num_params < 2)
+        if (num_params < 3)
         {
           THEA_WARNING << "Distance limit for not specified for distance histogram, using default of mesh scale";
           max_distance = -1;
+
+          if (num_params < 2)
+          {
+            THEA_WARNING << "Approximate number of samples not specified for distance histogram, using default value";
+            num_samples = -1;
+          }
         }
       }
 
-      if (num_bins <= 0)
-      {
-        THEA_ERROR << "Number of histogram bins must be > 0";
-        return -1;
-      }
-
       Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a histogram
-      if (!computeLocalDistanceHistograms(mg, positions, num_bins, max_distance, num_samples, values))
+      if (!computeLocalDistanceHistograms(mg, positions, num_samples, num_bins, max_distance, reduction_ratio, values))
         return -1;
 
       alwaysAssertM(values.numRows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
@@ -441,7 +443,7 @@ main(int argc, char * argv[])
     }
   }
 
-  THEA_CONSOLE << "Wrote " << features.size() << " feature vectors to " << out_path;
+  THEA_CONSOLE << "Wrote " << features.size() << " feature vector(s) to " << out_path;
 
   return 0;
 }
@@ -454,13 +456,14 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "    <featureN> must be one of:";
   THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "        --projcurv";
-  THEA_CONSOLE << "        --dh=<num-bins>[,<max_distance>[,<num-samples>]]";
+  THEA_CONSOLE << "        --dh=<num-samples>[<num-bins>[,<max_distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
   THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
   THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
+  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
   THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
   THEA_CONSOLE << "        --binary (outputs features in binary format)";
@@ -559,16 +562,31 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
 }
 
 bool
-computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_bins, double max_distance,
-                               long num_samples, Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
+                               double max_distance, double reduction_ratio, Matrix<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing distance histograms";
+
+  if (num_bins <= 0)
+  {
+    THEA_ERROR << "Number of histogram bins must be > 0";
+    return false;
+  }
 
   values.resize((long)positions.size(), num_bins);
   MeshFeatures::Local::LocalDistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
-    dh.compute(positions[i], num_bins, &values((long)i, 0), max_distance);
+  {
+    double sum_values = dh.compute(positions[i], num_bins, &values((long)i, 0), (Real)max_distance, (Real)reduction_ratio);
+
+    // Normalize the histogram to add up to 1
+    if (sum_values > 0)
+    {
+      for (long j = 0; j < num_bins; ++j)
+        values((long)i, j) /= sum_values;
+    }
+  }
 
   THEA_CONSOLE << "  -- done";
 
