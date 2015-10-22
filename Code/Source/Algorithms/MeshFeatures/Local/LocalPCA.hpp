@@ -43,14 +43,10 @@
 #define __Thea_Algorithms_MeshFeatures_Local_LocalPCA_hpp__
 
 #include "../../../Common.hpp"
-#include "../../../Graphics/MeshGroup.hpp"
-#include "../../BestFitSphere3.hpp"
+#include "../SampledSurface.hpp"
 #include "../../IntersectionTester.hpp"
-#include "../../KDTreeN.hpp"
-#include "../../MeshSampler.hpp"
 #include "../../PCA_N.hpp"
-#include "../../PointCollectorN.hpp"
-#include "../../../Vector3.hpp"
+#include "../../PointTraitsN.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -63,30 +59,16 @@ namespace Local {
  * distribution may also be returned.
  */
 template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class LocalPCA
+class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
 {
-  public:
-    typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
-
   private:
-    typedef KDTreeN<Vector3, 3> SampleKDTree;  ///< A kd-tree on mesh samples.
-
+    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
     static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
-
-    /** Compute sample points with normals on the mesh. */
-    template <typename MeshT>
-    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, TheaArray<Vector3> & samples)
-    {
-      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
-
-      samples.clear();
-      sampler.sampleEvenlyByArea(num_samples, samples);
-    }
 
   public:
     /**
-     * Constructs the object to compute PCA features at sample points on a given mesh. The mesh must persist as long as this
-     * object does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
+     * Constructs the object to compute PCA features at sample points on a given mesh. Initializes internal data structures that
+     * do not need to be recomputed for successive calls to compute().
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
@@ -95,26 +77,12 @@ class LocalPCA
      */
     template <typename MeshT>
     LocalPCA(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      MeshSampler<MeshT> sampler(mesh);
-      TheaArray<Vector3> samples;
-      computeSamples(sampler, num_samples, samples);
-
-      sample_kdtree->init(samples.begin(), samples.end());
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
-     * Constructs the object to compute PCA features at sample points on a given mesh group. The mesh group must persist as long
-     * as this object does. Initializes internal data structures that do not need to be recomputed for successive calls to
-     * compute().
+     * Constructs the object to compute PCA features at sample points on a given mesh group. Initializes internal data
+     * structures that do not need to be recomputed for successive calls to compute().
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
@@ -123,21 +91,8 @@ class LocalPCA
      */
     template <typename MeshT>
     LocalPCA(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      MeshSampler<MeshT> sampler(mesh_group);
-      TheaArray<Vector3> samples;
-      computeSamples(sampler, num_samples, samples);
-
-      sample_kdtree->init(samples.begin(), samples.end());
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh_group);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
      * Constructs the object to compute PCA features of a shape with a precomputed kd-tree on points densely sampled from the
@@ -147,25 +102,9 @@ class LocalPCA
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    LocalPCA(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), scale(normalization_scale)
-    {
-      alwaysAssertM(precomp_kdtree, "LocalPCA: Precomputed KD-tree cannot be null");
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(precomp_kdtree->getElements(),
-                                                               precomp_kdtree->getElements() + precomp_kdtree->numElements());
-        scale = bsphere.getDiameter();
-      }
-    }
-
-    /** Destructor. */
-    ~LocalPCA()
-    {
-      delete sample_kdtree;
-    }
+    LocalPCA(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    : BaseT(sample_kdtree_, normalization_scale)
+    {}
 
     /**
      * Compute the PCA features at a query point on the mesh.
@@ -179,15 +118,15 @@ class LocalPCA
     Vector3 compute(Vector3 const & position, Vector3 * eigenvectors = NULL, Real nbd_radius = -1) const
     {
       if (nbd_radius <= 0)
-        nbd_radius = 0.05f * scale;
+        nbd_radius = 0.05f * this->getNormalizationScale();
 
       Ball3 range(position, nbd_radius);
       func.reset();
 
-      if (precomp_kdtree)
-        const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(range, &func);
+      if (this->hasExternalKDTree())
+        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
       else
-        sample_kdtree->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
 
       return func.getPCAFeatures(eigenvectors);
     }
@@ -223,10 +162,6 @@ class LocalPCA
       TheaArray<Vector3> nbd_pts;
 
     }; // struct LocalPCAFunctor
-
-    SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
-    ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
-    Real scale;  ///< The normalization length.
 
     mutable LocalPCAFunctor func;
 

@@ -43,18 +43,12 @@
 #define __Thea_Algorithms_MeshFeatures_Local_LocalDistanceHistogram_hpp__
 
 #include "../../../Common.hpp"
-#include "../../../Graphics/MeshGroup.hpp"
-#include "../../BestFitSphere3.hpp"
+#include "../SampledSurface.hpp"
 #include "../../Histogram.hpp"
 #include "../../IntersectionTester.hpp"
-#include "../../KDTreeN.hpp"
-#include "../../MeshSampler.hpp"
-#include "../../PointCollectorN.hpp"
 #include "../../PointTraitsN.hpp"
 #include "../../../Ball3.hpp"
-#include "../../../Math.hpp"
 #include "../../../Random.hpp"
-#include "../../../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -63,14 +57,10 @@ namespace Local {
 
 /** Compute the histogram of distances from a query point to other points on a shape. */
 template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class LocalDistanceHistogram
+class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
 {
-  public:
-    typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
-
   private:
-    typedef KDTreeN<Vector3, 3> SampleKDTree;  ///< A kd-tree on mesh samples.
-
+    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
     static long const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -85,20 +75,8 @@ class LocalDistanceHistogram
      */
     template <typename MeshT>
     LocalDistanceHistogram(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
-
-      MeshSampler<MeshT> sampler(mesh);
-      sampler.sampleEvenlyByArea(num_samples, samples);
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
      * Constructs the object to compute the histogram of distances to sample points on a given mesh group. The mesh group need
@@ -111,20 +89,8 @@ class LocalDistanceHistogram
      */
     template <typename MeshT>
     LocalDistanceHistogram(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
-
-      MeshSampler<MeshT> sampler(mesh_group);
-      sampler.sampleEvenlyByArea(num_samples, samples);
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh_group);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
      * Constructs the object to compute the histogram of distances to sample points of a shape with a precomputed kd-tree on
@@ -134,51 +100,9 @@ class LocalDistanceHistogram
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    LocalDistanceHistogram(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), scale(normalization_scale)
-    {
-      alwaysAssertM(precomp_kdtree, "LocalDistanceHistogram: Precomputed KD-tree cannot be null");
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(precomp_kdtree->getElements(),
-                                                               precomp_kdtree->getElements() + precomp_kdtree->numElements());
-        scale = bsphere.getDiameter();
-      }
-    }
-
-    /** Destructor. */
-    ~LocalDistanceHistogram()
-    {
-      delete sample_kdtree;
-    }
-
-    /** Get the number of surface samples. */
-    long numSamples() const
-    {
-      if (precomp_kdtree)
-        return precomp_kdtree->numElements();
-      else
-        return (long)samples.size();
-    }
-
-    /** Get the position of the surface sample with index \a index. */
-    Vector3 getSamplePosition(long index) const
-    {
-      debugAssertM(index >= 0 && index < numSamples(), format("LocalDistanceHistogram: Sample index %ld out of bounds", index));
-
-      if (precomp_kdtree)
-      {
-        typedef typename ExternalSampleKDTree::Element ExternalSample;
-        return PointTraitsN<ExternalSample, 3>::getPosition(precomp_kdtree->getElements()[(array_size_t)index]);
-      }
-      else
-        return samples[(array_size_t)index];
-    }
-
-    /** Get the normalization scale. */
-    Real getNormalizationScale() const { return scale; }
+    LocalDistanceHistogram(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    : BaseT(sample_kdtree_, normalization_scale)
+    {}
 
     /**
      * Compute the histogram of distances from a query point to sample points on the shape. The histogram bins uniformly
@@ -203,7 +127,7 @@ class LocalDistanceHistogram
 
       bool process_all = (max_distance < 0);
       if (process_all)
-        max_distance = scale;
+        max_distance = this->getNormalizationScale();
 
       histogram.setRange(0, std::max((double)max_distance, 1.0e-30));
       histogram.setZero();
@@ -212,31 +136,18 @@ class LocalDistanceHistogram
 
       if (process_all)
       {
-        if (precomp_kdtree)
-        {
-          typename ExternalSampleKDTree::value_type const * elems = precomp_kdtree->getElements();
-          long num_elems = precomp_kdtree->numElements();
-
-          for (long i = 0; i < num_elems; ++i)
-            callback(i, elems[i]);
-        }
-        else
-        {
-          for (array_size_t i = 0; i < samples.size(); ++i)
-            callback((long)i, samples[i]);
-        }
+        long num_samples = this->numSamples();
+        for (long i = 0; i < num_samples; ++i)
+          callback(i, this->getSamplePosition(i));
       }
       else
       {
-        if (!precomp_kdtree && !sample_kdtree)
-          sample_kdtree = new SampleKDTree(samples.begin(), samples.end());
-
         Ball3 ball(position, max_distance);
 
-        if (precomp_kdtree)
-          const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(ball, &callback);
+        if (this->hasExternalKDTree())
+          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
         else
-          sample_kdtree->template processRangeUntil<IntersectionTester>(ball, &callback);
+          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
       }
     }
 
@@ -248,7 +159,7 @@ class LocalDistanceHistogram
       : position(position_), histogram(histogram_), acceptance_probability(acceptance_probability_)
       {}
 
-      template <typename SampleT> bool operator()(long index, SampleT & t)
+      template <typename SampleT> bool operator()(long index, SampleT const & t)
       {
         if (acceptance_probability < 1 && Random::common().uniform01() > acceptance_probability)
           return false;
@@ -264,11 +175,6 @@ class LocalDistanceHistogram
       Real acceptance_probability;
 
     }; // struct Callback
-
-    TheaArray<Vector3> samples;  ///< MeshT sample points computed by this object.
-    mutable SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
-    ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
-    Real scale;  ///< The normalization length.
 
 }; // class LocalDistanceHistogram
 
