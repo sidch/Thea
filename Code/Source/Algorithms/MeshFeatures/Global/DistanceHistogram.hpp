@@ -43,6 +43,7 @@
 #define __Thea_Algorithms_MeshFeatures_Global_DistanceHistogram_hpp__
 
 #include "../Local/LocalDistanceHistogram.hpp"
+#include "../../Histogram.hpp"
 #include "../../../Math.hpp"
 #include "../../../Random.hpp"
 
@@ -115,11 +116,10 @@ class DistanceHistogram
      * of distances from zero to \a max_distance. If \a max_distance is negative, the shape scale specified in the constructor
      * will be used.
      *
-     * @param num_bins The number of bins in the output histogram.
-     * @param histogram An array preallocated to \a num_bins entries, each entry corresponding to a histogram bin.
+     * @param The histogram to be computed.
      * @param max_distance The maximum separation between points to consider for the histogram. A negative value indicates the
      *   entire shape is to be considered (in which case \a max_distance is set to the shape scale specified in the
-     *   constructor).
+     *   constructor). The histogram range is set appropriately.
      * @param pair_reduction_ratio The fraction of the available set of point pairs -- expressed as a number between 0 and 1 --
      *   that will be randomly selected and used to actually build the histogram. Note that the final set is a subsampling of
      *   the set of all possible pairs, not the set of all possible pairs of a subsampled set of points. This may be useful for
@@ -127,49 +127,39 @@ class DistanceHistogram
      *   indicates all ordered pairs will be used, but this counts every distance twice, so a value of 0.5 or so may be more
      *   appropriate. A negative value picks a default of 0.5, or the ratio that gives a maximum of ~1M ordered pairs, whichever
      *   is smaller.
-     *
-     * @return The sum of the values in the histogram bins. Can be used to normalize the histogram, especially if the exact
-     *   number of pairs used to build the histogram is unknown.
      */
-    double compute(long num_bins, double * histogram, Real max_distance = -1, Real pair_reduction_ratio = -1) const
+    void compute(Histogram & histogram, Real max_distance = -1, Real pair_reduction_ratio = -1) const
     {
-      alwaysAssertM(num_bins > 0, "DistanceHistogram: Number of bins must be positive");
-
       long num_samples = ldh.numSamples();
       long num_distinct_unordered = (num_samples - 1) * num_samples;
 
       if (pair_reduction_ratio < 0)
         pair_reduction_ratio = (Real)std::min(0.5, 1000000.0 / num_distinct_unordered);  // don't count (x, x)
 
-      for (long i = 0; i < num_bins; ++i)
-        histogram[i] = 0.0;
+      histogram.setZero();  // don't bother setting the range
 
       Real local_reduction_ratio = std::sqrt(pair_reduction_ratio);
       long num_queries = Math::clamp((long)std::ceil(local_reduction_ratio * num_samples), 0, num_samples - 1);
       if (num_queries <= 0)
-        return 0.0;
+        return;
 
       TheaArray<int32> query_indices((array_size_t)num_queries);
       Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
-      TheaArray<double> local_histogram(num_bins);
-      double sum_values = 0;
+      Histogram local_histogram(histogram.numBins());
       for (array_size_t i = 0; i < query_indices.size(); ++i)
       {
         Vector3 p = ldh.getSamplePosition(query_indices[i]);
-        double local_sum_values = ldh.compute(p, num_bins, &local_histogram[0], max_distance, local_reduction_ratio);
+        ldh.compute(p, local_histogram, max_distance, local_reduction_ratio);
 
         // Remove the zero distance from the query point to itself
-        local_histogram[0] -= 1.0;
-        local_sum_values -= 1.0;
+        local_histogram.remove(0.0);
 
-        for (array_size_t j = 0; j < local_histogram.size(); ++j)
-          histogram[j] += local_histogram[j];
+        if (i == 0)
+          histogram.setRange(local_histogram.minValue(), local_histogram.maxValue());
 
-        sum_values += local_sum_values;
+        histogram.insert(local_histogram);
       }
-
-      return sum_values;
     }
 
   private:

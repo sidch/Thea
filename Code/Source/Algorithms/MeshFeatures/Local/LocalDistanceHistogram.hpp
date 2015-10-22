@@ -45,6 +45,7 @@
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
 #include "../../BestFitSphere3.hpp"
+#include "../../Histogram.hpp"
 #include "../../IntersectionTester.hpp"
 #include "../../KDTreeN.hpp"
 #include "../../MeshSampler.hpp"
@@ -176,89 +177,76 @@ class LocalDistanceHistogram
         return samples[(array_size_t)index];
     }
 
+    /** Get the normalization scale. */
+    Real getNormalizationScale() const { return scale; }
+
     /**
      * Compute the histogram of distances from a query point to sample points on the shape. The histogram bins uniformly
-     * subdivide the range of distances from zero to \a max_distance.
+     * subdivide the range of distances from zero to \a max_distance. If \a max_distance is negative, the shape scale specified
+     * in the constructor will be used.
      *
      * @param position The position of the query point.
-     * @param num_bins The number of bins in the output histogram.
-     * @param histogram An array preallocated to \a num_bins entries, each entry corresponding to a histogram bin.
+     * @param The histogram to be computed.
      * @param max_distance The distance to the furthest point to consider for the histogram. A negative value indicates the
      *   entire shape is to be considered (in which case \a max_distance is set to the shape scale specified in the
-     *   constructor).
+     *   constructor). The histogram range is set appropriately.
      * @param sample_reduction_ratio The fraction of the available set of samples -- expressed as a number between 0 and 1 --
      *   that will be randomly selected and used to actually build the histogram. This may be useful for getting a more evenly
      *   sampled set of pairwise distances when calling this function with multiple query points (and an extra-large initial set
      *   of points). A negative value, or a value of 1, indicates all sample points will be used.
-     *
-     * @return The sum of the values in the histogram bins. Can be used to normalize the histogram, especially if the exact
-     *   number of pairs used to build the histogram is unknown.
      */
-    double compute(Vector3 const & position, long num_bins, double * histogram, Real max_distance = -1,
-                   Real sample_reduction_ratio = -1) const
+    void compute(Vector3 const & position, Histogram & histogram, Real max_distance = -1, Real sample_reduction_ratio = -1)
+         const
     {
       if (sample_reduction_ratio < 0)
         sample_reduction_ratio = 1.1;  // play safe
 
-      double hist_sum = 0;
-
-      if (max_distance < 0)
-      {
+      bool process_all = (max_distance < 0);
+      if (process_all)
         max_distance = scale;
-        LocalDistanceHistogramFunctor func(position, num_bins, histogram, max_distance, sample_reduction_ratio);
 
+      histogram.setRange(0, std::max((double)max_distance, 1.0e-30));
+      histogram.setZero();
+
+      Callback callback(position, histogram, sample_reduction_ratio);
+
+      if (process_all)
+      {
         if (precomp_kdtree)
         {
           typename ExternalSampleKDTree::value_type const * elems = precomp_kdtree->getElements();
           long num_elems = precomp_kdtree->numElements();
 
           for (long i = 0; i < num_elems; ++i)
-            func(i, elems[i]);
+            callback(i, elems[i]);
         }
         else
         {
           for (array_size_t i = 0; i < samples.size(); ++i)
-            func((long)i, samples[i]);
+            callback((long)i, samples[i]);
         }
-
-        hist_sum = func.sum_values;
       }
       else
       {
         if (!precomp_kdtree && !sample_kdtree)
           sample_kdtree = new SampleKDTree(samples.begin(), samples.end());
 
-        LocalDistanceHistogramFunctor func(position, num_bins, histogram, max_distance, sample_reduction_ratio);
         Ball3 ball(position, max_distance);
 
         if (precomp_kdtree)
-          const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(ball, &func);
+          const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(ball, &callback);
         else
-          sample_kdtree->template processRangeUntil<IntersectionTester>(ball, &func);
-
-        hist_sum = func.sum_values;
+          sample_kdtree->template processRangeUntil<IntersectionTester>(ball, &callback);
       }
-
-      return hist_sum;
     }
 
   private:
     /** Called for each point in the neighborhood. */
-    struct LocalDistanceHistogramFunctor
+    struct Callback
     {
-      LocalDistanceHistogramFunctor(Vector3 const & position_, long num_bins_, double * histogram_, Real max_distance_,
-                                    Real acceptance_probability_)
-      : position(position_), num_bins(num_bins_), histogram(histogram_), bin_scale(0),
-        acceptance_probability(acceptance_probability_), sum_values(0)
-      {
-        alwaysAssertM(num_bins_ > 0, "LocalDistanceHistogram: Number of bins must be positive");
-        alwaysAssertM(max_distance_ >= 0, "LocalDistanceHistogram: Maximum distance must be non-negative");
-
-        bin_scale = std::max(max_distance_ / num_bins_, 1.0e-30f);
-
-        for (long i = 0; i < num_bins_; ++i)
-          histogram_[i] = 0.0;
-      }
+      Callback(Vector3 const & position_, Histogram & histogram_, Real acceptance_probability_)
+      : position(position_), histogram(histogram_), acceptance_probability(acceptance_probability_)
+      {}
 
       template <typename SampleT> bool operator()(long index, SampleT & t)
       {
@@ -266,21 +254,16 @@ class LocalDistanceHistogram
           return false;
 
         Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).length();
-        long bin = Math::clamp((long)std::floor(d / bin_scale), 0, num_bins - 1);
-        histogram[bin] += 1.0;
-        sum_values += 1.0;
+        histogram.insert(d);
 
         return false;
       }
 
       Vector3 position;
-      long num_bins;
-      double * histogram;
-      Real bin_scale;
+      Histogram & histogram;
       Real acceptance_probability;
-      double sum_values;
 
-    }; // struct LocalDistanceHistogramFunctor
+    }; // struct Callback
 
     TheaArray<Vector3> samples;  ///< MeshT sample points computed by this object.
     mutable SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
