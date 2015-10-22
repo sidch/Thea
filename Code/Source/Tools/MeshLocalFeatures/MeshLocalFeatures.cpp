@@ -578,14 +578,9 @@ computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positio
 
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
-    double sum_values = dh.compute(positions[i], num_bins, &values((long)i, 0), (Real)max_distance, (Real)reduction_ratio);
-
-    // Normalize the histogram to add up to 1
-    if (sum_values > 0)
-    {
-      for (long j = 0; j < num_bins; ++j)
-        values((long)i, j) /= sum_values;
-    }
+    Histogram histogram(num_bins, &values((long)i, 0));
+    dh.compute(positions[i], histogram, (Real)max_distance, (Real)reduction_ratio);
+    histogram.normalize();
   }
 
   THEA_CONSOLE << "  -- done";
