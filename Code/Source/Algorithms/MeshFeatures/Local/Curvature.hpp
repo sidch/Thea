@@ -43,115 +43,28 @@
 #define __Thea_Algorithms_MeshFeatures_Local_Curvature_hpp__
 
 #include "../../../Common.hpp"
-#include "../../../Graphics/MeshGroup.hpp"
-#include "../../BestFitSphere3.hpp"
+#include "../SampledSurface.hpp"
 #include "../../IntersectionTester.hpp"
-#include "../../KDTreeN.hpp"
-#include "../../MeshSampler.hpp"
 #include "../../MetricL2.hpp"
-#include "../../PointCollectorN.hpp"
 #include "../../PointTraitsN.hpp"
-#include "../../../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
 namespace Local {
 
-namespace CurvatureInternal {
-
-// A point sample and an associated normal
-// TODO: Replace with SurfaceSample class if/when latter is completed?
-class SurfaceSample
-{
-  public:
-    SurfaceSample() {}
-    SurfaceSample(Vector3 const & p, Vector3 const & n) : position(p), normal(n) {}
-
-    Vector3 const & getPosition() const { return position; }
-    Vector3 const & getNormal() const { return normal; }
-
-  private:
-    Vector3 position;
-    Vector3 normal;
-};
-
-} // namespace CurvatureInternal
-} // namespace Local
-} // namespace MeshFeatures
-
-template <>
-class IsPointN<MeshFeatures::Local::CurvatureInternal::SurfaceSample, 3>
-{
-  public:
-    static bool const value = true;
-};
-
-template <>
-inline Vector3
-PointTraitsN<MeshFeatures::Local::CurvatureInternal::SurfaceSample, 3>::getPosition(
-  MeshFeatures::Local::CurvatureInternal::SurfaceSample const & sample
-)
-{
-  return sample.getPosition();
-}
-
-namespace MeshFeatures {
-namespace Local {
-
 /** Compute the curvature at a point on a shape. */
-template < typename ExternalSampleKDTreeT = KDTreeN<CurvatureInternal::SurfaceSample, 3> >
-class Curvature
+template < typename ExternalSampleKDTreeT = KDTreeN<MeshFeatures::SurfaceSample, 3> >
+class Curvature : public SampledSurface<ExternalSampleKDTreeT>
 {
-  public:
-    typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
-
   private:
-    typedef CurvatureInternal::SurfaceSample SurfaceSample;  ///< A point plus a normal.
-    typedef KDTreeN<SurfaceSample, 3> SampleKDTree;  ///< A kd-tree on mesh samples.
-
+    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
     static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
-
-    /** Get the smoothed normal at a point on a triangle with vertex normals. */
-    template <typename TriangleT>
-    Vector3 smoothNormal(TriangleT const & tri, Vector3 const & p)
-    {
-      Vector3 b = tri.barycentricCoordinates(p);
-
-      Vector3 n0 = tri.getVertices().getVertexNormal(0);
-      Vector3 n1 = tri.getVertices().getVertexNormal(1);
-      Vector3 n2 = tri.getVertices().getVertexNormal(2);
-
-      return b[0] * n0 + b[1] * n1 + b[2] * n2;
-    }
-
-    /** Compute sample points with normals on the mesh. */
-    template <typename MeshT>
-    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, TheaArray<SurfaceSample> & samples)
-    {
-      typedef typename MeshSampler<MeshT>::Triangle Triangle;
-
-      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
-
-      TheaArray<Vector3> positions;
-      TheaArray<Triangle const *> tris;
-      sampler.sampleEvenlyByArea(num_samples, positions, NULL, &tris);
-
-      samples.clear();
-      for (array_size_t i = 0; i < positions.size(); ++i)
-        samples.push_back(SurfaceSample(positions[i], smoothNormal(*tris[i], positions[i])));
-    }
-
-    /** Get the normal at a sample point. */
-    template <typename T> struct NormalTraits { static Vector3 getNormal(T const & t) { return t.getNormal(); } };
-
-    /** Get the normal at a sample point referenced by a pointer. */
-    template <typename T> struct NormalTraits<T *> { static Vector3 getNormal(T const * t) { return t->getNormal(); } };
 
   public:
     /**
-     * Constructs the object to compute curvature at sample points on a given mesh. The mesh must persist as long as this object
-     * does. Initializes internal data structures that do not need to be recomputed for successive calls to compute().
+     * Constructs the object to compute curvature at sample points on a given mesh. Initializes internal data structures that do
+     * not need to be recomputed for successive calls to compute().
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
@@ -160,26 +73,12 @@ class Curvature
      */
     template <typename MeshT>
     Curvature(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      MeshSampler<MeshT> sampler(mesh);
-      TheaArray<SurfaceSample> samples;
-      computeSamples(sampler, num_samples, samples);
-
-      sample_kdtree->init(samples.begin(), samples.end());
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
-     * Constructs the object to compute curvature at sample points on a given mesh group. The mesh group must persist as long as
-     * this object does. Initializes internal data structures that do not need to be recomputed for successive calls to
-     * compute().
+     * Constructs the object to compute curvature at sample points on a given mesh group. Initializes internal data structures
+     * that do not need to be recomputed for successive calls to compute().
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
@@ -188,21 +87,8 @@ class Curvature
      */
     template <typename MeshT>
     Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(new SampleKDTree), precomp_kdtree(NULL), scale(normalization_scale)
-    {
-      MeshSampler<MeshT> sampler(mesh_group);
-      TheaArray<SurfaceSample> samples;
-      computeSamples(sampler, num_samples, samples);
-
-      sample_kdtree->init(samples.begin(), samples.end());
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addMeshVertices(mesh_group);
-        scale = bsphere.getDiameter();
-      }
-    }
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    {}
 
     /**
      * Constructs the object to compute curvature of a shape with a precomputed kd-tree on points densely sampled from the
@@ -212,25 +98,9 @@ class Curvature
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    Curvature(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), scale(normalization_scale)
-    {
-      alwaysAssertM(precomp_kdtree, "Curvature: Precomputed KD-tree cannot be null");
-
-      if (scale <= 0)
-      {
-        BestFitSphere3 bsphere;
-        PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(precomp_kdtree->getElements(),
-                                                               precomp_kdtree->getElements() + precomp_kdtree->numElements());
-        scale = bsphere.getDiameter();
-      }
-    }
-
-    /** Destructor. */
-    ~Curvature()
-    {
-      delete sample_kdtree;
-    }
+    Curvature(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    : BaseT(sample_kdtree_, normalization_scale)
+    {}
 
     /**
      * Compute the <em>projected</em> curvature at a query point on the mesh. The projected curvature is an approximation to the
@@ -244,19 +114,15 @@ class Curvature
      */
     double computeProjectedCurvature(Vector3 const & position, Real nbd_radius = -1) const
     {
-      long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
-                                     : sample_kdtree->template closestElement<MetricL2>(position);
+      long nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
+                                                : this->getInternalKDTree()->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
         THEA_WARNING << "Curvature: Query point cannot be mapped to mesh, curvature value set to zero";
         return 0.0;
       }
 
-      Vector3 normal = precomp_kdtree ? NormalTraits<typename ExternalSampleKDTree::Element>
-                                            ::getNormal(precomp_kdtree->getElements()[(array_size_t)nn_index])
-                                      : sample_kdtree->getElements()[(array_size_t)nn_index].getNormal();
-
-      return computeProjectedCurvature(position, normal, nbd_radius);
+      return computeProjectedCurvature(position, this->getSampleNormal(nn_index), nbd_radius);
     }
 
     /**
@@ -269,15 +135,15 @@ class Curvature
     double computeProjectedCurvature(Vector3 const & position, Vector3 const & normal, Real nbd_radius = -1) const
     {
       if (nbd_radius <= 0)
-        nbd_radius = 0.05f * scale;
+        nbd_radius = 0.05f * this->getNormalizationScale();
 
       ProjectedCurvatureFunctor func(position, normal);
       Ball3 range(position, nbd_radius);
 
-      if (precomp_kdtree)
-        const_cast<ExternalSampleKDTree *>(precomp_kdtree)->template processRangeUntil<IntersectionTester>(range, &func);
+      if (this->hasExternalKDTree())
+        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
       else
-        sample_kdtree->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
 
       return func.getCurvature();
     }
@@ -312,10 +178,6 @@ class Curvature
       Vector3 sum_offsets;
 
     }; // struct ProjectedCurvatureFunctor
-
-    SampleKDTree * sample_kdtree;  ///< KD-tree on mesh samples.
-    ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on mesh samples.
-    Real scale;  ///< The normalization length.
 
 }; // class Curvature
 

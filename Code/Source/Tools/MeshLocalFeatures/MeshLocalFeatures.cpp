@@ -456,7 +456,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "    <featureN> must be one of:";
   THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "        --projcurv";
-  THEA_CONSOLE << "        --dh=<num-samples>[<num-bins>[,<max_distance>[,<reduction-ratio>]]]";
+  THEA_CONSOLE << "        --dh=<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
   THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
   THEA_CONSOLE << "";
@@ -465,6 +465,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
   THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
+  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
   THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
   THEA_CONSOLE << "        --binary (outputs features in binary format)";
   THEA_CONSOLE << "";
