@@ -1,6 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Global/DistanceHistogram.hpp"
 #include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
+#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
@@ -49,9 +50,9 @@ struct MeshScaleType
 };
 
 MeshScaleType mesh_scale_type = MeshScaleType::BSPHERE;
-bool normalize_by_mesh_scale = false;
 double mesh_scale = 1;
 bool is_oriented = false;  // all normals point outwards
+bool abs_values = false;
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
@@ -59,6 +60,7 @@ bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, do
                               TheaArray<double> & values);
 bool computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio,
                                TheaArray<double> & values);
+bool computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -67,7 +69,6 @@ main(int argc, char * argv[])
   string out_path;
 
   bool shift_to_01 = false;
-  bool abs_values = false;
   bool feat_scale = false;
   double feat_scale_factor = 1;
   bool binary = false;
@@ -91,13 +92,13 @@ main(int argc, char * argv[])
 
       curr_opt++;
     }
-    else if (arg == "--shift01")
-    {
-      shift_to_01 = true;
-    }
     else if (arg == "--abs")
     {
       abs_values = true;
+    }
+    else if (arg == "--binary")
+    {
+      binary = true;
     }
     else if (beginsWith(arg, "--featscale="))
     {
@@ -108,6 +109,10 @@ main(int argc, char * argv[])
         THEA_ERROR << "Couldn't parse feat_scale factor";
         return -1;
       }
+    }
+    else if (arg == "--is-oriented")
+    {
+      is_oriented = true;
     }
     else if (beginsWith(arg, "--meshscale="))
     {
@@ -124,17 +129,9 @@ main(int argc, char * argv[])
         return -1;
       }
     }
-    else if (arg == "--normalize")
+    else if (arg == "--shift01")
     {
-      normalize_by_mesh_scale = true;
-    }
-    else if (arg == "--is-oriented")
-    {
-      is_oriented = true;
-    }
-    else if (arg == "--binary")
-    {
-      binary = true;
+      shift_to_01 = true;
     }
     else
       continue;
@@ -163,7 +160,42 @@ main(int argc, char * argv[])
   for (int i = 1; i < argc; ++i)
   {
     string feat = string(argv[i]);
-    if (beginsWith(feat, "--dh="))
+    if (beginsWith(feat, "--ch="))
+    {
+      long num_bins, num_samples;
+      double reduction_ratio;
+
+      long num_params = sscanf(feat.c_str(), "--ch=%ld,%ld,%lf", &num_bins, &num_samples, &reduction_ratio);
+      if (num_params < 1)
+      {
+        THEA_ERROR << "Couldn't parse curvature histogram parameters";
+        return -1;
+      }
+      else if (num_params < 3)
+      {
+        THEA_WARNING << "Sample reduction ratio not specified for curvature histogram, using default value";
+        reduction_ratio = -1;
+
+        if (num_params < 2)
+        {
+          THEA_WARNING << "Number of samples not specified for curvature histogram, using default value";
+          num_samples = -1;
+        }
+      }
+
+      if (num_bins <= 0)
+      {
+        THEA_ERROR << "Number of histogram bins must be > 0";
+        return -1;
+      }
+
+      TheaArray<double> values;
+      if (!computeCurvatureHistogram(mg, num_bins, num_samples, reduction_ratio, values))
+        return -1;
+
+      features.insert(features.end(), values.begin(), values.end());
+    }
+    else if (beginsWith(feat, "--dh="))
     {
       long num_bins, num_samples;
       double max_distance;
@@ -187,7 +219,7 @@ main(int argc, char * argv[])
 
           if (num_params < 2)
           {
-            THEA_WARNING << "Approximate number of samples not specified for distance histogram, using default value";
+            THEA_WARNING << "Number of samples not specified for distance histogram, using default value";
             num_samples = -1;
           }
         }
@@ -205,27 +237,20 @@ main(int argc, char * argv[])
 
       features.insert(features.end(), values.begin(), values.end());
     }
-    else if (beginsWith(feat, "--ch="))
+    else if (beginsWith(feat, "--sdf="))
     {
       long num_bins, num_samples;
-      double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--ch=%ld,%ld,%lf", &num_bins, &num_samples, &reduction_ratio);
+      long num_params = sscanf(feat.c_str(), "--sdf=%ld,%ld", &num_bins, &num_samples);
       if (num_params < 1)
       {
-        THEA_ERROR << "Couldn't parse curvature histogram parameters";
+        THEA_ERROR << "Couldn't parse SDF histogram parameters";
         return -1;
       }
-      else if (num_params < 3)
+      else if (num_params < 2)
       {
-        THEA_WARNING << "Sample reduction ratio not specified for curvature histogram, using default value";
-        reduction_ratio = -1;
-
-        if (num_params < 2)
-        {
-          THEA_WARNING << "Approximate number of samples not specified for curvature histogram, using default value";
-          num_samples = -1;
-        }
+        THEA_WARNING << "Number of samples not specified for SDF histogram, using default value";
+        num_samples = -1;
       }
 
       if (num_bins <= 0)
@@ -235,7 +260,7 @@ main(int argc, char * argv[])
       }
 
       TheaArray<double> values;
-      if (!computeCurvatureHistogram(mg, num_bins, num_samples, reduction_ratio, values))
+      if (!computeSDFHistogram(mg, num_bins, num_samples, values))
         return -1;
 
       features.insert(features.end(), values.begin(), values.end());
@@ -317,17 +342,18 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <outfile> [<feature0> <feature1> ...]";
   THEA_CONSOLE << "    <featureN> must be one of:";
-  THEA_CONSOLE << "        --dh=<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --ch=<num-bins>[,<num-samples>[,<reduction-ratio>]]";
+  THEA_CONSOLE << "        --dh=<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
+  THEA_CONSOLE << "        --sdf=<num-bins>[,<num-samples>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
+  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
+  THEA_CONSOLE << "        --binary (outputs features in binary format)";
+  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
+  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
   THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
-  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
-  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
-  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
-  THEA_CONSOLE << "        --binary (outputs features in binary format)";
   THEA_CONSOLE << "";
 
   return -1;
@@ -396,7 +422,7 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
   THEA_CONSOLE << "Computing curvature histogram";
 
   values.resize((array_size_t)num_bins);
-  Histogram histogram(num_bins, &values[0]);
+  Histogram histogram(num_bins, &values[0], (abs_values ? 0.0 : -1.0), 1.0);
 
   MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
 
@@ -415,7 +441,57 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
     long index = query_indices[i];
     Vector3 p = projcurv.getSamplePosition(index);
     Vector3 n = projcurv.getSampleNormal(index);
-    histogram.insert(projcurv.computeProjectedCurvature(p, n));
+
+    double curv = projcurv.computeProjectedCurvature(p, n);
+    if (abs_values)
+      curv = fabs(curv);
+
+    histogram.insert(curv);
+  }
+
+  histogram.normalize();
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<double> & values)
+{
+  THEA_CONSOLE << "Computing SDF histogram";
+
+  values.resize((array_size_t)num_bins);
+  Histogram histogram(num_bins, &values[0], 0.0, 1.0);
+
+  MeshFeatures::Local::ShapeDiameter<Mesh> sdf(mg, (Real)mesh_scale);
+
+  if (num_samples < 0)
+    num_samples = 5000;
+
+  MeshSampler<Mesh> sampler(mg);
+  TheaArray<Vector3> positions, normals;
+  sampler.sampleEvenlyByArea(num_samples, positions, &normals);
+
+  for (long i = 0; i < num_samples; ++i)
+  {
+    Vector3 p = positions[(array_size_t)i];
+    Vector3 n = normals[(array_size_t)i];
+
+    double v0 = sdf.compute(p, n, true);
+    if (v0 < 0)
+      v0 = sdf.compute(p, n, false);
+
+    if (!is_oriented)
+    {
+      double v1 = sdf.compute(p, -n, true);
+      if (v1 < 0)
+        v1 = sdf.compute(p, -n, false);
+
+      v0 = ((v1 < 0 || (v0 >= 0 && v0 < v1)) ? v0 : v1);
+    }
+
+    histogram.insert(v0);
   }
 
   histogram.normalize();

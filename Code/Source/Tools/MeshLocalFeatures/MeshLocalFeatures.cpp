@@ -117,13 +117,13 @@ main(int argc, char * argv[])
 
       curr_opt++;
     }
-    else if (arg == "--shift01")
-    {
-      shift_to_01 = true;
-    }
     else if (arg == "--abs")
     {
       abs_values = true;
+    }
+    else if (arg == "--binary")
+    {
+      binary = true;
     }
     else if (beginsWith(arg, "--featscale="))
     {
@@ -134,6 +134,10 @@ main(int argc, char * argv[])
         THEA_ERROR << "Couldn't parse feat_scale factor";
         return -1;
       }
+    }
+    else if (arg == "--is-oriented")
+    {
+      is_oriented = true;
     }
     else if (beginsWith(arg, "--meshscale="))
     {
@@ -154,13 +158,9 @@ main(int argc, char * argv[])
     {
       normalize_by_mesh_scale = true;
     }
-    else if (arg == "--is-oriented")
+    else if (arg == "--shift01")
     {
-      is_oriented = true;
-    }
-    else if (arg == "--binary")
-    {
-      binary = true;
+      shift_to_01 = true;
     }
     else
       continue;
@@ -254,29 +254,7 @@ main(int argc, char * argv[])
   for (int i = 1; i < argc; ++i)
   {
     string feat = string(argv[i]);
-    if (feat == "--sdf")
-    {
-      TheaArray<double> values;
-      if (!computeSDF(kdtree, positions, face_normals, values))
-        return -1;
-
-      alwaysAssertM(values.size() == positions.size(), "Number of SDF values doesn't match number of points");
-
-      for (array_size_t j = 0; j < positions.size(); ++j)
-        features[j].push_back(values[j]);
-    }
-    else if (feat == "--projcurv")
-    {
-      TheaArray<double> values;
-      if (!computeProjectedCurvatures(mg, positions, smooth_normals, values))
-        return -1;
-
-      alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures doesn't match number of points");
-
-      for (array_size_t j = 0; j < positions.size(); ++j)
-        features[j].push_back(values[j]);
-    }
-    else if (beginsWith(feat, "--dh="))
+    if (beginsWith(feat, "--dh="))
     {
       long num_bins, num_samples;
       double max_distance;
@@ -300,7 +278,7 @@ main(int argc, char * argv[])
 
           if (num_params < 2)
           {
-            THEA_WARNING << "Approximate number of samples not specified for distance histogram, using default value";
+            THEA_WARNING << "Number of samples not specified for distance histogram, using default value";
             num_samples = -1;
           }
         }
@@ -363,6 +341,28 @@ main(int argc, char * argv[])
         for (array_size_t k = 0; k < num_pca_features; ++k)
           features[j].push_back(values[base + k]);
       }
+    }
+    else if (feat == "--projcurv")
+    {
+      TheaArray<double> values;
+      if (!computeProjectedCurvatures(mg, positions, smooth_normals, values))
+        return -1;
+
+      alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures doesn't match number of points");
+
+      for (array_size_t j = 0; j < positions.size(); ++j)
+        features[j].push_back(values[j]);
+    }
+    else if (feat == "--sdf")
+    {
+      TheaArray<double> values;
+      if (!computeSDF(kdtree, positions, face_normals, values))
+        return -1;
+
+      alwaysAssertM(values.size() == positions.size(), "Number of SDF values doesn't match number of points");
+
+      for (array_size_t j = 0; j < positions.size(); ++j)
+        features[j].push_back(values[j]);
     }
     else
     {
@@ -454,20 +454,20 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <points> <outfile> [<feature0> <feature1> ...]";
   THEA_CONSOLE << "    <featureN> must be one of:";
-  THEA_CONSOLE << "        --sdf";
-  THEA_CONSOLE << "        --projcurv";
   THEA_CONSOLE << "        --dh=<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
   THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
+  THEA_CONSOLE << "        --projcurv";
+  THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
+  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
+  THEA_CONSOLE << "        --binary (outputs features in binary format)";
+  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
+  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
   THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
-  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
   THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
-  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
-  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
-  THEA_CONSOLE << "        --binary (outputs features in binary format)";
   THEA_CONSOLE << "";
 
   return -1;
@@ -523,9 +523,9 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
 
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
-    double v0 = sdf.compute(positions[i],  normals[i], true);
+    double v0 = sdf.compute(positions[i], normals[i], true);
     if (v0 < 0)
-      v0 = sdf.compute(positions[i],  normals[i], false);
+      v0 = sdf.compute(positions[i], normals[i], false);
 
     if (is_oriented)
       values[i] = v0 * scaling;
