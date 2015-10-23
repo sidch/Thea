@@ -452,7 +452,7 @@ class SampleGraph
     /**
      * Get the average separation of samples from their neighbors, that is, the average edge length of the graph. This may be
      * computed by sampling and hence should not be assumed to be a true average, just a representative value. Has a meaningful
-     * value <b>only after graph initialization<b>, i.e. calling init(). It should not be called before then.
+     * value <b>only after graph initialization</b>, i.e. calling init(). It should not be called before then.
      */
     Real getAverageSeparation() const { return avg_separation; }
 

@@ -110,7 +110,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
      * in the constructor will be used.
      *
      * @param position The position of the query point.
-     * @param The histogram to be computed.
+     * @param histogram The histogram to be computed.
      * @param max_distance The distance to the furthest point to consider for the histogram. A negative value indicates the
      *   entire shape is to be considered (in which case \a max_distance is set to the shape scale specified in the
      *   constructor). The histogram range is set appropriately.
