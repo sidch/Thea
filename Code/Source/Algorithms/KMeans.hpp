@@ -275,8 +275,8 @@ class THEA_API KMeans : public Serializable
      * @param point The feature vector of the point, with numPointFeatures() entries.
      * @param squared_distance [Optional] Used to return the square of the distance to the closest cluster center.
      *
-     * @param label The index of the cluster containing the point, in the range [0, numClusters() - 1], or a negative value if
-     *   no such cluster was found.
+     * @return The index of the cluster containing the point, in the range [0, numClusters() - 1], or a negative value if no
+     *   such cluster was found.
      */
     long mapToCluster(double const * point, double * squared_distance = NULL) const
     {

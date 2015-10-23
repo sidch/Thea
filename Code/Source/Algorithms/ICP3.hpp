@@ -80,6 +80,7 @@ class ICP3
      *
      * @param fractional_error_threshold_ The maximum fractional change in error to determine convergence.
      * @param max_iterations_ The maximum number of iterations.
+     * @param verbose_ If true, print extra debugging information.
      */
     ICP3(ScalarT fractional_error_threshold_ = -1, long max_iterations_ = -1, bool verbose_ = false)
     : fractional_error_threshold(fractional_error_threshold_), max_iterations(max_iterations_), has_up(false), verbose(verbose_)

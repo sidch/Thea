@@ -112,6 +112,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      * @param position Point at which to compute features.
      * @param eigenvectors If non-null, used to return eigenvectors of samples in the neighborhood, sorted in order of
      *   decreasing eigenvalue. Must be pre-allocated to (at least) 3 elements.
+     * @param nbd_radius The size of the local neighborhood for which the features are computed.
      *
      * @return Eigenvalues of samples in the neighborhood, sorted in decreasing order.
      */

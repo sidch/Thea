@@ -81,8 +81,8 @@ class THEA_API ShapeContext
      *
      * @param num_radial_bins Number of divisions in the radial direction.
      * @param num_polar_bins Number of divisions in the angular direction.
-     * @param values Computed shape contexts, in a #pixels * \a num_radial_bins * \a num_polar_bins array (#pixels is major
-     *   dimension for packing).
+     * @param values Computed shape contexts, in a num_pixels * \a num_radial_bins * \a num_polar_bins array (num_pixels is
+     *   major dimension for packing).
      * @param ignore_empty_pixels Does not compute shape contexts for pixels that are empty (zero luminance, i.e. black). The
      *   corresponding entries in \a values are set to zero.
      * @param max_radius Limits the area of the context for a pixel to this radius (negative for default).

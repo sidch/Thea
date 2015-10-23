@@ -113,6 +113,7 @@ class SampledSurface
   protected:
     typedef KDTreeN<SurfaceSample, 3> InternalSampleKDTree;  ///< A kd-tree on mesh samples.
 
+  private:
     /** Get the smoothed normal at a point on a triangle with vertex normals. */
     template <typename TriangleT>
     Vector3 smoothNormal(TriangleT const & tri, Vector3 const & p)
@@ -144,6 +145,7 @@ class SampledSurface
         samples.push_back(SurfaceSample(positions[i], smoothNormal(*tris[i], positions[i])));
     }
 
+  protected:
     /**
      * Generates a point-sampled surface from a mesh.
      *
