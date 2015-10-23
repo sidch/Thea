@@ -221,7 +221,10 @@ class SampledSurface
       return sample_kdtree;
     }
 
-    /** Get the kd-tree on internally generated samples, or null if no such samples exist. */
+    /**
+     * Get the kd-tree on internally generated samples, or null if no such samples exist. <b>Use with caution</b> -- you should
+     * never actually change the tree even if you have a non-const handle to it!
+     */
     InternalSampleKDTree const * getInternalKDTree() const
     {
       return const_cast<SampledSurface *>(this)->getMutableInternalKDTree();
