@@ -1009,13 +1009,13 @@ Model::saveSegments(QString const & filename_) const
 QString
 Model::getSegmentsFilename() const
 {
-  QString sfn = getFilename() + ".seg";
+  QString sfn = getFilename() + ".labels";
   if (QFileInfo(sfn).exists())
     return sfn;
   else
   {
     QFileInfo info(getFilename());
-    return info.dir().filePath(info.baseName() + ".seg");
+    return info.dir().filePath(info.baseName() + ".labels");
   }
 }
 
