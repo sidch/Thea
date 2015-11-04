@@ -65,6 +65,62 @@
 namespace Thea {
 namespace Algorithms {
 
+namespace KDTreeNInternal {
+
+/** A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries. */
+template <long N, typename ScalarT>
+struct ElementSample
+{
+  VectorN<N, ScalarT> position;
+  void const * element;  // this cannot be pointer-to-T, else we get recursive instantiation overflow
+
+  /** Default constructor. */
+  ElementSample() {}
+
+  /** Initialize a sample at point \a p drawn from an element \a e. */
+  ElementSample(VectorN<N, ScalarT> const & p, void const * e) : position(p), element(e) {}
+
+}; // struct ElementSample
+
+/**
+ * A filter that passes or rejects a sample point, depending on whether a base filter passes or rejects the point's parent
+ * element.
+ */
+template <typename T, long N, typename ScalarT>
+class SampleFilter : public Filter< ElementSample<N, ScalarT> >
+{
+  public:
+    /** Constructor. */
+    SampleFilter(Filter<T> * base_filter_) : base_filter(base_filter_) {}
+
+    bool allows(ElementSample<N, ScalarT> const & sample) const
+    {
+      // Assume null pointer case won't happen by construction
+      return base_filter->allows(*static_cast<T const *>(sample.element));
+    }
+
+  private:
+    Filter<T> * base_filter;  ///< The underlying element filter.
+
+}; // struct SampleFilter
+
+} // namespace KDTreeNInternal
+
+template <long N, typename ScalarT>
+class IsPointN< KDTreeNInternal::ElementSample<N, ScalarT>, N >
+{
+  public:
+    static bool const value = true;
+};
+
+template <long N, typename ScalarT>
+class PointTraitsN< KDTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
+{
+  public:
+    typedef VectorN<N, ScalarT> VectorT;
+    static VectorT getPosition(KDTreeNInternal::ElementSample<N, ScalarT> const & sample) { return sample.position; }
+};
+
 /**
  * A kd-tree for a set of objects in N-space. The requirements on the optional template parameters are:
  *
@@ -322,8 +378,10 @@ class /* THEA_API */ KDTreeN
     typedef typename RayQueryBaseT::RayStructureIntersectionT  RayStructureIntersectionT;  /**< Ray intersection structure in
                                                                                                 N-space. */
 
-    typedef KDTreeN<VectorT, N, ScalarT> NearestNeighborAccelerationStructure;  /**< Structure to speed up nearest neighbor
-                                                                                     queries. */
+    typedef KDTreeNInternal::ElementSample<N, ScalarT> ElementSample;  /**< A point sample drawn from a kd-tree element, used
+                                                                            for accelerating nearest neighbor queries. */
+    typedef KDTreeN<ElementSample, N, ScalarT> NearestNeighborAccelerationStructure;  /**< Structure to speed up nearest
+                                                                                           neighbor queries. */
 
     /** A node of the kd-tree. Only immutable objects of this class should be exposed by the external kd-tree interface. */
     class Node : public AttributedObject<NodeAttributeT>
@@ -388,6 +446,7 @@ class /* THEA_API */ KDTreeN
     typedef MemoryPool<Node> NodePool;  ///< A pool for quickly allocating kd-tree nodes.
     typedef MemoryPool<ElementIndex> IndexPool;  ///< A pool for quickly allocating element indices.
     typedef TheaArray<T> ElementArray;  ///< An array of elements.
+    typedef KDTreeNInternal::SampleFilter<T, N, ScalarT> SampleFilter;  ///< Filter for samples, wrapping a filter for elements.
 
   public:
     /** Default constructor. */
@@ -696,7 +755,15 @@ class /* THEA_API */ KDTreeN
      */
     void pushFilter(Filter<T> * filter)
     {
+      alwaysAssertM(filter, "KDTreeN: Filter must be non-null");
+
       filters.push_back(filter);
+
+      if (accelerate_nn_queries && valid_acceleration_structure)
+      {
+        sample_filters.push_back(SampleFilter(filter));
+        acceleration_structure->pushFilter(&sample_filters.back());
+      }
     }
 
     /**
@@ -707,6 +774,12 @@ class /* THEA_API */ KDTreeN
     void popFilter()
     {
       filters.pop_back();
+
+      if (accelerate_nn_queries && valid_acceleration_structure)
+      {
+        acceleration_structure->popFilter();
+        sample_filters.pop_back();
+      }
     }
 
     /** Get the minimum distance between this structure and a query object. */
@@ -976,8 +1049,8 @@ class /* THEA_API */ KDTreeN
     // Allow the comparator unrestricted access to the kd-tree.
     friend struct ObjectLess;
 
-    /** A stack of element filters. */
-    typedef TheaArray<Filter<T> *> FilterStack;
+    typedef TheaArray<Filter<T> *> FilterStack;  ///< A stack of element filters.
+    typedef TheaArray<SampleFilter> SampleFilterStack;  ///< A stack of point sample filters.
 
     void moveIndicesToLeafPool(Node * leaf, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
@@ -1577,8 +1650,8 @@ class /* THEA_API */ KDTreeN
       delete acceleration_structure; acceleration_structure = NULL;
 
       static int const DEFAULT_NUM_ACCELERATION_SAMPLES = 250;
-      TheaArray<Vector3> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
-                                                                            : num_acceleration_samples);
+      TheaArray<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
+                                                                                  : num_acceleration_samples);
       VectorT src_cp, dst_cp;
       for (array_size_t i = 0; i < acceleration_samples.size(); ++i)
       {
@@ -1588,7 +1661,7 @@ class /* THEA_API */ KDTreeN
         // Snap point to element, else it's not a valid NN proxy
         MetricT::template closestPoints<N, ScalarT>(p, elems[elem_index], src_cp, dst_cp);
 
-        acceleration_samples[i] = dst_cp;
+        acceleration_samples[i] = ElementSample(dst_cp, &elems[elem_index]);
       }
 
       acceleration_structure = new NearestNeighborAccelerationStructure;
@@ -1597,6 +1670,13 @@ class /* THEA_API */ KDTreeN
 
       if (this->hasTransform())
         acceleration_structure->setTransform(this->getTransform());
+
+      sample_filters.clear();
+      for (array_size_t i = 0; i < filters.size(); ++i)
+      {
+        sample_filters.push_back(SampleFilter(filters[i]));
+        acceleration_structure->pushFilter(&sample_filters.back());  // careful, make sure order is not reversed!
+      }
 
       valid_acceleration_structure = true;
     }
@@ -1610,6 +1690,8 @@ class /* THEA_API */ KDTreeN
       {
         delete acceleration_structure;
         acceleration_structure = NULL;
+
+        sample_filters.clear();
       }
     }
 
@@ -1678,6 +1760,7 @@ class /* THEA_API */ KDTreeN
     long num_acceleration_samples;
     mutable bool valid_acceleration_structure;
     mutable NearestNeighborAccelerationStructure * acceleration_structure;
+    mutable SampleFilterStack sample_filters;
 
     mutable bool valid_bounds;
     mutable AxisAlignedBoxT bounds;

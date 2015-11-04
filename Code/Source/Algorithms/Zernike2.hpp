@@ -148,8 +148,8 @@ class THEA_API Zernike2
     template <typename U, typename ScalarT>
     static void accum(U const & u, std::complex<double> const & x, std::complex<ScalarT> & acc)
     {
-      acc.real() += static_cast<ScalarT>(x.real() * u);
-      acc.imag() -= static_cast<ScalarT>(x.imag() * u);
+      acc.real(acc.real() + static_cast<ScalarT>(x.real() * u));
+      acc.imag(acc.imag() - static_cast<ScalarT>(x.imag() * u));
     }
 
     /** Add a multidimensional scaled increment. */
@@ -158,8 +158,8 @@ class THEA_API Zernike2
     {
       for (long i = 0; i < N; ++i)
       {
-        acc[i].real() += static_cast<ScalarT>(x.real() * u[i]);
-        acc[i].imag() -= static_cast<ScalarT>(x.imag() * u[i]);
+        acc[i].real(acc[i].real() + static_cast<ScalarT>(x.real() * u[i]));
+        acc[i].imag(acc[i].imag() - static_cast<ScalarT>(x.imag() * u[i]));
       }
     }
 

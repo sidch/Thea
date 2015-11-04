@@ -11,7 +11,7 @@ class MyOpt : public NumericalOptimizer
   public:
     MyOpt() : NamedObject("MyOpt") {}
 
-    bool minimize(ScalarFunction const & objective, Options const & options = Options())
+    bool minimize(ScalarFunction const & objective, double const * hint = NULL, Options const & options = Options())
     {
       return true;
     }

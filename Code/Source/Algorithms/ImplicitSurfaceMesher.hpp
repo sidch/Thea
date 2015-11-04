@@ -285,7 +285,7 @@ class THEA_API ImplicitSurfaceMesher
         {
           BloomenthalPolygonizer::VERTEX const & bp_p = polygonizer.get_vertex(i);
           BloomenthalPolygonizer::NORMAL const & bp_n = polygonizer.get_normal(i);
-          Vector3 p(bp_p.x(), bp_p.y(), bp_p.z()), n(bp_n.x(), bp_n.y(), bp_n.z());
+          Vector3 p(bp_p.x, bp_p.y, bp_p.z), n(bp_n.x, bp_n.y, bp_n.z);
 
           typename Builder::VertexHandle vx = builder.addVertex(p, &n);
           if (!vx)
