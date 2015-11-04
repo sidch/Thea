@@ -306,6 +306,7 @@ testTriangleKDTree()
   KDTree kdtree(triangles.begin(), triangles.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
                                                       // reinitialization, set the deallocate_previous_memory arg of init() to
                                                       // false.
+  kdtree.enableNearestNeighborAcceleration();
   cout << "Created kd-tree for triangles" << endl;
 
   //============================================================================================================================
@@ -347,6 +348,7 @@ testTriangleKDTree()
     new_triangles.push_back(tri);
   }
   KDTree new_kdtree(new_triangles.begin(), new_triangles.end());
+  new_kdtree.enableNearestNeighborAcceleration();
 
   typedef KDTree::NeighborPair NeighborPair;
   NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, true);  // -1 means there's no limit on the maximum
