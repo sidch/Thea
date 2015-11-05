@@ -44,6 +44,8 @@
 
 #include "TransformedObject.hpp"
 #include "Transformer.hpp"
+#include <boost/type_traits/is_pointer.hpp>
+#include <boost/utility/enable_if.hpp>
 
 namespace Thea {
 namespace Algorithms {
@@ -118,7 +120,9 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<O
 };
 
 template <typename ObjectA, typename TransformA, typename B, long N, typename T>
-struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T >
+struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T,
+                     typename boost::enable_if_c< !boost::is_pointer<B>::value
+                                               && !MetricL2Internal::TransformedObjectCheck<B>::value >::type>
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
 
@@ -148,7 +152,9 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T >
 };
 
 template <typename A, typename ObjectB, typename TransformB, long N, typename T>
-struct MetricL2Impl< A, TransformedObject<ObjectB, TransformB>, N, T >
+struct MetricL2Impl< A, TransformedObject<ObjectB, TransformB>, N, T,
+                     typename boost::enable_if_c< !boost::is_pointer<A>::value
+                                               && !MetricL2Internal::TransformedObjectCheck<A>::value >::type>
 {
   typedef TransformedObject<ObjectB, TransformB> TB;
 
