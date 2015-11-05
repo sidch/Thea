@@ -112,7 +112,7 @@ LINK_DIRECTORIES(${OutputRoot}/lib)
 # TestARPACK
 #===========================================================
 
-IF(NOT APPLE)
+IF(TARGET TheaPluginARPACK)
 
 # Source file lists
 SET(TheaTestARPACKSources
@@ -136,7 +136,7 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(TheaTestARPACK "${TheaTestARPACKLibraries}")
 ENDIF()
 
-ENDIF(NOT APPLE)
+ENDIF(TARGET TheaPluginARPACK)
 
 #===========================================================
 # TestBagOfWords
@@ -539,7 +539,7 @@ SET(TheaTestsDependencies
     TheaTestPyramidMatch
     TheaTestZernike)
 
-IF(NOT APPLE)
+IF(TARGET TheaTestARPACK)
   SET(TheaTestsDependencies ${TheaTestsDependencies} TheaTestARPACK)
 ENDIF()
 
