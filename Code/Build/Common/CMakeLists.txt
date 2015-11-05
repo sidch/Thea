@@ -77,6 +77,9 @@ ELSEIF(MSVC)
   ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
 ENDIF()
 
+# Additional platform-specific libraries
+SET(PLATFORM_LIBRARIES ${CMAKE_DL_LIBS})
+
 # Specify that Triangle should be built as a library, use ANSI function declarations and not use a timer
 ADD_DEFINITIONS(-DTRILIBRARY -DANSI_DECLARATORS -DNO_TIMER)
 
