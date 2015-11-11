@@ -198,6 +198,34 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
         eigenvectors[2] = -eigenvectors[2];
     }
 
+    /**
+     * Create a matrix from its columns.
+     *
+     * @param cv0 First column of the matrix.
+     * @param cv1 Second column of the matrix.
+     * @param cv2 Third column of the matrix.
+     */
+    static MatrixMN fromColumns(VectorN<3, T> const & cv0, VectorN<3, T> const & cv1, VectorN<3, T> const & cv2)
+    {
+      return MatrixMN(cv0[0], cv1[0], cv2[0],
+                      cv0[1], cv1[1], cv2[1],
+                      cv0[2], cv1[2], cv2[2]);
+    }
+
+    /**
+     * Create a matrix from its rows.
+     *
+     * @param rv0 First row of the matrix.
+     * @param rv1 Second row of the matrix.
+     * @param rv2 Third row of the matrix.
+     */
+    static MatrixMN fromRows(VectorN<3, T> const & rv0, VectorN<3, T> const & rv1, VectorN<3, T> const & rv2)
+    {
+      return MatrixMN(rv0[0], rv0[1], rv0[2],
+                      rv1[0], rv1[1], rv1[2],
+                      rv2[0], rv2[1], rv2[2]);
+    }
+
     /** 2D scaling matrix in homogeneous coordinates. */
     static MatrixMN homScaling(T const & sx, T const & sy)
     {

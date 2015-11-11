@@ -43,6 +43,7 @@
 #define __Thea_Matrix2_hpp__
 
 #include "MatrixMN.hpp"
+#include "VectorN.hpp"
 #include <cmath>
 
 namespace Thea {
@@ -69,6 +70,30 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
     {
       (*this)(0, 0) = m00; (*this)(0, 1) = m01;
       (*this)(1, 0) = m10; (*this)(1, 1) = m11;
+    }
+
+    /**
+     * Create a matrix from its columns.
+     *
+     * @param cv0 First column of the matrix.
+     * @param cv1 Second column of the matrix.
+     */
+    static MatrixMN fromColumns(VectorN<2, T> const & cv0, VectorN<2, T> const & cv1)
+    {
+      return MatrixMN(cv0[0], cv1[0],
+                      cv0[1], cv1[1]);
+    }
+
+    /**
+     * Create a matrix from its rows.
+     *
+     * @param rv0 First row of the matrix.
+     * @param rv1 Second row of the matrix.
+     */
+    static MatrixMN fromRows(VectorN<2, T> const & rv0, VectorN<2, T> const & rv1)
+    {
+      return MatrixMN(rv0[0], rv0[1],
+                      rv1[0], rv1[1]);
     }
 
     /** Matrix to rotate about the origin by an angle (in radians). */
