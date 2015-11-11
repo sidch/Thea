@@ -159,6 +159,40 @@ class /* THEA_API */ MatrixMN<4, 4, T> : public Internal::SquareMatrixN<4, T>
                                (*this)(2, 0), (*this)(2, 1), (*this)(2, 2));
     }
 
+    /**
+     * Create a matrix from its columns.
+     *
+     * @param cv0 First column of the matrix.
+     * @param cv1 Second column of the matrix.
+     * @param cv2 Third column of the matrix.
+     * @param cv3 Fourth column of the matrix.
+     */
+    static MatrixMN fromColumns(VectorN<4, T> const & cv0, VectorN<4, T> const & cv1, VectorN<4, T> const & cv2,
+                                VectorN<4, T> const & cv3)
+    {
+      return MatrixMN(cv0[0], cv1[0], cv2[0], cv3[0],
+                      cv0[1], cv1[1], cv2[1], cv3[1],
+                      cv0[2], cv1[2], cv2[2], cv3[2],
+                      cv0[3], cv1[3], cv2[3], cv3[3]);
+    }
+
+    /**
+     * Create a matrix from its rows.
+     *
+     * @param rv0 First row of the matrix.
+     * @param rv1 Second row of the matrix.
+     * @param rv2 Third row of the matrix.
+     * @param rv3 Fourth row of the matrix.
+     */
+    static MatrixMN fromRows(VectorN<4, T> const & rv0, VectorN<4, T> const & rv1, VectorN<4, T> const & rv2,
+                             VectorN<4, T> const & rv3)
+    {
+      return MatrixMN(rv0[0], rv0[1], rv0[2], rv0[3],
+                      rv1[0], rv1[1], rv1[2], rv1[3],
+                      rv2[0], rv2[1], rv2[2], rv2[3],
+                      rv3[0], rv3[1], rv3[2], rv3[3]);
+    }
+
     /** 3D scaling matrix in homogeneous coordinates. */
     static MatrixMN homScaling(T const & sx, T const & sy, T const & sz)
     {
