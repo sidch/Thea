@@ -208,8 +208,8 @@ usage()
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
   THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
-  THEA_CONSOLE << "  -v <viewing-dir>      (3 chars, one for each coordinate, each one of";
-  THEA_CONSOLE << "                         +, - or 0)";
+  THEA_CONSOLE << "  -v <viewing-dir>      (comma-separated 3-vector, or string of 3 chars,";
+  THEA_CONSOLE << "                         one for each coordinate, each one of +, - or 0)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
@@ -247,18 +247,18 @@ parseTransform(string const & s, Matrix4 & m)
 }
 
 bool
-parseViewDirection(string const & s, Vector3 & dir, Vector3 & up)
+parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up)
 {
   if (s.length() != 3)
   {
     THEA_ERROR << "Viewing direction string must have exactly 3 characters, one for each coordinate";
-    return -1;
+    return false;
   }
 
   if (s == "000")
   {
     THEA_ERROR << "View direction is zero vector";
-    return -1;
+    return false;
   }
 
   for (int i = 0; i < 3; ++i)
@@ -270,13 +270,43 @@ parseViewDirection(string const & s, Vector3 & dir, Vector3 & up)
       case '0': dir[i] =  0; break;
       default:
         THEA_ERROR << "Invalid view direction string '" << s << '\'';
-        return -1;
+        return false;
     }
   }
 
   if (s == "0-0")
     up = -Vector3::unitZ();
   else if (s == "0+0")
+    up = Vector3::unitZ();
+  else
+    up = Vector3::unitY();
+
+  return true;
+}
+
+bool
+parseViewDirectionContinuous(string const & s, Vector3 & dir, Vector3 & up)
+{
+  double x, y, z;
+  if (sscanf(s.c_str(), " %lf , %lf , %lf", &x, &y, &z) != 3)
+  {
+    THEA_ERROR << "Invalid view direction string '" << s << '\'';
+    return false;
+  }
+
+  dir = Vector3(x, y, z);
+  if (dir.squaredLength() <= 1e-10)
+  {
+    THEA_ERROR << "View direction is zero vector";
+    return false;
+  }
+
+  dir.unitize();
+
+  Real d = dir.dot(Vector3::unitY());
+  if (Math::fuzzyEq(d, (Real)-1))
+    up = -Vector3::unitZ();
+  else if (Math::fuzzyEq(d, (Real)1))
     up = Vector3::unitZ();
   else
     up = Vector3::unitY();
@@ -432,7 +462,16 @@ parseArgs(int argc, char * argv[])
         {
           if (argc < 1) { THEA_ERROR << "-v: View direction not specified"; return false; }
           Vector3 up;
-          if (!parseViewDirection(*argv, view_dir, up)) return false;
+          if (strlen(*argv) == 3)
+          {
+            if (!parseViewDirectionDiscrete(*argv, view_dir, up))
+              return false;
+          }
+          else
+          {
+            if (!parseViewDirectionContinuous(*argv, view_dir, up))
+              return false;
+          }
           if (!has_up) view_up = up;
           argv++; argc--; break;
         }
@@ -1049,13 +1088,13 @@ Model::render(ColorRGBA const & color)
       if (!point_shader)
       {
         THEA_ERROR << "Could not create point shader";
-        return -1;
+        return false;
       }
 
       if (!initPointShader(*point_shader))
       {
         THEA_ERROR << "Could not initialize point shader";
-        return -1;
+        return false;
       }
     }
 
@@ -1084,7 +1123,7 @@ Model::render(ColorRGBA const & color)
       if (!mesh_shader)
       {
         THEA_ERROR << "Could not create mesh shader";
-        return -1;
+        return false;
       }
 
       if (color_by_id)
@@ -1092,7 +1131,7 @@ Model::render(ColorRGBA const & color)
         if (!initFaceIndexShader(*mesh_shader))
         {
           THEA_ERROR << "Could not initialize face index shader";
-          return -1;
+          return false;
         }
       }
       else
@@ -1100,7 +1139,7 @@ Model::render(ColorRGBA const & color)
         if (!initMeshShader(*mesh_shader))
         {
           THEA_ERROR << "Could not initialize mesh shader";
-          return -1;
+          return false;
         }
       }
     }
