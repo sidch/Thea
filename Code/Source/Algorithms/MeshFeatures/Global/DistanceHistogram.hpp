@@ -117,6 +117,7 @@ class DistanceHistogram
      * will be used.
      *
      * @param histogram The histogram to be computed.
+     * @param dist_type The type of distance metric.
      * @param max_distance The maximum separation between points to consider for the histogram. A negative value indicates the
      *   entire shape is to be considered (in which case \a max_distance is set to the shape scale specified in the
      *   constructor). The histogram range is set appropriately.
@@ -128,7 +129,7 @@ class DistanceHistogram
      *   appropriate. A negative value picks a default of 0.5, or the ratio that gives a maximum of ~1M ordered pairs, whichever
      *   is smaller.
      */
-    void compute(Histogram & histogram, Real max_distance = -1, Real pair_reduction_ratio = -1) const
+    void compute(Histogram & histogram, DistanceType dist_type, Real max_distance = -1, Real pair_reduction_ratio = -1) const
     {
       long num_samples = ldh.numSamples();
       long num_distinct_unordered = (num_samples - 1) * num_samples;
@@ -150,7 +151,7 @@ class DistanceHistogram
       for (array_size_t i = 0; i < query_indices.size(); ++i)
       {
         Vector3 p = ldh.getSamplePosition(query_indices[i]);
-        ldh.compute(p, local_histogram, max_distance, local_reduction_ratio);
+        ldh.compute(p, local_histogram, dist_type, max_distance, local_reduction_ratio);
 
         // Remove the zero distance from the query point to itself
         local_histogram.remove(0.0);
