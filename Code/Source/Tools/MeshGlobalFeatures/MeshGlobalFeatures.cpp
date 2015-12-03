@@ -56,8 +56,8 @@ bool abs_values = false;
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
-bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, double max_distance, double reduction_ratio,
-                              TheaArray<double> & values);
+bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
+                              double reduction_ratio, TheaArray<double> & values);
 bool computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio,
                                TheaArray<double> & values);
 bool computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<double> & values);
@@ -197,27 +197,37 @@ main(int argc, char * argv[])
     }
     else if (beginsWith(feat, "--dh="))
     {
+      char dist_str[260];
+      DistanceType dist_type;
       long num_bins, num_samples;
       double max_distance;
       double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--dh=%ld,%ld,%lf,%lf", &num_bins, &num_samples, &max_distance, &reduction_ratio);
-      if (num_params < 1)
+      long num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
+                               dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
+      if (num_params < 2)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
         return -1;
       }
-      else if (num_params < 4)
+
+      if (!dist_type.fromString(dist_str))
+      {
+        THEA_ERROR << "Unknown distance metric: " << dist_str;
+        return -1;
+      }
+
+      if (num_params < 5)
       {
         THEA_WARNING << "Sample reduction ratio not specified for distance histogram, using default value";
         reduction_ratio = -1;
 
-        if (num_params < 3)
+        if (num_params < 4)
         {
           THEA_WARNING << "Distance limit for not specified for distance histogram, using default of mesh scale";
           max_distance = -1;
 
-          if (num_params < 2)
+          if (num_params < 3)
           {
             THEA_WARNING << "Number of samples not specified for distance histogram, using default value";
             num_samples = -1;
@@ -232,7 +242,7 @@ main(int argc, char * argv[])
       }
 
       TheaArray<double> values;
-      if (!computeDistanceHistogram(mg, num_bins, num_samples, max_distance, reduction_ratio, values))
+      if (!computeDistanceHistogram(mg, num_bins, num_samples, dist_type, max_distance, reduction_ratio, values))
         return -1;
 
       features.insert(features.end(), values.begin(), values.end());
@@ -343,7 +353,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <outfile> [<feature0> <feature1> ...]";
   THEA_CONSOLE << "    <featureN> must be one of:";
   THEA_CONSOLE << "        --ch=<num-bins>[,<num-samples>[,<reduction-ratio>]]";
-  THEA_CONSOLE << "        --dh=<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
+  THEA_CONSOLE << "        --dh=<metric>,<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --sdf=<num-bins>[,<num-samples>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
@@ -398,16 +408,16 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 }
 
 bool
-computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, double max_distance, double reduction_ratio,
-                         TheaArray<double> & values)
+computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
+                         double reduction_ratio, TheaArray<double> & values)
 {
-  THEA_CONSOLE << "Computing distance histogram";
+  THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histogram";
 
   MeshFeatures::Global::DistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
   values.resize((array_size_t)num_bins);
   Histogram histogram(num_bins, &values[0]);
-  dh.compute(histogram, (Real)max_distance, (Real)reduction_ratio);
+  dh.compute(histogram, dist_type, (Real)max_distance, (Real)reduction_ratio);
 
   histogram.normalize();
 

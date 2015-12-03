@@ -145,6 +145,24 @@ struct THEA_API CompareOp
   THEA_ENUM_CLASS_BODY(CompareOp)
 };
 
+/** Common distance metrics. */
+struct DistanceType
+{
+  /** Supported values. */
+  enum Value
+  {
+    EUCLIDEAN,  ///< Euclidean distance.
+    GEODESIC    ///< Geodesic distance on a surface.
+  };
+
+  THEA_ENUM_CLASS_BODY(DistanceType)
+
+  THEA_ENUM_CLASS_STRINGS_BEGIN(DistanceType)
+    THEA_ENUM_CLASS_STRING(EUCLIDEAN,  "euclidean")
+    THEA_ENUM_CLASS_STRING(GEODESIC,   "geodesic")
+  THEA_ENUM_CLASS_STRINGS_END(DistanceType)
+};
+
 /** %Endianness values (little-endian and big-endian) (enum class). Also has a function to check the machine endianness. */
 struct THEA_API Endianness
 {
