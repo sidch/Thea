@@ -242,8 +242,8 @@ class SampledSurface
      *   diameter will be used.
      */
     SampledSurface(SampleGraph const * sample_graph_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(false), sample_graph(sample_graph_),
-      scale(normalization_scale)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(false),
+      sample_graph(const_cast<SampleGraph *>(sample_graph_)), scale(normalization_scale)
     {
       alwaysAssertM(sample_graph, "SampledSurface: Sample graph cannot be null");
 

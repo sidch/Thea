@@ -44,6 +44,7 @@
 
 #include "Platform.hpp"
 #include "AtomicInt32.hpp"
+#include "CommonEnums.hpp"
 #include "EnumClass.hpp"
 #include "Error.hpp"
 #include "Log.hpp"
@@ -108,85 +109,6 @@ do \
 { \
   enum { assert_static__ = 1/((int)(e)) }; \
 } while (0)
-
-/** Coordinate axis-aligned directions upto 4D (enum class). */
-struct THEA_API AxisAlignedDirection
-{
-  /** Supported values. */
-  enum Value
-  {
-    POS_X = 0,  ///< The positive X direction.
-    NEG_X,      ///< The negative X direction.
-    POS_Y,      ///< The positive Y direction.
-    NEG_Y,      ///< The negative Y direction.
-    POS_Z,      ///< The positive Z direction.
-    NEG_Z,      ///< The negative Z direction.
-    POS_W,      ///< The positive W direction.
-    NEG_W       ///< The negative W direction.
-  };
-
-  THEA_ENUM_CLASS_BODY(AxisAlignedDirection)
-};
-
-/** Comparison operators (enum class). */
-struct THEA_API CompareOp
-{
-  /** Supported values. */
-  enum Value
-  {
-    EQUAL,      ///< Equality.
-    NOT_EQUAL,  ///< Inequality.
-    LESS,       ///< Less-than.
-    LEQUAL,     ///< Less-than-or-equal.
-    GREATER,    ///< Greater-than.
-    GEQUAL      ///< Greater-than-or-equal.
-  };
-
-  THEA_ENUM_CLASS_BODY(CompareOp)
-};
-
-/** Common distance metrics. */
-struct DistanceType
-{
-  /** Supported values. */
-  enum Value
-  {
-    EUCLIDEAN,  ///< Euclidean distance.
-    GEODESIC    ///< Geodesic distance on a surface.
-  };
-
-  THEA_ENUM_CLASS_BODY(DistanceType)
-
-  THEA_ENUM_CLASS_STRINGS_BEGIN(DistanceType)
-    THEA_ENUM_CLASS_STRING(EUCLIDEAN,  "euclidean")
-    THEA_ENUM_CLASS_STRING(GEODESIC,   "geodesic")
-  THEA_ENUM_CLASS_STRINGS_END(DistanceType)
-};
-
-/** %Endianness values (little-endian and big-endian) (enum class). Also has a function to check the machine endianness. */
-struct THEA_API Endianness
-{
-  /** Supported values. */
-  enum Value
-  {
-    BIG,
-    LITTLE
-  };
-
-  THEA_ENUM_CLASS_BODY(Endianness)
-
-  /** Get the machine endian-ness. */
-  static Endianness machine()
-  {
-    union
-    {
-      uint32 i;
-      char c[4];
-    } b = { 0x01020304 };
-
-    return (b.c[0] == 1 ? BIG : LITTLE);
-  }
-};
 
 /** Get the class of an object. */
 template <typename T>
