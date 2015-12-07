@@ -333,7 +333,7 @@ PointCloud::loadFeatures(std::string const & filename_)
     bool status = true;
     if (endsWith(filename_lc, ".arff"))
       status = PointCloudInternal::readFeaturesARFF(filename_, (long)points.size(), features);
-    else if (endsWith(filename_lc, ".features"))
+    else if (endsWith(filename_lc, ".features") || endsWith(filename_lc, ".feat"))
       status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, true);
     else
       status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, false);
@@ -374,7 +374,7 @@ PointCloud::loadFeatures(std::string const & filename_)
         for (array_size_t i = 0; i < features.size(); ++i)
         {
           TheaArray<Real> sorted = features[i];
-          std::sort(features.begin(), features.end());
+          std::sort(sorted.begin(), sorted.end());
 
           array_size_t tenth = (int)(0.1 * sorted.size());
           Real lo = *(sorted.begin() + tenth);

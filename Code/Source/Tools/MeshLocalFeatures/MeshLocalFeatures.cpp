@@ -77,12 +77,14 @@ double meshScale(MG & mg, MeshScaleType mesh_scale_type);
 bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                 TheaArray<double> & values);
 bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                                TheaArray<double> & values);
+                                long num_samples, double nbd_radius, TheaArray<double> & values);
 bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
                                     Matrix<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values);
-bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values);
+bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+                     TheaArray<double> & values);
+bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius,
+                           TheaArray<double> & values);
 bool computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
                        int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 
@@ -256,6 +258,10 @@ main(int argc, char * argv[])
   for (int i = 1; i < argc; ++i)
   {
     string feat = string(argv[i]);
+
+    //=========================================================================================================================
+    // Distance Histogram
+    //=========================================================================================================================
     if (beginsWith(feat, "--dh="))
     {
       char dist_str[260];
@@ -264,7 +270,7 @@ main(int argc, char * argv[])
       double max_distance;
       double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
+      int num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
                                dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
       if (num_params < 2)
       {
@@ -313,36 +319,54 @@ main(int argc, char * argv[])
         features[j].insert(features[j].end(), row_start, row_start + num_bins);
       }
     }
+    //=========================================================================================================================
+    // PCA
+    //=========================================================================================================================
     else if (beginsWith(feat, "--pca"))
     {
       enum { PCA_DEFAULT, PCA_FULL, PCA_RATIO } pca_type = PCA_DEFAULT;
       array_size_t num_pca_features = 3;
-      string type_str = feat.substr(strlen("--pca"));
-      if (type_str == "=full")
+
+      string opts;
+      if (beginsWith(feat, "--pca-full"))
       {
         pca_type = PCA_FULL;
         num_pca_features = 12;
+        opts = feat.substr(strlen("--pca-full"));
       }
-      else if (type_str == "=ratio")
+      else if (beginsWith(feat, "--pca-ratio"))
       {
         pca_type = PCA_RATIO;
         num_pca_features = 2;
+        opts = feat.substr(strlen("--pca-ratio"));
       }
-      else if (!type_str.empty())
+      else
+        opts = feat.substr(strlen("--pca"));
+
+      double nbd_radius;
+      long num_samples;
+      int num_params = sscanf(opts.c_str(), "=%lf,%ld", &nbd_radius, &num_samples);
+      if (num_params < 2)
       {
-        THEA_ERROR << "Unsupported PCA type: " << feat;
-        return -1;
+        THEA_WARNING << "Number of samples not specified for PCA, using default value";
+        num_samples = -1;
+
+        if (num_params < 1)
+        {
+          THEA_WARNING << "Neighborhood radius not specified for PCA, using default value";
+          nbd_radius = -1;
+        }
       }
 
       TheaArray<double> values;
       if (pca_type == PCA_RATIO)
       {
-        if (!computeLocalPCARatios(mg, positions, values))
+        if (!computeLocalPCARatios(mg, positions, num_samples, nbd_radius, values))
           return -1;
       }
       else
       {
-        if (!computeLocalPCA(mg, positions, (pca_type == PCA_FULL), values))
+        if (!computeLocalPCA(mg, positions, num_samples, nbd_radius, (pca_type == PCA_FULL), values))
           return -1;
       }
 
@@ -357,10 +381,28 @@ main(int argc, char * argv[])
           features[j].push_back(values[base + k]);
       }
     }
-    else if (feat == "--projcurv")
+    //=========================================================================================================================
+    // Projected Curvature
+    //=========================================================================================================================
+    else if (beginsWith(feat, "--projcurv"))
     {
+      double nbd_radius;
+      long num_samples;
+      int num_params = sscanf(feat.c_str(), "--projcurv=%lf,%ld", &nbd_radius, &num_samples);
+      if (num_params < 2)
+      {
+        THEA_WARNING << "Number of samples not specified for projected curvature, using default value";
+        num_samples = -1;
+
+        if (num_params < 1)
+        {
+          THEA_WARNING << "Neighborhood radius not specified for projected curvature, using default value";
+          nbd_radius = -1;
+        }
+      }
+
       TheaArray<double> values;
-      if (!computeProjectedCurvatures(mg, positions, smooth_normals, values))
+      if (!computeProjectedCurvatures(mg, positions, smooth_normals, num_samples, nbd_radius, values))
         return -1;
 
       alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures doesn't match number of points");
@@ -368,6 +410,9 @@ main(int argc, char * argv[])
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
+    //=========================================================================================================================
+    // Shape Diameter
+    //=========================================================================================================================
     else if (feat == "--sdf")
     {
       TheaArray<double> values;
@@ -379,12 +424,15 @@ main(int argc, char * argv[])
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
+    //=========================================================================================================================
+    // Spin Image
+    //=========================================================================================================================
     else if (beginsWith(feat, "--spin="))
     {
       int num_radial_bins, num_height_bins;
       long num_samples;
 
-      long num_params = sscanf(feat.c_str(), "--spin=%d,%d,%ld", &num_radial_bins, &num_height_bins, &num_samples);
+      int num_params = sscanf(feat.c_str(), "--spin=%d,%d,%ld", &num_radial_bins, &num_height_bins, &num_samples);
       if (num_params < 2)
       {
         THEA_ERROR << "Couldn't parse spin image parameters";
@@ -504,12 +552,16 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <points> <outfile> [<feature0> <feature1> ...]";
   THEA_CONSOLE << "    <featureN> must be one of:";
-  THEA_CONSOLE << "        --dh=<metric>,<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
-  THEA_CONSOLE << "        --pca[=full] (eigenvalues [+ eigenvectors] in decreasing order)";
-  THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
-  THEA_CONSOLE << "        --projcurv";
+  THEA_CONSOLE << "        --dh=<metric>,<#bins>[,<#samples>[,<max-distance>[,<reduction-ratio>]]]";
+  THEA_CONSOLE << "        --pca[=<nbd-radius>[,<#samples>]]";
+  THEA_CONSOLE << "              (eigenvalues in decreasing order)";
+  THEA_CONSOLE << "        --pca-full[=<nbd-radius>[,<#samples>]]";
+  THEA_CONSOLE << "              (eigenvalues + eigenvectors in decreasing order)";
+  THEA_CONSOLE << "        --pca-ratio[=<nbd-radius>[,<#samples>]]";
+  THEA_CONSOLE << "              (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
+  THEA_CONSOLE << "        --projcurv[=<nbd-radius>[,<#samples>]]";
   THEA_CONSOLE << "        --sdf";
-  THEA_CONSOLE << "        --spin=<num-radial-bins>,<num-height-bins>[,<num-samples>]";
+  THEA_CONSOLE << "        --spin=<#radial-bins>,<#height-bins>[,<#samples>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
@@ -598,15 +650,15 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
 
 bool
 computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                           TheaArray<double> & values)
+                           long num_samples, double nbd_radius, TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing projected curvatures";
 
   values.resize(positions.size());
-  MeshFeatures::Local::Curvature<> projcurv(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
-    values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i]);
+    values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i], (Real)nbd_radius);
 
   THEA_CONSOLE << "  -- done";
 
@@ -642,17 +694,18 @@ computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positio
 }
 
 bool
-computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values)
+computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+                TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA features";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<> pca(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
 
   Vector3 evecs[3];
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
-    Vector3 evals = pca.compute(positions[i], evecs);
+    Vector3 evals = pca.compute(positions[i], evecs, (Real)nbd_radius);
     if (normalize_by_mesh_scale)
       evals /= mesh_scale;
 
@@ -674,16 +727,17 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_fu
 }
 
 bool
-computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values)
+computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius,
+                      TheaArray<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA ratios";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<> pca(mg, -1, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
 
   for (array_size_t i = 0; i < positions.size(); ++i)
   {
-    Vector3 evals = pca.compute(positions[i]);
+    Vector3 evals = pca.compute(positions[i], NULL, (Real)nbd_radius);
     if (evals[0] > 0)
     {
       values.push_back(evals[1] / evals[0]);
