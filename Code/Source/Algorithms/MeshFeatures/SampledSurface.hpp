@@ -156,6 +156,30 @@ class SampledSurface
 
   protected:
     /**
+     * Initializes the object from a set of precomputed samples.
+     *
+     * @param num_samples The number of precomputed samples.
+     * @param positions The positions of the samples.
+     * @param normals The normals of the samples.
+     * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
+     *   diameter will be used.
+     */
+    SampledSurface(long num_samples, Vector3 const * positions, Vector3 const * normals, Real normalization_scale = -1)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
+    {
+      alwaysAssertM(num_samples >= 0,   "SampledSurface: Number of precomputed samples must be non-negative");
+      alwaysAssertM(positions != NULL,  "SampledSurface: Null array of sample positions");
+      alwaysAssertM(normals != NULL,    "SampledSurface: Null array of sample normals");
+
+      samples.resize((array_size_t)num_samples);
+      for (array_size_t i = 0; i < samples.size(); ++i)
+        samples[i] = SurfaceSample(positions[i], normals[i]);
+
+      if (scale <= 0)
+        computeScaleFromSamples();
+    }
+
+    /**
      * Generates a point-sampled surface from a mesh.
      *
      * @param mesh The mesh representing the shape.
@@ -165,8 +189,7 @@ class SampledSurface
      */
     template <typename MeshT>
     SampledSurface(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL),
-      scale(normalization_scale)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh);
       computeSamples(sampler, num_samples, samples);
@@ -189,8 +212,7 @@ class SampledSurface
      */
     template <typename MeshT>
     SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL),
-      scale(normalization_scale)
+    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh_group);
       computeSamples(sampler, num_samples, samples);
