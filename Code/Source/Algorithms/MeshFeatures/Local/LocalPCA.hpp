@@ -63,7 +63,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
+    static long const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -112,14 +112,17 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      * @param position Point at which to compute features.
      * @param eigenvectors If non-null, used to return eigenvectors of samples in the neighborhood, sorted in order of
      *   decreasing eigenvalue. Must be pre-allocated to (at least) 3 elements.
-     * @param nbd_radius The size of the local neighborhood for which the features are computed.
+     * @param nbd_radius The size of the local neighborhood for which the features are computed, specified as a multiple of the
+     *   shape scale. A negative argument selects a default size.
      *
      * @return Eigenvalues of samples in the neighborhood, sorted in decreasing order.
      */
     Vector3 compute(Vector3 const & position, Vector3 * eigenvectors = NULL, Real nbd_radius = -1) const
     {
       if (nbd_radius <= 0)
-        nbd_radius = 0.05f * this->getNormalizationScale();
+        nbd_radius = 0.1f;
+
+      nbd_radius *= this->getNormalizationScale();
 
       Ball3 range(position, nbd_radius);
       func.reset();

@@ -59,7 +59,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
+    static long const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -110,6 +110,10 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      * should be used if the normal is known in advance. The normal is computed from samples, so <b>may be quite inaccurate</b>
      * especially in thin areas.
      *
+     * @param position The position at which to compute curvature.
+     * @param nbd_radius The size of the neighborhood over which to compute curvature, specified as a multiple of the shape
+     *   scale. A negative argument selects a default size.
+     *
      * @note The returned curvature is signed. Positive curvature surfaces curve <em>away</em> from the normal.
      */
     double computeProjectedCurvature(Vector3 const & position, Real nbd_radius = -1) const
@@ -130,12 +134,18 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      * approximation to the actual curvature, obtained by projecting sample points in the neighborhood of the query point onto
      * the normal.
      *
+     * @param position The position at which to compute curvature.
+     * @param nbd_radius The size of the neighborhood over which to compute curvature, specified as a multiple of the shape
+     *   scale. A negative argument selects a default size.
+     *
      * @note The returned curvature is signed. Positive curvature surfaces curve <em>away</em> from the normal.
      */
     double computeProjectedCurvature(Vector3 const & position, Vector3 const & normal, Real nbd_radius = -1) const
     {
       if (nbd_radius <= 0)
-        nbd_radius = 0.05f * this->getNormalizationScale();
+        nbd_radius = 0.1f;
+
+      nbd_radius *= this->getNormalizationScale();
 
       ProjectedCurvatureFunctor func(position, normal);
       Ball3 range(position, nbd_radius);

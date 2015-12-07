@@ -1048,6 +1048,8 @@ struct VertexFeatureVisitor
         else
           vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], feat_vals2[nn_index]));
       }
+      else
+        THEA_CONSOLE << "No nearest neighbor found!";
     }
 
     return false;
