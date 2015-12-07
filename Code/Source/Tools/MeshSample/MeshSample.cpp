@@ -11,7 +11,15 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
-typedef GeneralMesh<> Mesh;
+struct IndexAttribute
+{
+  long index;
+
+  IndexAttribute() : index(-1) {}
+  void draw(RenderSystem &render_system, RenderOptions const &options) const {}
+};
+
+typedef GeneralMesh<IndexAttribute, Graphics::NullAttribute, IndexAttribute> Mesh;
 typedef MeshGroup<Mesh> MG;
 
 int
@@ -23,12 +31,28 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << " -s[F] : Generate approximately uniformly separated samples";
   THEA_CONSOLE << "         with an initial oversampling factor of F";
   THEA_CONSOLE << " -v    : Generate samples only at mesh vertices (ignores -n)";
+  THEA_CONSOLE << " -id   : Write the index of the face (or if -v, the vertex)";
+  THEA_CONSOLE << "         from which each sample was drawn";
   return 0;
 }
 
+struct ReadCallback : public MeshCodec<Mesh>::ReadCallback
+{
+  void vertexAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::VertexHandle vertex)
+  {
+    vertex->attr().index = index;
+  }
+
+  void faceAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::FaceHandle face)
+  {
+    face->attr().index = index;
+  }
+};
+
 struct VertexCollector
 {
-  VertexCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_) : positions(positions_), normals(normals_) {}
+  VertexCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_, TheaArray<long> * indices_)
+  : positions(positions_), normals(normals_), indices(indices_) {}
 
   bool operator()(Mesh const & mesh)
   {
@@ -36,6 +60,7 @@ struct VertexCollector
     {
       positions->push_back(vi->getPosition());
       normals->push_back(vi->getNormal());
+      indices->push_back(vi->attr().index);
     }
 
     return false;
@@ -43,6 +68,7 @@ struct VertexCollector
 
   TheaArray<Vector3> * positions;
   TheaArray<Vector3> * normals;
+  TheaArray<long> * indices;
 };
 
 int
@@ -57,6 +83,7 @@ main(int argc, char * argv[])
   bool uniformly_separated = false;
   float oversampling_factor = -1;
   bool vertex_samples = false;
+  bool output_ids = false;
 
   int curr_pos_arg = 0;
   for (int i = 1; i < argc; ++i)
@@ -66,6 +93,8 @@ main(int argc, char * argv[])
     {
       if (arg == "-v")
         vertex_samples = true;
+      else if (arg == "-id")
+        output_ids = true;
       else if (beginsWith(arg, "-s"))
       {
         uniformly_separated = true;
@@ -111,28 +140,60 @@ main(int argc, char * argv[])
 
   try
   {
+    ReadCallback read_callback;
+    CodecOBJ<Mesh> codec_obj(&read_callback);
+    CodecOFF<Mesh> codec_off(&read_callback);
+    Codec3DS<Mesh> codec_3ds(&read_callback);
+
     MG mg("MeshGroup");
-    mg.load(mesh_path);
+    string path_lc = toLower(mesh_path);
+    if (endsWith(path_lc, ".obj"))
+      mg.load(mesh_path, codec_obj);
+    else if (endsWith(path_lc, ".off") || endsWith(path_lc, ".off.bin"))
+      mg.load(mesh_path, codec_off);
+    else if (endsWith(path_lc, ".3ds"))
+      mg.load(mesh_path, codec_3ds);
+    else
+    {
+      THEA_ERROR << "Unsupported mesh type";
+      return -1;
+    }
 
     TheaArray<Vector3> positions;
     TheaArray<Vector3> normals;
+    TheaArray<long> indices;
 
     if (vertex_samples)
     {
-      VertexCollector collector(&positions, &normals);
+      VertexCollector collector(&positions, &normals, &indices);
       mg.forEachMeshUntil(&collector);
     }
     else
     {
       MeshSampler<Mesh> sampler(mg);
+      TheaArray< MeshSampler<Mesh>::Triangle const * > tris;
+
       if (uniformly_separated)
       {
-        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT,
-                                         oversampling_factor, true);
+        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (output_ids ? &tris : NULL),
+                                         MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
       }
       else
       {
-        sampler.sampleEvenlyByArea(num_samples, positions, &normals, NULL, MeshSampler<Mesh>::CountMode::EXACT, true);
+        sampler.sampleEvenlyByArea(num_samples, positions, &normals, (output_ids ? &tris : NULL),
+                                   MeshSampler<Mesh>::CountMode::EXACT, true);
+      }
+
+      if (output_ids)
+      {
+        alwaysAssertM(tris.size() >= positions.size(), "Triangle ID's not initialized");
+
+        indices.resize(positions.size());
+        for (array_size_t i = 0; i < positions.size(); ++i)
+        {
+          Mesh::Face const * face = tris[i]->getVertices().getMeshFace();
+          indices[i] = face->attr().index;
+        }
       }
     }
 
@@ -158,7 +219,12 @@ main(int argc, char * argv[])
     for (array_size_t i = 0; i < positions.size(); ++i)
     {
       out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
-          << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z() << '\n';
+          << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z();
+
+      if (output_ids)
+        out << ' ' << indices[i];
+
+      out << '\n';
     }
     out.flush();
 
