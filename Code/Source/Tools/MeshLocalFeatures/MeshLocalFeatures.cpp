@@ -3,6 +3,7 @@
 #include "../../Algorithms/MeshFeatures/Local/LocalDistanceHistogram.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalPCA.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/MeshFeatures/Local/SpinImage.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
@@ -82,6 +83,8 @@ bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & po
                                     Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, bool pca_full, TheaArray<double> & values);
 bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<double> & values);
+bool computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
+                       int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
 main(int argc, char * argv[])
@@ -376,6 +379,41 @@ main(int argc, char * argv[])
       for (array_size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
+    else if (beginsWith(feat, "--spin="))
+    {
+      int num_radial_bins, num_height_bins;
+      long num_samples;
+
+      long num_params = sscanf(feat.c_str(), "--spin=%d,%d,%ld", &num_radial_bins, &num_height_bins, &num_samples);
+      if (num_params < 2)
+      {
+        THEA_ERROR << "Couldn't parse spin image parameters";
+        return -1;
+      }
+
+      if (num_params < 3)
+      {
+        THEA_WARNING << "Number of samples not specified for spin image, using default value";
+        num_samples = -1;
+      }
+
+      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a spin image
+      if (!computeSpinImages(mg, positions, num_samples, num_radial_bins, num_height_bins, values))
+      {
+        return -1;
+      }
+
+      alwaysAssertM(values.numRows() == (long)positions.size(), "Number of spin images doesn't match number of points");
+      alwaysAssertM(positions.empty() || values.numColumns() == num_radial_bins * num_height_bins,
+                    "Number of spin image bins doesn't match input parameter");
+
+      long num_features = num_radial_bins * num_height_bins;
+      for (array_size_t j = 0; j < positions.size(); ++j)
+      {
+        double const * row_start = &values((long)j, 0);
+        features[j].insert(features[j].end(), row_start, row_start + num_features);
+      }
+    }
     else
     {
       if (!feat.empty())
@@ -471,6 +509,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --pca=ratio (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
   THEA_CONSOLE << "        --projcurv";
   THEA_CONSOLE << "        --sdf";
+  THEA_CONSOLE << "        --spin=<num-radial-bins>,<num-height-bins>[,<num-samples>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
@@ -655,6 +694,32 @@ computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, TheaA
       values.push_back(0);
       values.push_back(0);
     }
+  }
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
+                  int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+{
+  THEA_CONSOLE << "Computing spin images";
+
+  long num_features = num_radial_bins * num_height_bins;
+  values.resize((long)positions.size(), num_features);
+
+  MeshFeatures::Local::SpinImage<> spin_image(mg, num_samples, (Real)mesh_scale);
+
+  Matrix<double> f;
+  for (array_size_t i = 0; i < positions.size(); ++i)
+  {
+    spin_image.compute(positions[i], num_radial_bins, num_height_bins, f);
+    int j = 0;
+    for (int r = 0; r < num_radial_bins; ++r)
+      for (int h = 0; h < num_height_bins; ++h, ++j)
+        values((long)i, j) = f(r, h);
   }
 
   THEA_CONSOLE << "  -- done";
