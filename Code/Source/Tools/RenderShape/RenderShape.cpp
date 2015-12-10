@@ -56,11 +56,12 @@ enum PointUsage
 RenderSystem * render_system = NULL;
 TheaArray<string> model_paths;
 TheaArray<Matrix4> transforms;
-Real zoom = 1.0f;
+float zoom = 1.0f;
 string out_path;
 int out_width, out_height;
 Vector3 view_dir(-1, -1, -1);
 Vector3 view_up(0, 1, 0);
+float point_size = 1.0f;
 bool color_by_id = false;
 ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
@@ -154,7 +155,7 @@ main(int argc, char * argv[])
             return -1;
 
           ColorRGBA overlay_color = getPaletteColor((long)i - 1);
-          overlay_color.a() = (model.is_point_cloud ? 1.0f : 0.5f);
+          overlay_color.a() = (!color_by_id && !model.is_point_cloud ? 0.5f : 1.0f);
 
           render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
 
@@ -211,6 +212,7 @@ usage()
   THEA_CONSOLE << "  -v <viewing-dir>      (comma-separated 3-vector, or string of 3 chars,";
   THEA_CONSOLE << "                         one for each coordinate, each one of +, - or 0)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
+  THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
@@ -484,6 +486,22 @@ parseArgs(int argc, char * argv[])
           argv++; argc--; break;
         }
 
+        case 's':
+        {
+          if (argc < 1) { THEA_ERROR << "-s: Point size not specified"; return false; }
+          if (sscanf(*argv, " %f", &point_size) != 1)
+          {
+            THEA_ERROR << "Could not parse point size '" << *argv << '\'';
+            return false;
+          }
+          if (zoom <= 0)
+          {
+            THEA_ERROR << "Invalid point size " << point_size;
+            return false;
+          }
+          argv++; argc--; break;
+        }
+
         case 'c':
         {
           if (argc < 1) { THEA_ERROR << "-c: Mesh color not specified"; return false; }
@@ -648,7 +666,7 @@ indexToColor(uint32 index, bool is_point)
   ColorRGBA8 color((uint8)((index      ) & 0xFF),
                    (uint8)((index >>  8) & 0xFF),
                    (uint8)((index >> 16) & 0xFF),
-                   1);
+                   255);
 
   if (is_point)
   {
@@ -1100,7 +1118,7 @@ Model::render(ColorRGBA const & color)
 
     render_system->setShader(point_shader);
 
-    render_system->setPointSize(antialiasing_level);
+    render_system->setPointSize(point_size * antialiasing_level);
     render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
 
       for (array_size_t i = 0; i < points.size(); ++i)
