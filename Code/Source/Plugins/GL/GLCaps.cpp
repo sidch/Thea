@@ -396,7 +396,7 @@ GLCaps::isHeadless()
 void
 GLCaps::loadExtensions()
 {
-  alwaysAssertM(glGetString(GL_RENDERER) != NULL, "Error initializing Open GL, please check your GL installation");
+  alwaysAssertM(glGetString(GL_RENDERER) != NULL, "Error initializing OpenGL, please check your GL installation");
 
   if (_loadedExtensions)
     return;

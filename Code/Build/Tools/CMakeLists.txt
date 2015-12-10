@@ -65,7 +65,30 @@ ENDIF()
 FIND_PACKAGE(Boost COMPONENTS program_options thread REQUIRED)
 
 # Dependency: OpenGL
-FIND_PACKAGE(OpenGL)
+IF(THEA_GL_OSMESA)
+  FIND_PACKAGE(OSMesa)
+
+  IF(OSMesa_FOUND)
+    SET(OPENGL_FOUND TRUE)
+  ENDIF()
+
+  IF(OSMesa_GLU_FOUND)
+    SET(OPENGL_GLU_FOUND TRUE)
+  ENDIF()
+
+  # Replace GL libraries with OSMesa ones, if available
+  IF(OSMesa_FOUND)
+    SET(OPENGL_INCLUDE_DIRS ${OSMesa_INCLUDE_DIRS} ${OSMesa_GLU_INCLUDE_DIRS})
+    SET(OPENGL_CFLAGS ${OSMesa_CFLAGS} ${OSMesa_GLU_CFLAGS})
+    SET(OPENGL_LIBRARIES ${OSMesa_GLU_LIBRARIES} ${OSMesa_LIBRARIES})
+    SET(OPENGL_LIBRARY_DIRS ${OSMesa_LIBRARY_DIRS} ${OSMesa_GLU_LIBRARY_DIRS})
+    SET(OPENGL_LDFLAGS ${OSMesa_LDFLAGS} ${OSMesa_GLU_LDFLAGS})
+  ENDIF()
+
+  ADD_DEFINITIONS(-DTHEA_GL_OSMESA=1)
+ELSE()
+  FIND_PACKAGE(OpenGL)
+ENDIF()
 
 # Dependency: Qt4
 FIND_PACKAGE(Qt4)
@@ -105,12 +128,14 @@ ENDIF()
 INCLUDE_DIRECTORIES(BEFORE
                     ${CMAKE_CURRENT_BINARY_DIR}  # QT4_WRAP_UI generates ui_*.h files here
                     ${SourceRoot}
+                    ${OPENGL_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS})
 
 # Link directories
-LINK_DIRECTORIES(${OutputRoot}/lib)
+LINK_DIRECTORIES(${OutputRoot}/lib
+                 ${OPENGL_LIBRARY_DIRS})
 
 # List of all tools
 SET(TheaAllTools )
