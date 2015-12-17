@@ -51,6 +51,7 @@
 #include "RayIntersectionTester.hpp"
 #include "RayQueryStructureN.hpp"
 #include "../BoundedSortedArray.hpp"
+#include "../Noncopyable.hpp"
 #include "../Vector3.hpp"
 #include <boost/type_traits/has_trivial_assign.hpp>
 
@@ -182,7 +183,7 @@ PointTraitsN<SampleGraphInternal::SurfaceSample, 3>::getPosition(SampleGraphInte
  *
  * @note The graph is <b>not created</b> until init() is called.
  */
-class SampleGraph
+class SampleGraph : private Noncopyable
 {
   private:
     /** Dummy surface representation used to disambiguate specialization of init(). */
