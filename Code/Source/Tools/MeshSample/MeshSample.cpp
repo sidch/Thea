@@ -141,9 +141,9 @@ main(int argc, char * argv[])
   try
   {
     ReadCallback read_callback;
-    CodecOBJ<Mesh> codec_obj(&read_callback);
+    CodecOBJ<Mesh> codec_obj(&read_callback, CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true).setIgnoreTexCoords(true));
     CodecOFF<Mesh> codec_off(&read_callback);
-    Codec3DS<Mesh> codec_3ds(&read_callback);
+    Codec3DS<Mesh> codec_3ds(&read_callback, Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true));
 
     MG mg("MeshGroup");
     string path_lc = toLower(mesh_path);
