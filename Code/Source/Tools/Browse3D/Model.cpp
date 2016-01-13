@@ -44,6 +44,7 @@
 #include "MainWindow.hpp"
 #include "Math.hpp"
 #include "Mesh.hpp"
+#include "ModelDisplay.hpp"
 #include "PointCloud.hpp"
 #include "Util.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
@@ -1289,39 +1290,42 @@ drawMesh(Mesh const & mesh, Graphics::RenderSystem & render_system, Graphics::Re
 {
   using namespace Graphics;
 
-  if (app().options().flat)
+  if (app().getMainWindow()->getRenderDisplay()->flatShading())
   {
     Mesh::VertexArray const & vertices = mesh.getVertices();
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
 
-    render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
-      for (array_size_t i = 0; i < tris.size(); i += 3)
-      {
-        Vector3 v0 = vertices[tris[i    ]];
-        Vector3 v1 = vertices[tris[i + 1]];
-        Vector3 v2 = vertices[tris[i + 2]];
-        render_system.sendNormal(((v1 - v0).cross(v2 - v0)).fastUnit());
-        render_system.sendVertex(v0);
-        render_system.sendVertex(v1);
-        render_system.sendVertex(v2);
-      }
-    render_system.endPrimitive();
+    if (options.drawFaces())
+    {
+      render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
+        for (array_size_t i = 0; i < tris.size(); i += 3)
+        {
+          Vector3 v0 = vertices[tris[i    ]];
+          Vector3 v1 = vertices[tris[i + 1]];
+          Vector3 v2 = vertices[tris[i + 2]];
+          render_system.sendNormal(((v1 - v0).cross(v2 - v0)).fastUnit());
+          render_system.sendVertex(v0);
+          render_system.sendVertex(v1);
+          render_system.sendVertex(v2);
+        }
+      render_system.endPrimitive();
 
-    render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
-      for (array_size_t i = 0; i < quads.size(); i += 4)
-      {
-        Vector3 v0 = vertices[quads[i    ]];
-        Vector3 v1 = vertices[quads[i + 1]];
-        Vector3 v2 = vertices[quads[i + 2]];
-        Vector3 v3 = vertices[quads[i + 3]];
-        render_system.sendNormal(((v1 - v0).cross(v3 - v0)).fastUnit());
-        render_system.sendVertex(v0);
-        render_system.sendVertex(v1);
-        render_system.sendVertex(v2);
-        render_system.sendVertex(v3);
-      }
-    render_system.endPrimitive();
+      render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
+        for (array_size_t i = 0; i < quads.size(); i += 4)
+        {
+          Vector3 v0 = vertices[quads[i    ]];
+          Vector3 v1 = vertices[quads[i + 1]];
+          Vector3 v2 = vertices[quads[i + 2]];
+          Vector3 v3 = vertices[quads[i + 3]];
+          render_system.sendNormal(((v1 - v0).cross(v3 - v0)).fastUnit());
+          render_system.sendVertex(v0);
+          render_system.sendVertex(v1);
+          render_system.sendVertex(v2);
+          render_system.sendVertex(v3);
+        }
+      render_system.endPrimitive();
+    }
 
     if (options.drawEdges())
     {

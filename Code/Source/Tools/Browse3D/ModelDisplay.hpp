@@ -122,6 +122,9 @@ class ModelDisplay : public QGLWidget
     /** Project a 3D point to the viewing plane. The (roughly) inverse operation is computePickRay(). */
     QPointF project(Vector3 const & p) const;
 
+    /** Check if flat shading is on/off. */
+    bool flatShading() const { return flat_shading; }
+
   public slots:
     /** Adjust the view to fit the current model. */
     void fitViewToModel();
@@ -140,6 +143,9 @@ class ModelDisplay : public QGLWidget
 
     /** Set two-sided lighting on/off. */
     void setTwoSided(bool value);
+
+    /** Set flat shading on/off. */
+    void setFlatShading(bool value);
 
     /** Save a screenshot to a file. If the path is null, a default path is generated. */
     void saveScreenshot(QString path = "");
@@ -210,6 +216,7 @@ class ModelDisplay : public QGLWidget
 
     Camera camera;
     Vector3 camera_look_at;
+    bool flat_shading;
     RenderOptions render_opts;
 
     Mode mode;

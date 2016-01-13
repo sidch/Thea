@@ -67,6 +67,7 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
+  flat_shading(false),
   render_opts(RenderOptions::defaults()),
   mode(Mode::DEFAULT),
   view_edit_mode(ViewEditMode::DEFAULT),
@@ -216,6 +217,18 @@ ModelDisplay::setTwoSided(bool value)
     update();
 
     qDebug() << "Two-sided lighting =" << value;
+  }
+}
+
+void
+ModelDisplay::setFlatShading(bool value)
+{
+  if (flat_shading != value)
+  {
+    flat_shading = value;
+    update();
+
+    qDebug() << "Flat shading =" << value;
   }
 }
 

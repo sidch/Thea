@@ -183,6 +183,7 @@
      <addaction name="actionViewShadedWireframe"/>
      <addaction name="separator"/>
      <addaction name="actionViewTwoSidedLighting"/>
+     <addaction name="actionViewFlatShading"/>
     </widget>
     <addaction name="actionViewFitViewToModel"/>
     <addaction name="menuRendering"/>
@@ -373,6 +374,17 @@
    </property>
    <property name="toolTip">
     <string>Turn two-sided lighting on/off</string>
+   </property>
+  </action>
+  <action name="actionViewFlatShading">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Flat Shading</string>
+   </property>
+   <property name="toolTip">
+    <string>Turn flat shading on/off</string>
    </property>
   </action>
   <action name="actionGoPreviousFeatures">

@@ -127,6 +127,7 @@ MainWindow::init()
   connect(ui->actionViewShaded, SIGNAL(triggered(bool)), model_display, SLOT(renderShaded()));
   connect(ui->actionViewShadedWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderShadedWireframe()));
   connect(ui->actionViewTwoSidedLighting, SIGNAL(toggled(bool)), model_display, SLOT(setTwoSided(bool)));
+  connect(ui->actionViewFlatShading, SIGNAL(toggled(bool)), model_display, SLOT(setFlatShading(bool)));
 
   connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
   connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
@@ -158,6 +159,9 @@ MainWindow::init()
 
   ui->actionViewTwoSidedLighting->setChecked(app().options().two_sided);
   model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
+
+  ui->actionViewFlatShading->setChecked(app().options().flat);
+  model_display->setFlatShading(ui->actionViewFlatShading->isChecked());
 
   setPickSegments(false);
   setPickPoints(false);
