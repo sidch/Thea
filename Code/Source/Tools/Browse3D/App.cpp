@@ -89,6 +89,7 @@ App::optsToString() const
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
+      << "\n  flat = " << opts.flat
       << "\n  accentuate-features = " << opts.accentuate_features
       << "\n  color-cube-features = " << opts.color_cube_features
       << "\n  show-graph = " << opts.show_graph
@@ -216,6 +217,7 @@ App::parseOptions(int argc, char * argv[])
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
+          ("flat",                 po::value<bool>(&opts.flat)->default_value(true), "Flat shade all meshes?")
           ("fancy-points",         "Draw points as shaded spheres?")
           ("fancy-colors,c",       "Color points by a function of position?")
           ("point-scale,s",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")

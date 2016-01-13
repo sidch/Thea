@@ -88,6 +88,7 @@ class App : public QObject
       bool bg_plain;                                   ///< Draw the background in a single plain color?
       ColorRGB bg_color;                               ///< Background color.
       bool two_sided;                                  ///< Use two-sided lighting?
+      bool flat;                                       ///< Flat-shade all meshes?
       bool fancy_points;                               ///< Draw points as shaded spheres?
       bool fancy_colors;                               ///< Color points by a function of position?
       Real point_scale;                                ///< Scale point sizes by this factor.

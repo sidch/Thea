@@ -1282,6 +1282,91 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     point_cloud->uploadToGraphicsSystem(render_system);
 }
 
+namespace ModelInternal {
+
+void
+drawMesh(Mesh const & mesh, Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options)
+{
+  using namespace Graphics;
+
+  if (app().options().flat)
+  {
+    Mesh::VertexArray const & vertices = mesh.getVertices();
+    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+    Mesh::IndexArray const & quads = mesh.getQuadIndices();
+
+    render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
+      for (array_size_t i = 0; i < tris.size(); i += 3)
+      {
+        Vector3 v0 = vertices[tris[i    ]];
+        Vector3 v1 = vertices[tris[i + 1]];
+        Vector3 v2 = vertices[tris[i + 2]];
+        render_system.sendNormal(((v1 - v0).cross(v2 - v0)).fastUnit());
+        render_system.sendVertex(v0);
+        render_system.sendVertex(v1);
+        render_system.sendVertex(v2);
+      }
+    render_system.endPrimitive();
+
+    render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
+      for (array_size_t i = 0; i < quads.size(); i += 4)
+      {
+        Vector3 v0 = vertices[quads[i    ]];
+        Vector3 v1 = vertices[quads[i + 1]];
+        Vector3 v2 = vertices[quads[i + 2]];
+        Vector3 v3 = vertices[quads[i + 3]];
+        render_system.sendNormal(((v1 - v0).cross(v3 - v0)).fastUnit());
+        render_system.sendVertex(v0);
+        render_system.sendVertex(v1);
+        render_system.sendVertex(v2);
+        render_system.sendVertex(v3);
+      }
+    render_system.endPrimitive();
+
+    if (options.drawEdges())
+    {
+      render_system.pushShader();
+      render_system.setShader(NULL);
+
+      render_system.pushColorFlags();
+      render_system.setColor(options.edgeColor());
+
+      for (array_size_t i = 0; i < tris.size(); i += 3)
+      {
+        render_system.beginPrimitive(RenderSystem::Primitive::LINE_LOOP);
+          for (array_size_t j = 0; j < 3; ++j)
+            render_system.sendVertex(vertices[tris[i + j]]);
+        render_system.endPrimitive();
+      }
+
+      for (array_size_t i = 0; i < quads.size(); i += 4)
+      {
+        render_system.beginPrimitive(RenderSystem::Primitive::LINE_LOOP);
+          for (array_size_t j = 0; j < 4; ++j)
+            render_system.sendVertex(vertices[quads[i + j]]);
+        render_system.endPrimitive();
+      }
+
+      render_system.popColorFlags();
+      render_system.popShader();
+    }
+  }
+  else
+    mesh.draw(render_system, options);
+}
+
+void
+drawMeshGroup(MeshGroup const & mg, Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options)
+{
+  for (MeshGroup::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
+    drawMesh(**mi, render_system, options);
+
+  for (MeshGroup::GroupConstIterator ci = mg.childrenBegin(); ci != mg.childrenEnd(); ++ci)
+    drawMeshGroup(**ci, render_system, options);
+}
+
+} // namespace ModelInternal
+
 void
 Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
                               Graphics::RenderOptions const & options) const
@@ -1317,7 +1402,7 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
       render_system.setColor(color);
     }
 
-    mesh->draw(render_system, options);
+    ModelInternal::drawMesh(*mesh, render_system, options);
   }
 
   ro.drawEdges() = old_draw_edges;
@@ -1379,7 +1464,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
           drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
         }
         else
-          mesh_group->draw(render_system, options);
+          ModelInternal::drawMeshGroup(*mesh_group, render_system, options);
       }
 
       if (point_cloud) point_cloud->draw(render_system, options);
