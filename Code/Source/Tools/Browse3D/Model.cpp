@@ -1298,6 +1298,12 @@ drawMesh(Mesh const & mesh, Graphics::RenderSystem & render_system, Graphics::Re
 
     if (options.drawFaces())
     {
+      if (options.drawEdges())
+      {
+        render_system.pushShapeFlags();
+        render_system.setPolygonOffset(true, 2);
+      }
+
       render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
         for (array_size_t i = 0; i < tris.size(); i += 3)
         {
@@ -1325,6 +1331,9 @@ drawMesh(Mesh const & mesh, Graphics::RenderSystem & render_system, Graphics::Re
           render_system.sendVertex(v3);
         }
       render_system.endPrimitive();
+
+      if (options.drawEdges())
+        render_system.popShapeFlags();
     }
 
     if (options.drawEdges())
