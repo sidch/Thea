@@ -53,90 +53,90 @@ namespace Graphics {
 class THEA_API RenderOptions
 {
   private:
-    bool       _send_normals;
-    bool       _send_colors;
-    bool       _send_texcoords;
-    bool       _use_vertex_data;
-    bool       _draw_faces;
-    bool       _draw_edges;
-    bool       _override_edge_color;
-    ColorRGBA  _edge_color;
-    Camera     _viewing_camera;
+    bool       send_normals;
+    bool       send_colors;
+    bool       send_texcoords;
+    bool       use_vertex_data;
+    bool       draw_faces;
+    bool       draw_edges;
+    bool       override_edge_color;
+    ColorRGBA  edge_color;
+    Camera     viewing_camera;
 
   public:
     /** Default constructor. */
     RenderOptions()
-    : _send_normals(true),
-      _send_colors(true),
-      _send_texcoords(false),
-      _use_vertex_data(true),
-      _draw_faces(true),
-      _draw_edges(false),
-      _override_edge_color(false),
-      _edge_color(ColorRGB::white()),
-      _viewing_camera()
+    : send_normals(true),
+      send_colors(true),
+      send_texcoords(false),
+      use_vertex_data(true),
+      draw_faces(true),
+      draw_edges(false),
+      override_edge_color(false),
+      edge_color(ColorRGB::white()),
+      viewing_camera()
     {}
 
     /** Get the default set of options. */
     static RenderOptions const & defaults() { static RenderOptions def; return def; }
 
     /** Send colors to the rendersystem? */
-    bool sendColors() const { return _send_colors; }
+    bool sendColors() const { return send_colors; }
 
     /** Send colors to the rendersystem? */
-    bool & sendColors() { return _send_colors; }
+    bool & sendColors() { return send_colors; }
 
     /** Send normals to the rendersystem? */
-    bool sendNormals() const { return _send_normals; }
+    bool sendNormals() const { return send_normals; }
 
     /** Send normals to the rendersystem? */
-    bool & sendNormals() { return _send_normals; }
+    bool & sendNormals() { return send_normals; }
 
     /** Send texture coordinates to the rendersystem? */
-    bool sendTexCoords() const { return _send_texcoords; }
+    bool sendTexCoords() const { return send_texcoords; }
 
     /** Send texture coordinates to the rendersystem? */
-    bool & sendTexCoords() { return _send_texcoords; }
+    bool & sendTexCoords() { return send_texcoords; }
 
     /** Use data at vertices instead of faces? */
-    bool useVertexData() const { return _use_vertex_data; }
+    bool useVertexData() const { return use_vertex_data; }
 
     /** Use data at vertices instead of faces? */
-    bool & useVertexData() { return _use_vertex_data; }
+    bool & useVertexData() { return use_vertex_data; }
 
     /** Draw polygon faces? */
-    bool drawFaces() const { return _draw_faces; }
+    bool drawFaces() const { return draw_faces; }
 
     /** Draw polygon faces? */
-    bool & drawFaces() { return _draw_faces; }
+    bool & drawFaces() { return draw_faces; }
 
     /** Draw polygon edges? */
-    bool drawEdges() const { return _draw_edges; }
+    bool drawEdges() const { return draw_edges; }
 
     /** Draw polygon edges? */
-    bool & drawEdges() { return _draw_edges; }
+    bool & drawEdges() { return draw_edges; }
 
     /** Override edge-specific colors with the value of edgeColor() when drawing edges? */
-    bool overrideEdgeColor() const { return _override_edge_color; }
+    bool overrideEdgeColor() const { return override_edge_color; }
 
     /** Override edge-specific colors with the value of edgeColor() when drawing edges? */
-    bool & overrideEdgeColor() { return _override_edge_color; }
+    bool & overrideEdgeColor() { return override_edge_color; }
 
     /** Color for drawing edges when overrideEdgeColor() is true. */
-    ColorRGBA const & edgeColor() const { return _edge_color; }
+    ColorRGBA const & edgeColor() const { return edge_color; }
 
     /** Color for drawing edges when overrideEdgeColor() is true. */
-    ColorRGBA & edgeColor() { return _edge_color; }
+    ColorRGBA & edgeColor() { return edge_color; }
 
     /** The camera being used for rendering. */
-    Camera const & viewingCamera() const { return _viewing_camera; }
+    Camera const & viewingCamera() const { return viewing_camera; }
 
     /** The camera being used for rendering. */
-    Camera & viewingCamera() { return _viewing_camera; }
+    Camera & viewingCamera() { return viewing_camera; }
 
 }; // class RenderOptions
 
-} // namespace Thea
 } // namespace Graphics
+} // namespace Thea
 
 #endif
