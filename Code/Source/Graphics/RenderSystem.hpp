@@ -64,7 +64,7 @@ namespace Graphics {
  * RenderSystemFactory::createRenderSystem().
  *
  * If no rendering context is available when a rendersystem is constructed, the new rendersystem will be set up for offscreen
- * rendering if possible. In this case, you must explictly create and attach a framebuffer to the rendersystem before you can
+ * rendering if possible. In this case, you must explicitly create and attach a framebuffer to the rendersystem before you can
  * call any drawing functions.
  */
 class THEA_API RenderSystem : public AbstractNamedObject

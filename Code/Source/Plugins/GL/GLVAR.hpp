@@ -86,6 +86,7 @@ class THEA_GL_DLL_LOCAL GLVAR : public VAR
 
     void clear();
 
+    long numElements() const { return num_elems; }
     long getCapacityInBytes() const { return capacity; }
     bool isValid() const { return area && capacity > 0 && generation == area->getCurrentGeneration(); }
 
@@ -100,9 +101,6 @@ class THEA_GL_DLL_LOCAL GLVAR : public VAR
 
     /** The id of the OpenGL target. */
     int getGLTarget() const { return gl_target; }
-
-    /** The number of elements in the VAR. */
-    long numElements() const { return num_elems; }
 
     /** Get the VARArea where this VAR is stored. */
     GLVARArea * getArea() const { return area; }

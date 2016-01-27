@@ -405,7 +405,7 @@ GLShader::setUniform(char const * uniform_name, Texture * value)
 
 #define GLShader__MULTI_FLOAT_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(char const * uniform_name, uniform_type const & value)                                          \
+  GLShader::setUniform(char const * uniform_name, uniform_type const & value)                                                 \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, 1);                                                                \
