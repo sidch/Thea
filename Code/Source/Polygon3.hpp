@@ -67,8 +67,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_Polygon3_hpp__
-#define __Thea_Algorithms_Polygon3_hpp__
+#ifndef __Thea_Polygon3_hpp__
+#define __Thea_Polygon3_hpp__
 
 #include "Common.hpp"
 #include "Array.hpp"

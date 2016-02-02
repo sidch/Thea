@@ -258,14 +258,14 @@ ModelDisplay::paintGL()
   if (!app().options().bg_plain)
     drawBackground(rs);
 
-  drawAxes(rs);
-
   model->draw(rs, render_opts);
 
   long num_overlays = app().getMainWindow()->numOverlays();
   Model const * const * overlays = app().getMainWindow()->getOverlays();
   for (long i = 0; i < num_overlays; ++i)
     overlays[i]->draw(rs, render_opts);
+
+  drawAxes(rs);
 
 #ifdef THEA_OSX
   swapBuffers();  // for some reason this is necessary even if auto buffer swap is on

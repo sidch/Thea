@@ -1,6 +1,6 @@
 //============================================================================
 //
-// This file is part of the Modeling by Assembly project.
+// This file is part of the Thea project.
 //
 // This software is covered by the following BSD license, except for portions
 // derived from other works which are covered by their respective licenses.

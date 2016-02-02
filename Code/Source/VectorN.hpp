@@ -501,7 +501,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
 
 /**
  * Fixed-size N-dimensional vectors, where N is any <b>positive</b> (non-zero) integer and T is a field. Implemented as a
- * wrapper for <code>boost::array</code>, with the same interface plus arithmetic operators.
+ * contiguous array of N values of type T.
  */
 template <long N, typename T>
 class /* THEA_API */ VectorN : public Internal::VectorNBase<N, T>

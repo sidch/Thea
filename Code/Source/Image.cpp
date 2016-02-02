@@ -233,7 +233,7 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
   if (prefix_info)                                                                                                            \
   {                                                                                                                           \
     output.setEndianness(Endianness::LITTLE);                                                                                 \
-    output.writeUInt32(static_cast<uint32>(size_in_bytes));                                                                   \
+    output.writeUInt64(static_cast<uint64>(size_in_bytes));                                                                   \
   }                                                                                                                           \
                                                                                                                               \
   output.writeBytes(size_in_bytes, data);                                                                                     \
@@ -282,7 +282,7 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
 {                                                                                                                             \
   /* Get the size of the image block in bytes */                                                                              \
   input.setEndianness(Endianness::LITTLE);                                                                                    \
-  uint32 size = read_prefixed_info ? input.readUInt32() : input.size();                                                       \
+  uint64 size = read_prefixed_info ? input.readUInt64() : input.size();                                                       \
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
   /* input stream?)  */                                                                                                       \
@@ -350,12 +350,14 @@ Image::Type::numChannels() const
 {
   switch (value)
   {
+    case UNKNOWN   :  return -1;
+
     case RGB_8U    :
     case RGB_16U   :
     case RGB_32F   :  return 3;
 
-    case RGBA_8U   :  return 4;
-    case RGBA_16U  :  return 4;
+    case RGBA_8U   :
+    case RGBA_16U  :
     case RGBA_32F  :  return 4;
 
     default        :  return 1;
@@ -483,15 +485,15 @@ Image::clear()
 }
 
 void
-Image::resize(Type type_, int width, int height)
+Image::resize(Type type_, int width_, int height_)
 {
-  if (type_ == Type::UNKNOWN || width <= 0 || height <= 0)
+  if (type_ == Type::UNKNOWN || width_ <= 0 || height_ <= 0)
     throw Error("Cannot resize image to unknown type or non-positive size (use clear() function to destroy data)");
 
-  if (type_ == type && width == getWidth() && height == getHeight())
+  if (type_ == type && width_ == getWidth() && height_ == getHeight())
     return;
 
-  fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width, height, ImageInternal::typeToFreeImageBPP(type_));
+  fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width_, height_, ImageInternal::typeToFreeImageBPP(type_));
   if (!isValid())
     throw Error("Could not resize the image to the specified type and dimensions");
 

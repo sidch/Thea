@@ -95,7 +95,7 @@ bool const BinaryInputStream::NO_COPY = false;
 void
 BinaryInputStream::readBool8(int64 n, TheaArray<bool> & out)
 {
-  out.resize((int)n);
+  out.resize((array_size_t)n);
 
   // std::vector optimizes bool in a way that prevents fast reading
   for (int64 i = 0; i < n ; ++i)
@@ -105,7 +105,7 @@ BinaryInputStream::readBool8(int64 n, TheaArray<bool> & out)
 #define THEA_BINARY_INPUT_STREAM_DEFINE_READER(fname, tname) \
   void BinaryInputStream::read##fname(int64 n, TheaArray<tname> & out) \
   { \
-    out.resize(n); \
+    out.resize((array_size_t)n); \
     read##fname(n, &out[0]); \
   }
 

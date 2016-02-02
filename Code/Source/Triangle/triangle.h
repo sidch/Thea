@@ -248,8 +248,8 @@
 /*                                                                           */
 /*****************************************************************************/
 
-#ifndef __Thea_Algorithms_Triangle_triangle_h__
-#define __Thea_Algorithms_Triangle_triangle_h__
+#ifndef __Thea_Triangle_triangle_h__
+#define __Thea_Triangle_triangle_h__
 
 #ifdef __cplusplus
 extern "C" {

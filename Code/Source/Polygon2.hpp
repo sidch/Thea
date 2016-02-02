@@ -38,8 +38,8 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //============================================================================
 
-#ifndef __Thea_Algorithms_Polygon2_hpp__
-#define __Thea_Algorithms_Polygon2_hpp__
+#ifndef __Thea_Polygon2_hpp__
+#define __Thea_Polygon2_hpp__
 
 #include "Common.hpp"
 #include "Array.hpp"

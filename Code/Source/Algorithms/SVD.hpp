@@ -363,7 +363,7 @@ SVD::pseudoInverse(InputMatrixT const & a, OutputMatrixT & result, double tolera
   return SVDPseudoInverseImpl<InputMatrixT, OutputMatrixT>::pseudoInverse(a, result, tolerance);
 }
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

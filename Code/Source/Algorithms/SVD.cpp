@@ -449,5 +449,5 @@ SVD_DEF_SVDCORE(double, double, double)
 
 } // namespace SVDInternal
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
