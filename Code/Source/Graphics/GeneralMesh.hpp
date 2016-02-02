@@ -66,6 +66,7 @@ namespace Graphics {
  * A class for storing meshes with arbitrary topologies. Optionally allows GPU-buffered rendering, which requires the user to
  * manually indicate when mesh contents have changed and need to be resynchronized with the GPU.
  *
+ * @todo Automatically invalidate appropriate GPU buffers on all modifications.
  * @todo Add support for GPU-buffered texture coordinates with 1, 3 or 4 dimensions.
  * @todo Instantiate different types of GPU buffers for different types of colors/texture coordinates.
  */
@@ -1020,7 +1021,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
                         typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
-      vertex->attr().setColor(FromColorRGBA<VertexT>::convert(color));
+      vertex->attr().setColor(color);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */

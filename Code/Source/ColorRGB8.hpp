@@ -64,6 +64,7 @@ namespace Thea {
 
 // Forward declarations
 class ColorRGB;
+class ColorRGBA;
 
 /**
  * A color with three byte-sized channels: red, green and blue, each in [0, 255]. Derived from the G3D library:
@@ -87,6 +88,9 @@ class THEA_API ColorRGB8
 
     /** Construct a color from three components in an array. */
     explicit ColorRGB8(uint8 v[3]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
+
+    /** Initialize from a 32-bit RGBA color. For conversion from a consistent source type. */
+    ColorRGB8(ColorRGBA const & other);
 
     /** Copy constructor. */
     ColorRGB8(ColorRGB8 const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; }

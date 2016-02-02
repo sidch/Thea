@@ -64,6 +64,7 @@ namespace Thea {
 
 // Forward declarations
 class ColorL8;
+class ColorRGBA;
 
 /**
  * Monochrome luminance value in [0, 1], with automatic scaling by 255 when switching between integer (ColorL8) and floating
@@ -86,6 +87,9 @@ class THEA_API ColorL
 
     /** Initialize from an integer color, automatically dividing by 255. */
     ColorL(ColorL8 const & other);
+
+    /** Initialize from a 32-bit RGBA color. For conversion from a consistent source type. */
+    ColorL(ColorRGBA const & other);
 
     /** The value of the color. */
     Real value() const { return val; }

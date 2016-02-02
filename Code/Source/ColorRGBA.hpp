@@ -72,7 +72,7 @@ namespace Thea {
 class ColorRGBA8;
 
 /**
- * A color with three floating-point channels: red, green and blue, each in [0, 1]. Derived from the G3D library:
+ * A color with four floating-point channels: red, green and blue, each in [0, 1]. Derived from the G3D library:
  * http://g3d.sourceforge.net
  */
 class THEA_API ColorRGBA

@@ -52,13 +52,20 @@
 
 #include "ColorL8.hpp"
 #include "ColorL.hpp"
+#include "ColorRGBA.hpp"
 #include "Math.hpp"
 
 namespace Thea {
 
 ColorL8::ColorL8(ColorL const & c)
-: val((uint8)Math::clamp((Real)Math::round(c.value() * 255), (Real)0, (Real)255))
+: val(Math::clamp((uint8)Math::round(c.value() * 255), (uint8)0, (uint8)255))
 {}
+
+ColorL::ColorL(ColorRGBA const & other)
+{
+  Real lum = 0.299f * other.r() + 0.587f * other.g() + 0.114f * other.b();
+  val = Math::clamp((uint8)Math::round(lum * 255), (uint8)0, (uint8)255);
+}
 
 std::string
 ColorL8::toString() const

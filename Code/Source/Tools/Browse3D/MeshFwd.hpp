@@ -47,18 +47,29 @@
 namespace Thea {
 namespace Graphics {
 
+// Forward declarations
+struct NullAttribute;
+
+template <typename VA, typename EA, typename FA, template <typename T> class Alloc> class GeneralMeshVertex;
+template <typename VA, typename EA, typename FA, template <typename T> class Alloc> class GeneralMeshFace;
 template <typename MeshType> class MeshGroup;
-class DisplayMeshVertex;
-class DisplayMeshFace;
 
 } // namespace Graphics
 } // namespace Thea
 
 namespace Browse3D {
 
-class Mesh;                                             ///< Mesh class for display purposes.
-typedef Graphics::DisplayMeshVertex MeshVertex;         ///< Handle to a mesh vertex.
-typedef Graphics::DisplayMeshFace MeshFace;             ///< Handle to a mesh face.
+// Forward declarations
+class VertexAttribute;
+class FaceAttribute;
+class Mesh;
+
+/**< Handle to a mesh vertex. */
+typedef Graphics::GeneralMeshVertex<VertexAttribute, Graphics::NullAttribute, FaceAttribute, std::allocator> MeshVertex;
+
+/**< Handle to a mesh face. */
+typedef Graphics::GeneralMeshFace<VertexAttribute, Graphics::NullAttribute, FaceAttribute, std::allocator> MeshFace;
+
 typedef Graphics::MeshGroup<Mesh> MeshGroup;            ///< A hierarchical group of meshes.
 typedef shared_ptr<Mesh> MeshPtr;                       ///< A shared pointer to a mesh.
 typedef shared_ptr<Mesh const> MeshConstPtr;            ///< A shared pointer to an immutable mesh.

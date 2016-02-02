@@ -76,6 +76,8 @@ namespace Graphics {
  * - E-mail: ryan [at] holmes3d [dot] net
  * - Usage: Use freely. Please cite the website as the source if you use it substantially unchanged. Please leave this
  *   documentation in the code.
+ *
+ * @todo Automatically invalidate appropriate GPU buffers on all modifications.
  */
 template < typename VertexAttribute    =  Graphics::NullAttribute,
            typename HalfedgeAttribute  =  Graphics::NullAttribute,
@@ -293,7 +295,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       next_halfedge_index = 0;
       bounds = AxisAlignedBox3();
 
-      changed_buffers = BufferID::ALL;
+      invalidateGPUBuffers();
     }
 
     /** True if and only if the mesh contains no objects. */
@@ -363,6 +365,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       THEA_CONSOLE << "Added vertex " << vertices.size() - 1 << " at " << vertex->getPosition();
 #endif
 
+      invalidateGPUBuffers();
+
       return vertex;
     }
 
@@ -418,7 +422,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       Vector3 e2 = face_vertices[2]->getPosition() - face_vertices[1]->getPosition();
       Vector3 normal = e2.cross(e1).unit();  // counter-clockwise
 
-      return addFace(num_verts, &face_vertices[0], normal);
+      Face * face = addFace(num_verts, &face_vertices[0], normal);
+
+      invalidateGPUBuffers();
+
+      return face;
     }
 
     /**
@@ -580,6 +588,58 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       return true;
     }
 
+    /**
+     * Check if GPU-buffered rendering is on or off. If it is on, you <b>must manually call</b> invalidateGPUBuffers() every
+     * time the mesh changes, to make sure the GPU buffers are update when the mesh is next rendered.
+     *
+     * @see setGPUBufferedRendering()
+     */
+    bool renderingIsGPUBuffered() const { return buffered_rendering; }
+
+    /**
+     * Turn GPU-buffered rendering on/off. If you enable this function, you <b>must manually call</b> invalidateGPUBuffers()
+     * every time the mesh changes, to make sure the GPU buffers are synchronized when the mesh is next rendered.
+     *
+     * @see renderingIsGPUBuffered()
+     */
+    void setGPUBufferedRendering(bool value)
+    {
+      if (value == buffered_rendering)
+        return;
+
+      buffered_rendering = value;
+      invalidateGPUBuffers();
+    }
+
+    /** Invalidate part or all of the current GPU data for the mesh. */
+    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL) { changed_buffers |= changed_buffers_; }
+
+    /**
+     * Enable/disable drawing the edges of the mesh in GPU-buffered mode. Enabling this function will <b>not</b> draw any edges
+     * unless you turn on the appropriate RenderOptions flag. The edges will be uploaded to the graphics system on the next call
+     * to uploadToGraphicsSystem().
+     *
+     * Wireframe mode is initially disabled to save video memory. This flag is ignored in non-buffered (immediate) mode.
+     *
+     * @see wireframeIsGPUBuffered()
+     */
+    void setGPUBufferedWireframe(bool value)
+    {
+      if (value == buffered_wireframe)
+        return;
+
+      buffered_wireframe = value;
+      invalidateGPUBuffers();
+    }
+
+    /**
+     * Check if wireframe drawing is enabled in GPU-buffered mode. This is initially disabled to save video memory. This flag is
+     * ignored in non-buffered (immediate) mode.
+     *
+     * @see setGPUBufferedWireframe()
+     */
+    bool wireframeIsGPUBuffered() const { return buffered_wireframe; }
+
     void uploadToGraphicsSystem(RenderSystem & render_system);
 
     void draw(RenderSystem & render_system, RenderOptions const & options = RenderOptions::defaults()) const
@@ -605,7 +665,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
                         typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
-      vertex->attr().setColor(FromColorRGBA<VertexT>::convert(color));
+      vertex->attr().setColor(color);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
