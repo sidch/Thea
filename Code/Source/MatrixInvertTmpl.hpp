@@ -64,9 +64,9 @@ namespace Internal {
  */
 template <typename THEA_INVERT_MATRIX_TEMPLATE_TYPE> /* THEA_DLL_LOCAL */
 void
-THEA_INVERT_MATRIX_FN( THEA_INVERT_MATRIX_TYPE & mat, long * col_index, long * row_index, long * pivot )
+THEA_INVERT_MATRIX_FN( THEA_INVERT_MATRIX_TEMPLATE_TYPE & mat, long * col_index, long * row_index, long * pivot )
 {
-  typedef typename THEA_INVERT_MATRIX_TYPE::Value Value;
+  typedef typename THEA_INVERT_MATRIX_TEMPLATE_TYPE::Value Value;
 
   alwaysAssertM(mat.isSquare(), "Can't invert non-square matrices");
   alwaysAssertM(!boost::is_integral<Value>::value, "Can't invert integer matrices");

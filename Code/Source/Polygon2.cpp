@@ -47,7 +47,7 @@
 #  define REAL double
 #endif
 
-#include "Algorithms/Triangle/triangle.h"
+#include "Triangle/triangle.h"
 
 #include <cmath>
 #include <cstring>

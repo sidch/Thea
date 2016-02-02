@@ -959,11 +959,10 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      */
     void setGPUBufferedRendering(bool value)
     {
-      if (value && !buffered_rendering)
-        buffered_rendering = true;
-      else if (!value && buffered_rendering)
-        buffered_rendering = false;
+      if (value == buffered_rendering)
+        return;
 
+      buffered_rendering = value;
       invalidateGPUBuffers();
     }
 
@@ -981,11 +980,10 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      */
     void setGPUBufferedWireframe(bool value)
     {
-      if (value && !buffered_wireframe)
-        buffered_wireframe = true;
-      else if (!value && buffered_wireframe)
-        buffered_wireframe = false;
+      if (value == buffered_wireframe)
+        return;
 
+      buffered_wireframe = value;
       invalidateGPUBuffers();
     }
 

@@ -46,8 +46,8 @@
 #include "AddressableMatrix.hpp"
 #include "MatrixInvert.hpp"
 #include "VectorN.hpp"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace Thea {
 

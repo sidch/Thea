@@ -67,7 +67,7 @@ class /* THEA_API */ HyperplaneN<3, T> : public Internal::HyperplaneNBase<3, T>
       return hyperplane;
     }
 
-    /** Get the coefficients a, b, c, d of the hyperplane equation a * x + b * y + c * z + d = 0. */
+    /** Construct a hyperplane given coefficients a, b, c, d of the plane equation a * x + b * y + c * z + d = 0. */
     static HyperplaneN fromEquation(T const & a, T const & b, T const & c, T const & d)
     {
       HyperplaneN hyperplane;
@@ -91,7 +91,7 @@ class /* THEA_API */ HyperplaneN<3, T> : public Internal::HyperplaneNBase<3, T>
 
     using BaseT::getEquation;
 
-    /** Get the coefficients a, b, c, d of the hyperplane equation a * x + b * y + c * z + d = 0. */
+    /** Get the coefficients a, b, c, d of the plane equation a * x + b * y + c * z + d = 0. */
     void getEquation(T & a, T & b, T & c, T & d) const
     {
       a = this->normal.x();

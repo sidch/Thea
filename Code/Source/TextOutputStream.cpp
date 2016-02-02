@@ -139,6 +139,7 @@ TextOutputStream::_commit(bool flush, bool force)
   if (path == "<memory>")
     return true;
 
+  // Make sure the directory exists
   std::string dir = FilePath::parent(path);
   if (!FileSystem::exists(dir))
     if (!FileSystem::createDirectory(dir))
