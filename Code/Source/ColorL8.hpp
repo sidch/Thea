@@ -63,6 +63,7 @@ namespace Thea {
 
 // Forward declarations
 class ColorL;
+class ColorRGBA;
 
 /**
  * Monochrome color represented as a single byte value in [0, 255], with automatic scaling by 255 when switching between integer
@@ -80,6 +81,9 @@ class THEA_API ColorL8
 
     /** Initializing constructor. */
     explicit ColorL8(uint8 v) : val(v) {}
+
+    /** Initialize from a 32-bit RGBA color. For conversion from a consistent source type. */
+    ColorL8(ColorRGBA const & other);
 
     /** Copy constructor. */
     ColorL8(ColorL8 const & other) : val(other.val) {}

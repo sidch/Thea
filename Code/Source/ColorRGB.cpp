@@ -51,6 +51,7 @@
 
 #include "ColorRGB.hpp"
 #include "ColorRGB8.hpp"
+#include "ColorRGBA.hpp"
 #include "Crypto.hpp"
 
 namespace Thea {
@@ -187,6 +188,11 @@ ColorRGB const & ColorRGB::wheelRandom()
   };
 
   return color_array[Random::common().integer(0, 7)];
+}
+
+ColorRGB::ColorRGB(ColorRGBA const & src)
+{
+  *this = src.rgb();
 }
 
 ColorRGB::ColorRGB(ColorRGB8 const & src)

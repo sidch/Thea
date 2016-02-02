@@ -45,15 +45,57 @@
 #include "Common.hpp"
 #include "MeshFwd.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
-#include "../../Graphics/DisplayMesh.hpp"
+#include "../../Graphics/GeneralMesh.hpp"
+#include "../../Graphics/GraphicsAttributes.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 
 namespace Browse3D {
 
-class Mesh : public Graphics::DisplayMesh
+class VertexAttribute : public Graphics::NormalColorAttribute<Vector3, ColorRGBA>
+{
+  public:
+    VertexAttribute() : Graphics::NormalColorAttribute<Vector3, ColorRGBA>(), index(-1), parent(NULL) {}
+
+    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+    {
+      Graphics::NormalColorAttribute<Vector3, ColorRGBA>::draw(render_system, options);
+    }
+
+    void setIndex(long i) { index = i; }
+    long getIndex() const { return index; }
+
+    void setParent(Mesh * p) { parent = p; }
+    Mesh * getParent() const { return parent; }
+
+  private:
+    long index;
+    Mesh * parent;
+};
+
+class FaceAttribute
+{
+  public:
+    FaceAttribute() : index(-1), parent(NULL) {}
+
+    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const {}
+
+    void setIndex(long i) { index = i; }
+    long getIndex() const { return index; }
+
+    void setParent(Mesh * p) { parent = p; }
+    Mesh * getParent() const { return parent; }
+
+  private:
+    long index;
+    Mesh * parent;
+};
+
+// FIXME: In a huge hack, we make the assumption there is only one set of vertex indices and one set of face indices in the
+// entire program, and declare these as static variables. This avoids having to pass separate structures around.
+class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribute, FaceAttribute>
 {
   private:
-    typedef Graphics::DisplayMesh BaseType;
+    typedef Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribute, FaceAttribute> BaseType;
 
   public:
     THEA_DEF_POINTER_TYPES(Mesh, shared_ptr, weak_ptr)
@@ -63,65 +105,63 @@ class Mesh : public Graphics::DisplayMesh
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
 
-    template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end)
+    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+                       Vector2 const * texcoord = NULL)
     {
-      Face face = BaseType::addFace(vi_begin, vi_end);
+      Vertex * vertex = BaseType::addVertex(point, normal, color, texcoord);
+
+      // Increment regardless of whether the vertex was successfully added or not, since we want the indices to correspond
+      // exactly to the input file
+      long next_index = nextVertexIndex(vertex);
+      if (vertex)
+      {
+        vertex->attr().setIndex(next_index);
+        vertex->attr().setParent(this);
+      }
+
+      return vertex;
+    }
+
+    template <typename VertexInputIterator> Face * addFace(VertexInputIterator vi_begin, VertexInputIterator vi_end)
+    {
+      Face * face = BaseType::addFace(vi_begin, vi_end);
 
       // Increment regardless of whether the face was successfully added or not, since we want the indices to correspond exactly
       // to the input file
       long next_index = nextFaceIndex(face);
-
       if (face)
       {
-        if (face.hasTriangles())
-        {
-          long num_tris = face.numTriangles();
-          for (long i = 0; i < num_tris; ++i)
-            tri_face_indices.push_back(next_index);
-
-          alwaysAssertM((long)tri_face_indices.size() == numTriangles(),
-                        std::string(getName()) + ": Face indices and triangle list out of sync");
-        }
-
-        if (face.hasQuads())
-        {
-          long num_quads = face.numQuads();
-          for (long i = 0; i < num_quads; ++i)
-            quad_face_indices.push_back(next_index);
-
-          alwaysAssertM((long)quad_face_indices.size() == numQuads(),
-                        std::string(getName()) + ": Face indices and quad list out of sync");
-        }
+        face->attr().setIndex(next_index);
+        face->attr().setParent(this);
       }
 
       return face;
     }
 
-    long getTriFaceIndex(long tri) const { return tri_face_indices[(array_size_t)tri]; }
-    long getQuadFaceIndex(long quad) const { return quad_face_indices[(array_size_t)quad]; }
-
-    static long nextFaceIndex(Face const & face, bool reset = false)
+    static void resetVertexIndices()
     {
-      if (reset)
-      {
-        indexToFace().clear();
-        return 0;
-      }
-      else
-      {
-        indexToFace().push_back(face);
-        return (long)indexToFace().size() - 1;
-      }
+      index_to_vertex.clear();
     }
 
-    static Face const & mapIndexToFace(long face)
+    static Vertex * mapIndexToVertex(long index)
     {
-      static Face const INVALID;
+      if (index < 0 || index >= (long)index_to_vertex.size())
+        return NULL;
 
-      if (face < 0 || face >= (long)indexToFace().size())
-        return INVALID;
+      return index_to_vertex[(array_size_t)index];
+    }
 
-      return indexToFace()[(array_size_t)face];
+    static void resetFaceIndices()
+    {
+      index_to_face.clear();
+    }
+
+    static Face * mapIndexToFace(long index)
+    {
+      if (index < 0 || index >= (long)index_to_face.size())
+        return NULL;
+
+      return index_to_face[(array_size_t)index];
     }
 
     void setParent(MeshGroup * p) { parent = p; }
@@ -135,20 +175,27 @@ class Mesh : public Graphics::DisplayMesh
     void invalidateFeatures() { valid_features = false; }
 
   private:
-    static TheaArray<Face> & indexToFace()
+    static long nextVertexIndex(Vertex * vertex)
     {
-      static TheaArray<Face> index_to_face;
-      return index_to_face;
+      index_to_vertex.push_back(vertex);
+      return (long)index_to_vertex.size() - 1;
+    }
+
+    static long nextFaceIndex(Face * face)
+    {
+      index_to_face.push_back(face);
+      return (long)index_to_face.size() - 1;
     }
 
     void updateFeatures() const;
 
-    TheaArray<long> tri_face_indices;
-    TheaArray<long> quad_face_indices;
     MeshGroup * parent;
 
     mutable bool valid_features;
     mutable TheaArray<double> features;
+
+    static TheaArray<Vertex *>  index_to_vertex;  // horrible hack
+    static TheaArray<Face *>    index_to_face;  // horrible hack
 
 }; // class Mesh
 

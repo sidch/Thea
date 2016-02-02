@@ -45,6 +45,9 @@
 
 namespace Browse3D {
 
+TheaArray<Mesh::Vertex *>  Mesh::index_to_vertex;
+TheaArray<Mesh::Face *>    Mesh::index_to_face;
+
 MeshGroup *
 Mesh::getAncestor(long generations) const
 {
@@ -91,18 +94,17 @@ Mesh::updateFeatures() const
   std::fill(features.begin(), features.end(), 0.0);
   valid_features = true;
 
-  VertexArray const & vertices = getVertices();
-  if (vertices.empty())
+  if (numVertices() <= 0)
   {
     THEA_CONSOLE << getName() << ": No vertices, zero feature vector";
     return;
   }
 
-  Vector3 centroid = Algorithms::CentroidN<Vector3, 3>::compute(vertices.begin(), vertices.end());
+  Vector3 centroid = Algorithms::CentroidN<Vertex, 3>::compute(verticesBegin(), verticesEnd());
 
   TheaArray<Real> all_dists;
-  for (array_size_t i = 0; i < vertices.size(); ++i)
-    all_dists.push_back((vertices[i] - centroid).length());
+  for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
+    all_dists.push_back((vi->getPosition() - centroid).length());
 
   Real dmax = *std::max_element(all_dists.begin(), all_dists.end());
   if (dmax <= 1e-20)

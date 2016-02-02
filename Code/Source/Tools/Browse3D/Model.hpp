@@ -61,43 +61,7 @@ namespace Browse3D {
 class PointCloud;
 typedef shared_ptr<PointCloud> PointCloudPtr;
 
-/**
- * An indexed vertex of a mesh suitable for kd-tree storage, saves memory over DisplayMeshVertex and allows forward-declaration
- * of the mesh.
- */
-struct IndexedMeshVertex
-{
-  IndexedMeshVertex() {}
-  IndexedMeshVertex(Mesh * mesh_, long index_, Vector3 const & position_) : mesh(mesh_), index(index_), position(position_) {}
-
-  Mesh * mesh;
-  long index;
-  Vector3 position;
-
-}; // struct IndexedMeshVertex
-
 } // namespace Browse3D
-
-namespace Thea {
-namespace Algorithms {
-
-// Specify that a mesh vertex is a logical 3D point. */
-template <>
-class IsPointN<Browse3D::IndexedMeshVertex, 3>
-{
-  public:
-    static bool const value = true;
-};
-
-// Map a mesh vertex to its 3D position. */
-template <>
-struct PointTraitsN<Browse3D::IndexedMeshVertex, 3>
-{
-  static Vector3 const & getPosition(Browse3D::IndexedMeshVertex const & t) { return t.position; }
-};
-
-} // namespace Algorithms
-} // namespace Thea
 
 namespace Browse3D {
 
@@ -112,7 +76,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
-    typedef Thea::Algorithms::KDTreeN<IndexedMeshVertex, 3> VertexKDTree;  ///< A kd-tree on mesh vertices.
+    typedef Thea::Algorithms::KDTreeN<MeshVertex const *, 3> VertexKDTree;  ///< A kd-tree on mesh vertices.
 
     /** A sample point on the surface. */
     struct Sample
@@ -340,6 +304,9 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Get the filename of the currently loaded features. */
     QString const & getFeaturesFilename() const { return features_filename; }
 
+    /** Check if the model has currently loaded features. */
+    bool hasFeatures() const { return has_features; }
+
     //========================================================================================================================
     // Bounding boxes
     //========================================================================================================================
@@ -436,6 +403,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     PointCloudPtr point_cloud;
     QString filename;
     QString features_filename;
+    bool has_features;
 
     ColorRGBA color;
     AxisAlignedBox3 bounds;

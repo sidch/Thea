@@ -332,41 +332,31 @@ struct NormalColorTexCoordAttribute
 
 }; // class NormalColorTexCoordAttribute
 
-// Dirty template trick to check if the type T has a get...() function that returns a particular attribute type and a similar
-// set...() function that sets the attribute.
+// Dirty SFINAE template trick to check if the type T has get...() and set...() functions
 #define THEA_HAS_GRAPHICS_ATTRIB(name, get_func_name, set_func_name) \
-template <typename T, typename AttribT> \
+template <typename T> \
 class name \
 { \
-  private: \
-    typedef char One; \
-    typedef struct { char a[2]; } Two; \
+  public: \
+    typedef char Yes; \
+    typedef struct { char a[2]; } No; \
 \
-    template < typename U, AttribT (U::*)() const         > struct SFINAE_get {}; \
-    template < typename U, AttribT & (U::*)() const       > struct SFINAE_getRef {}; \
-    template < typename U, AttribT const & (U::*)() const > struct SFINAE_getConstRef {}; \
+    struct GetBaseMixin {  void get_func_name() {}  }; \
+    struct SetBaseMixin {  void set_func_name() {}  }; \
 \
-    template < typename U, void (U::*)(AttribT)         > struct SFINAE_set {}; \
-    template < typename U, void (U::*)(AttribT const &) > struct SFINAE_setConstRef {}; \
+    struct GetBase : public T, public GetBaseMixin {}; \
+    struct SetBase : public T, public SetBaseMixin {}; \
+    template <typename S, S>  class Helper {}; \
 \
-    template <typename U> static One testGet(SFINAE_get<U, &U::get_func_name> *); \
-    template <typename U> static Two testGet(...); \
-    template <typename U> static One testGetRef(SFINAE_getRef<U, &U::get_func_name> *); \
-    template <typename U> static Two testGetRef(...); \
-    template <typename U> static One testGetConstRef(SFINAE_getConstRef<U, &U::get_func_name> *); \
-    template <typename U> static Two testGetConstRef(...); \
+    template <typename U> static No testGet(U *, Helper<void (GetBaseMixin::*)(), &U::get_func_name> * = 0); \
+    static Yes testGet(...); \
 \
-    template <typename U> static One testSet(SFINAE_set<U, &U::set_func_name> *); \
-    template <typename U> static Two testSet(...); \
-    template <typename U> static One testSetConstRef(SFINAE_setConstRef<U, &U::set_func_name> *); \
-    template <typename U> static Two testSetConstRef(...); \
+    template <typename U> static No testSet(U *, Helper<void (SetBaseMixin::*)(), &U::set_func_name> * = 0); \
+    static Yes testSet(...); \
 \
   public: \
-    static bool const has_get = (sizeof(testGet<T>(0)) == 1 \
-                              || sizeof(testGetRef<T>(0)) == 1 \
-                              || sizeof(testGetConstRef<T>(0)) == 1); \
-    static bool const has_set = (sizeof(testSet<T>(0)) == 1 \
-                              || sizeof(testSetConstRef<T>(0)) == 1); \
+    static bool const has_get = (sizeof(testGet((GetBase *)(0))) == sizeof(Yes)); \
+    static bool const has_set = (sizeof(testSet((SetBase *)(0))) == sizeof(Yes)); \
     static bool const value = has_get && has_set; \
 };
 
@@ -375,44 +365,18 @@ THEA_HAS_GRAPHICS_ATTRIB(HasTexCoordAttrib, getTexCoord, setTexCoord)
 
 #undef THEA_HAS_GRAPHICS_ATTRIB
 
-// Short-hand for calling HasColorAttrib<T::Attribute, ColorT> for all allowed color types.
+// Short-hand for calling HasColorAttrib<T::Attribute>
 template <typename T>
 struct HasColor
 {
-  static bool const value = HasColorAttrib<typename T::Attribute, ColorRGBA>::value
-                         || HasColorAttrib<typename T::Attribute, ColorRGBA8>::value
-                         || HasColorAttrib<typename T::Attribute, ColorRGB>::value
-                         || HasColorAttrib<typename T::Attribute, ColorRGB8>::value;
+  static bool const value = HasColorAttrib<typename T::Attribute>::value;
 };
 
-// Convert from a ColorRGBA to the attribute color type
-template <class T, typename Enable = void> struct FromColorRGBA {};
-
-template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGBA> >::type>
-{
-  static ColorRGBA const & convert(ColorRGBA const & color) { return color; }
-};
-
-template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGBA8> >::type>
-{
-  static ColorRGBA8 convert(ColorRGBA const & color) { return ColorRGBA8(color); }
-};
-
-template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGB> >::type>
-{
-  static ColorRGB convert(ColorRGBA const & color) { return color.rgb(); }
-};
-
-template <class T> struct FromColorRGBA<T, typename boost::enable_if< HasColorAttrib<typename T::Attribute, ColorRGB8> >::type>
-{
-  static ColorRGB8 convert(ColorRGBA const & color) { return ColorRGB8(color.rgb()); }
-};
-
-// Short-hand for calling HasTexCoordAttrib<T::Attribute, TexCoordT> for all allowed texture coordinate types.
+// Short-hand for calling HasTexCoordAttrib<T::Attribute>
 template <typename T>
 struct HasTexCoord
 {
-  static bool const value = HasTexCoordAttrib<typename T::Attribute, Vector2>::value;
+  static bool const value = HasTexCoordAttrib<typename T::Attribute>::value;
 };
 
 } // namespace Graphics

@@ -77,18 +77,18 @@ getWorkingDir()
 }
 
 bool
-averageNormals(Mesh & mesh)
+enableGPURendering(Mesh & mesh)
 {
-  if (!mesh.hasNormals())
-    mesh.computeAveragedVertexNormals();
-
+  mesh.setGPUBufferedRendering(true);
+  mesh.setGPUBufferedWireframe(true);
   return false;
 }
 
 bool
-enableWireframe(Mesh & mesh)
+disableGPURendering(Mesh & mesh)
 {
-  mesh.setWireframeEnabled(true);
+  mesh.setGPUBufferedRendering(false);
+  mesh.setGPUBufferedWireframe(false);
   return false;
 }
 
@@ -108,7 +108,8 @@ static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 } // namespace ModelInternal
 
 Model::Model(QString const & initial_mesh)
-: color(ModelInternal::DEFAULT_COLOR),
+: has_features(false),
+  color(ModelInternal::DEFAULT_COLOR),
   valid_pick(false),
   selected_sample(-1),
   segment_depth_promotion(0),
@@ -158,6 +159,7 @@ void
 Model::clearMesh()
 {
   if (mesh_group) mesh_group->clear();
+  has_features = false;
   samples.clear();
   segments.clear();
 }
@@ -192,7 +194,9 @@ Model::load(QString const & filename_)
   else
   {
     MeshGroupPtr new_mesh_group(new MeshGroup("Mesh Group"));
-    Mesh::nextFaceIndex(Mesh::Face(), true);  // reset counting
+
+    Mesh::resetVertexIndices();  // reset counting
+    Mesh::resetFaceIndices();
 
     static CodecOBJ<Mesh> const obj_codec(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
     try
@@ -206,8 +210,6 @@ Model::load(QString const & filename_)
 
     invalidateAll();
 
-    new_mesh_group->forEachMeshUntil(ModelInternal::averageNormals);
-    new_mesh_group->forEachMeshUntil(ModelInternal::enableWireframe);
     ModelInternal::linkMeshesToParent(new_mesh_group);
 
     mesh_group = new_mesh_group;
@@ -311,18 +313,17 @@ namespace ModelInternal {
 
 struct CollectVerticesFunctor
 {
-  CollectVerticesFunctor(TheaArray<IndexedMeshVertex> * verts_) : verts(verts_) {}
+  CollectVerticesFunctor(TheaArray<MeshVertex *> * verts_) : verts(verts_) {}
 
   bool operator()(Mesh & mesh)
   {
-    Mesh::VertexArray const & mv = mesh.getVertices();
-    for (array_size_t i = 0; i < mv.size(); ++i)
-      verts->push_back(IndexedMeshVertex(&mesh, (long)i, mv[i]));
+    for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+      verts->push_back(&(*vi));
 
     return false;
   }
 
-  TheaArray<IndexedMeshVertex> * verts;
+  TheaArray<MeshVertex *> * verts;
 
 }; // struct CollectVerticesFunctor
 
@@ -335,7 +336,7 @@ Model::updateVertexKDTree() const
 
   vertex_kdtree->clear(false);
 
-  TheaArray<IndexedMeshVertex> verts;
+  TheaArray<MeshVertex *> verts;
   ModelInternal::CollectVerticesFunctor func(&verts);
   mesh_group->forEachMeshUntil(&func);
   vertex_kdtree->init(verts.begin(), verts.end());
@@ -422,10 +423,8 @@ Model::pick(Ray3 const & ray)
   {
     array_size_t index = (array_size_t)isec.getElementIndex();
     KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
-    picked_sample.mesh = triple.getMesh();
-    picked_sample.face_index = (triple.getMeshFaceType() == KDTree::VertexTriple::FaceType::TRIANGLE
-                              ? picked_sample.mesh->getTriFaceIndex(triple.getMeshFaceIndex())
-                              : picked_sample.mesh->getQuadFaceIndex(triple.getMeshFaceIndex()));
+    picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
+    picked_sample.face_index = triple.getMeshFace()->attr().getIndex();
     picked_sample.position = ray.getPoint(isec.getTime());
 
     valid_pick = true;
@@ -500,42 +499,26 @@ Model::addPickedSample(QString const & label, bool snap_to_vertex)
 
     if (snap_to_vertex)
     {
-      Mesh::Face const & face = Mesh::mapIndexToFace(sample.face_index);
+      Mesh::Face const * face = Mesh::mapIndexToFace(sample.face_index);
       if (!face)
       {
         THEA_ERROR << getName() << ": Mesh face with index " << sample.face_index << " not found";
         return false;
       }
 
-      Mesh * mesh = (Mesh *)face.getMesh();
-      Mesh::VertexArray const & verts = mesh->getVertices();
-      Vector3 face_verts[3];
-      if (face.hasTriangles())
+      MeshVertex const * nnv = NULL;
+      Real min_sqdist = -1;
+      for (MeshFace::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
       {
-        Mesh::IndexTriple triple = mesh->getTriangle(face.getFirstTriangle());
-        face_verts[0] = verts[(array_size_t)triple[0]];
-        face_verts[1] = verts[(array_size_t)triple[1]];
-        face_verts[2] = verts[(array_size_t)triple[2]];
-      }
-      else if (face.hasQuads())  // use only the first vertices, so all barycentric coords will be non-negative
-      {
-        Mesh::IndexQuad quad = mesh->getQuad(face.getFirstQuad());
-        face_verts[0] = verts[(array_size_t)quad[0]];
-        face_verts[1] = verts[(array_size_t)quad[1]];
-        face_verts[2] = verts[(array_size_t)quad[2]];
-      }
-      else
-      {
-        THEA_ERROR << getName() << ": Face " << sample.face_index << " has neither triangles nor quads";
-        return false;
+        Real sqdist = ((*fvi)->getPosition() - sample.position).squaredLength();
+        if (!nnv || sqdist < min_sqdist)
+        {
+          min_sqdist = sqdist;
+          nnv = *fvi;
+        }
       }
 
-      int nn = 0;
-      Real min_sqdist = (face_verts[0] - sample.position).squaredLength();
-      Real sqdist = (face_verts[1] - sample.position).squaredLength(); if (sqdist < min_sqdist) { min_sqdist = sqdist; nn = 1; }
-      sqdist      = (face_verts[2] - sample.position).squaredLength(); if (sqdist < min_sqdist) { min_sqdist = sqdist; nn = 2; }
-
-      sample.position = face_verts[nn];
+      sample.position = nnv->getPosition();
     }
 
     samples.push_back(sample);
@@ -590,7 +573,6 @@ Model::loadSamples(QString const & filename_)
     std::string type, label;
     long face_index;
     double bary[3], coords[3];
-    Vector3 face_verts[3];
     Vector3 pos;
 
     samples.resize((array_size_t)n);
@@ -610,35 +592,26 @@ Model::loadSamples(QString const & filename_)
       else
         read_pos = (bool)(iss >> coords[0] >> coords[1] >> coords[2]);
 
-      Mesh::Face const & face = Mesh::mapIndexToFace(face_index);
+      Mesh::Face const * face = Mesh::mapIndexToFace(face_index);
       if (!face)
         throw Error(format("Mesh face with index %ld not found", face_index));
 
-      Mesh * mesh = (Mesh *)face.getMesh();
+      Mesh * mesh = face->attr().getParent();
 
       if (read_pos)
         pos = Vector3((Real)coords[0], (Real)coords[1], (Real)coords[2]);
       else
       {
-        Mesh::VertexArray const & verts = mesh->getVertices();
-        if (face.hasTriangles())
-        {
-          Mesh::IndexTriple triple = mesh->getTriangle(face.getFirstTriangle());
-          face_verts[0] = verts[(array_size_t)triple[0]];
-          face_verts[1] = verts[(array_size_t)triple[1]];
-          face_verts[2] = verts[(array_size_t)triple[2]];
-        }
-        else if (face.hasQuads())
-        {
-          Mesh::IndexQuad quad = mesh->getQuad(face.getFirstQuad());
-          face_verts[0] = verts[(array_size_t)quad[0]];
-          face_verts[1] = verts[(array_size_t)quad[1]];
-          face_verts[2] = verts[(array_size_t)quad[2]];
-        }
-        else
-          throw Error(format("Face %ld has neither triangles nor quads", face_index));
+        if (face->numVertices() < 3)
+          throw Error(format("Face %ld has %d vertices", face->attr().getIndex(), face->numVertices()));
 
-        pos = bary[0] * face_verts[0] + bary[1] * face_verts[1] + bary[2] * face_verts[2];
+        MeshFace::VertexConstIterator v2 = face->verticesBegin();
+        MeshFace::VertexConstIterator v0 = v2; ++v2;
+        MeshFace::VertexConstIterator v1 = v2; ++v2;
+
+        pos = bary[0] * ((*v0)->getPosition())
+            + bary[1] * ((*v1)->getPosition())
+            + bary[2] * ((*v2)->getPosition());
       }
 
       samples[(array_size_t)i] = Sample(mesh, face_index, pos, toQString(type), toQString(label));
@@ -661,47 +634,32 @@ Model::saveSamples(QString const & filename_) const
   out << samples.size() << std::endl;
 
   Real bary[3];
-  array_size_t vx_index, v[3];
 
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
     Sample const & sample = samples[i];
-    Mesh::Face const & face = Mesh::mapIndexToFace(sample.face_index);
+    Mesh::Face const * face = Mesh::mapIndexToFace(sample.face_index);
     if (!face)
     {
       THEA_ERROR << getName() << ": Mesh face with index " << sample.face_index << " not found, aborting saving samples";
       return false;
     }
 
-    if (face.getMesh() != sample.mesh)
+    if (face->attr().getParent() != sample.mesh)
     {
       THEA_ERROR << getName() << ": Face " << sample.face_index << " belongs to wrong mesh";
       return false;
     }
 
-    Mesh const * mesh = (Mesh const *)face.getMesh();
-    if (face.hasTriangles())
-    {
-      vx_index = 3 * (array_size_t)face.getFirstTriangle();
-      v[0] = (array_size_t)mesh->getTriangleIndices()[vx_index    ];
-      v[1] = (array_size_t)mesh->getTriangleIndices()[vx_index + 1];
-      v[2] = (array_size_t)mesh->getTriangleIndices()[vx_index + 2];
-    }
-    else if (face.hasQuads())
-    {
-      vx_index = 4 * (array_size_t)face.getFirstQuad();
-      v[0] = (array_size_t)mesh->getTriangleIndices()[vx_index    ];
-      v[1] = (array_size_t)mesh->getTriangleIndices()[vx_index + 1];
-      v[2] = (array_size_t)mesh->getTriangleIndices()[vx_index + 2];
-    }
-    else
-    {
-      THEA_ERROR << getName() << ": Face " << sample.face_index << " has neither triangles nor quads";
-      return false;
-    }
+    if (face->numVertices() < 3)
+      throw Error(format("Face %ld has %d vertices", face->attr().getIndex(), face->numVertices()));
 
-    Mesh::VertexArray const & verts = mesh->getVertices();
-    getBarycentricCoordinates3(sample.position, verts[v[0]], verts[v[1]], verts[v[2]], bary[0], bary[1], bary[2]);
+    MeshFace::VertexConstIterator v2 = face->verticesBegin();
+    MeshFace::VertexConstIterator v0 = v2; ++v2;
+    MeshFace::VertexConstIterator v1 = v2; ++v2;
+
+    getBarycentricCoordinates3(sample.position, (*v0)->getPosition(), (*v1)->getPosition(), (*v2)->getPosition(),
+                               bary[0], bary[1], bary[2]);
 
     // Sometimes 0 gets written as -0
     if (bary[0] <= 0 && bary[0] >= -1.0e-06) bary[0] = 0;
@@ -784,7 +742,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
   {
     array_size_t index = (array_size_t)isec.getElementIndex();
     KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
-    Mesh * mesh = triple.getMesh();
+    Mesh * mesh = const_cast<Mesh *>(triple.getMesh());
 
     Segment const * existing = getSegment(mesh);
     if (existing)
@@ -945,11 +903,11 @@ Model::loadSegments(QString const & filename_)
       long face_index = -1;
       while (iss >> face_index)
       {
-        Mesh::Face const & face = Mesh::mapIndexToFace(face_index);
+        Mesh::Face const * face = Mesh::mapIndexToFace(face_index);
         if (!face)
           throw Error(format("Mesh face with index %ld not found", face_index));
 
-        Mesh * mesh = (Mesh *)face.getMesh();
+        Mesh * mesh = face->attr().getParent();
         seg.addMesh(mesh);
       }
 
@@ -985,11 +943,7 @@ Model::saveSegments(QString const & filename_) const
       if (!mesh || mesh->numFaces() <= 0)
         continue;
 
-      long face_index = -1;
-      if (mesh->numTriangles() > 0)
-        face_index = mesh->getTriFaceIndex(0);  // the first triangle
-      else
-        face_index = mesh->getQuadFaceIndex(0);  // the first quad
+      long face_index = mesh->facesBegin()->attr().getIndex();  // the first face
 
       if (mj != meshes.begin())
         out << ' ';
@@ -1031,27 +985,26 @@ struct VertexFeatureVisitor
 
   bool operator()(Mesh & mesh)
   {
-    mesh.addColors();
-
-    for (long i = 0; i < mesh.numVertices(); ++i)
+    for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
-      Mesh::IndexedVertex vx = mesh.getIndexedVertex(i);
-      long nn_index = fkdtree->closestElement<Algorithms::MetricL2>(vx.getPosition());
+      long nn_index = fkdtree->closestElement<Algorithms::MetricL2>(vi->getPosition());
       if (nn_index >= 0)
       {
         if (!feat_vals2)
         {
           if (!feat_vals1)
-            vx.setColor(ColorRGB::jetColorMap(0.2 + 0.6 * feat_vals0[nn_index]));
+            vi->attr().setColor(ColorRGB::jetColorMap(0.2 + 0.6 * feat_vals0[nn_index]));
           else
-            vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], 1.0f));
+            vi->attr().setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], 1.0f));
         }
         else
-          vx.setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], feat_vals2[nn_index]));
+          vi->attr().setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], feat_vals2[nn_index]));
       }
       else
         THEA_CONSOLE << "No nearest neighbor found!";
     }
+
+    mesh.invalidateGPUBuffers(Mesh::BufferID::VERTEX_COLOR);
 
     return false;
   }
@@ -1071,15 +1024,21 @@ Model::loadFeatures(QString const & filename_)
 
   features_filename = filename_;
 
-  if (point_cloud && !point_cloud->loadFeatures(toStdString(filename_)))
-    return false;
+  if (point_cloud)
+  {
+    has_features = point_cloud->loadFeatures(toStdString(filename_));
+    return has_features;
+  }
 
   if (!mesh_group)
-    return true;
+  {
+    has_features = true;
+    return has_features;
+  }
 
   TheaArray<Vector3> feat_pts;
   TheaArray< TheaArray<Real> > feat_vals(1);
-  bool status = true;
+  has_features = true;
   try
   {
     std::ifstream in(toStdString(filename_).c_str());
@@ -1193,12 +1152,12 @@ Model::loadFeatures(QString const & filename_)
                                  feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
     mesh_group->forEachMeshUntil(&visitor);
   }
-  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model features from '%s'",
+  THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'",
                              toStdString(filename_).c_str())
 
   emit needsRedraw(this);
 
-  return status;
+  return has_features;
 }
 
 QString
@@ -1283,112 +1242,11 @@ Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     point_cloud->uploadToGraphicsSystem(render_system);
 }
 
-namespace ModelInternal {
-
-void
-drawMesh(Mesh const & mesh, Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options)
-{
-  using namespace Graphics;
-
-  if (app().getMainWindow()->getRenderDisplay()->flatShading())
-  {
-    Mesh::VertexArray const & vertices = mesh.getVertices();
-    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
-    Mesh::IndexArray const & quads = mesh.getQuadIndices();
-
-    if (options.drawFaces())
-    {
-      if (options.drawEdges())
-      {
-        render_system.pushShapeFlags();
-        render_system.setPolygonOffset(true, 2);
-      }
-
-      render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
-        for (array_size_t i = 0; i < tris.size(); i += 3)
-        {
-          Vector3 v0 = vertices[tris[i    ]];
-          Vector3 v1 = vertices[tris[i + 1]];
-          Vector3 v2 = vertices[tris[i + 2]];
-          render_system.sendNormal(((v1 - v0).cross(v2 - v0)).fastUnit());
-          render_system.sendVertex(v0);
-          render_system.sendVertex(v1);
-          render_system.sendVertex(v2);
-        }
-      render_system.endPrimitive();
-
-      render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
-        for (array_size_t i = 0; i < quads.size(); i += 4)
-        {
-          Vector3 v0 = vertices[quads[i    ]];
-          Vector3 v1 = vertices[quads[i + 1]];
-          Vector3 v2 = vertices[quads[i + 2]];
-          Vector3 v3 = vertices[quads[i + 3]];
-          render_system.sendNormal(((v1 - v0).cross(v3 - v0)).fastUnit());
-          render_system.sendVertex(v0);
-          render_system.sendVertex(v1);
-          render_system.sendVertex(v2);
-          render_system.sendVertex(v3);
-        }
-      render_system.endPrimitive();
-
-      if (options.drawEdges())
-        render_system.popShapeFlags();
-    }
-
-    if (options.drawEdges())
-    {
-      render_system.pushShader();
-      render_system.setShader(NULL);
-
-      render_system.pushColorFlags();
-      render_system.setColor(options.edgeColor());
-
-      for (array_size_t i = 0; i < tris.size(); i += 3)
-      {
-        render_system.beginPrimitive(RenderSystem::Primitive::LINE_LOOP);
-          for (array_size_t j = 0; j < 3; ++j)
-            render_system.sendVertex(vertices[tris[i + j]]);
-        render_system.endPrimitive();
-      }
-
-      for (array_size_t i = 0; i < quads.size(); i += 4)
-      {
-        render_system.beginPrimitive(RenderSystem::Primitive::LINE_LOOP);
-          for (array_size_t j = 0; j < 4; ++j)
-            render_system.sendVertex(vertices[quads[i + j]]);
-        render_system.endPrimitive();
-      }
-
-      render_system.popColorFlags();
-      render_system.popShader();
-    }
-  }
-  else
-    mesh.draw(render_system, options);
-}
-
-void
-drawMeshGroup(MeshGroup const & mg, Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options)
-{
-  for (MeshGroup::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
-    drawMesh(**mi, render_system, options);
-
-  for (MeshGroup::GroupConstIterator ci = mg.childrenBegin(); ci != mg.childrenEnd(); ++ci)
-    drawMeshGroup(**ci, render_system, options);
-}
-
-} // namespace ModelInternal
-
 void
 Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
                               Graphics::RenderOptions const & options) const
 {
-  Graphics::RenderOptions & ro = const_cast<Graphics::RenderOptions &>(options);
-
-  bool old_draw_edges = ro.drawEdges();
-  bool old_override_edge_color = ro.overrideEdgeColor();
-  ColorRGBA old_edge_color = ro.edgeColor();
+  Graphics::RenderOptions ro = options;  // make a copy and tweak it
 
   ro.overrideEdgeColor() = true;
 
@@ -1415,15 +1273,11 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
       render_system.setColor(color);
     }
 
-    ModelInternal::drawMesh(*mesh, render_system, options);
+    mesh->draw(render_system, ro);
   }
 
-  ro.drawEdges() = old_draw_edges;
-  ro.overrideEdgeColor() = old_override_edge_color;
-  ro.edgeColor() = old_edge_color;
-
   for (MeshGroup::GroupConstIterator ci = mesh_group->childrenBegin(); ci != mesh_group->childrenEnd(); ++ci)
-    drawSegmentedMeshGroup(*ci, depth + 1, node_index, render_system, options);
+    drawSegmentedMeshGroup(*ci, depth + 1, node_index, render_system, ro);
 }
 
 void
@@ -1477,7 +1331,24 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
           drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
         }
         else
-          ModelInternal::drawMeshGroup(*mesh_group, render_system, options);
+        {
+          Graphics::RenderOptions ro = options;  // make a copy
+
+          if (has_features) ro.sendColors() = true;
+
+          if (app().getMainWindow()->getRenderDisplay()->flatShading())
+          {
+            mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
+            ro.useVertexData() = false;
+          }
+          else
+          {
+            mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+            ro.useVertexData() = true;
+          }
+
+          mesh_group->draw(render_system, ro);
+        }
       }
 
       if (point_cloud) point_cloud->draw(render_system, options);
