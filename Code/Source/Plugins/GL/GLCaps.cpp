@@ -1095,18 +1095,18 @@ registryReadString(std::string const & key, std::string const & value, std::stri
   {
     uint32 dataSize = 0;
     result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, NULL, reinterpret_cast<LPDWORD>(&dataSize));
-    debugAssertM(result == ERROR_SUCCESS, "Couldn't query registry value");
-
-    // increment datasize to allow for non null-terminated strings in registry
-    dataSize += 1;
+    debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 
     if (result == ERROR_SUCCESS)
     {
+      // increment datasize to allow for non null-terminated strings in registry
+      dataSize += 1;
+
       char * tmpStr = static_cast<char *>(std::malloc(dataSize));
-      std::memset(tmpStr, 0, dataSize);
+      std::memset(tmpStr, 0, (size_t)dataSize);
       result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, reinterpret_cast<LPBYTE>(tmpStr),
                                 reinterpret_cast<LPDWORD>(&dataSize));
-      debugAssertM(result == ERROR_SUCCESS, "Couldn't query registry value.");
+      debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 
       if (result == ERROR_SUCCESS)
         data = tmpStr;
