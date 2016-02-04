@@ -1257,20 +1257,21 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      */
     void drawFace(Face const & face, RenderSystem & render_system, RenderOptions const & options) const
     {
-      if (!options.useVertexData())
-      {
-        face.attr().draw(render_system, options);
+      if (!options.useVertexNormals() && options.sendNormals())
         face.drawNormal(render_system, options);
-      }
+
+      if (!options.useVertexData())
+        face.attr().draw(render_system, options);
 
       for (typename Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
       {
         Vertex const & vertex = **vi;
-        if (options.useVertexData())  // vertex attributes (per-vertex normal, color, texcoord etc)
-        {
-          vertex.attr().draw(render_system, options);
+
+        if (options.useVertexNormals() && options.sendNormals())
           vertex.drawNormal(render_system, options);
-        }
+
+        if (options.useVertexData())  // vertex attributes (per-vertex color, texcoord etc)
+          vertex.attr().draw(render_system, options);
 
         vertex.drawPosition(render_system, options);  // finally send the position of the vertex
       }

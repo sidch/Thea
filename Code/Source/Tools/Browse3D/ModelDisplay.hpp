@@ -123,7 +123,7 @@ class ModelDisplay : public QGLWidget
     QPointF project(Vector3 const & p) const;
 
     /** Check if flat shading is on/off. */
-    bool flatShading() const { return flat_shading; }
+    bool flatShading() const { return !render_opts.useVertexNormals(); }
 
   public slots:
     /** Adjust the view to fit the current model. */
@@ -216,7 +216,6 @@ class ModelDisplay : public QGLWidget
 
     Camera camera;
     Vector3 camera_look_at;
-    bool flat_shading;
     RenderOptions render_opts;
 
     Mode mode;

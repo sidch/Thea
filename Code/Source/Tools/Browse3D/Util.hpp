@@ -80,7 +80,7 @@ void drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, V
 int numPaletteColors();
 
 // Get the i-th color in the standard palette.
-ColorRGB const & getPaletteColor(int i);
+ColorRGB const & getPaletteColor(long i);
 
 // Map a label to a color.
 ColorRGB getLabelColor(QString const & label);

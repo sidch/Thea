@@ -109,6 +109,7 @@ static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 Model::Model(QString const & initial_mesh)
 : has_features(false),
+  has_face_labels(false),
   color(ModelInternal::DEFAULT_COLOR),
   valid_pick(false),
   selected_sample(-1),
@@ -160,6 +161,7 @@ Model::clearMesh()
 {
   if (mesh_group) mesh_group->clear();
   has_features = false;
+  has_face_labels = false;
   samples.clear();
   segments.clear();
 }
@@ -224,6 +226,7 @@ Model::load(QString const & filename_)
     loadSamples(getSamplesFilename());
     loadSegments(getSegmentsFilename());
     loadFeatures(getDefaultFeaturesFilename());
+    loadFaceLabels(getDefaultFaceLabelsFilename());
   }
 
   emit filenameChanged(filename);
@@ -1032,7 +1035,7 @@ Model::loadFeatures(QString const & filename_)
 
   if (!mesh_group)
   {
-    has_features = true;
+    has_features = false;
     return has_features;
   }
 
@@ -1160,46 +1163,136 @@ Model::loadFeatures(QString const & filename_)
   return has_features;
 }
 
-QString
-Model::getDefaultFeaturesFilename() const
+namespace ModelInternal {
+
+class FaceLabeler
 {
-  std::string features_path = toStdString(app().options().features);
-  if (FileSystem::fileExists(features_path))
-    return toQString(features_path);
+  public:
+    FaceLabeler(TheaArray<ColorRGBA> const & face_colors_) : face_colors(face_colors_) {}
 
-  static std::string const EXTS[] = { ".arff", ".features" };  // in order of decreasing priority
-  static size_t NUM_EXTS = sizeof(EXTS) / sizeof(std::string);
+    bool operator()(Mesh & mesh) const
+    {
+      for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+      {
+        long index = fi->attr().getIndex();
+        if (index < 0 || index >= (long)face_colors.size())
+          throw Error("Face index out of range of face labels array");
 
-  std::string model_path = toStdString(filename);
-  int iter_begin = FileSystem::directoryExists(features_path) ? 0 : 1;
+        fi->attr().setColor(face_colors[(array_size_t)index]);
+      }
+
+      return false;
+    }
+
+  private:
+    TheaArray<ColorRGBA> const & face_colors;
+};
+
+} // namespace ModelInternal
+
+bool
+Model::loadFaceLabels(QString const & filename_)
+{
+  has_face_labels = false;
+
+  if (!mesh_group)
+    return has_face_labels;
+
+  std::ifstream in(toStdString(filename_).c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not open face labels file: " << filename_;
+    return has_face_labels;
+  }
+
+  TheaArray<ColorRGBA> face_colors;
+  std::string line;
+  while (in)
+  {
+    std::getline(in, line);
+    line = trimWhitespace(line);
+
+    // Check if this is an integer, if so, use as is.
+    char * next;
+    long n = strtol(line.c_str(), &next, 10);
+    if (*next != 0)  // could not parse to end of string, not an integer
+      face_colors.push_back(getLabelColor(toQString(line)));
+    else
+      face_colors.push_back(getPaletteColor(n));
+  }
+
+  try
+  {
+    ModelInternal::FaceLabeler flab(face_colors);
+    mesh_group->forEachMeshUntil(&flab);
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'",
+                             toStdString(filename_).c_str())
+
+  has_face_labels = true;
+  emit needsRedraw(this);
+
+  return has_face_labels;
+}
+
+namespace ModelInternal {
+
+std::string
+getDefaultFilename(std::string model_path, std::string const & query_path, TheaArray<std::string> const & query_exts)
+{
+  if (FileSystem::fileExists(query_path))
+    return query_path;
+
+  int iter_begin = FileSystem::directoryExists(query_path) ? 0 : 1;
 
   for (int i = iter_begin; i < 2; ++i)
   {
-    std::string dir = (i == 0 ? features_path : FilePath::parent(model_path));
+    std::string dir = (i == 0 ? query_path : FilePath::parent(model_path));
 
-    for (size_t j = 0; j < NUM_EXTS; ++j)
+    for (array_size_t j = 0; j < query_exts.size(); ++j)
     {
-      std::string ffn = FilePath::concat(dir, model_path + EXTS[j]);
+      std::string ffn = FilePath::concat(dir, model_path + query_exts[j]);
       if (FileSystem::exists(ffn))
-        return toQString(ffn);
+        return ffn;
     }
 
-    for (size_t j = 0; j < NUM_EXTS; ++j)
+    for (array_size_t j = 0; j < query_exts.size(); ++j)
     {
-      std::string ffn = FilePath::concat(dir, FilePath::completeBaseName(model_path) + EXTS[j]);
+      std::string ffn = FilePath::concat(dir, FilePath::completeBaseName(model_path) + query_exts[j]);
       if (FileSystem::exists(ffn))
-        return toQString(ffn);
+        return ffn;
     }
 
-    for (size_t j = 0; j < NUM_EXTS; ++j)
+    for (array_size_t j = 0; j < query_exts.size(); ++j)
     {
-      std::string ffn = FilePath::concat(dir, FilePath::baseName(model_path) + EXTS[j]);
+      std::string ffn = FilePath::concat(dir, FilePath::baseName(model_path) + query_exts[j]);
       if (FileSystem::exists(ffn))
-        return toQString(ffn);
+        return ffn;
     }
   }
 
   return "";
+}
+
+} // namespace ModelInternal
+
+QString
+Model::getDefaultFeaturesFilename() const
+{
+  TheaArray<std::string> exts;
+  exts.push_back(".arff");
+  exts.push_back(".features");
+
+  return toQString(ModelInternal::getDefaultFilename(toStdString(filename), toStdString(app().options().features), exts));
+}
+
+QString
+Model::getDefaultFaceLabelsFilename() const
+{
+  TheaArray<std::string> exts;
+  exts.push_back(".seg");
+
+  return toQString(ModelInternal::getDefaultFilename(toStdString(filename), toStdString(app().options().face_labels), exts));
 }
 
 AxisAlignedBox3 const &
@@ -1334,18 +1427,21 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         {
           Graphics::RenderOptions ro = options;  // make a copy
 
-          if (has_features) ro.sendColors() = true;
-
-          if (app().getMainWindow()->getRenderDisplay()->flatShading())
+          if (has_features)
           {
-            mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
-            ro.useVertexData() = false;
-          }
-          else
-          {
-            mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+            ro.sendColors() = true;
             ro.useVertexData() = true;
           }
+          else if (has_face_labels)
+          {
+            ro.sendColors() = true;
+            ro.useVertexData() = false;
+          }
+
+          if (ro.useVertexNormals() && ro.useVertexData())
+            mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+          else
+            mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
 
           mesh_group->draw(render_system, ro);
         }

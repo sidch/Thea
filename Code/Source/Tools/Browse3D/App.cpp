@@ -199,6 +199,7 @@ App::parseOptions(int argc, char * argv[])
   std::string s_model;
   std::vector<std::string> s_overlays;
   std::string s_features;
+  std::string s_face_labels;
   std::string s_bg_color;
 
   po::options_description visible("Allowed options");
@@ -212,6 +213,7 @@ App::parseOptions(int argc, char * argv[])
           ("model",                po::value<std::string>(&s_model), "Model to load on startup")
           ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
           ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
+          ("face-labels,l",        po::value<std::string>(&s_face_labels), "Directory or file containing face labels to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("graph,g",              "Show point adjacency graph")
@@ -259,8 +261,8 @@ App::parseOptions(int argc, char * argv[])
 
   if (vm.count("version") > 0)
   {
-    qDebug() << "Browse3D version 1.1";
-    qDebug() << "Siddhartha Chaudhuri/Stanford University/Princeton University, 2013";
+    qDebug() << "Browse3D version 1.2";
+    qDebug() << "Siddhartha Chaudhuri, 2016";
     quit = true;
   }
 
@@ -298,7 +300,8 @@ App::parseOptions(int argc, char * argv[])
     opts.overlay_transforms.push_back(transform);
   }
 
-  if (!s_features.empty()) opts.features = toQString(s_features);
+  if (!s_features.empty())     opts.features = toQString(s_features);
+  if (!s_face_labels.empty())  opts.face_labels = toQString(s_face_labels);
   opts.accentuate_features  =  (vm.count("emph-features") > 0);
   opts.color_cube_features  =  (vm.count("color-cube") > 0);
   opts.show_graph           =  (vm.count("graph") > 0);

@@ -84,6 +84,7 @@ class App : public QObject
       QStringList overlays;                            ///< The initial overlays to load.
       TheaArray<AffineTransform3> overlay_transforms;  ///< The transforms of the overlays.
       QString features;                                ///< Path to directory or specific file containing features to load.
+      QString face_labels;                             ///< Path to directory or specific file containing face labels to load.
 
       bool bg_plain;                                   ///< Draw the background in a single plain color?
       ColorRGB bg_color;                               ///< Background color.
