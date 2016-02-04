@@ -51,14 +51,15 @@
 
 namespace Browse3D {
 
-class VertexAttribute : public Graphics::NormalColorAttribute<Vector3, ColorRGBA>
+class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    VertexAttribute() : Graphics::NormalColorAttribute<Vector3, ColorRGBA>(), index(-1), parent(NULL) {}
+    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), index(-1), parent(NULL) {}
 
     void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
     {
-      Graphics::NormalColorAttribute<Vector3, ColorRGBA>::draw(render_system, options);
+      if (options.sendColors() && options.useVertexData())
+        Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
     }
 
     void setIndex(long i) { index = i; }
@@ -72,12 +73,16 @@ class VertexAttribute : public Graphics::NormalColorAttribute<Vector3, ColorRGBA
     Mesh * parent;
 };
 
-class FaceAttribute
+class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    FaceAttribute() : index(-1), parent(NULL) {}
+    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), index(-1), parent(NULL) {}
 
-    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const {}
+    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+    {
+      if (options.sendColors() && !options.useVertexData())
+        Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
+    }
 
     void setIndex(long i) { index = i; }
     long getIndex() const { return index; }

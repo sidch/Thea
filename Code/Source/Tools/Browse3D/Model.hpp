@@ -293,7 +293,6 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Get the path to the file in which labeled segments are stored. */
     QString getSegmentsFilename() const;
 
-
     //========================================================================================================================
     // Features
     //========================================================================================================================
@@ -306,6 +305,19 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     /** Check if the model has currently loaded features. */
     bool hasFeatures() const { return has_features; }
+
+    //========================================================================================================================
+    // Face labels
+    //========================================================================================================================
+
+    /** Load face labels from a file. */
+    bool loadFaceLabels(QString const & filename_);
+
+    /** Get the filename of the currently loaded face labels. */
+    QString const & getFaceLabelsFilename() const { return face_labels_filename; }
+
+    /** Check if the model has currently loaded face labels. */
+    bool hasFaceLabels() const { return has_face_labels; }
 
     //========================================================================================================================
     // Bounding boxes
@@ -395,6 +407,9 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Get the default path to the file in which features are stored. */
     QString getDefaultFeaturesFilename() const;
 
+    /** Get the default path to the file in which the face labels are stored. */
+    QString getDefaultFaceLabelsFilename() const;
+
     /** Draw the mesh group colored by segment. */
     void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
                                 Graphics::RenderOptions const & options) const;
@@ -402,8 +417,12 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
     QString filename;
+
     QString features_filename;
     bool has_features;
+
+    QString face_labels_filename;
+    bool has_face_labels;
 
     ColorRGBA color;
     AxisAlignedBox3 bounds;

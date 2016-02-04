@@ -1189,22 +1189,23 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      */
     void drawFace(Face const & face, RenderSystem & render_system, RenderOptions const & options) const
     {
-      if (!options.useVertexData())
-      {
-        face.attr().draw(render_system, options);
+      if (!options.useVertexNormals() && options.sendNormals())
         face.drawNormal(render_system, options);
-      }
+
+      if (!options.useVertexData())
+        face.attr().draw(render_system, options);
 
       Halfedge const * first = face.getHalfedge();
       Halfedge const * e = first;
       do
       {
         Vertex const * v = e->getOrigin();
-        if (options.useVertexData())  // vertex attributes (per-vertex normal, color and texcoord)
-        {
-          v->attr().draw(render_system, options);
+
+        if (options.useVertexNormals() && options.sendNormals())
           v->drawNormal(render_system, options);
-        }
+
+        if (options.useVertexData())  // vertex attributes (per-vertex color, texcoord etc)
+          v->attr().draw(render_system, options);
 
         v->drawPosition(render_system, options);  // finally send the position of the vertex
 

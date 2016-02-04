@@ -376,10 +376,16 @@ numPaletteColors()
 }
 
 ColorRGB const &
-getPaletteColor(int i)
+getPaletteColor(long i)
 {
-  alwaysAssertM(i >= 0, "Can't use a negative index to get a palette color");
-  return COLOR_PALETTE[i % numPaletteColors()];
+  long n = numPaletteColors();
+  long index;
+  if (i < 0)
+    index = (n - ((-i) % n)) % n;
+  else
+    index = i % n;
+
+  return COLOR_PALETTE[index];
 }
 
 ColorRGB

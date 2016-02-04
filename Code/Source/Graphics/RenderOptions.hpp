@@ -56,6 +56,7 @@ class THEA_API RenderOptions
     bool       send_normals;
     bool       send_colors;
     bool       send_texcoords;
+    bool       use_vertex_normals;
     bool       use_vertex_data;
     bool       draw_faces;
     bool       draw_edges;
@@ -69,6 +70,7 @@ class THEA_API RenderOptions
     : send_normals(true),
       send_colors(true),
       send_texcoords(false),
+      use_vertex_normals(true),
       use_vertex_data(true),
       draw_faces(true),
       draw_edges(false),
@@ -98,10 +100,16 @@ class THEA_API RenderOptions
     /** Send texture coordinates to the rendersystem? */
     bool & sendTexCoords() { return send_texcoords; }
 
-    /** Use data at vertices instead of faces? */
+    /** Use vertex normals instead of face normals (for smooth shading)? */
+    bool useVertexNormals() const { return use_vertex_normals; }
+
+    /** Use vertex normals instead of face normals (for smooth shading)? */
+    bool & useVertexNormals() { return use_vertex_normals; }
+
+    /** Use data at vertices instead of faces? Does <b>not</b> apply to normals, see useVertexNormals(). */
     bool useVertexData() const { return use_vertex_data; }
 
-    /** Use data at vertices instead of faces? */
+    /** Use data at vertices instead of faces? Does <b>not</b> apply to normals, see useVertexNormals(). */
     bool & useVertexData() { return use_vertex_data; }
 
     /** Draw polygon faces? */

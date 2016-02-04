@@ -67,7 +67,6 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
-  flat_shading(false),
   render_opts(RenderOptions::defaults()),
   mode(Mode::DEFAULT),
   view_edit_mode(ViewEditMode::DEFAULT),
@@ -79,10 +78,11 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
   setFocusPolicy(Qt::StrongFocus);
   setMouseTracking(true);
 
-  render_opts.useVertexData() = true;
   render_opts.sendNormals() = true;
   render_opts.sendColors() = false;
   render_opts.sendTexCoords() = false;
+  render_opts.useVertexNormals() = true;
+  render_opts.useVertexData() = true;
   render_opts.drawEdges() = true;
   render_opts.overrideEdgeColor() = true;
   render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
@@ -223,9 +223,9 @@ ModelDisplay::setTwoSided(bool value)
 void
 ModelDisplay::setFlatShading(bool value)
 {
-  if (flat_shading != value)
+  if (!render_opts.useVertexNormals() != value)
   {
-    flat_shading = value;
+    render_opts.useVertexNormals() = !value;
     update();
 
     qDebug() << "Flat shading =" << value;
