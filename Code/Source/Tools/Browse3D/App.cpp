@@ -60,7 +60,8 @@
 namespace Browse3D {
 
 App::Options::Options()
-: bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), accentuate_features(false), show_graph(false)
+: accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false), bg_plain(false),
+  bg_color(ColorRGB::black()), two_sided(true), flat(false), fancy_points(false), fancy_colors(false)
 {
 }
 
@@ -86,13 +87,15 @@ App::optsToString() const
       << "\n  model = " << opts.model
       << "\n  overlays = { " << opts.overlays.join(", ") << " }"
       << "\n  features = " << opts.features
+      << "\n  face-labels = " << opts.face_labels
+      << "\n  emph-features = " << opts.accentuate_features
+      << "\n  color-cube = " << opts.color_cube_features
+      << "\n  show-normals = " << opts.show_normals
+      << "\n  show-graph = " << opts.show_graph
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
       << "\n  flat = " << opts.flat
-      << "\n  accentuate-features = " << opts.accentuate_features
-      << "\n  color-cube-features = " << opts.color_cube_features
-      << "\n  show-graph = " << opts.show_graph
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
       << "\n  point-scale = " << opts.point_scale
@@ -216,6 +219,7 @@ App::parseOptions(int argc, char * argv[])
           ("face-labels,l",        po::value<std::string>(&s_face_labels), "Directory or file containing face labels to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
+          ("normals,n",            "Draw normals as arrows")
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
@@ -304,6 +308,7 @@ App::parseOptions(int argc, char * argv[])
   if (!s_face_labels.empty())  opts.face_labels = toQString(s_face_labels);
   opts.accentuate_features  =  (vm.count("emph-features") > 0);
   opts.color_cube_features  =  (vm.count("color-cube") > 0);
+  opts.show_normals         =  (vm.count("normals") > 0);
   opts.show_graph           =  (vm.count("graph") > 0);
   opts.fancy_points         =  (vm.count("fancy-points") > 0);
   opts.fancy_colors         =  (vm.count("fancy-colors") > 0);

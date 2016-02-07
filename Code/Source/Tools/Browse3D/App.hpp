@@ -86,6 +86,12 @@ class App : public QObject
       QString features;                                ///< Path to directory or specific file containing features to load.
       QString face_labels;                             ///< Path to directory or specific file containing face labels to load.
 
+      bool accentuate_features;                        ///< Make feature distributions easier to view?
+      bool color_cube_features;                        /**< Map 0-centered 3D feature sets to RGB color-cube, if
+                                                            accentuate_features == true; */
+      bool show_normals;                               ///< Draw arrows for normals?
+      bool show_graph;                                 ///< Show point adjacency graph, if available?
+
       bool bg_plain;                                   ///< Draw the background in a single plain color?
       ColorRGB bg_color;                               ///< Background color.
       bool two_sided;                                  ///< Use two-sided lighting?
@@ -93,11 +99,6 @@ class App : public QObject
       bool fancy_points;                               ///< Draw points as shaded spheres?
       bool fancy_colors;                               ///< Color points by a function of position?
       Real point_scale;                                ///< Scale point sizes by this factor.
-
-      bool accentuate_features;                        ///< Make feature distributions easier to view?
-      bool color_cube_features;                        /**< Map 0-centered 3D feature sets to RGB color-cube, if
-                                                            accentuate_features == true; */
-      bool show_graph;                                 ///< Show point adjacency graph, if available?
 
     }; // struct Options
 

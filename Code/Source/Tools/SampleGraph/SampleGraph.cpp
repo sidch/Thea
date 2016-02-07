@@ -318,10 +318,13 @@ loadSamples(string const & samples_path, TheaArray<Vector3> & positions, TheaArr
 
       positions.push_back(p);
 
-      if (positions.empty() && (line_in >> n[0] >> n[1] >> n[2]))
+      if (positions.size() == 1)
       {
-        has_normals = true;
-        normals.push_back(n);
+        if (line_in >> n[0] >> n[1] >> n[2])
+        {
+          has_normals = true;
+          normals.push_back(n);
+        }
       }
       else if (has_normals)
       {

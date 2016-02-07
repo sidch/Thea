@@ -612,26 +612,32 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
 
   const_cast<PointCloud *>(this)->uploadToGraphicsSystem(render_system);
 
-  if (app().options().fancy_points)
-  {
-    bool has_colors = (!features.empty() || has_normals || app().options().fancy_colors);
-    Real scale = getBounds().getExtent().length();
-    Real point_radius = app().options().point_scale * Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
-    for (array_size_t i = 0; i < points.size(); ++i)
+  render_system.pushShader();
+  render_system.pushTextures();
+  render_system.pushColorFlags();
+
+    render_system.setTexture(0, NULL);
+
+    if (app().options().fancy_points)
     {
-      if (has_colors)
-        render_system.setColor(getColor(i));
+      setPhongShader(render_system);
 
-      drawSphere(render_system, points[i].p, point_radius, 8);
+      bool has_colors = (!features.empty()
+                       || has_normals
+                       || app().options().fancy_colors);
+      Real scale = getBounds().getExtent().length();
+      Real point_radius = app().options().point_scale * Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
+      for (array_size_t i = 0; i < points.size(); ++i)
+      {
+        if (has_colors)
+          render_system.setColor(getColor(i));
+
+        drawSphere(render_system, points[i].p, point_radius, 8);
+      }
     }
-  }
-  else
-  {
-    render_system.pushShader();
-    render_system.pushTextures();
-
+    else
+    {
       render_system.setShader(NULL);
-      render_system.setTexture(0, NULL);
 
       render_system.beginIndexedPrimitives();
 
@@ -646,19 +652,11 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         render_system.popShapeFlags();
 
       render_system.endIndexedPrimitives();
+    }
 
-    render_system.popTextures();
-    render_system.popShader();
-  }
-
-  if (has_graph && app().options().show_graph)
-  {
-    render_system.pushShader();
-    render_system.pushTextures();
-    render_system.pushColorFlags();
-
+    if (has_graph && app().options().show_graph)
+    {
       render_system.setShader(NULL);
-      render_system.setTexture(0, NULL);
       render_system.setColor(ColorRGB(1, 1, 0));
 
       render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
@@ -673,19 +671,10 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         }
 
       render_system.endPrimitive();
-
-    render_system.popColorFlags();
-    render_system.popTextures();
-    render_system.popShader();
-  }
-  else if (has_normals)
-  {
-    render_system.pushShader();
-    render_system.pushTextures();
-    render_system.pushColorFlags();
-
+    }
+    else if (has_normals && app().options().show_normals)
+    {
       render_system.setShader(NULL);
-      render_system.setTexture(0, NULL);
       render_system.setColor(ColorRGB(0, 0, 1));
 
       Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().length() : 1);
@@ -699,11 +688,11 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         }
 
       render_system.endPrimitive();
+    }
 
-    render_system.popColorFlags();
-    render_system.popTextures();
-    render_system.popShader();
-  }
+  render_system.popColorFlags();
+  render_system.popTextures();
+  render_system.popShader();
 }
 
 void
