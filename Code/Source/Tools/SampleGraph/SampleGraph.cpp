@@ -1,11 +1,14 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/SampleGraph.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
+#include "../../Algorithms/SampleGraph.hpp"
+#include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../AffineTransform3.hpp"
 #include "../../Array.hpp"
+#include "../../FilePath.hpp"
+#include "../../Matrix.hpp"
 #include "../../Vector3.hpp"
 #include <boost/algorithm/string/trim.hpp>
 #include <cstdio>
@@ -23,6 +26,7 @@ int max_nbrs = 8;
 long min_samples = 50000;
 bool consistent_normals = false;
 bool reachability = false;
+bool pairwise_distances = false;
 
 enum { LOAD_ERROR = 1, PARSE_ERROR, UNSUPPORTED_FORMAT };
 
@@ -44,6 +48,25 @@ struct MeshTransformer
   }
 
   AffineTransform3 tr;
+};
+
+struct DistanceCallback
+{
+  DistanceCallback(long n) : m(n, n), current_source(-1) { m.fill(-1); }
+
+  bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
+  {
+    if (!vertex)
+      return false;
+
+    long i = vertex->getIndex();
+    m(current_source, i) = m(i, current_source) = distance;
+
+    return false;
+  }
+
+  Matrix<double> m;
+  long current_source;
 };
 
 int
@@ -96,6 +119,10 @@ main(int argc, char * argv[])
       {
         reachability = true;
       }
+      else if (arg == "-d" || arg == "--distances")
+      {
+        pairwise_distances = true;
+      }
       else
       {
         THEA_ERROR << "Unknown parameter: " << arg;
@@ -107,13 +134,15 @@ main(int argc, char * argv[])
   if (curr_opt != 3)
   {
     THEA_CONSOLE << "";
-    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points> <points> <graph-outfile>";
+    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points> <points> <graph-file>";
     THEA_CONSOLE << "";
     THEA_CONSOLE << "Options:";
     THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity graph";
     THEA_CONSOLE << "  --min-samples=N       Minimum number of original plus generated samples";
     THEA_CONSOLE << "  --normals | -n        Run extra tests assuming consistently oriented mesh normals";
     THEA_CONSOLE << "  --reachability | -r   Reachability test for adjacency (requires -n)";
+    THEA_CONSOLE << "  --distances | -d      Output distances b/w all pairs of points as a .dist file.";
+    THEA_CONSOLE << "                        Requires graph to alread exist.";
     THEA_CONSOLE << "";
 
     return -1;
@@ -123,6 +152,45 @@ main(int argc, char * argv[])
   {
     THEA_ERROR << "Reachability test requires consistent normals";
     return -1;
+  }
+
+  //===========================================================================================================================
+  // Load graph if it already exists, compute and write all pairwise distances, and quit
+  //===========================================================================================================================
+
+  if (pairwise_distances)
+  {
+    SampleGraph graph;
+    if (!graph.load(out_path, samples_path))
+    {
+      THEA_CONSOLE << "Could not load graph from file " << out_path;
+      return -1;
+    }
+
+    SampleGraph::SampleArray const & samples = graph.getSamples();
+    DistanceCallback distance_callback((long)samples.size());
+    ShortestPaths<SampleGraph> shortest_paths;
+
+    distance_callback.m(0, 0) = 0;
+    for (array_size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
+    {
+      distance_callback.current_source = (long)i;
+      shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]), &distance_callback);
+    }
+
+    ofstream d_out(FilePath::changeExtension(out_path, "dist"));
+    for (long r = 0; r < distance_callback.m.numRows(); ++r)
+    {
+      for (long c = 0; c < distance_callback.m.numColumns(); ++c)
+      {
+        if (c > 0) d_out << ' ';
+        d_out << distance_callback.m(r, c);
+      }
+
+      d_out << endl;
+    }
+
+    return 0;
   }
 
   //===========================================================================================================================
@@ -268,7 +336,7 @@ main(int argc, char * argv[])
   // Write graph to file
   //===========================================================================================================================
 
-  if (!graph.save(out_path))
+  if (!graph.save(out_path, "", true))
     return -1;
 
   double sum_degrees = 0;

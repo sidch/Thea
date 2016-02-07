@@ -259,6 +259,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     return false;
   }
 
+  TheaArray<SurfaceSample::Neighbor> nbrs((array_size_t)options.max_degree);
   long num_nbrs, nbr_index;
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
@@ -275,8 +276,6 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
       return false;
     }
 
-    samples[i].getNeighbors().setCapacity(options.max_degree);
-
     for (long j = 0; j < num_nbrs; ++j)
     {
       if (!(line_in >> nbr_index) || nbr_index < 0 || nbr_index >= (long)samples.size())
@@ -287,9 +286,40 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
       }
 
       SurfaceSample * nbr_sample = &samples[(array_size_t)nbr_index];
-      Real sep = (samples[i].getPosition() - nbr_sample->getPosition()).length();
-      samples[i].getNeighbors().insert(SurfaceSample::Neighbor(nbr_sample, sep));
+      nbrs[(array_size_t)j] = SurfaceSample::Neighbor(nbr_sample, -1);
     }
+
+    // Check if precomputed separations exist, else compute separations as Euclidean distances
+    Real nbr_sep;
+    if (line_in >> nbr_sep)
+    {
+      for (array_size_t j = 0; j < nbrs.size(); ++j)
+      {
+        if (j > 0)
+        {
+          if (!(line_in >> nbr_sep))
+          {
+            THEA_ERROR << "SampleGraph: Could not read separation of neighbor " << j << " of vertex " << i << " from '"
+                       << graph_path << '\'';
+            return false;
+          }
+        }
+
+        nbrs[j].setSeparation(nbr_sep);
+      }
+    }
+    else
+    {
+      for (array_size_t j = 0; j < nbrs.size(); ++j)
+      {
+        nbr_sep = (samples[i].getPosition() - nbrs[j].getSample()->getPosition()).length();
+        nbrs[j].setSeparation(nbr_sep);
+      }
+    }
+
+    samples[i].getNeighbors().setCapacity(options.max_degree);
+    for (array_size_t j = 0; j < nbrs.size(); ++j)
+      samples[i].getNeighbors().insert(nbrs[j]);
   }
 
   updateAverageSeparation();
@@ -299,7 +329,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
 }
 
 bool
-SampleGraph::save(std::string const & graph_path, std::string const & samples_path) const
+SampleGraph::save(std::string const & graph_path, std::string const & samples_path, bool write_distances) const
 {
   // Save graph
   std::ofstream gout(graph_path.c_str(), std::ios::binary);
@@ -318,6 +348,12 @@ SampleGraph::save(std::string const & graph_path, std::string const & samples_pa
 
     for (int j = 0; j < nbrs.size(); ++j)
       gout << ' ' << nbrs[j].getSample()->getIndex();
+
+    if (write_distances)
+    {
+      for (int j = 0; j < nbrs.size(); ++j)
+        gout << ' ' << nbrs[j].getSeparation();
+    }
 
     gout << '\n';
   }
