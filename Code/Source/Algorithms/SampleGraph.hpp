@@ -464,8 +464,15 @@ class SampleGraph : private Noncopyable
     /** Load the graph and samples from disk files. */
     bool load(std::string const & graph_path, std::string const & samples_path);
 
-    /** Save the graph (and optionally the samples) to disk. */
-    bool save(std::string const & graph_path, std::string const & samples_path = "") const;
+    /**
+     * Save the graph (and optionally the samples) to disk.
+     *
+     * @param graph_path Output file for graph.
+     * @param samples_path Output file for samples.
+     * @param write_distances If true, the distance of each neighbor (which may be different from the Euclidean distance if
+     *   the graph was computed via an oversampling) is also written to the file.
+     */
+    bool save(std::string const & graph_path, std::string const & samples_path = "", bool write_distances = false) const;
 
   private:
     /** Allows every sample except one. */
