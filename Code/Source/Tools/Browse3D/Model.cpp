@@ -1373,6 +1373,65 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
     drawSegmentedMeshGroup(*ci, depth + 1, node_index, render_system, ro);
 }
 
+namespace ModelInternal {
+
+struct DrawFaceNormals
+{
+  DrawFaceNormals(Graphics::RenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
+
+  bool operator()(Mesh const & mesh)
+  {
+    render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+
+      for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+      {
+        if (fi->numVertices() <= 0)
+          continue;
+
+        Vector3 c(0, 0, 0);
+        for (Mesh::Face::VertexConstIterator vi = fi->verticesBegin(); vi != fi->verticesEnd(); ++vi)
+          c += (*vi)->getPosition();
+
+        c /= fi->numVertices();
+
+        render_system->sendVertex(c);
+        render_system->sendVertex(c + normal_scale * fi->getNormal());
+      }
+
+    render_system->endPrimitive();
+
+    return false;
+  }
+
+  Graphics::RenderSystem * render_system;
+  Real normal_scale;
+};
+
+struct DrawVertexNormals
+{
+  DrawVertexNormals(Graphics::RenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
+
+  bool operator()(Mesh const & mesh)
+  {
+    render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+
+      for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+      {
+        render_system->sendVertex(vi->getPosition());
+        render_system->sendVertex(vi->getPosition() + normal_scale * vi->getNormal());
+      }
+
+    render_system->endPrimitive();
+
+    return false;
+  }
+
+  Graphics::RenderSystem * render_system;
+  Real normal_scale;
+};
+
+} // namespace ModelInternal
+
 void
 Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
 {
@@ -1390,67 +1449,92 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
   }
 
   render_system.pushShader();
-    render_system.pushColorFlags();
+  render_system.pushTextures();
+  render_system.pushColorFlags();
 
-      setPhongShader(render_system);
+    setPhongShader(render_system);
+    render_system.setTexture(0, NULL);
 
-      if (app().getMainWindow()->pickPoints())
+    if (app().getMainWindow()->pickPoints())
+    {
+      Real sample_radius = 0.005f * getBounds().getExtent().length();
+      if (valid_pick)
       {
-        Real sample_radius = 0.005f * getBounds().getExtent().length();
-        if (valid_pick)
-        {
-          render_system.setColor(ColorRGB::red());
-          drawSphere(render_system, picked_sample.position, sample_radius);
-        }
-
-        for (array_size_t i = 0; i < samples.size(); ++i)
-        {
-          render_system.setColor(getLabelColor(samples[i].label));
-
-          if ((long)i == selected_sample)
-            drawSphere(render_system, samples[i].position, 3 * sample_radius);
-          else
-            drawSphere(render_system, samples[i].position, sample_radius);
-        }
+        render_system.setColor(ColorRGB::red());
+        drawSphere(render_system, picked_sample.position, sample_radius);
       }
 
-      render_system.setColor(color);
-
-      if (mesh_group)
+      for (array_size_t i = 0; i < samples.size(); ++i)
       {
-        if (app().getMainWindow()->pickSegments())
-        {
-          int node_index = 0;
-          drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
-        }
+        render_system.setColor(getLabelColor(samples[i].label));
+
+        if ((long)i == selected_sample)
+          drawSphere(render_system, samples[i].position, 3 * sample_radius);
         else
+          drawSphere(render_system, samples[i].position, sample_radius);
+      }
+    }
+
+    render_system.setColor(color);
+
+    if (mesh_group)
+    {
+      if (app().getMainWindow()->pickSegments())
+      {
+        int node_index = 0;
+        drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
+      }
+      else
+      {
+        Graphics::RenderOptions ro = options;  // make a copy
+
+        if (has_features)
         {
-          Graphics::RenderOptions ro = options;  // make a copy
+          ro.sendColors() = true;
+          ro.useVertexData() = true;
+        }
+        else if (has_face_labels)
+        {
+          ro.sendColors() = true;
+          ro.useVertexData() = false;
+        }
 
-          if (has_features)
-          {
-            ro.sendColors() = true;
-            ro.useVertexData() = true;
-          }
-          else if (has_face_labels)
-          {
-            ro.sendColors() = true;
-            ro.useVertexData() = false;
-          }
+        bool smooth_shading = (ro.useVertexNormals() && ro.useVertexData());
 
-          if (ro.useVertexNormals() && ro.useVertexData())
-            mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+        if (smooth_shading)
+          mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+        else
+          mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
+
+        mesh_group->draw(render_system, ro);
+
+        if (app().options().show_normals)
+        {
+          render_system.setShader(NULL);
+          render_system.setColor(ColorRGB(0, 1, 0));
+
+          Real normal_scale = 0.025f * getBounds().getExtent().length();
+
+          if (smooth_shading)
+          {
+            ModelInternal::DrawVertexNormals drawer(&render_system, normal_scale);
+            mesh_group->forEachMeshUntil(&drawer);
+          }
           else
-            mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
-
-          mesh_group->draw(render_system, ro);
+          {
+            ModelInternal::DrawFaceNormals drawer(&render_system, normal_scale);
+            mesh_group->forEachMeshUntil(&drawer);
+          }
         }
       }
+    }
 
-      if (point_cloud) point_cloud->draw(render_system, options);
-
-    render_system.popColorFlags();
+  render_system.popColorFlags();
+  render_system.popTextures();
   render_system.popShader();
+
+  if (point_cloud)
+    point_cloud->draw(render_system, options);
 
   if (hasTransform())
   {

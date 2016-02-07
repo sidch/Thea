@@ -429,7 +429,8 @@ class SampleGraph : private Noncopyable
         sample_kdtree.pushFilter(&filter);
           long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
-          avg_separation += (sample_ptrs[(array_size_t)nn_index]->getPosition() - sample_ptrs[index]->getPosition()).squaredLength();
+          avg_separation += (sample_ptrs[(array_size_t)nn_index]->getPosition()
+                           - sample_ptrs[index]->getPosition()).squaredLength();
         sample_kdtree.popFilter();
       }
 

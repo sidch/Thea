@@ -33,6 +33,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << " -v    : Generate samples only at mesh vertices (ignores -n)";
   THEA_CONSOLE << " -id   : Write the index of the face (or if -v, the vertex)";
   THEA_CONSOLE << "         from which each sample was drawn";
+
   return 0;
 }
 
