@@ -1201,7 +1201,7 @@ Model::loadFaceLabels(QString const & filename_)
   std::ifstream in(toStdString(filename_).c_str());
   if (!in)
   {
-    THEA_ERROR << "Could not open face labels file: " << filename_;
+    THEA_WARNING << "Could not open face labels file: " << filename_;
     return has_face_labels;
   }
 
