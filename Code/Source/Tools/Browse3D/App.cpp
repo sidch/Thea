@@ -223,7 +223,7 @@ App::parseOptions(int argc, char * argv[])
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
-          ("flat",                 po::value<bool>(&opts.flat)->default_value(false), "Flat shade all meshes?")
+          ("flat",                 "Flat shade all meshes?")
           ("fancy-points",         "Draw points as shaded spheres?")
           ("fancy-colors,c",       "Color points by a function of position?")
           ("point-scale,s",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
@@ -310,6 +310,7 @@ App::parseOptions(int argc, char * argv[])
   opts.color_cube_features  =  (vm.count("color-cube") > 0);
   opts.show_normals         =  (vm.count("normals") > 0);
   opts.show_graph           =  (vm.count("graph") > 0);
+  opts.flat                 =  (vm.count("flat") > 0);
   opts.fancy_points         =  (vm.count("fancy-points") > 0);
   opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
 
