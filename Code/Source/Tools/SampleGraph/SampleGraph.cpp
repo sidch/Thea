@@ -178,7 +178,7 @@ main(int argc, char * argv[])
       shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]), &distance_callback);
     }
 
-    ofstream d_out(FilePath::changeExtension(out_path, "dist"));
+    ofstream d_out(FilePath::changeExtension(out_path, "dist").c_str());
     for (long r = 0; r < distance_callback.m.numRows(); ++r)
     {
       for (long c = 0; c < distance_callback.m.numColumns(); ++c)

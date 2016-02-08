@@ -143,18 +143,38 @@ PointCloud::load(std::string const & path, std::string const & features_path)
     {
       graph.resize(points.size());
 
-      long max_nbrs;
-      if (!(gin >> max_nbrs) || max_nbrs < 0)
+      std::string line;
+      if (!std::getline(gin, line))
       {
         THEA_WARNING << getName() << ": Error reading maximum number of neighbors in graph '" << graph_path << '\'';
         has_graph = false;
       }
-      else
+
+      long max_nbrs;
+      if (has_graph)
+      {
+        std::istringstream line_in(line);
+        if (!(line_in >> max_nbrs) || max_nbrs < 0)
+        {
+          THEA_WARNING << getName() << ": Error reading maximum number of neighbors in graph '" << graph_path << '\'';
+          has_graph = false;
+        }
+      }
+
+      if (has_graph)
       {
         for (array_size_t i = 0; i < points.size(); ++i)
         {
+          if (!std::getline(gin, line))
+          {
+            THEA_WARNING << getName() << ": Error reading neighbors of point " << i << " in graph '" << graph_path << '\'';
+            has_graph = false;
+            break;
+          }
+
+          std::istringstream line_in(line);
           long num_nbrs;
-          if (!(gin >> num_nbrs) || num_nbrs < 0 || num_nbrs > max_nbrs || num_nbrs >= (long)points.size())
+          if (!(line_in >> num_nbrs) || num_nbrs < 0 || num_nbrs > max_nbrs || num_nbrs >= (long)points.size())
           {
             THEA_WARNING << getName() << ": Error reading valid number of neighbors of point " << i << " from '" << graph_path
                          << '\'';
@@ -166,7 +186,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
 
           for (array_size_t j = 0; j < graph[i].size(); ++j)
           {
-            if (!(gin >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
+            if (!(line_in >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
             {
               THEA_WARNING << getName() << ": Error reading valid neighbor" << j << " of point " << i << " from '" << graph_path
                            << '\'';
