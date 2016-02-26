@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef Thea_Log_hpp
-#define Thea_Log_hpp
+#ifndef __Thea_Log_hpp__
+#define __Thea_Log_hpp__
 
 #include "Platform.hpp"
 #include "BasicStringAlg.hpp"
@@ -56,7 +56,7 @@ namespace LogInternal {
 extern Spinlock lock;
 
 // Extract the filename from a full path.
-THEA_API std::string stripPathFromFilename(std::string const & fullPath);
+THEA_API std::string stripPathFromFilename(std::string const & full_path);
 
 // Get the current date and time as a string (not threadsafe).
 THEA_API std::string currentDateTimeToString();
