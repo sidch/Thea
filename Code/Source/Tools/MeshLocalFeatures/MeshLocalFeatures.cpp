@@ -2,6 +2,7 @@
 #include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalDistanceHistogram.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalPCA.hpp"
+#include "../../Algorithms/MeshFeatures/Local/RandomWalks.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/MeshFeatures/Local/SpinImage.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
@@ -87,6 +88,8 @@ bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, 
                            TheaArray<double> & values);
 bool computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
                        int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+bool computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+                        Matrix<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
 main(int argc, char * argv[])
@@ -445,7 +448,7 @@ main(int argc, char * argv[])
         num_samples = -1;
       }
 
-      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a spin image
+      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is the spin image at a query point
       if (!computeSpinImages(mg, positions, num_samples, num_radial_bins, num_height_bins, values))
       {
         return -1;
@@ -456,6 +459,50 @@ main(int argc, char * argv[])
                     "Number of spin image bins doesn't match input parameter");
 
       long num_features = num_radial_bins * num_height_bins;
+      for (array_size_t j = 0; j < positions.size(); ++j)
+      {
+        double const * row_start = &values((long)j, 0);
+        features[j].insert(features[j].end(), row_start, row_start + num_features);
+      }
+    }
+    //=========================================================================================================================
+    // Random Walks
+    //=========================================================================================================================
+    else if (beginsWith(feat, "--rndwalk="))
+    {
+      long num_steps, num_walks, num_samples;
+
+      int num_params = sscanf(feat.c_str(), "--rndwalk=%ld,%ld,%ld", &num_steps, &num_walks, &num_samples);
+      if (num_params < 1)
+      {
+        THEA_ERROR << "Couldn't parse random walks parameters";
+        return -1;
+      }
+
+      if (num_params < 3)
+      {
+        THEA_WARNING << "Number of samples not specified for random walks, using default value";
+        num_samples = -1;
+
+        if (num_params < 2)
+        {
+          THEA_WARNING << "Number of walks per point not specified for random walks, using default value";
+          num_walks = -1;
+        }
+      }
+
+      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is the feature vector of a query point
+      if (!computeRandomWalks(mg, positions, num_samples, num_steps, num_walks, values))
+      {
+        return -1;
+      }
+
+      alwaysAssertM(values.numRows() == (long)positions.size(),
+                    "Number of random walk descriptors doesn't match number of points");
+      alwaysAssertM(positions.empty() || values.numColumns() == 3 * num_steps,
+                    "Length of random walk descriptor != 3 * number of steps");
+
+      long num_features = values.numColumns();
       for (array_size_t j = 0; j < positions.size(); ++j)
       {
         double const * row_start = &values((long)j, 0);
@@ -560,6 +607,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --pca-ratio[=<nbd-radius>[,<#samples>]]";
   THEA_CONSOLE << "              (ratios of 2nd and 3rd eigenvalues to max eigenvalue)";
   THEA_CONSOLE << "        --projcurv[=<nbd-radius>[,<#samples>]]";
+  THEA_CONSOLE << "        --rndwalk=<#steps>[,<#walks>[,<#samples>]]";
   THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "        --spin=<#radial-bins>,<#height-bins>[,<#samples>]";
   THEA_CONSOLE << "";
@@ -775,6 +823,23 @@ computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_
       for (int h = 0; h < num_height_bins; ++h, ++j)
         values((long)i, j) = f(r, h);
   }
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+                   Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+{
+  THEA_CONSOLE << "Computing random walks";
+
+  values.resize((long)positions.size(), 3 * (array_size_t)num_steps);
+  MeshFeatures::Local::RandomWalks<> rw(mg, num_samples);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    rw.compute(positions[i], num_steps, &values((long)i, 0), num_walks);
 
   THEA_CONSOLE << "  -- done";
 
