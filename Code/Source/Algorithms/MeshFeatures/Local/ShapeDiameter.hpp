@@ -133,9 +133,9 @@ class ShapeDiameter
      *   box diagonal will be used.
      *
      * @warning This function uses the <b>bounding box diagonal</b> as the default normalization scale, instead of the bounding
-     *   sphere diameter as in the other constructors. This is because the latter cannot be computed from only a kd-tree. If you
-     *   want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute it separately
-     *   and pass it as a parameter to this function.
+     *   sphere diameter as in the other constructors. This is because the latter cannot currently be computed from only a
+     *   kd-tree. If you want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute
+     *   it separately and pass it as a parameter to this function.
      */
     ShapeDiameter(ExternalKDTree const * kdtree_, Real normalization_scale = -1)
     : kdtree(NULL), precomp_kdtree(kdtree_), scale(normalization_scale)

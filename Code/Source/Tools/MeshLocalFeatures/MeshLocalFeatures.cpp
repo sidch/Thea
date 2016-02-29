@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../Algorithms/MeshFeatures/Local/AverageDistance.hpp"
 #include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalDistanceHistogram.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalPCA.hpp"
@@ -79,6 +80,8 @@ bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, The
                 TheaArray<double> & values);
 bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
                                 long num_samples, double nbd_radius, TheaArray<double> & values);
+bool computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, DistanceType dist_type,
+                             double max_distance, TheaArray<double> & values);
 bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
                                     Matrix<double, MatrixLayout::ROW_MAJOR> & values);
@@ -263,9 +266,53 @@ main(int argc, char * argv[])
     string feat = string(argv[i]);
 
     //=========================================================================================================================
+    // Average Distance
+    //=========================================================================================================================
+    if (beginsWith(feat, "--avgd="))
+    {
+      char dist_str[260];
+      DistanceType dist_type;
+      long num_samples;
+      double max_distance;
+
+      int num_params = sscanf(feat.c_str(), "--avgd=%256[^,],%ld,%lf", dist_str, &num_samples, &max_distance);
+      if (num_params < 1)
+      {
+        THEA_ERROR << "Couldn't parse average distance parameters";
+        return -1;
+      }
+
+      if (!dist_type.fromString(dist_str))
+      {
+        THEA_ERROR << "Unknown distance metric: " << dist_str;
+        return -1;
+      }
+
+      if (num_params < 3)
+      {
+        THEA_WARNING << "Distance limit for not specified for average distance, using default of mesh scale";
+        max_distance = -1;
+
+        if (num_params < 2)
+        {
+          THEA_WARNING << "Number of samples not specified for average distance, using default value";
+          num_samples = -1;
+        }
+      }
+
+      TheaArray<double> values;
+      if (!computeAverageDistances(mg, positions, num_samples, dist_type, max_distance, values))
+        return -1;
+
+      alwaysAssertM(values.size() == positions.size(), "Number of average distances doesn't match number of points");
+
+      for (array_size_t j = 0; j < positions.size(); ++j)
+        features[j].push_back(values[j]);
+    }
+    //=========================================================================================================================
     // Distance Histogram
     //=========================================================================================================================
-    if (beginsWith(feat, "--dh="))
+    else if (beginsWith(feat, "--dh="))
     {
       char dist_str[260];
       DistanceType dist_type;
@@ -274,7 +321,7 @@ main(int argc, char * argv[])
       double reduction_ratio;
 
       int num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
-                               dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
+                              dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
       if (num_params < 2)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
@@ -599,6 +646,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <points> <outfile> [<feature0> <feature1> ...]";
   THEA_CONSOLE << "    <featureN> must be one of:";
+  THEA_CONSOLE << "        --avgd=<metric>[,<#samples>[,<max-distance>]]";
   THEA_CONSOLE << "        --dh=<metric>,<#bins>[,<#samples>[,<max-distance>[,<reduction-ratio>]]]";
   THEA_CONSOLE << "        --pca[=<nbd-radius>[,<#samples>]]";
   THEA_CONSOLE << "              (eigenvalues in decreasing order)";
@@ -707,6 +755,23 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
 
   for (array_size_t i = 0; i < positions.size(); ++i)
     values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i], (Real)nbd_radius);
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, DistanceType dist_type,
+                        double max_distance, TheaArray<double> & values)
+{
+  THEA_CONSOLE << "Computing average " << dist_type.toString() << " distances";
+
+  values.resize(positions.size());
+  MeshFeatures::Local::AverageDistance<> avgd(mg, num_samples, (Real)mesh_scale);
+
+  for (array_size_t i = 0; i < positions.size(); ++i)
+    values[i] = avgd.compute(positions[i], dist_type, (Real)max_distance);
 
   THEA_CONSOLE << "  -- done";
 
