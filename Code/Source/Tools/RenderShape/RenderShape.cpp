@@ -63,6 +63,7 @@ Vector3 view_dir(-1, -1, -1);
 Vector3 view_up(0, 1, 0);
 float point_size = 1.0f;
 bool color_by_id = false;
+string selected_mesh;
 ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
 ColorRGBA background_color(1, 1, 1, 1);
 int antialiasing_level = 1;
@@ -215,6 +216,8 @@ usage()
   THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
+  THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
+  THEA_CONSOLE << "                         rest of the shape as black)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
@@ -518,6 +521,15 @@ parseArgs(int argc, char * argv[])
           argv++; argc--; break;
         }
 
+        case 'm':
+        {
+          if (argc < 1) { THEA_ERROR << "-m: Selected mesh not specified"; return false; }
+
+          selected_mesh = toLower(*argv);
+
+          argv++; argc--; break;
+        }
+
         case 'b':
         {
           if (argc < 1) { THEA_ERROR << "-b: Background color not specified"; return false; }
@@ -728,6 +740,56 @@ struct FaceIndexColorizer
   }
 };
 
+void
+colorizeMeshSelection(MG & mg, uint32 parent_id)
+{
+  for (MG::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
+  {
+    Mesh & mesh = **mi;
+
+    uint32 mesh_id = 0;
+    if (parent_id != 0)
+      mesh_id = parent_id;
+    else if (!selected_mesh.empty() && toLower(mesh.getName()) == selected_mesh)
+      mesh_id = 0xFFFFFF;
+
+    ColorRGBA8 color = indexToColor(mesh_id, false);
+
+    mesh.isolateFaces();
+    mesh.addColors();
+
+    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+    for (array_size_t i = 0; i < tris.size(); i += 3)
+    {
+      mesh.setColor((long)tris[i    ], color);
+      mesh.setColor((long)tris[i + 1], color);
+      mesh.setColor((long)tris[i + 2], color);
+    }
+
+    Mesh::IndexArray const & quads = mesh.getQuadIndices();
+    for (array_size_t i = 0; i < quads.size(); i += 4)
+    {
+      mesh.setColor((long)quads[i    ], color);
+      mesh.setColor((long)quads[i + 1], color);
+      mesh.setColor((long)quads[i + 2], color);
+      mesh.setColor((long)quads[i + 3], color);
+    }
+  }
+
+  for (MG::GroupConstIterator ci = mg.childrenBegin(); ci != mg.childrenEnd(); ++ci)
+  {
+    MG & child = **ci;
+    uint32 child_id = 0;
+
+    if (parent_id != 0)
+      child_id = parent_id;
+    else if (!selected_mesh.empty() && toLower(child.getName()) == selected_mesh)
+      child_id = 0xFFFFFF;
+
+    colorizeMeshSelection(child, child_id);
+  }
+}
+
 bool
 averageNormals(Mesh & mesh)
 {
@@ -818,6 +880,10 @@ Model::load(string const & path)
       {
         FaceIndexColorizer id_colorizer(tri_ids, quad_ids);
         mesh_group.forEachMeshUntil(&id_colorizer);
+      }
+      else if (!selected_mesh.empty())
+      {
+        colorizeMeshSelection(mesh_group, 0);
       }
       else
         mesh_group.forEachMeshUntil(averageNormals);
@@ -1144,7 +1210,7 @@ Model::render(ColorRGBA const & color)
         return false;
       }
 
-      if (color_by_id)
+      if (color_by_id || !selected_mesh.empty())
       {
         if (!initFaceIndexShader(*mesh_shader))
         {
