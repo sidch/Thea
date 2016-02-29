@@ -139,7 +139,7 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
       MatrixMN<N, M, T> result;
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          result(i, j) = m[j][i];
+          result(j, i) = m[i][j];
 
       return result;
     }
