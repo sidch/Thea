@@ -50,6 +50,12 @@
 #include <QPoint>
 #include <QPointF>
 
+#ifdef THEA_USE_QOPENGLWIDGET
+#  include <QOpenGLWidget>
+#else
+#  include <QGLWidget>
+#endif
+
 class QMouseEvent;
 
 namespace Thea {
@@ -67,7 +73,12 @@ namespace Browse3D {
 class Model;
 
 /** An OpenGL widget to display and interact with a model. */
-class ModelDisplay : public QGLWidget
+class ModelDisplay
+#ifdef THEA_USE_QOPENGLWIDGET
+: public QOpenGLWidget
+#else
+: public QGLWidget
+#endif
 {
     Q_OBJECT
 
@@ -211,6 +222,11 @@ class ModelDisplay : public QGLWidget
 
     /** Draw the background image. */
     void drawBackground(Graphics::RenderSystem & rs);
+
+#ifdef THEA_USE_QOPENGLWIDGET
+    /** Draw text on the window. */
+    void renderText(int x, int y, QString const & str, QFont const & font = QFont());
+#endif
 
     Model * model;
 
