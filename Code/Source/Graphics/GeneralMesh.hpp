@@ -56,7 +56,6 @@
 #include "DefaultMeshCodecs.hpp"
 #include "DrawableObject.hpp"
 #include "EdgeWelder.hpp"
-#include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 
 namespace Thea {
@@ -427,10 +426,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     {
       for (FaceIterator fi = faces.begin(); fi != faces.end(); ++fi)
         if (&(*fi) == face)
-        {
-          removeFace(fi);
-          return true;
-        }
+          return removeFace(fi);
 
       return false;
     }
