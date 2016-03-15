@@ -50,12 +50,17 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
-#include <QGLFormat>
 #include <boost/program_options.hpp>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
 #include <vector>
+
+#ifdef THEA_USE_QOPENGLWIDGET
+#  include <QSurfaceFormat>
+#else
+#  include <QGLFormat>
+#endif
 
 namespace Browse3D {
 
@@ -339,11 +344,19 @@ App::parseOptions(int argc, char * argv[])
 void
 App::createMainWindow()
 {
-  // Enable antialiasing
+  // Enable depth buffer, antialiasing etc
+#ifdef THEA_USE_QOPENGLWIDGET
+  QSurfaceFormat sf = QSurfaceFormat::defaultFormat();
+  sf.setDepthBufferSize(16);
+  sf.setSamples(4);
+  sf.setProfile(QSurfaceFormat::CoreProfile);
+  QSurfaceFormat::setDefaultFormat(sf);
+#else
   QGLFormat glf = QGLFormat::defaultFormat();
   glf.setSampleBuffers(true);
   glf.setSamples(4);
   QGLFormat::setDefaultFormat(glf);
+#endif
 
   // Create the main window, and hence a rendering context
   main_window = new MainWindow;

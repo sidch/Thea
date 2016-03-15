@@ -45,6 +45,10 @@
 #define QT_USE_FAST_CONCATENATION
 #define QT_USE_FAST_OPERATOR_PLUS
 
+#ifdef THEA_QT5
+// # define THEA_USE_QOPENGLWIDGET
+#endif
+
 #include "../../Common.hpp"
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
@@ -68,21 +72,21 @@ operator<<(QDebug dbg, std::string const & str)
 inline std::ostream &
 operator<<(std::ostream & out, QString const & s)
 {
-  return out << s.toAscii().data();
+  return out << s.toLatin1().data();
 }
 
 /** Convert a std::string to a Qt string. */
 inline QString
 toQString(std::string const s)
 {
-  return QString::fromAscii(s.data(), (int)s.size());
+  return QString::fromLatin1(s.data(), (int)s.size());
 }
 
 /** Convert a Qt string to a std::string (use this function and <b>NOT</b> QString::toStdString()!). */
 inline std::string
 toStdString(QString const s)
 {
-  return std::string(s.toAscii().data(), (int)s.length());
+  return std::string(s.toLatin1().data(), (int)s.length());
 }
 
 /** Namespace for data-driven texturing project. */
