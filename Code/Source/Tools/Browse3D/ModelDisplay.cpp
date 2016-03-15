@@ -60,10 +60,19 @@
 #include <QImage>
 #include <QMouseEvent>
 
+#ifdef THEA_USE_QOPENGLWIDGET
+#  include <QOpenGLContext>
+#  include <QPainter>
+#endif
+
 namespace Browse3D {
 
 ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
+#ifdef THEA_USE_QOPENGLWIDGET
+: QOpenGLWidget(parent),
+#else
 : QGLWidget(parent),
+#endif
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
@@ -341,6 +350,25 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
 
   rs.popShader();
 }
+
+#ifdef THEA_USE_QOPENGLWIDGET
+// Adapted from http://stackoverflow.com/questions/28216001/how-to-render-text-with-qopenglwidget
+void
+ModelDisplay::renderText(int x, int y, QString const & str, QFont const & font)
+{
+  // Retrieve last OpenGL color to use as a font color
+  GLdouble color[4];
+  glGetDoublev(GL_CURRENT_COLOR, color);
+  QColor font_color = QColor(color[0], color[1], color[2], color[3]);
+
+  // Render text
+  // QPainter painter(this);
+  // painter.setPen(font_color);
+  // painter.setFont(font);
+  // painter.drawText(x, y, str);
+  // painter.end();
+}
+#endif
 
 void
 ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
@@ -725,7 +753,12 @@ ModelDisplay::saveScreenshot(QString path)
     path = getFullPath(QDir::homePath(), prefix + QDateTime::currentDateTime().toString("-yyyy-MM-dd-hh-mm-ss") + ".png");
   }
 
+#ifdef THEA_USE_QOPENGLWIDGET
+  QImage img = grabFramebuffer();
+#else
   QImage img = grabFrameBuffer();
+#endif
+
   if (img.save(path))
     THEA_CONSOLE << "Saved screenshot to " << path;
   else
