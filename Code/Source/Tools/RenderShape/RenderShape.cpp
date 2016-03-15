@@ -717,6 +717,8 @@ struct FaceIndexColorizer
       mesh.setColor((long)tris[i    ], color);
       mesh.setColor((long)tris[i + 1], color);
       mesh.setColor((long)tris[i + 2], color);
+
+      THEA_CONSOLE << tris[1 << 30];
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
@@ -998,6 +1000,8 @@ Model::fitCamera(Matrix4 const & transform, Real zoom, int width, int height)
   Ball3 bsphere = modelBSphere(*this, transform);
   Vector3 center = bsphere.getCenter();
   Real diameter = bsphere.getDiameter();
+
+  // THEA_CONSOLE << "Model bounding sphere = " << bsphere.toString();
 
   Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
   Vector3 dir = view_dir.unit();

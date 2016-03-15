@@ -40,10 +40,11 @@
 //============================================================================
 
 #include "BestFitSphere3.hpp"
-#include <CGAL/Cartesian.h>
-#include <CGAL/MP_Float.h>
-#include <CGAL/Min_sphere_of_spheres_d.h>
-#include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
+#include "CentroidN.hpp"
+#include "SVD.hpp"
+#include "../Math.hpp"
+#include "../Matrix.hpp"
+#include "../TransposedMatrix.hpp"
 #include <algorithm>
 
 namespace Thea {
@@ -112,31 +113,61 @@ BestFitSphere3::update() const
   }
   else
   {
-    typedef CGAL::Cartesian<double>                              Kernel;
-    typedef double                                               FT;
-    typedef CGAL::Min_sphere_of_spheres_d_traits_3<Kernel, FT>   Traits;
-    typedef Traits::Point                                        Point;
-    typedef Traits::Sphere                                       Sphere;
-    typedef CGAL::Min_sphere_of_spheres_d<Traits>                MSS;
+    Vector3 centroid = CentroidN<Vector3, 3>::compute(points.begin(), points.end());
+    double x = centroid[0];
+    double y = centroid[1];
+    double z = centroid[2];
 
-    TheaArray<Sphere> p(points.size());
+    double r = 0;
     for (array_size_t i = 0; i < points.size(); ++i)
+      r += (points[i] - centroid).length();
+
+    r /= points.size();
+
+    static double const THRESHOLD = 1.0e-10;
+    double g_new = 100.0;
+    double g_old = 1.0;
+
+    Matrix<double> J((long)points.size(), 4);
+    Matrix<double> D((long)points.size(), 1);
+    Matrix<double> Inv(4, (long)points.size());
+
+    while (std::fabs(g_new - g_old) > THRESHOLD)
     {
-      Vector3 const & point = points[i];
-      p[i] = Sphere(Point(point.x(), point.y(), point.z()), 0);
+      g_old = g_new;
+
+      for (array_size_t i = 0; i < points.size(); ++i)
+      {
+        double pX = points[i][0] - x;
+        double pY = points[i][1] - y;
+        double pZ = points[i][2] - z;
+        double ri = std::sqrt(pX * pX + pY * pY + pZ * pZ);
+
+        D((long)i, 0) = r - ri;
+        J((long)i, 0) = -pX / ri;
+        J((long)i, 1) = -pY / ri;
+        J((long)i, 2) = -pZ / ri;
+        J((long)i, 3) = -1;
+      }
+
+      SVD::pseudoInverse(J, Inv);  // 4 x n
+      Matrix<double> X = Inv * D;  // 4 x 1
+
+      x += X(0, 0);
+      y += X(1, 0);
+      z += X(2, 0);
+      r += X(3, 0);
+
+      TransposedMatrix<double> Jt(&J);  // 4 x n
+      g_new = 0.0;
+      for (int i = 0; i < 4; ++i)
+      {
+        for (long j = 0; j < Jt.numColumns(); ++j)
+          g_new -= Jt.get(i, j) * D(j, 0);
+      }
     }
 
-    Traits traits;
-    MSS mss(p.begin(), p.end(), traits);
-
-    Real r = (Real)mss.radius();
-    MSS::Cartesian_const_iterator ci = mss.center_cartesian_begin();
-    Vector3 c;
-    c[0] = (Real)(*ci);
-    c[1] = (Real)(*(++ci));
-    c[2] = (Real)(*(++ci));
-
-    ball = Ball3(c, r);
+    ball = Ball3(Vector3(x, y, z), (Real)r);
   }
 
   updated = true;
