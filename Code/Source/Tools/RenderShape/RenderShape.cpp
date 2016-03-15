@@ -717,8 +717,6 @@ struct FaceIndexColorizer
       mesh.setColor((long)tris[i    ], color);
       mesh.setColor((long)tris[i + 1], color);
       mesh.setColor((long)tris[i + 2], color);
-
-      THEA_CONSOLE << tris[1 << 30];
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
