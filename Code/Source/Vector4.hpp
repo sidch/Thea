@@ -74,7 +74,7 @@ class /* THEA_API */ VectorN<4, T> : public Internal::VectorNBase<4, T>
       (*this)[3] = w_;
     }
 
-    /** Initialize from a 3D vector (XY) plus a Z component. */
+    /** Initialize from a 3D vector (XYZ) plus a W component. */
     VectorN(VectorN<3, T> const & xyz_, T const & w_)
     {
       (*this)[0] = xyz_[0];

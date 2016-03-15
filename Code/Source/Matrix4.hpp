@@ -126,10 +126,10 @@ class /* THEA_API */ MatrixMN<4, 4, T> : public Internal::SquareMatrixN<4, T>
     {
       // Determinant is the dot product of the first row and the first row of cofactors (the first column of the adjoint matrix)
       VectorN<4, T> cofactor0;
-      cofactor0[0] = subDeterminant(0, 0);
-      cofactor0[1] = subDeterminant(0, 1);
-      cofactor0[2] = subDeterminant(0, 2);
-      cofactor0[3] = subDeterminant(0, 3);
+      cofactor0[0] =  subDeterminant(0, 0);
+      cofactor0[1] = -subDeterminant(0, 1);
+      cofactor0[2] =  subDeterminant(0, 2);
+      cofactor0[3] = -subDeterminant(0, 3);
 
       return cofactor0.dot(this->getRow(0));
     }
