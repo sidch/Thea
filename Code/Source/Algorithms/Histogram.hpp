@@ -122,14 +122,14 @@ class THEA_API Histogram
     /** Get the value of a specific bin. */
     double getBin(long index) const
     {
-      debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0, num_bins));
+      debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0L, num_bins));
       return bins[index];
     }
 
     /** Get a mutable reference to the value of a specific bin. */
     double & getBin(long index)
     {
-      debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0, num_bins));
+      debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0L, num_bins));
       return bins[index];
     }
 
