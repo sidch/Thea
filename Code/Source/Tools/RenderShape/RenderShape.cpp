@@ -36,7 +36,7 @@ struct Model
 {
   Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
   bool load(string const & path);
-  Camera fitCamera(Matrix4 const & transform, Real zoom, int width, int height);
+  Camera fitCamera(Matrix4 const & transform, Vector3 dir, Vector3 up, Real zoom, int width, int height);
   bool render(ColorRGBA const & color);
 
   bool convert_to_points;
@@ -59,7 +59,7 @@ TheaArray<Matrix4> transforms;
 float zoom = 1.0f;
 string out_path;
 int out_width, out_height;
-Vector3 view_dir(-1, -1, -1);
+TheaArray<Vector3> view_dirs;
 Vector3 view_up(0, 1, 0);
 float point_size = 1.0f;
 bool color_by_id = false;
@@ -91,6 +91,7 @@ main(int argc, char * argv[])
   int buffer_width   =  antialiasing_level * out_width;
   int buffer_height  =  antialiasing_level * out_height;
   Texture * color_tex = NULL;
+  Framebuffer * fb = NULL;
   try
   {
     Texture::Options tex_opts = Texture::Options::defaults();
@@ -111,7 +112,7 @@ main(int argc, char * argv[])
       return -1;
     }
 
-    Framebuffer * fb = render_system->createFramebuffer("Framebuffer");
+    fb = render_system->createFramebuffer("Framebuffer");
     if (!fb)
     {
       THEA_ERROR << "Could not create offscreen framebuffer";
@@ -120,77 +121,89 @@ main(int argc, char * argv[])
 
     fb->attach(Framebuffer::AttachmentPoint::COLOR_0, color_tex);
     fb->attach(Framebuffer::AttachmentPoint::DEPTH,   depth_tex);
-
-    // Initialize the camera
-    Camera camera = model.fitCamera(transforms[0], zoom, buffer_width, buffer_height);
-
-    // Render the mesh to the offscreen framebuffer
-    render_system->pushFramebuffer();
-      render_system->setFramebuffer(fb);
-
-      render_system->pushDepthFlags();
-      render_system->pushColorFlags();
-      render_system->pushShapeFlags();
-      render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-      render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
-
-        render_system->setCamera(camera);
-        render_system->setDepthTest(RenderSystem::DepthTest::LESS);
-        render_system->setDepthWrite(true);
-        render_system->setColorWrite(true, true, true, true);
-
-        render_system->setColorClearValue(background_color);
-        render_system->clear();
-
-        // Draw primary model
-        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-          render_system->multMatrix(transforms[0]);
-          model.render(primary_color);
-        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
-
-        // Draw overlay models
-        for (array_size_t i = 1; i < model_paths.size(); ++i)
-        {
-          model.convert_to_points = (show_points & POINTS_OVERLAY);
-          if (!model.load(model_paths[i]))
-            return -1;
-
-          ColorRGBA overlay_color = getPaletteColor((long)i - 1);
-          overlay_color.a() = (!color_by_id && !model.is_point_cloud ? 0.5f : 1.0f);
-
-          render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
-
-          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-            render_system->multMatrix(transforms[i]);
-            model.render(overlay_color);
-          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
-        }
-
-      render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
-      render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
-      render_system->popShapeFlags();
-      render_system->popColorFlags();
-      render_system->popDepthFlags();
-
-    render_system->popFramebuffer();
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render mesh")
 
-  // Save the rendered image
-  try
+  // Do the rendering
+  for (array_size_t v = 0; v < view_dirs.size(); ++v)
   {
-    Image image(Image::Type::RGB_8U, buffer_width, buffer_height);
-    color_tex->getImage(image);
-
-    if (antialiasing_level > 1 && !image.rescale(out_width, out_height, Image::Filter::BICUBIC))
+    try
     {
-      THEA_ERROR << "Could not rescale image to output dimensions";
-      return -1;
-    }
+      // Initialize the camera
+      Vector3 view_dir = view_dirs[v];
+      Camera camera = model.fitCamera(transforms[0], view_dir, view_up, zoom, buffer_width, buffer_height);
 
-    image.save(out_path);
+      // Render the mesh to the offscreen framebuffer
+      render_system->pushFramebuffer();
+        render_system->setFramebuffer(fb);
+
+        render_system->pushDepthFlags();
+        render_system->pushColorFlags();
+        render_system->pushShapeFlags();
+        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+        render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
+
+          render_system->setCamera(camera);
+          render_system->setDepthTest(RenderSystem::DepthTest::LESS);
+          render_system->setDepthWrite(true);
+          render_system->setColorWrite(true, true, true, true);
+
+          render_system->setColorClearValue(background_color);
+          render_system->clear();
+
+          // Draw primary model
+          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+            render_system->multMatrix(transforms[0]);
+            model.render(primary_color);
+          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+
+          // Draw overlay models
+          for (array_size_t i = 1; i < model_paths.size(); ++i)
+          {
+            model.convert_to_points = (show_points & POINTS_OVERLAY);
+            if (!model.load(model_paths[i]))
+              return -1;
+
+            ColorRGBA overlay_color = getPaletteColor((long)i - 1);
+            overlay_color.a() = (!color_by_id && !model.is_point_cloud ? 0.5f : 1.0f);
+
+            render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
+
+            render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+              render_system->multMatrix(transforms[i]);
+              model.render(overlay_color);
+            render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+          }
+
+        render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
+        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+        render_system->popShapeFlags();
+        render_system->popColorFlags();
+        render_system->popDepthFlags();
+
+        // Grab and save the rendered image
+        Image image(Image::Type::RGB_8U, buffer_width, buffer_height);
+        color_tex->getImage(image);
+
+        if (antialiasing_level > 1 && !image.rescale(out_width, out_height, Image::Filter::BICUBIC))
+        {
+          THEA_ERROR << "Could not rescale image to output dimensions";
+          return -1;
+        }
+
+        string path = out_path;
+        if (view_dirs.size() > 1)
+        {
+          path = FilePath::concat(FilePath::parent(path),
+                                  FilePath::baseName(path) + format("_%06ld.", (long)v) + FilePath::completeExtension(path));
+        }
+
+        image.save(path);
+
+      render_system->popFramebuffer();
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of mesh", (long)v)
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not save rendered image to '%s'", out_path.c_str())
 
   return 0;
 }
@@ -210,8 +223,9 @@ usage()
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
   THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
-  THEA_CONSOLE << "  -v <viewing-dir>      (comma-separated 3-vector, or string of 3 chars,";
-  THEA_CONSOLE << "                         one for each coordinate, each one of +, - or 0)";
+  THEA_CONSOLE << "  -v <viewing-dir>      (comma-separated 3-vector; or string of 3 chars,";
+  THEA_CONSOLE << "                         one for each coordinate, each one of +, - or 0;";
+  THEA_CONSOLE << "                         or file containing one of the above per line";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
@@ -252,17 +266,17 @@ parseTransform(string const & s, Matrix4 & m)
 }
 
 bool
-parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up)
+parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up, bool silent = false)
 {
   if (s.length() != 3)
   {
-    THEA_ERROR << "Viewing direction string must have exactly 3 characters, one for each coordinate";
+    if (!silent) THEA_ERROR << "Viewing direction string must have exactly 3 characters, one for each coordinate";
     return false;
   }
 
   if (s == "000")
   {
-    THEA_ERROR << "View direction is zero vector";
+    if (!silent) THEA_ERROR << "View direction is zero vector";
     return false;
   }
 
@@ -274,7 +288,7 @@ parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up)
       case '-': dir[i] = -1; break;
       case '0': dir[i] =  0; break;
       default:
-        THEA_ERROR << "Invalid view direction string '" << s << '\'';
+        if (!silent) THEA_ERROR << "Invalid view direction string '" << s << '\'';
         return false;
     }
   }
@@ -290,19 +304,19 @@ parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up)
 }
 
 bool
-parseViewDirectionContinuous(string const & s, Vector3 & dir, Vector3 & up)
+parseViewDirectionContinuous(string const & s, Vector3 & dir, Vector3 & up, bool silent = false)
 {
   double x, y, z;
   if (sscanf(s.c_str(), " %lf , %lf , %lf", &x, &y, &z) != 3)
   {
-    THEA_ERROR << "Invalid view direction string '" << s << '\'';
+    if (!silent) THEA_ERROR << "Invalid view direction string '" << s << '\'';
     return false;
   }
 
   dir = Vector3(x, y, z);
   if (dir.squaredLength() <= 1e-10)
   {
-    THEA_ERROR << "View direction is zero vector";
+    if (!silent) THEA_ERROR << "View direction is zero vector";
     return false;
   }
 
@@ -315,6 +329,47 @@ parseViewDirectionContinuous(string const & s, Vector3 & dir, Vector3 & up)
     up = Vector3::unitZ();
   else
     up = Vector3::unitY();
+
+  return true;
+}
+
+bool
+parseViewDirectionFile(string const & path, Vector3 & up)
+{
+  ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not open view directions file '" << path << '\'';
+    return false;
+  }
+
+  string line;
+  Vector3 view_dir, line_up;
+  bool first = true;
+  while (getline(in, line))
+  {
+    line = trimWhitespace(line);
+    if (line.empty())
+      continue;
+    else if (line.length() == 3)
+    {
+      if (!parseViewDirectionDiscrete(line, view_dir, line_up))
+        return false;
+    }
+    else
+    {
+      if (!parseViewDirectionContinuous(line, view_dir, line_up))
+        return false;
+    }
+
+    view_dirs.push_back(view_dir);
+
+    if (first)  // determine view up from first entry in file
+    {
+      up = line_up;
+      first = false;
+    }
+  }
 
   return true;
 }
@@ -466,17 +521,27 @@ parseArgs(int argc, char * argv[])
         case 'v':
         {
           if (argc < 1) { THEA_ERROR << "-v: View direction not specified"; return false; }
-          Vector3 up;
+          Vector3 view_dir, up;
+          bool status = false;
           if (strlen(*argv) == 3)
-          {
-            if (!parseViewDirectionDiscrete(*argv, view_dir, up))
-              return false;
-          }
+            status = parseViewDirectionDiscrete(*argv, view_dir, up, true);
           else
+            status = parseViewDirectionContinuous(*argv, view_dir, up, true);
+
+          if (!status)
           {
-            if (!parseViewDirectionContinuous(*argv, view_dir, up))
+            if (FileSystem::fileExists(*argv))
+            {
+              if (!parseViewDirectionFile(*argv, up))
+                return false;
+            }
+            else
+            {
+              THEA_ERROR << "Could not parse view direction '" << *argv << '\'';
               return false;
+            }
           }
+
           if (!has_up) view_up = up;
           argv++; argc--; break;
         }
@@ -602,6 +667,9 @@ parseArgs(int argc, char * argv[])
     THEA_ERROR << "Too few positional arguments";
     return usage();
   }
+
+  if (view_dirs.empty())
+    view_dirs.push_back(Vector3(-1, -1, -1));
 
   return true;
 }
@@ -992,7 +1060,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
 }
 
 Camera
-Model::fitCamera(Matrix4 const & transform, Real zoom, int width, int height)
+Model::fitCamera(Matrix4 const & transform, Vector3 dir, Vector3 up, Real zoom, int width, int height)
 {
   // Orientation
   Ball3 bsphere = modelBSphere(*this, transform);
@@ -1002,8 +1070,8 @@ Model::fitCamera(Matrix4 const & transform, Real zoom, int width, int height)
   // THEA_CONSOLE << "Model bounding sphere = " << bsphere.toString();
 
   Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
-  Vector3 dir = view_dir.unit();
-  Vector3 up  = view_up.unit();
+  dir.unitize();
+  up.unitize();
 
   CoordinateFrame3 cframe = CoordinateFrame3::fromViewFrame(center - camera_separation * dir,  // eye
                                                             center,                            // look-at
