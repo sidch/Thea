@@ -45,10 +45,11 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Line2.hpp"
+#include "../MatrixMN.hpp
+#include "../VectorN.hpp"
+#include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
-#include <CGAL/Cartesian.h>
-#include <CGAL/linear_least_squares_fitting_2.h>
 
 namespace Thea {
 namespace Algorithms {
@@ -65,7 +66,7 @@ class /* THEA_API */ LinearLeastSquares2
      * @param end One position beyond the last object in the set.
      * @param line Best-fit line.
      *
-     * @return The fitting quality: 0 (worst) to 1 (perfect).
+     * @return The sum of squared fitting errors.
      */
     template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line);
 
@@ -87,41 +88,45 @@ class /* THEA_API */ LinearLeastSquares2<T *>
 template <typename T>
 class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsPointN<T, 2> >::type>
 {
-  private:
-    typedef CGAL::Cartesian<Real>    CGALKernel;
-    typedef CGALKernel::Point_2      CGALPoint;
-    typedef CGALKernel::Direction_2  CGALDirection;
-    typedef CGALKernel::Line_2       CGALLine;
-
   public:
     template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line)
     {
-      TheaArray<CGALPoint> cgal_points;
-      toCGALPoints(begin, end, cgal_points);
+      typedef VectorN<2, double> DVec2;
+      typedef MatrixMN<2, 2, double> DMat2;
 
-      CGALLine cgal_line;
-      CGALPoint centroid;
-      double quality = CGAL::linear_least_squares_fitting_2(cgal_points.begin(), cgal_points.end(), cgal_line, centroid,
-                                                            CGAL::Dimension_tag<0>());
-
-      CGALPoint lp = cgal_line.point(0);
-      CGALDirection ld = cgal_line.direction();
-
-      line = Line2::fromPointAndDirection(Vector2(lp.x(), lp.y()), Vector2(ld.dx(), ld.dy()));
-
-      return quality;
-    }
-
-  private:
-    // Convert a set of point objects in 2-space to CGAL points.
-    template <typename InputIterator>
-    static void toCGALPoints(InputIterator begin, InputIterator end, TheaArray<CGALPoint> & result)
-    {
-      for (InputIterator i = begin; i != end; ++i)
+      DVec2 centroid = CentroidN<T, 2>::compute(begin, end);
+      DMat2 m = DMat2::zero();
+      for (InputIterator iter = begin; iter != end; ++iter)
       {
-        Vector2 const & p = PointTraitsN<T, 2>::getPosition(*i);
-        result.push_back(CGALPoint(p.x(), p.y()));
+        DVec2 diff = DVec2(PointTraitsN<T, 2>::getPosition(*iter)) - centroid;
+
+        m(0, 0) += (diff.y() * diff.y());
+        m(0, 1) -= (diff.x() * diff.y());
+        m(1, 1) += (diff.x() * diff.x());
       }
+
+      m(1, 0) = m(0, 1);
+
+      double eigenvalues[2];
+      DVec2 eigenvectors[2];
+
+      int num_eigen = m.eigenSolve((double *)eigenvalues, (DVec2 *)eigenvectors);
+      if (num_eigen == 2)
+      {
+        if (eigenvalues[1] < eigenvalues[0])
+        {
+          std::swap(eigenvalues[0], eigenvalues[1]);
+          std::swap(eigenvectors[0], eigenvectors[1]);
+        }
+      }
+      else if (num_eigen <= 0)
+      {
+        throw Error("LinearLeastSquares2: Could not eigensolve matrix");
+      }
+
+      line = Line2::fromPointAndDirection(Vector2(centroid), Vector2(eigenvectors[0]));
+
+      return eigenvalues[0];
     }
 
 }; // class LinearLeastSquares2<Point2>
