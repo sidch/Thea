@@ -122,7 +122,7 @@ main(int argc, char * argv[])
     fb->attach(Framebuffer::AttachmentPoint::COLOR_0, color_tex);
     fb->attach(Framebuffer::AttachmentPoint::DEPTH,   depth_tex);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render mesh")
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
   // Do the rendering
   for (array_size_t v = 0; v < view_dirs.size(); ++v)
@@ -202,8 +202,10 @@ main(int argc, char * argv[])
 
       render_system->popFramebuffer();
     }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of mesh", (long)v)
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (long)v)
   }
+
+  THEA_CONSOLE << "Rendered " << view_dirs.size() << " view(s) of the shape";
 
   return 0;
 }
