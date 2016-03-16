@@ -142,6 +142,14 @@ class /* THEA_DLL_LOCAL */ LineNBase
       return point + s * direction;
     }
 
+    /** Get a textual description of the line. */
+    std::string toString() const
+    {
+      std::ostringstream oss;
+      oss << "[P: " << point.toString() << ", U: " << direction << ']';
+      return oss.str();
+    }
+
   private:
     VectorT point;      ///< A point on the line.
     VectorT direction;  ///< A unit vector along the direction of the line.

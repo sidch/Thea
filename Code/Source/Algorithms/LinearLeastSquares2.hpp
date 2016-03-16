@@ -45,7 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Line2.hpp"
-#include "../MatrixMN.hpp
+#include "../MatrixMN.hpp"
 #include "../VectorN.hpp"
 #include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
@@ -64,11 +64,14 @@ class /* THEA_API */ LinearLeastSquares2
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
-     * @param line Best-fit line.
+     * @param line Used to return the best-fit line.
+     * @param centroid If non-null, used to return the centroid of the objects, which is computed in the process of finding the
+     *   best-fit line.
      *
      * @return The sum of squared fitting errors.
      */
-    template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line);
+    template <typename InputIterator>
+    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL);
 
 }; // class LinearLeastSquares2
 
@@ -77,9 +80,11 @@ template <typename T>
 class /* THEA_API */ LinearLeastSquares2<T *>
 {
   public:
-    template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line)
+    template <typename InputIterator>
+    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL)
     {
-      LinearLeastSquares2<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end), line);
+      LinearLeastSquares2<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin),
+                                      PtrToRefIterator<T, InputIterator>(end), line, centroid);
     }
 
 }; // class LinearLeastSquares2<T *>
@@ -89,16 +94,17 @@ template <typename T>
 class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsPointN<T, 2> >::type>
 {
   public:
-    template <typename InputIterator> static double fitLine(InputIterator begin, InputIterator end, Line2 & line)
+    template <typename InputIterator>
+    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL)
     {
       typedef VectorN<2, double> DVec2;
       typedef MatrixMN<2, 2, double> DMat2;
 
-      DVec2 centroid = CentroidN<T, 2>::compute(begin, end);
+      DVec2 center = CentroidN<T, 2>::compute(begin, end);
       DMat2 m = DMat2::zero();
       for (InputIterator iter = begin; iter != end; ++iter)
       {
-        DVec2 diff = DVec2(PointTraitsN<T, 2>::getPosition(*iter)) - centroid;
+        DVec2 diff = DVec2(PointTraitsN<T, 2>::getPosition(*iter)) - center;
 
         m(0, 0) += (diff.y() * diff.y());
         m(0, 1) -= (diff.x() * diff.y());
@@ -124,8 +130,9 @@ class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsPointN<
         throw Error("LinearLeastSquares2: Could not eigensolve matrix");
       }
 
-      line = Line2::fromPointAndDirection(Vector2(centroid), Vector2(eigenvectors[0]));
+      line = Line2::fromPointAndDirection(Vector2(center), Vector2(eigenvectors[0]));
 
+      if (centroid) *centroid = center;
       return eigenvalues[0];
     }
 

@@ -185,7 +185,7 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
       eigenvalues[0] = trace / 2 - s;
       eigenvalues[1] = trace / 2 + s;
 
-      if (!Math::fuzzyEq(c, 0))
+      if (!Math::fuzzyEq(c, static_cast<T>(0)))
       {
         eigenvectors[0][0] = eigenvalues[0] - d;
         eigenvectors[0][1] = c;
@@ -193,7 +193,7 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
         eigenvectors[1][0] = eigenvalues[1] - d;
         eigenvectors[1][1] = c;
       }
-      else if (!Math::fuzzyEq(b, 0))
+      else if (!Math::fuzzyEq(b, static_cast<T>(0)))
       {
         eigenvectors[0][0] = b;
         eigenvectors[0][1] = eigenvalues[0] - a;
