@@ -48,6 +48,7 @@
 #include "../MatrixMN.hpp"
 #include "../Plane3.hpp"
 #include "../VectorN.hpp"
+#include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
 
