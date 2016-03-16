@@ -45,11 +45,11 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Line3.hpp"
+#include "../MatrixMN.hpp"
 #include "../Plane3.hpp"
+#include "../VectorN.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
-#include <CGAL/Cartesian.h>
-#include <CGAL/linear_least_squares_fitting_3.h>
 
 namespace Thea {
 namespace Algorithms {
@@ -68,7 +68,7 @@ class /* THEA_API */ LinearLeastSquares3
      * @param centroid If non-null, used to return the centroid of the objects, which is computed in the process of finding the
      *   best-fit line.
      *
-     * @return The fitting quality: 0 (worst) to 1 (perfect).
+     * @return The sum of squared fitting errors.
      */
     template <typename InputIterator>
     static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL);
@@ -115,59 +115,94 @@ template <typename T>
 class LinearLeastSquares3<T, typename boost::enable_if< IsPointN<T, 3> >::type>
 {
   private:
-    typedef CGAL::Cartesian<Real>    CGALKernel;
-    typedef CGALKernel::Point_3      CGALPoint;
-    typedef CGALKernel::Direction_3  CGALDirection;
-    typedef CGALKernel::Line_3       CGALLine;
-    typedef CGALKernel::Plane_3      CGALPlane;
+    typedef VectorN<3, double> DVec3;
+    typedef MatrixMN<3, 3, double> DMat3;
 
   public:
     template <typename InputIterator>
     static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL)
     {
-      TheaArray<CGALPoint> cgal_points;
-      toCGALPoints(begin, end, cgal_points);
+      DVec3 center;
+      DMat3 cov = covMatrix(begin, end, center);
 
-      CGALLine cgal_line;
-      CGALPoint cgal_centroid;
-      double quality = CGAL::linear_least_squares_fitting_3(cgal_points.begin(), cgal_points.end(), cgal_line,
-                                                            cgal_centroid, CGAL::Dimension_tag<0>());
+      double sum = 0;
+      for (InputIterator iter = begin; iter != end; ++iter)
+      {
+        DVec3 diff = DVec3(PointTraitsN<T, 3>::getPosition(*iter)) - center;
+        sum += (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
+      }
 
-      CGALPoint lp = cgal_line.point(0);
-      CGALDirection ld = cgal_line.direction();
-      line = Line3::fromPointAndDirection(Vector3(lp.x(), lp.y(), lp.z()), Vector3(ld.dx(), ld.dy(), ld.dz()));
-      if (centroid) *centroid = Vector3(cgal_centroid.x(), cgal_centroid.y(), cgal_centroid.z());
+      DMat3 m = sum * DMat3::identity() - cov;
+      DVec3 eigenvector;
+      double eigenvalue = eigenSolveSmallest(m, eigenvector);
 
-      return quality;
+      line = Line3::fromPointAndDirection(Vector3(center), Vector3(eigenvector));
+
+      if (centroid) *centroid = center;
+      return eigenvalue;
     }
 
     template <typename InputIterator>
     static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL)
     {
-      TheaArray<CGALPoint> cgal_points;
-      toCGALPoints(begin, end, cgal_points);
+      DVec3 center;
+      DMat3 cov = covMatrix(begin, end, center);
 
-      CGALPlane cgal_plane;
-      CGALPoint cgal_centroid;
-      double quality = CGAL::linear_least_squares_fitting_3(cgal_points.begin(), cgal_points.end(), cgal_plane,
-                                                            cgal_centroid, CGAL::Dimension_tag<0>());
+      DVec3 eigenvector;
+      double eigenvalue = eigenSolveSmallest(cov, eigenvector);
 
-      plane = Plane3::fromEquation(cgal_plane.a(), cgal_plane.b(), cgal_plane.c(), cgal_plane.d());  // normalizes (a, b, c)
-      if (centroid) *centroid = Vector3(cgal_centroid.x(), cgal_centroid.y(), cgal_centroid.z());
-
-      return quality;
+      plane = Plane3::fromPointAndNormal(Vector3(center), Vector3(eigenvector));
+      
+      if (centroid) *centroid = center;
+      return eigenvalue;
     }
 
   private:
-    // Convert a set of point objects in 3-space to CGAL points.
+    /** Compute the covariance matrix between the coordinates of a set of 3D points. */
     template <typename InputIterator>
-    static void toCGALPoints(InputIterator begin, InputIterator end, TheaArray<CGALPoint> & result)
+    static DMat3 covMatrix(InputIterator begin, InputIterator end, DVec3 & centroid)
     {
-      for (InputIterator i = begin; i != end; ++i)
+      centroid = CentroidN<T, 3>::compute(begin, end);
+
+      DMat3 m = DMat3::zero();
+      for (InputIterator iter = begin; iter != end; ++iter)
       {
-        Vector3 p = PointTraitsN<T, 3>::getPosition(*i);
-        result.push_back(CGALPoint(p.x(), p.y(), p.z()));
+        DVec3 diff = DVec3(PointTraitsN<T, 3>::getPosition(*iter)) - centroid;
+
+        m(0, 0) += (diff[0] * diff[0]);
+        m(0, 1) += (diff[0] * diff[1]);
+        m(0, 2) += (diff[0] * diff[2]);
+
+        m(1, 1) += (diff[1] * diff[1]);
+        m(1, 2) += (diff[1] * diff[2]);
+
+        m(2, 2) += (diff[2] * diff[2]);
       }
+
+      m(1, 0) = m(0, 1);
+      m(2, 0) = m(0, 2);
+      m(2, 1) = m(1, 2);
+
+      return m;
+    }
+
+    /** Compute the smallest eigenvalue (returned) and corresponding eigenvector of a symmetric 3x3 matrix. */
+    static double eigenSolveSmallest(DMat3 const & m, DVec3 & eigenvector)
+    {
+      double eigenvalues[3];
+      DVec3 eigenvectors[3];
+
+      int num_eigen = m.eigenSolveSymmetric((double *)eigenvalues, (DVec3 *)eigenvectors);
+      if (num_eigen <= 0)
+        throw Error("LinearLeastSquares2: Could not eigensolve matrix");
+
+      int min_index = 0;
+      for (int i = 1; i < num_eigen; ++i)
+        if (eigenvalues[i] < eigenvalues[min_index])
+          min_index = i;
+
+      eigenvector = eigenvectors[min_index];
+      return eigenvalues[min_index];
     }
 
 }; // class LinearLeastSquares3<Point3>

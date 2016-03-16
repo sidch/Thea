@@ -42,9 +42,9 @@
 #ifndef __Thea_Matrix2_hpp__
 #define __Thea_Matrix2_hpp__
 
+#include "Math.hpp"
 #include "MatrixMN.hpp"
 #include "VectorN.hpp"
-#include <cmath>
 
 namespace Thea {
 
@@ -159,6 +159,58 @@ class /* THEA_API */ MatrixMN<2, 2, T> : public Internal::SquareMatrixN<2, T>
         throw Error("MatrixMN<2, 2, T>: Could not invert matrix " + this->toString() + " with given tolerance");
 
       return result;
+    }
+
+    /**
+     * Solve for the real eigenvalues and eigenvectors of the matrix.
+     *
+     * @param eigenvalues Used to return the eigenvalues of the matrix. Must be preallocated to at least 2 elements.
+     * @param eigenvectors Used to return the eigenvectors of the matrix. Must be preallocated to at least 2 elements.
+     *
+     * @return The number of real eigenvalues found.
+     */
+    int eigenSolve(T * eigenvalues, VectorN<2, T> * eigenvectors) const
+    {
+      T a = (*this)(0, 0), b = (*this)(0, 1);
+      T c = (*this)(1, 0), d = (*this)(1, 1);
+
+      T trace  =  a + d;
+      T det    =  a * d - b * c;
+
+      T disc = trace * trace / 4 - det;
+      if (disc < 0)
+        return 0;
+
+      T s = std::sqrt(disc);
+      eigenvalues[0] = trace / 2 - s;
+      eigenvalues[1] = trace / 2 + s;
+
+      if (!Math::fuzzyEq(c, 0))
+      {
+        eigenvectors[0][0] = eigenvalues[0] - d;
+        eigenvectors[0][1] = c;
+
+        eigenvectors[1][0] = eigenvalues[1] - d;
+        eigenvectors[1][1] = c;
+      }
+      else if (!Math::fuzzyEq(b, 0))
+      {
+        eigenvectors[0][0] = b;
+        eigenvectors[0][1] = eigenvalues[0] - a;
+
+        eigenvectors[1][0] = b;
+        eigenvectors[1][1] = eigenvalues[1] - a;
+      }
+      else
+      {
+        eigenvectors[0][0] = 1;
+        eigenvectors[0][1] = 0;
+
+        eigenvectors[1][0] = 0;
+        eigenvectors[1][1] = 1;
+      }
+
+      return 2;
     }
 
 }; // class MatrixMN<2, 2, T>

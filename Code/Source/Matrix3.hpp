@@ -173,12 +173,14 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
     }
 
     /**
-     * Solve for the eigenvalues and eigenvectors of the matrix, assuming it is symmetric.
+     * Solve for the real eigenvalues and eigenvectors of the matrix, assuming it is symmetric.
      *
      * @param eigenvalues Used to return the eigenvalues of the matrix. Must be preallocated to at least 3 elements.
      * @param eigenvectors Used to return the eigenvectors of the matrix. Must be preallocated to at least 3 elements.
+     *
+     * @return The number of real eigenvalues found.
      */
-    void eigenSolveSymmetric(T * eigenvalues, VectorN<3, T> * eigenvectors) const
+    int eigenSolveSymmetric(T * eigenvalues, VectorN<3, T> * eigenvectors) const
     {
       // From G3D::Matrix3
 
@@ -186,7 +188,10 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
       T subdiag[3];
       scratch.tridiagonal(eigenvalues, subdiag);
       if (!scratch.qlAlgorithm(eigenvalues, subdiag))
-        throw Error("MatrixMN<3, 3, T>: Could not apply QL algorithm to matrix");
+      {
+        THEA_ERROR << "MatrixMN<3, 3, T>: Could not apply QL algorithm to matrix";
+        return 0;
+      }
 
       for (int i = 0; i < 3; i++)
         eigenvectors[i] = scratch.getColumn(i);
@@ -196,6 +201,8 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
       T det = eigenvectors[0].dot(cross);
       if (det < 0)
         eigenvectors[2] = -eigenvectors[2];
+
+      return 3;
     }
 
     /**
