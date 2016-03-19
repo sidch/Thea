@@ -1,4 +1,4 @@
-#include "../../Common.hpp"
+#include "ShapeRenderer.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"
 #include "../../Graphics/Camera.hpp"
@@ -45,9 +45,7 @@ struct View
 struct Model
 {
   Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
-  bool load(string const & path);
   Camera fitCamera(Matrix4 const & transform, View const & view, Real zoom, int width, int height);
-  bool render(ColorRGBA const & color);
 
   bool convert_to_points;
   MG mesh_group;
@@ -63,39 +61,168 @@ enum PointUsage
   POINTS_ALL      = 0xFFFF,
 };
 
-RenderSystem * render_system = NULL;
-TheaArray<string> model_paths;
-TheaArray<Matrix4> transforms;
-float zoom = 1.0f;
-string out_path;
-int out_width, out_height;
-TheaArray<View> views;
-bool has_up = false;
-Vector3 view_up(0, 1, 0);
-float point_size = 1.0f;
-bool color_by_id = false;
-string selected_mesh;
-ColorRGBA primary_color(1.0f, 0.9f, 0.8f, 1.0f);
-ColorRGBA background_color(1, 1, 1, 1);
-int antialiasing_level = 1;
-PointUsage show_points = POINTS_NONE;
+class ShapeRendererImpl
+{
+  private:
+    static AtomicInt32 has_render_system;
+    static RenderSystem * render_system;
+    static Shader * point_shader;
+    static Shader * mesh_shader;
+    static Shader * face_index_shader;
 
-bool parseArgs(int argc, char * argv[]);
-bool loadPlugins(int argc, char * argv[]);
-ColorRGBA getPaletteColor(long n);
+    TheaArray<string> model_paths;
+    TheaArray<Matrix4> transforms;
+    float zoom;
+    string out_path;
+    int out_width, out_height;
+    TheaArray<View> views;
+    bool has_up;
+    Vector3 view_up;
+    float point_size;
+    bool color_by_id;
+    string selected_mesh;
+    ColorRGBA primary_color;
+    ColorRGBA background_color;
+    int antialiasing_level;
+    PointUsage show_points;
+
+    bool loadPlugins(int argc, char ** argv);
+    bool parseArgs(int argc, char ** argv);
+    bool usage();
+    bool parseTransform(string const & s, Matrix4 & m);
+    bool parseViewDiscrete(string const & s, View & view, bool silent = false);
+    bool parseViewContinuous(string const & s, View & view, bool silent = false);
+    bool parseViewFile(string const & path);
+    bool parseViewUp(string const & s, Vector3 & up);
+    bool parseColor(string const & s, ColorRGBA & c);
+    void resetArgs();
+    bool loadModel(Model & model, string const & path);
+    bool renderModel(Model const & model, ColorRGBA const & color);
+    void colorizeMeshSelection(MG & mg, uint32 parent_id);
+
+  public:
+    ShapeRendererImpl(int argc, char * argv[]);  // just loads plugins and initializes variables
+
+    int exec(string const & cmdline);
+    int exec(int argc, char ** argv);
+
+}; // class ShapeRendererImpl
+
+ShapeRenderer::ShapeRenderer(int argc, char * argv[])
+{
+  impl = new ShapeRendererImpl(argc, argv);
+}
+
+ShapeRenderer::~ShapeRenderer()
+{
+  delete impl;
+}
 
 int
-main(int argc, char * argv[])
+ShapeRenderer::exec(string const & cmdline)
+{
+  return impl->exec(cmdline);
+}
+
+int
+ShapeRenderer::exec(int argc, char ** argv)
+{
+  return impl->exec(argc, argv);
+}
+
+AtomicInt32 ShapeRendererImpl::has_render_system(0);
+RenderSystem * ShapeRendererImpl::render_system = NULL;
+Shader * ShapeRendererImpl::point_shader = NULL;
+Shader * ShapeRendererImpl::mesh_shader = NULL;
+Shader * ShapeRendererImpl::face_index_shader = NULL;
+
+ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
+{
+  resetArgs();
+
+  if (has_render_system.compareAndSet(0, 1) == 0)
+  {
+    if (!loadPlugins(argc, argv))
+      throw Error("Could not load plugins");
+  }
+}
+
+void
+ShapeRendererImpl::resetArgs()
+{
+  model_paths.clear();
+  transforms.clear();
+  zoom = 1.0f;
+  out_path = "";
+  out_width = out_height = -1;
+  views.clear();
+  has_up = false;
+  view_up = Vector3(0, 1, 0);
+  point_size = 1.0f;
+  color_by_id = false;
+  selected_mesh = "";
+  primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
+  background_color = ColorRGBA(1, 1, 1, 1);
+  antialiasing_level = 1;
+  show_points = POINTS_NONE;
+}
+
+int
+ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include program name
+{
+  TheaArray<string> args;
+  stringSplit(cmdline, " \t\n\f\r", args, true);
+
+  TheaArray<char *> argv(args.size() + 1);
+
+  string prog_name = FilePath::objectName(Application::programPath());
+  argv[0] = new char[prog_name.length() + 1];
+  strcpy(argv[0], prog_name.c_str());
+
+  for (array_size_t i = 0; i < args.size(); ++i)
+  {
+    argv[i + 1] = new char[args[i].length() + 1];
+    strcpy(argv[i + 1], args[i].c_str());
+  }
+
+  int status = exec((int)argv.size(), &argv[0]);
+
+  for (array_size_t i = 0; i < argv.size(); ++i)
+    delete [] argv[i];
+
+  return status;
+}
+
+ColorRGBA
+getPaletteColor(long n)
+{
+  static ColorRGBA PALETTE[] = {
+    ColorRGBA::fromARGB(0xFFFF0000),
+    ColorRGBA::fromARGB(0xFF00FF00),
+    ColorRGBA::fromARGB(0xFF0000FF),
+    ColorRGBA::fromARGB(0xFF00FFFF),
+    ColorRGBA::fromARGB(0xFFFF00FF),
+    ColorRGBA::fromARGB(0xFFFFFF00),
+    ColorRGBA::fromARGB(0xFF800000),
+    ColorRGBA::fromARGB(0xFF008000),
+    ColorRGBA::fromARGB(0xFF000080),
+    ColorRGBA::fromARGB(0xFF008080),
+    ColorRGBA::fromARGB(0xFF800080),
+    ColorRGBA::fromARGB(0xFF808000),
+  };
+
+  return PALETTE[n % (sizeof(PALETTE) / sizeof(ColorRGBA))];
+}
+
+int
+ShapeRendererImpl::exec(int argc, char ** argv)
 {
   if (!parseArgs(argc, argv))
     return -1;
 
-  if (!loadPlugins(argc, argv))
-    return -1;
-
   // Load the mesh
   Model model(show_points & POINTS_PRIMARY);
-  if (!model.load(model_paths[0]))
+  if (!loadModel(model, model_paths[0]))
     return -1;
 
   // Set up framebuffer for offscreen drawing
@@ -164,14 +291,14 @@ main(int argc, char * argv[])
           // Draw primary model
           render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
             render_system->multMatrix(transforms[0]);
-            model.render(primary_color);
+            renderModel(model, primary_color);
           render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
 
           // Draw overlay models
           for (array_size_t i = 1; i < model_paths.size(); ++i)
           {
             model.convert_to_points = (show_points & POINTS_OVERLAY);
-            if (!model.load(model_paths[i]))
+            if (!loadModel(model, model_paths[i]))
               return -1;
 
             ColorRGBA overlay_color = getPaletteColor((long)i - 1);
@@ -181,7 +308,7 @@ main(int argc, char * argv[])
 
             render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
               render_system->multMatrix(transforms[i]);
-              model.render(overlay_color);
+              renderModel(model, overlay_color);
             render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
           }
 
@@ -221,7 +348,7 @@ main(int argc, char * argv[])
 }
 
 bool
-usage()
+ShapeRendererImpl::usage()
 {
   string app_path = FilePath::objectName(Application::programPath());
 
@@ -256,7 +383,7 @@ usage()
 }
 
 bool
-parseTransform(string const & s, Matrix4 & m)
+ShapeRendererImpl::parseTransform(string const & s, Matrix4 & m)
 {
   TheaArray<string> fields;
   long nfields = stringSplit(trimWhitespace(s), ",;:[({<>})] \t\n\r\f", fields, true);
@@ -281,7 +408,7 @@ parseTransform(string const & s, Matrix4 & m)
 }
 
 bool
-parseViewDiscrete(string const & s, View & view, bool silent = false)
+ShapeRendererImpl::parseViewDiscrete(string const & s, View & view, bool silent)
 {
   if (s.length() != 3)
   {
@@ -331,7 +458,7 @@ parseViewDiscrete(string const & s, View & view, bool silent = false)
 }
 
 bool
-parseViewContinuous(string const & s, View & view, bool silent = false)
+ShapeRendererImpl::parseViewContinuous(string const & s, View & view, bool silent)
 {
   double dx, dy, dz;
   double ex, ey, ez;
@@ -392,7 +519,7 @@ parseViewContinuous(string const & s, View & view, bool silent = false)
 }
 
 bool
-parseViewFile(string const & path)
+ShapeRendererImpl::parseViewFile(string const & path)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -426,7 +553,7 @@ parseViewFile(string const & path)
 }
 
 bool
-parseViewUp(string const & s, Vector3 & up)
+ShapeRendererImpl::parseViewUp(string const & s, Vector3 & up)
 {
   if (s.length() != 1 && s.length() != 2)
   {
@@ -469,7 +596,7 @@ parseViewUp(string const & s, Vector3 & up)
 }
 
 bool
-parseColor(string const & s, ColorRGBA & c)
+ShapeRendererImpl::parseColor(string const & s, ColorRGBA & c)
 {
   std::stringstream ss;
   ss << std::hex << s;
@@ -490,13 +617,14 @@ parseColor(string const & s, ColorRGBA & c)
 }
 
 bool
-parseArgs(int argc, char * argv[])
+ShapeRendererImpl::parseArgs(int argc, char ** argv)
 {
   if (argc < 5)
     return usage();
 
+  resetArgs();
+
   Matrix4 current_transform = Matrix4::identity();
-  has_up = false;
 
   argv++;
   argc--;
@@ -732,27 +860,6 @@ parseArgs(int argc, char * argv[])
   return true;
 }
 
-ColorRGBA
-getPaletteColor(long n)
-{
-  static ColorRGBA PALETTE[] = {
-    ColorRGBA::fromARGB(0xFFFF0000),
-    ColorRGBA::fromARGB(0xFF00FF00),
-    ColorRGBA::fromARGB(0xFF0000FF),
-    ColorRGBA::fromARGB(0xFF00FFFF),
-    ColorRGBA::fromARGB(0xFFFF00FF),
-    ColorRGBA::fromARGB(0xFFFFFF00),
-    ColorRGBA::fromARGB(0xFF800000),
-    ColorRGBA::fromARGB(0xFF008000),
-    ColorRGBA::fromARGB(0xFF000080),
-    ColorRGBA::fromARGB(0xFF008080),
-    ColorRGBA::fromARGB(0xFF800080),
-    ColorRGBA::fromARGB(0xFF808000),
-  };
-
-  return PALETTE[n % (sizeof(PALETTE) / sizeof(ColorRGBA))];
-}
-
 typedef std::pair<Mesh const *, long> FaceRef;
 typedef TheaUnorderedMap<FaceRef, uint32> FaceIndexMap;
 
@@ -867,7 +974,7 @@ struct FaceIndexColorizer
 };
 
 void
-colorizeMeshSelection(MG & mg, uint32 parent_id)
+ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
 {
   for (MG::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
   {
@@ -926,11 +1033,11 @@ averageNormals(Mesh & mesh)
 }
 
 bool
-Model::load(string const & path)
+ShapeRendererImpl::loadModel(Model & model, string const & path)
 {
-  mesh_group.clear();
-  points.clear();
-  is_point_cloud = false;
+  model.mesh_group.clear();
+  model.points.clear();
+  model.is_point_cloud = false;
 
   if (endsWith(toLower(path), ".pts"))
   {
@@ -951,16 +1058,16 @@ Model::load(string const & path)
       istringstream line_in(line);
       if (!(line_in >> x >> y >> z))
       {
-        THEA_ERROR << "Could not read point " << points.size() << " from '" << path << '\'';
+        THEA_ERROR << "Could not read point " << model.points.size() << " from '" << path << '\'';
         return false;
       }
 
-      points.push_back(Vector3((Real)x, (Real)y, (Real)z));
+      model.points.push_back(Vector3((Real)x, (Real)y, (Real)z));
     }
 
-    is_point_cloud = true;
+    model.is_point_cloud = true;
 
-    THEA_CONSOLE << "Read " << points.size() << " points from '" << path << '\'';
+    THEA_CONSOLE << "Read " << model.points.size() << " points from '" << path << '\'';
   }
   else
   {
@@ -974,11 +1081,11 @@ Model::load(string const & path)
 
       string ext = toLower(FilePath::completeExtension(path));
       if (ext == "3ds")
-        mesh_group.load(path, codec_3ds);
+        model.mesh_group.load(path, codec_3ds);
       else if (ext == "obj")
-        mesh_group.load(path, codec_obj);
+        model.mesh_group.load(path, codec_obj);
       else if (ext == "off" || ext == "off.bin")
-        mesh_group.load(path, codec_off);
+        model.mesh_group.load(path, codec_off);
       else
       {
         THEA_ERROR << "Unsupported file type: " << path;
@@ -987,35 +1094,35 @@ Model::load(string const & path)
     }
     THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
 
-    if (convert_to_points)
+    if (model.convert_to_points)
     {
-      MeshSampler<Mesh> sampler(mesh_group);
+      MeshSampler<Mesh> sampler(model.mesh_group);
 
       double out_scale = min(out_width, out_height);
       long max_samples = (long)ceil(10 * out_scale);
-      long npoints = sampler.sampleEvenlyByArea(max_samples, points);
+      long npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
 
-      mesh_group.clear();
-      is_point_cloud = true;
+      model.mesh_group.clear();
+      model.is_point_cloud = true;
     }
     else
     {
       if (color_by_id)
       {
         FaceIndexColorizer id_colorizer(tri_ids, quad_ids);
-        mesh_group.forEachMeshUntil(&id_colorizer);
+        model.mesh_group.forEachMeshUntil(&id_colorizer);
       }
       else if (!selected_mesh.empty())
       {
-        colorizeMeshSelection(mesh_group, 0);
+        colorizeMeshSelection(model.mesh_group, 0);
       }
       else
-        mesh_group.forEachMeshUntil(averageNormals);
+        model.mesh_group.forEachMeshUntil(averageNormals);
 
 #ifdef DRAW_EDGES
-      mesh_group.forEachMeshUntil(enableWireframe);
+      model.mesh_group.forEachMeshUntil(enableWireframe);
 #endif
     }
   }
@@ -1282,7 +1389,7 @@ initFaceIndexShader(Shader & shader)
 }
 
 bool
-Model::render(ColorRGBA const & color)
+ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 {
   render_system->pushShader();
   render_system->pushShapeFlags();
@@ -1298,10 +1405,9 @@ Model::render(ColorRGBA const & color)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   }
 
-  if (is_point_cloud)
+  if (model.is_point_cloud)
   {
     // Initialize the shader
-    static Shader * point_shader = NULL;
     if (!point_shader)
     {
       point_shader = render_system->createShader("Point shader");
@@ -1323,12 +1429,12 @@ Model::render(ColorRGBA const & color)
     render_system->setPointSize(point_size * antialiasing_level);
     render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
 
-      for (array_size_t i = 0; i < points.size(); ++i)
+      for (array_size_t i = 0; i < model.points.size(); ++i)
       {
         if (color_by_id)
           render_system->setColor(indexToColor((uint32)i, true));
 
-        render_system->sendVertex(points[i]);
+        render_system->sendVertex(model.points[i]);
       }
 
     render_system->endPrimitive();
@@ -1336,35 +1442,46 @@ Model::render(ColorRGBA const & color)
   else
   {
     // Initialize the shader
-    static Shader * mesh_shader = NULL;
-    if (!mesh_shader)
+    if (color_by_id || !selected_mesh.empty())
     {
-      mesh_shader = render_system->createShader("Mesh shader");
-      if (!mesh_shader)
+      if (!face_index_shader)
       {
-        THEA_ERROR << "Could not create mesh shader";
-        return false;
-      }
+        face_index_shader = render_system->createShader("Face index shader");
+        if (!face_index_shader)
+        {
+          THEA_ERROR << "Could not create face index shader";
+          return false;
+        }
 
-      if (color_by_id || !selected_mesh.empty())
-      {
-        if (!initFaceIndexShader(*mesh_shader))
+        if (!initFaceIndexShader(*face_index_shader))
         {
           THEA_ERROR << "Could not initialize face index shader";
           return false;
         }
       }
-      else
+
+      render_system->setShader(face_index_shader);
+    }
+    else
+    {
+      if (!mesh_shader)
       {
+        mesh_shader = render_system->createShader("Mesh shader");
+        if (!mesh_shader)
+        {
+          THEA_ERROR << "Could not create mesh shader";
+          return false;
+        }
+
         if (!initMeshShader(*mesh_shader))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
         }
       }
-    }
 
-    render_system->setShader(mesh_shader);
+      render_system->setShader(mesh_shader);
+    }
 
     RenderOptions opts = RenderOptions::defaults();
     if (color_by_id)
@@ -1379,15 +1496,15 @@ Model::render(ColorRGBA const & color)
     {
       // First back faces...
       render_system->setCullFace(RenderSystem::CullFace::FRONT);
-      mesh_group.draw(*render_system, opts);
+      model.mesh_group.draw(*render_system, opts);
 
       // ... then front faces
       render_system->setCullFace(RenderSystem::CullFace::BACK);
-      mesh_group.draw(*render_system, opts);
+      model.mesh_group.draw(*render_system, opts);
     }
     else
     {
-      mesh_group.draw(*render_system, opts);
+      model.mesh_group.draw(*render_system, opts);
     }
   }
 
@@ -1399,7 +1516,7 @@ Model::render(ColorRGBA const & color)
 }
 
 bool
-loadPlugins(int argc, char * argv[])
+ShapeRendererImpl::loadPlugins(int argc, char ** argv)
 {
   string app_path = FileSystem::resolve(Application::programPath());
   string plugin_dir = FilePath::concat(FilePath::parent(FilePath::parent(app_path)), "lib");
