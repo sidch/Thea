@@ -85,6 +85,7 @@ class ShapeRendererImpl
     ColorRGBA background_color;
     int antialiasing_level;
     PointUsage show_points;
+    bool flat;
 
     bool loadPlugins(int argc, char ** argv);
     bool parseArgs(int argc, char ** argv);
@@ -165,6 +166,7 @@ ShapeRendererImpl::resetArgs()
   background_color = ColorRGBA(1, 1, 1, 1);
   antialiasing_level = 1;
   show_points = POINTS_NONE;
+  flat = false;
 }
 
 int
@@ -377,6 +379,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
+  THEA_CONSOLE << "  -f                    (flat shading)";
   THEA_CONSOLE << "";
 
   return false;
@@ -797,6 +800,12 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           }
           argv++; argc--; break;
         }
+
+        case 'f':
+        {
+          flat = true;
+          break;
+        }
       }
     }
     else
@@ -1024,6 +1033,14 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
 }
 
 bool
+flattenFaces(Mesh & mesh)
+{
+  mesh.isolateFaces();
+  mesh.computeAveragedVertexNormals();
+  return false;
+}
+
+bool
 averageNormals(Mesh & mesh)
 {
   if (!mesh.hasNormals())
@@ -1119,7 +1136,12 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
         colorizeMeshSelection(model.mesh_group, 0);
       }
       else
-        model.mesh_group.forEachMeshUntil(averageNormals);
+      {
+        if (flat)
+          model.mesh_group.forEachMeshUntil(flattenFaces);
+        else
+          model.mesh_group.forEachMeshUntil(averageNormals);
+      }
 
 #ifdef DRAW_EDGES
       model.mesh_group.forEachMeshUntil(enableWireframe);
