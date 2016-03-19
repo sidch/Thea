@@ -32,11 +32,21 @@ using namespace Graphics;
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
 
+struct View
+{
+  Vector3 dir;
+  bool has_eye;
+  Vector3 eye;
+  Vector3 up;
+
+  View() : dir(-1, -1, -1), has_eye(false), up(0, 1, 0) {}
+};
+
 struct Model
 {
   Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
   bool load(string const & path);
-  Camera fitCamera(Matrix4 const & transform, Vector3 dir, Vector3 up, Real zoom, int width, int height);
+  Camera fitCamera(Matrix4 const & transform, View const & view, Real zoom, int width, int height);
   bool render(ColorRGBA const & color);
 
   bool convert_to_points;
@@ -59,7 +69,8 @@ TheaArray<Matrix4> transforms;
 float zoom = 1.0f;
 string out_path;
 int out_width, out_height;
-TheaArray<Vector3> view_dirs;
+TheaArray<View> views;
+bool has_up = false;
 Vector3 view_up(0, 1, 0);
 float point_size = 1.0f;
 bool color_by_id = false;
@@ -125,13 +136,12 @@ main(int argc, char * argv[])
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
   // Do the rendering
-  for (array_size_t v = 0; v < view_dirs.size(); ++v)
+  for (array_size_t v = 0; v < views.size(); ++v)
   {
     try
     {
       // Initialize the camera
-      Vector3 view_dir = view_dirs[v];
-      Camera camera = model.fitCamera(transforms[0], view_dir, view_up, zoom, buffer_width, buffer_height);
+      Camera camera = model.fitCamera(transforms[0], views[v], zoom, buffer_width, buffer_height);
 
       // Render the mesh to the offscreen framebuffer
       render_system->pushFramebuffer();
@@ -192,7 +202,7 @@ main(int argc, char * argv[])
         }
 
         string path = out_path;
-        if (view_dirs.size() > 1)
+        if (views.size() > 1)
         {
           path = FilePath::concat(FilePath::parent(path),
                                   FilePath::baseName(path) + format("_%06ld.", (long)v) + FilePath::completeExtension(path));
@@ -205,7 +215,7 @@ main(int argc, char * argv[])
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (long)v)
   }
 
-  THEA_CONSOLE << "Rendered " << view_dirs.size() << " view(s) of the shape";
+  THEA_CONSOLE << "Rendered " << views.size() << " view(s) of the shape";
 
   return 0;
 }
@@ -225,9 +235,12 @@ usage()
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
   THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
-  THEA_CONSOLE << "  -v <viewing-dir>      (comma-separated 3-vector; or string of 3 chars,";
-  THEA_CONSOLE << "                         one for each coordinate, each one of +, - or 0;";
-  THEA_CONSOLE << "                         or file containing one of the above per line";
+  THEA_CONSOLE << "  -v <arg>              (comma-separated 3-vector (viewing direction);";
+  THEA_CONSOLE << "                         or 6-vector (direction + eye position);";
+  THEA_CONSOLE << "                         or 9-vector (direction + eye + up);";
+  THEA_CONSOLE << "                         or string of 3 chars, one for each coordinate,";
+  THEA_CONSOLE << "                           each one of +, - or 0;";
+  THEA_CONSOLE << "                         or file containing one of the above per line)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
@@ -268,7 +281,7 @@ parseTransform(string const & s, Matrix4 & m)
 }
 
 bool
-parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up, bool silent = false)
+parseViewDiscrete(string const & s, View & view, bool silent = false)
 {
   if (s.length() != 3)
   {
@@ -282,61 +295,104 @@ parseViewDirectionDiscrete(string const & s, Vector3 & dir, Vector3 & up, bool s
     return false;
   }
 
+  view = View();
+
   for (int i = 0; i < 3; ++i)
   {
     switch (s[i])
     {
-      case '+': dir[i] =  1; break;
-      case '-': dir[i] = -1; break;
-      case '0': dir[i] =  0; break;
+      case '+': view.dir[i] =  1; break;
+      case '-': view.dir[i] = -1; break;
+      case '0': view.dir[i] =  0; break;
       default:
         if (!silent) THEA_ERROR << "Invalid view direction string '" << s << '\'';
         return false;
     }
   }
 
-  if (s == "0-0")
-    up = -Vector3::unitZ();
-  else if (s == "0+0")
-    up = Vector3::unitZ();
-  else
-    up = Vector3::unitY();
-
-  return true;
-}
-
-bool
-parseViewDirectionContinuous(string const & s, Vector3 & dir, Vector3 & up, bool silent = false)
-{
-  double x, y, z;
-  if (sscanf(s.c_str(), " %lf , %lf , %lf", &x, &y, &z) != 3)
-  {
-    if (!silent) THEA_ERROR << "Invalid view direction string '" << s << '\'';
-    return false;
-  }
-
-  dir = Vector3(x, y, z);
-  if (dir.squaredLength() <= 1e-10)
+  if (view.dir.squaredLength() <= 1e-10)
   {
     if (!silent) THEA_ERROR << "View direction is zero vector";
     return false;
   }
 
-  dir.unitize();
+  view.dir.unitize();
 
-  Real d = dir.dot(Vector3::unitY());
-  if (Math::fuzzyEq(d, (Real)-1))
-    up = -Vector3::unitZ();
-  else if (Math::fuzzyEq(d, (Real)1))
-    up = Vector3::unitZ();
+  if (has_up)
+    view.up = view_up;
+  else if (s == "0-0")
+    view.up = -Vector3::unitZ();
+  else if (s == "0+0")
+    view.up = Vector3::unitZ();
   else
-    up = Vector3::unitY();
+    view.up = Vector3::unitY();
 
   return true;
 }
 
 bool
-parseViewDirectionFile(string const & path, Vector3 & up)
+parseViewContinuous(string const & s, View & view, bool silent = false)
+{
+  double dx, dy, dz;
+  double ex, ey, ez;
+  double ux, uy, uz;
+  char trailing[2];  // to make sure there's nothing after the 9th number
+  int num_params = sscanf(s.c_str(), " %lf , %lf , %lf , %lf , %lf , %lf , %lf , %lf , %lf %1s",
+                          &dx, &dy, &dz, &ex, &ey, &ez, &ux, &uy, &uz, trailing);
+
+  if (!(num_params == 9 || num_params == 6 || num_params == 3))
+  {
+    if (!silent) THEA_ERROR << "Invalid view string '" << s << '\'';
+    return false;
+  }
+
+  view = View();
+
+  view.dir = Vector3(dx, dy, dz);
+  if (view.dir.squaredLength() <= 1e-10)
+  {
+    if (!silent) THEA_ERROR << "View direction is zero vector";
+    return false;
+  }
+
+  view.dir.unitize();
+
+  if (num_params == 6)
+  {
+    view.has_eye = true;
+    view.eye = Vector3(ex, ey, ez);
+  }
+
+  if (num_params == 9)
+  {
+    view.up = Vector3(ux, uy, uz);
+
+    if (view.up.squaredLength() <= 1e-10)
+    {
+      if (!silent) THEA_ERROR << "View up is zero vector";
+      return false;
+    }
+
+    view.up.unitize();
+  }
+  else if (has_up)
+    view.up = view_up;
+  else
+  {
+    Real d = view.dir.dot(Vector3::unitY());
+    if (Math::fuzzyEq(d, (Real)-1))
+      view.up = -Vector3::unitZ();
+    else if (Math::fuzzyEq(d, (Real)1))
+      view.up = Vector3::unitZ();
+    else
+      view.up = Vector3::unitY();
+  }
+
+  return true;
+}
+
+bool
+parseViewFile(string const & path)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -346,8 +402,7 @@ parseViewDirectionFile(string const & path, Vector3 & up)
   }
 
   string line;
-  Vector3 view_dir, line_up;
-  bool first = true;
+  View view;
   while (getline(in, line))
   {
     line = trimWhitespace(line);
@@ -355,22 +410,16 @@ parseViewDirectionFile(string const & path, Vector3 & up)
       continue;
     else if (line.length() == 3)
     {
-      if (!parseViewDirectionDiscrete(line, view_dir, line_up))
+      if (!parseViewDiscrete(line, view))
         return false;
     }
     else
     {
-      if (!parseViewDirectionContinuous(line, view_dir, line_up))
+      if (!parseViewContinuous(line, view))
         return false;
     }
 
-    view_dirs.push_back(view_dir);
-
-    if (first)  // determine view up from first entry in file
-    {
-      up = line_up;
-      first = false;
-    }
+    views.push_back(view);
   }
 
   return true;
@@ -447,7 +496,7 @@ parseArgs(int argc, char * argv[])
     return usage();
 
   Matrix4 current_transform = Matrix4::identity();
-  bool has_up = false;
+  has_up = false;
 
   argv++;
   argc--;
@@ -522,19 +571,21 @@ parseArgs(int argc, char * argv[])
 
         case 'v':
         {
-          if (argc < 1) { THEA_ERROR << "-v: View direction not specified"; return false; }
-          Vector3 view_dir, up;
+          if (argc < 1) { THEA_ERROR << "-v: View parameters not specified"; return false; }
+          View view;
           bool status = false;
           if (strlen(*argv) == 3)
-            status = parseViewDirectionDiscrete(*argv, view_dir, up, true);
+            status = parseViewDiscrete(*argv, view, true);
           else
-            status = parseViewDirectionContinuous(*argv, view_dir, up, true);
+            status = parseViewContinuous(*argv, view, true);
 
-          if (!status)
+          if (status)
+            views.push_back(view);
+          else
           {
             if (FileSystem::fileExists(*argv))
             {
-              if (!parseViewDirectionFile(*argv, up))
+              if (!parseViewFile(*argv))
                 return false;
             }
             else
@@ -544,7 +595,6 @@ parseArgs(int argc, char * argv[])
             }
           }
 
-          if (!has_up) view_up = up;
           argv++; argc--; break;
         }
 
@@ -670,8 +720,14 @@ parseArgs(int argc, char * argv[])
     return usage();
   }
 
-  if (view_dirs.empty())
-    view_dirs.push_back(Vector3(-1, -1, -1));
+  if (views.empty())
+  {
+    View view;
+    view.dir = Vector3(-1, -1, -1);
+    view.up = Vector3(0, 1, 0);
+
+    views.push_back(view);
+  }
 
   return true;
 }
@@ -1062,22 +1118,29 @@ modelBSphere(Model const & model, Matrix4 const & transform)
 }
 
 Camera
-Model::fitCamera(Matrix4 const & transform, Vector3 dir, Vector3 up, Real zoom, int width, int height)
+Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int width, int height)
 {
   // Orientation
   Ball3 bsphere = modelBSphere(*this, transform);
   Vector3 center = bsphere.getCenter();
   Real diameter = bsphere.getDiameter();
 
-  // THEA_CONSOLE << "Model bounding sphere = " << bsphere.toString();
+  // Make absolutely sure these are unit vectors
+  Vector3 dir  =  view.dir.unit();
+  Vector3 up   =  view.up.unit();
+  Vector3 eye;
 
-  Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
-  dir.unitize();
-  up.unitize();
+  if (view.has_eye)
+  {
+    eye = view.eye;
+  }
+  else
+  {
+    Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
+    eye = center - camera_separation * dir;
+  }
 
-  CoordinateFrame3 cframe = CoordinateFrame3::fromViewFrame(center - camera_separation * dir,  // eye
-                                                            center,                            // look-at
-                                                            up);                               // up
+  CoordinateFrame3 cframe = CoordinateFrame3::fromViewFrame(eye, eye + dir, up);
 
   // Projection
   static Real const HALF_WIDTH = 0.5;
@@ -1095,8 +1158,9 @@ Model::fitCamera(Matrix4 const & transform, Vector3 dir, Vector3 up, Real zoom, 
     hh = HALF_WIDTH;
   }
 
-  Real near_dist = 0.01f * camera_separation;
-  Real far_dist  = 2 * camera_separation + 2 * diameter;
+  Real center_distance = std::max((bsphere.getCenter() - eye).dot(dir), (Real)0);
+  Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
+  Real far_dist  = center_distance + 2 * diameter;
 
   hw = (hw / zoom) * (0.5f * near_dist);
   hh = (hh / zoom) * (0.5f * near_dist);
