@@ -54,7 +54,7 @@ echo "Installing Thea to $INSTALL_DIR"
 # Ensure target directories exist
 ################################################################################################################################
 
-mkdir -p '${INSTALL_DIR}/bin' '${INSTALL_DIR}/include' '${INSTALL_DIR}/lib' '${INSTALL_DIR}/share' '${INSTALL_DIR}/man'
+mkdir -p "${INSTALL_DIR}/bin" "${INSTALL_DIR}/include" "${INSTALL_DIR}/lib" "${INSTALL_DIR}/share" "${INSTALL_DIR}/man"
 
 
 ################################################################################################################################
@@ -62,10 +62,10 @@ mkdir -p '${INSTALL_DIR}/bin' '${INSTALL_DIR}/include' '${INSTALL_DIR}/lib' '${I
 ################################################################################################################################
 
 echo "Installing Thea..."
-cd '${BASE_DIR}/../Build'
-cmake -DTHEA_INSTALLATIONS_ROOT='${INSTALL_DIR}' -DCMAKE_INSTALL_PREFIX='${INSTALL_DIR}' .
+cd "${BASE_DIR}/../Build"
+cmake -DTHEA_INSTALLATIONS_ROOT="${INSTALL_DIR}" -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" .
 make $NUM_PROCS install
-cd '${BASE_DIR}'
+cd "${BASE_DIR}"
 
 
 ################################################################################################################################
