@@ -504,10 +504,10 @@ DisplayMesh::isolateFaces()
 
   for (array_size_t i = 0; i < quads.size(); i += 4)
   {
-    array_size_t i0 = (array_size_t)tris[i    ];
-    array_size_t i1 = (array_size_t)tris[i + 1];
-    array_size_t i2 = (array_size_t)tris[i + 2];
-    array_size_t i3 = (array_size_t)tris[i + 3];
+    array_size_t i0 = (array_size_t)quads[i    ];
+    array_size_t i1 = (array_size_t)quads[i + 1];
+    array_size_t i2 = (array_size_t)quads[i + 2];
+    array_size_t i3 = (array_size_t)quads[i + 3];
 
     uint32 new_vindex = (uint32)new_vertices.size();
 
@@ -540,10 +540,10 @@ DisplayMesh::isolateFaces()
       new_texcoords.push_back(texcoords[i3]);
     }
 
-    tris[i    ]  =  new_vindex;
-    tris[i + 1]  =  new_vindex + 1;
-    tris[i + 2]  =  new_vindex + 2;
-    tris[i + 3]  =  new_vindex + 3;
+    quads[i    ]  =  new_vindex;
+    quads[i + 1]  =  new_vindex + 1;
+    quads[i + 2]  =  new_vindex + 2;
+    quads[i + 3]  =  new_vindex + 3;
   }
 
   vertices   =  new_vertices;
