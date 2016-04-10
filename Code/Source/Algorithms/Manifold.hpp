@@ -46,8 +46,8 @@
 #include "../Array.hpp"
 #include "../Set.hpp"
 #include "../Stack.hpp"
+#include "../UnionFind.hpp"
 #include "../Vector3.hpp"
-#include <CGAL/Union_find.h>
 #include <utility>
 
 namespace Thea {
@@ -123,22 +123,19 @@ class THEA_API Manifold
         TheaSet<array_size_t> shared_edges;
 
         // Group the faces into maximal edge-connected components
-        typedef CGAL::Union_find<array_size_t> UnionFind;
-        UnionFind uf;
-        TheaArray<UnionFind::handle> handles(v2f[i].size());
-        for (array_size_t j = 0; j < v2f[i].size(); ++j)
-          handles[j] = uf.push_back(v2f[i][j]);
+        typedef UnionFind<array_size_t> UnionFind;
+        UnionFind uf(v2f[i].begin(), v2f[i].end());
 
         for (array_size_t j = 0; j < v2f[i].size(); ++j)
           for (array_size_t k = j + 1; k < v2f[i].size(); ++k)
             if (shareEdgeAtVertex(faces[v2f[i][j]], faces[v2f[i][k]], i, shared_edges))
-              uf.unify_sets(handles[j], handles[k]);
+              uf.merge((long)j, (long)k);
 
         // Retain only the faces edge-connected to the first one, assigning the rest to a copy of the vertex
         bool created_new_vertex = false;
         for (array_size_t j = 1; j < v2f[i].size(); ++j)
         {
-          if (!uf.same_set(handles[0], handles[j]))
+          if (!uf.sameSet(0, j))
           {
             array_size_t face = v2f[i][j];
             array_size_t copy_index = v2f.size() - 1;
@@ -170,7 +167,7 @@ class THEA_API Manifold
         {
           TheaArray<array_size_t> nbd;
           for (array_size_t j = 0; j < v2f[i].size(); ++j)
-            if (uf.same_set(handles[0], handles[j]))
+            if (uf.sameSet(0, j))
               nbd.push_back(v2f[i][j]);
 
           v2f[i] = nbd;

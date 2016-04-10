@@ -15,9 +15,9 @@
 #include "../../Colors.hpp"
 #include "../../Math.hpp"
 #include "../../System.hpp"
+#include "../../UnionFind.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../VectorN.hpp"
-#include <CGAL/Union_find.h>
 #include <boost/functional/hash.hpp>
 #include <boost/thread/thread.hpp>
 #include <algorithm>
@@ -377,29 +377,7 @@ doMeanShiftBlock(TheaArray<IndexedValue> const * descs, TheaArray<IndexedValue> 
     (*modes)[i] = IndexedValue(doMeanShift((*descs)[i].value, *descs, bandwidth, NUM_ITERS, THRESHOLD), (*descs)[i].index);
 }
 
-/** Union-find data structure, wrapper for CGAL::Union_find. */
-template < typename T, typename A = CGAL_ALLOCATOR(T) >
-class UnionFind : public CGAL::Union_find<T, A>
-{
-  private:
-    typedef CGAL::Union_find<T, A> BaseType;
-
-  public:
-    /** Hash functor for mutable handle. */
-    struct HandleHash
-    {
-      size_t operator()(typename BaseType::handle ufh) const { return reinterpret_cast<size_t>(&(*ufh)); }
-    };
-
-    /** Hash functor for immutable handle. */
-    struct ConstHandleHash
-    {
-      size_t operator()(typename BaseType::const_handle ufh) const { return reinterpret_cast<size_t>(&(*ufh)); }
-    };
-
-}; // class UnionFind
-
-typedef UnionFind<int> LabelUnionFind;
+typedef UnionFind<> LabelUnionFind;
 
 int
 defaultConcurrency()
@@ -444,11 +422,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   sort(modes.begin(), modes.end());
 
   // Create a union-find structure that starts with a set for every sample and finishes with a set for every cluster
-  LabelUnionFind uf;
-
-  TheaArray<LabelUnionFind::handle> handles(modes.size());
-  for (array_size_t i = 0; i < modes.size(); ++i)
-    handles[i] = uf.push_back((int)i);  // indices into the modes array
+  LabelUnionFind uf((long)modes.size());
 
   // Combine all means that are within a small threshold of each other
   static double const THRESHOLD_SCALE = 1.3;
@@ -458,36 +432,35 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   static unsigned int MAX_ITERS = 100;
   double merge_threshold = 0.001 * bandwidth;
 
-  size_t last_num_sets = uf.number_of_sets();
+  size_t last_num_sets = uf.numSets();
   size_t last_diff = numeric_limits<size_t>::max() / 4;
   for (unsigned int iter = 1; iter <= MAX_ITERS; ++iter)
   {
     for (array_size_t i = 1; i < modes.size(); ++i)
       if (fabs(modes[i].value - modes[i - 1].value) < merge_threshold)
       {
-        uf.unify_sets(handles[i], handles[i - 1]);  // indices are into modes array
+        uf.merge((long)i, (long)i - 1);  // indices are into modes array
       }
 
-    THEA_CONSOLE << uf.number_of_sets() << " clusters identified after merge pass " << iter << " with threshold "
-                 << merge_threshold;
+    THEA_CONSOLE << uf.numSets() << " clusters identified after merge pass " << iter << " with threshold " << merge_threshold;
 
-    size_t diff = max(last_num_sets - uf.number_of_sets(), (size_t)1);
-    if (uf.number_of_sets() <= MAX_CLUSTERS)
+    size_t diff = max(last_num_sets - uf.numSets(), (size_t)1);
+    if (uf.numSets() <= MAX_CLUSTERS)
     {
       // If there are too few sets, or we just made a large jump to enter the allowed region, or there is a sharp drop in the
       // number of sets, stop
-      if (uf.number_of_sets() <= QUICK_STOP
-       || last_num_sets - uf.number_of_sets() >= REQUIRED_DIFF
+      if (uf.numSets() <= QUICK_STOP
+       || last_num_sets - uf.numSets() >= REQUIRED_DIFF
        || diff > 2 * last_diff)
         break;
     }
 
     merge_threshold *= THRESHOLD_SCALE;
-    last_num_sets = uf.number_of_sets();
+    last_num_sets = uf.numSets();
     last_diff = diff;
   }
 
-  return (int)uf.number_of_sets();
+  return (int)uf.numSets();
 }
 
 struct SampleCluster;  // forward declaration
