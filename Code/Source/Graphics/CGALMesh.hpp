@@ -56,7 +56,6 @@
 #include <CGAL/basic.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
-#include <CGAL/Union_find.h>
 
 namespace Thea {
 namespace Graphics {

@@ -40,11 +40,14 @@
 //============================================================================
 
 #include "BestFitEllipsoid3.hpp"
-#include <CGAL/Cartesian.h>
-#include <CGAL/MP_Float.h>
-#include <CGAL/Approximate_min_ellipsoid_d.h>
-#include <CGAL/Approximate_min_ellipsoid_d_traits_3.h>
-#include <algorithm>
+
+#ifdef THEA_ENABLE_CGAL
+#  include <CGAL/Cartesian.h>
+#  include <CGAL/MP_Float.h>
+#  include <CGAL/Approximate_min_ellipsoid_d.h>
+#  include <CGAL/Approximate_min_ellipsoid_d_traits_3.h>
+#  include <algorithm>
+#endif
 
 namespace Thea {
 namespace Algorithms {
@@ -108,6 +111,8 @@ BestFitEllipsoid3::update() const
   }
   else
   {
+#ifdef THEA_ENABLE_CGAL
+
     typedef CGAL::Cartesian<double>                                 Kernel;
     typedef CGAL::MP_Float                                          ET;
     typedef CGAL::Approximate_min_ellipsoid_d_traits_3<Kernel, ET>  Traits;
@@ -183,6 +188,12 @@ BestFitEllipsoid3::update() const
       if ((axis[0].cross(axis[1])).dot(axis[2]) < 0)
         axis[2] = -axis[2];
     }
+
+#else
+
+    throw FatalError("BestFitEllipsoid3: Requires CGAL for 2 or more points");
+
+#endif
   }
 
   updated = true;

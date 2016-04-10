@@ -43,12 +43,10 @@
 #define __Thea_Algorithms_ConnectedComponents_hpp__
 
 #include "../Common.hpp"
-#include "../Array.hpp"
-#include "../UnorderedMap.hpp"
 #include "../Graphics/MeshType.hpp"
-
-// TODO: Remove dependence on CGAL union-find by rolling one of our own
-#include <CGAL/Union_find.h>
+#include "../Array.hpp"
+#include "../UnionFind.hpp"
+#include "../UnorderedMap.hpp"
 #include <boost/utility/enable_if.hpp>
 
 namespace Thea {
@@ -108,48 +106,43 @@ class THEA_API ConnectedComponents
     static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceHandleT> > & components,
                                   typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type * dummy = NULL)
     {
-      typedef CGAL::Union_find<typename MeshT::Facet *> FacetUnionFind;
-      FacetUnionFind uf;
-
       // Begin with all faces as separate components
-      TheaUnorderedMap<typename MeshT::Facet *, typename FacetUnionFind::handle> facet_handles;
+      TheaArray<typename MeshT::Facet *> facets;
       for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); fi++)
-      {
-        typename MeshT::Facet * fp = &(*fi);
-        typename FacetUnionFind::handle handle = uf.push_back(fp);
-        facet_handles[fp] = handle;
-      }
+        facets.push_back(&(*fi));
+
+      typedef UnionFind<typename MeshT::Facet *> FacetUnionFind;
+      FacetUnionFind uf(facets.begin(), facets.end());
 
       // Now go over all edges, connecting the faces on either side
       for (typename MeshT::Edge_iterator ei = mesh.edges_begin(); ei != mesh.edges_end(); ei++)
       {
         if (!ei->is_border_edge())
         {
-          typename FacetUnionFind::handle handle1 = facet_handles[&(*ei->facet())];
-          typename FacetUnionFind::handle handle2 = facet_handles[&(*ei->opposite()->facet())];
-          uf.unify_sets(handle1, handle2);
+          long handle1 = uf.getObjectID(&(*ei->facet()));
+          long handle2 = uf.getObjectID(&(*ei->opposite()->facet()));
+          uf.merge(handle1, handle2);
         }
       }
 
       // Reserve space for the result
-      components.resize(uf.number_of_sets());
+      components.resize((array_size_t)uf.numSets());
 
-      typedef TheaUnorderedMap<typename MeshT::Facet *, array_size_t> ComponentIndexMap;
+      typedef TheaUnorderedMap<long, array_size_t> ComponentIndexMap;
       ComponentIndexMap component_indices;
 
       // Loop over facets, adding each to the appropriate result subarray
       array_size_t component_index;
       for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); fi++)
       {
-        typename FacetUnionFind::handle rep = uf.find(facet_handles[&(*fi)]);
-
-        typename ComponentIndexMap::iterator existing = component_indices.find(*rep);
+        long rep = uf.find(uf.getObjectID(&(*fi)));
+        typename ComponentIndexMap::const_iterator existing = component_indices.find(rep);
         if (existing == component_indices.end())
         {
           component_index = component_indices.size();
-          component_indices[*rep] = component_index;
+          component_indices[rep] = component_index;
           components[component_index].clear();
-          components[component_index].reserve(uf.size(rep));
+          components[component_index].reserve(uf.sizeOfSet(rep));
         }
         else
           component_index = existing->second;
@@ -175,41 +168,36 @@ class THEA_API ConnectedComponents
       typedef MeshT Mesh;
       typedef FaceT Face;
 
-      typedef CGAL::Union_find<Face *> FaceUnionFind;
-      FaceUnionFind uf;
-
       // Begin with all faces as separate components
-      TheaUnorderedMap<Face *, typename FaceUnionFind::handle> face_handles;
+      TheaArray<Face *> faces;
       for (typename Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
-      {
-        Face * face = &(*fi);
-        typename FaceUnionFind::handle handle = uf.push_back(face);
-        face_handles[face] = handle;
-      }
+        faces.push_back(&(*fi));
+
+      typedef UnionFind<Face *> FaceUnionFind;
+      FaceUnionFind uf(faces.begin(), faces.end());
 
       // Now go over all edges, connecting the faces on either side
-      unifyAdjacentFaces(mesh, face_handles, uf);
+      unifyAdjacentFaces(mesh, uf);
 
       // Reserve space for the result
-      components.resize(uf.number_of_sets());
+      components.resize(uf.numSets());
 
-      typedef TheaUnorderedMap<Face *, array_size_t> ComponentIndexMap;
+      typedef TheaUnorderedMap<long, array_size_t> ComponentIndexMap;
       ComponentIndexMap component_indices;
 
       // Loop over faces, adding each to the appropriate result subarray
       array_size_t component_index;
       for (typename Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
       {
-        Face * face = &(*fi);
-        typename FaceUnionFind::handle rep = uf.find(face_handles[face]);
-
-        typename ComponentIndexMap::iterator existing = component_indices.find(*rep);
+        FaceT * face = &(*fi);
+        long rep = uf.find(uf.getObjectID(face));
+        typename ComponentIndexMap::iterator existing = component_indices.find(rep);
         if (existing == component_indices.end())
         {
           component_index = component_indices.size();
-          component_indices[*rep] = component_index;
+          component_indices[rep] = component_index;
           components[component_index].clear();
-          components[component_index].reserve(uf.size(rep));
+          components[component_index].reserve(uf.sizeOfSet(rep));
         }
         else
           component_index = existing->second;
@@ -225,8 +213,8 @@ class THEA_API ConnectedComponents
      *
      * @see GeneralMesh
      */
-    template <typename MeshT, typename FaceHandleMap, typename FaceUnionFind>
-    static void unifyAdjacentFaces(MeshT & mesh, FaceHandleMap & face_handles, FaceUnionFind & uf,
+    template <typename MeshT, typename FaceUnionFind>
+    static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
                                    typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy = NULL)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
@@ -234,9 +222,9 @@ class THEA_API ConnectedComponents
         for (typename MeshT::Edge::FaceIterator fi = ei->facesBegin(); fi != ei->facesEnd(); ++fi)
           for (typename MeshT::Edge::FaceIterator fj = ei->facesBegin(); fj != fi; ++fj)
           {
-            typename FaceUnionFind::handle handle1 = face_handles[*fi];
-            typename FaceUnionFind::handle handle2 = face_handles[*fj];
-            uf.unify_sets(handle1, handle2);
+            long handle1 = uf.getObjectID(*fi);
+            long handle2 = uf.getObjectID(*fj);
+            uf.merge(handle1, handle2);
           }
       }
     }
@@ -246,17 +234,17 @@ class THEA_API ConnectedComponents
      *
      * @see DCELMesh
      */
-    template <typename MeshT, typename FaceHandleMap, typename FaceUnionFind>
-    static void unifyAdjacentFaces(MeshT & mesh, FaceHandleMap & face_handles, FaceUnionFind & uf,
+    template <typename MeshT, typename FaceUnionFind>
+    static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
                                    typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
         if (!ei->isBoundaryEdge())
         {
-          typename FaceUnionFind::handle handle1 = face_handles[ei->getFace()];
-          typename FaceUnionFind::handle handle2 = face_handles[ei->twin()->getFace()];
-          uf.unify_sets(handle1, handle2);
+          long handle1 = uf.getObjectID(ei->getFace());
+          long handle2 = uf.getObjectID(ei->twin()->getFace());
+          uf.merge(handle1, handle2);
         }
       }
     }
