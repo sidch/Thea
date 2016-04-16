@@ -133,7 +133,7 @@ class THEA_API Polygon3
      *
      * @return The number of triangles created.
      */
-    long triangulate(TheaArray<long> & tri_indices, Real epsilon = Math::eps<Real>()) const;
+    long triangulate(TheaArray<long> & tri_indices, Real epsilon = -1) const;
 
     /** Compute the area of the polygon. */
     Real area() const;
@@ -173,7 +173,7 @@ class THEA_API Polygon3
                                long & i0, long & j0, long & k0,
                                long & i1, long & j1, long & k1)
     {
-      return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, Math::eps<T>());
+      return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, static_cast<T>(-1));
     }
 
     /**
@@ -230,7 +230,7 @@ class THEA_API Polygon3
       }
 
       // Check for degenerate triangles
-      T e2 = epsilon * epsilon;
+      T e2 = (epsilon < 0 ? Math::eps<T>() * Math::eps<T>() : epsilon * epsilon);
       if (n0.squaredLength() < e2)
       {
         if (n1.squaredLength() < e2)
