@@ -1028,6 +1028,9 @@ triangulate(Mesh & mesh)
   if (num_triangulated_faces < 0)
     return true;  // error, stop recursion through mesh group
 
+  if (num_triangulated_faces == 0)  // already triangulated
+    return false;
+
   long after_num_faces = mesh.numFaces();
 
   THEA_CONSOLE << "Mesh " << mesh.getName() << ": " << num_triangulated_faces << " face(s) triangulated with "
