@@ -133,7 +133,7 @@ class THEA_API Polygon3
      *
      * @return The number of triangles created.
      */
-    long triangulate(TheaArray<long> & tri_indices) const;
+    long triangulate(TheaArray<long> & tri_indices, Real epsilon = Math::eps<Real>()) const;
 
     /** Compute the area of the polygon. */
     Real area() const;
@@ -170,11 +170,10 @@ class THEA_API Polygon3
     template <typename T>
     static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
                                VectorN<3, T> const & p2, VectorN<3, T> const & p3,
-                               int & i0, int & j0, int & k0,
-                               int & i1, int & j1, int & k1)
+                               long & i0, long & j0, long & k0,
+                               long & i1, long & j1, long & k1)
     {
-      // Tolerance a bit smaller than for linear quantities, we're comparing area^2
-      return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, Math::eps<T>() * Math::eps<T>());
+      return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, Math::eps<T>());
     }
 
     /**
@@ -203,8 +202,8 @@ class THEA_API Polygon3
     template <typename T>
     static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
                                VectorN<3, T> const & p2, VectorN<3, T> const & p3,
-                               int & i0, int & j0, int & k0,
-                               int & i1, int & j1, int & k1,
+                               long & i0, long & j0, long & k0,
+                               long & i1, long & j1, long & k1,
                                T const & epsilon)
     {
       typedef VectorN<3, T> VectorT;
@@ -231,9 +230,10 @@ class THEA_API Polygon3
       }
 
       // Check for degenerate triangles
-      if (n0.squaredLength() < epsilon)
+      T e2 = epsilon * epsilon;
+      if (n0.squaredLength() < e2)
       {
-        if (n1.squaredLength() < epsilon)
+        if (n1.squaredLength() < e2)
           return 0;
         else
         {
@@ -241,7 +241,7 @@ class THEA_API Polygon3
           return 1;
         }
       }
-      else if (n1.squaredLength() < epsilon)
+      else if (n1.squaredLength() < e2)
         return 1;
       else
         return 2;
@@ -252,7 +252,8 @@ class THEA_API Polygon3
     Real projArea() const;
 
     /** Check if a triangle can be removed. */
-    bool snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices) const;
+    bool snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices,
+              Real epsilon) const;
 
     TheaArray<IndexedVertex> vertices;
     long max_index;

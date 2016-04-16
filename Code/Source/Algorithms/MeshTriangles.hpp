@@ -365,8 +365,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     v[2] = *(vi++);
     v[3] = *vi;
 
-    int i0, j0, k0;
-    int i1, j1, k1;
+    long i0, j0, k0;
+    long i1, j1, k1;
     int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
                                              i0, j0, k0, i1, j1, k1);
 
@@ -433,8 +433,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     v[2] = he->next()->next()->getOrigin();
     v[3] = he->next()->next()->next()->getOrigin();
 
-    int i0, j0, k0;
-    int i1, j1, k1;
+    long i0, j0, k0;
+    long i1, j1, k1;
     int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
                                              i0, j0, k0, i1, j1, k1);
 
@@ -503,8 +503,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     v[2] = he->next()->next()->vertex();
     v[3] = he->next()->next()->next()->vertex();
 
-    int i0, j0, k0;
-    int i1, j1, k1;
+    long i0, j0, k0;
+    long i1, j1, k1;
     int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
                                              i0, j0, k0, i1, j1, k1);
 
@@ -578,8 +578,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     array_size_t end = beg + 4 * (array_size_t)face.numQuads();
     for (array_size_t i = beg; i < end; i += 4)
     {
-      int i0, j0, k0;
-      int i1, j1, k1;
+      long i0, j0, k0;
+      long i1, j1, k1;
       int num_tris = Polygon3::triangulateQuad(vertices[(array_size_t)quad_indices[i    ]],
                                                vertices[(array_size_t)quad_indices[i + 1]],
                                                vertices[(array_size_t)quad_indices[i + 2]],

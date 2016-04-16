@@ -101,6 +101,8 @@ bool do_orient = false;
 bool do_orient_sdf = false;
 bool do_orient_majority = false;
 
+bool do_triangulate = false;
+
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
 void delDuplicateFaces(MG & mesh_group, bool sorted);
@@ -110,6 +112,7 @@ bool tJuncts(Mesh & mesh);
 bool orient(Mesh & mesh);
 bool orientMajority(Mesh & mesh);
 void orientSDF(MG & mesh_group);
+bool triangulate(Mesh & mesh);
 bool checkProblems(Mesh & mesh);
 
 int
@@ -207,6 +210,12 @@ meshFix(int argc, char * argv[])
     mg.forEachMeshUntil(&checkProblems);
   }
 
+  if (do_triangulate)
+  {
+    if (mg.forEachMeshUntil(&triangulate)) return -1;
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
   string lc_out = toLower(outfile);
   if (endsWith(lc_out, ".3ds"))
     mg.save(outfile, codec_3ds);
@@ -286,6 +295,8 @@ parseArgs(int argc, char * argv[])
           ("orient-majority",     "Consistently orient each edge-connected component of the mesh so that normals defined by"
                                   " counter-clockwise winding point inside-out, flipping faces that disagree most with their"
                                   " neighbors first")
+
+          ("triangulate",         "Triangulate every face with more than 3 vertices")
   ;
 
   po::options_description desc;
@@ -381,6 +392,9 @@ parseArgs(int argc, char * argv[])
 
   if (vm.count("orient-majority") > 0)
     do_orient_majority = do_something = true;
+
+  if (vm.count("triangulate") > 0)
+    do_triangulate = do_something = true;
 
   if (!do_something)
   {
@@ -996,6 +1010,33 @@ orientMajority(Mesh & mesh)
   if (verbose)
   {
     THEA_CONSOLE << "orient-majority('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+  }
+
+  return false;
+}
+
+bool
+triangulate(Mesh & mesh)
+{
+  long before_num_faces = mesh.numFaces();
+
+  Real epsilon = max(1.0e-6f * mesh.getBounds().getExtent().length(), 1.0e-10f);
+  long num_triangulated_faces = mesh.triangulate(epsilon);
+  if (num_triangulated_faces < 0)
+    return true;  // error, stop recursion through mesh group
+
+  long after_num_faces = mesh.numFaces();
+
+  THEA_CONSOLE << "Mesh " << mesh.getName() << ": " << num_triangulated_faces << " face(s) triangulated with "
+               << (after_num_faces - before_num_faces + num_triangulated_faces) << " triangles";
+
+  for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+  {
+    if (fi->numVertices() > 3)
+    {
+      THEA_ERROR << "Mesh was triangulated but still has a face with " << fi->numVertices() << " vertices";
+      return true;
+    }
   }
 
   return false;
