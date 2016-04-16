@@ -484,6 +484,14 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       dst.marked = marked;
     }
 
+    /** Reset the face to an empty state. */
+    void clear()
+    {
+      vertices.clear();
+      edges.clear();
+      marked = false;
+    }
+
     VertexList vertices;
     EdgeList edges;
     bool marked;

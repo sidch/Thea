@@ -47,6 +47,7 @@
 #include "../Colors.hpp"
 #include "../List.hpp"
 #include "../NamedObject.hpp"
+#include "../Polygon3.hpp"
 #include "../UnorderedMap.hpp"
 #include "GeneralMeshFace.hpp"
 #include "GeneralMeshVertex.hpp"
@@ -360,54 +361,14 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     template <typename VertexInputIterator>
     Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend)
     {
-      // Check for errors and compute normal
-      array_size_t num_verts = 0;
-      Vector3 v[3];
-      for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
-      {
-        debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
-        if (num_verts < 3) v[num_verts] = (*vi)->getPosition();
-      }
-
-      if (num_verts < 3)
-      {
-        THEA_WARNING << getName() << ": Skipping face -- too few vertices (" << num_verts << ')';
-        return NULL;
-      }
-
       // Create the (initially empty) face
       faces.push_back(Face());
       Face * face = &(*faces.rbegin());
 
-      // Add the loop of vertices to the face
-      VertexInputIterator next = vbegin;
-      for (VertexInputIterator vi = next++ ; vi != vend; ++vi, ++next)
-      {
-        if (next == vend) next = vbegin;
-
-        face->addVertex(*vi);
-        (*vi)->addFace(face, false);  // we'll update the normals later
-
-        Edge * edge = (*vi)->getEdgeTo(*next);
-        if (!edge)
-        {
-          edges.push_back(Edge(*vi, *next));
-          edge = &(*edges.rbegin());
-
-          (*vi)->addEdge(edge);
-          (*next)->addEdge(edge);
-        }
-
-        edge->addFace(face);
-        face->addEdge(edge);
-      }
-
-      // Update the face and vertex normals;
-      face->updateNormal();
-      for (typename Face::VertexIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
-        (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
-
-      invalidateGPUBuffers();
+      // Initialize the face
+      face = initFace(face, vbegin, vend);
+      if (!face)
+        faces.pop_back();
 
       return face;
     }
@@ -443,13 +404,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     bool removeFace(FaceIterator face)
     {
       Face * fp = &(*face);
-
-      for (typename Face::VertexIterator fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
-        (*fvi)->removeFace(fp);
-
-      for (typename Face::EdgeIterator fei = face->edges.begin(); fei != face->edges.end(); ++fei)
-        (*fei)->removeFace(fp);
-
+      unlinkFace(fp);
       faces.erase(face);
 
       return true;
@@ -941,6 +896,115 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     }
 
     /**
+     * Triangulate all faces with more than 3 vertices.
+     *
+     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not.
+     *
+     * @return The number of triangulated faces, or a negative number on error. (The number of generated triangles can be
+     *   obtained by comparing the number of mesh faces before and after the operation.)
+     */
+    long triangulate(Real epsilon = Math::eps<Real>())
+    {
+      long orig_num_faces = numFaces();
+      long num_visited_faces = 0;
+      long num_triangulated_faces = 0;
+
+      // New faces will be added to the end of the face list, so we can just keep track of when we've processed the original
+      // number of faces
+      for (FaceIterator fi = facesBegin(); num_visited_faces < orig_num_faces; ++fi, ++num_visited_faces)
+        if (fi->numVertices() > 3)
+        {
+          long nt = triangulate(&(*fi), epsilon);
+          if (nt < 0)
+            return nt;
+
+          num_triangulated_faces++;
+        }
+
+      return num_triangulated_faces;
+    }
+
+    /**
+     * Triangulate a face if it has more than 3 vertices.
+     *
+     * @param face The face to triangulate.
+     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not.
+     *
+     * @return The number of triangles resulting from the operation (1 if the face is already a triangle, negative on error).
+     */
+    long triangulate(Face * face, Real epsilon = Math::eps<Real>())
+    {
+      if (!face)
+        return 0;
+
+      if (face->numVertices() <= 3)
+        return 1;
+
+      long ntris = 0;
+      if (face->numVertices() == 4)
+      {
+        Vertex * face_vertices[4];
+        {
+          array_size_t i = 0;
+          for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
+            face_vertices[i] = *fvi;
+        }
+
+        long tri_indices[6];
+        ntris = Polygon3::triangulateQuad(face_vertices[0]->getPosition(),
+                                          face_vertices[1]->getPosition(),
+                                          face_vertices[2]->getPosition(),
+                                          face_vertices[3]->getPosition(),
+                                          tri_indices[0], tri_indices[1], tri_indices[2],
+                                          tri_indices[3], tri_indices[4], tri_indices[5], epsilon);
+        if (ntris >= 1)
+        {
+          if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))
+            return -1;
+        }
+      }
+      else
+      {
+        TheaArray<Vertex *> face_vertices((array_size_t)face->numVertices());
+        Polygon3 poly;
+        {
+          array_size_t i = 0;
+          for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
+          {
+            face_vertices[i] = *fvi;
+            poly.addVertex((*fvi)->getPosition());
+          }
+        }
+
+        TheaArray<long> tri_indices;
+        ntris = poly.triangulate(tri_indices, epsilon);
+        if (ntris >= 1)
+        {
+          if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))
+            return -1;
+        }
+      }
+
+      // If the triangulation generated no triangles, the face is degenerate but we must replace it with SOME triangle
+      if (ntris <= 0)
+      {
+        Vertex * face_vertices[3];
+        typename Face::VertexConstIterator fvi = face->verticesBegin();
+        face_vertices[0] = *(fvi++);
+        face_vertices[1] = *(fvi++);
+        face_vertices[2] = *(fvi);
+
+        long tri_indices[3] = { 0, 1, 2 };
+        ntris = 1;
+
+        if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))
+          return -1;
+      }
+
+      return ntris;
+    }
+
+    /**
      * Check if GPU-buffered rendering is on or off. If it is on, you <b>must manually call</b> invalidateGPUBuffers() every
      * time the mesh changes, to make sure the GPU buffers are update when the mesh is next rendered.
      *
@@ -1012,6 +1076,74 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     AxisAlignedBox3 const & getBounds() const { return bounds; }
 
   private:
+    /**
+     * Initialize a pre-constructed face, which will be assigned the sequence of vertices obtained by dereferencing
+     * [vbegin, vend). VertexInputIterator must dereference to a pointer to a Vertex. Unless the mesh is already in an
+     * inconsistent state, failure to add the face will not affect the mesh.
+     *
+     * Automatically calls invalidateGPUBuffers() to schedule a resync with the GPU.
+     *
+     * @param face The previously constructed face, assumed to be <b>uninitialized</b>.
+     * @param vbegin Points to the beginning of the vertex sequence.
+     * @param vend Points to (one past) the end of the vertex sequence.
+     *
+     * @return A pointer to the face, or null on error.
+     */
+    template <typename VertexInputIterator>
+    Face * initFace(Face * face, VertexInputIterator vbegin, VertexInputIterator vend)
+    {
+      debugAssertM(face, getNameStr() + ": Null face cannot be initialized");
+
+      // Check for errors and compute normal
+      array_size_t num_verts = 0;
+      Vector3 v[3];
+      for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
+      {
+        debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
+        if (num_verts < 3) v[num_verts] = (*vi)->getPosition();
+      }
+
+      if (num_verts < 3)
+      {
+        THEA_WARNING << getName() << ": Skipping face -- too few vertices (" << num_verts << ')';
+        return NULL;
+      }
+
+      face->clear();
+
+      // Add the loop of vertices to the face
+      VertexInputIterator next = vbegin;
+      for (VertexInputIterator vi = next++ ; vi != vend; ++vi, ++next)
+      {
+        if (next == vend) next = vbegin;
+
+        face->addVertex(*vi);
+        (*vi)->addFace(face, false);  // we'll update the normals later
+
+        Edge * edge = (*vi)->getEdgeTo(*next);
+        if (!edge)
+        {
+          edges.push_back(Edge(*vi, *next));
+          edge = &(*edges.rbegin());
+
+          (*vi)->addEdge(edge);
+          (*next)->addEdge(edge);
+        }
+
+        edge->addFace(face);
+        face->addEdge(edge);
+      }
+
+      // Update the face and vertex normals;
+      face->updateNormal();
+      for (typename Face::VertexIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
+        (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
+
+      invalidateGPUBuffers();
+
+      return face;
+    }
+
     /** Set vertex color. */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
@@ -1242,6 +1374,47 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     {
       for (FaceIterator fi = facesBegin(); fi != facesEnd(); ++fi)
         fi->unmark();
+    }
+
+    /** Remove all references to a face from its adjacent elements. */
+    void unlinkFace(Face * face)
+    {
+      debugAssertM(face, getNameStr() + ": Can't unlink null face");
+
+      for (typename Face::VertexIterator fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
+        (*fvi)->removeFace(face);
+
+      for (typename Face::EdgeIterator fei = face->edges.begin(); fei != face->edges.end(); ++fei)
+        (*fei)->removeFace(face);
+    }
+
+    /** Replace a higher-degree face with multiple triangular faces. */
+    bool replaceFaceWithTriangulation(Face * face, Vertex ** face_vertices, long num_tris, long * tri_indices)
+    {
+      debugAssertM(face, getNameStr() + ": Can't replace null face with triangulation");
+
+      Vertex * tri_vertices[3];
+      for (long i = 0; i < num_tris; ++i)
+      {
+        for (int j = 0; j < 3; ++j)
+          tri_vertices[j] = face_vertices[tri_indices[3 * i + j]];
+
+        if (i == 0)
+        {
+          // Repurpose the existing face as the first triangle. Avoids having to remove the face from the mesh (linear-time).
+          unlinkFace(face);
+          if (!initFace(face, &tri_vertices[0], &tri_vertices[0] + 3))
+            return false;
+        }
+        else
+        {
+          // Construct a new triangular face
+          if (!addFace(&tri_vertices[0], &tri_vertices[0] + 3))
+            return false;
+        }
+      }
+
+      return true;
     }
 
     /** Draw the mesh in immediate rendering mode. */

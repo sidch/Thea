@@ -154,15 +154,14 @@ Polygon3_insideTriangle2(Vector2 const & A, Vector2 const & B, Vector2 const & C
 }
 
 bool
-Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices) const
+Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices,
+               Real epsilon) const
 {
-  static Real const EPSILON = 1e-10f;
-
   Vector2 const & A = proj_vertices[indices[u]];
   Vector2 const & B = proj_vertices[indices[v]];
   Vector2 const & C = proj_vertices[indices[w]];
 
-  if (EPSILON > (((B.x() - A.x()) * (C.y() - A.y())) - ((B.y() - A.y()) * (C.x() - A.x()))))
+  if (epsilon > (((B.x() - A.x()) * (C.y() - A.y())) - ((B.y() - A.y()) * (C.x() - A.x()))))
   {
     // THEA_DEBUG << "Polygon3: Epsilon test failed: A = " << A << ", B = " << B << ", C = " << C << ", eps = " << EPSILON;
     return false;
@@ -204,7 +203,7 @@ Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, T
 //
 //   Instead, we will project onto the plane of the polygon.
 long
-Polygon3::triangulate(TheaArray<long> & tri_indices) const
+Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
 {
   if (vertices.size() < 3)
   {
@@ -266,7 +265,7 @@ Polygon3::triangulate(TheaArray<long> & tri_indices) const
       array_size_t w = v + 1;
       if (nv <= w) w = 0;
 
-      if (snip(u, v, w, nv, indices))
+      if (snip(u, v, w, nv, indices, epsilon))
       {
         array_size_t a = indices[u];
         array_size_t b = indices[v];
