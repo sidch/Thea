@@ -102,6 +102,7 @@ bool do_orient_sdf = false;
 bool do_orient_majority = false;
 
 bool do_triangulate = false;
+double triangulate_tolerance = -1;
 
 int parseArgs(int argc, char * argv[]);
 bool delDanglers(Mesh & mesh);
@@ -296,7 +297,8 @@ parseArgs(int argc, char * argv[])
                                   " counter-clockwise winding point inside-out, flipping faces that disagree most with their"
                                   " neighbors first")
 
-          ("triangulate",         "Triangulate every face with more than 3 vertices")
+          ("triangulate",         po::value<double>(&triangulate_tolerance),
+                                  "Triangulate every face with more than 3 vertices")
   ;
 
   po::options_description desc;
@@ -1020,7 +1022,8 @@ triangulate(Mesh & mesh)
 {
   long before_num_faces = mesh.numFaces();
 
-  Real epsilon = max(1.0e-6f * mesh.getBounds().getExtent().length(), 1.0e-10f);
+  Real tol = (triangulate_tolerance < 0 ? 1.0e-6f : (Real)triangulate_tolerance);
+  Real epsilon = max(tol * mesh.getBounds().getExtent().length(), tol);
   long num_triangulated_faces = mesh.triangulate(epsilon);
   if (num_triangulated_faces < 0)
     return true;  // error, stop recursion through mesh group

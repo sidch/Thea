@@ -205,6 +205,9 @@ Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, T
 long
 Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
 {
+  if (epsilon < 0)
+    epsilon = Math::eps<Real>();
+
   if (vertices.size() < 3)
   {
     tri_indices.clear();

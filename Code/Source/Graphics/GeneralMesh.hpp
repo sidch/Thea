@@ -898,12 +898,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /**
      * Triangulate all faces with more than 3 vertices.
      *
-     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not.
+     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not. A negative value selects a default
+     *   setting.
      *
      * @return The number of triangulated faces, or a negative number on error. (The number of generated triangles can be
      *   obtained by comparing the number of mesh faces before and after the operation.)
      */
-    long triangulate(Real epsilon = Math::eps<Real>())
+    long triangulate(Real epsilon = -1)
     {
       long orig_num_faces = numFaces();
       long num_visited_faces = 0;
@@ -928,11 +929,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      * Triangulate a face if it has more than 3 vertices.
      *
      * @param face The face to triangulate.
-     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not.
+     * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not. A negative value selects a default
+     *   setting.
      *
      * @return The number of triangles resulting from the operation (1 if the face is already a triangle, negative on error).
      */
-    long triangulate(Face * face, Real epsilon = Math::eps<Real>())
+    long triangulate(Face * face, Real epsilon = -1)
     {
       if (!face)
         return 0;
