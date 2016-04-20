@@ -405,8 +405,8 @@ loadImage(Image & image, QString const & filename)
   image.load(toStdString(filename));
   if (image.isValid())
   {
-    // This used to be necessary on Linux. No longer, since we've fixed Graphics::Texture::toTextureFormat() to detect and
-    // handle BGR images.
+    // This used to be necessary on Linux. No longer, since we've fixed TextureFormat::fromImageType() to detect and handle BGR
+    // images.
     // fixChannelOrdering(image);
 
     return true;

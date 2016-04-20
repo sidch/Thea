@@ -109,6 +109,12 @@ TextureFormat::TextureFormat(
   debugAssertM(_cpuBitsPerPixel <= _glBitsPerPixel, "TextureFormat: Too many packed bits");
 }
 
+bool
+TextureFormat::isDepth() const
+{
+  return depthBits > 0;
+}
+
 TextureFormat const *
 TextureFormat::depth(int depth_bits)
 {
@@ -539,6 +545,38 @@ TextureFormat::fromCode(Code code)
 
     default:
       return NULL;
+  }
+}
+
+TextureFormat const *
+TextureFormat::fromImageType(AbstractImage::Type type, bool is_depth)
+{
+  if (is_depth)
+  {
+    switch (type)
+    {
+      case AbstractImage::Type::LUMINANCE_16U : return DEPTH16();
+      case AbstractImage::Type::LUMINANCE_32U : return DEPTH32();
+      case AbstractImage::Type::LUMINANCE_32F : return DEPTH32F();
+      default: throw Error("TextureFormat: No supported depth texture format corresponds to the specified image format");
+    }
+  }
+
+  enum { COLOR_ORDER_RGB, COLOR_ORDER_BGR } color_order;
+  color_order = (AbstractImage::Channel::RED < AbstractImage::Channel::BLUE ? COLOR_ORDER_RGB : COLOR_ORDER_BGR);
+
+  switch (type)
+  {
+    case AbstractImage::Type::LUMINANCE_8U  : return L8();
+    case AbstractImage::Type::LUMINANCE_16U : return L16();
+    case AbstractImage::Type::LUMINANCE_32F : return L32F();
+    case AbstractImage::Type::RGB_8U        : return color_order == COLOR_ORDER_RGB ? RGB8() : BGR8();
+    case AbstractImage::Type::RGBA_8U       : return color_order == COLOR_ORDER_RGB ? RGBA8() : BGRA8();
+    case AbstractImage::Type::RGB_16U       : return color_order == COLOR_ORDER_RGB ? RGB16() : BGR16();
+    case AbstractImage::Type::RGBA_16U      : return color_order == COLOR_ORDER_RGB ? RGBA16() : BGRA16();
+    case AbstractImage::Type::RGB_32F       : return color_order == COLOR_ORDER_RGB ? RGB32F() : BGR32F();
+    case AbstractImage::Type::RGBA_32F      : return color_order == COLOR_ORDER_RGB ? RGBA32F() : BGRA32F();
+    default: throw Error("TextureFormat: No supported texture format corresponds to the specified image format");
   }
 }
 

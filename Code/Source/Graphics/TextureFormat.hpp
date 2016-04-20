@@ -54,6 +54,7 @@
 #define __Thea_Graphics_TextureFormat_hpp__
 
 #include "../Common.hpp"
+#include "../Image.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -276,10 +277,13 @@ class THEA_API TextureFormat
     /** True if the format has floating-point channels. */
     bool                floatingPoint;
 
+    /** Check if this is a depth texture format. */
+    bool isDepth() const;
+
     /** Human readable name of this format.*/
     std::string const & name() const;
 
-    /** Get an image format given its name. Takes the same values that name() returns */
+    /** Get an image format given its name. Takes the same values that name() returns. */
     static TextureFormat const * fromString(std::string const & s);
 
   private:
@@ -526,6 +530,9 @@ class THEA_API TextureFormat
     /** Returns the matching TextureFormat* identified by the Code.  May return NULL
       if this format's code is reserved but not yet implemented by Thea. */
     static TextureFormat const * fromCode(TextureFormat::Code code);
+
+    /** Internal convenience function to convert an image type to a texture storage format. */
+    static TextureFormat const * fromImageType(AbstractImage::Type type, bool is_depth = false);
 
 }; // class TextureFormat
 
