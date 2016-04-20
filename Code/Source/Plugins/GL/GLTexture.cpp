@@ -146,7 +146,7 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, Abstra
   if (dimension == Dimension::DIM_CUBE_MAP)
     throw Error(std::string(getName()) + ": This constructor cannot be used to create a cube map");
 
-  Format const * bytes_format = toTextureFormat(image.getType());
+  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
   setInternalFormat(bytes_format, desired_format);
 
   glGenTextures(1, &gl_id);
@@ -177,7 +177,7 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, Abstra
       throw Error(std::string(getName()) + ": All source images must have identical type and dimensions");
   }
 
-  Format const * bytes_format = toTextureFormat(type);
+  Format const * bytes_format = TextureFormat::fromImageType(type);
   setInternalFormat(bytes_format, desired_format);
 
   doSanityChecks();
@@ -418,7 +418,7 @@ GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * 
     glBindTexture(gl_target, gl_id);
     THEA_CHECK_GL_OK
 
-    Format const * bytes_format = toTextureFormat(image.getType());
+    Format const * bytes_format = TextureFormat::fromImageType(image.getType());
     width  = image.getWidth();
     height = image.getHeight();
     depth  = 1;
@@ -439,7 +439,7 @@ GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
 
-  Format const * bytes_format = toTextureFormat(image.getType());
+  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
   int src_depth = 1;
 
   alwaysAssertM(src_x >= 0 && src_y >= 0
@@ -505,7 +505,7 @@ GLTexture::getImage(AbstractImage & image, Face face) const
     if (depth > 1) throw Error(std::string(getName()) + ": 3D images are not currently supported");
     image.resize(image.getType(), width, height);
 
-    Format const * bytes_format = toTextureFormat(image.getType());
+    Format const * bytes_format = TextureFormat::fromImageType(image.getType(), format->isDepth());
     GLTexture__setDefaultPackingOptions(image.getRowAlignment());
 
     if (gl_target == GL_TEXTURE_CUBE_MAP_ARB)

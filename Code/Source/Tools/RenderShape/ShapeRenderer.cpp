@@ -86,6 +86,7 @@ class ShapeRendererImpl
     int antialiasing_level;
     PointUsage show_points;
     bool flat;
+    bool save_depth;
 
     bool loadPlugins(int argc, char ** argv);
     bool parseArgs(int argc, char ** argv);
@@ -167,6 +168,7 @@ ShapeRendererImpl::resetArgs()
   antialiasing_level = 1;
   show_points = POINTS_NONE;
   flat = false;
+  save_depth = false;
 }
 
 int
@@ -231,6 +233,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   int buffer_width   =  antialiasing_level * out_width;
   int buffer_height  =  antialiasing_level * out_height;
   Texture * color_tex = NULL;
+  Texture * depth_tex = NULL;
   Framebuffer * fb = NULL;
   try
   {
@@ -244,8 +247,8 @@ ShapeRendererImpl::exec(int argc, char ** argv)
       return -1;
     }
 
-    Texture * depth_tex = render_system->createTexture("Depth", buffer_width, buffer_height, 1, Texture::Format::DEPTH24(),
-                                                       Texture::Dimension::DIM_2D, tex_opts);
+    depth_tex = render_system->createTexture("Depth", buffer_width, buffer_height, 1, Texture::Format::DEPTH16(),
+                                             Texture::Dimension::DIM_2D, tex_opts);
     if (!depth_tex)
     {
       THEA_ERROR << "Could not create depth buffer";
@@ -339,6 +342,24 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
         image.save(path);
 
+        // Grab and save the depth image
+        if (save_depth)
+        {
+          Image depth_image(Image::Type::LUMINANCE_16U, buffer_width, buffer_height);
+          depth_tex->getImage(depth_image);
+
+          if (antialiasing_level > 1 && !depth_image.rescale(out_width, out_height, Image::Filter::BICUBIC))
+          {
+            THEA_ERROR << "Could not rescale depth image to output dimensions";
+            return -1;
+          }
+
+          string suffix = (views.size() > 1 ? format("_%06ld.tif", (long)v) : ".tif");
+          string depth_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_depth" + suffix);
+
+          depth_image.save(depth_path);
+        }
+
       render_system->popFramebuffer();
     }
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (long)v)
@@ -380,6 +401,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
   THEA_CONSOLE << "  -f                    (flat shading)";
+  THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "";
 
   return false;
@@ -804,6 +826,12 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         case 'f':
         {
           flat = true;
+          break;
+        }
+
+        case 'd':
+        {
+          save_depth = true;
           break;
         }
       }
