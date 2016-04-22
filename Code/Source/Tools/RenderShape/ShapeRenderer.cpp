@@ -952,10 +952,10 @@ indexToColor(uint32 index, bool is_point)
 
   if (is_point)
   {
-    if (color.g() & 0x80)
+    if (color.b() & 0x80)
       THEA_WARNING << "Too many points -- point IDs will overflow and not be one-to-one!";
 
-    color.g() = (color.g() | 0x80);
+    color.b() = (color.b() | 0x80);
   }
 
   return color;
