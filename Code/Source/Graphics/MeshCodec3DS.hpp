@@ -240,7 +240,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
         if (!builder)
         {
           std::string name = m->name;
-          mesh = MeshPtr(new Mesh(mesh_group->getName() + '/' + name));
+          mesh = MeshPtr(new Mesh(std::string(mesh_group->getName()) + '/' + name));
 
           local_builder = BuilderPtr(new Builder(mesh));
           builder = local_builder.get();
