@@ -164,7 +164,6 @@ initCodecMap()
   codec_map["CUT"  ] = new CodecCUT();
   codec_map["DDS"  ] = new CodecDDS();
   codec_map["EXR"  ] = new CodecEXR();
-  codec_map["G3"   ] = new CodecFAXG3();
   codec_map["GIF"  ] = new CodecGIF();
   codec_map["HDR"  ] = new CodecHDR();
   codec_map["ICO"  ] = new CodecICO();
@@ -246,7 +245,6 @@ THEA_DEF_SERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
 THEA_DEF_SERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
 THEA_DEF_SERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
 THEA_DEF_SERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecFAXG3,   FIF_FAXG3,   0)
 THEA_DEF_SERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
 THEA_DEF_SERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
 THEA_DEF_SERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
@@ -315,7 +313,6 @@ THEA_DEF_DESERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecFAXG3,   FIF_FAXG3,   0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)

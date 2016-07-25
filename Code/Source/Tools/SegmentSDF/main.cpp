@@ -426,14 +426,14 @@ countSDFModes(TheaArray<Real> const & sdf_values)
 
   // Combine all means that are within a small threshold of each other
   static double const THRESHOLD_SCALE = 1.3;
-  static size_t const MAX_CLUSTERS = 10;
-  static size_t const REQUIRED_DIFF = 3;
-  static size_t const QUICK_STOP = 5;
+  static long const MAX_CLUSTERS = 10;
+  static long const REQUIRED_DIFF = 3;
+  static long const QUICK_STOP = 5;
   static unsigned int MAX_ITERS = 100;
   double merge_threshold = 0.001 * bandwidth;
 
-  size_t last_num_sets = uf.numSets();
-  size_t last_diff = numeric_limits<size_t>::max() / 4;
+  long last_num_sets = uf.numSets();
+  long last_diff = numeric_limits<long>::max() / 4;
   for (unsigned int iter = 1; iter <= MAX_ITERS; ++iter)
   {
     for (array_size_t i = 1; i < modes.size(); ++i)
@@ -444,7 +444,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
 
     THEA_CONSOLE << uf.numSets() << " clusters identified after merge pass " << iter << " with threshold " << merge_threshold;
 
-    size_t diff = max(last_num_sets - uf.numSets(), (size_t)1);
+    long diff = max(last_num_sets - uf.numSets(), 1L);
     if (uf.numSets() <= MAX_CLUSTERS)
     {
       // If there are too few sets, or we just made a large jump to enter the allowed region, or there is a sharp drop in the

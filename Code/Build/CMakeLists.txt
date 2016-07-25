@@ -27,7 +27,7 @@ SET(CMAKE_DEBUG_POSTFIX "d")
 
 # Set the default build type
 IF(NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE "Release")
+  SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
 ENDIF()
 
 # Subdirectories containing individual build targets
