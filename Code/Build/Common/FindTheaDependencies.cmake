@@ -19,9 +19,9 @@ ENDIF()
 
 # Dependency: Boost
 IF(Thea_FIND_Boost OR Thea_FIND_CGAL)
-  SET(Boost_USE_STATIC_LIBS      ON)
   SET(Boost_USE_MULTITHREADED    ON)
-  SET(Boost_USE_STATIC_RUNTIME  OFF)
+  # SET(Boost_USE_STATIC_LIBS      ON)
+  # SET(Boost_USE_STATIC_RUNTIME  OFF)
   INCLUDE(BoostAdditionalVersions)
   IF(EXISTS ${THEA_INSTALLATIONS_ROOT}/installed-boost)
     SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT}/installed-boost)
