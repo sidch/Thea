@@ -43,6 +43,7 @@
 #define __Thea_EnumClass_hpp__
 
 #include "Platform.hpp"
+#include "BasicStringAlg.hpp"
 #include <string>
 #include <utility>
 
@@ -85,7 +86,8 @@ namespace Thea {
 #define THEA_ENUM_CLASS_STRINGIFY_(x) #x
 #define THEA_ENUM_CLASS_STRINGIFY(x) THEA_ENUM_CLASS_STRINGIFY_(x)
 
-// Begin sequence of mappings of enum values to strings.
+// Begin sequence of mappings of enum values to strings. There can be more than one string registered for the same value. When
+// serializing, the first registered string is used.
 #define THEA_ENUM_CLASS_STRINGS_BEGIN(name)                                                                                   \
     private:                                                                                                                  \
       static std::pair<Value, std::string> const * THEA_ENUM_CLASS_stringMapping(std::size_t i)                               \
@@ -119,19 +121,22 @@ namespace Thea {
         throw THEA_ENUM_CLASS_STRINGIFY(name) ": Enum value has no string representation";                                    \
       }                                                                                                                       \
                                                                                                                               \
-      explicit name(std::string const & str)                                                                                  \
+      explicit name(std::string const & str, bool ignore_case = false)                                                        \
       {                                                                                                                       \
-        if (!fromString(str))                                                                                                 \
+        if (!fromString(str, ignore_case))                                                                                    \
           throw THEA_ENUM_CLASS_STRINGIFY(name) ": Could not convert string to enum value";                                   \
       }                                                                                                                       \
                                                                                                                               \
-      bool fromString(std::string const & str)                                                                                \
+      bool fromString(std::string str, bool ignore_case = false)                                                              \
       {                                                                                                                       \
+        if (ignore_case)                                                                                                      \
+          str = toLower(str);                                                                                                 \
+                                                                                                                              \
         std::pair<Value, std::string> const * mapping = THEA_ENUM_CLASS_stringMapping(0);                                     \
         std::size_t i = 0;                                                                                                    \
         while (mapping)                                                                                                       \
         {                                                                                                                     \
-          if (mapping->second == str)                                                                                         \
+          if ((!ignore_case && mapping->second == str) || (ignore_case && toLower(mapping->second) == str))                   \
           {                                                                                                                   \
             value = mapping->first;                                                                                           \
             return true;                                                                                                      \

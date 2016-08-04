@@ -127,33 +127,31 @@ meshFix(int argc, char * argv[])
   opts_3ds.setIgnoreTexCoords(no_texcoords)
           .setSkipEmptyMeshes(no_empty)
           .setFlatten(flatten);
-  Codec3DS<Mesh> codec_3ds(NULL, opts_3ds, opts_3ds);
+  Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(opts_3ds, opts_3ds));
 
   CodecOBJ<Mesh>::Options opts_obj = CodecOBJ<Mesh>::Options::defaults();
   opts_obj.setIgnoreTexCoords(no_texcoords)
           .setIgnoreNormals(no_normals)
           .setSkipEmptyMeshes(no_empty)
           .setFlatten(flatten);
-  CodecOBJ<Mesh> codec_obj(NULL, opts_obj, opts_obj);
+  CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(opts_obj, opts_obj));
 
   CodecOFF<Mesh>::ReadOptions opts_off = CodecOFF<Mesh>::ReadOptions::defaults();
   opts_off.setSkipEmptyMeshes(no_empty);
-  CodecOFF<Mesh> codec_off(NULL, opts_off);
+  CodecOFF<Mesh>::Ptr codec_off(new CodecOFF<Mesh>(opts_off));
+
+  CodecPLY<Mesh>::ReadOptions opts_ply = CodecPLY<Mesh>::ReadOptions::defaults();
+  opts_ply.setSkipEmptyMeshes(no_empty);
+  CodecPLY<Mesh>::Ptr codec_ply(new CodecPLY<Mesh>(opts_ply));
+
+  TheaArray<MeshCodec<Mesh>::Ptr> codecs;
+  codecs.push_back(codec_3ds);
+  codecs.push_back(codec_obj);
+  codecs.push_back(codec_off);
+  codecs.push_back(codec_3ds);
 
   MG mg(FilePath::objectName(infile));
-
-  string lc_in = toLower(infile);
-  if (endsWith(lc_in, ".3ds"))
-    mg.load(infile, codec_3ds);
-  else if (endsWith(lc_in, ".obj"))
-    mg.load(infile, codec_obj);
-  else if (endsWith(lc_in, ".off") || endsWith(lc_in, ".off.bin"))
-    mg.load(infile, codec_off);
-  else
-  {
-    THEA_ERROR << "Unrecognized mesh input format";
-    return -1;
-  }
+  mg.load(infile, codecs);
 
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())
@@ -218,25 +216,13 @@ meshFix(int argc, char * argv[])
   }
 
   string lc_out = toLower(outfile);
-  if (endsWith(lc_out, ".3ds"))
-    mg.save(outfile, codec_3ds);
-  else if (endsWith(lc_out, ".obj"))
-    mg.save(outfile, codec_obj);
-  else if (endsWith(lc_out, ".off"))
-    mg.save(outfile, codec_off);
-  else if (endsWith(lc_out, ".off.bin"))
+  if (endsWith(lc_out, ".off.bin"))
   {
-    CodecOFF<Mesh>::WriteOptions write_opts_off = CodecOFF<Mesh>::WriteOptions::defaults();
-    write_opts_off.setBinary(true);
-    CodecOFF<Mesh> write_codec_off(NULL, opts_off, write_opts_off);
+    CodecOFF<Mesh>::WriteOptions write_opts_off = CodecOFF<Mesh>::WriteOptions().setBinary(true);
+    *codec_off = CodecOFF<Mesh>(opts_off, write_opts_off);
+  }
 
-    mg.save(outfile, write_codec_off);
-  }
-  else
-  {
-    THEA_ERROR << "Unrecognized mesh output format";
-    return -1;
-  }
+  mg.save(outfile, codecs);
 
   return 0;
 }

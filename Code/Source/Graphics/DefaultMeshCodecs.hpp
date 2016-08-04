@@ -45,5 +45,6 @@
 #include "MeshCodec3DS.hpp"
 #include "MeshCodecOBJ.hpp"
 #include "MeshCodecOFF.hpp"
+#include "MeshCodecPLY.hpp"
 
 #endif

@@ -1120,22 +1120,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     try
     {
       MeshReadCallback callback(tri_ids, quad_ids);
-      Codec3DS<Mesh> codec_3ds(&callback);
-      CodecOBJ<Mesh> codec_obj(&callback);
-      CodecOFF<Mesh> codec_off(&callback);
-
-      string ext = toLower(FilePath::completeExtension(path));
-      if (ext == "3ds")
-        model.mesh_group.load(path, codec_3ds);
-      else if (ext == "obj")
-        model.mesh_group.load(path, codec_obj);
-      else if (ext == "off" || ext == "off.bin")
-        model.mesh_group.load(path, codec_off);
-      else
-      {
-        THEA_ERROR << "Unsupported file type: " << path;
-        return false;
-      }
+      model.mesh_group.load(path, Codec_AUTO(), &callback);
     }
     THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
 

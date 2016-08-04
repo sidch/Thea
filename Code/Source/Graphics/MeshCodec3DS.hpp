@@ -122,16 +122,17 @@ class Codec3DS : public Codec3DSBase<MeshT>
     typedef Options WriteOptions;  ///< %Options for serializing meshes.
 
     /** Constructor. */
-    Codec3DS(ReadCallback * read_callback_ = NULL, ReadOptions const & read_opts_ = ReadOptions::defaults(),
+    Codec3DS(ReadOptions const & read_opts_ = ReadOptions::defaults(),
              WriteOptions const & write_opts_ = WriteOptions::defaults())
-    : read_callback(read_callback_), read_opts(read_opts_), write_opts(write_opts_) {}
+    : read_opts(read_opts_), write_opts(write_opts_) {}
 
     long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info) const
     {
       throw Error(std::string(getName()) + ": Not implemented");
     }
 
-    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info) const
+    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
+                              ReadCallback * callback) const
     {
       mesh_group.clear();
 
@@ -199,13 +200,13 @@ class Codec3DS : public Codec3DSBase<MeshT>
         Builder flat_builder(mesh);
         flat_builder.begin();
 
-          convert3DSSubtree(file3ds->meshes, file3ds->nodes, NULL, Matrix4::identity(), &flat_builder);
+          convert3DSSubtree(file3ds->meshes, file3ds->nodes, NULL, Matrix4::identity(), &flat_builder, callback);
 
         flat_builder.end();
         mesh_group.addMesh(mesh);
       }
       else
-        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::identity(), NULL);
+        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::identity(), NULL, callback);
 
       THEA_CONSOLE << getName() << ": Read a total of " << vertex_count << " vertices and " << face_count
                    << " faces (including malformed faces which may have been dropped from the final mesh)";
@@ -219,7 +220,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
      * must be null.
      */
     void convert3DSSubtree(Lib3dsMesh * meshes, Lib3dsNode * nodes, MeshGroup * mesh_group, Matrix4 const & accum_transform,
-                           Builder * flat_builder) const
+                           Builder * flat_builder, ReadCallback * callback) const
     {
       for (Lib3dsMesh * m = meshes; m; m = m->next)
       {
@@ -269,8 +270,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
           else
             vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex);
 
-          if (read_callback)
-            read_callback->vertexAdded(mesh.get(), vertex_count, vref);
+          if (callback)
+            callback->vertexAdded(mesh.get(), vertex_count, vref);
 
           vrefs.push_back(vref);
           vertex_count++;
@@ -306,8 +307,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
           face[2] = vrefs[(array_size_t)indices[2]];
 
           typename Builder::FaceHandle fref = builder->addFace(face, face + 3);
-          if (read_callback)
-            read_callback->faceAdded(mesh.get(), face_count, fref);
+          if (callback)
+            callback->faceAdded(mesh.get(), face_count, fref);
 
           face_count++;
         }
@@ -333,11 +334,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
                             : Matrix4::identity();
 
           if (flat_builder)
-            convert3DSSubtree(n->user.mesh, n->childs, NULL, transform, flat_builder);
+            convert3DSSubtree(n->user.mesh, n->childs, NULL, transform, flat_builder, callback);
           else
           {
             typename MeshGroup::Ptr child_group(new MeshGroup(mesh_group->getName() + format("/Child%d", i)));
-            convert3DSSubtree(n->user.mesh, n->childs, child_group.get(), transform, NULL);
+            convert3DSSubtree(n->user.mesh, n->childs, child_group.get(), transform, NULL, callback);
             mesh_group->addChild(child_group);
           }
         }
@@ -455,7 +456,6 @@ class Codec3DS : public Codec3DSBase<MeshT>
     }
 #endif
 
-    ReadCallback * read_callback;
     ReadOptions read_opts;
     WriteOptions write_opts;
 
