@@ -321,6 +321,8 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
     }
 
+    using Serializable::deserialize;
+
     /**
      * {@inheritDoc}
      *
