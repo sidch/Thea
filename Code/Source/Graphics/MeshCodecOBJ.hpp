@@ -158,9 +158,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     typedef Options WriteOptions;  ///< %Options for serializing meshes.
 
     /** Constructor. */
-    CodecOBJ(ReadCallback * read_callback_ = NULL, ReadOptions const & read_opts_ = ReadOptions::defaults(),
+    CodecOBJ(ReadOptions const & read_opts_ = ReadOptions::defaults(),
              WriteOptions const & write_opts_ = WriteOptions::defaults())
-    : read_callback(read_callback_), read_opts(read_opts_), write_opts(write_opts_) {}
+    : read_opts(read_opts_), write_opts(write_opts_) {}
 
     long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info) const
     {
@@ -192,7 +192,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       return (long)(enc_end - initial_pos);
     }
 
-    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info) const
+    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
+                              ReadCallback * callback) const
     {
       mesh_group.clear();
 
@@ -361,8 +362,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
                                                                          vtn[2] > 0 ? &normals[vtn[2] - 1] : NULL,
                                                                          NULL,  // color
                                                                          vtn[1] > 0 ? &texcoords[vtn[1] - 1] : NULL);
-                if (read_callback)
-                  read_callback->vertexAdded(mesh.get(), (long)vtn[0] - 1, vref);
+                if (callback)
+                  callback->vertexAdded(mesh.get(), (long)vtn[0] - 1, vref);
 
                 vtn_refs[vtn] = vref;
                 face.push_back(vref);
@@ -385,8 +386,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               if (existing == vrefs.end())
               {
                 typename Builder::VertexHandle vref = builder->addVertex(vertices[(array_size_t)index]);
-                if (read_callback)
-                  read_callback->vertexAdded(mesh.get(), index, vref);
+                if (callback)
+                  callback->vertexAdded(mesh.get(), index, vref);
 
                 vrefs[index] = vref;
                 face.push_back(vref);
@@ -400,8 +401,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           }
 
           typename Builder::FaceHandle fref = builder->addFace(face.begin(), face.end());
-          if (read_callback)
-            read_callback->faceAdded(mesh.get(), num_faces, fref);
+          if (callback)
+            callback->faceAdded(mesh.get(), num_faces, fref);
 
           num_faces++;
         }
@@ -747,7 +748,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       }
     }
 
-    ReadCallback * read_callback;
     ReadOptions read_opts;
     WriteOptions write_opts;
 

@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2016, Siddhartha Chaudhuri
 //
 // All rights reserved.
 //
@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Graphics_MeshCodecOFF_hpp__
-#define __Thea_Graphics_MeshCodecOFF_hpp__
+#ifndef __Thea_Graphics_MeshCodecPLY_hpp__
+#define __Thea_Graphics_MeshCodecPLY_hpp__
 
 #include "../Common.hpp"
 #include "../Array.hpp"
@@ -50,7 +50,7 @@
 
 namespace Thea {
 
-namespace CodecOFFInternal {
+namespace CodecPLYInternal {
 
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
@@ -64,15 +64,111 @@ struct VertexIndexMap<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh<
   typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
 
-} // namespace CodecOFFInternal
+} // namespace CodecPLYInternal
 
-/** %Codec for reading and writing OFF files. */
+/** %Codec for reading and writing Stanford PLY files. @see http://paulbourke.net/dataformats/ply/ */
 template <typename MeshT, typename BuilderT>
-class CodecOFF : public CodecOFFBase<MeshT>
+class CodecPLY : public CodecPLYBase<MeshT>
 {
   private:
-    typedef CodecOFFBase<MeshT> BaseT;
-    typedef typename CodecOFFInternal::VertexIndexMap<MeshT>::type VertexIndexMap;
+    typedef CodecPLYBase<MeshT> BaseT;
+    typedef typename CodecPLYInternal::VertexIndexMap<MeshT>::type VertexIndexMap;
+
+    /** Types of mesh elements (enum class). */
+    struct ElementType
+    {
+      enum Value
+      {
+        VERTEX,
+        FACE,
+        UNKNOWN,
+      };
+
+      THEA_ENUM_CLASS_BODY(ElementType)
+
+    }; // struct ElementType
+
+    /** Type of an element property (enum class). */
+    struct PropertyType
+    {
+      enum Value
+      {
+        // Right-two hex digits: number of bits in type
+        // Third digit from right: signed (0) or unsigned (1)
+        // Fourth digit from right: int (0) or float (1)
+        INVALID     =   0x0000,
+        LIST        =   0xFFFF,
+
+        // New names
+        INT8        =   0x0008,
+        INT16       =   0x0010,
+        INT32       =   0x0020,
+        UINT8       =   0x0108,
+        UINT16      =   0x0110,
+        UINT32      =   0x0120,
+        FLOAT32     =   0x1020,
+        FLOAT64     =   0x1040,
+      };
+
+      THEA_ENUM_CLASS_BODY(PropertyType)
+
+      THEA_ENUM_CLASS_STRINGS_BEGIN(PropertyType)
+        THEA_ENUM_CLASS_STRING(INVALID,   "invalid")
+        THEA_ENUM_CLASS_STRING(LIST,      "list")
+
+        // New names
+        THEA_ENUM_CLASS_STRING(INT8,      "int8")
+        THEA_ENUM_CLASS_STRING(INT16,     "int16")
+        THEA_ENUM_CLASS_STRING(INT32,     "int32")
+        THEA_ENUM_CLASS_STRING(UINT8,     "uint8")
+        THEA_ENUM_CLASS_STRING(UINT16,    "uint16")
+        THEA_ENUM_CLASS_STRING(UINT32,    "uint32")
+        THEA_ENUM_CLASS_STRING(FLOAT32,   "float32")
+        THEA_ENUM_CLASS_STRING(FLOAT64,   "float64")
+
+        // Old names
+        THEA_ENUM_CLASS_STRING(INT8,      "char")
+        THEA_ENUM_CLASS_STRING(INT16,     "short")
+        THEA_ENUM_CLASS_STRING(INT32,     "int")
+        THEA_ENUM_CLASS_STRING(UINT8,     "uchar")
+        THEA_ENUM_CLASS_STRING(UINT16,    "ushort")
+        THEA_ENUM_CLASS_STRING(UINT32,    "uint")
+        THEA_ENUM_CLASS_STRING(FLOAT32,   "float")
+        THEA_ENUM_CLASS_STRING(FLOAT64,   "double")
+      THEA_ENUM_CLASS_STRINGS_END(PropertyType)
+
+    }; // struct PropertyType
+
+    /** An element property. */
+    struct Property
+    {
+      PropertyType type;
+
+      // Only if type == LIST
+      PropertyType count_type;
+      PropertyType item_type;
+
+    }; // struct Property
+
+    /** Specification for a block of elements. */
+    struct ElementBlock
+    {
+      ElementType type;           ///< Type of element.
+      long num_elems;             ///< Number of elements in the block.
+      TheaArray<Property> props;  ///< Element properties
+
+    }; // struct ElementBlock
+
+    /** Information in the header of a PLY file. */
+    struct Header
+    {
+      Header() : binary(false), endianness(Endianness::LITTLE) {}
+
+      bool binary;
+      Endianness endianness;
+      TheaArray<ElementBlock> elem_blocks;
+
+    }; // struct Header
 
   public:
     typedef MeshT Mesh;  ///< The type of mesh processed by the codec.
@@ -89,7 +185,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         bool skip_empty_meshes;
         bool verbose;
 
-        friend class CodecOFF;
+        friend class CodecPLY;
 
       public:
         /** Constructor. Sets default values. */
@@ -116,7 +212,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         bool binary;
         bool verbose;
 
-        friend class CodecOFF;
+        friend class CodecPLY;
 
       public:
         /** Constructor. Sets default values. */
@@ -134,7 +230,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     }; // class WriteOptions
 
     /** Constructor. */
-    CodecOFF(ReadOptions const & read_opts_ = ReadOptions::defaults(),
+    CodecPLY(ReadOptions const & read_opts_ = ReadOptions::defaults(),
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
@@ -158,21 +254,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
         long num_vertices = 0, num_faces = 0;
         getStats(mesh_group, num_vertices, num_faces);
 
-        VertexIndexMap vertex_indices;
-        if (write_opts.binary)
-        {
-          output.setEndianness(Endianness::BIG);  // binary OFF uses big-endian storage
-          writeString("OFF BINARY\n", output);
-          output.writeInt32((int32)num_vertices);
-          output.writeInt32((int32)num_faces);
-          output.writeInt32(0);  // num_edges
-        }
-        else
-        {
-          writeString("OFF\n", output);
-          writeString(format("%ld %ld 0\n", num_vertices, num_faces), output);
-        }
+        writeDefaultHeader(output, write_opts.binary, num_vertices, num_faces);
 
+        VertexIndexMap vertex_indices;
         serializeVertices(mesh_group, output, vertex_indices);
         serializeFaces(mesh_group, vertex_indices, output);
 
@@ -214,41 +298,153 @@ class CodecOFF : public CodecOFFBase<MeshT>
         in = tmp_in.get();
       }
 
-      std::string header = trimWhitespace(in->readLine());
-      if (header != "OFF" && !beginsWith(header, "OFF "))
-        throw Error(std::string(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
+      Header header;
+      readHeader(header, *in);
 
-      bool binary = (header == "OFF BINARY" || beginsWith(header, "OFF BINARY "));
-      if (binary)
-        deserializeBinary(mesh_group, *in, callback);
+      if (header.binary)
+        deserializeBinary(mesh_group, *in, header, callback);
       else
-        deserializeAscii(mesh_group, *in, callback);
+        deserializeAscii(mesh_group, *in, header, callback);
     }
 
   private:
-    /** Deserialize a mesh group in ASCII format. */
-    void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
+    /** Read a property specification from a line. */
+    void readPropertyHeader(Property & prop, std::istream & in) const
     {
-      std::string line = trimWhitespace(in.readLine());
-      while (line.empty() || line[0] == '#')
+      // Assume first word "property" has already been extracted
+      std::string field;
+      if (!(in >> field))
+        throw Error(std::string(getName()) + ": Could not read property type");
+
+      if (!prop.type.fromString(field))
+        throw Error(std::string(getName()) + ": Unknown property type '" + field + '\'');
+
+      if (prop.type == PropertyType::LIST)
       {
-        if (in.hasMore())
-          line = trimWhitespace(in.readLine());
-        else
-          throw Error(std::string(getName()) + ": Unexpected end of input");
+        std::string count_str, item_str;
+        if (!(in >> count_str >> item_str))
+          throw Error(std::string(getName()) + ": Could not read list item and count types");
+
+        if (!prop.count_type.fromString(count_str))
+          throw Error(std::string(getName()) + ": Unknown list count type '" + count_str + '\'');
+
+        if (!prop.item_type.fromString(item_str))
+          throw Error(std::string(getName()) + ": Unknown list item type '" + item_str + '\'');
+      }
+    }
+
+    /** Read the header of a PLY file. */
+    void readHeader(Header & header, BinaryInputStream & in) const
+    {
+      std::string magic = trimWhitespace(in.readLine());
+      if (magic != "ply")
+        throw Error(std::string(getName()) + ": Invalid PLY stream (does not start with 'ply')");
+
+      header = Header();  // reset
+
+      bool first = true;
+      std::string line, field;
+      while (in.hasMore())
+      {
+        line = trimWhitespace(in.readLine());
+
+        if (line.empty())
+          continue;
+
+        if (line == "end_header")
+          return;
+
+        std::istringstream line_in(line);
+        if (!(line_in >> field))
+          throw Error(std::string(getName()) + ": Could not read first word of line");
+
+        if (field == "format")
+        {
+          if (first)
+          {
+            if (!(line_in >> field))
+              throw Error(std::string(getName()) + ": Could not read ascii/binary specifier");
+
+            // Don't bother looking for the version number at the end of the line
+            if (field == "ascii")
+              header.binary = false;
+            else if (field == "binary_little_endian")
+            {
+              header.binary = true;
+              header.endianness = Endianness::LITTLE;
+            }
+            else if (field == "binary_big_endian")
+            {
+              header.binary = true;
+              header.endianness = Endianness::BIG;
+            }
+            else
+              throw Error(std::string(getName()) + ": Invalid format specifier");
+
+            first = false;
+          }
+          else
+            throw Error(std::string(getName()) + ": Format specifier must be first line after magic string");
+        }
+        else if (field == "element")
+        {
+          if (!(line_in >> field))
+            throw Error(std::string(getName()) + ": Could not read element type");
+
+          ElementBlock block;
+          if (!(line_in >> block.num_elems))
+            throw Error(std::string(getName()) + ": Could not read number of elements of type '" + field + '\'');
+
+          if (field == "vertex")
+            block.type = ElementType::VERTEX;
+          else if (field == "face")
+            block.type = ElementType::FACE;
+          else
+            block.type = ElementType::UNKNOWN;
+
+          header.elem_blocks.push_back(block);
+        }
+        else if (field == "property")
+        {
+          if (header.elem_blocks.empty())
+            throw Error(std::string(getName()) + ": Property specification outside an element block");
+
+          Property prop;
+          readPropertyHeader(prop, line_in);
+          if (prop.type == PropertyType::INVALID)
+            throw Error(std::string(getName()) + ": Invalid property type");
+
+          header.elem_blocks.back().props.push_back(prop);
+        }
       }
 
-      std::istringstream counts(line);
-      long num_vertices, num_faces, num_edges;
-      if (!(counts >> num_vertices >> num_faces >> num_edges))
-        throw Error(std::string(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
+      throw Error(std::string(getName()) + ": No end_header token, header not closed");
+    }
 
-      THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
-                   << " edges";
+    /** Sanity checks for an element block. */
+    void checkBlock(ElementBlock const & block) const
+    {
+      if (block.type == ElementType::VERTEX)
+      {
+        if (block.props.size() < 3
+          || block.props[0].type == PropertyType::LIST
+          || block.props[1].type == PropertyType::LIST
+          || block.props[2].type == PropertyType::LIST)
+          throw Error(std::string(getName()) + ": Vertex element must start with three numerical coordinates");
+      }
+      else if (block.type == ElementType::FACE)
+      {
+        if (block.props.empty()
+          || block.props[0].type != PropertyType::LIST
+          || (block.props[0].count_type & 0xF000)
+          || (block.props[0].item_type  & 0xF000))
+          throw Error(std::string(getName()) + ": Face element must start with a list of integer indices");
+      }
+    }
 
-      if (read_opts.skip_empty_meshes && num_vertices <= 0)
-        return;
-
+    /** Deserialize a mesh group in ASCII format. */
+    void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
+    {
       // Create new mesh
       MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
 
@@ -259,103 +455,150 @@ class CodecOFF : public CodecOFFBase<MeshT>
       TheaArray<typename Builder::VertexHandle> vrefs;
       TheaArray<typename Builder::VertexHandle> face;
 
-      // Read list of vertices
-      double x, y, z;
-      for (long v = 0; v < num_vertices; ++v)
+      std::string line;
+      long num_vertices = 0, num_faces = 0;
+      for (array_size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
-        std::string line = trimWhitespace(in.readLine());
-        while (line.empty() || line[0] == '#')
+        ElementBlock const & block = header.elem_blocks[i];
+        checkBlock(block);
+
+        for (long j = 0; j < block.num_elems; ++j)
         {
-          if (in.hasMore())
-            line = trimWhitespace(in.readLine());
-          else
-            throw Error(std::string(getName()) + ": Unexpected end of input");
-        }
-
-        std::istringstream vstr(line);
-        if (!(vstr >> x >> y >> z))
-          throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
-
-        typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z));
-        if (callback)
-          callback->vertexAdded(mesh.get(), v, vref);
-
-        vrefs.push_back(vref);
-      }
-
-      // Read list of faces
-      long index;
-      long num_face_vertices;
-      for (long f = 0; f < num_faces; ++f)
-      {
-        std::string line = trimWhitespace(in.readLine());
-        while (line.empty() || line[0] == '#')
-        {
-          if (in.hasMore())
-            line = trimWhitespace(in.readLine());
-          else
-            throw Error(std::string(getName()) + ": Unexpected end of input");
-        }
-
-        std::istringstream vstr(line);
-        if (!(vstr >> num_face_vertices))
-          throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
-
-        if (num_face_vertices > 0)
-        {
-          face.resize(num_face_vertices);
-
-          bool skip = false;
-          for (long v = 0; v < num_face_vertices && !skip; ++v)
+          do
           {
-            if (!(vstr >> index))
-              throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+            if (!in.hasMore())
+              throw Error(std::string(getName()) + ": Unexpected end of input");
 
-            if (index < 0 || index >= (long)vrefs.size())
-              throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
+            line = trimWhitespace(in.readLine());
 
-            face[(array_size_t)v] = vrefs[(array_size_t)index];
+          } while (line.empty() || beginsWith(line, "comment"));
 
-            for (int w = 0; w < v; ++w)
-              if (face[w] == face[v])  // face has repeated vertices
+          switch (block.type)
+          {
+            case ElementType::VERTEX:
+            {
+              double x, y, z;
+              std::istringstream vstr(line);
+              if (!(vstr >> x >> y >> z))
+                throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
+
+              typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z));
+              if (callback)
+                callback->vertexAdded(mesh.get(), num_vertices, vref);
+
+              vrefs.push_back(vref);
+              num_vertices++;
+
+              break;
+            }
+
+            case ElementType::FACE:
+            {
+              long index, num_face_vertices;
+              std::istringstream vstr(line);
+              if (!(vstr >> num_face_vertices))
+                throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
+
+              if (num_face_vertices > 0)
               {
-                skip = true;
-                break;
-              }
-          }
+                face.resize(num_face_vertices);
 
-          if (!skip)
-          {
-            typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
-            if (callback)
-              callback->faceAdded(mesh.get(), f, fref);
-          }
-          else if (read_opts.verbose)
-          {
-            THEA_WARNING << getName() << ": Skipping face with repeated vertices";
+                bool skip = false;
+                for (long v = 0; v < num_face_vertices && !skip; ++v)
+                {
+                  if (!(vstr >> index))
+                    throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+
+                  if (index < 0 || index >= (long)vrefs.size())
+                    throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
+
+                  face[(array_size_t)v] = vrefs[(array_size_t)index];
+
+                  for (int w = 0; w < v; ++w)
+                    if (face[w] == face[v])  // face has repeated vertices
+                    {
+                      skip = true;
+                      break;
+                    }
+                }
+
+                if (!skip)
+                {
+                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
+                  if (callback)
+                    callback->faceAdded(mesh.get(), num_faces, fref);
+
+                  num_faces++;
+                }
+                else if (read_opts.verbose)
+                {
+                  THEA_WARNING << getName() << ": Skipping face with repeated vertices";
+                }
+              }
+
+              break;
+            }
+
+            default: {}
           }
         }
       }
 
       builder.end();
-      mesh_group.addMesh(mesh);
+
+      if (builder.numVertices() > 0 || builder.numFaces() > 0)
+        mesh_group.addMesh(mesh);
+
+      THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
+    }
+
+    /** Read a binary-encoded number and return it as a specified type. */
+    template <typename T> T readBinaryNumber(BinaryInputStream & in, PropertyType const & type) const
+    {
+      switch (type)
+      {
+        case PropertyType::INT8:      return static_cast<T>(in.readInt8());
+        case PropertyType::INT16:     return static_cast<T>(in.readInt16());
+        case PropertyType::INT32:     return static_cast<T>(in.readInt32());
+        case PropertyType::UINT8:     return static_cast<T>(in.readUInt8());
+        case PropertyType::UINT16:    return static_cast<T>(in.readUInt16());
+        case PropertyType::UINT32:    return static_cast<T>(in.readUInt32());
+        case PropertyType::FLOAT32:   return static_cast<T>(in.readFloat32());
+        case PropertyType::FLOAT64:   return static_cast<T>(in.readFloat64());
+        default: throw Error(std::string(getName()) + ": Unknown property type");
+      }
+    }
+
+    /** Return a binary-encoded list of elements of a specified type. */
+    template <typename T> void readBinaryList(BinaryInputStream & in, Property const & prop, TheaArray<T> & items) const
+    {
+      debugAssertM(prop.type == PropertyType::LIST, std::string(getName()) + ": Can't read non-list property as list");
+
+      long num_items = readBinaryNumber<long>(in, prop.count_type);
+      if (num_items < 0)
+        throw Error(std::string(getName()) + ": List has negative size");
+
+      items.resize((array_size_t)num_items);
+      for (array_size_t i = 0; i < items.size(); ++i)
+        items[i] = readBinaryNumber<T>(in, prop.item_type);
+    }
+
+    /** Skip over a binary-encoded property. */
+    void skipBinaryProperty(BinaryInputStream & in, Property const & prop) const
+    {
+      if (prop.type == PropertyType::LIST)
+      {
+        long num_items = readBinaryNumber<long>(in, prop.count_type);
+        if (num_items >= 0)
+          in.skip(num_items * (prop.item_type & 0xFF));
+      }
+      else
+        in.skip(prop.type & 0xFF);
     }
 
     /** Deserialize a mesh group in binary format. */
-    void deserializeBinary(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
+    void deserializeBinary(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
     {
-      in.setEndianness(Endianness::BIG);  // binary OFF uses big-endian
-
-      long num_vertices = (long)in.readInt32();
-      long num_faces = (long)in.readInt32();
-      long num_edges = (long)in.readInt32();
-
-      THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
-                   << " edges";
-
-      if (read_opts.skip_empty_meshes && num_vertices <= 0)
-        return;
-
       // Create new mesh
       MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
 
@@ -366,69 +609,92 @@ class CodecOFF : public CodecOFFBase<MeshT>
       TheaArray<typename Builder::VertexHandle> vrefs;
       TheaArray<typename Builder::VertexHandle> face;
 
-      // Read list of vertices
-      Vector3 vertex;
-      for (long v = 0; v < num_vertices; ++v)
+      in.setEndianness(header.endianness);
+
+      long num_vertices = 0, num_faces = 0;
+      for (array_size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
-        vertex[0] = (Real)in.readFloat32();
-        vertex[1] = (Real)in.readFloat32();
-        vertex[2] = (Real)in.readFloat32();
+        ElementBlock const & block = header.elem_blocks[i];
+        checkBlock(block);
 
-        typename Builder::VertexHandle vref = builder.addVertex(vertex);
-        if (callback)
-          callback->vertexAdded(mesh.get(), v, vref);
-
-        vrefs.push_back(vref);
-      }
-
-      // Read list of faces
-      for (long f = 0; f < num_faces; ++f)
-      {
-        int num_face_vertices = (int)in.readInt32();
-        if (num_face_vertices > 0)
+        for (long j = 0; j < block.num_elems; ++j)
         {
-          face.resize(num_face_vertices);
-
-          bool skip = false;
-          for (int v = 0; v < num_face_vertices; ++v)
+          switch (block.type)
           {
-            if (skip)
+            case ElementType::VERTEX:
             {
-              in.skip(4);
-              continue;
+              Vector3 vertex;
+              vertex[0] = readBinaryNumber<Real>(in, block.props[0].type);
+              vertex[1] = readBinaryNumber<Real>(in, block.props[1].type);
+              vertex[2] = readBinaryNumber<Real>(in, block.props[2].type);
+
+              for (array_size_t k = 3; k < block.props.size(); ++i)
+                skipBinaryProperty(in, block.props[k]);
+
+              typename Builder::VertexHandle vref = builder.addVertex(vertex);
+              if (callback)
+                callback->vertexAdded(mesh.get(), num_vertices, vref);
+
+              vrefs.push_back(vref);
+              num_vertices++;
+
+              break;
             }
 
-            long index = (long)in.readInt32();
+            case ElementType::FACE:
+            {
+              TheaArray<long> face_vertices;
+              readBinaryList(in, block.props[0], face_vertices);
 
-            if (index < 0 || index >= (long)vrefs.size())
-              throw Error(getName() + format(": Vertex index %ld out of bounds in face %ld", index, f));
+              if (!face_vertices.empty())
+              {
+                face.resize(face_vertices.size());
 
-            face[v] = vrefs[(array_size_t)index];
+                bool skip = false;
+                for (array_size_t v = 0; v < face_vertices.size() && !skip; ++v)
+                {
+                  long index = face_vertices[v];
+                  if (index < 0 || index >= (long)vrefs.size())
+                    throw Error(getName() + format(": Vertex index %ld out of bounds in face %ld", index, num_faces));
 
-            for (int w = 0; w < v; ++w)
-              if (face[w] == face[v])  // face has repeated vertices
-                skip = true;
-          }
+                  face[v] = vrefs[(array_size_t)index];
 
-          int num_color_components = (int)in.readInt32();
-          if (num_color_components > 0)
-            in.skip(4 * num_color_components);
+                  for (array_size_t w = 0; w < v; ++w)
+                    if (face[w] == face[v])  // face has repeated vertices
+                    {
+                      skip = true;
+                      break;
+                    }
+                }
 
-          if (!skip)
-          {
-            typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
-            if (callback)
-              callback->faceAdded(mesh.get(), f, fref);
-          }
-          else if (read_opts.verbose)
-          {
-            THEA_WARNING << getName() << ": Skipping face with repeated vertices";
+                if (!skip)
+                {
+                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
+                  if (callback)
+                    callback->faceAdded(mesh.get(), num_faces, fref);
+
+                  num_faces++;
+                }
+                else if (read_opts.verbose)
+                {
+                  THEA_WARNING << getName() << ": Skipping face with repeated vertices";
+                }
+              }
+
+              break;
+            }
+
+            default: {}
           }
         }
       }
 
       builder.end();
-      mesh_group.addMesh(mesh);
+
+      if (builder.numVertices() > 0 || builder.numFaces() > 0)
+        mesh_group.addMesh(mesh);
+
+      THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
     }
 
     /** Count the number of vertices and faces in a general/DCEL/display mesh (increments parameters). */
@@ -463,6 +729,25 @@ class CodecOFF : public CodecOFFBase<MeshT>
     static void writeString(std::string const & str, BinaryOutputStream & output)
     {
       output.writeBytes((int64)str.length(), str.data());
+    }
+
+    /** Write the default header of a PLY file. */
+    void writeDefaultHeader(BinaryOutputStream & out, bool binary, long num_vertices, long num_faces) const
+    {
+      writeString("ply\n", out);
+
+      if (binary) writeString("format binary_little_endian 1.0\n", out);
+      else        writeString("format ascii 1.0\n", out);
+
+      writeString(format("element vertex %ld\n", num_vertices), out);
+      writeString("property float x\n", out);  // stick to old typenames for compatibility
+      writeString("property float y\n", out);
+      writeString("property float z\n", out);
+
+      writeString(format("element face %ld\n", num_faces), out);
+      writeString("property list int int vertex_index\n", out);
+
+      writeString("end_header\n", out);
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */
@@ -604,8 +889,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
             output.writeInt32((int32)ii->second);
           }
-
-          output.writeInt32(0);  // no color components
         }
         else
         {
@@ -649,8 +932,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
             he = he->next();
 
           } while (he != first_he);
-
-          output.writeInt32(0);  // no color components
         }
         else
         {
@@ -698,8 +979,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
               output.writeInt32((int32)ii->second);
             }
-
-            output.writeInt32(0);  // no color components
           }
           else
           {
@@ -743,8 +1022,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
             output.writeInt32((int32)ii->second);
 
           } while (++ei != facet.facet_begin());
-
-          output.writeInt32(0);  // no color components
         }
         else
         {
@@ -769,7 +1046,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     ReadOptions read_opts;
     WriteOptions write_opts;
 
-}; // class CodecOFF
+}; // class CodecPLY
 
 } // namespace Thea
 

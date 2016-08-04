@@ -200,7 +200,7 @@ Model::load(QString const & filename_)
     Mesh::resetVertexIndices();  // reset counting
     Mesh::resetFaceIndices();
 
-    static CodecOBJ<Mesh> const obj_codec(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
+    static CodecOBJ<Mesh> const obj_codec(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
     try
     {
       if (filename_.endsWith(".obj", Qt::CaseInsensitive))

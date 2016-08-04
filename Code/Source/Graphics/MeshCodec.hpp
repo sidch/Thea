@@ -59,28 +59,10 @@ template <typename MeshT>
 class MeshCodec : public Codec
 {
   public:
-    typedef MeshT Mesh;
+    THEA_DEF_POINTER_TYPES(MeshCodec, shared_ptr, weak_ptr)
 
-    /** Interface for callback functions that are called when a vertex or face is read by the codec. */
-    class ReadCallback
-    {
-      public:
-        /** Destructor. */
-        virtual ~ReadCallback() = 0;
-
-        /**
-         * Called after a vertex has been read and added to the mesh. \a index is the sequential index of the vertex in the mesh
-         * file, and need not correspond to the sequence in which vertices are added to the mesh.
-         */
-        virtual void vertexAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::VertexHandle vertex) {}
-
-        /**
-         * Called after a face has been read and added to the mesh. \a index is the sequential index of the face in the mesh
-         * file, and need not correspond to the sequence in which faces are added to the mesh.
-         */
-        virtual void faceAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::FaceHandle face) {}
-
-    }; // class ReadCallback
+    typedef MeshT Mesh;  ///< The mesh type.
+    typedef typename MeshGroup<MeshT>::ReadCallback ReadCallback;  ///< Called when a mesh undergoes an incremental update.
 
     /** Destructor. */
     virtual ~MeshCodec() {}
@@ -99,8 +81,8 @@ class MeshCodec : public Codec
      *
      * @see serializeMeshGroup
      */
-    virtual void deserializeMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, bool read_prefixed_info)
-                 const = 0;
+    virtual void deserializeMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
+                                      ReadCallback * callback) const = 0;
 
     /**
      * Get the <b>4-byte</b> magic string for the codec.
@@ -116,14 +98,6 @@ class MeshCodec : public Codec
     static int const MAGIC_LENGTH = 4;
 
 }; // class MeshCodec
-
-// Inline functions
-template <typename MeshT> inline
-MeshCodec<MeshT>::ReadCallback::~ReadCallback()
-{
-  // Pure virtual destructor should have a body
-  // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
-}
 
 } // namespace Graphics
 
@@ -160,10 +134,10 @@ MeshCodec<MeshT>::ReadCallback::~ReadCallback()
                                                                                                                               \
   template < typename MeshT, typename BuilderT = Graphics::IncrementalMeshBuilder<MeshT> > class name;
 
-THEA_DEF_MESH_CODEC(CodecOBJ, CodecOBJBase, "Wavefront OBJ",            "OBJ ", "obj")
-THEA_DEF_MESH_CODEC(CodecOFF, CodecOFFBase, "Object File Format (OFF)", "OFF ", "off", "off.bin")
-THEA_DEF_MESH_CODEC(CodecMD2, CodecMD2Base, "Quake MD2",                "IDP2", "md2")
-THEA_DEF_MESH_CODEC(Codec3DS, Codec3DSBase, "3D Studio Max",            "MM  ", "3ds")
+THEA_DEF_MESH_CODEC(Codec3DS, Codec3DSBase, "3D Studio Max",               "MM  ", "3ds")
+THEA_DEF_MESH_CODEC(CodecOBJ, CodecOBJBase, "Wavefront OBJ",               "OBJ ", "obj")
+THEA_DEF_MESH_CODEC(CodecOFF, CodecOFFBase, "Object File Format (OFF)",    "OFF ", "off", "off.bin")
+THEA_DEF_MESH_CODEC(CodecPLY, CodecPLYBase, "Polygon File Format (PLY)",   "PLY ", "ply")
 
 #undef THEA_DEF_MESH_CODEC
 

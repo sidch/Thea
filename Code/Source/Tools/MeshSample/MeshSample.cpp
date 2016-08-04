@@ -142,23 +142,15 @@ main(int argc, char * argv[])
   try
   {
     ReadCallback read_callback;
-    CodecOBJ<Mesh> codec_obj(&read_callback, CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true).setIgnoreTexCoords(true));
-    CodecOFF<Mesh> codec_off(&read_callback);
-    Codec3DS<Mesh> codec_3ds(&read_callback, Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true));
+    Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
+    CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
+                                                                                  .setIgnoreTexCoords(true)));
+    TheaArray<MeshCodec<Mesh>::Ptr> read_codecs;
+    read_codecs.push_back(codec_3ds);
+    read_codecs.push_back(codec_obj);
 
     MG mg("MeshGroup");
-    string path_lc = toLower(mesh_path);
-    if (endsWith(path_lc, ".obj"))
-      mg.load(mesh_path, codec_obj);
-    else if (endsWith(path_lc, ".off") || endsWith(path_lc, ".off.bin"))
-      mg.load(mesh_path, codec_off);
-    else if (endsWith(path_lc, ".3ds"))
-      mg.load(mesh_path, codec_3ds);
-    else
-    {
-      THEA_ERROR << "Unsupported mesh type";
-      return -1;
-    }
+    mg.load(mesh_path, read_codecs, &read_callback);
 
     TheaArray<Vector3> positions;
     TheaArray<Vector3> normals;

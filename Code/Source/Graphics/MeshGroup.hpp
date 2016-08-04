@@ -62,6 +62,27 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     typedef MeshT Mesh;  ///< The type of mesh in the group.
     typedef shared_ptr<Mesh> MeshPtr;  ///< A shared pointer to a mesh.
 
+    /** Interface for callback functions that are called when a vertex or face is deserialized. */
+    class ReadCallback
+    {
+      public:
+        /** Destructor. */
+        virtual ~ReadCallback() = 0;
+
+        /**
+         * Called after a vertex has been read and added to the mesh. \a index is the sequential index of the vertex in the mesh
+         * file, and need not correspond to the sequence in which vertices are added to the mesh.
+         */
+        virtual void vertexAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::VertexHandle vertex) {}
+
+        /**
+         * Called after a face has been read and added to the mesh. \a index is the sequential index of the face in the mesh
+         * file, and need not correspond to the sequence in which faces are added to the mesh.
+         */
+        virtual void faceAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::FaceHandle face) {}
+
+    }; // class ReadCallback
+
   private:
     typedef TheaSet<MeshPtr>  MeshSet;
     typedef TheaSet<Ptr>      GroupSet;
@@ -307,14 +328,24 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      */
     void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO())
     {
+      deserialize(input, codec, NULL);
+    }
+
+    /**
+     * Read the mesh group from an input stream.
+     *
+     * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
+     */
+    void deserialize(BinaryInputStream & input, Codec const & codec, ReadCallback * callback)
+    {
       if (codec == Codec_AUTO())
-        deserialize_AUTO(input, true);
+        deserialize_AUTO(input, true, callback);
       else
       {
         try
         {
           MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-          mesh_codec.deserializeMeshGroup(*this, input, true);
+          mesh_codec.deserializeMeshGroup(*this, input, true, callback);
         }
         catch (std::bad_cast &)
         {
@@ -332,11 +363,54 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      */
     void save(std::string const & path, Codec const & codec = Codec_AUTO()) const
     {
+      save(path, codec, NULL);
+    }
+
+    /**
+     * Save the mesh group to a file, choosing one of a given set of codecs that best matches the output path, else falling back
+     * on a default option. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be thrown if
+     * the mesh group cannot be saved.
+     */
+    void save(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs) const
+    {
+      save(path, Codec_AUTO(), &codecs);
+    }
+
+    /**
+     * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
+     * thrown if the mesh group cannot be loaded.
+     */
+    void load(std::string const & path, Codec const & codec = Codec_AUTO(), ReadCallback * callback = NULL)
+    {
+      load(path, codec, NULL, callback);
+    }
+
+    /**
+     * Load the mesh from a file, choosing one of a given set of codecs that best matches the input path, else falling back on a
+     * default option. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be thrown if
+     * the mesh group cannot be loaded.
+     */
+    void load(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs,
+              ReadCallback * callback = NULL)
+    {
+      load(path, Codec_AUTO(), &codecs, callback);
+    }
+
+  private:
+    /**
+     * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
+     * thrown if the mesh group cannot be saved.
+     */
+    void save(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs) const
+    {
       MeshCodec<Mesh> const * mesh_codec = NULL;
 
       if (codec == Codec_AUTO())
       {
-        mesh_codec = codecFromPath(path);
+        if (codecs)
+          mesh_codec = codecFromPath(path, *codecs);
+        if (!mesh_codec)  // fallback
+          mesh_codec = codecFromPath(path);
         if (!mesh_codec)
           throw Error(getNameStr() + ": Could not autodetect codec for saving mesh group");
       }
@@ -359,13 +433,17 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Codec const & codec = Codec_AUTO())
+    void load(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs,
+              ReadCallback * callback = NULL)
     {
       MeshCodec<Mesh> const * mesh_codec = NULL;
 
       if (codec == Codec_AUTO())
       {
-        mesh_codec = codecFromPath(path);
+        if (codecs)
+          mesh_codec = codecFromPath(path, *codecs);
+        if (!mesh_codec)  // fallback
+          mesh_codec = codecFromPath(path);
         if (!mesh_codec)
           throw Error(getNameStr() + ": Could not autodetect codec for loading mesh group");
       }
@@ -377,17 +455,16 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
 
       BinaryInputStream in(path, Endianness::LITTLE);
-      mesh_codec->deserializeMeshGroup(*this, in, false);
+      mesh_codec->deserializeMeshGroup(*this, in, false, callback);
 
       updateBounds();
     }
 
-  private:
     /**
      * Automatically detect the type of the encoded mesh group and deserialize it appropriately. Limited to a hard-coded set
      * of standard mesh codecs in the default specialization.
      */
-    void deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
+    void deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info, ReadCallback * callback)
     {
       if (read_prefixed_info)
       {
@@ -401,7 +478,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         while ((codec = getDefaultCodec(codec_index++)))
           if (codec->getMagic() == magic)
           {
-            codec->deserializeMeshGroup(*this, input, true);
+            codec->deserializeMeshGroup(*this, input, true, callback);
             return;
           }
       }
@@ -410,7 +487,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       MeshCodec<Mesh> const * codec = codecFromPath(input.getPath());
       if (codec)
       {
-        codec->deserializeMeshGroup(*this, input, false);
+        codec->deserializeMeshGroup(*this, input, false, callback);
         return;
       }
 
@@ -437,16 +514,35 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     static MeshCodec<Mesh> const * getDefaultCodec(long index)
     {
       // A set of default codecs that should be implemented for each mesh type
+      static Codec3DS<Mesh> const codec_3DS;
       static CodecOBJ<Mesh> const codec_OBJ;
       static CodecOFF<Mesh> const codec_OFF;
-      static Codec3DS<Mesh> const codec_3DS;
-      static long const NUM_CODECS = 3;
-      static MeshCodec<Mesh> const * codecs[NUM_CODECS] = { &codec_OBJ, &codec_OFF, &codec_3DS };
+      static CodecPLY<Mesh> const codec_PLY;
+      static MeshCodec<Mesh> const * codecs[] = { &codec_3DS, &codec_OBJ, &codec_OFF, &codec_PLY };
+      static long NUM_CODECS = (long)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
 
       if (index >= 0 && index < NUM_CODECS)
         return codecs[index];
       else
         return NULL;
+    }
+
+    /** Try to get the appropriate codec for a mesh, given a collection of codecs. */
+    static MeshCodec<Mesh> const * codecFromPath(std::string path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs)
+    {
+      path = toLower(path);
+      for (array_size_t i = 0; i < codecs.size(); ++i)
+      {
+        MeshCodec<Mesh> const * codec = codecs[i].get();
+        if (!codec)
+          continue;
+
+        for (array_size_t j = 0; j < codec->getExtensions().size(); ++j)
+          if (endsWith(path, '.' + codec->getExtensions()[j]))
+            return codec;
+      }
+
+      return NULL;
     }
 
     MeshGroup * parent;  // not a smart pointer, to avoid circular references
@@ -455,6 +551,14 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     AxisAlignedBox3 bounds;
 
 }; // class MeshGroup
+
+// Inline functions
+template <typename MeshT> inline
+MeshGroup<MeshT>::ReadCallback::~ReadCallback()
+{
+  // Pure virtual destructor should have a body
+  // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
+}
 
 } // namespace Graphics
 } // namespace Thea
