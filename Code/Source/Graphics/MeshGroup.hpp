@@ -321,7 +321,9 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
     }
 
-    using Serializable::deserialize;
+    using Serializable::deserialize;  // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
+                                      // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any
+                                      // case the behavior appears to be as expected with this line.
 
     /**
      * {@inheritDoc}
