@@ -43,6 +43,7 @@
 #define __Thea_Graphics_GL_GLVARArea_hpp__
 
 #include "../../Graphics/VARArea.hpp"
+#include "../../UnorderedSet.hpp"
 #include "GLCommon.hpp"
 #include "GLHeaders.hpp"
 
@@ -60,7 +61,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     /** Constructor. */
     GLVARArea(GLRenderSystem * render_system, char const * name_, long capacity_, Usage usage, bool gpu_memory_ = true);
 
-    /** Destructor. */
+    /** Destructor. Automatically destroys all associated vertex arrays. */
     ~GLVARArea();
 
     /** Get the parent rendersystem. */
@@ -91,6 +92,11 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     void incrementAllocated(long inc) { allocated_size += inc; }
 
   private:
+    /** Destroy all vertex arrays that are allocated from this area. */
+    void destroyAllVARs();
+
+    typedef TheaUnorderedSet<VAR *> VARSet;
+
     GLRenderSystem * render_system;
     std::string name;
     long capacity;
@@ -99,6 +105,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     uint8 * base_pointer;
     int generation;
     long allocated_size;
+    VARSet vars;
 
 }; // class GLVARArea
 

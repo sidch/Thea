@@ -573,7 +573,8 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
 
   if (changed_buffers == BufferID::ALL)
   {
-    vertices_var = tris_var = quads_var = normals_var = colors_var = texcoords_var = edges_var = NULL;
+    if (var_area) var_area->reset();
+    vertices_var = normals_var = colors_var = texcoords_var = tris_var = quads_var = edges_var = NULL;
 
     if (vertices.empty() || (tris.empty() && quads.empty()))
     {
@@ -615,8 +616,7 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
         var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
         if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
       }
-      else
-        var_area->reset();
+      // Else no need to reset var_area, we've done it above
     }
     else
     {

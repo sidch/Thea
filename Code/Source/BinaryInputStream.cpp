@@ -504,7 +504,7 @@ BinaryInputStream::readLine()
     if (hasMore())
     {
       prepareToRead(1);
-      if (isNewline(m_buffer[m_pos + 1]) && (m_buffer[m_pos + 1] != firstNLChar))
+      if (isNewline(m_buffer[m_pos]) && (m_buffer[m_pos] != firstNLChar))
         skip(1);
     }
   }
