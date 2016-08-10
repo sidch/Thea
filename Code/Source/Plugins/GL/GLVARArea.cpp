@@ -94,7 +94,7 @@ GLVARArea::~GLVARArea()
   if (capacity <= 0)  // how did this happen?
     return;
 
-  destroyAllVARs();
+  destroyAllArrays();
 
   if (gpu_memory)
     glDeleteBuffersARB(1, &gl_buffer);
@@ -103,7 +103,7 @@ GLVARArea::~GLVARArea()
 }
 
 void
-GLVARArea::destroyAllVARs()
+GLVARArea::destroyAllArrays()
 {
   for (VARSet::iterator vi = vars.begin(); vi != vars.end(); ++vi)
     delete *vi;
@@ -123,7 +123,7 @@ GLVARArea::toString() const
 void
 GLVARArea::reset()
 {
-  destroyAllVARs();
+  destroyAllArrays();
 
   generation++;
   allocated_size = 0;
