@@ -159,7 +159,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[center: " << center.toString() << ", radius: " << radius + ']';
+      oss << "[center: " << center.toString() << ", radius: " << radius << ']';
       return oss.str();
     }
 

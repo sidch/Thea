@@ -342,6 +342,21 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       }
     }
 
+    /** Compute the centroid of the face. */
+    Vector3 centroid() const
+    {
+      Vector3 c(0, 0, 0);
+      if (!vertices.empty())
+      {
+        for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+          c += (*vi)->getPosition();
+
+        c /= vertices.size();
+      }
+
+      return c;
+    }
+
     /**
      * Test if the face contains a point (which is assumed to lie on the plane of the face -- for efficiency the function does
      * <b>not</b> explicitly verify that this holds).

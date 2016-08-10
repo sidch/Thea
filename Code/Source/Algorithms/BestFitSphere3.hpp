@@ -42,53 +42,13 @@
 #ifndef __Thea_Algorithms_BestFitSphere3_hpp__
 #define __Thea_Algorithms_BestFitSphere3_hpp__
 
-#include "../Common.hpp"
-#include "../Array.hpp"
-#include "../Ball3.hpp"
+#include "BestFitSphereN.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
-/** Approximate best-fit sphere. */
-class THEA_API BestFitSphere3
-{
-  public:
-    THEA_DEF_POINTER_TYPES(BestFitSphere3, shared_ptr, weak_ptr)
-
-    /** Default constructor. */
-    BestFitSphere3();
-
-    /** Add a point to the set. */
-    void addPoint(Vector3 const & point);
-
-    /** Remove all data and (lazily) set the sphere to null. */
-    void clear();
-
-    /** Remove all cached data to free memory, but do <b>not</b> mark the sphere for recomputation. */
-    void releaseMemoryWithoutUpdate();
-
-    /** Get the radius of the sphere. */
-    Real getRadius() const;
-
-    /** Get the diameter of the sphere. */
-    Real getDiameter() const;
-
-    /** Get the center of the sphere. */
-    Vector3 const & getCenter() const;
-
-    /** Get the ball bounded by the sphere. */
-    Ball3 const & getBall() const;
-
-  private:
-    /** Recompute the best-fit sphere. */
-    void update() const;
-
-    TheaArray<Vector3> points;
-    Real eps;
-    mutable Ball3 ball;
-    mutable bool updated;
-
-}; // class BestFitSphere3
+/** Best-fit sphere in 3 dimensions. */
+typedef BestFitSphereN<3, Real> BestFitSphere3;
 
 } // namespace Thea
 } // namespace Algorithms
