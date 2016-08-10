@@ -92,7 +92,10 @@ class THEA_API VARArea : public AbstractNamedObject
     /** Check if the area is stored in GPU memory or not. */
     virtual bool inGPUMemory() const = 0;
 
-    /** Create a VAR with a specified capacity in bytes. The VAR must be destroyed with destroyArray(). */
+    /**
+     * Create a VAR with a specified capacity in bytes. The VAR must be destroyed with destroyArray(). It will be
+     * automatically destroyed when the VARArea is destroyed or reset().
+     */
     virtual VAR * createArray(long num_bytes) = 0;
 
     /** Destroy a VAR. The VAR must have been created with createArray(). */
