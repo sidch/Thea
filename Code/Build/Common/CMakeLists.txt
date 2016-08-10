@@ -133,10 +133,11 @@ FILE(GLOB TheaSources
      ${SourceRoot}/Algorithms/*.cpp
      ${SourceRoot}/Algorithms/ImageFeatures/*.cpp
      ${SourceRoot}/Algorithms/MeshFeatures/*.cpp
+     ${SourceRoot}/Algorithms/BloomenthalPolygonizer/*.cpp
      ${SourceRoot}/Algorithms/dx/*.c
      ${SourceRoot}/Algorithms/fibheap/*.cpp
+     ${SourceRoot}/Algorithms/miniball/*.cpp
      ${SourceRoot}/Algorithms/NNLS/*.c
-     ${SourceRoot}/Algorithms/BloomenthalPolygonizer/*.cpp
      ${SourceRoot}/Algorithms/StanHull/*.cpp
      ${SourceRoot}/Algorithms/Triangle/*.c
      ${SourceRoot}/Database/*.cpp

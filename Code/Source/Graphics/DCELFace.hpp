@@ -108,6 +108,24 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
       setNormal(e2.cross(e1).unit());  // counter-clockwise
     }
 
+    /** Compute the centroid of the face. */
+    Vector3 centroid() const
+    {
+      if (!halfedge)
+        return Vector3::zero();
+
+      Vector3 c = halfedge->getOrigin()->getPosition();
+      long nv = 1;
+      Halfedge const * e = halfedge->next();
+      while (e != halfedge)
+      {
+        c += e->getOrigin()->getPosition();
+        nv++;
+      }
+
+      return c / nv;
+    }
+
     /**
      * Test if the face contains a point (which is assumed to lie on the plane of the face -- for efficiency the function does
      * <b>not</b> explicitly verify that this holds).
