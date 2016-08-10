@@ -94,10 +94,21 @@ GLVARArea::~GLVARArea()
   if (capacity <= 0)  // how did this happen?
     return;
 
+  destroyAllVARs();
+
   if (gpu_memory)
     glDeleteBuffersARB(1, &gl_buffer);
   else
     delete [] base_pointer;
+}
+
+void
+GLVARArea::destroyAllVARs()
+{
+  for (VARSet::iterator vi = vars.begin(); vi != vars.end(); ++vi)
+    delete *vi;
+
+  vars.clear();
 }
 
 std::string
@@ -112,6 +123,8 @@ GLVARArea::toString() const
 void
 GLVARArea::reset()
 {
+  destroyAllVARs();
+
   generation++;
   allocated_size = 0;
 }
@@ -119,12 +132,15 @@ GLVARArea::reset()
 VAR *
 GLVARArea::createArray(long num_bytes)
 {
-  return new GLVAR(this, num_bytes);
+  VAR * v = new GLVAR(this, num_bytes);
+  if (v) vars.insert(v);
+  return v;
 }
 
 void
 GLVARArea::destroyArray(VAR * array)
 {
+  vars.erase(array);
   delete array;
 }
 

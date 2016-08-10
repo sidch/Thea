@@ -1383,6 +1383,8 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
 
   if (changed_buffers == BufferID::ALL)
   {
+    if (var_area) var_area->reset();
+
     vertex_positions_var  =  NULL;
     vertex_normals_var    =  NULL;
     vertex_colors_var     =  NULL;
@@ -1455,8 +1457,7 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
         var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
         if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
       }
-      else
-        var_area->reset();
+      // Else no need to reset var_area, we've done it above
     }
     else
     {

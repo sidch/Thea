@@ -66,6 +66,7 @@ class ShapeRendererImpl
 {
   private:
     static AtomicInt32 has_render_system;
+    static RenderSystemFactory * render_system_factory;
     static RenderSystem * render_system;
     static Shader * point_shader;
     static Shader * mesh_shader;
@@ -105,6 +106,7 @@ class ShapeRendererImpl
 
   public:
     ShapeRendererImpl(int argc, char * argv[]);  // just loads plugins and initializes variables
+    ~ShapeRendererImpl();  // shuts down plugins
 
     int exec(string const & cmdline);
     int exec(int argc, char ** argv);
@@ -134,6 +136,7 @@ ShapeRenderer::exec(int argc, char ** argv)
 }
 
 AtomicInt32 ShapeRendererImpl::has_render_system(0);
+RenderSystemFactory * ShapeRendererImpl::render_system_factory = NULL;
 RenderSystem * ShapeRendererImpl::render_system = NULL;
 Shader * ShapeRendererImpl::point_shader = NULL;
 Shader * ShapeRendererImpl::mesh_shader = NULL;
@@ -148,6 +151,17 @@ ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
     if (!loadPlugins(argc, argv))
       throw Error("Could not load plugins");
   }
+}
+
+ShapeRendererImpl::~ShapeRendererImpl()
+{
+  if (has_render_system.compareAndSet(1, 0) == 1)
+  {
+    if (render_system_factory)
+      render_system_factory->destroyRenderSystem(render_system);
+  }
+
+  Application::getPluginManager().unloadAllPlugins();
 }
 
 void
@@ -1596,7 +1610,7 @@ ShapeRendererImpl::loadPlugins(int argc, char ** argv)
 
   gl_plugin->startup();
 
-  RenderSystemFactory * render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
+  render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
   if (!render_system_factory)
   {
     THEA_ERROR << "Could not get OpenGL rendersystem factory";

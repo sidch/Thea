@@ -154,65 +154,61 @@ typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
   return Image::Type::UNKNOWN;
 }
 
-typedef TheaUnorderedMap<std::string, ImageCodec const *> CodecMap;
-CodecMap codec_map;
-
-static ImageCodec const *
-initCodecMap()
-{
-  codec_map["BMP"  ] = new CodecBMP();
-  codec_map["CUT"  ] = new CodecCUT();
-  codec_map["DDS"  ] = new CodecDDS();
-  codec_map["EXR"  ] = new CodecEXR();
-  codec_map["GIF"  ] = new CodecGIF();
-  codec_map["HDR"  ] = new CodecHDR();
-  codec_map["ICO"  ] = new CodecICO();
-  codec_map["IFF"  ] = new CodecIFF();
-  codec_map["LBM"  ] = new CodecIFF();
-  codec_map["J2K"  ] = new CodecJ2K();
-  codec_map["J2C"  ] = new CodecJ2K();
-  codec_map["JNG"  ] = new CodecJNG();
-  codec_map["JP2"  ] = new CodecJP2();
-  codec_map["JPG"  ] = new CodecJPEG();
-  codec_map["JIF"  ] = new CodecJPEG();
-  codec_map["JPEG" ] = new CodecJPEG();
-  codec_map["JPE"  ] = new CodecJPEG();
-  codec_map["KOA"  ] = new CodecKOALA();
-  codec_map["MNG"  ] = new CodecMNG();
-  codec_map["PBM"  ] = new CodecPBM();
-  codec_map["PBM"  ] = new CodecPBMRAW();
-  codec_map["PCD"  ] = new CodecPCD();
-  codec_map["PCX"  ] = new CodecPCX();
-  codec_map["PFM"  ] = new CodecPFM();
-  codec_map["PGM"  ] = new CodecPGM();
-  codec_map["PGM"  ] = new CodecPGMRAW();
-  codec_map["PNG"  ] = new CodecPNG();
-  codec_map["PPM"  ] = new CodecPPM();
-  codec_map["PPM"  ] = new CodecPPMRAW();
-  codec_map["PSD"  ] = new CodecPSD();
-  codec_map["RAS"  ] = new CodecRAS();
-  codec_map["SGI"  ] = new CodecSGI();
-  codec_map["TGA"  ] = new CodecTARGA();
-  codec_map["TARGA"] = new CodecTARGA();
-  codec_map["TIF"  ] = new CodecTIFF();
-  codec_map["TIFF" ] = new CodecTIFF();
-  codec_map["WBMP" ] = new CodecWBMP();
-  codec_map["XBM"  ] = new CodecXBM();
-  codec_map["XPM"  ] = new CodecXPM();
-
-  return NULL;
-}
-
 static ImageCodec const *
 codecFromPath(std::string const & path)
 {
-  static ImageCodec const * UNKNOWN_CODEC = initCodecMap();
+  typedef shared_ptr<ImageCodec> ICPtr;
+  typedef TheaUnorderedMap<std::string, ICPtr > CodecMap;
+
+  static CodecMap codec_map;
+  if (codec_map.empty())  // only on the first call
+  {
+    codec_map["BMP"  ] = ICPtr(new CodecBMP());
+    codec_map["CUT"  ] = ICPtr(new CodecCUT());
+    codec_map["DDS"  ] = ICPtr(new CodecDDS());
+    codec_map["EXR"  ] = ICPtr(new CodecEXR());
+    codec_map["GIF"  ] = ICPtr(new CodecGIF());
+    codec_map["HDR"  ] = ICPtr(new CodecHDR());
+    codec_map["ICO"  ] = ICPtr(new CodecICO());
+    codec_map["IFF"  ] = ICPtr(new CodecIFF());
+    codec_map["LBM"  ] = ICPtr(new CodecIFF());
+    codec_map["J2K"  ] = ICPtr(new CodecJ2K());
+    codec_map["J2C"  ] = ICPtr(new CodecJ2K());
+    codec_map["JNG"  ] = ICPtr(new CodecJNG());
+    codec_map["JP2"  ] = ICPtr(new CodecJP2());
+    codec_map["JPG"  ] = ICPtr(new CodecJPEG());
+    codec_map["JIF"  ] = ICPtr(new CodecJPEG());
+    codec_map["JPEG" ] = ICPtr(new CodecJPEG());
+    codec_map["JPE"  ] = ICPtr(new CodecJPEG());
+    codec_map["KOA"  ] = ICPtr(new CodecKOALA());
+    codec_map["MNG"  ] = ICPtr(new CodecMNG());
+    codec_map["PBM"  ] = ICPtr(new CodecPBM());
+    codec_map["PBM"  ] = ICPtr(new CodecPBMRAW());
+    codec_map["PCD"  ] = ICPtr(new CodecPCD());
+    codec_map["PCX"  ] = ICPtr(new CodecPCX());
+    codec_map["PFM"  ] = ICPtr(new CodecPFM());
+    codec_map["PGM"  ] = ICPtr(new CodecPGM());
+    codec_map["PGM"  ] = ICPtr(new CodecPGMRAW());
+    codec_map["PNG"  ] = ICPtr(new CodecPNG());
+    codec_map["PPM"  ] = ICPtr(new CodecPPM());
+    codec_map["PPM"  ] = ICPtr(new CodecPPMRAW());
+    codec_map["PSD"  ] = ICPtr(new CodecPSD());
+    codec_map["RAS"  ] = ICPtr(new CodecRAS());
+    codec_map["SGI"  ] = ICPtr(new CodecSGI());
+    codec_map["TGA"  ] = ICPtr(new CodecTARGA());
+    codec_map["TARGA"] = ICPtr(new CodecTARGA());
+    codec_map["TIF"  ] = ICPtr(new CodecTIFF());
+    codec_map["TIFF" ] = ICPtr(new CodecTIFF());
+    codec_map["WBMP" ] = ICPtr(new CodecWBMP());
+    codec_map["XBM"  ] = ICPtr(new CodecXBM());
+    codec_map["XPM"  ] = ICPtr(new CodecXPM());
+  }
 
   CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::extension(path)));
   if (existing == codec_map.end())
-    return UNKNOWN_CODEC;
+    return NULL;
   else
-    return existing->second;
+    return existing->second.get();
 }
 
 } // namespace ImageInternal

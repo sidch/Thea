@@ -71,10 +71,13 @@ class THEA_API VARArea : public AbstractNamedObject
       THEA_ENUM_CLASS_BODY(Usage)
     };
 
-    /** Destructor. */
+    /** Destructor. Automatically destroys all associated vertex arrays. */
     virtual ~VARArea() {}
 
-    /** Destroy all vertex arrays allocated in this block. */
+    /**
+     * Destroy all vertex arrays allocated in this block. Don't try to dereference pointers to previously allocated vertex
+     * arrays (VARs) after calling this function!
+     */
     virtual void reset() = 0;
 
     /** Get the total capacity of the area in bytes. */
