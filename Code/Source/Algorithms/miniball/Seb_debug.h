@@ -9,8 +9,15 @@
 #include <fstream>
 #include <map>
 #include <string>
+#if !defined(_MSC_VER)
 #include <sys/resource.h>
 #include <sys/time.h>
+#else
+typedef struct timeval {
+  long tv_sec;
+  long tv_usec;
+} timeval;
+#endif
 
 namespace SEB_NAMESPACE {
   
