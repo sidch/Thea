@@ -4,8 +4,10 @@
 //          Kaspar Fischer <kf@iaeth.ch>
 
 #include <cmath>
+#if !defined(_MSC_VER)
 #include <sys/resource.h>
 #include <sys/time.h>
+#endif
 
 #include "Seb_configure.h"
 
@@ -96,6 +98,7 @@ namespace SEB_NAMESPACE {
 
   void Timer::start(const char *timer_name)
   {
+#if !defined(_MSC_VER)
     // fetch current usage:
     rusage now;
     int status = getrusage(RUSAGE_SELF,&now);
@@ -104,10 +107,12 @@ namespace SEB_NAMESPACE {
 
     // save it:
     timers[std::string(timer_name)] = now.ru_utime;
+#endif
   }
 
   float Timer::lapse(const char *name)
   {
+#if !defined(_MSC_VER)
     // assert that start(name) has been called before:
     SEB_ASSERT(timers.find(std::string(name)) != timers.end());
 
@@ -120,6 +125,8 @@ namespace SEB_NAMESPACE {
     // compute elapsed usage:
     now.ru_utime -= (*timers.find(std::string(name))).second;
     return now.ru_utime.tv_sec + now.ru_utime.tv_usec * 1e-6;
+#else
+    return 0.0f;
+#endif
   }
-
 } // namespace SEB_NAMESPACE
