@@ -45,7 +45,7 @@
 namespace Browse3D {
 
 QString
-getFullPath(QString const & dir, QString const & filename)
+FilePath::concat(QString const & dir, QString const & filename)
 {
   // URL's can be picky about double slashes, so remove those
   if (dir.isEmpty())

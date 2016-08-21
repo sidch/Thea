@@ -43,25 +43,17 @@
 #include "App.hpp"
 #include "Model.hpp"
 #include "ModelDisplay.hpp"
-#include "ui_MainWindow.h"
 #include "Util.hpp"
 #include "../../Application.hpp"
-#include <QActionGroup>
-#include <QDir>
-#include <QFileInfo>
-#include <QList>
-#include <QStringList>
-#include <QTableWidget>
-#include <QTableWidgetItem>
 
 namespace Browse3D {
 
 static int const SEGMENTS_TAB_INDEX  =  0;
 static int const POINTS_TAB_INDEX    =  1;
 
-MainWindow::MainWindow(QWidget * parent)
-: QMainWindow(parent),
-  ui(new Ui::MainWindow),
+MainWindow::MainWindow(wxWindow * parent)
+: BaseType(parent, wxID_ANY),
+  model(NULL),
   model_display(NULL)
 {
 }
@@ -69,8 +61,7 @@ MainWindow::MainWindow(QWidget * parent)
 void
 MainWindow::init()
 {
-  ui->setupUi(this);
-  setWindowTitle("");
+  setWindowTitle("Browse3D");
 
   view_type_action_group = new QActionGroup(this);
   ui->actionViewShaded->setActionGroup(view_type_action_group);
@@ -111,8 +102,8 @@ MainWindow::init()
   model_display->show();
 
   // Segment picking interface
-  ui->segmentsTable->setColumnCount(1);
-  ui->segmentsTable->horizontalHeader()->setStretchLastSection(true);
+  ui->segments_table->setColumnCount(1);
+  ui->segments_table->horizontalHeader()->setStretchLastSection(true);
 
   // Point picking interface
   ui->pointsTable->setColumnCount(1);
@@ -142,13 +133,13 @@ MainWindow::init()
   connect(model, SIGNAL(needsSyncSamples(Model const *)), this, SLOT(syncSamples()));
   connect(model, SIGNAL(needsSyncSegments(Model const *)), this, SLOT(syncSegments()));
 
-  connect(ui->toolBox, SIGNAL(currentChanged(int)), this, SLOT(update()));
+  connect(ui->toolbox, SIGNAL(currentChanged(int)), this, SLOT(update()));
 
   connect(ui->buttonExpandSegment, SIGNAL(clicked()), this, SLOT(expandPickedSegment()));
   connect(ui->buttonContractSegment, SIGNAL(clicked()), this, SLOT(contractPickedSegment()));
   connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
   connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
-  connect(ui->segmentsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
+  connect(ui->segments_table, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
 
   connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
   connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
@@ -199,7 +190,6 @@ MainWindow::init()
 MainWindow::~MainWindow()
 {
   delete model;
-  delete ui;
 }
 
 ModelDisplay *
@@ -306,15 +296,15 @@ MainWindow::loadPreviousFeatures()
   if (index == 0)
   {
     model->loadFeatures(fdir.dir().filePath(files.last()));
-    qDebug() << info.dir().filePath(files.last());
+    THEA_CONSOLE << info.dir().filePath(files.last());
   }
   else
   {
     model->loadFeatures(fdir.dir().filePath(files[index - 1]));
-    qDebug() << info.dir().filePath(files.last());
+    THEA_CONSOLE << info.dir().filePath(files.last());
   }
 
-  qDebug() << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesFilename();
 }
 
 void
@@ -341,7 +331,7 @@ MainWindow::loadNextFeatures()
   else
     model->loadFeatures(fdir.dir().filePath(files[index + 1]));
 
-  qDebug() << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesFilename();
 }
 
 void
@@ -354,106 +344,82 @@ MainWindow::clearOverlays()
 }
 
 void
-MainWindow::setWindowTitle(QString const & title)
-{
-  if (title.isEmpty())
-    BaseType::setWindowTitle("Browse3D");
-  else
-  {
-    QFileInfo info(title);
-    BaseType::setWindowTitle(info.fileName() + " - Browse3D (" + title + ")");
-  }
-}
-
-void
 MainWindow::addPickedSample()
 {
-  QString label = ui->pointLabel->text();
-  qDebug() << "Adding sample with label" << label;
+  std::string label = point_label->GetValue().ToStdString();
+  THEA_CONSOLE << "Adding sample with label" << label;
 
-  model->addPickedSample(label, ui->pickPointsSnapToVertex->isChecked());
+  model->addPickedSample(label, pick_points_snap_to_vertex->GetValue());
   model->invalidatePick();
 
-  QTableWidgetItem * item = new QTableWidgetItem(label);
-  item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-  ui->pointsTable->setRowCount((int)model->numSamples());
-  ui->pointsTable->setItem((int)model->numSamples() - 1, 0, item);
+  points_table->Append(label);
 }
 
 void
 MainWindow::syncSamples()
 {
-  ui->pointsTable->setRowCount((int)model->numSamples());
   TheaArray<Model::Sample> const & samples = model->getSamples();
+  std::vector<std::string> labels((size_t)samples.size());
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
-    qDebug() << "Adding sample with label" << samples[i].label;
-
-    QTableWidgetItem * item = new QTableWidgetItem(samples[i].label);
-    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-    ui->pointsTable->setItem((int)i, 0, item);
+    THEA_CONSOLE << "Adding sample with label" << samples[i].label;
+    labels[(size_t)i] = segments[i].label;
   }
+
+  points_table->Set(labels);
 }
 
 void
 MainWindow::removeSelectedSample()
 {
-  QList<QTableWidgetItem *> sel = ui->pointsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  points_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     return;
 
-  QTableWidgetItem * item = sel.front();
-  qDebug() << "Removing sample" << item->row() << "with label" << item->text();
+  int index = sel.Item(0);
+  model->selectSample(index);
+  THEA_CONSOLE << "Removing sample " << item << " with label " << points_table->GetString(index);
 
-  model->removeSample(item->row());
-  ui->pointsTable->removeRow(item->row());
+  model->removeSample(index);
+  points_table->Delete(index);
 }
 
 void
 MainWindow::selectSample()
 {
-  QList<QTableWidgetItem *> sel = ui->pointsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  points_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     model->selectSample(-1);
   else
-  {
-    QTableWidgetItem * item = sel.front();
-    model->selectSample(item->row());  // ignore column
-  }
+    model->selectSample(sel.Item(0));
 }
 
 bool
 MainWindow::pickPoints() const
 {
-  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == POINTS_TAB_INDEX;
+  return toolbox->IsShown() && toolbox->GetSelection() == POINTS_TAB_INDEX;
 }
 
 void
 MainWindow::setPickPoints(bool value)
 {
-  ui->toolBox->setVisible(value);
+  toolbox->Show(value);
   if (value)
-    ui->toolBox->setCurrentIndex(POINTS_TAB_INDEX);
-
-  update();
+    toolbox->SetSelection(POINTS_TAB_INDEX);
 }
 
 void
 MainWindow::addPickedSegment()
 {
-  QString label = ui->segmentLabel->text();
-  qDebug() << "Adding segment with label" << label;
+  std::string label = segment_label->GetValue().ToStdString();
+  THEA_CONSOLE << "Adding segment with label" << label;
 
   model->addPickedSegment(label);
   model->invalidatePickedSegment();
 
-  QTableWidgetItem * item = new QTableWidgetItem(label);
-  item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-  ui->segmentsTable->setRowCount((int)model->numSegments());
-  ui->segmentsTable->setItem((int)model->numSegments() - 1, 0, item);
+  segments_table->Append(label);
 }
 
 void
@@ -471,72 +437,84 @@ MainWindow::contractPickedSegment()
 void
 MainWindow::syncSegments()
 {
-  ui->segmentsTable->setRowCount((int)model->numSegments());
   TheaArray<Segment> const & segments = model->getSegments();
+  std::vector<std::string> labels((size_t)segments.size());
   for (array_size_t i = 0; i < segments.size(); ++i)
   {
-    qDebug() << "Adding segment with label" << segments[i].getLabel();
-
-    QTableWidgetItem * item = new QTableWidgetItem(segments[i].getLabel());
-    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-    ui->segmentsTable->setItem((int)i, 0, item);
+    THEA_CONSOLE << "Adding segment with label" << segments[i].getLabel();
+    labels[(size_t)i] = segments[i].getLabel();
   }
+
+  ui->segments_table->Set(labels);
 }
 
 void
 MainWindow::removeSelectedSegment()
 {
-  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  segments_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     return;
 
-  QTableWidgetItem * item = sel.front();
-  qDebug() << "Removing segment" << item->row() << "with label" << item->text();
+  int index = sel.Item(0);
+  model->selectSegment(index);
+  THEA_CONSOLE << "Removing segment " << item << " with label " << segments_table->GetString(index);
 
-  model->removeSegment(item->row());
-  ui->segmentsTable->removeRow(item->row());
+  model->removeSegment(index);
+  segments_table->Delete(index);
 }
 
 void
 MainWindow::selectSegment()
 {
-  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  segments_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     model->selectSegment(-1);
   else
-  {
-    QTableWidgetItem * item = sel.front();
-    model->selectSegment(item->row());  // ignore column
-  }
+    model->selectSegment(sel.Item(0));
 }
 
 bool
 MainWindow::pickSegments() const
 {
-  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == SEGMENTS_TAB_INDEX;
+  return toolbox->IsShown() && toolbox->GetSelection() == SEGMENTS_TAB_INDEX;
 }
 
 void
 MainWindow::setPickSegments(bool value)
 {
-  ui->toolBox->setVisible(value);
+  toolbox->Show(value);
   if (value)
-    ui->toolBox->setCurrentIndex(SEGMENTS_TAB_INDEX);
-
-  update();
+    toolbox->SetSelection(SEGMENTS_TAB_INDEX);
 }
 
 void
 MainWindow::setShowToolbox(bool value)
 {
-  ui->toolBox->setVisible(value);
-  update();
+  toolbox->Show(value);
+}
+
+//=============================================================================================================================
+// GUI callbacks etc
+//=============================================================================================================================
+
+void
+MainWindow::SetTitle(wxString const & title)
+{
+  if (title.empty())
+    BaseType::SetTitle("Browse3D");
+  else
+  {
+    std::string filename = FilePath::nodeName(title.ToStdString());
+    BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
+  }
 }
 
 void
-MainWindow::closeEvent(QCloseEvent * event)
+MainWindow::OnExit(wxCommandEvent & event)
 {
+  Close(true);
 }
 
 } // namespace Browse3D
