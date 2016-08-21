@@ -194,7 +194,7 @@ ModelDisplay::renderShaded()
   render_opts.drawEdges() = false;
   update();
 
-  qDebug() << "Rendering shaded faces";
+  THEA_CONSOLE << "Rendering shaded faces";
 }
 
 void
@@ -204,7 +204,7 @@ ModelDisplay::renderWireframe()
   render_opts.drawEdges() = true;
   update();
 
-  qDebug() << "Rendering wireframe";
+  THEA_CONSOLE << "Rendering wireframe";
 }
 
 void
@@ -214,7 +214,7 @@ ModelDisplay::renderShadedWireframe()
   render_opts.drawEdges() = true;
   update();
 
-  qDebug() << "Rendering shaded faces with wireframe edges";
+  THEA_CONSOLE << "Rendering shaded faces with wireframe edges";
 }
 
 void
@@ -225,7 +225,7 @@ ModelDisplay::setTwoSided(bool value)
     GraphicsWidget::setTwoSided(value);
     update();
 
-    qDebug() << "Two-sided lighting =" << value;
+    THEA_CONSOLE << "Two-sided lighting =" << value;
   }
 }
 
@@ -237,7 +237,7 @@ ModelDisplay::setFlatShading(bool value)
     render_opts.useVertexNormals() = !value;
     update();
 
-    qDebug() << "Flat shading =" << value;
+    THEA_CONSOLE << "Flat shading =" << value;
   }
 }
 
@@ -284,7 +284,7 @@ ModelDisplay::paintGL()
 void
 ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
 {
-  // qDebug() << "drawBackground";
+  // THEA_CONSOLE << "drawBackground";
 
   using namespace Graphics;
 
@@ -302,11 +302,11 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
     }
 
     if (background_texture)
-     qDebug().nospace() << "Loaded " << background_texture->getWidth() << "x" << background_texture->getHeight()
+     THEA_CONSOLE.nospace() << "Loaded " << background_texture->getWidth() << "x" << background_texture->getHeight()
                         << " background image " << BG_IMAGE;
     else
     {
-      qDebug() << "Couldn't load background texture";
+      THEA_CONSOLE << "Couldn't load background texture";
       return;  // just use whatever we had earlier as a fallback
     }
   }
@@ -373,7 +373,7 @@ ModelDisplay::renderText(int x, int y, QString const & str, QFont const & font)
 void
 ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 {
-  // qDebug() << "drawAxes";
+  // THEA_CONSOLE << "drawAxes";
 
   // TODO: Make the axes and labels occlude each other properly depending on orientation.
 
@@ -479,7 +479,7 @@ ModelDisplay::keyPressEvent(QKeyEvent * event)
 void
 ModelDisplay::mousePressEvent(QMouseEvent * event)
 {
-  // qDebug() << "mousePressEvent";
+  // THEA_CONSOLE << "mousePressEvent";
 
   last_cursor = event->pos();
 
@@ -553,7 +553,7 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
 void
 ModelDisplay::mouseMoveEvent(QMouseEvent * event)
 {
-  // qDebug() << "mouseMoveEvent";
+  // THEA_CONSOLE << "mouseMoveEvent";
 
   if (mode == Mode::EDIT_VIEW)
   {
@@ -593,7 +593,7 @@ ModelDisplay::mouseMoveEvent(QMouseEvent * event)
 void
 ModelDisplay::incrementViewTransform(AffineTransform3 const & tr)
 {
-  // qDebug() << "incrementViewTransform";
+  // THEA_CONSOLE << "incrementViewTransform";
 
   AffineTransform3 inv_vt = tr.inverse();
   CoordinateFrame3 const & old_cframe = camera.getFrame();
@@ -609,7 +609,7 @@ ModelDisplay::incrementViewTransform(AffineTransform3 const & tr)
 void
 ModelDisplay::mouseReleaseEvent(QMouseEvent * event)
 {
-  // qDebug() << "mouseReleaseEvent";
+  // THEA_CONSOLE << "mouseReleaseEvent";
 
   if (mode == Mode::EDIT_VIEW)
   {
@@ -633,7 +633,7 @@ ModelDisplay::mouseReleaseEvent(QMouseEvent * event)
 void
 ModelDisplay::wheelEvent(QWheelEvent * event)
 {
-  // qDebug() << "wheelEvent";
+  // THEA_CONSOLE << "wheelEvent";
 
   mode = Mode::EDIT_VIEW;
   view_edit_mode = ViewEditMode::ZOOM;
@@ -647,7 +647,7 @@ ModelDisplay::wheelEvent(QWheelEvent * event)
 Real
 ModelDisplay::getModelDistance() const
 {
-  // qDebug() << "getModelDistance";
+  // THEA_CONSOLE << "getModelDistance";
 
   return model ? (model->getTransformedBounds().getCenter() - camera.getPosition()).length()
                : (camera_look_at - camera.getPosition()).length();
@@ -656,7 +656,7 @@ ModelDisplay::getModelDistance() const
 void
 ModelDisplay::panView(QMouseEvent * event)
 {
-  // qDebug() << "panView";
+  // THEA_CONSOLE << "panView";
 
   Vector3 trn = dragToTranslation(last_cursor, event->pos(), width(), height(), camera, getModelDistance());
   incrementViewTransform(AffineTransform3(Matrix3::identity(), trn));
@@ -665,7 +665,7 @@ ModelDisplay::panView(QMouseEvent * event)
 void
 ModelDisplay::rotateView(QMouseEvent * event)
 {
-  // qDebug() << "rotateView";
+  // THEA_CONSOLE << "rotateView";
 
   Matrix3 rot = dragToRotation(last_cursor, event->pos(), width(), height(), camera);
   Vector3 trn = camera_look_at - rot * camera_look_at;
@@ -675,7 +675,7 @@ ModelDisplay::rotateView(QMouseEvent * event)
 void
 ModelDisplay::rollView(QMouseEvent * event)
 {
-  // qDebug() << "rollView";
+  // THEA_CONSOLE << "rollView";
 
   Vector2 center(0.5f * width(), 0.5f * height());
   Vector2 u = Vector2(last_cursor.x(), last_cursor.y()) - center;
@@ -704,7 +704,7 @@ zoomTransform(Real zoom, Real camera_separation, Vector3 const & look_dir)
 void
 ModelDisplay::zoomView(QMouseEvent * event)
 {
-  // qDebug() << "zoomView";
+  // THEA_CONSOLE << "zoomView";
 
   using namespace ModelDisplayInternal;
 
@@ -724,7 +724,7 @@ ModelDisplay::zoomView(QMouseEvent * event)
 void
 ModelDisplay::zoomView(QWheelEvent * event)
 {
-  // qDebug() << "zoomView";
+  // THEA_CONSOLE << "zoomView";
 
   using namespace ModelDisplayInternal;
 
@@ -750,7 +750,7 @@ ModelDisplay::saveScreenshot(QString path)
   {
     Model const * model = app().getMainWindow()->getModel();
     QString prefix = model ? QFileInfo(model->getFilename()).baseName() : "Browse3D-Screenshot";
-    path = getFullPath(QDir::homePath(), prefix + QDateTime::currentDateTime().toString("-yyyy-MM-dd-hh-mm-ss") + ".png");
+    path = FilePath::concat(QDir::homePath(), prefix + QDateTime::currentDateTime().toString("-yyyy-MM-dd-hh-mm-ss") + ".png");
   }
 
 #ifdef THEA_USE_QOPENGLWIDGET

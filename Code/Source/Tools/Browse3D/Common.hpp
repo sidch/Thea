@@ -99,13 +99,13 @@ using namespace Thea;
 #define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
 
 /** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-inline std::string getFullPath(std::string const & dir, std::string const & filename)
+inline std::string FilePath::concat(std::string const & dir, std::string const & filename)
 {
   return FilePath::concat(dir, filename);
 }
 
 /** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-QString getFullPath(QString const & dir, QString const & filename);
+QString FilePath::concat(QString const & dir, QString const & filename);
 
 /** Print a sequence of values as a comma-separated list to a string. */
 template <typename Iterator> std::string seqStr(Iterator begin, Iterator end)

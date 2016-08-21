@@ -54,7 +54,7 @@ namespace Graphics {
 
 /** A collection of meshes and subgroups. */
 template <typename MeshT>
-class MeshGroup : public virtual NamedObject, public DrawableObject, public Serializable
+class MeshGroup : public virtual NamedObject, public DrawableObject, public Serializable, public TransformableObject
 {
   public:
     THEA_DEF_POINTER_TYPES(MeshGroup, shared_ptr, weak_ptr)

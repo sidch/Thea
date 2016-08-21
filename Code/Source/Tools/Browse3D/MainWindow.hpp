@@ -43,15 +43,12 @@
 #define __Browse3D_MainWindow_hpp__
 
 #include "Common.hpp"
-#include <QMainWindow>
+#include <wx/frame.h>
 
-namespace Ui {
-
-class MainWindow;
-
-}
-
-class QActionGroup;
+class wxCheckBox
+class wxListBox;
+class wxNotebook;
+class wxTextCtrl;
 
 namespace Browse3D {
 
@@ -59,15 +56,13 @@ class Model;
 class ModelDisplay;
 
 /** The main application window. */
-class MainWindow : public QMainWindow
+class MainWindow : public wxFrame
 {
-    Q_OBJECT
-
-    typedef QMainWindow BaseType;
+    typedef wxFrame BaseType;
 
   public:
     /** Constructor. */
-    explicit MainWindow(QWidget * parent = NULL);
+    explicit MainWindow(wxWindow * parent = NULL);
 
     /** Destructor. */
     ~MainWindow();
@@ -96,7 +91,6 @@ class MainWindow : public QMainWindow
     /** Check if segment-selection is on. */
     bool pickSegments() const;
 
-  public slots:
     /** Select and load a model. */
     void selectAndLoadModel();
 
@@ -111,9 +105,6 @@ class MainWindow : public QMainWindow
 
     /** Load the next set of features in the features directory. */
     void loadNextFeatures();
-
-    /** Set the window title. */
-    void setWindowTitle(QString const & title);
 
     /** Add the currently picked point to the set of samples. */
     void addPickedSample();
@@ -154,19 +145,34 @@ class MainWindow : public QMainWindow
     /** Turn segment-picking on/off. */
     void setPickSegments(bool value);
 
-  protected:
-    /** Called just before the window is closed. */
-    void closeEvent(QCloseEvent * event);
+    //=========================================================================================================================
+    // GUI callbacks etc
+    //=========================================================================================================================
+
+    /** Set the window title. */
+    void SetTitle(wxString const & title);
+
+    /** Called when the window is closed. */
+    void OnExit(wxCommandEvent & event);
 
   private:
     /** Get rid of all overlay models. */
     void clearOverlays();
 
-    Ui::MainWindow * ui;
-    QActionGroup * view_type_action_group;
+    // Models
     Model * model;
     TheaArray<Model *> overlays;
+
+    // Widgets
     ModelDisplay * model_display;
+    wxNotebook * toolbox;
+
+    wxListBox * points_table;
+    wxTextCtrl * point_label;
+    wxCheckBox * pick_points_snap_to_vertex;
+
+    wxListBox * segments_table;
+    wxTextCtrl * segment_label;
 
 }; // class MainWindow
 

@@ -42,25 +42,17 @@
 #include "App.hpp"
 #include "MainWindow.hpp"
 #include "../../Application.hpp"
+#include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
 #include "../../Plugin.hpp"
 #include "../../Graphics/RenderSystem.hpp"
-#include <QApplication>
-#include <QDateTime>
-#include <QDir>
-#include <QFile>
-#include <QFileInfo>
 #include <boost/program_options.hpp>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
 #include <vector>
 
-#ifdef THEA_USE_QOPENGLWIDGET
-#  include <QSurfaceFormat>
-#else
-#  include <QGLFormat>
-#endif
+IMPLEMENT_APP(Browse3D::App);
 
 namespace Browse3D {
 
@@ -90,7 +82,7 @@ App::optsToString() const
       << "\n  resource-dir = " << opts.resource_dir
       << "\n  working-dir = " << opts.working_dir
       << "\n  model = " << opts.model
-      << "\n  overlays = { " << opts.overlays.join(", ") << " }"
+      << "\n  overlays = { " << stringJoin(opts.overlays, ", ") << " }"
       << "\n  features = " << opts.features
       << "\n  face-labels = " << opts.face_labels
       << "\n  emph-features = " << opts.accentuate_features
@@ -110,27 +102,7 @@ App::optsToString() const
 }
 
 bool
-App::init(int argc, char * argv[])
-{
-  if (!parseOptions(argc, argv))
-    return false;
-
-  qDebug() << "Started Browse3D";
-  std::string opt_str = optsToString();
-  qDebug() << opt_str;
-
-  createMainWindow();
-
-  // Load plugins and create a rendersystem
-  loadPlugins();
-  createRenderSystem();
-  main_window->update();
-
-  return true;
-}
-
-bool
-parseModel(std::string const & str, QString & path, AffineTransform3 & transform)
+parseModel(std::string const & str, std::string & path, AffineTransform3 & transform)
 {
   TheaArray<std::string> fields;
   stringSplit(str, '|', fields);
@@ -140,7 +112,7 @@ parseModel(std::string const & str, QString & path, AffineTransform3 & transform
     return false;
   }
 
-  path = toQString(trimWhitespace(fields[0]));
+  path = trimWhitespace(fields[0]);
 
   if (fields.size() >= 2)
   {
@@ -183,6 +155,16 @@ parseModel(std::string const & str, QString & path, AffineTransform3 & transform
 bool
 App::parseOptions(int argc, char * argv[])
 {
+  std::vector<std::string> const & args;
+  for (int i = 0; i < argc; ++i)
+    args.push_back(argv[i]);
+
+  return parseOptions(args);
+}
+
+bool
+App::parseOptions(std::vector<std::string> const & args)
+{
   namespace po = boost::program_options;
 
   static std::string const usage("Usage: Browse3D [options] [model]");
@@ -192,22 +174,17 @@ App::parseOptions(int argc, char * argv[])
   // po::options_description hidden;
   // hidden.add_options()("hidden-option", po::value<std::string>(&hidden_option), "");
 
-  std::string app_dir(QFile::encodeName(QApplication::applicationDirPath()).data());
-  std::string def_plugin_dir = getFullPath(app_dir, "../lib");
+  std::string app_dir(FilePath::parent(Application::programPath()));
+  std::string def_plugin_dir = FilePath::concat(app_dir, "../lib");
 #ifdef _MSC_VER
   // Visual Studio puts executables in Debug|Release subdirectory
-  std::string def_resource_dir = getFullPath(app_dir, "../../../../Resources");
+  std::string def_resource_dir = FilePath::concat(app_dir, "../../../../Resources");
 #else
-  std::string def_resource_dir = getFullPath(app_dir, "../../../Resources");
+  std::string def_resource_dir = FilePath::concat(app_dir, "../../../Resources");
 #endif
 
-  std::string s_plugin_dir;
-  std::string s_resource_dir;
-  std::string s_working_dir;
   std::string s_model;
   std::vector<std::string> s_overlays;
-  std::string s_features;
-  std::string s_face_labels;
   std::string s_bg_color;
 
   po::options_description visible("Allowed options");
@@ -215,13 +192,13 @@ App::parseOptions(int argc, char * argv[])
           ("help,h",               "Print this help message")
           ("version,v",            "Print the program version")
           ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"), "Configuration file (overridden by duplicate cmdline options)")
-          ("plugin-dir",           po::value<std::string>(&s_plugin_dir)->default_value(def_plugin_dir), "Plugins directory")
-          ("resource-dir",         po::value<std::string>(&s_resource_dir)->default_value(def_resource_dir), "Resources directory")
-          ("working-dir",          po::value<std::string>(&s_working_dir)->default_value("."), "Working directory")
-          ("model",                po::value<std::string>(&s_model), "Model to load on startup")
+          ("plugin-dir",           po::value<std::string>(&opts.plugin_dir)->default_value(def_plugin_dir), "Plugins directory")
+          ("resource-dir",         po::value<std::string>(&opts.resource_dir)->default_value(def_resource_dir), "Resources directory")
+          ("working-dir",          po::value<std::string>(&opts.working_dir)->default_value("."), "Working directory")
+          ("model",                po::value<std::string>(&s_model), "Model to load on startup, with optional transform")
           ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
-          ("features,f",           po::value<std::string>(&s_features), "Directory or file containing features to load")
-          ("face-labels,l",        po::value<std::string>(&s_face_labels), "Directory or file containing face labels to load")
+          ("features,f",           po::value<std::string>(&opts.features), "Directory/file containing features to load")
+          ("face-labels,l",        po::value<std::string>(&opts.face_labels), "Directory/file containing face labels to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("normals,n",            "Draw normals as arrows")
@@ -239,7 +216,7 @@ App::parseOptions(int argc, char * argv[])
 
   if (argc < 1)
   {
-    qDebug() << usage;
+    THEA_CONSOLE << usage;
     std::cerr << visible;  // should be intercepted by out
     return 0;
   }
@@ -249,15 +226,14 @@ App::parseOptions(int argc, char * argv[])
   pdesc.add("overlay", -1);
 
   // Read cmdline options first (overrides conflicting config file values)
-  po::parsed_options cmdline_parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).positional(pdesc).run();
+  po::parsed_options cmdline_parsed = po::basic_command_line_parser<char>(args).options(desc).positional(pdesc).run();
   po::variables_map vm;
   po::store(cmdline_parsed, vm);
 
   // Now read the config file, if it is found
-  if (vm.count("conf") > 0) conf_file = vm["conf"].as<std::string>();
-  if (QFile::exists(QFile::decodeName(conf_file.c_str())))
+  if (vm.count("conf") > 0 && FileSystem::fileExists(conf_file))
   {
-    qDebug() << "Reading options from config file:" << conf_file;
+    THEA_CONSOLE << "Reading options from config file:" << conf_file;
 
     std::ifstream conf_in(conf_file.c_str());
     po::parsed_options conf_file_parsed = po::parse_config_file(conf_in, desc);
@@ -270,27 +246,27 @@ App::parseOptions(int argc, char * argv[])
 
   if (vm.count("version") > 0)
   {
-    qDebug() << "Browse3D version 1.2";
-    qDebug() << "Siddhartha Chaudhuri, 2016";
+    THEA_CONSOLE << "Browse3D version 2.0";
+    THEA_CONSOLE << "Siddhartha Chaudhuri, 2016";
     quit = true;
   }
 
   if (vm.count("help") > 0)
   {
-    if (quit) qDebug();
-    qDebug() << usage;
-    std::cout << visible;  // should be intercepted by qDebug()
+    if (quit) THEA_CONSOLE << "";
+    THEA_CONSOLE << usage;
+    THEA_CONSOLE << visible;  // should be intercepted by THEA_CONSOLE
     quit = true;
   }
 
   if (quit)
     return false;
 
-  if (!s_plugin_dir.empty())    opts.plugin_dir    =  QDir(QFile::decodeName(s_plugin_dir.c_str())).canonicalPath();
-  if (!s_resource_dir.empty())  opts.resource_dir  =  QDir(QFile::decodeName(s_resource_dir.c_str())).canonicalPath();
-  if (!s_working_dir.empty())   opts.working_dir   =  QDir(QFile::decodeName(s_working_dir.c_str())).canonicalPath();
+  opts.plugin_dir    =  FileSystem::resolve(opts.plugin_dir);
+  opts.resource_dir  =  FileSystem::resolve(opts.resource_dir);
+  opts.working_dir   =  FileSystem::resolve(opts.working_dir);
 
-  if (!s_model.empty())
+  if (!opts.model.empty())
   {
     if (!parseModel(s_model, opts.model, opts.model_transform))
       return false;
@@ -300,17 +276,17 @@ App::parseOptions(int argc, char * argv[])
   opts.overlay_transforms.clear();
   for (size_t i = 0; i < s_overlays.size(); ++i)
   {
-    QString path;
+    std::string path;
     AffineTransform3 transform;
     if (!parseModel(s_overlays[i], path, transform))
       return false;
 
-    opts.overlays << path;
+    opts.overlays.push_back(path);
     opts.overlay_transforms.push_back(transform);
   }
 
-  if (!s_features.empty())     opts.features = toQString(s_features);
-  if (!s_face_labels.empty())  opts.face_labels = toQString(s_face_labels);
+  opts.features             =  FileSystem::resolve(opts.features);
+  opts.face_labels          =  FileSystem::resolve(opts.face_labels);
   opts.accentuate_features  =  (vm.count("emph-features") > 0);
   opts.color_cube_features  =  (vm.count("color-cube") > 0);
   opts.show_normals         =  (vm.count("normals") > 0);
@@ -336,7 +312,7 @@ App::parseOptions(int argc, char * argv[])
     opts.bg_color = ColorRGB::black();
   }
 
-  Application::setResourceArchive(s_resource_dir);
+  Application::setResourceArchive(opts.resource_dir);
 
   return true;
 }
@@ -344,26 +320,9 @@ App::parseOptions(int argc, char * argv[])
 void
 App::createMainWindow()
 {
-  // Enable depth buffer, antialiasing etc
-#ifdef THEA_USE_QOPENGLWIDGET
-  QSurfaceFormat sf = QSurfaceFormat::defaultFormat();
-  sf.setDepthBufferSize(16);
-  sf.setSamples(4);
-  sf.setProfile(QSurfaceFormat::CoreProfile);
-  QSurfaceFormat::setDefaultFormat(sf);
-#else
-  QGLFormat glf = QGLFormat::defaultFormat();
-  glf.setSampleBuffers(true);
-  glf.setSamples(4);
-  QGLFormat::setDefaultFormat(glf);
-#endif
-
   // Create the main window, and hence a rendering context
   main_window = new MainWindow;
-  main_window->init();
-  main_window->raise();
-  main_window->activateWindow();
-  main_window->show();
+  main_window->Show(true);
 }
 
 void
@@ -371,14 +330,13 @@ App::loadPlugins()
 {
   // Try to load the OpenGL plugin
 #ifdef THEA_DEBUG_BUILD
-  std::string s_plugin_dir         =  toStdString(opts.plugin_dir);
 
 #ifdef THEA_WINDOWS
-  std::string debug_plugin_path    =  getFullPath(s_plugin_dir, "TheaPluginGLd");
-  std::string release_plugin_path  =  getFullPath(s_plugin_dir, "TheaPluginGL");
+  std::string debug_plugin_path    =  FilePath::concat(opts.plugin_dir, "TheaPluginGLd");
+  std::string release_plugin_path  =  FilePath::concat(opts.plugin_dir, "TheaPluginGL");
 #else
-  std::string debug_plugin_path    =  getFullPath(s_plugin_dir, "libTheaPluginGLd");
-  std::string release_plugin_path  =  getFullPath(s_plugin_dir, "libTheaPluginGL");
+  std::string debug_plugin_path    =  FilePath::concat(opts.plugin_dir, "libTheaPluginGLd");
+  std::string release_plugin_path  =  FilePath::concat(opts.plugin_dir, "libTheaPluginGL");
 #endif
 
 #ifdef THEA_WINDOWS
@@ -393,14 +351,14 @@ App::loadPlugins()
 #else
 
 #ifdef THEA_WINDOWS
-  std::string plugin_path = getFullPath(toStdString(opts.plugin_dir), "TheaPluginGL");
+  std::string plugin_path = FilePath::concat(opts.plugin_dir, "TheaPluginGL");
 #else
-  std::string plugin_path = getFullPath(toStdString(opts.plugin_dir), "libTheaPluginGL");
+  std::string plugin_path = FilePath::concat(opts.plugin_dir, "libTheaPluginGL");
 #endif
 
 #endif
 
-  qDebug() << "Loading OpenGL plugin:" << plugin_path;
+  THEA_CONSOLE << "Loading OpenGL plugin: " << plugin_path;
   gl_plugin = Application::getPluginManager().load(plugin_path);
 
   // Start up the plugin (a GL context should already exist in a QGLWidget)
@@ -415,21 +373,63 @@ App::createRenderSystem()
   has_render_system = 1;
 }
 
-void
-App::cleanup()
+//=============================================================================================================================
+// GUI callbacks etc
+//=============================================================================================================================
+
+bool
+App::OnInit()
 {
-  // QObjects without parents must be manually deleted
+  if (!wxApp::OnInit())
+    return false;
 
-  if (main_window && !main_window->parent())
+  THEA_CONSOLE << "Started Browse3D\n";
+  THEA_CONSOLE << optsToString();
+
+  createMainWindow();
+
+  // Load plugins and create a rendersystem
+  loadPlugins();
+  createRenderSystem();
+
+  return true;
+}
+
+bool
+App::OnCmdLineParsed(wxCmdLineParser & parser)
+{
+  if (!wxApp::OnCmdLineParsed(parser))
+    return false;
+
+  std::vector<std::string> const & args;
+  for (size_t i = 0; i < parser.GetParamCount(); ++i)
+    args.push_back(parser.GetParam(i).ToStdString());
+
+  return parseOptions(args);
+}
+
+bool
+App::OnExceptionInMainLoop()
+{
+  try
   {
-    delete main_window;
-    main_window = NULL;
+    throw; // Rethrow the current exception.
   }
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
+  // Exit the main loop and thus terminate the program.
+  return false;
+}
+
+int
+App::OnExit()
+{
   if (render_system_factory)
     render_system_factory->destroyRenderSystem(render_system);
 
   Application::getPluginManager().unloadAllPlugins();
+
+  return wxApp::OnExit();
 }
 
 } // namespace Browse3D

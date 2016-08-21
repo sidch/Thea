@@ -373,7 +373,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
       }
 
       CoordinateFrame3 cf(RigidTransform3::_fromAffine(AffineTransform3(rot, dst_mean - rot * src_mean)));
-      // qDebug().nospace() << "R = " << cf.getRotation().toString() << ", T = " << cf.getTranslation().toString();
+      // THEA_CONSOLE.nospace() << "R = " << cf.getRotation().toString() << ", T = " << cf.getTranslation().toString();
 
       return RigidTransform3(cf);
     }
@@ -390,9 +390,9 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
     CoordinateFrame3 const & src_frame = src[i];
     CoordinateFrame3 const & dst_frame = dst[i];
 
-    // qDebug().nospace() << "src[" << i << "] = R: " << src_frame.getRotation().toString() << ", T: "
+    // THEA_CONSOLE.nospace() << "src[" << i << "] = R: " << src_frame.getRotation().toString() << ", T: "
     //                    << src_frame.getTranslation().toString();
-    // qDebug().nospace() << "dst[" << i << "] = R: " << dst_frame.getRotation().toString() << ", T: "
+    // THEA_CONSOLE.nospace() << "dst[" << i << "] = R: " << dst_frame.getRotation().toString() << ", T: "
     //                    << dst_frame.getTranslation().toString();
 
     src_mean += src_frame.getTranslation();
@@ -463,7 +463,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
   Vector3 translation = dst_mean - rotation * src_mean;
 
   CoordinateFrame3 cf(RigidTransform3::_fromAffine(AffineTransform3(rotation, translation)));
-  // qDebug().nospace() << "R = " << rotation.toString() << ", T = " << translation.toString();
+  // THEA_CONSOLE.nospace() << "R = " << rotation.toString() << ", T = " << translation.toString();
 
   return RigidTransform3(cf);
 }
@@ -584,7 +584,7 @@ raySphereIntersectionTime(Ray3 const & ray, Vector3 const & center, Real radius)
 
 #if 0
   if (min_root >= 0)
-    qDebug() << "min_root =" << min_root;
+    THEA_CONSOLE << "min_root =" << min_root;
 #endif
 
   return (Real)min_root;
@@ -621,7 +621,7 @@ rayTorusIntersectionTime(Ray3 const & ray, Real torus_radius, Real torus_width)
 
 #if 0
   if (min_root >= 0)
-    qDebug() << "min_root =" << min_root;
+    THEA_CONSOLE << "min_root =" << min_root;
 #endif
 
   return (Real)min_root;
