@@ -56,6 +56,7 @@
 #include "Common.hpp"
 #include "BasicStringAlg.hpp"
 #include "Array.hpp"
+#include <sstream>
 
 #ifdef THEA_WINDOWS
 #  ifndef FNM_NOMATCH
@@ -111,11 +112,34 @@ THEA_API long stringSplit(std::string const & s, char split_char, TheaArray<std:
 THEA_API long stringSplit(std::string const & s, std::string const & split_chars, TheaArray<std::string> & result,
                           bool skip_empty_fields = false);
 
-/** Concatenate a sequence of strings, separated by a joining character. */
-THEA_API std::string stringJoin(TheaArray<std::string> const  & a, char join_char);
+/**
+ * Concatenate a sequence of serializable objects (typically strings), separated by a padding character, string or other
+ * serializable object.
+ */
+template <typename StringIterator, typename C>
+std::string
+stringJoin(StringIterator begin, StringIterator end, C const & padding)
+{
+  std::ostringstream out;
+  for (StringIterator iter = begin; iter != end; ++iter)
+  {
+    if (iter != begin) out << padding;
+    out << *iter;
+  }
 
-/** Concatenate a sequence of strings, separated by a joining string. */
-THEA_API std::string stringJoin(TheaArray<std::string> const & a, std::string const & join_str);
+  return out.str();
+}
+
+/**
+ * Concatenate a sequence of serializable objects (typically strings), separated by a padding character, string or other
+ * serializable object. This is shorthand for stringJoin(a.begin(), a.end(), padding).
+ */
+template <typename T, typename C>
+std::string
+stringJoin(TheaArray<T> const & a, C const & padding)
+{
+  return stringJoin(a.begin(), a.end(), padding);
+}
 
 /** Pattern matching flags (enum class). Correspond to flags for POSIX fnmatch. */
 struct THEA_API Match

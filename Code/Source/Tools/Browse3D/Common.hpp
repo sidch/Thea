@@ -42,54 +42,9 @@
 #ifndef __Browse3D_Common_hpp__
 #define __Browse3D_Common_hpp__
 
-#define QT_USE_FAST_CONCATENATION
-#define QT_USE_FAST_OPERATOR_PLUS
-
-#ifdef THEA_QT5
-// # define THEA_USE_QOPENGLWIDGET
-#endif
-
 #include "../../Common.hpp"
-#include "../../Colors.hpp"
-#include "../../FilePath.hpp"
-#include "../../IOStream.hpp"
-#include <QDebug>
-#include <QtDebug>
-#include <QString>
-#include <iostream>
-#include <sstream>
-#include <string>
 
-/** Allow a std::string to be piped to a Qt debug stream. */
-inline QDebug
-operator<<(QDebug dbg, std::string const & str)
-{
-  dbg << str.c_str();
-  return dbg;
-}
-
-/** Allow a QString to be piped to a standard output stream. */
-inline std::ostream &
-operator<<(std::ostream & out, QString const & s)
-{
-  return out << s.toLatin1().data();
-}
-
-/** Convert a std::string to a Qt string. */
-inline QString
-toQString(std::string const s)
-{
-  return QString::fromLatin1(s.data(), (int)s.size());
-}
-
-/** Convert a Qt string to a std::string (use this function and <b>NOT</b> QString::toStdString()!). */
-inline std::string
-toStdString(QString const s)
-{
-  return std::string(s.toLatin1().data(), (int)s.length());
-}
-
-/** Namespace for data-driven texturing project. */
+/** Namespace for 3D file browser project. */
 namespace Browse3D {
 
 using namespace Thea;
@@ -97,33 +52,6 @@ using namespace Thea;
 // Put quotes around the result of a macro expansion.
 #define BROWSE3D_STRINGIFY_(x) #x
 #define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-inline std::string FilePath::concat(std::string const & dir, std::string const & filename)
-{
-  return FilePath::concat(dir, filename);
-}
-
-/** Construct a fully qualified path for a file, given the name of the file and the path to its parent directory. */
-QString FilePath::concat(QString const & dir, QString const & filename);
-
-/** Print a sequence of values as a comma-separated list to a string. */
-template <typename Iterator> std::string seqStr(Iterator begin, Iterator end)
-{
-  std::ostringstream oss;
-  bool first = true;
-  for (Iterator ii = begin; ii != end; ++ii)
-  {
-    if (first)
-      first = false;
-    else
-      oss << ", ";
-
-    oss << *ii;
-  }
-
-  return oss.str();
-}
 
 } // namespace Browse3D
 
