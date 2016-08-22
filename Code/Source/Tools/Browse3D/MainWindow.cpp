@@ -206,39 +206,50 @@ MainWindow::selectAndLoadModel()
 }
 
 void
-getMeshPatterns(QStringList & patterns)
+getMeshPatterns(TheaArray<std::string> & patterns)
 {
-  patterns << "*.3ds" << "*.obj" << "*.off" << "*.off.bin" << "*.pts";
+  patterns.clear();
+  patterns.push_back("*.3ds");
+  patterns.push_back("*.obj");
+  patterns.push_back("*.off");
+  patterns.push_back("*.off.bin");
+  patterns.push_back("*.ply");
+  patterns.push_back("*.pts");
 }
 
 void
-getFeaturePatterns(QStringList & patterns)
+getFeaturePatterns(TheaArray<std::string> & patterns)
 {
-  patterns << "*.arff" << "*.arff.*" << "*.features" << "*.features.*";
+  patterns.clear();
+  patterns.push_back("*.arff");
+  patterns.push_back("*.arff.*");
+  patterns.push_back("*.features");
+  patterns.push_back("*.features.*");
 }
 
-QStringList
-getDirFiles(QString const & filename, QStringList const & patterns)
+long
+fileIndex(std::string const & dir, std::string const & file, TheaArray<std::string> const * patterns = NULL)
 {
-  QFileInfo info(filename);
-  QDir dir = info.dir();
-  if (dir.exists())
-    return dir.entryList(patterns, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
-  else
-    return QStringList();
+  TheaArray<std::string> files;
+  if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, stringJoin(patterns, ' '), false) <= 0)
+    return;
+
+  std::string fname = FilePath::objectName(file);
+  for (array_size_t i = 0; i < files.size(); ++i)
+    if (fname == FilePath::objectName(files[i]))
+      return (long)i;
+
+  return -1;
 }
 
 void
 MainWindow::loadPreviousModel()
 {
-  QStringList patterns; getMeshPatterns(patterns);
-  QStringList files = getDirFiles(model->getFilename(), patterns);
-  if (files.isEmpty())
-    return;
+  TheaArray<std::string> patterns;
+  getMeshPatterns(patterns);
 
-  QFileInfo info(model->getFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  long index = fileIndex(app().options().features, model->getPath(), &patterns);
+  if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -246,22 +257,19 @@ MainWindow::loadPreviousModel()
   clearOverlays();
 
   if (index == 0)
-    model->load(info.dir().filePath(files.last()));
+    model->load(files[files.size() - 1]);
   else
-    model->load(info.dir().filePath(files[index - 1]));
+    model->load(files[index - 1]);
 }
 
 void
 MainWindow::loadNextModel()
 {
-  QStringList patterns; getMeshPatterns(patterns);
-  QStringList files = getDirFiles(model->getFilename(), patterns);
-  if (files.isEmpty())
-    return;
+  TheaArray<std::string> patterns;
+  getMeshPatterns(patterns);
 
-  QFileInfo info(model->getFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  long index = fileIndex(app().options().features, model->getPath(), &patterns);
+  if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -269,69 +277,49 @@ MainWindow::loadNextModel()
   clearOverlays();
 
   if (index == files.size() - 1)
-    model->load(info.dir().filePath(files.first()));
+    model->load(files[0]);
   else
-    model->load(info.dir().filePath(files[index + 1]));
+    model->load(files[index + 1]);
 }
 
 void
 MainWindow::loadPreviousFeatures()
 {
-  QFileInfo fdir(app().options().features);
-  if (!fdir.isDir())
-    return;
+  TheaArray<std::string> patterns;
+  getFeaturePatterns(patterns);
 
-  QStringList patterns; getFeaturePatterns(patterns);
-  QStringList files = getDirFiles(app().options().features, patterns);
-  if (files.isEmpty())
-    return;
-
-  QFileInfo info(model->getFeaturesFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), &patterns);
+  if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   if (index == 0)
-  {
-    model->loadFeatures(fdir.dir().filePath(files.last()));
-    THEA_CONSOLE << info.dir().filePath(files.last());
-  }
+    model->loadFeatures(files[files.size() - 1]);
   else
-  {
-    model->loadFeatures(fdir.dir().filePath(files[index - 1]));
-    THEA_CONSOLE << info.dir().filePath(files.last());
-  }
+    model->loadFeatures(files[index - 1]);
 
-  THEA_CONSOLE << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesPath();
 }
 
 void
 MainWindow::loadNextFeatures()
 {
-  QFileInfo fdir(app().options().features);
-  if (!fdir.isDir())
-    return;
+  TheaArray<std::string> patterns;
+  getFeaturePatterns(patterns);
 
-  QStringList patterns; getFeaturePatterns(patterns);
-  QStringList files = getDirFiles(app().options().features, patterns);
-  if (files.isEmpty())
-    return;
-
-  QFileInfo info(model->getFeaturesFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), &patterns);
+  if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
-  if (index == files.size() - 1)
-    model->loadFeatures(fdir.dir().filePath(files.first()));
+  if (index == (long)files.size() - 1)
+    model->loadFeatures(files[0]);
   else
-    model->loadFeatures(fdir.dir().filePath(files[index + 1]));
+    model->loadFeatures(files[index + 1]);
 
-  THEA_CONSOLE << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesPath();
 }
 
 void
@@ -506,7 +494,7 @@ MainWindow::SetTitle(wxString const & title)
     BaseType::SetTitle("Browse3D");
   else
   {
-    std::string filename = FilePath::nodeName(title.ToStdString());
+    std::string filename = FilePath::objectName(title.ToStdString());
     BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
   }
 }

@@ -108,8 +108,8 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     /** Get the name of the model. */
     QString getName() const;
 
-    /** Get the filename of the currently loaded model. */
-    QString const & getFilename() const { return filename; }
+    /** Get the path of the currently loaded model. */
+    QString const & getPath() const { return path; }
 
     /** Is the model empty? */
     bool isEmpty() const;
@@ -228,13 +228,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void selectSample(long index);
 
     /** Load samples from a file. */
-    bool loadSamples(QString const & filename_);
+    bool loadSamples(QString const & path_);
 
     /** Save samples to a file. */
-    bool saveSamples(QString const & filename_) const;
+    bool saveSamples(QString const & path_) const;
 
     /** Get the path to the file in which samples are stored. */
-    QString getSamplesFilename() const;
+    QString getSamplesPath() const;
 
     //========================================================================================================================
     // Segments
@@ -285,23 +285,23 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void selectSegment(long index);
 
     /** Load labeled segments from a file. */
-    bool loadSegments(QString const & filename_);
+    bool loadSegments(QString const & path_);
 
     /** Save labeled segments to a file. */
-    bool saveSegments(QString const & filename_) const;
+    bool saveSegments(QString const & path_) const;
 
     /** Get the path to the file in which labeled segments are stored. */
-    QString getSegmentsFilename() const;
+    QString getSegmentsPath() const;
 
     //========================================================================================================================
     // Features
     //========================================================================================================================
 
     /** Load features from a file. */
-    bool loadFeatures(QString const & filename_);
+    bool loadFeatures(QString const & path_);
 
-    /** Get the filename of the currently loaded features. */
-    QString const & getFeaturesFilename() const { return features_filename; }
+    /** Get the path of the currently loaded features. */
+    QString const & getFeaturesPath() const { return features_path; }
 
     /** Check if the model has currently loaded features. */
     bool hasFeatures() const { return has_features; }
@@ -311,10 +311,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     //========================================================================================================================
 
     /** Load face labels from a file. */
-    bool loadFaceLabels(QString const & filename_);
+    bool loadFaceLabels(QString const & path_);
 
-    /** Get the filename of the currently loaded face labels. */
-    QString const & getFaceLabelsFilename() const { return face_labels_filename; }
+    /** Get the path of the currently loaded face labels. */
+    QString const & getFaceLabelsPath() const { return face_labels_path; }
 
     /** Check if the model has currently loaded face labels. */
     bool hasFaceLabels() const { return has_face_labels; }
@@ -352,7 +352,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
      *
      * @return True if the model was successfully loaded, else false.
      */
-    bool load(QString const & filename_);
+    bool load(QString const & path_);
 
     /**
      * Select a file via a file dialog and load the model from it.
@@ -370,11 +370,11 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void geometryChanged(Model const * model);
 
     /**
-     * Emitted when the filename of the model changes.
+     * Emitted when the path of the model changes.
      *
-     * @param current_filename The current filename of the model.
+     * @param current_path The current path of the model.
      */
-    void filenameChanged(QString const & current_filename);
+    void pathChanged(QString const & current_path);
 
     /**
      * Emitted when the model needs to be redrawn.
@@ -405,10 +405,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void clearPoints();
 
     /** Get the default path to the file in which features are stored. */
-    QString getDefaultFeaturesFilename() const;
+    QString getDefaultFeaturesPath() const;
 
     /** Get the default path to the file in which the face labels are stored. */
-    QString getDefaultFaceLabelsFilename() const;
+    QString getDefaultFaceLabelsPath() const;
 
     /** Draw the mesh group colored by segment. */
     void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
@@ -416,12 +416,12 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
-    QString filename;
+    QString path;
 
-    QString features_filename;
+    QString features_path;
     bool has_features;
 
-    QString face_labels_filename;
+    QString face_labels_path;
     bool has_face_labels;
 
     ColorRGBA color;

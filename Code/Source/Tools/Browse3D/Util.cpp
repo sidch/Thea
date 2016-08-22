@@ -45,11 +45,8 @@
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Ball3.hpp"
 #include "../../Image.hpp"
-#include <QDir>
-#include <QFileInfo>
-#include <QHash>
-#include <QPoint>
-#include <QPointF>
+#include <wx/gdicmn.h>
+#include <boost/functional/hash.hpp>
 #include <cmath>
 #include <limits>
 
@@ -241,47 +238,47 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
 }
 
 Ray3
-computePickRay(QPointF const & p, Graphics::Camera const & camera, int width, int height)
+computePickRay(wxRealPoint const & p, Graphics::Camera const & camera, int width, int height)
 {
-  Vector2 screen_pos = Vector2(2 * p.x() / (Real)width - 1, 1 - 2 * p.y() / (Real)height);
+  Vector2 screen_pos = Vector2(2 * p.x / (Real)width - 1, 1 - 2 * p.y / (Real)height);
   return camera.computePickRay(screen_pos);
 }
 
 Vector3
-dragToTranslation(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera,
+dragToTranslation(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera,
                   Real object_distance)
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
 
-  QPoint diff = end - start;
+  wxPoint diff = end - start;
 
   Real d_scale = object_distance / camera.getNearDistance();
   Real horz_scale = d_scale * (camera.getRightMargin() - camera.getLeftMargin()) / (Real)width;
   Real vert_scale = d_scale * (camera.getTopMargin() - camera.getBottomMargin()) / (Real)height;
 
-  return diff.x() * horz_scale * camera.getRightDirection()
-       - diff.y() * vert_scale * camera.getUpDirection();
+  return diff.x * horz_scale * camera.getRightDirection()
+       - diff.y * vert_scale * camera.getUpDirection();
 }
 
 Matrix3
-dragToRotation(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera)
+dragToRotation(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera)
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
 
-  QPoint diff = end - start;
-  if (diff.x() == 0 && diff.y() == 0) return Matrix3::identity();
+  wxPoint diff = end - start;
+  if (diff.x == 0 && diff.y == 0) return Matrix3::identity();
 
-  Vector3 axis = (Real)diff.y() * camera.getRightDirection() + (Real)diff.x() * camera.getUpDirection();
+  Vector3 axis = (Real)diff.y * camera.getRightDirection() + (Real)diff.x * camera.getUpDirection();
 
   static Real const ROT_SPEED = 5;
   int size = width < height ? width : height;
-  Real angle = ROT_SPEED * Vector2(diff.x(), -diff.y()).length() / size;
+  Real angle = ROT_SPEED * Vector2(diff.x, -diff.y).length() / size;
 
   return Matrix3::rotationAxisAngle(axis, angle);
 }
 
 Matrix3
-dragToRotationAroundAxis(QPoint const & start, Vector3 const & start_pick, QPoint const & end, Vector3 const & axis,
+dragToRotationAroundAxis(wxPoint const & start, Vector3 const & start_pick, wxPoint const & end, Vector3 const & axis,
                          Vector3 const & center, int width, int height, Graphics::Camera const & camera)
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
@@ -292,17 +289,17 @@ dragToRotationAroundAxis(QPoint const & start, Vector3 const & start_pick, QPoin
   Vector3 tangent = axis.cross(perp_offset).fastUnit();
   Vector2 proj_tangent = (camera.getWorldToCameraTransform().getRotation() * tangent).xy().fastUnit();
 
-  QPoint diff = end - start;
-  if (diff.x() == 0 && diff.y() == 0) return Matrix3::identity();
+  wxPoint diff = end - start;
+  if (diff.x == 0 && diff.y == 0) return Matrix3::identity();
 
   static Real const ROT_SPEED = 0.02f;
-  Real angle = ROT_SPEED * (diff.x() * proj_tangent.x() - diff.y() * proj_tangent.y());
+  Real angle = ROT_SPEED * (diff.x * proj_tangent.x() - diff.y * proj_tangent.y());
 
   return Matrix3::rotationAxisAngle(axis, angle);
 }
 
 Matrix3
-dragToJoystickRotation(QPoint const & start, QPoint const & end, Vector3 const & center, Real offset, int width, int height,
+dragToJoystickRotation(wxPoint const & start, wxPoint const & end, Vector3 const & center, Real offset, int width, int height,
                        Graphics::Camera const & camera)
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
@@ -323,20 +320,20 @@ dragToJoystickRotation(QPoint const & start, QPoint const & end, Vector3 const &
 }
 
 Real
-dragToScale(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera)
+dragToScale(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera)
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
 
-  QPoint diff = end - start;
+  wxPoint diff = end - start;
 
   static Real const SCALE_INC_SPEED = 4;
   static Real const SCALE_DEC_SPEED = 2;
   static Real const MIN_SCALE = 0.25;
 
-  if (diff.y() < 0)  // drag up => increase
-    return std::max(1 - SCALE_INC_SPEED * diff.y() / (Real)height, MIN_SCALE);
+  if (diff.y < 0)  // drag up => increase
+    return std::max(1 - SCALE_INC_SPEED * diff.y / (Real)height, MIN_SCALE);
   else  // drag down => decrease
-    return std::max(1 - SCALE_DEC_SPEED * diff.y() / (Real)height, MIN_SCALE);
+    return std::max(1 - SCALE_DEC_SPEED * diff.y / (Real)height, MIN_SCALE);
 }
 
 int const NUM_PALETTE_COLORS = 24;
@@ -389,20 +386,20 @@ getPaletteColor(long i)
 }
 
 ColorRGB
-getLabelColor(QString const & label)
+getLabelColor(std::string const & label)
 {
-  unsigned int hash = qHash(label);
-  Random rnd(hash);
+  boost::hash<std::string> hasher;
+  Random rnd((uint32)hasher(label));
 
   return ColorRGB(rnd.uniform01(), rnd.uniform01(), rnd.uniform01());
 }
 
 bool
-loadImage(Image & image, QString const & filename)
+loadImage(Image & image, std::string const & path)
 {
-  if (filename.isEmpty()) return false;
+  if (!FileSystem::fileExists(path)) return false;
 
-  image.load(toStdString(filename));
+  image.load(path);
   if (image.isValid())
   {
     // This used to be necessary on Linux. No longer, since we've fixed TextureFormat::fromImageType() to detect and handle BGR

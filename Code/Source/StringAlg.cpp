@@ -56,7 +56,6 @@
 #include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <sstream>
 
 // Not cstdarg, to make sure we pull in the vsnprintf etc functions
 #include <stdarg.h>
@@ -307,17 +306,6 @@ stringSplit(std::string const & s, std::string const & split_chars, TheaArray<st
 std::string
 stringJoin(TheaArray<std::string> const & a, char join_char)
 {
-  std::ostringstream out;
-
-  for (long i = 0; i < (long)a.size() - 1; ++i)
-  {
-    out << a[(array_size_t)i] << join_char;
-  }
-
-  if (a.size() > 0)
-    out << a.back();
-
-  return out.str();
 }
 
 std::string
