@@ -127,6 +127,20 @@ class MainWindow : public wxFrame
     /** Check if segment-selection is on. */
     bool pickSegments() const;
 
+    //=========================================================================================================================
+    // wxWidgets callbacks
+    //=========================================================================================================================
+
+    /** Set the window title. */
+    void SetTitle(wxString const & title);
+
+    /** Called when the window is closed. */
+    void OnExit(wxCommandEvent & event);
+
+    //=========================================================================================================================
+    // Custom callbacks
+    //=========================================================================================================================
+
     /** Select and load a model. */
     void selectAndLoadModel();
 
@@ -180,16 +194,6 @@ class MainWindow : public wxFrame
 
     /** Turn segment-picking on/off. */
     void setPickSegments(bool value);
-
-    //=========================================================================================================================
-    // GUI callbacks etc
-    //=========================================================================================================================
-
-    /** Set the window title. */
-    void SetTitle(wxString const & title);
-
-    /** Called when the window is closed. */
-    void OnExit(wxCommandEvent & event);
 
   private:
     /** Get rid of all overlay models. */

@@ -48,10 +48,6 @@
 #include "../../Graphics/RenderOptions.hpp"
 #include <wx/glcanvas.h>
 
-class wxKeyEvent;
-class wxMouseEvent;
-class wxSizeEvent
-
 namespace Thea {
 namespace Graphics {
 
@@ -120,12 +116,15 @@ class ModelDisplay : public wxGLCanvas
     Ray3 computePickRay(QPointF const & p) const;
 
     /** Project a 3D point to the viewing plane. The (roughly) inverse operation is computePickRay(). */
-    QPointF project(Vector3 const & p) const;
+    wxRealPoint project(Vector3 const & p) const;
 
     /** Check if flat shading is on/off. */
     bool flatShading() const { return !render_opts.useVertexNormals(); }
 
-  public slots:
+    //=========================================================================================================================
+    // Custom callbacks
+    //=========================================================================================================================
+
     /** Adjust the view to fit the current model. */
     void fitViewToModel();
 
@@ -150,29 +149,28 @@ class ModelDisplay : public wxGLCanvas
     /** Save a screenshot to a file. If the path is null, a default path is generated. */
     void saveScreenshot(QString path = "");
 
-  protected:
-    /** [Qt] Called to initialize OpenGL. */
+    /** Called to initialize OpenGL. */
     void initializeGL();
 
-    /** [Qt] Called when widget is resized. */
+    /** Called when widget is resized. */
     void resizeGL(int w, int h);
 
-    /** [Qt] Called to render display. */
+    /** Called to render display. */
     void paintGL();
 
-    /** [Qt] Called when a key is pressed. */
-    void keyPressEvent(QKeyEvent * event);
+    /** Called when a key is pressed. */
+    void keyPressEvent(wxKeyEvent & event);
 
-    /** [Qt] Called when a mouse button is pressed. */
-    void mousePressEvent(QMouseEvent * event);
+    /** Called when a mouse button is pressed. */
+    void mousePressEvent(wxMouseEvent & event);
 
-    /** [Qt] Called when the mouse is moved. */
-    void mouseMoveEvent(QMouseEvent * event);
+    /** Called when the mouse is moved. */
+    void mouseMoveEvent(wxMouseEvent & event);
 
-    /** [Qt] Called when a mouse button is released. */
-    void mouseReleaseEvent(QMouseEvent * event);
+    /** Called when a mouse button is released. */
+    void mouseReleaseEvent(wxMouseEvent & event);
 
-    /** [Qt] Called when the mouse wheel is turned. */
+    /** Called when the mouse wheel is turned. */
     void wheelEvent(QWheelEvent * event);
 
   private:
