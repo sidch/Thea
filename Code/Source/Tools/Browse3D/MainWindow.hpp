@@ -55,6 +55,42 @@ namespace Browse3D {
 class Model;
 class ModelDisplay;
 
+/** Custom event IDs. */
+enum EventID
+{
+  ID_VIEW_SHADED,
+  ID_VIEW_WIREFRAME,
+  ID_VIEW_SHADED_WIREFRAME,
+  ID_VIEW_TWO_SIDED,
+  ID_VIEW_FLAT_SHADING,
+  ID_VIEW_FIT,
+  ID_GO_PREV,
+  ID_GO_NEXT,
+  ID_GO_PREV_FEATURES,
+  ID_GO_NEXT_FEATURES,
+  ID_TOOLS_SCREENSHOT,
+  ID_TOOLS_TOOLBOX,
+
+}; // enum EventID
+
+/** Holds MainWindow UI elements. */
+struct MainWindowUI
+{
+  ModelDisplay * model_display;
+  wxNotebook * toolbox;
+
+  wxListBox * points_table;
+  wxTextCtrl * point_label;
+  wxCheckBox * pick_points_snap_to_vertex;
+
+  wxListBox * segments_table;
+  wxTextCtrl * segment_label;
+
+  /** Default constructor. Sets all pointers to null. */
+  MainWindowUI();
+
+}; // struct MainWindow
+
 /** The main application window. */
 class MainWindow : public wxFrame
 {
@@ -164,15 +200,7 @@ class MainWindow : public wxFrame
     TheaArray<Model *> overlays;
 
     // Widgets
-    ModelDisplay * model_display;
-    wxNotebook * toolbox;
-
-    wxListBox * points_table;
-    wxTextCtrl * point_label;
-    wxCheckBox * pick_points_snap_to_vertex;
-
-    wxListBox * segments_table;
-    wxTextCtrl * segment_label;
+    MainWindowUI * ui;
 
 }; // class MainWindow
 
