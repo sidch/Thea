@@ -46,17 +46,11 @@
 #include "../../AffineTransform3.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/RenderOptions.hpp"
-#include <QGLWidget>
-#include <QPoint>
-#include <QPointF>
+#include <wx/glcanvas.h>
 
-#ifdef THEA_USE_QOPENGLWIDGET
-#  include <QOpenGLWidget>
-#else
-#  include <QGLWidget>
-#endif
-
-class QMouseEvent;
+class wxKeyEvent;
+class wxMouseEvent;
+class wxSizeEvent
 
 namespace Thea {
 namespace Graphics {
@@ -73,12 +67,7 @@ namespace Browse3D {
 class Model;
 
 /** An OpenGL widget to display and interact with a model. */
-class ModelDisplay
-#ifdef THEA_USE_QOPENGLWIDGET
-: public QOpenGLWidget
-#else
-: public QGLWidget
-#endif
+class ModelDisplay : public wxGLCanvas
 {
     Q_OBJECT
 
@@ -236,8 +225,8 @@ class ModelDisplay
 
     Mode mode;
     ViewEditMode view_edit_mode;
-    QPoint view_drag_start;
-    QPoint last_cursor;
+    wxPoint view_drag_start;
+    wxPoint last_cursor;
 
     Graphics::Texture * background_texture;
     Graphics::Shader * background_shader;
