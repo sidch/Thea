@@ -44,6 +44,13 @@
 
 #include "../../Common.hpp"
 
+// Forward declarations
+class wxPoint;
+class wxRealPoint;
+class wxKeyEvent;
+class wxMouseEvent;
+class wxSizeEvent;
+
 /** Namespace for 3D file browser project. */
 namespace Browse3D {
 

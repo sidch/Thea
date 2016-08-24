@@ -270,6 +270,26 @@ MainWindow::getRenderDisplay()
   return ui.model_display;
 }
 
+//=============================================================================================================================
+// wxWidgets callbacks
+//=============================================================================================================================
+
+void
+MainWindow::SetTitle(wxString const & title)
+{
+  if (title.empty())
+    BaseType::SetTitle("Browse3D");
+  else
+  {
+    std::string filename = FilePath::objectName(title.ToStdString());
+    BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
+  }
+}
+
+//=============================================================================================================================
+// Custom callbacks
+//=============================================================================================================================
+
 void
 MainWindow::selectAndLoadModel()
 {
@@ -555,24 +575,8 @@ MainWindow::setShowToolbox(bool value)
   ui.toolbox->Show(value);
 }
 
-//=============================================================================================================================
-// GUI callbacks etc
-//=============================================================================================================================
-
 void
-MainWindow::SetTitle(wxString const & title)
-{
-  if (title.empty())
-    BaseType::SetTitle("Browse3D");
-  else
-  {
-    std::string filename = FilePath::objectName(title.ToStdString());
-    BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
-  }
-}
-
-void
-MainWindow::OnExit(wxCommandEvent & event)
+MainWindow::cleanup(wxCommandEvent & event)
 {
   Close(true);
 }

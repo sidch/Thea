@@ -46,9 +46,6 @@
 #include "../../Colors.hpp"
 #include "../../Ray3.hpp"
 
-class wxPoint;
-class wxRealPoint;
-
 namespace Thea {
 
 class Image;
