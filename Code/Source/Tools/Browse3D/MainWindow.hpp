@@ -45,7 +45,7 @@
 #include "Common.hpp"
 #include <wx/frame.h>
 
-class wxCheckBox
+class wxCheckBox;
 class wxListBox;
 class wxNotebook;
 class wxTextCtrl;
@@ -54,24 +54,6 @@ namespace Browse3D {
 
 class Model;
 class ModelDisplay;
-
-/** Custom event IDs. */
-enum EventID
-{
-  ID_VIEW_SHADED,
-  ID_VIEW_WIREFRAME,
-  ID_VIEW_SHADED_WIREFRAME,
-  ID_VIEW_TWO_SIDED,
-  ID_VIEW_FLAT_SHADING,
-  ID_VIEW_FIT,
-  ID_GO_PREV,
-  ID_GO_NEXT,
-  ID_GO_PREV_FEATURES,
-  ID_GO_NEXT_FEATURES,
-  ID_TOOLS_SCREENSHOT,
-  ID_TOOLS_TOOLBOX,
-
-}; // enum EventID
 
 /** Holds MainWindow UI elements. */
 struct MainWindowUI
@@ -94,9 +76,28 @@ struct MainWindowUI
 /** The main application window. */
 class MainWindow : public wxFrame
 {
+  private:
     typedef wxFrame BaseType;
 
   public:
+    /** Custom event IDs. */
+    enum EventID
+    {
+      ID_VIEW_SHADED,
+      ID_VIEW_WIREFRAME,
+      ID_VIEW_SHADED_WIREFRAME,
+      ID_VIEW_TWO_SIDED,
+      ID_VIEW_FLAT_SHADING,
+      ID_VIEW_FIT,
+      ID_GO_PREV,
+      ID_GO_NEXT,
+      ID_GO_PREV_FEATURES,
+      ID_GO_NEXT_FEATURES,
+      ID_TOOLS_SCREENSHOT,
+      ID_TOOLS_TOOLBOX,
+
+    }; // enum EventID
+
     /** Constructor. */
     explicit MainWindow(wxWindow * parent = NULL);
 
@@ -128,18 +129,14 @@ class MainWindow : public wxFrame
     bool pickSegments() const;
 
     //=========================================================================================================================
-    // wxWidgets callbacks
+    // GUI callbacks
     //=========================================================================================================================
 
-    /** Set the window title. */
+    /** [wxWidgets] Set the window title. */
     void SetTitle(wxString const & title);
 
-    /** Called when the window is closed. */
+    /** Called when program exits. */
     void OnExit(wxCommandEvent & event);
-
-    //=========================================================================================================================
-    // Custom callbacks
-    //=========================================================================================================================
 
     /** Select and load a model. */
     void selectAndLoadModel();
@@ -204,7 +201,7 @@ class MainWindow : public wxFrame
     TheaArray<Model *> overlays;
 
     // Widgets
-    MainWindowUI * ui;
+    MainWindowUI ui;
 
 }; // class MainWindow
 

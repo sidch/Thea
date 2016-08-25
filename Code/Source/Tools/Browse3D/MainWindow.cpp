@@ -45,6 +45,16 @@
 #include "ModelDisplay.hpp"
 #include "Util.hpp"
 #include "../../Application.hpp"
+#include "../../FilePath.hpp"
+#include "../../FileSystem.hpp"
+#include <wx/checkbox.h>
+#include <wx/listbox.h>
+#include <wx/menu.h>
+#include <wx/notebook.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/splitter.h>
+#include <wx/textctrl.h>
 
 namespace Browse3D {
 
@@ -57,32 +67,31 @@ MainWindowUI::MainWindowUI()
   points_table(NULL),
   point_label(NULL),
   pick_points_snap_to_vertex(NULL),
-  wxListBox * segments_table(NULL),
-  wxTextCtrl * segment_label(NULL)
+  segments_table(NULL),
+  segment_label(NULL)
 {}
 
 MainWindow::MainWindow(wxWindow * parent)
-: BaseType(parent, wxID_ANY),
-  model(NULL),
-  ui.model_display(NULL)
+: BaseType(parent, wxID_ANY, ""),
+  model(NULL)
 {}
 
 void
 MainWindow::init()
 {
   // Set the window title
-  setWindowTitle("Browse3D");
+  SetTitle("Browse3D");
 
   // Set up the main menu
-  menubar = new wxMenuBar();
+  wxMenuBar * menubar = new wxMenuBar();
 
   // File Menu
   wxMenu * file_menu = new wxMenu();
-  file_menu->Append(wxID_OPEN,    "&Open"));
-  file_menu->Append(wxID_SAVEAS,  "&Save"));
+  file_menu->Append(wxID_OPEN,    "&Open");
+  file_menu->Append(wxID_SAVEAS,  "&Save");
   file_menu->AppendSeparator();
-  file_menu->Append(wxID_EXIT,    "&Quit"));
-  menubar->Append(file_menu, "&File"));
+  file_menu->Append(wxID_EXIT,    "&Quit");
+  menubar->Append(file_menu, "&File");
 
   // View menu
   wxMenu * view_menu = new wxMenu();
@@ -96,16 +105,16 @@ MainWindow::init()
     rendering_menu->Append(ID_VIEW_FLAT_SHADING,      "&Flat shading");
   view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
   view_menu->Append(ID_VIEW_FIT,            "&Fit view to model");
-  menubar->Append(help_menu, "&View");
+  menubar->Append(view_menu, "&View");
 
   // Go menu
   wxMenu * go_menu = new wxMenu();
-  go_menu->Append(ID_GO_PREV,           "&Previous model"));
-  go_menu->Append(ID_GO_NEXT,           "&Next model"));
+  go_menu->Append(ID_GO_PREV,           "&Previous model");
+  go_menu->Append(ID_GO_NEXT,           "&Next model");
   go_menu->AppendSeparator();
-  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features"));
-  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features"));
-  menubar->Append(go_menu, "&Go"));
+  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features");
+  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features");
+  menubar->Append(go_menu, "&Go");
 
   // Tools menu
   wxMenu * tools_menu = new wxMenu();
@@ -165,19 +174,19 @@ MainWindow::init()
   model_sizer->Add(ui.model_display, 1, wxEXPAND, 0);
 
   // A tabbed pane for the toolbox
-  ui.toolbox = new wxNotebook(main_splitter);
+  ui.toolbox = new wxNotebook(main_splitter, wxID_ANY);
 
   // Segment picking interface
   wxPanel * segments_panel = new wxPanel(ui.toolbox);
   wxBoxSizer * segments_sizer = new wxBoxSizer(wxVERTICAL);
-  ui.segments_table = new wxListBox(segments_panel);
-  ui.toolbox->Add(ui.segments_table);
+  ui.segments_table = new wxListBox(segments_panel, wxID_ANY);
+  ui.toolbox->AddPage(ui.segments_table, "Segments");
 
   // Point picking interface
   wxPanel * points_panel = new wxPanel(ui.toolbox);
   wxBoxSizer * points_sizer = new wxBoxSizer(wxVERTICAL);
-  ui.points_table = new wxListBox(points_panel);
-  ui.toolbox->Add(ui.points_table);
+  ui.points_table = new wxListBox(points_panel, wxID_ANY);
+  ui.toolbox->AddPage(ui.points_table, "Points");
 
   // Setup signal/slot connections
 /*
@@ -239,14 +248,14 @@ MainWindow::init()
 
     // Load overlays
     overlays.clear();
-    for (int i = 0; i < app().options().overlays.size(); ++i)
+    for (array_size_t i = 0; i < app().options().overlays.size(); ++i)
     {
       Model * overlay = new Model;
       loaded = overlay->load(app().options().overlays[i]);
       if (loaded)
       {
         overlay->setTransform(app().options().overlay_transforms[i]);
-        overlay->setColor(getPaletteColor(i));
+        overlay->setColor(getPaletteColor((long)i));
         overlays.push_back(overlay);
       }
       else
@@ -271,7 +280,7 @@ MainWindow::getRenderDisplay()
 }
 
 //=============================================================================================================================
-// wxWidgets callbacks
+// GUI callbacks
 //=============================================================================================================================
 
 void
@@ -285,10 +294,6 @@ MainWindow::SetTitle(wxString const & title)
     BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
   }
 }
-
-//=============================================================================================================================
-// Custom callbacks
-//=============================================================================================================================
 
 void
 MainWindow::selectAndLoadModel()
@@ -320,12 +325,8 @@ getFeaturePatterns(TheaArray<std::string> & patterns)
 }
 
 long
-fileIndex(std::string const & dir, std::string const & file, TheaArray<std::string> const * patterns = NULL)
+fileIndex(TheaArray<std::string> const & files, std::string const & file, TheaArray<std::string> const * patterns = NULL)
 {
-  TheaArray<std::string> files;
-  if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, stringJoin(patterns, ' '), false) <= 0)
-    return;
-
   std::string fname = FilePath::objectName(file);
   for (array_size_t i = 0; i < files.size(); ++i)
     if (fname == FilePath::objectName(files[i]))
@@ -334,13 +335,33 @@ fileIndex(std::string const & dir, std::string const & file, TheaArray<std::stri
   return -1;
 }
 
+long
+fileIndex(std::string const & dir, std::string const & file, TheaArray<std::string> & files,
+          TheaArray<std::string> const * patterns = NULL)
+{
+  files.clear();
+
+  if (FileSystem::fileExists(dir))
+  {
+    files.push_back(dir);
+  }
+  else
+  {
+    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, stringJoin(*patterns, ' '), false) <= 0)
+      return -1;
+  }
+
+  return fileIndex(files, file, patterns);
+}
+
 void
 MainWindow::loadPreviousModel()
 {
   TheaArray<std::string> patterns;
   getMeshPatterns(patterns);
 
-  long index = fileIndex(app().options().features, model->getPath(), &patterns);
+  TheaArray<std::string> files;
+  long index = fileIndex(FilePath::parent(model->getPath()), model->getPath(), files, &patterns);
   if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
@@ -360,7 +381,8 @@ MainWindow::loadNextModel()
   TheaArray<std::string> patterns;
   getMeshPatterns(patterns);
 
-  long index = fileIndex(app().options().features, model->getPath(), &patterns);
+  TheaArray<std::string> files;
+  long index = fileIndex(FilePath::parent(model->getPath()), model->getPath(), files, &patterns);
   if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
@@ -368,7 +390,7 @@ MainWindow::loadNextModel()
 
   clearOverlays();
 
-  if (index == files.size() - 1)
+  if (index == (long)files.size() - 1)
     model->load(files[0]);
   else
     model->load(files[index + 1]);
@@ -380,7 +402,8 @@ MainWindow::loadPreviousFeatures()
   TheaArray<std::string> patterns;
   getFeaturePatterns(patterns);
 
-  long index = fileIndex(app().options().features, model->getFeaturesPath(), &patterns);
+  TheaArray<std::string> files;
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
@@ -400,7 +423,8 @@ MainWindow::loadNextFeatures()
   TheaArray<std::string> patterns;
   getFeaturePatterns(patterns);
 
-  long index = fileIndex(app().options().features, model->getFeaturesPath(), &patterns);
+  TheaArray<std::string> files;
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (index < 0)  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
@@ -429,7 +453,7 @@ MainWindow::addPickedSample()
   std::string label = ui.point_label->GetValue().ToStdString();
   THEA_CONSOLE << "Adding sample with label" << label;
 
-  model->addPickedSample(label, pick_points_snap_to_vertex->GetValue());
+  model->addPickedSample(label, ui.pick_points_snap_to_vertex->GetValue());
   model->invalidatePick();
 
   ui.points_table->Append(label);
@@ -439,11 +463,11 @@ void
 MainWindow::syncSamples()
 {
   TheaArray<Model::Sample> const & samples = model->getSamples();
-  std::vector<std::string> labels((size_t)samples.size());
+  wxArrayString labels;
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
     THEA_CONSOLE << "Adding sample with label" << samples[i].label;
-    labels[(size_t)i] = segments[i].label;
+    labels.Add(samples[i].label);
   }
 
   ui.points_table->Set(labels);
@@ -459,7 +483,7 @@ MainWindow::removeSelectedSample()
 
   int index = sel.Item(0);
   model->selectSample(index);
-  THEA_CONSOLE << "Removing sample " << item << " with label " << ui.points_table->GetString(index);
+  THEA_CONSOLE << "Removing sample " << index << " with label " << ui.points_table->GetString(index);
 
   model->removeSample(index);
   ui.points_table->Delete(index);
@@ -518,11 +542,11 @@ void
 MainWindow::syncSegments()
 {
   TheaArray<Segment> const & segments = model->getSegments();
-  std::vector<std::string> labels((size_t)segments.size());
+  wxArrayString labels;
   for (array_size_t i = 0; i < segments.size(); ++i)
   {
     THEA_CONSOLE << "Adding segment with label" << segments[i].getLabel();
-    labels[(size_t)i] = segments[i].getLabel();
+    labels.Add(segments[i].getLabel());
   }
 
   ui.segments_table->Set(labels);
@@ -538,7 +562,7 @@ MainWindow::removeSelectedSegment()
 
   int index = sel.Item(0);
   model->selectSegment(index);
-  THEA_CONSOLE << "Removing segment " << item << " with label " << ui.segments_table->GetString(index);
+  THEA_CONSOLE << "Removing segment " << index << " with label " << ui.segments_table->GetString(index);
 
   model->removeSegment(index);
   ui.segments_table->Delete(index);
@@ -576,7 +600,7 @@ MainWindow::setShowToolbox(bool value)
 }
 
 void
-MainWindow::cleanup(wxCommandEvent & event)
+MainWindow::OnExit(wxCommandEvent & event)
 {
   Close(true);
 }

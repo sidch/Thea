@@ -126,7 +126,7 @@ class App : public wxApp
     bool OnInit();
 
     /** Called to process command line. */
-    bool OnCmdLineParsed(wxCmdLineParser & parser)
+    bool OnCmdLineParsed(wxCmdLineParser & parser);
 
     /** Called when the main program loop throws an exception. */
     bool OnExceptionInMainLoop();
@@ -135,6 +135,13 @@ class App : public wxApp
     int OnExit();
 
   private:
+    /**
+     * Parse program options from the command-line, or from a configuration file specified on the command-line.
+     *
+     * @return True on success, false on failure.
+     */
+    bool parseOptions(int argc, char * argv[]);
+
     /**
      * Parse program options from the command-line, or from a configuration file specified on the command-line.
      *

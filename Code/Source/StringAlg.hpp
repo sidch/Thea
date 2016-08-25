@@ -134,9 +134,9 @@ stringJoin(StringIterator begin, StringIterator end, C const & padding)
  * Concatenate a sequence of serializable objects (typically strings), separated by a padding character, string or other
  * serializable object. This is shorthand for stringJoin(a.begin(), a.end(), padding).
  */
-template <typename T, typename C>
+template <typename ContainerT, typename C>
 std::string
-stringJoin(TheaArray<T> const & a, C const & padding)
+stringJoin(ContainerT const & a, C const & padding)
 {
   return stringJoin(a.begin(), a.end(), padding);
 }

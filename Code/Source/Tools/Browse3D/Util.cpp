@@ -44,6 +44,7 @@
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Ball3.hpp"
+#include "../../FileSystem.hpp"
 #include "../../Image.hpp"
 #include <wx/gdicmn.h>
 #include <boost/functional/hash.hpp>

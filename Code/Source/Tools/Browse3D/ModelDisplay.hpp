@@ -65,8 +65,6 @@ class Model;
 /** An OpenGL widget to display and interact with a model. */
 class ModelDisplay : public wxGLCanvas
 {
-    Q_OBJECT
-
   private:
     typedef Graphics::Camera Camera;
     typedef Graphics::RenderOptions RenderOptions;
@@ -101,7 +99,7 @@ class ModelDisplay : public wxGLCanvas
 
   public:
     /** Constructs the widget as a viewer for a given model. */
-    explicit ModelDisplay(QWidget * parent, Model * model_);
+    explicit ModelDisplay(wxWindow * parent, Model * model_);
 
     /** Get the viewing camera. */
     Graphics::Camera const & getCamera() const { return camera; }
@@ -113,7 +111,7 @@ class ModelDisplay : public wxGLCanvas
      * Compute a ray that emanates from the viewer's eye and passes through a given pixel on the widget. The (roughly) inverse
      * operation is project().
      */
-    Ray3 computePickRay(QPointF const & p) const;
+    Ray3 computePickRay(wxRealPoint const & p) const;
 
     /** Project a 3D point to the viewing plane. The (roughly) inverse operation is computePickRay(). */
     wxRealPoint project(Vector3 const & p) const;
@@ -122,7 +120,7 @@ class ModelDisplay : public wxGLCanvas
     bool flatShading() const { return !render_opts.useVertexNormals(); }
 
     //=========================================================================================================================
-    // Custom callbacks
+    // GUI callbacks
     //=========================================================================================================================
 
     /** Adjust the view to fit the current model. */
@@ -147,7 +145,7 @@ class ModelDisplay : public wxGLCanvas
     void setFlatShading(bool value);
 
     /** Save a screenshot to a file. If the path is null, a default path is generated. */
-    void saveScreenshot(QString path = "");
+    void saveScreenshot(std::string path = "");
 
     /** Called to initialize OpenGL. */
     void initializeGL();
@@ -171,7 +169,7 @@ class ModelDisplay : public wxGLCanvas
     void mouseReleaseEvent(wxMouseEvent & event);
 
     /** Called when the mouse wheel is turned. */
-    void wheelEvent(QWheelEvent * event);
+    void wheelEvent(wxMouseEvent * event);
 
   private:
     /** Update the viewing camera to fit the current model. */
@@ -187,19 +185,19 @@ class ModelDisplay : public wxGLCanvas
     Real getModelDistance() const;
 
     /** Drag the view window with the mouse. */
-    void panView(QMouseEvent * event);
+    void panView(wxMouseEvent & event);
 
     /** Rotate the view with the mouse. */
-    void rotateView(QMouseEvent * event);
+    void rotateView(wxMouseEvent & event);
 
     /** Roll the view with the mouse around the viewing direction. */
-    void rollView(QMouseEvent * event);
+    void rollView(wxMouseEvent & event);
 
     /** Zoom the view in or out by dragging with the mouse. */
-    void zoomView(QMouseEvent * event);
+    void zoomView(wxMouseEvent & event);
 
-    /** Zoom the view in or out by turning the scroll wheel. */
-    void zoomView(QWheelEvent * event);
+    /** Zoom the view in or out by rotating the mouse wheel. */
+    void zoomViewWheel(wxMouseEvent & event);
 
     /** Multiply the current view transform by an increment. */
     void incrementViewTransform(AffineTransform3 const & tr);
@@ -209,11 +207,6 @@ class ModelDisplay : public wxGLCanvas
 
     /** Draw the background image. */
     void drawBackground(Graphics::RenderSystem & rs);
-
-#ifdef THEA_USE_QOPENGLWIDGET
-    /** Draw text on the window. */
-    void renderText(int x, int y, QString const & str, QFont const & font = QFont());
-#endif
 
     Model * model;
 

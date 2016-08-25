@@ -45,7 +45,6 @@
 #include "Common.hpp"
 #include "MeshFwd.hpp"
 #include "../../UnorderedSet.hpp"
-#include <QString>
 
 namespace Browse3D {
 
@@ -59,13 +58,13 @@ class Segment
     Segment() : label("AnonymousSegment") {}
 
     /** Create a segment with the given label. */
-    Segment(QString const & label_) : label(label_) {}
+    Segment(std::string const & label_) : label(label_) {}
 
     /** Get the segment label. */
-    QString const & getLabel() const { return label; }
+    std::string const & getLabel() const { return label; }
 
     /** Set the segment label. */
-    void setLabel(QString const & label_) { label = label_; }
+    void setLabel(std::string const & label_) { label = label_; }
 
     /** Get the number of meshes in the segment. */
     long numMeshes() const { return (long)meshes.size(); }
@@ -96,7 +95,7 @@ class Segment
 
   private:
     MeshSet meshes;
-    QString label;
+    std::string label;
 
 }; // class Segment
 
