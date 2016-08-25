@@ -52,9 +52,8 @@
 #include "../../Algorithms/RayQueryStructureN.hpp"
 #include "../../AffineTransform3.hpp"
 #include "../../Transformable.hpp"
-#include <QObject>
 
-class QMouseEvent;
+class wxMouseEvent;
 
 namespace Browse3D {
 
@@ -66,13 +65,23 @@ typedef shared_ptr<PointCloud> PointCloudPtr;
 namespace Browse3D {
 
 /** The model manipulated by the user. */
-class Model : public QObject, public GraphicsWidget, public Transformable<AffineTransform3>
+class Model : public GraphicsWidget, public Transformable<AffineTransform3>
 {
-    Q_OBJECT
-
+  private:
     typedef Transformable<AffineTransform3> TransformableBaseT;
 
   public:
+    /** Custom event IDs. */
+    enum EventID
+    {
+      ID_PATH_CHANGED,
+      ID_GEOMETRY_CHANGED,
+      ID_NEEDS_REDRAW,
+      ID_NEEDS_SYNC_SAMPLES,
+      ID_NEEDS_SYNC_SEGMENTS,
+
+    }; // enum EventID
+
     typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
@@ -83,15 +92,16 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     {
       Sample() {}
 
-      Sample(Mesh * mesh_, long face_index_, Vector3 const & position_, QString const & type_ = "", QString const & label_ = "")
+      Sample(Mesh * mesh_, long face_index_, Vector3 const & position_, std::string const & type_ = "",
+             std::string const & label_ = "")
       : mesh(mesh_), face_index(face_index_), position(position_), type(type_), label(label_)
       {}
 
       Mesh * mesh;
       long face_index;
       Vector3 position;
-      QString type;
-      QString label;
+      std::string type;
+      std::string label;
 
     }; // struct Sample
 
@@ -100,16 +110,16 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     //========================================================================================================================
 
     /** Constructor. */
-    Model(QString const & initial_mesh = "");
+    Model(std::string const & initial_mesh = "");
 
     /** Destructor. */
     ~Model();
 
     /** Get the name of the model. */
-    QString getName() const;
+    std::string getName() const;
 
     /** Get the path of the currently loaded model. */
-    QString const & getPath() const { return path; }
+    std::string const & getPath() const { return path; }
 
     /** Is the model empty? */
     bool isEmpty() const;
@@ -197,13 +207,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     //========================================================================================================================
 
     /** [Qt] Called when a mouse button is pressed. */
-    void mousePressEvent(QMouseEvent * event);
+    void mousePressEvent(wxMouseEvent & event);
 
     /** [Qt] Called when the mouse is moved. */
-    void mouseMoveEvent(QMouseEvent * event);
+    void mouseMoveEvent(wxMouseEvent & event);
 
     /** [Qt] Called when a mouse button is released. */
-    void mouseReleaseEvent(QMouseEvent * event);
+    void mouseReleaseEvent(wxMouseEvent & event);
 
     //========================================================================================================================
     // Samples
@@ -219,7 +229,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void addSample(Sample const & sample);
 
     /** Add the currently picked point as a sample. */
-    bool addPickedSample(QString const & label, bool snap_to_vertex);
+    bool addPickedSample(std::string const & label, bool snap_to_vertex);
 
     /** Remove a sample. */
     void removeSample(long index);
@@ -228,13 +238,13 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void selectSample(long index);
 
     /** Load samples from a file. */
-    bool loadSamples(QString const & path_);
+    bool loadSamples(std::string const & path_);
 
     /** Save samples to a file. */
-    bool saveSamples(QString const & path_) const;
+    bool saveSamples(std::string const & path_) const;
 
     /** Get the path to the file in which samples are stored. */
-    QString getSamplesPath() const;
+    std::string getSamplesPath() const;
 
     //========================================================================================================================
     // Segments
@@ -270,7 +280,7 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void addSegment(Segment const & segment);
 
     /** Add the currently picked segment to the set of labeled segments. */
-    bool addPickedSegment(QString const & label);
+    bool addPickedSegment(std::string const & label);
 
     /** Remove a segment from the list of labeled segments. */
     void removeSegment(long index);
@@ -285,23 +295,23 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void selectSegment(long index);
 
     /** Load labeled segments from a file. */
-    bool loadSegments(QString const & path_);
+    bool loadSegments(std::string const & path_);
 
     /** Save labeled segments to a file. */
-    bool saveSegments(QString const & path_) const;
+    bool saveSegments(std::string const & path_) const;
 
     /** Get the path to the file in which labeled segments are stored. */
-    QString getSegmentsPath() const;
+    std::string getSegmentsPath() const;
 
     //========================================================================================================================
     // Features
     //========================================================================================================================
 
     /** Load features from a file. */
-    bool loadFeatures(QString const & path_);
+    bool loadFeatures(std::string const & path_);
 
     /** Get the path of the currently loaded features. */
-    QString const & getFeaturesPath() const { return features_path; }
+    std::string const & getFeaturesPath() const { return features_path; }
 
     /** Check if the model has currently loaded features. */
     bool hasFeatures() const { return has_features; }
@@ -311,10 +321,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     //========================================================================================================================
 
     /** Load face labels from a file. */
-    bool loadFaceLabels(QString const & path_);
+    bool loadFaceLabels(std::string const & path_);
 
     /** Get the path of the currently loaded face labels. */
-    QString const & getFaceLabelsPath() const { return face_labels_path; }
+    std::string const & getFaceLabelsPath() const { return face_labels_path; }
 
     /** Check if the model has currently loaded face labels. */
     bool hasFaceLabels() const { return has_face_labels; }
@@ -346,13 +356,16 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void draw(Graphics::RenderSystem & render_system,
               Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
-  public slots:
+    //========================================================================================================================
+    // GUI callbacks
+    //========================================================================================================================
+
     /**
      * Load the model from a disk file.
      *
      * @return True if the model was successfully loaded, else false.
      */
-    bool load(QString const & path_);
+    bool load(std::string const & path_);
 
     /**
      * Select a file via a file dialog and load the model from it.
@@ -360,42 +373,6 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
      * @return True if the model was successfully loaded, else false.
      */
     bool selectAndLoad();
-
-  signals:
-    /**
-     * Emitted when the model changes its geometry.
-     *
-     * @param model Always points to the emitting model.
-     */
-    void geometryChanged(Model const * model);
-
-    /**
-     * Emitted when the path of the model changes.
-     *
-     * @param current_path The current path of the model.
-     */
-    void pathChanged(QString const & current_path);
-
-    /**
-     * Emitted when the model needs to be redrawn.
-     *
-     * @param model Always points to the emitting model.
-     */
-    void needsRedraw(Model const * model);
-
-    /**
-     * Emitted when a displayed list of samples needs to be synced with the model.
-     *
-     * @param model Always points to the emitting model.
-     */
-    void needsSyncSamples(Model const * model);
-
-    /**
-     * Emitted when a displayed list of segments needs to be synced with the model.
-     *
-     * @param model Always points to the emitting model.
-     */
-    void needsSyncSegments(Model const * model);
 
   private:
     /** Clear the model mesh. */
@@ -405,10 +382,10 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
     void clearPoints();
 
     /** Get the default path to the file in which features are stored. */
-    QString getDefaultFeaturesPath() const;
+    std::string getDefaultFeaturesPath() const;
 
     /** Get the default path to the file in which the face labels are stored. */
-    QString getDefaultFaceLabelsPath() const;
+    std::string getDefaultFaceLabelsPath() const;
 
     /** Draw the mesh group colored by segment. */
     void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
@@ -416,12 +393,12 @@ class Model : public QObject, public GraphicsWidget, public Transformable<Affine
 
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
-    QString path;
+    std::string path;
 
-    QString features_path;
+    std::string features_path;
     bool has_features;
 
-    QString face_labels_path;
+    std::string face_labels_path;
     bool has_face_labels;
 
     ColorRGBA color;

@@ -53,26 +53,14 @@
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Graphics/Shader.hpp"
 #include "../../Graphics/Texture.hpp"
-#include <QDateTime>
-#include <QDir>
-#include <QFont>
-#include <QFontMetrics>
-#include <QImage>
-#include <QMouseEvent>
-
-#ifdef THEA_USE_QOPENGLWIDGET
-#  include <QOpenGLContext>
-#  include <QPainter>
-#endif
+#include "../../Plugins/GL/GLHeaders.hpp"
+#include <wx/stdpaths.h>
+#include <wx/datetime.h>
 
 namespace Browse3D {
 
-ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
-#ifdef THEA_USE_QOPENGLWIDGET
-: QOpenGLWidget(parent),
-#else
-: QGLWidget(parent),
-#endif
+ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
+: wxGLCanvas(parent),
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
@@ -84,8 +72,8 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
 {
   alwaysAssertM(model, "ModelDisplay: Can't create a display without a valid model");
 
-  setFocusPolicy(Qt::StrongFocus);
-  setMouseTracking(true);
+//   setFocusPolicy(Qt::StrongFocus);
+//   setMouseTracking(true);
 
   render_opts.sendNormals() = true;
   render_opts.sendColors() = false;
@@ -97,7 +85,7 @@ ModelDisplay::ModelDisplay(QWidget * parent, Model * model_)
   render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
 
   connect(model, SIGNAL(geometryChanged(Model const *)), this, SLOT(modelGeometryChanged()));
-  connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(update()));
+  connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(Update()));
 }
 
 void
@@ -109,23 +97,23 @@ ModelDisplay::initializeGL()
 }
 
 Ray3
-ModelDisplay::computePickRay(QPointF const & p) const
+ModelDisplay::computePickRay(wxRealPoint const & p) const
 {
   return Browse3D::computePickRay(p, camera, width(), height());
 }
 
-QPointF
+wxRealPoint
 ModelDisplay::project(Vector3 const & p) const
 {
   Vector3 proj_p = camera.project(p);
-  return QPointF(0.5 * (proj_p.x() + 1) * width(), 0.5 * (proj_p.y() + 1) * height());
+  return wxRealPoint(0.5 * (proj_p.x() + 1) * width(), 0.5 * (proj_p.y() + 1) * height());
 }
 
 void
 ModelDisplay::fitViewToModel()
 {
   updateCameraFromModel();
-  update();
+  Update();
 }
 
 void
@@ -192,7 +180,7 @@ ModelDisplay::renderShaded()
 {
   render_opts.drawFaces() = true;
   render_opts.drawEdges() = false;
-  update();
+  Update();
 
   THEA_CONSOLE << "Rendering shaded faces";
 }
@@ -202,7 +190,7 @@ ModelDisplay::renderWireframe()
 {
   render_opts.drawFaces() = false;
   render_opts.drawEdges() = true;
-  update();
+  Update();
 
   THEA_CONSOLE << "Rendering wireframe";
 }
@@ -212,7 +200,7 @@ ModelDisplay::renderShadedWireframe()
 {
   render_opts.drawFaces() = true;
   render_opts.drawEdges() = true;
-  update();
+  Update();
 
   THEA_CONSOLE << "Rendering shaded faces with wireframe edges";
 }
@@ -223,7 +211,7 @@ ModelDisplay::setTwoSided(bool value)
   if (GraphicsWidget::isTwoSided() != value)
   {
     GraphicsWidget::setTwoSided(value);
-    update();
+    Update();
 
     THEA_CONSOLE << "Two-sided lighting =" << value;
   }
@@ -235,7 +223,7 @@ ModelDisplay::setFlatShading(bool value)
   if (!render_opts.useVertexNormals() != value)
   {
     render_opts.useVertexNormals() = !value;
-    update();
+    Update();
 
     THEA_CONSOLE << "Flat shading =" << value;
   }
@@ -246,7 +234,7 @@ ModelDisplay::resizeGL(int w, int h)
 {
   glViewport(0, 0, w, h);
   fitViewToModel();
-  update();
+  Update();
 }
 
 void
@@ -277,7 +265,7 @@ ModelDisplay::paintGL()
   drawAxes(rs);
 
 #ifdef THEA_OSX
-  swapBuffers();  // for some reason this is necessary even if auto buffer swap is on
+  SwapBuffers();  // for some reason this is necessary even if auto buffer swap is on
 #endif
 }
 
@@ -351,25 +339,6 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
   rs.popShader();
 }
 
-#ifdef THEA_USE_QOPENGLWIDGET
-// Adapted from http://stackoverflow.com/questions/28216001/how-to-render-text-with-qopenglwidget
-void
-ModelDisplay::renderText(int x, int y, QString const & str, QFont const & font)
-{
-  // Retrieve last OpenGL color to use as a font color
-  GLdouble color[4];
-  glGetDoublev(GL_CURRENT_COLOR, color);
-  QColor font_color = QColor(color[0], color[1], color[2], color[3]);
-
-  // Render text
-  // QPainter painter(this);
-  // painter.setPen(font_color);
-  // painter.setFont(font);
-  // painter.drawText(x, y, str);
-  // painter.end();
-}
-#endif
-
 void
 ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 {
@@ -431,34 +400,35 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
   bool multisample = (glIsEnabled(GL_MULTISAMPLE) == GL_TRUE);
 #endif
 
-  static QFont label_font("Helvetica", 12);
-  static QFontMetrics fm(label_font);
-  static QSize half_x_label_size = 0.5 * fm.tightBoundingRect("X").size();
-  static QSize half_y_label_size = 0.5 * fm.tightBoundingRect("Y").size();
-  static QSize half_z_label_size = 0.5 * fm.tightBoundingRect("Z").size();
-
-  static Real const TEXT_OFFSET = 0.5;
-  Vector2 x_text_center = x_arrow_tip + TEXT_OFFSET * (x_arrow_tip - arrow_origin);
-  Vector2 y_text_center = y_arrow_tip + TEXT_OFFSET * (y_arrow_tip - arrow_origin);
-  Vector2 z_text_center = z_arrow_tip + TEXT_OFFSET * (z_arrow_tip - arrow_origin);
-
-  QPoint x_text_bottom_left((int)Math::round((0.5 * (1 + x_text_center.x())) * width()) - half_x_label_size.width(),
-                            (int)Math::round((0.5 * (1 - x_text_center.y())) * height()) + half_x_label_size.height());
-
-  QPoint y_text_bottom_left((int)Math::round((0.5 * (1 + y_text_center.x())) * width()) - half_y_label_size.width(),
-                            (int)Math::round((0.5 * (1 - y_text_center.y())) * height()) + half_y_label_size.height());
-
-  QPoint z_text_bottom_left((int)Math::round((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
-                            (int)Math::round((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
-
-  rs.setColor(ColorRGB::red());
-  renderText(x_text_bottom_left.x(), x_text_bottom_left.y(), "X", label_font);
-
-  rs.setColor(ColorRGB::green());
-  renderText(y_text_bottom_left.x(), y_text_bottom_left.y(), "Y", label_font);
-
-  rs.setColor(ColorRGB::blue());
-  renderText(z_text_bottom_left.x(), z_text_bottom_left.y(), "Z", label_font);
+//   FIXME
+//   static QFont label_font("Helvetica", 12);
+//   static QFontMetrics fm(label_font);
+//   static QSize half_x_label_size = 0.5 * fm.tightBoundingRect("X").size();
+//   static QSize half_y_label_size = 0.5 * fm.tightBoundingRect("Y").size();
+//   static QSize half_z_label_size = 0.5 * fm.tightBoundingRect("Z").size();
+//
+//   static Real const TEXT_OFFSET = 0.5;
+//   Vector2 x_text_center = x_arrow_tip + TEXT_OFFSET * (x_arrow_tip - arrow_origin);
+//   Vector2 y_text_center = y_arrow_tip + TEXT_OFFSET * (y_arrow_tip - arrow_origin);
+//   Vector2 z_text_center = z_arrow_tip + TEXT_OFFSET * (z_arrow_tip - arrow_origin);
+//
+//   wxPoint x_text_bottom_left((int)Math::round((0.5 * (1 + x_text_center.x())) * width()) - half_x_label_size.width(),
+//                             (int)Math::round((0.5 * (1 - x_text_center.y())) * height()) + half_x_label_size.height());
+//
+//   wxPoint y_text_bottom_left((int)Math::round((0.5 * (1 + y_text_center.x())) * width()) - half_y_label_size.width(),
+//                             (int)Math::round((0.5 * (1 - y_text_center.y())) * height()) + half_y_label_size.height());
+//
+//   wxPoint z_text_bottom_left((int)Math::round((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
+//                             (int)Math::round((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
+//
+//   rs.setColor(ColorRGB::red());
+//   renderText(x_text_bottom_left.x(), x_text_bottom_left.y(), "X", label_font);
+//
+//   rs.setColor(ColorRGB::green());
+//   renderText(y_text_bottom_left.x(), y_text_bottom_left.y(), "Y", label_font);
+//
+//   rs.setColor(ColorRGB::blue());
+//   renderText(z_text_bottom_left.x(), z_text_bottom_left.y(), "Z", label_font);
 
 #ifndef THEA_WINDOWS
   if (multisample) glEnable(GL_MULTISAMPLE);  // for some reason drawing text disables this and doesn't restore it properly
@@ -472,26 +442,24 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 }
 
 void
-ModelDisplay::keyPressEvent(QKeyEvent * event)
+ModelDisplay::keyPressEvent(wxKeyEvent & event)
 {
 }
 
 void
-ModelDisplay::mousePressEvent(QMouseEvent * event)
+ModelDisplay::mousePressEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mousePressEvent";
 
-  last_cursor = event->pos();
+  last_cursor = event.GetPosition();
 
-  Qt::MouseButton button = event->button();
-  bool left    =  (button == Qt::LeftButton);
-  bool right   =  (button == Qt::RightButton);
-  bool middle  =  (button == Qt::MidButton);
+  bool left    =  event.LeftDown();
+  bool right   =  event.RightDown();
+  bool middle  =  event.MiddleDown();
 
-  Qt::KeyboardModifiers kbmods = event->modifiers();
-  bool shift  =  kbmods.testFlag(Qt::ShiftModifier);
-  bool ctrl   =  kbmods.testFlag(Qt::ControlModifier);
-  bool alt    =  kbmods.testFlag(Qt::AltModifier);
+  bool shift  =  event.ShiftDown();
+  bool ctrl   =  event.ControlDown();
+  bool alt    =  event.AltDown();
   bool no_mods     =  !(shift || ctrl || alt);
   bool shift_only  =   shift && !ctrl && !alt;
   bool ctrl_only   =  !shift &&  ctrl && !alt;
@@ -503,7 +471,7 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
 
   if (edit_model && (right || (ctrl && left)))
   {
-    Ray3 ray = computePickRay(event->pos());
+    Ray3 ray = computePickRay(event.GetPosition());
 
     bool success = false;
     if (pick_points)
@@ -514,7 +482,7 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
     if (success)
     {
       model->mousePressEvent(event);
-      if (event->isAccepted())
+      if (!event.ShouldPropagate())
       {
         mode = Mode::EDIT_MODEL;
         return;
@@ -540,18 +508,16 @@ ModelDisplay::mousePressEvent(QMouseEvent * event)
     else  // zoom_view
       view_edit_mode = ViewEditMode::ZOOM;
 
-    view_drag_start = event->pos();
+    view_drag_start = event.GetPosition();
 
-    event->accept();
-    update();
+    event.StopPropagation();
+    Update();
     return;
   }
-
-  event->ignore();
 }
 
 void
-ModelDisplay::mouseMoveEvent(QMouseEvent * event)
+ModelDisplay::mouseMoveEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mouseMoveEvent";
 
@@ -561,22 +527,22 @@ ModelDisplay::mouseMoveEvent(QMouseEvent * event)
     {
       case ViewEditMode::PAN:
         panView(event);
-        event->accept();
+        event->StopPropagation();
         break;
 
       case ViewEditMode::ROTATE:
         rotateView(event);
-        event->accept();
+        event.StopPropagation();
         break;
 
       case ViewEditMode::ROTATE_ROLL:
         rollView(event);
-        event->accept();
+        event.StopPropagation();
         break;
 
       case ViewEditMode::ZOOM:
         zoomView(event);
-        event->accept();
+        event.StopPropagation();
         break;
 
       default: break;
@@ -587,7 +553,7 @@ ModelDisplay::mouseMoveEvent(QMouseEvent * event)
     model->mouseMoveEvent(event);
   }
 
-  last_cursor = event->pos();
+  last_cursor = event.GetPosition();
 }
 
 void
@@ -603,11 +569,11 @@ ModelDisplay::incrementViewTransform(AffineTransform3 const & tr)
   if (view_edit_mode == ViewEditMode::PAN)
     camera_look_at = inv_vt * camera_look_at;
 
-  update();
+  Update();
 }
 
 void
-ModelDisplay::mouseReleaseEvent(QMouseEvent * event)
+ModelDisplay::mouseReleaseEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mouseReleaseEvent";
 
@@ -618,8 +584,8 @@ ModelDisplay::mouseReleaseEvent(QMouseEvent * event)
       view_edit_mode = ViewEditMode::DEFAULT;
       mode = Mode::DEFAULT;
 
-      event->accept();
-      update();
+      event.StopPropagation();
+      Update();
     }
   }
   else if (mode == Mode::EDIT_MODEL)
@@ -627,21 +593,7 @@ ModelDisplay::mouseReleaseEvent(QMouseEvent * event)
     model->mouseReleaseEvent(event);
   }
 
-  last_cursor = event->pos();
-}
-
-void
-ModelDisplay::wheelEvent(QWheelEvent * event)
-{
-  // THEA_CONSOLE << "wheelEvent";
-
-  mode = Mode::EDIT_VIEW;
-  view_edit_mode = ViewEditMode::ZOOM;
-
-    zoomView(event);
-
-  mode = Mode::DEFAULT;
-  view_edit_mode = ViewEditMode::DEFAULT;
+  last_cursor = event.GetPosition();
 }
 
 Real
@@ -654,32 +606,32 @@ ModelDisplay::getModelDistance() const
 }
 
 void
-ModelDisplay::panView(QMouseEvent * event)
+ModelDisplay::panView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "panView";
 
-  Vector3 trn = dragToTranslation(last_cursor, event->pos(), width(), height(), camera, getModelDistance());
+  Vector3 trn = dragToTranslation(last_cursor, event.GetPosition(), width(), height(), camera, getModelDistance());
   incrementViewTransform(AffineTransform3(Matrix3::identity(), trn));
 }
 
 void
-ModelDisplay::rotateView(QMouseEvent * event)
+ModelDisplay::rotateView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "rotateView";
 
-  Matrix3 rot = dragToRotation(last_cursor, event->pos(), width(), height(), camera);
+  Matrix3 rot = dragToRotation(last_cursor, event.GetPosition(), width(), height(), camera);
   Vector3 trn = camera_look_at - rot * camera_look_at;
   incrementViewTransform(AffineTransform3(rot, trn));
 }
 
 void
-ModelDisplay::rollView(QMouseEvent * event)
+ModelDisplay::rollView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "rollView";
 
   Vector2 center(0.5f * width(), 0.5f * height());
-  Vector2 u = Vector2(last_cursor.x(), last_cursor.y()) - center;
-  Vector2 v = Vector2(event->pos().x(), event->pos().y()) - center;
+  Vector2 u = Vector2(last_cursor.x, last_cursor.y) - center;
+  Vector2 v = Vector2(event.GetPosition().x, event.GetPosition().y) - center;
   Real s = u.x() * v.y() - u.y() * v.x();
   Real c = u.dot(v);
   Real angle = Math::fastArcTan2(s, c);
@@ -702,13 +654,13 @@ zoomTransform(Real zoom, Real camera_separation, Vector3 const & look_dir)
 } // namespace ModelDisplayInternal
 
 void
-ModelDisplay::zoomView(QMouseEvent * event)
+ModelDisplay::zoomView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "zoomView";
 
   using namespace ModelDisplayInternal;
 
-  Real zoom = dragToScale(last_cursor, event->pos(), width(), height(), camera);
+  Real zoom = dragToScale(last_cursor, event.GetPosition(), width(), height(), camera);
 
   // Zoom in at mouse position, zoom out at screen center
   Vector3 dir;
@@ -722,20 +674,20 @@ ModelDisplay::zoomView(QMouseEvent * event)
 }
 
 void
-ModelDisplay::zoomView(QWheelEvent * event)
+ModelDisplay::zoomViewWheel(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "zoomView";
 
   using namespace ModelDisplayInternal;
 
   static Real const ZOOM_PER_DEGREE = 2.0f / 180.0f;
-  Real num_degrees = event->delta() / 8;  // delta is in eighths of a degree
+  Real num_degrees = event.GetWheelRotation() / 8;  // delta is in eighths of a degree
   Real zoom = 1 + ZOOM_PER_DEGREE * num_degrees;
 
   // Zoom in at mouse position, zoom out at screen center
   Vector3 dir;
   if (zoom > 1)
-    dir = computePickRay(event->pos()).getDirection().unit();
+    dir = computePickRay(event.GetPosition()).getDirection().unit();
   else
     dir = camera.getLookDirection();
 
@@ -744,25 +696,27 @@ ModelDisplay::zoomView(QWheelEvent * event)
 }
 
 void
-ModelDisplay::saveScreenshot(QString path)
+ModelDisplay::saveScreenshot(std::string path)
 {
-  if (path.isEmpty())
+  if (path.empty())
   {
     Model const * model = app().getMainWindow()->getModel();
-    QString prefix = model ? QFileInfo(model->getFilename()).baseName() : "Browse3D-Screenshot";
-    path = FilePath::concat(QDir::homePath(), prefix + QDateTime::currentDateTime().toString("-yyyy-MM-dd-hh-mm-ss") + ".png");
+    std::string prefix = model ? FilePath::baseName(model->getPath()) : "Browse3D-Screenshot";
+    path = FilePath::concat(wxStandardPaths::Get().GetUserDir(-1), prefix
+         + wxDateTime::Now().toString("-%Y-%m-%d-%H-%M-%S") + ".png");
   }
 
-#ifdef THEA_USE_QOPENGLWIDGET
-  QImage img = grabFramebuffer();
-#else
-  QImage img = grabFrameBuffer();
-#endif
-
-  if (img.save(path))
-    THEA_CONSOLE << "Saved screenshot to " << path;
-  else
-    THEA_ERROR << "Could not save screenshot to " << path;
+  // FIXME
+// #ifdef THEA_USE_QOPENGLWIDGET
+//   QImage img = grabFramebuffer();
+// #else
+//   QImage img = grabFrameBuffer();
+// #endif
+//
+//   if (img.save(path))
+//     THEA_CONSOLE << "Saved screenshot to " << path;
+//   else
+//     THEA_ERROR << "Could not save screenshot to " << path;
 }
 
 } // namespace Browse3D

@@ -43,6 +43,7 @@
 #define __Browse3D_Common_hpp__
 
 #include "../../Common.hpp"
+#include "../../Colors.hpp"
 
 // Forward declarations
 class wxPoint;

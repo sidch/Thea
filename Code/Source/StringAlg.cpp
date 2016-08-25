@@ -304,27 +304,6 @@ stringSplit(std::string const & s, std::string const & split_chars, TheaArray<st
 }
 
 std::string
-stringJoin(TheaArray<std::string> const & a, char join_char)
-{
-}
-
-std::string
-stringJoin(TheaArray<std::string> const & a, std::string const & join_str)
-{
-  std::ostringstream out;
-
-  for (long i = 0; i < (long)a.size() - 1; ++i)
-  {
-    out << a[i] << join_str;
-  }
-
-  if (a.size() > 0)
-    out << a.back();
-
-  return out.str();
-}
-
-std::string
 trimWhitespace(std::string const & s)
 {
   size_t left = 0;
