@@ -46,6 +46,7 @@
 #include "../../FileSystem.hpp"
 #include "../../Plugin.hpp"
 #include "../../Graphics/RenderSystem.hpp"
+#include <wx/cmdline.h>
 #include <boost/program_options.hpp>
 #include <fstream>
 #include <sstream>
@@ -155,7 +156,7 @@ parseModel(std::string const & str, std::string & path, AffineTransform3 & trans
 bool
 App::parseOptions(int argc, char * argv[])
 {
-  std::vector<std::string> const & args;
+  std::vector<std::string> args;
   for (int i = 0; i < argc; ++i)
     args.push_back(argv[i]);
 
@@ -401,7 +402,7 @@ App::OnCmdLineParsed(wxCmdLineParser & parser)
   if (!wxApp::OnCmdLineParsed(parser))
     return false;
 
-  std::vector<std::string> const & args;
+  std::vector<std::string> args;
   for (size_t i = 0; i < parser.GetParamCount(); ++i)
     args.push_back(parser.GetParam(i).ToStdString());
 

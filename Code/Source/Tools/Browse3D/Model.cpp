@@ -54,11 +54,17 @@
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
-#include <wx/event.h>
+#include <wx/filedlg.h>
 #include <algorithm>
 #include <fstream>
 
 namespace Browse3D {
+
+wxDEFINE_EVENT(EVT_PATH_CHANGED,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_GEOMETRY_CHANGED,     wxCommandEvent);
+wxDEFINE_EVENT(EVT_NEEDS_REDRAW,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
+wxDEFINE_EVENT(EVT_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
 
 namespace ModelInternal {
 
@@ -173,7 +179,7 @@ Model::clearPoints()
 bool
 Model::load(std::string const & path_)
 {
-  if (path_.isEmpty())
+  if (path_.empty())
     return false;
 
   if (!FileSystem::fileExists(path_) || FileSystem::resolve(path_) == FileSystem::resolve(path))
@@ -226,8 +232,8 @@ Model::load(std::string const & path_)
     loadFaceLabels(getDefaultFaceLabelsPath());
   }
 
-  ProcessEvent(ID_PATH_CHANGED);
-  ProcessEvent(ID_GEOMETRY_CHANGED);
+  QueueEvent(new wxCommandEvent(EVT_PATH_CHANGED));
+  QueueEvent(new wxCommandEvent(EVT_GEOMETRY_CHANGED));
 
   return true;
 }
@@ -235,7 +241,7 @@ Model::load(std::string const & path_)
 bool
 Model::selectAndLoad()
 {
-  wxFileDialog file_dialog(this, "Load model", "", "",
+  wxFileDialog file_dialog(app().getMainWindow(), "Load model", "", "",
                            "Model files (*.3ds *.obj *.off *.off.bin *.ply *.pts)|*.3ds *.obj *.off *.off.bin *.ply *.pts",
                            wxFD_OPEN | wxFD_FILE_MUST_EXIST);
   if (file_dialog.ShowModal() == wxID_CANCEL)
@@ -432,7 +438,7 @@ Model::pick(Ray3 const & ray)
 
     valid_pick = true;
 
-    ProcessEvent(ID_NEEDS_REDRAW);
+    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -442,13 +448,13 @@ void
 Model::invalidatePick()
 {
   valid_pick = false;
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 void
 Model::mousePressEvent(wxMouseEvent & event)
 {
-  event->accept();
+  event.StopPropagation();
 }
 
 void
@@ -483,7 +489,7 @@ void
 Model::addSample(Sample const & sample)
 {
   samples.push_back(sample);
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 bool
@@ -539,7 +545,7 @@ Model::removeSample(long index)
   {
     samples.erase(samples.begin() + index);
     saveSamples(getSamplesPath());
-    ProcessEvent(ID_NEEDS_REDRAW);
+    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
   }
 }
 
@@ -547,7 +553,7 @@ void
 Model::selectSample(long index)
 {
   selected_sample = index;
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 bool
@@ -617,12 +623,12 @@ Model::loadSamples(std::string const & path_)
             + bary[2] * ((*v2)->getPosition());
       }
 
-      samples[(array_size_t)i] = Sample(mesh, face_index, pos, tostd::string(type), tostd::string(label));
+      samples[(array_size_t)i] = Sample(mesh, face_index, pos, type, label);
     }
   }
   THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
 
-  ProcessEvent(ID_NEEDS_SYNC_SAMPLES);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_SYNC_SAMPLES));
 
   return status;
 }
@@ -681,13 +687,10 @@ std::string
 Model::getSamplesPath() const
 {
   std::string sfn = getPath() + ".picked";
-  if (QFileInfo(sfn).exists())
+  if (FileSystem::fileExists(sfn))
     return sfn;
   else
-  {
-    QFileInfo info(getPath());
-    return info.dir().filePath(info.baseName() + ".picked");
-  }
+    return FilePath::concat(FilePath::parent(getPath()), FilePath::baseName(getPath()) + ".picked");
 }
 
 namespace ModelInternal {
@@ -797,7 +800,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
       }
     }
 
-    ProcessEvent(ID_NEEDS_REDRAW);
+    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -817,20 +820,20 @@ Model::promotePickedSegment(long offset)
 
   THEA_CONSOLE << getName() << ": Segment depth promotion set to " << segment_depth_promotion;
 
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 void
 Model::addSegment(Segment const & segment)
 {
   segments.push_back(segment);
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 bool
 Model::addPickedSegment(std::string const & label)
 {
-  if (label.isEmpty())
+  if (label.empty())
   {
     THEA_WARNING << getName() << ": Empty label, cannot add segment";
     return false;
@@ -856,7 +859,7 @@ Model::removeSegment(long index)
   {
     segments.erase(segments.begin() + index);
     saveSegments(getSegmentsPath());
-    ProcessEvent(ID_NEEDS_REDRAW);
+    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
   }
 }
 
@@ -874,7 +877,7 @@ void
 Model::selectSegment(long index)
 {
   selected_segment = index;
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 }
 
 bool
@@ -896,7 +899,7 @@ Model::loadSegments(std::string const & path_)
     std::string line;
     while (getNextNonBlankLine(in, line))
     {
-      std::string label = tostd::string(trimWhitespace(line));
+      std::string label = trimWhitespace(line);
       Segment seg(label);
 
       if (!getNextNonBlankLine(in, line))
@@ -923,7 +926,7 @@ Model::loadSegments(std::string const & path_)
   if (!status)
     segments.clear();
 
-  ProcessEvent(ID_NEEDS_SYNC_SEGMENTS);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_SYNC_SEGMENTS));
 
   return status;
 }
@@ -969,13 +972,10 @@ std::string
 Model::getSegmentsPath() const
 {
   std::string sfn = getPath() + ".labels";
-  if (QFileInfo(sfn).exists())
+  if (FileSystem::fileExists(sfn))
     return sfn;
   else
-  {
-    QFileInfo info(getPath());
-    return info.dir().filePath(info.baseName() + ".labels");
-  }
+    return FilePath::concat(FilePath::parent(getPath()), FilePath::baseName(getPath()) + ".labels");
 }
 
 namespace ModelInternal {
@@ -1083,7 +1083,7 @@ Model::loadFeatures(std::string const & path_)
 
     if (feat_pts.empty())
     {
-      ProcessEvent(ID_NEEDS_REDRAW);
+      QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
       return true;
     }
 
@@ -1158,7 +1158,7 @@ Model::loadFeatures(std::string const & path_)
   }
   THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
 
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 
   return has_features;
 }
@@ -1216,7 +1216,7 @@ Model::loadFaceLabels(std::string const & path_)
     char * next;
     long n = strtol(line.c_str(), &next, 10);
     if (*next != 0)  // could not parse to end of string, not an integer
-      face_colors.push_back(getLabelColor(tostd::string(line)));
+      face_colors.push_back(getLabelColor(line));
     else
       face_colors.push_back(getPaletteColor(n));
   }
@@ -1229,7 +1229,7 @@ Model::loadFaceLabels(std::string const & path_)
   THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
 
   has_face_labels = true;
-  ProcessEvent(ID_NEEDS_REDRAW);
+  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
 
   return has_face_labels;
 }

@@ -52,6 +52,7 @@
 #include "../../Algorithms/RayQueryStructureN.hpp"
 #include "../../AffineTransform3.hpp"
 #include "../../Transformable.hpp"
+#include <wx/event.h>
 
 class wxMouseEvent;
 
@@ -65,7 +66,7 @@ typedef shared_ptr<PointCloud> PointCloudPtr;
 namespace Browse3D {
 
 /** The model manipulated by the user. */
-class Model : public GraphicsWidget, public Transformable<AffineTransform3>
+class Model : public GraphicsWidget, public Transformable<AffineTransform3>, public wxEvtHandler
 {
   private:
     typedef Transformable<AffineTransform3> TransformableBaseT;
@@ -74,11 +75,11 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>
     /** Custom event IDs. */
     enum EventID
     {
-      ID_PATH_CHANGED,
-      ID_GEOMETRY_CHANGED,
-      ID_NEEDS_REDRAW,
-      ID_NEEDS_SYNC_SAMPLES,
-      ID_NEEDS_SYNC_SEGMENTS,
+      EVT_PATH_CHANGED,
+      EVT_GEOMETRY_CHANGED,
+      EVT_NEEDS_REDRAW,
+      EVT_NEEDS_SYNC_SAMPLES,
+      EVT_NEEDS_SYNC_SEGMENTS,
 
     }; // enum EventID
 
@@ -206,13 +207,13 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>
     // Interaction
     //========================================================================================================================
 
-    /** [Qt] Called when a mouse button is pressed. */
+    /** [wxWidgets] Called when a mouse button is pressed. */
     void mousePressEvent(wxMouseEvent & event);
 
-    /** [Qt] Called when the mouse is moved. */
+    /** [wxWidgets] Called when the mouse is moved. */
     void mouseMoveEvent(wxMouseEvent & event);
 
-    /** [Qt] Called when a mouse button is released. */
+    /** [wxWidgets] Called when a mouse button is released. */
     void mouseReleaseEvent(wxMouseEvent & event);
 
     //========================================================================================================================
@@ -421,6 +422,12 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>
     mutable VertexKDTree * vertex_kdtree;
 
 }; // class Model
+
+wxDECLARE_EVENT(EVT_PATH_CHANGED,         wxCommandEvent);
+wxDECLARE_EVENT(EVT_GEOMETRY_CHANGED,     wxCommandEvent);
+wxDECLARE_EVENT(EVT_NEEDS_REDRAW,         wxCommandEvent);
+wxDECLARE_EVENT(EVT_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
+wxDECLARE_EVENT(EVT_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
 
 } // namespace Browse3D
 

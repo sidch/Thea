@@ -80,8 +80,8 @@ class MainWindow : public wxFrame
     typedef wxFrame BaseType;
 
   public:
-    /** Custom event IDs. */
-    enum EventID
+    /** Custom item IDs. */
+    enum ItemID
     {
       ID_VIEW_SHADED,
       ID_VIEW_WIREFRAME,
