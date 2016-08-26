@@ -53,14 +53,13 @@
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Graphics/Shader.hpp"
 #include "../../Graphics/Texture.hpp"
-#include "../../Plugins/GL/GLHeaders.hpp"
 #include <wx/stdpaths.h>
 #include <wx/datetime.h>
 
 namespace Browse3D {
 
 ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
-: wxGLCanvas(parent),
+: wxGLCanvas(parent, wxID_ANY, NULL),
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
@@ -84,8 +83,8 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   render_opts.overrideEdgeColor() = true;
   render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
 
-  connect(model, SIGNAL(geometryChanged(Model const *)), this, SLOT(modelGeometryChanged()));
-  connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(Update()));
+//   connect(model, SIGNAL(geometryChanged(Model const *)), this, SLOT(modelGeometryChanged()));
+//   connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(Update()));
 }
 
 void
@@ -280,7 +279,7 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
   {
     static std::string const BG_IMAGE = "wood.jpg";
     Image bg_img;
-    if (loadImage(bg_img, toQString(Application::getFullResourcePath("Images/" + BG_IMAGE))))
+    if (loadImage(bg_img, Application::getFullResourcePath("Images/" + BG_IMAGE)))
     {
       Texture::Options opts = Texture::Options::defaults();
       opts.interpolateMode = Texture::InterpolateMode::BILINEAR_NO_MIPMAP;
@@ -290,8 +289,8 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
     }
 
     if (background_texture)
-     THEA_CONSOLE.nospace() << "Loaded " << background_texture->getWidth() << "x" << background_texture->getHeight()
-                        << " background image " << BG_IMAGE;
+     THEA_CONSOLE << "Loaded " << background_texture->getWidth() << "x" << background_texture->getHeight()
+                  << " background image " << BG_IMAGE;
     else
     {
       THEA_CONSOLE << "Couldn't load background texture";
@@ -527,7 +526,7 @@ ModelDisplay::mouseMoveEvent(wxMouseEvent & event)
     {
       case ViewEditMode::PAN:
         panView(event);
-        event->StopPropagation();
+        event.StopPropagation();
         break;
 
       case ViewEditMode::ROTATE:
@@ -702,8 +701,8 @@ ModelDisplay::saveScreenshot(std::string path)
   {
     Model const * model = app().getMainWindow()->getModel();
     std::string prefix = model ? FilePath::baseName(model->getPath()) : "Browse3D-Screenshot";
-    path = FilePath::concat(wxStandardPaths::Get().GetUserDir(-1), prefix
-         + wxDateTime::Now().toString("-%Y-%m-%d-%H-%M-%S") + ".png");
+    path = FilePath::concat(wxStandardPaths::Get().GetDocumentsDir().ToStdString(),
+                            prefix + wxDateTime::Now().Format("-%Y-%m-%d-%H-%M-%S").ToStdString() + ".png");
   }
 
   // FIXME

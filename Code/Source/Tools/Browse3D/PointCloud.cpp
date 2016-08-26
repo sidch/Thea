@@ -441,7 +441,7 @@ PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string
   if (FileSystem::fileExists(features_path))
     return features_path;
 
-  std::string app_features_path = toStdString(app().options().features);
+  std::string app_features_path = app().options().features;
   if (FileSystem::fileExists(app_features_path))
     return app_features_path;
 

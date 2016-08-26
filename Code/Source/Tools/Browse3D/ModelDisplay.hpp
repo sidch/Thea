@@ -46,6 +46,7 @@
 #include "../../AffineTransform3.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/RenderOptions.hpp"
+#include "../../Plugins/GL/GLHeaders.hpp"
 #include <wx/glcanvas.h>
 
 namespace Thea {
@@ -207,6 +208,12 @@ class ModelDisplay : public wxGLCanvas
 
     /** Draw the background image. */
     void drawBackground(Graphics::RenderSystem & rs);
+
+    /** Get the width of the widget. */
+    int width() const { return GetSize().GetWidth(); }
+
+    /** Get the height of the widget. */
+    int height() const { return GetSize().GetHeight(); }
 
     Model * model;
 
