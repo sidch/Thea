@@ -256,6 +256,7 @@ ModelDisplay::paintGL()
 
   if (!app().hasRenderSystem()) return;
 
+#if 0
   RenderSystem & rs = *app().getRenderSystem();
 
   rs.setColorClearValue(app().options().bg_color);
@@ -275,9 +276,17 @@ ModelDisplay::paintGL()
     overlays[i]->draw(rs, render_opts);
 
   drawAxes(rs);
+#endif
 
-#ifdef THEA_OSX
-  swapBuffers();  // for some reason this is necessary even if auto buffer swap is on
+#if defined(THEA_OSX)
+
+  // For some reason this is necessary even if auto buffer swap is on
+#if defined(THEA_USE_QOPENGLWIDGET)
+  context()->swapBuffers(context()->surface());
+#else
+  swapBuffers();
+#endif
+
 #endif
 }
 

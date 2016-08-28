@@ -46,7 +46,7 @@
 #define QT_USE_FAST_OPERATOR_PLUS
 
 #ifdef THEA_QT5
-// # define THEA_USE_QOPENGLWIDGET
+#  define THEA_USE_QOPENGLWIDGET
 #endif
 
 #include "../../Common.hpp"

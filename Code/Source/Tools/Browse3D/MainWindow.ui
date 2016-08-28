@@ -32,7 +32,16 @@
         <string>Segments</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
-        <property name="margin">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
          <number>0</number>
         </property>
         <item>
@@ -94,7 +103,16 @@
         <string>Points</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
-        <property name="margin">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
          <number>0</number>
         </property>
         <item>
@@ -158,7 +176,7 @@
      <x>0</x>
      <y>0</y>
      <width>784</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -269,7 +287,7 @@
     <string>Open a model</string>
    </property>
    <property name="iconVisibleInMenu">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionFileSaveAs">
@@ -280,7 +298,7 @@
     <string>Save as a new model</string>
    </property>
    <property name="iconVisibleInMenu">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionFileQuit">
@@ -291,7 +309,7 @@
     <string>Quit the application</string>
    </property>
    <property name="iconVisibleInMenu">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionViewFitViewToModel">
@@ -305,7 +323,7 @@
     <string>F</string>
    </property>
    <property name="iconVisibleInMenu">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionGoPrevious">
@@ -318,6 +336,9 @@
    <property name="shortcut">
     <string>,</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionGoNext">
    <property name="text">
@@ -329,6 +350,9 @@
    <property name="shortcut">
     <string>.</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionViewWireframe">
    <property name="text">
@@ -336,6 +360,9 @@
    </property>
    <property name="toolTip">
     <string>Show only mesh edges</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionViewShaded">
@@ -345,6 +372,9 @@
    <property name="toolTip">
     <string>Show shaded faces</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionViewShadedWireframe">
    <property name="text">
@@ -352,6 +382,9 @@
    </property>
    <property name="toolTip">
     <string>Show shaded faces and edges</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionToolsSaveScreenshot">
@@ -364,6 +397,9 @@
    <property name="shortcut">
     <string>Ctrl+G</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionViewTwoSidedLighting">
    <property name="checkable">
@@ -374,6 +410,9 @@
    </property>
    <property name="toolTip">
     <string>Turn two-sided lighting on/off</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionViewFlatShading">
@@ -386,6 +425,9 @@
    <property name="toolTip">
     <string>Turn flat shading on/off</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionGoPreviousFeatures">
    <property name="text">
@@ -393,6 +435,9 @@
    </property>
    <property name="shortcut">
     <string>[</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
   <action name="actionGoNextFeatures">
@@ -402,6 +447,9 @@
    <property name="shortcut">
     <string>]</string>
    </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
+   </property>
   </action>
   <action name="actionToolsToolbox">
    <property name="checkable">
@@ -409,6 +457,9 @@
    </property>
    <property name="text">
     <string>Toolbox</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>false</bool>
    </property>
   </action>
  </widget>
