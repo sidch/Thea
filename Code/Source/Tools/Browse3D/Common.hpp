@@ -44,6 +44,7 @@
 
 #include "../../Common.hpp"
 #include "../../Colors.hpp"
+#include <wx/event.h>
 
 // Forward declarations
 class wxPoint;
@@ -60,6 +61,9 @@ using namespace Thea;
 // Put quotes around the result of a macro expansion.
 #define BROWSE3D_STRINGIFY_(x) #x
 #define BROWSE3D_STRINGIFY(x) BROWSE3D_STRINGIFY_(x)
+
+/** A dummy event that is a default argument for callbacks. */
+extern wxCommandEvent DUMMY_EVENT;
 
 } // namespace Browse3D
 

@@ -58,13 +58,13 @@
 #include <algorithm>
 #include <fstream>
 
-namespace Browse3D {
+wxDEFINE_EVENT(EVT_MODEL_PATH_CHANGED,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_GEOMETRY_CHANGED,     wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_REDRAW,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
 
-wxDEFINE_EVENT(EVT_PATH_CHANGED,         wxCommandEvent);
-wxDEFINE_EVENT(EVT_GEOMETRY_CHANGED,     wxCommandEvent);
-wxDEFINE_EVENT(EVT_NEEDS_REDRAW,         wxCommandEvent);
-wxDEFINE_EVENT(EVT_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
-wxDEFINE_EVENT(EVT_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
+namespace Browse3D {
 
 namespace ModelInternal {
 
@@ -232,8 +232,8 @@ Model::load(std::string const & path_)
     loadFaceLabels(getDefaultFaceLabelsPath());
   }
 
-  QueueEvent(new wxCommandEvent(EVT_PATH_CHANGED));
-  QueueEvent(new wxCommandEvent(EVT_GEOMETRY_CHANGED));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_PATH_CHANGED));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_GEOMETRY_CHANGED));
 
   return true;
 }
@@ -242,7 +242,7 @@ bool
 Model::selectAndLoad()
 {
   wxFileDialog file_dialog(app().getMainWindow(), "Load model", "", "",
-                           "Model files (*.3ds *.obj *.off *.off.bin *.ply *.pts)|*.3ds *.obj *.off *.off.bin *.ply *.pts",
+                           "Model files (*.3ds *.obj *.off *.off.bin *.ply *.pts)|*.3ds;*.obj;*.off;*.off.bin;*.ply;*.pts",
                            wxFD_OPEN | wxFD_FILE_MUST_EXIST);
   if (file_dialog.ShowModal() == wxID_CANCEL)
       return false;
@@ -438,7 +438,7 @@ Model::pick(Ray3 const & ray)
 
     valid_pick = true;
 
-    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -448,7 +448,7 @@ void
 Model::invalidatePick()
 {
   valid_pick = false;
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 void
@@ -489,7 +489,7 @@ void
 Model::addSample(Sample const & sample)
 {
   samples.push_back(sample);
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
@@ -545,7 +545,7 @@ Model::removeSample(long index)
   {
     samples.erase(samples.begin() + index);
     saveSamples(getSamplesPath());
-    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
 
@@ -553,7 +553,7 @@ void
 Model::selectSample(long index)
 {
   selected_sample = index;
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
@@ -628,7 +628,7 @@ Model::loadSamples(std::string const & path_)
   }
   THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
 
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_SYNC_SAMPLES));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_SYNC_SAMPLES));
 
   return status;
 }
@@ -800,7 +800,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
       }
     }
 
-    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -820,14 +820,14 @@ Model::promotePickedSegment(long offset)
 
   THEA_CONSOLE << getName() << ": Segment depth promotion set to " << segment_depth_promotion;
 
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 void
 Model::addSegment(Segment const & segment)
 {
   segments.push_back(segment);
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
@@ -859,7 +859,7 @@ Model::removeSegment(long index)
   {
     segments.erase(segments.begin() + index);
     saveSegments(getSegmentsPath());
-    QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
 
@@ -877,7 +877,7 @@ void
 Model::selectSegment(long index)
 {
   selected_segment = index;
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
@@ -926,7 +926,7 @@ Model::loadSegments(std::string const & path_)
   if (!status)
     segments.clear();
 
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_SYNC_SEGMENTS));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_SYNC_SEGMENTS));
 
   return status;
 }
@@ -1083,7 +1083,7 @@ Model::loadFeatures(std::string const & path_)
 
     if (feat_pts.empty())
     {
-      QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+      wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
       return true;
     }
 
@@ -1158,7 +1158,7 @@ Model::loadFeatures(std::string const & path_)
   }
   THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
 
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
   return has_features;
 }
@@ -1229,7 +1229,7 @@ Model::loadFaceLabels(std::string const & path_)
   THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
 
   has_face_labels = true;
-  QueueEvent(new wxCommandEvent(EVT_NEEDS_REDRAW));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
   return has_face_labels;
 }
@@ -1292,6 +1292,24 @@ Model::getDefaultFaceLabelsPath() const
   exts.push_back(".seg");
 
   return ModelInternal::getDefaultPath(path, app().options().face_labels, exts);
+}
+
+void
+Model::registerDisplay(ModelDisplay * display)
+{
+  if (!display) return;
+
+  Bind(EVT_MODEL_GEOMETRY_CHANGED, &ModelDisplay::modelGeometryChanged, display);
+  Bind(EVT_MODEL_NEEDS_REDRAW, &ModelDisplay::modelNeedsRedraw, display);
+}
+
+void
+Model::deregisterDisplay(ModelDisplay * display)
+{
+  if (!display) return;
+
+  Unbind(EVT_MODEL_GEOMETRY_CHANGED, &ModelDisplay::modelGeometryChanged, display);
+  Unbind(EVT_MODEL_NEEDS_REDRAW, &ModelDisplay::modelNeedsRedraw, display);
 }
 
 AxisAlignedBox3 const &

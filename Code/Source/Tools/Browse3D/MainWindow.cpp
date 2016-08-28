@@ -47,6 +47,7 @@
 #include "../../Application.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
+#include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/listbox.h>
 #include <wx/menu.h>
@@ -58,6 +59,9 @@
 
 namespace Browse3D {
 
+// Definition of object declared in common header
+wxCommandEvent DUMMY_EVENT;
+
 static int const SEGMENTS_TAB_INDEX  =  0;
 static int const POINTS_TAB_INDEX    =  1;
 
@@ -66,21 +70,24 @@ MainWindowUI::MainWindowUI()
   toolbox(NULL),
   points_table(NULL),
   point_label(NULL),
-  pick_points_snap_to_vertex(NULL),
+  point_snap_to_vertex(NULL),
   segments_table(NULL),
   segment_label(NULL)
 {}
 
 MainWindow::MainWindow(wxWindow * parent)
-: BaseType(parent, wxID_ANY, ""),
+: BaseType(parent, wxID_ANY, "Browse3D", wxDefaultPosition, wxSize(800, 600)),
   model(NULL)
-{}
+{
+  init();
+}
 
 void
 MainWindow::init()
 {
-  // Set the window title
-  SetTitle("Browse3D");
+  //==========================================================================================================================
+  // Menu
+  //==========================================================================================================================
 
   // Set up the main menu
   wxMenuBar * menubar = new wxMenuBar();
@@ -129,49 +136,24 @@ MainWindow::init()
 
   SetMenuBar(menubar);
 
-/*
-  // Icons for menu options/buttons
-  ui->actionFileOpen->setIcon(QIcon::fromTheme("document-open",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/document-open.svg")))));
-  ui->actionFileSaveAs->setIcon(QIcon::fromTheme("document-save-as",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/document-save-as.svg")))));
+  //==========================================================================================================================
+  // Main layout
+  //==========================================================================================================================
 
-  ui->actionViewFitViewToModel->setIcon(QIcon::fromTheme("zoom-fit-best",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/zoom-fit-best.svg")))));
-  ui->actionViewWireframe->setIcon(QIcon::fromTheme("view-wireframe",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-wireframe.png")))));
-  ui->actionViewShaded->setIcon(QIcon::fromTheme("view-shaded",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-shaded.png")))));
-  ui->actionViewShadedWireframe->setIcon(QIcon::fromTheme("view-shaded-wireframe",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-shaded-wireframe.png")))));
+  static Real const SASH_GRAVITY = 0.67;
+  static Real const MIN_SPLIT_SIZE = 300;
 
-  ui->actionGoPrevious->setIcon(QIcon::fromTheme("go-previous",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/go-previous.svg")))));
-  ui->actionGoNext->setIcon(QIcon::fromTheme("go-next",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/go-next.svg")))));
-
-  view_type_action_group = new QActionGroup(this);
-  ui->actionViewShaded->setActionGroup(view_type_action_group);
-  ui->actionViewWireframe->setActionGroup(view_type_action_group);
-  ui->actionViewShadedWireframe->setActionGroup(view_type_action_group);
-
-  // Shortcuts for menu options
-  ui->actionFileOpen->setShortcuts(QKeySequence::Open);
-  ui->actionFileSaveAs->setShortcuts(QKeySequence::SaveAs);
-  ui->actionFileQuit->setShortcuts(QKeySequence::Quit);
-*/
-
-  wxSplitterWindow * main_splitter = new wxSplitterWindow(this, wxID_ANY);
-  main_splitter->SetSashGravity(0.67);
-  main_splitter->SetMinimumPaneSize(50);
+  wxSplitterWindow * main_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                                                          wxSP_3D | wxSP_BORDER | wxSP_LIVE_UPDATE);
+  main_splitter->SetSashGravity(SASH_GRAVITY);
+  main_splitter->SetMinimumPaneSize(MIN_SPLIT_SIZE);
+  main_splitter->SetSashInvisible(false);
 
   // Create the model
   model = new Model;
 
   // An OpenGL display box for the model
   ui.model_display = new ModelDisplay(main_splitter, model);
-  wxBoxSizer * model_sizer = new wxBoxSizer(wxVERTICAL);
-  model_sizer->Add(ui.model_display, 1, wxEXPAND, 0);
 
   // A tabbed pane for the toolbox
   ui.toolbox = new wxNotebook(main_splitter, wxID_ANY);
@@ -179,20 +161,75 @@ MainWindow::init()
   // Segment picking interface
   wxPanel * segments_panel = new wxPanel(ui.toolbox);
   wxBoxSizer * segments_sizer = new wxBoxSizer(wxVERTICAL);
+  segments_panel->SetSizer(segments_sizer);
   ui.segments_table = new wxListBox(segments_panel, wxID_ANY);
-  ui.toolbox->AddPage(ui.segments_table, "Segments");
+  segments_sizer->Add(ui.segments_table, 1, wxEXPAND, 0);
+  wxButton * segment_add_btn     =  new wxButton(segments_panel, ID_SEGMENT_ADD,     "Add segment");
+  wxButton * segment_remove_btn  =  new wxButton(segments_panel, ID_SEGMENT_REMOVE,  "Remove segment");
+  wxBoxSizer * segments_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+  segments_btn_sizer->Add(segment_add_btn, 1, wxEXPAND | wxRIGHT, 5);
+  segments_btn_sizer->Add(segment_remove_btn, 1, wxEXPAND | wxLEFT, 5);
+  segments_sizer->Add(segments_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+  ui.toolbox->AddPage(segments_panel, "Segments");
 
   // Point picking interface
   wxPanel * points_panel = new wxPanel(ui.toolbox);
   wxBoxSizer * points_sizer = new wxBoxSizer(wxVERTICAL);
+  points_panel->SetSizer(points_sizer);
   ui.points_table = new wxListBox(points_panel, wxID_ANY);
-  ui.toolbox->AddPage(ui.points_table, "Points");
+  points_sizer->Add(ui.points_table, 1, wxEXPAND, 0);
+  wxButton * point_add_btn     =  new wxButton(points_panel, ID_POINT_ADD,     "Add point");
+  wxButton * point_remove_btn  =  new wxButton(points_panel, ID_POINT_REMOVE,  "Remove point");
+  wxBoxSizer * points_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+  points_btn_sizer->Add(point_add_btn, 1, wxEXPAND | wxRIGHT, 5);
+  points_btn_sizer->Add(point_remove_btn, 1, wxEXPAND | wxLEFT, 5);
+  points_sizer->Add(points_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+  ui.point_snap_to_vertex = new wxCheckBox(points_panel, wxID_ANY, "Snap point to vertex");
+  points_sizer->Add(ui.point_snap_to_vertex, 0, wxEXPAND | wxTOP, 5);
+  ui.toolbox->AddPage(points_panel, "Points");
+
+  // The main UI is split into two panes
+  main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
+
+  // Do the top-level layout
+  wxBoxSizer * main_sizer = new wxBoxSizer(wxVERTICAL);
+  SetSizer(main_sizer);
+  main_sizer->Add(main_splitter, 1, wxEXPAND);
+
+  //==========================================================================================================================
+  // Callbacks
+  //==========================================================================================================================
+
+  Bind(wxEVT_MENU, &MainWindow::selectAndLoadModel, this, wxID_OPEN);
+  Bind(wxEVT_MENU, &MainWindow::OnExit, this, wxID_EXIT);
+
+  Bind(wxEVT_MENU, &ModelDisplay::renderShaded, ui.model_display, ID_VIEW_SHADED);
+  Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::renderShadedWireframe, ui.model_display, ID_VIEW_SHADED_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
+
+  Bind(wxEVT_MENU, &MainWindow::loadPreviousModel, this, ID_GO_PREV);
+  Bind(wxEVT_MENU, &MainWindow::loadNextModel, this, ID_GO_NEXT);
+  Bind(wxEVT_MENU, &MainWindow::loadPreviousFeatures, this, ID_GO_PREV_FEATURES);
+  Bind(wxEVT_MENU, &MainWindow::loadNextFeatures, this, ID_GO_NEXT_FEATURES);
+
+  Bind(wxEVT_MENU, &ModelDisplay::saveScreenshot, ui.model_display, ID_TOOLS_SCREENSHOT);
+  Bind(wxEVT_MENU, &MainWindow::toggleToolbox, this, ID_TOOLS_TOOLBOX);
+
+  Bind(wxEVT_BUTTON, &MainWindow::expandPickedSegment, this, ID_SEGMENT_EXPAND);
+  Bind(wxEVT_BUTTON, &MainWindow::contractPickedSegment, this, ID_SEGMENT_CONTRACT);
+  Bind(wxEVT_BUTTON, &MainWindow::addPickedSegment, this, ID_SEGMENT_ADD);
+  Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSegment, this, ID_SEGMENT_REMOVE);
+
+  Bind(wxEVT_BUTTON, &MainWindow::addPickedSample, this, ID_POINT_ADD);
+  Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSample, this, ID_POINT_REMOVE);
+
+  model->Bind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
+  model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
+  model->Bind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
 
   // Setup signal/slot connections
 /*
-  connect(ui->actionFileOpen, SIGNAL(triggered(bool)), this, SLOT(selectAndLoadModel()));
-  connect(ui->actionFileQuit, SIGNAL(triggered(bool)), this, SLOT(close()));
-
   connect(ui->actionViewFitViewToModel, SIGNAL(triggered(bool)), ui.model_display, SLOT(fitViewToModel()));
   connect(ui->actionViewWireframe, SIGNAL(triggered(bool)), ui.model_display, SLOT(renderWireframe()));
   connect(ui->actionViewShaded, SIGNAL(triggered(bool)), ui.model_display, SLOT(renderShaded()));
@@ -270,6 +307,13 @@ MainWindow::init()
 
 MainWindow::~MainWindow()
 {
+  model->Unbind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
+  model->Unbind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
+  model->Unbind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
+
+  ui.model_display->setModel(NULL);  // this is necessary else we get a segfault when the base class destructor is called after
+                                     // this, and can't find the model to deregister callbacks when destroying the display.
+  clearOverlays();
   delete model;
 }
 
@@ -278,10 +322,6 @@ MainWindow::getRenderDisplay()
 {
   return ui.model_display;
 }
-
-//=============================================================================================================================
-// GUI callbacks
-//=============================================================================================================================
 
 void
 MainWindow::SetTitle(wxString const & title)
@@ -295,8 +335,18 @@ MainWindow::SetTitle(wxString const & title)
   }
 }
 
+//=============================================================================================================================
+// GUI callbacks
+//=============================================================================================================================
+
 void
-MainWindow::selectAndLoadModel()
+MainWindow::setTitle(wxEvent & event)
+{
+  SetTitle(model->getPath());
+}
+
+void
+MainWindow::selectAndLoadModel(wxEvent & event)
 {
   if (model->selectAndLoad())
     clearOverlays();
@@ -355,7 +405,7 @@ fileIndex(std::string const & dir, std::string const & file, TheaArray<std::stri
 }
 
 void
-MainWindow::loadPreviousModel()
+MainWindow::loadPreviousModel(wxEvent & event)
 {
   TheaArray<std::string> patterns;
   getMeshPatterns(patterns);
@@ -376,7 +426,7 @@ MainWindow::loadPreviousModel()
 }
 
 void
-MainWindow::loadNextModel()
+MainWindow::loadNextModel(wxEvent & event)
 {
   TheaArray<std::string> patterns;
   getMeshPatterns(patterns);
@@ -397,7 +447,7 @@ MainWindow::loadNextModel()
 }
 
 void
-MainWindow::loadPreviousFeatures()
+MainWindow::loadPreviousFeatures(wxEvent & event)
 {
   TheaArray<std::string> patterns;
   getFeaturePatterns(patterns);
@@ -418,7 +468,7 @@ MainWindow::loadPreviousFeatures()
 }
 
 void
-MainWindow::loadNextFeatures()
+MainWindow::loadNextFeatures(wxEvent & event)
 {
   TheaArray<std::string> patterns;
   getFeaturePatterns(patterns);
@@ -448,19 +498,19 @@ MainWindow::clearOverlays()
 }
 
 void
-MainWindow::addPickedSample()
+MainWindow::addPickedSample(wxEvent & event)
 {
   std::string label = ui.point_label->GetValue().ToStdString();
   THEA_CONSOLE << "Adding sample with label" << label;
 
-  model->addPickedSample(label, ui.pick_points_snap_to_vertex->GetValue());
+  model->addPickedSample(label, ui.point_snap_to_vertex->GetValue());
   model->invalidatePick();
 
   ui.points_table->Append(label);
 }
 
 void
-MainWindow::syncSamples()
+MainWindow::syncSamples(wxEvent & event)
 {
   TheaArray<Model::Sample> const & samples = model->getSamples();
   wxArrayString labels;
@@ -474,7 +524,7 @@ MainWindow::syncSamples()
 }
 
 void
-MainWindow::removeSelectedSample()
+MainWindow::removeSelectedSample(wxEvent & event)
 {
   wxArrayInt sel;
   ui.points_table->GetSelections(sel);
@@ -490,7 +540,7 @@ MainWindow::removeSelectedSample()
 }
 
 void
-MainWindow::selectSample()
+MainWindow::selectSample(wxEvent & event)
 {
   wxArrayInt sel;
   ui.points_table->GetSelections(sel);
@@ -507,15 +557,7 @@ MainWindow::pickPoints() const
 }
 
 void
-MainWindow::setPickPoints(bool value)
-{
-  ui.toolbox->Show(value);
-  if (value)
-    ui.toolbox->SetSelection(POINTS_TAB_INDEX);
-}
-
-void
-MainWindow::addPickedSegment()
+MainWindow::addPickedSegment(wxEvent & event)
 {
   std::string label = ui.segment_label->GetValue().ToStdString();
   THEA_CONSOLE << "Adding segment with label" << label;
@@ -527,19 +569,19 @@ MainWindow::addPickedSegment()
 }
 
 void
-MainWindow::expandPickedSegment()
+MainWindow::expandPickedSegment(wxEvent & event)
 {
   model->promotePickedSegment(1);
 }
 
 void
-MainWindow::contractPickedSegment()
+MainWindow::contractPickedSegment(wxEvent & event)
 {
   model->promotePickedSegment(-1);
 }
 
 void
-MainWindow::syncSegments()
+MainWindow::syncSegments(wxEvent & event)
 {
   TheaArray<Segment> const & segments = model->getSegments();
   wxArrayString labels;
@@ -553,7 +595,7 @@ MainWindow::syncSegments()
 }
 
 void
-MainWindow::removeSelectedSegment()
+MainWindow::removeSelectedSegment(wxEvent & event)
 {
   wxArrayInt sel;
   ui.segments_table->GetSelections(sel);
@@ -569,7 +611,7 @@ MainWindow::removeSelectedSegment()
 }
 
 void
-MainWindow::selectSegment()
+MainWindow::selectSegment(wxEvent & event)
 {
   wxArrayInt sel;
   ui.segments_table->GetSelections(sel);
@@ -586,21 +628,14 @@ MainWindow::pickSegments() const
 }
 
 void
-MainWindow::setPickSegments(bool value)
+MainWindow::toggleToolbox(wxEvent & event)
 {
-  ui.toolbox->Show(value);
-  if (value)
-    ui.toolbox->SetSelection(SEGMENTS_TAB_INDEX);
+  bool current = ui.toolbox->IsShown();
+  ui.toolbox->Show(!current);
 }
 
 void
-MainWindow::setShowToolbox(bool value)
-{
-  ui.toolbox->Show(value);
-}
-
-void
-MainWindow::OnExit(wxCommandEvent & event)
+MainWindow::OnExit(wxEvent & event)
 {
   Close(true);
 }
