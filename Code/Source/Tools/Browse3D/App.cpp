@@ -349,7 +349,8 @@ App::createMainWindow()
   QSurfaceFormat sf = QSurfaceFormat::defaultFormat();
   sf.setDepthBufferSize(16);
   sf.setSamples(4);
-  sf.setProfile(QSurfaceFormat::CoreProfile);
+  sf.setVersion(2, 1);
+  sf.setProfile(QSurfaceFormat::NoProfile);
   QSurfaceFormat::setDefaultFormat(sf);
 #else
   QGLFormat glf = QGLFormat::defaultFormat();
