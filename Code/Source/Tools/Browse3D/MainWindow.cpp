@@ -47,6 +47,7 @@
 #include "../../Application.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
+#include <wx/accel.h>
 #include <wx/button.h>
 #include <wx/checkbox.h>
 #include <wx/listbox.h>
@@ -62,8 +63,9 @@ namespace Browse3D {
 // Definition of object declared in common header
 wxCommandEvent DUMMY_EVENT;
 
-static int const SEGMENTS_TAB_INDEX  =  0;
-static int const POINTS_TAB_INDEX    =  1;
+static int const SEGMENTS_TAB_INDEX  =     0;
+static int const POINTS_TAB_INDEX    =     1;
+static Real const MIN_SPLIT_SIZE     =   300;
 
 MainWindowUI::MainWindowUI()
 : model_display(NULL),
@@ -141,22 +143,20 @@ MainWindow::init()
   //==========================================================================================================================
 
   static Real const SASH_GRAVITY = 0.67;
-  static Real const MIN_SPLIT_SIZE = 300;
-
-  wxSplitterWindow * main_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                                                          wxSP_3D | wxSP_BORDER | wxSP_LIVE_UPDATE);
-  main_splitter->SetSashGravity(SASH_GRAVITY);
-  main_splitter->SetMinimumPaneSize(MIN_SPLIT_SIZE);
-  main_splitter->SetSashInvisible(false);
+  ui.main_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                                          wxSP_3D | wxSP_BORDER | wxSP_PERMIT_UNSPLIT | wxSP_LIVE_UPDATE);
+  ui.main_splitter->SetSashGravity(SASH_GRAVITY);
+  ui.main_splitter->SetMinimumPaneSize(MIN_SPLIT_SIZE);
+  ui.main_splitter->SetSashInvisible(false);
 
   // Create the model
   model = new Model;
 
   // An OpenGL display box for the model
-  ui.model_display = new ModelDisplay(main_splitter, model);
+  ui.model_display = new ModelDisplay(ui.main_splitter, model);
 
   // A tabbed pane for the toolbox
-  ui.toolbox = new wxNotebook(main_splitter, wxID_ANY);
+  ui.toolbox = new wxNotebook(ui.main_splitter, wxID_ANY);
 
   // Segment picking interface
   wxPanel * segments_panel = new wxPanel(ui.toolbox);
@@ -189,12 +189,12 @@ MainWindow::init()
   ui.toolbox->AddPage(points_panel, "Points");
 
   // The main UI is split into two panes
-  main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
+  ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
 
   // Do the top-level layout
   wxBoxSizer * main_sizer = new wxBoxSizer(wxVERTICAL);
   SetSizer(main_sizer);
-  main_sizer->Add(main_splitter, 1, wxEXPAND);
+  main_sizer->Add(ui.main_splitter, 1, wxEXPAND);
 
   //==========================================================================================================================
   // Callbacks
@@ -228,40 +228,22 @@ MainWindow::init()
   model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
   model->Bind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
 
-  // Setup signal/slot connections
+  //==========================================================================================================================
+  // Keyboard shortcuts for menu items
+  //==========================================================================================================================
+
+  static int const NUM_ACCEL = 6;
+  wxAcceleratorEntry accel[NUM_ACCEL];
+  accel[0].Set(wxACCEL_NORMAL, (int)'F', ID_VIEW_FIT);
+  accel[1].Set(wxACCEL_NORMAL, (int)',', ID_GO_PREV);
+  accel[2].Set(wxACCEL_NORMAL, (int)'.', ID_GO_NEXT);
+  accel[3].Set(wxACCEL_CTRL,   (int)'G', ID_TOOLS_SCREENSHOT);
+  accel[4].Set(wxACCEL_NORMAL, (int)'[', ID_GO_PREV_FEATURES);
+  accel[5].Set(wxACCEL_NORMAL, (int)']', ID_GO_NEXT_FEATURES);
+  wxAcceleratorTable accel_table(NUM_ACCEL, accel);
+  SetAcceleratorTable(accel_table);
+
 /*
-  connect(ui->actionViewFitViewToModel, SIGNAL(triggered(bool)), ui.model_display, SLOT(fitViewToModel()));
-  connect(ui->actionViewWireframe, SIGNAL(triggered(bool)), ui.model_display, SLOT(renderWireframe()));
-  connect(ui->actionViewShaded, SIGNAL(triggered(bool)), ui.model_display, SLOT(renderShaded()));
-  connect(ui->actionViewShadedWireframe, SIGNAL(triggered(bool)), ui.model_display, SLOT(renderShadedWireframe()));
-  connect(ui->actionViewTwoSidedLighting, SIGNAL(toggled(bool)), ui.model_display, SLOT(setTwoSided(bool)));
-  connect(ui->actionViewFlatShading, SIGNAL(toggled(bool)), ui.model_display, SLOT(setFlatShading(bool)));
-
-  connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
-  connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
-
-  connect(ui->actionGoPreviousFeatures, SIGNAL(triggered(bool)), this, SLOT(loadPreviousFeatures()));
-  connect(ui->actionGoNextFeatures,     SIGNAL(triggered(bool)), this, SLOT(loadNextFeatures()));
-
-  connect(ui->actionToolsSaveScreenshot, SIGNAL(triggered(bool)), ui.model_display, SLOT(saveScreenshot()));
-  connect(ui->actionToolsToolbox, SIGNAL(toggled(bool)), this, SLOT(setShowToolbox(bool)));
-
-  connect(model, SIGNAL(filenameChanged(QString const &)), this, SLOT(setWindowTitle(QString const &)));
-  connect(model, SIGNAL(needsSyncSamples(Model const *)), this, SLOT(syncSamples()));
-  connect(model, SIGNAL(needsSyncSegments(Model const *)), this, SLOT(syncSegments()));
-
-  connect(ui.toolbox, SIGNAL(currentChanged(int)), this, SLOT(update()));
-
-  connect(ui->buttonExpandSegment, SIGNAL(clicked()), this, SLOT(expandPickedSegment()));
-  connect(ui->buttonContractSegment, SIGNAL(clicked()), this, SLOT(contractPickedSegment()));
-  connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
-  connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
-  connect(ui.segments_table, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
-
-  connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
-  connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
-  connect(ui->pointsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSample()));
-
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
 
@@ -303,6 +285,13 @@ MainWindow::init()
       }
     }
   }
+
+  //==========================================================================================================================
+  // Initial view
+  //==========================================================================================================================
+
+  setToolboxVisible(false);
+  ui.model_display->renderShaded();
 }
 
 MainWindow::~MainWindow()
@@ -397,7 +386,8 @@ fileIndex(std::string const & dir, std::string const & file, TheaArray<std::stri
   }
   else
   {
-    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, stringJoin(*patterns, ' '), false) <= 0)
+    std::string pat = (patterns ? stringJoin(*patterns, ' ') : "");
+    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat, false) <= 0)
       return -1;
   }
 
@@ -411,8 +401,11 @@ MainWindow::loadPreviousModel(wxEvent & event)
   getMeshPatterns(patterns);
 
   TheaArray<std::string> files;
-  long index = fileIndex(FilePath::parent(model->getPath()), model->getPath(), files, &patterns);
-  if (index < 0)  // maybe the file was deleted recently?
+  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  if (files.empty())
+    return;
+
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -432,13 +425,19 @@ MainWindow::loadNextModel(wxEvent & event)
   getMeshPatterns(patterns);
 
   TheaArray<std::string> files;
-  long index = fileIndex(FilePath::parent(model->getPath()), model->getPath(), files, &patterns);
-  if (index < 0)  // maybe the file was deleted recently?
+  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  if (files.empty())
+    return;
+
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   clearOverlays();
+
+  THEA_CONSOLE << "files = " << stringJoin(files, ", ");
+  THEA_CONSOLE << "files.size() = " << files.size() << " index = " << index;
 
   if (index == (long)files.size() - 1)
     model->load(files[0]);
@@ -454,7 +453,10 @@ MainWindow::loadPreviousFeatures(wxEvent & event)
 
   TheaArray<std::string> files;
   long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
-  if (index < 0)  // maybe the file was deleted recently?
+  if (files.empty())
+    return;
+
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -475,7 +477,10 @@ MainWindow::loadNextFeatures(wxEvent & event)
 
   TheaArray<std::string> files;
   long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
-  if (index < 0)  // maybe the file was deleted recently?
+  if (files.empty())
+    return;
+
+  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -631,7 +636,20 @@ void
 MainWindow::toggleToolbox(wxEvent & event)
 {
   bool current = ui.toolbox->IsShown();
-  ui.toolbox->Show(!current);
+  setToolboxVisible(!current);
+}
+
+void
+MainWindow::setToolboxVisible(bool value)
+{
+  if (ui.toolbox->IsShown() == value)
+    return;
+
+  ui.toolbox->Show(value);
+  if (value)
+    ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
+  else
+    ui.main_splitter->Unsplit(ui.toolbox);
 }
 
 void

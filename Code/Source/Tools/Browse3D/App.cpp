@@ -381,7 +381,8 @@ App::createRenderSystem()
 bool
 App::OnInit()
 {
-  parseOptions(this->argc, this->argv);
+  if (!parseOptions(this->argc, this->argv))
+    return false;
 
   THEA_CONSOLE << "Started Browse3D\n";
   THEA_CONSOLE << optsToString();

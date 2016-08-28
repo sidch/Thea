@@ -177,12 +177,13 @@ Model::clearPoints()
 }
 
 bool
-Model::load(std::string const & path_)
+Model::load(std::string path_)
 {
   if (path_.empty())
     return false;
 
-  if (!FileSystem::fileExists(path_) || FileSystem::resolve(path_) == FileSystem::resolve(path))
+  path_ = FileSystem::resolve(path_);
+  if (!FileSystem::fileExists(path_) || path_ == FileSystem::resolve(path))
     return false;
 
   if (endsWith(toLower(path_), ".pts"))
