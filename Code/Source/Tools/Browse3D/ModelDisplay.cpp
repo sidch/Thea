@@ -66,31 +66,34 @@ wxGLAttributes
 getGLAttributes()
 {
   wxGLAttributes attribs;
-  attribs.PlatformDefaults().RGBA().Depth(16).Samplers(4).DoubleBuffer().EndList();
+  attribs.PlatformDefaults().RGBA().Depth(16).SampleBuffers(1).Samplers(4).DoubleBuffer().EndList();
   return attribs;
 }
 #else
 int const *
 getGLAttributes()
 {
-  static int attribs[16];
+  static int attribs[32];
   int n = 0;
   attribs[n++] = WX_GL_RGBA;
   attribs[n++] = WX_GL_DEPTH_SIZE;
   attribs[n++] = 16;
+  attribs[n++] = WX_GL_SAMPLE_BUFFERS;
+  attribs[n++] = 1;
   attribs[n++] = WX_GL_SAMPLES;
   attribs[n++] = 4;
   attribs[n++] = WX_DOUBLEBUFFER;
   attribs[n] = 0; // terminate the list
+
+  return (int const *)attribs;
 }
 #endif
 
 ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
-:
 #if NEW_WXGLCANVAS
-  wxGLCanvas(parent, getGLAttributes()),
+: wxGLCanvas(parent, getGLAttributes()),
 #else
-  wxGLCanvas(parent, wxID_ANY, getGLAttributes()),
+: wxGLCanvas(parent, wxID_ANY, getGLAttributes()),
 #endif
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),

@@ -48,6 +48,7 @@
 class wxCheckBox;
 class wxListBox;
 class wxNotebook;
+class wxSplitterWindow;
 class wxTextCtrl;
 
 namespace Browse3D {
@@ -58,6 +59,8 @@ class ModelDisplay;
 /** Holds MainWindow UI elements. */
 struct MainWindowUI
 {
+  wxSplitterWindow * main_splitter;
+
   ModelDisplay * model_display;
   wxNotebook * toolbox;
 
@@ -200,6 +203,9 @@ class MainWindow : public wxFrame
   private:
     /** Get rid of all overlay models. */
     void clearOverlays();
+
+    /** Show or hide the toolbox. */
+    void setToolboxVisible(bool value);
 
     // Models
     Model * model;

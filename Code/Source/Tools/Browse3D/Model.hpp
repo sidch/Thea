@@ -368,7 +368,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
      *
      * @return True if the model was successfully loaded, else false.
      */
-    bool load(std::string const & path_);
+    bool load(std::string path_);
 
     /**
      * Select a file via a file dialog and load the model from it.
