@@ -121,6 +121,17 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   Bind(wxEVT_PAINT, &ModelDisplay::paintGL, this);
   Bind(wxEVT_SIZE, &ModelDisplay::resize, this);
 
+  Bind(wxEVT_LEFT_DOWN, &ModelDisplay::mousePressEvent, this);
+  Bind(wxEVT_RIGHT_DOWN, &ModelDisplay::mousePressEvent, this);
+  Bind(wxEVT_MIDDLE_DOWN, &ModelDisplay::mousePressEvent, this);
+
+  Bind(wxEVT_LEFT_UP, &ModelDisplay::mouseReleaseEvent, this);
+  Bind(wxEVT_RIGHT_UP, &ModelDisplay::mouseReleaseEvent, this);
+  Bind(wxEVT_MIDDLE_UP, &ModelDisplay::mouseReleaseEvent, this);
+
+  Bind(wxEVT_MOTION, &ModelDisplay::mouseMoveEvent, this);
+  Bind(wxEVT_MOUSEWHEEL, &ModelDisplay::wheelEvent, this);
+
   model->registerDisplay(this);
 }
 
@@ -515,8 +526,6 @@ ModelDisplay::keyPressEvent(wxKeyEvent & event)
 void
 ModelDisplay::mousePressEvent(wxMouseEvent & event)
 {
-  // THEA_CONSOLE << "mousePressEvent";
-
   if (!model) return;
 
   last_cursor = event.GetPosition();
@@ -666,6 +675,20 @@ ModelDisplay::mouseReleaseEvent(wxMouseEvent & event)
   }
 
   last_cursor = event.GetPosition();
+}
+
+void
+ModelDisplay::wheelEvent(wxMouseEvent & event)
+{
+  // THEA_CONSOLE << "wheelEvent";
+
+  mode = Mode::EDIT_VIEW;
+  view_edit_mode = ViewEditMode::ZOOM;
+
+    zoomViewWheel(event);
+
+  mode = Mode::DEFAULT;
+  view_edit_mode = ViewEditMode::DEFAULT;
 }
 
 Real

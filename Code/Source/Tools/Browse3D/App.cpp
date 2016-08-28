@@ -157,7 +157,7 @@ bool
 App::parseOptions(int argc, char * argv[])
 {
   std::vector<std::string> args;
-  for (int i = 0; i < argc; ++i)
+  for (int i = 1; i < argc; ++i)  // omit the program path
     args.push_back(argv[i]);
 
   return parseOptions(args);
@@ -267,7 +267,7 @@ App::parseOptions(std::vector<std::string> const & args)
   opts.resource_dir  =  FileSystem::resolve(opts.resource_dir);
   opts.working_dir   =  FileSystem::resolve(opts.working_dir);
 
-  if (!opts.model.empty())
+  if (!s_model.empty())
   {
     if (!parseModel(s_model, opts.model, opts.model_transform))
       return false;
@@ -381,8 +381,7 @@ App::createRenderSystem()
 bool
 App::OnInit()
 {
-  if (!wxApp::OnInit())
-    return false;
+  parseOptions(this->argc, this->argv);
 
   THEA_CONSOLE << "Started Browse3D\n";
   THEA_CONSOLE << optsToString();
@@ -394,19 +393,6 @@ App::OnInit()
   createRenderSystem();
 
   return true;
-}
-
-bool
-App::OnCmdLineParsed(wxCmdLineParser & parser)
-{
-  if (!wxApp::OnCmdLineParsed(parser))
-    return false;
-
-  std::vector<std::string> args;
-  for (size_t i = 0; i < parser.GetParamCount(); ++i)
-    args.push_back(parser.GetParam(i).ToStdString());
-
-  return parseOptions(args);
 }
 
 bool
