@@ -179,7 +179,7 @@ class ModelDisplay : public wxGLCanvas
     void mouseReleaseEvent(wxMouseEvent & event);
 
     /** Called when the mouse wheel is turned. */
-    void wheelEvent(wxMouseEvent * event);
+    void wheelEvent(wxMouseEvent & event);
 
   private:
     /** Update the viewing camera to fit the current model. */

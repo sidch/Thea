@@ -125,9 +125,6 @@ class App : public wxApp
     /** Called when application is launched. */
     bool OnInit();
 
-    /** Called to process command line. */
-    bool OnCmdLineParsed(wxCmdLineParser & parser);
-
     /** Called when the main program loop throws an exception. */
     bool OnExceptionInMainLoop();
 
