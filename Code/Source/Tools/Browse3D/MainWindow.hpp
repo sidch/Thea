@@ -63,7 +63,7 @@ struct MainWindowUI
 
   wxListBox * points_table;
   wxTextCtrl * point_label;
-  wxCheckBox * pick_points_snap_to_vertex;
+  wxCheckBox * point_snap_to_vertex;
 
   wxListBox * segments_table;
   wxTextCtrl * segment_label;
@@ -95,6 +95,14 @@ class MainWindow : public wxFrame
       ID_GO_NEXT_FEATURES,
       ID_TOOLS_SCREENSHOT,
       ID_TOOLS_TOOLBOX,
+
+      ID_SEGMENT_EXPAND,
+      ID_SEGMENT_CONTRACT,
+      ID_SEGMENT_ADD,
+      ID_SEGMENT_REMOVE,
+
+      ID_POINT_ADD,
+      ID_POINT_REMOVE,
 
     }; // enum EventID
 
@@ -128,69 +136,66 @@ class MainWindow : public wxFrame
     /** Check if segment-selection is on. */
     bool pickSegments() const;
 
+    /** [wxWidgets] Set the window title. */
+    void SetTitle(wxString const & title);
+
     //=========================================================================================================================
     // GUI callbacks
     //=========================================================================================================================
 
-    /** [wxWidgets] Set the window title. */
-    void SetTitle(wxString const & title);
-
     /** Called when program exits. */
-    void OnExit(wxCommandEvent & event);
+    void OnExit(wxEvent & event = DUMMY_EVENT);
+
+    /** Set the window title. */
+    void setTitle(wxEvent & event = DUMMY_EVENT);
 
     /** Select and load a model. */
-    void selectAndLoadModel();
+    void selectAndLoadModel(wxEvent & event = DUMMY_EVENT);
 
     /** Load the previous model in the directory. */
-    void loadPreviousModel();
+    void loadPreviousModel(wxEvent & event = DUMMY_EVENT);
 
     /** Load the next model in the directory. */
-    void loadNextModel();
+    void loadNextModel(wxEvent & event = DUMMY_EVENT);
 
     /** Load the previous set of features in the features directory. */
-    void loadPreviousFeatures();
+    void loadPreviousFeatures(wxEvent & event = DUMMY_EVENT);
 
     /** Load the next set of features in the features directory. */
-    void loadNextFeatures();
+    void loadNextFeatures(wxEvent & event = DUMMY_EVENT);
 
     /** Add the currently picked point to the set of samples. */
-    void addPickedSample();
+    void addPickedSample(wxEvent & event = DUMMY_EVENT);
 
     /** Select the sample indicated by the table selection. */
-    void selectSample();
+    void selectSample(wxEvent & event = DUMMY_EVENT);
 
     /** Remove the selected sample. */
-    void removeSelectedSample();
+    void removeSelectedSample(wxEvent & event = DUMMY_EVENT);
 
     /** Sync the displayed list of samples with the model. */
-    void syncSamples();
+    void syncSamples(wxEvent & event = DUMMY_EVENT);
 
     /** Add the currently picked segment to the set of segments. */
-    void addPickedSegment();
+    void addPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Expand the picked segment by one level in the hierarchy. */
-    void expandPickedSegment();
+    void expandPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Contract the picked segment by one level in the hierarchy. */
-    void contractPickedSegment();
+    void contractPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Select the segment indicated by the table selection. */
-    void selectSegment();
+    void selectSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Remove the selected segment. */
-    void removeSelectedSegment();
+    void removeSelectedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Sync the displayed list of segments with the model. */
-    void syncSegments();
+    void syncSegments(wxEvent & event = DUMMY_EVENT);
 
     /** Show/hide the toolbox. */
-    void setShowToolbox(bool value);
-
-    /** Turn point-picking on/off. */
-    void setPickPoints(bool value);
-
-    /** Turn segment-picking on/off. */
-    void setPickSegments(bool value);
+    void toggleToolbox(wxEvent & event = DUMMY_EVENT);
 
   private:
     /** Get rid of all overlay models. */

@@ -53,13 +53,45 @@
 #include "../../Graphics/RenderSystem.hpp"
 #include "../../Graphics/Shader.hpp"
 #include "../../Graphics/Texture.hpp"
-#include <wx/stdpaths.h>
 #include <wx/datetime.h>
+#include <wx/dcclient.h>
+#include <wx/stdpaths.h>
 
 namespace Browse3D {
 
+#define NEW_WXGLCANVAS (wxMAJOR_VERSION > 3 || (wxMAJOR_VERSION == 3 && wxMINOR_VERSION >= 1))
+
+#if NEW_WXGLCANVAS
+wxGLAttributes
+getGLAttributes()
+{
+  wxGLAttributes attribs;
+  attribs.PlatformDefaults().RGBA().Depth(16).Samplers(4).DoubleBuffer().EndList();
+  return attribs;
+}
+#else
+int const *
+getGLAttributes()
+{
+  static int attribs[16];
+  int n = 0;
+  attribs[n++] = WX_GL_RGBA;
+  attribs[n++] = WX_GL_DEPTH_SIZE;
+  attribs[n++] = 16;
+  attribs[n++] = WX_GL_SAMPLES;
+  attribs[n++] = 4;
+  attribs[n++] = WX_DOUBLEBUFFER;
+  attribs[n] = 0; // terminate the list
+}
+#endif
+
 ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
-: wxGLCanvas(parent, wxID_ANY, NULL),
+:
+#if NEW_WXGLCANVAS
+  wxGLCanvas(parent, getGLAttributes()),
+#else
+  wxGLCanvas(parent, wxID_ANY, getGLAttributes()),
+#endif
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
@@ -67,12 +99,15 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   mode(Mode::DEFAULT),
   view_edit_mode(ViewEditMode::DEFAULT),
   background_texture(NULL),
-  background_shader(NULL)
+  background_shader(NULL),
+  context(NULL)
 {
   alwaysAssertM(model, "ModelDisplay: Can't create a display without a valid model");
 
 //   setFocusPolicy(Qt::StrongFocus);
 //   setMouseTracking(true);
+
+  context = new wxGLContext(this);
 
   render_opts.sendNormals() = true;
   render_opts.sendColors() = false;
@@ -83,16 +118,28 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   render_opts.overrideEdgeColor() = true;
   render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
 
-//   connect(model, SIGNAL(geometryChanged(Model const *)), this, SLOT(modelGeometryChanged()));
-//   connect(model, SIGNAL(needsRedraw(Model const *)), this, SLOT(Update()));
+  Bind(wxEVT_PAINT, &ModelDisplay::paintGL, this);
+  Bind(wxEVT_SIZE, &ModelDisplay::resize, this);
+
+  model->registerDisplay(this);
+}
+
+ModelDisplay::~ModelDisplay()
+{
+  if (model)
+    model->deregisterDisplay(this);
 }
 
 void
-ModelDisplay::initializeGL()
+ModelDisplay::setModel(Model * model_)
 {
-#ifndef THEA_WINDOWS
-  glEnable(GL_MULTISAMPLE);
-#endif
+  if (model)
+    model->deregisterDisplay(this);
+
+  model = model_;
+
+  if (model)
+    model->registerDisplay(this);
 }
 
 Ray3
@@ -109,15 +156,17 @@ ModelDisplay::project(Vector3 const & p) const
 }
 
 void
-ModelDisplay::fitViewToModel()
+ModelDisplay::fitViewToModel(wxEvent & event)
 {
   updateCameraFromModel();
-  Update();
+  Refresh();
 }
 
 void
 ModelDisplay::updateCameraFromModel()
 {
+  if (!model) return;
+
   model->updateBounds();
   updateCameraFrameFromModel();
   updateCameraProjection();
@@ -126,6 +175,8 @@ ModelDisplay::updateCameraFromModel()
 void
 ModelDisplay::updateCameraFrameFromModel()
 {
+  if (!model) return;
+
   camera_look_at = model->getTransformedBounds().getCenter();
   Real model_scale = model->getTransformedBounds().getExtent().fastLength();
   Real camera_separation = model_scale > 1.0e-3f ? 2 * model_scale : 1.0e-3f;
@@ -169,37 +220,43 @@ ModelDisplay::updateCameraProjection()
 }
 
 void
-ModelDisplay::modelGeometryChanged()
+ModelDisplay::modelGeometryChanged(wxEvent & event)
 {
-  fitViewToModel();
+  fitViewToModel(event);
 }
 
 void
-ModelDisplay::renderShaded()
+ModelDisplay::modelNeedsRedraw(wxEvent & event)
+{
+  Refresh();
+}
+
+void
+ModelDisplay::renderShaded(wxEvent & event)
 {
   render_opts.drawFaces() = true;
   render_opts.drawEdges() = false;
-  Update();
+  Refresh();
 
   THEA_CONSOLE << "Rendering shaded faces";
 }
 
 void
-ModelDisplay::renderWireframe()
+ModelDisplay::renderWireframe(wxEvent & event)
 {
   render_opts.drawFaces() = false;
   render_opts.drawEdges() = true;
-  Update();
+  Refresh();
 
   THEA_CONSOLE << "Rendering wireframe";
 }
 
 void
-ModelDisplay::renderShadedWireframe()
+ModelDisplay::renderShadedWireframe(wxEvent & event)
 {
   render_opts.drawFaces() = true;
   render_opts.drawEdges() = true;
-  Update();
+  Refresh();
 
   THEA_CONSOLE << "Rendering shaded faces with wireframe edges";
 }
@@ -210,7 +267,7 @@ ModelDisplay::setTwoSided(bool value)
   if (GraphicsWidget::isTwoSided() != value)
   {
     GraphicsWidget::setTwoSided(value);
-    Update();
+    Refresh();
 
     THEA_CONSOLE << "Two-sided lighting =" << value;
   }
@@ -222,26 +279,29 @@ ModelDisplay::setFlatShading(bool value)
   if (!render_opts.useVertexNormals() != value)
   {
     render_opts.useVertexNormals() = !value;
-    Update();
+    Refresh();
 
     THEA_CONSOLE << "Flat shading =" << value;
   }
 }
 
 void
-ModelDisplay::resizeGL(int w, int h)
-{
-  glViewport(0, 0, w, h);
-  fitViewToModel();
-  Update();
-}
-
-void
-ModelDisplay::paintGL()
+ModelDisplay::paintGL(wxPaintEvent & event)
 {
   using namespace Graphics;
 
+  if (!model) return;
   if (!app().hasRenderSystem()) return;
+
+  SetCurrent(*context);
+  wxPaintDC(this);
+
+#ifndef THEA_WINDOWS
+  glEnable(GL_MULTISAMPLE);
+#endif
+
+  wxSize size = GetSize();
+  glViewport(0, 0, size.GetWidth(), size.GetHeight());
 
   RenderSystem & rs = *app().getRenderSystem();
 
@@ -249,6 +309,8 @@ ModelDisplay::paintGL()
   rs.clear();
 
   rs.setColorWrite(true, true, true, true);
+  rs.setDepthWrite(true);
+  rs.setDepthTest(RenderSystem::DepthTest::LESS);
   rs.setCamera(camera);
 
   if (!app().options().bg_plain)
@@ -263,9 +325,14 @@ ModelDisplay::paintGL()
 
   drawAxes(rs);
 
-#ifdef THEA_OSX
-  SwapBuffers();  // for some reason this is necessary even if auto buffer swap is on
-#endif
+  glFlush();
+  SwapBuffers();
+}
+
+void
+ModelDisplay::resize(wxSizeEvent & event)
+{
+  fitViewToModel();
 }
 
 void
@@ -450,6 +517,8 @@ ModelDisplay::mousePressEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mousePressEvent";
 
+  if (!model) return;
+
   last_cursor = event.GetPosition();
 
   bool left    =  event.LeftDown();
@@ -510,7 +579,7 @@ ModelDisplay::mousePressEvent(wxMouseEvent & event)
     view_drag_start = event.GetPosition();
 
     event.StopPropagation();
-    Update();
+    Refresh();
     return;
   }
 }
@@ -519,6 +588,8 @@ void
 ModelDisplay::mouseMoveEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mouseMoveEvent";
+
+  if (!model) return;
 
   if (mode == Mode::EDIT_VIEW)
   {
@@ -568,13 +639,15 @@ ModelDisplay::incrementViewTransform(AffineTransform3 const & tr)
   if (view_edit_mode == ViewEditMode::PAN)
     camera_look_at = inv_vt * camera_look_at;
 
-  Update();
+  Refresh();
 }
 
 void
 ModelDisplay::mouseReleaseEvent(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "mouseReleaseEvent";
+
+  if (!model) return;
 
   if (mode == Mode::EDIT_VIEW)
   {
@@ -584,7 +657,7 @@ ModelDisplay::mouseReleaseEvent(wxMouseEvent & event)
       mode = Mode::DEFAULT;
 
       event.StopPropagation();
-      Update();
+      Refresh();
     }
   }
   else if (mode == Mode::EDIT_MODEL)
@@ -600,6 +673,8 @@ ModelDisplay::getModelDistance() const
 {
   // THEA_CONSOLE << "getModelDistance";
 
+  if (!model) return 0.0;
+
   return model ? (model->getTransformedBounds().getCenter() - camera.getPosition()).length()
                : (camera_look_at - camera.getPosition()).length();
 }
@@ -608,6 +683,8 @@ void
 ModelDisplay::panView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "panView";
+
+  if (!model) return;
 
   Vector3 trn = dragToTranslation(last_cursor, event.GetPosition(), width(), height(), camera, getModelDistance());
   incrementViewTransform(AffineTransform3(Matrix3::identity(), trn));
@@ -618,6 +695,8 @@ ModelDisplay::rotateView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "rotateView";
 
+  if (!model) return;
+
   Matrix3 rot = dragToRotation(last_cursor, event.GetPosition(), width(), height(), camera);
   Vector3 trn = camera_look_at - rot * camera_look_at;
   incrementViewTransform(AffineTransform3(rot, trn));
@@ -627,6 +706,8 @@ void
 ModelDisplay::rollView(wxMouseEvent & event)
 {
   // THEA_CONSOLE << "rollView";
+
+  if (!model) return;
 
   Vector2 center(0.5f * width(), 0.5f * height());
   Vector2 u = Vector2(last_cursor.x, last_cursor.y) - center;
@@ -659,6 +740,8 @@ ModelDisplay::zoomView(wxMouseEvent & event)
 
   using namespace ModelDisplayInternal;
 
+  if (!model) return;
+
   Real zoom = dragToScale(last_cursor, event.GetPosition(), width(), height(), camera);
 
   // Zoom in at mouse position, zoom out at screen center
@@ -679,6 +762,8 @@ ModelDisplay::zoomViewWheel(wxMouseEvent & event)
 
   using namespace ModelDisplayInternal;
 
+  if (!model) return;
+
   static Real const ZOOM_PER_DEGREE = 2.0f / 180.0f;
   Real num_degrees = event.GetWheelRotation() / 8;  // delta is in eighths of a degree
   Real zoom = 1 + ZOOM_PER_DEGREE * num_degrees;
@@ -695,8 +780,10 @@ ModelDisplay::zoomViewWheel(wxMouseEvent & event)
 }
 
 void
-ModelDisplay::saveScreenshot(std::string path)
+ModelDisplay::saveScreenshot(std::string path) const
 {
+  if (!model) return;
+
   if (path.empty())
   {
     Model const * model = app().getMainWindow()->getModel();
@@ -716,6 +803,13 @@ ModelDisplay::saveScreenshot(std::string path)
 //     THEA_CONSOLE << "Saved screenshot to " << path;
 //   else
 //     THEA_ERROR << "Could not save screenshot to " << path;
+}
+
+void
+ModelDisplay::saveScreenshot(wxEvent & event)
+{
+  // This function is a callback, so it can't be const else it doesn't match the Bind signature
+  const_cast<ModelDisplay *>(this)->saveScreenshot("");
 }
 
 } // namespace Browse3D

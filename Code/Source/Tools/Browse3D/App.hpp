@@ -167,15 +167,18 @@ class App : public wxApp
 
 }; // class App
 
-/** Get the global application object, constructed on program startup. */
-inline App & app()
-{
-  static App a;
-  return a;
-}
-
 } // namespace Browse3D
 
 DECLARE_APP(Browse3D::App);
+
+namespace Browse3D {
+
+/** Get the global application object, constructed on program startup. */
+inline App & app()
+{
+  return wxGetApp();
+}
+
+} // namespace Browse3D
 
 #endif

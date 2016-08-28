@@ -58,10 +58,17 @@ class wxMouseEvent;
 
 namespace Browse3D {
 
+class ModelDisplay;
 class PointCloud;
 typedef shared_ptr<PointCloud> PointCloudPtr;
 
 } // namespace Browse3D
+
+wxDECLARE_EVENT(EVT_MODEL_PATH_CHANGED,         wxCommandEvent);
+wxDECLARE_EVENT(EVT_MODEL_GEOMETRY_CHANGED,     wxCommandEvent);
+wxDECLARE_EVENT(EVT_MODEL_NEEDS_REDRAW,         wxCommandEvent);
+wxDECLARE_EVENT(EVT_MODEL_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
+wxDECLARE_EVENT(EVT_MODEL_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
 
 namespace Browse3D {
 
@@ -72,17 +79,6 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     typedef Transformable<AffineTransform3> TransformableBaseT;
 
   public:
-    /** Custom event IDs. */
-    enum EventID
-    {
-      EVT_PATH_CHANGED,
-      EVT_GEOMETRY_CHANGED,
-      EVT_NEEDS_REDRAW,
-      EVT_NEEDS_SYNC_SAMPLES,
-      EVT_NEEDS_SYNC_SEGMENTS,
-
-    }; // enum EventID
-
     typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
@@ -345,6 +341,12 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     //========================================================================================================================
     // Display
     //========================================================================================================================
+
+    /** Register a display window to receive events from this model. */
+    void registerDisplay(ModelDisplay * display);
+
+    /** Deregister a display window from receiving events from this model. */
+    void deregisterDisplay(ModelDisplay * display);
 
     /** Get the default color of the model. */
     ColorRGBA const & getColor() const { return color; }

@@ -102,6 +102,12 @@ class ModelDisplay : public wxGLCanvas
     /** Constructs the widget as a viewer for a given model. */
     explicit ModelDisplay(wxWindow * parent, Model * model_);
 
+    /** Destructor. */
+    ~ModelDisplay();
+
+    /** Set the reference to the model, which may be null. */
+    void setModel(Model * model_);
+
     /** Get the viewing camera. */
     Graphics::Camera const & getCamera() const { return camera; }
 
@@ -120,24 +126,30 @@ class ModelDisplay : public wxGLCanvas
     /** Check if flat shading is on/off. */
     bool flatShading() const { return !render_opts.useVertexNormals(); }
 
+    /** Save a screenshot to a file. If the path is empty, a default path is used. */
+    void saveScreenshot(std::string path = "") const;
+
     //=========================================================================================================================
     // GUI callbacks
     //=========================================================================================================================
 
     /** Adjust the view to fit the current model. */
-    void fitViewToModel();
+    void fitViewToModel(wxEvent & event = DUMMY_EVENT);
 
     /** Called when the model geometry changes. */
-    void modelGeometryChanged();
+    void modelGeometryChanged(wxEvent & event = DUMMY_EVENT);
+
+    /** Called when the model needs to be redrawn. */
+    void modelNeedsRedraw(wxEvent & event = DUMMY_EVENT);
 
     /** Render shaded polygons, without edges. */
-    void renderShaded();
+    void renderShaded(wxEvent & event = DUMMY_EVENT);
 
     /** Render only polygon edges. */
-    void renderWireframe();
+    void renderWireframe(wxEvent & event = DUMMY_EVENT);
 
     /** Render shaded polygons, with edges in a different color. */
-    void renderShadedWireframe();
+    void renderShadedWireframe(wxEvent & event = DUMMY_EVENT);
 
     /** Set two-sided lighting on/off. */
     void setTwoSided(bool value);
@@ -145,17 +157,14 @@ class ModelDisplay : public wxGLCanvas
     /** Set flat shading on/off. */
     void setFlatShading(bool value);
 
-    /** Save a screenshot to a file. If the path is null, a default path is generated. */
-    void saveScreenshot(std::string path = "");
-
-    /** Called to initialize OpenGL. */
-    void initializeGL();
-
-    /** Called when widget is resized. */
-    void resizeGL(int w, int h);
+    /** Save a screenshot to a file.. */
+    void saveScreenshot(wxEvent & event = DUMMY_EVENT);
 
     /** Called to render display. */
-    void paintGL();
+    void paintGL(wxPaintEvent & event);
+
+    /** Called when widget is resized. */
+    void resize(wxSizeEvent & event);
 
     /** Called when a key is pressed. */
     void keyPressEvent(wxKeyEvent & event);
@@ -228,6 +237,8 @@ class ModelDisplay : public wxGLCanvas
 
     Graphics::Texture * background_texture;
     Graphics::Shader * background_shader;
+
+    wxGLContext * context;
 
 }; // class ModelDisplay
 
