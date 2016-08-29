@@ -433,7 +433,7 @@ MainWindow::loadPreviousModel(wxEvent & event)
   if (files.empty())
     return;
 
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -457,15 +457,12 @@ MainWindow::loadNextModel(wxEvent & event)
   if (files.empty())
     return;
 
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   clearOverlays();
-
-  THEA_CONSOLE << "files = " << stringJoin(files, ", ");
-  THEA_CONSOLE << "files.size() = " << files.size() << " index = " << index;
 
   if (index == (long)files.size() - 1)
     model->load(files[0]);
@@ -484,7 +481,7 @@ MainWindow::loadPreviousFeatures(wxEvent & event)
   if (files.empty())
     return;
 
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -508,7 +505,7 @@ MainWindow::loadNextFeatures(wxEvent & event)
   if (files.empty())
     return;
 
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;

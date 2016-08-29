@@ -82,7 +82,7 @@ getGLAttributes()
   attribs[n++] = 1;
   attribs[n++] = WX_GL_SAMPLES;
   attribs[n++] = 4;
-  attribs[n++] = WX_DOUBLEBUFFER;
+  attribs[n++] = WX_GL_DOUBLEBUFFER;
   attribs[n] = 0; // terminate the list
 
   return (int const *)attribs;
