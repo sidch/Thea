@@ -105,13 +105,12 @@ MainWindow::init()
   // View menu
   wxMenu * view_menu = new wxMenu();
   wxMenu * rendering_menu = new wxMenu();
-    rendering_menu->Append(ID_VIEW_SHADED,            "&Shaded");
-    rendering_menu->Append(ID_VIEW_WIREFRAME,         "&Wireframe");
-    rendering_menu->Append(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED,            "&Shaded");
+    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe");
     rendering_menu->AppendSeparator();
-    rendering_menu->Remove(rendering_menu->Append(-1, wxEmptyString));  // resets radio grouping
-    rendering_menu->Append(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
-    rendering_menu->Append(ID_VIEW_FLAT_SHADING,      "&Flat shading");
+    rendering_menu->AppendCheckItem(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
+    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADING,      "&Flat shading");
   view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
   view_menu->Append(ID_VIEW_FIT,            "&Fit view to model");
   menubar->Append(view_menu, "&View");
@@ -127,8 +126,8 @@ MainWindow::init()
 
   // Tools menu
   wxMenu * tools_menu = new wxMenu();
-  tools_menu->Append(ID_TOOLS_SCREENSHOT,  "&Save screenshot");
-  tools_menu->Append(ID_TOOLS_TOOLBOX,     "&Toolbox");
+  tools_menu->Append(ID_TOOLS_SCREENSHOT,        "&Save screenshot");
+  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX,  "&Toolbox");
   menubar->Append(tools_menu, "&Tools");
 
   // About menu
@@ -137,6 +136,28 @@ MainWindow::init()
   menubar->Append(help_menu, "&Help");
 
   SetMenuBar(menubar);
+
+  //==========================================================================================================================
+  // Toolbar
+  //==========================================================================================================================
+
+// #define SHOW_TOOLBAR
+#ifdef SHOW_TOOLBAR
+  wxToolBar * toolbar = CreateToolBar(wxTB_HORIZONTAL | wxTB_TEXT | wxTB_NOICONS, wxID_ANY, "Main toolbar");
+  toolbar->AddTool(wxID_OPEN, "Open", wxNullBitmap, "Open a file");
+  toolbar->AddTool(ID_GO_PREV, "Previous", wxNullBitmap, "Go to the previous model");
+  toolbar->AddTool(ID_GO_NEXT, "Next", wxNullBitmap, "Go to the next model");
+  toolbar->AddSeparator();
+  toolbar->AddTool(ID_VIEW_FIT, "Fit", wxNullBitmap, "Fit view to model");
+  toolbar->AddSeparator();
+  toolbar->AddRadioTool(ID_VIEW_SHADED, "S", wxNullBitmap, wxNullBitmap, "Shaded polygons");
+  toolbar->AddRadioTool(ID_VIEW_WIREFRAME, "W", wxNullBitmap, wxNullBitmap, "Wireframe");
+  toolbar->AddRadioTool(ID_VIEW_SHADED_WIREFRAME, "SW", wxNullBitmap, wxNullBitmap, "Shading + wireframe");
+  toolbar->AddSeparator();
+  toolbar->AddTool(ID_TOOLS_TOOLBOX, "Toolbox", wxNullBitmap, "Show/hide toolbox");
+
+  toolbar->Realize();
+#endif
 
   //==========================================================================================================================
   // Main layout
@@ -206,6 +227,8 @@ MainWindow::init()
   Bind(wxEVT_MENU, &ModelDisplay::renderShaded, ui.model_display, ID_VIEW_SHADED);
   Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
   Bind(wxEVT_MENU, &ModelDisplay::renderShadedWireframe, ui.model_display, ID_VIEW_SHADED_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::setTwoSided, ui.model_display, ID_VIEW_TWO_SIDED);
+  Bind(wxEVT_MENU, &ModelDisplay::setFlatShading, ui.model_display, ID_VIEW_FLAT_SHADING);
   Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
 
   Bind(wxEVT_MENU, &MainWindow::loadPreviousModel, this, ID_GO_PREV);
@@ -214,7 +237,7 @@ MainWindow::init()
   Bind(wxEVT_MENU, &MainWindow::loadNextFeatures, this, ID_GO_NEXT_FEATURES);
 
   Bind(wxEVT_MENU, &ModelDisplay::saveScreenshot, ui.model_display, ID_TOOLS_SCREENSHOT);
-  Bind(wxEVT_MENU, &MainWindow::toggleToolbox, this, ID_TOOLS_TOOLBOX);
+  Bind(wxEVT_MENU, &MainWindow::setToolboxVisible, this, ID_TOOLS_TOOLBOX);
 
   Bind(wxEVT_BUTTON, &MainWindow::expandPickedSegment, this, ID_SEGMENT_EXPAND);
   Bind(wxEVT_BUTTON, &MainWindow::contractPickedSegment, this, ID_SEGMENT_CONTRACT);
@@ -227,6 +250,8 @@ MainWindow::init()
   model->Bind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
   model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
   model->Bind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
+
+  Bind(wxEVT_UPDATE_UI, &MainWindow::updateUI, this);  // synchronize menu and toolbar buttons
 
   //==========================================================================================================================
   // Keyboard shortcuts for menu items
@@ -290,8 +315,11 @@ MainWindow::init()
   // Initial view
   //==========================================================================================================================
 
-  setToolboxVisible(false);
-  ui.model_display->renderShaded();
+  // We have to both set the menu item and call the function since wxEVT_MENU is not generated without actually clicking
+  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false);          setToolboxVisible(false);
+  rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true);         ui.model_display->renderShaded();
+  rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(true);      ui.model_display->setTwoSided(true);
+  rendering_menu->FindItem(ID_VIEW_FLAT_SHADING)->Check(false);  ui.model_display->setFlatShading(false);
 }
 
 MainWindow::~MainWindow()
@@ -633,10 +661,9 @@ MainWindow::pickSegments() const
 }
 
 void
-MainWindow::toggleToolbox(wxEvent & event)
+MainWindow::setToolboxVisible(wxCommandEvent & event)
 {
-  bool current = ui.toolbox->IsShown();
-  setToolboxVisible(!current);
+  setToolboxVisible(event.IsChecked());
 }
 
 void
@@ -650,6 +677,12 @@ MainWindow::setToolboxVisible(bool value)
     ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
   else
     ui.main_splitter->Unsplit(ui.toolbox);
+}
+
+void
+MainWindow::updateUI(wxUpdateUIEvent & event)
+{
+  // TODO
 }
 
 void

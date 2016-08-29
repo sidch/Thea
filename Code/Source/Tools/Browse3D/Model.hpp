@@ -425,12 +425,6 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
 
 }; // class Model
 
-wxDECLARE_EVENT(EVT_PATH_CHANGED,         wxCommandEvent);
-wxDECLARE_EVENT(EVT_GEOMETRY_CHANGED,     wxCommandEvent);
-wxDECLARE_EVENT(EVT_NEEDS_REDRAW,         wxCommandEvent);
-wxDECLARE_EVENT(EVT_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
-wxDECLARE_EVENT(EVT_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
-
 } // namespace Browse3D
 
 #endif

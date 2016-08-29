@@ -50,6 +50,7 @@ class wxListBox;
 class wxNotebook;
 class wxSplitterWindow;
 class wxTextCtrl;
+class wxUpdateUIEvent;
 
 namespace Browse3D {
 
@@ -198,7 +199,10 @@ class MainWindow : public wxFrame
     void syncSegments(wxEvent & event = DUMMY_EVENT);
 
     /** Show/hide the toolbox. */
-    void toggleToolbox(wxEvent & event = DUMMY_EVENT);
+    void setToolboxVisible(wxCommandEvent & event);
+
+    /** Synchronize states of menu and toolbar buttons etc. */
+    void updateUI(wxUpdateUIEvent & event);
 
   private:
     /** Get rid of all overlay models. */
