@@ -126,6 +126,15 @@ class ModelDisplay : public wxGLCanvas
     /** Check if flat shading is on/off. */
     bool flatShading() const { return !render_opts.useVertexNormals(); }
 
+    /** Check if two-sided lighting is on/off. */
+    bool twoSided() const;
+
+    /** Set two-sided lighting on/off. */
+    void setTwoSided(bool value);
+
+    /** Set flat shading on/off. */
+    void setFlatShading(bool value);
+
     /** Save a screenshot to a file. If the path is empty, a default path is used. */
     void saveScreenshot(std::string path = "") const;
 
@@ -152,10 +161,10 @@ class ModelDisplay : public wxGLCanvas
     void renderShadedWireframe(wxEvent & event = DUMMY_EVENT);
 
     /** Set two-sided lighting on/off. */
-    void setTwoSided(bool value);
+    void setTwoSided(wxCommandEvent & event);
 
     /** Set flat shading on/off. */
-    void setFlatShading(bool value);
+    void setFlatShading(wxCommandEvent & event);
 
     /** Save a screenshot to a file.. */
     void saveScreenshot(wxEvent & event = DUMMY_EVENT);

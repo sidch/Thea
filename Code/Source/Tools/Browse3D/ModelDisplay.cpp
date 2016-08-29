@@ -275,6 +275,12 @@ ModelDisplay::renderShadedWireframe(wxEvent & event)
   THEA_CONSOLE << "Rendering shaded faces with wireframe edges";
 }
 
+bool
+ModelDisplay::twoSided() const
+{
+  return GraphicsWidget::isTwoSided();
+}
+
 void
 ModelDisplay::setTwoSided(bool value)
 {
@@ -288,6 +294,12 @@ ModelDisplay::setTwoSided(bool value)
 }
 
 void
+ModelDisplay::setTwoSided(wxCommandEvent & event)
+{
+  setTwoSided(event.IsChecked());
+}
+
+void
 ModelDisplay::setFlatShading(bool value)
 {
   if (!render_opts.useVertexNormals() != value)
@@ -297,6 +309,12 @@ ModelDisplay::setFlatShading(bool value)
 
     THEA_CONSOLE << "Flat shading =" << value;
   }
+}
+
+void
+ModelDisplay::setFlatShading(wxCommandEvent & event)
+{
+  setFlatShading(event.IsChecked());
 }
 
 void
@@ -472,7 +490,7 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
     rs.setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); rs.popMatrix();
     rs.setMatrixMode(RenderSystem::MatrixMode::PROJECTION); rs.popMatrix();
 
-#define DRAW_AXIS_LABELS
+// #define DRAW_AXIS_LABELS
 #ifdef DRAW_AXIS_LABELS
 
   // For some reason drawing text disables this and doesn't restore it properly
