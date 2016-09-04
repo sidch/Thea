@@ -43,11 +43,13 @@
 #define __Thea_Graphics_DCELVertex_hpp__
 
 #include "../Common.hpp"
+#include "../Algorithms/PointTraitsN.hpp"
 #include "../AttributedObject.hpp"
 #include "DCELHalfedge.hpp"
 #include "GraphicsAttributes.hpp"
 
 namespace Thea {
+
 namespace Graphics {
 
 /**
@@ -206,7 +208,28 @@ class /* THEA_API */ DCELVertex
 
 }; // class DCELVertex
 
-} // namespace Thea
 } // namespace Graphics
+
+namespace Algorithms {
+
+// Specify that a mesh vertex is a logical 3D point. */
+template <typename VT, typename HT, typename FT>
+class IsPointN<Graphics::DCELVertex<VT, HT, FT>, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+// Map a mesh vertex to its 3D position. */
+template <typename VT, typename HT, typename FT>
+class PointTraitsN<Graphics::GeneralMeshVertex<VT, HT, FT>, 3>
+{
+  public:
+    static Vector3 const & getPosition(Graphics::DCELVertex<VT, ET, FT, AT> const & t) { return t.getPosition(); }
+};
+
+} // namespace Algorithms
+
+} // namespace Thea
 
 #endif
