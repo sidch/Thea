@@ -303,6 +303,11 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     /** Check if the face is a quad. */
     bool isQuad() const { return vertices.size() == 4; }
 
+    /** Compute the area of the face, assuming it is planar. */
+    Real computeArea() const
+    {
+    }
+
     /** Reverse the order in which vertices and edges wind around the face. The face normal is <b>not</b> modified. */
     void reverseWinding()
     {

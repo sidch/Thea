@@ -226,7 +226,7 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
     array_size_t n = vertices.size();
     proj_vertices.resize(n);
 
-    Vector3 normal = getNormal();
+    Vector3 normal = computeNormal();
     Vector3 axis0, axis1;
     normal.createOrthonormalBasis(axis0, axis1);
 
@@ -312,57 +312,6 @@ Polygon3::projArea() const
   }
 
   return 0.5f * a;
-}
-
-Real
-Polygon3::area() const
-{
-  array_size_t n = vertices.size();
-  if (n < 3)
-    return 0;
-
-  if (n == 3)
-    return 0.5f * (vertices[2].position - vertices[1].position).cross(vertices[0].position - vertices[1].position).length();
-
-  static Real const EPSILON = 1e-10f;
-
-  Vector3 normal = getNormal();
-  if (normal.squaredLength() < EPSILON)
-    return 0;
-
-  Real a = 0;
-  Vector3 const & last = vertices[n - 1].position;
-  Vector3 prev = last;
-  for (array_size_t p = 0; p < n; ++p)
-  {
-    Vector3 const & v = vertices[p].position;
-    a += (prev.cross(v)).dot(normal);
-    prev = v;
-  }
-
-  return std::fabs(0.5f * a);
-}
-
-Vector3
-Polygon3::getNormal() const
-{
-  array_size_t n = vertices.size();
-  if (n < 3)
-    return Vector3::zero();
-
-  static Real const EPSILON = 1e-10f;
-
-  for (array_size_t i = 0; i < n; ++i)
-  {
-    array_size_t i1 = (i + 1) % n;
-    array_size_t i2 = (i + 2) % n;
-    Vector3 normal = (vertices[i2].position - vertices[i1].position).cross(vertices[i].position - vertices[i1].position);
-
-    if (normal.squaredLength() >= EPSILON)
-      return normal.unit();
-  }
-
-  return Vector3::zero();
 }
 
 } // namespace Thea

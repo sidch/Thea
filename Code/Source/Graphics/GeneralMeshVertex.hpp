@@ -43,11 +43,13 @@
 #define __Thea_Graphics_GeneralMeshVertex_hpp__
 
 #include "../Common.hpp"
+#include "../Algorithms/PointTraitsN.hpp"
 #include "../AttributedObject.hpp"
 #include "../List.hpp"
 #include "GraphicsAttributes.hpp"
 
 namespace Thea {
+
 namespace Graphics {
 
 // Forward declarations
@@ -380,7 +382,28 @@ class /* THEA_API */ GeneralMeshVertex
 
 }; // class GeneralMeshVertex
 
-} // namespace Thea
 } // namespace Graphics
+
+namespace Algorithms {
+
+// Specify that a mesh vertex is a logical 3D point. */
+template <typename VT, typename ET, typename FT, template <typename T> class AT>
+class IsPointN<Graphics::GeneralMeshVertex<VT, ET, FT, AT>, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+// Map a mesh vertex to its 3D position. */
+template <typename VT, typename ET, typename FT, template <typename T> class AT>
+class PointTraitsN<Graphics::GeneralMeshVertex<VT, ET, FT, AT>, 3>
+{
+  public:
+    static Vector3 const & getPosition(Graphics::GeneralMeshVertex<VT, ET, FT, AT> const & t) { return t.getPosition(); }
+};
+
+} // namespace Algorithms
+
+} // namespace Thea
 
 #endif
