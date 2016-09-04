@@ -217,9 +217,9 @@ Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & 
 }
 
 Real
-Polygon2::area() const
+Polygon2::computeArea() const
 {
-  return impl->area();
+  return impl->computeArea();
 }
 
 } // namespace Thea

@@ -138,7 +138,7 @@ class THEA_API Polygon2
                              TriangulationOptions const & options = TriangulationOptions::defaults()) const;
 
     /** Compute the area of the polygon. */
-    Real area() const;
+    Real computeArea() const;
 
   private:
     Polygon3 * impl;

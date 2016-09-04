@@ -211,25 +211,4 @@ bool isSimilarTo(MeshGroup const & lhs, MeshGroup const & rhs);
 
 } // namespace Browse3D
 
-namespace Thea {
-namespace Algorithms {
-
-// Specify that a mesh vertex is a logical 3D point. */
-template <>
-class IsPointN<Browse3D::MeshVertex, 3>
-{
-  public:
-    static bool const value = true;
-};
-
-// Map a mesh vertex to its 3D position. */
-template <>
-struct PointTraitsN<Browse3D::MeshVertex, 3>
-{
-  static Vector3 const & getPosition(Browse3D::MeshVertex const & t) { return t.getPosition(); }
-};
-
-} // namespace Algorithms
-} // namespace Thea
-
 #endif
