@@ -71,6 +71,7 @@
 #define __Thea_Polygon3_hpp__
 
 #include "Common.hpp"
+#include "Algorithms/PointTraitsN.hpp"
 #include "Array.hpp"
 #include "AxisAlignedBox3.hpp"
 #include "Math.hpp"
@@ -78,24 +79,50 @@
 
 namespace Thea {
 
+namespace Polygon3Internal {
+
+/** A vertex plus an index. */
+struct THEA_API IndexedVertex
+{
+  /** Default constructor. */
+  IndexedVertex() {}
+
+  /** Initializing constructor. */
+  IndexedVertex(Vector3 const & position_, long index_) : position(position_), index(index_) {}
+
+  Vector3 position;  ///< The position of the vertex.
+  long index;  ///< The index of the vertex.
+};
+
+} // namespace Polygon3Internal
+
+namespace Algorithms {
+
+// Specify that a Polygon3 vertex is a logical 3D point. */
+template <>
+class IsPointN<Polygon3Internal::IndexedVertex, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+// Map a Polygon3 vertex to its 3D position. */
+template <>
+class PointTraitsN<Polygon3Internal::IndexedVertex, 3>
+{
+  public:
+    static Vector3 const & getPosition(Polygon3Internal::IndexedVertex const & t) { return t.position; }
+};
+
+} // namespace Algorithms
+
 /** A polygon in 3-space. Original code due to John W. Ratcliff. */
 class THEA_API Polygon3
 {
   public:
     THEA_DEF_POINTER_TYPES(Polygon3, shared_ptr, weak_ptr)
 
-    /** A vertex plus an index. */
-    struct THEA_API IndexedVertex
-    {
-      /** Default constructor. */
-      IndexedVertex() {}
-
-      /** Initializing constructor. */
-      IndexedVertex(Vector3 const & position_, long index_) : position(position_), index(index_) {}
-
-      Vector3 position;  ///< The position of the vertex.
-      long index;  ///< The index of the vertex.
-    };
+    typedef Polygon3Internal::IndexedVertex IndexedVertex;  ///< A vertex plus an index.
 
     /** Construct an empty polygon. */
     Polygon3();
@@ -136,10 +163,77 @@ class THEA_API Polygon3
     long triangulate(TheaArray<long> & tri_indices, Real epsilon = -1) const;
 
     /** Compute the area of the polygon. */
-    Real area() const;
+    Real computeArea() const { return computeArea(vertices.begin(), vertices.end()); }
+
+    /** Compute the area of an arbitrary polygon (does not require explicit creation of a Polygon3). */
+    template <typename VertexInputIterator> static Real computeArea(VertexInputIterator vbegin, VertexInputIterator vend)
+    {
+      typedef typename std::iterator_traits<VertexInputIterator>::value_type VertexT;
+
+      static Real const EPSILON = 1e-10f;
+
+      Vector3 normal = computeNormal(vbegin, vend);
+      if (normal.squaredLength() < EPSILON)
+        return 0;
+
+      VertexInputIterator v0 = vbegin;
+      VertexInputIterator v1 = incrementIterator(v0, vbegin, vend);
+
+      if (v1 == v0)  // polygon is a point
+        return 0;
+
+      Vector3 p0 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v0);
+      Vector3 c;
+      for (VertexInputIterator vi = vbegin; vi != vend; ++vi)
+      {
+        Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
+        c += p0.cross(p1);
+
+        p0 = p1;
+        v1 = incrementIterator(v1, vbegin, vend);
+      }
+
+      return std::fabs(0.5f * c.dot(normal));
+    }
 
     /** Compute the unit normal of the polygon. */
-    Vector3 getNormal() const;
+    Vector3 computeNormal() const { return computeNormal(vertices.begin(), vertices.end()); }
+
+    /**
+     * Compute the unit normal of an arbitrary polygon (does not require explicit creation of a Polygon3). Returns the zero
+     * vector if the polygon is degenerate or too small. PointTraitsN<T, 3> must be defined for the value_type T of the
+     * iterator.
+     */
+    template <typename VertexInputIterator> static Vector3 computeNormal(VertexInputIterator vbegin, VertexInputIterator vend)
+    {
+      typedef typename std::iterator_traits<VertexInputIterator>::value_type VertexT;
+
+      static Real const EPSILON = 1e-10f;
+
+      VertexInputIterator v0 = vbegin;
+      VertexInputIterator v1 = incrementIterator(v0, vbegin, vend);
+      VertexInputIterator v2 = incrementIterator(v1, vbegin, vend);
+
+      if (v1 == v0 || v2 == v0)  // too few vertices
+        return Vector3::zero();
+
+      Vector3 p0 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v0);
+      Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
+
+      for (VertexInputIterator vi = vbegin; vi != vend; ++vi)
+      {
+        Vector3 p2 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v2);
+        Vector3 normal = (p2 - p1).cross(p0 - p1);
+        if (normal.squaredLength() >= EPSILON)
+          return normal.unit();
+
+        p0 = p1;
+        p1 = p2;
+        v2 = incrementIterator(v2, vbegin, vend);
+      }
+
+      return Vector3::zero();  // degenerate or too small
+    }
 
     /** Get the bounding box of the polygon. */
     AxisAlignedBox3 const & getBounds();
@@ -254,6 +348,16 @@ class THEA_API Polygon3
     /** Check if a triangle can be removed. */
     bool snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices,
               Real epsilon) const;
+
+    /** Advance an iterator round the polygon with vertices [vbegin, vend). */
+    template <typename VertexInputIterator>
+    static VertexInputIterator incrementIterator(VertexInputIterator vi, VertexInputIterator vbegin, VertexInputIterator vend)
+    {
+      if (++vi != vend)
+        return vi;
+      else
+        return vbegin;
+    }
 
     TheaArray<IndexedVertex> vertices;
     long max_index;
