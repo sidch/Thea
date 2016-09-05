@@ -183,7 +183,7 @@ class THEA_API Polygon3
         return 0;
 
       Vector3 p0 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v0);
-      Vector3 c;
+      Vector3 c = Vector3::zero();
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi)
       {
         Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
