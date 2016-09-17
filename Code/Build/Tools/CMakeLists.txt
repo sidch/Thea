@@ -90,36 +90,9 @@ ELSE()
   FIND_PACKAGE(OpenGL)
 ENDIF()
 
-IF(WITH_QT4)
-  # Dependency: Qt4
-  FIND_PACKAGE(Qt4)
-
-  IF(QT_FOUND)
-    SET(QT_USE_QTOPENGL 1)
-    INCLUDE(${QT_USE_FILE})
-    SET(QT_INCLUDE_DIRS ${QT_INCLUDES})
-    ADD_DEFINITIONS(-DTHEA_QT4)
-
-    MESSAGE(STATUS "Found Qt4: headers at ${QT_INCLUDE_DIRS}, libraries at ${QT_LIBRARIES}")
-  ENDIF()
-ELSE()
-  # Dependency: Qt5
-  FIND_PACKAGE(Qt5Widgets)
-  FIND_PACKAGE(Qt5OpenGL)
-
-  IF(Qt5Widgets_FOUND AND Qt5OpenGL_FOUND)
-    SET(QT_FOUND TRUE)
-  ENDIF()
-
-  IF(QT_FOUND)
-    SET(QT_INCLUDE_DIRS ${Qt5Widgets_INCLUDE_DIRS} ${Qt5OpenGL_INCLUDE_DIRS})
-    SET(QT_LIBRARIES ${Qt5Widgets_LIBRARIES} ${Qt5OpenGL_LIBRARIES})
-    ADD_DEFINITIONS(${Qt5Widgets_DEFINITIONS} ${Qt5OpenGL_DEFINITIONS} -DTHEA_QT5)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS} ${Qt5OpenGL_EXECUTABLE_COMPILE_FLAGS}")
-
-    MESSAGE(STATUS "Found Qt5: headers at ${QT_INCLUDE_DIRS}, libraries at ${QT_LIBRARIES}")
-  ENDIF()
-ENDIF()
+# Dependency: wxWidgets
+FIND_PACKAGE(wxWidgets COMPONENTS core base gl REQUIRED)
+INCLUDE(${wxWidgets_USE_FILE})
 
 # Dependency: OpenCL
 FIND_PACKAGE(OpenCL)
@@ -152,9 +125,7 @@ ENDIF()
 
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
-                    ${CMAKE_CURRENT_BINARY_DIR}  # QT4_WRAP_UI generates ui_*.h files here
                     ${SourceRoot}
-                    ${QT_INCLUDE_DIRS}
                     ${OPENGL_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
@@ -171,65 +142,15 @@ SET(TheaAllTools )
 # Browse3D
 #===========================================================
 
-# [OS X and Qt5-specific hack] Given a set of Qt include directories, figure out the paths to the corresponding Qt libraries
-MACRO(THEA_GET_QT_LIBS headers)
-  SET(QT_LIBRARY_PATHS )
-
-  FOREACH(TGQL_HEADER ${headers})
-    GET_FILENAME_COMPONENT(TGQL_PATH ${TGQL_HEADER} ABSOLUTE)
-    SET(TGQL_OLD_PATH )
-    WHILE(TGQL_PATH)
-      IF("${TGQL_PATH}" STREQUAL "${TGQL_OLD_PATH}")
-        BREAK()
-      ENDIF()
-      IF(TGQL_PATH MATCHES "[.]framework$")
-        GET_FILENAME_COMPONENT(TGQL_COMPONENT ${TGQL_PATH} NAME_WE)
-        SET(QT_LIBRARY_PATHS ${QT_LIBRARY_PATHS} "${TGQL_PATH}/Versions/Current/${TGQL_COMPONENT}")
-        BREAK()
-      ENDIF()
-      SET(TGQL_OLD_PATH ${TGQL_PATH})
-      GET_FILENAME_COMPONENT(TGQL_PATH ${TGQL_OLD_PATH} PATH)
-    ENDWHILE()
-  ENDFOREACH()
-
-  LIST(REMOVE_DUPLICATES QT_LIBRARY_PATHS)
-ENDMACRO()
-
-IF(QT_FOUND AND OPENGL_FOUND)
-  IF(WITH_QT4)
-    # Run Qt .ui files through uic -- produces ui_*.h files in current directory
-    QT4_WRAP_UI(Browse3D_QtUicSources
-                ${SourceRoot}/Tools/Browse3D/MainWindow.ui)
-
-    # Run Qt .hpp files defining QObjects through moc -- produces moc_*.cxx files in source directory
-    QT4_WRAP_CPP(Browse3D_QtMocSources
-                 ${SourceRoot}/Tools/Browse3D/App.hpp
-                 ${SourceRoot}/Tools/Browse3D/MainWindow.hpp
-                 ${SourceRoot}/Tools/Browse3D/Model.hpp
-                 ${SourceRoot}/Tools/Browse3D/ModelDisplay.hpp)
-  ELSE()
-    # Run Qt .ui files through uic -- produces ui_*.h files in current directory
-    QT5_WRAP_UI(Browse3D_QtUicSources
-                ${SourceRoot}/Tools/Browse3D/MainWindow.ui)
-
-    # Run Qt .hpp files defining QObjects through moc -- produces moc_*.cxx files in source directory
-    QT5_WRAP_CPP(Browse3D_QtMocSources
-                 ${SourceRoot}/Tools/Browse3D/App.hpp
-                 ${SourceRoot}/Tools/Browse3D/MainWindow.hpp
-                 ${SourceRoot}/Tools/Browse3D/Model.hpp
-                 ${SourceRoot}/Tools/Browse3D/ModelDisplay.hpp)
-  ENDIF()
-
+IF(wxWidgets_FOUND AND OPENGL_FOUND)
   # Source file lists
   FILE(GLOB Browse3DSources
        ${SourceRoot}/Tools/Browse3D/*.cpp)
 
-  SET(Browse3DSources ${Browse3D_QtUicSources} ${Browse3D_QtMocSources} ${Browse3DSources})
-
   # Libraries to link to
   SET(Browse3DLibraries
       Thea
-      ${QT_LIBRARIES}
+      ${wxWidgets_LIBRARIES}
       ${Lib3ds_LIBRARIES}
       ${OPENGL_LIBRARIES}
       ${Boost_LIBRARIES}
@@ -248,12 +169,6 @@ IF(QT_FOUND AND OPENGL_FOUND)
 
   # Fix library install names on OS X
   IF(APPLE)
-    IF(NOT WITH_QT4)
-      THEA_GET_QT_LIBS("${QT_INCLUDE_DIRS}")
-      MESSAGE(STATUS "Actual locations of Qt Libraries: ${QT_LIBRARY_PATHS}")
-      SET(Browse3DLibraries ${Browse3DLibraries} ${QT_LIBRARY_PATHS})
-    ENDIF()
-
     INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
     OSX_FIX_DYLIB_REFERENCES(Browse3D "${Browse3DLibraries}")
   ENDIF()
