@@ -356,16 +356,6 @@ ModelDisplay::paintGL(wxPaintEvent & event)
     overlays[i]->draw(rs, render_opts);
 
   drawAxes(rs);
-#endif
-
-#if defined(THEA_OSX)
-
-  // For some reason this is necessary even if auto buffer swap is on
-#if defined(THEA_USE_QOPENGLWIDGET)
-  context()->swapBuffers(context()->surface());
-#else
-  swapBuffers();
-#endif
 
   glFlush();
   SwapBuffers();
