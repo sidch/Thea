@@ -55,6 +55,7 @@
 #include "../../Graphics/Texture.hpp"
 #include <wx/datetime.h>
 #include <wx/dcclient.h>
+#include <wx/image.h>
 #include <wx/stdpaths.h>
 
 namespace Browse3D {
@@ -836,17 +837,42 @@ ModelDisplay::saveScreenshot(std::string path) const
                             prefix + wxDateTime::Now().Format("-%Y-%m-%d-%H-%M-%S").ToStdString() + ".png");
   }
 
-  // FIXME
-// #ifdef THEA_USE_QOPENGLWIDGET
-//   QImage img = grabFramebuffer();
-// #else
-//   QImage img = grabFrameBuffer();
-// #endif
-//
-//   if (img.save(path))
-//     THEA_CONSOLE << "Saved screenshot to " << path;
-//   else
-//     THEA_ERROR << "Could not save screenshot to " << path;
+  // Following method adapted from
+  // http://www.organicvectory.com/index.php?option=com_content&view=article&id=73:save-a-screenshot
+
+  SetCurrent(*context);
+
+  // Retrieve size of frame buffer
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
+  // Allocate memory for the pixel data
+  int w = viewport[2];
+  int h = viewport[3];
+  wxImage img(w, h, false);
+
+  // Are we in single or double-buffered mode?
+  GLboolean double_buffer;
+  glGetBooleanv(GL_DOUBLEBUFFER, &double_buffer);
+
+  // Retrieve framebuffer pixels
+  glPushAttrib(GL_PIXEL_MODE_BIT);
+  glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadBuffer(double_buffer == GL_TRUE ? GL_BACK : GL_FRONT);  // this is the default, but be explicit in case it was
+                                                                  // modified elsewhere
+    glReadPixels(viewport[0], viewport[1], viewport[2], viewport[3], GL_RGB, GL_UNSIGNED_BYTE, img.GetData());
+  glPopClientAttrib();
+  glPopAttrib();
+
+  // Image is flipped vertically
+  img = img.Mirror(false);
+
+  // Save image
+  if (img.SaveFile(path, wxBITMAP_TYPE_PNG))
+    THEA_CONSOLE << "Saved screenshot to " << path;
+  else
+    THEA_ERROR << "Could not save screenshot to " << path;
 }
 
 void
