@@ -47,6 +47,7 @@
 #include "../../Plugin.hpp"
 #include "../../Graphics/RenderSystem.hpp"
 #include <wx/cmdline.h>
+#include <wx/image.h>
 #include <boost/program_options.hpp>
 #include <fstream>
 #include <sstream>
@@ -386,6 +387,8 @@ App::OnInit()
 
   THEA_CONSOLE << "Started Browse3D\n";
   THEA_CONSOLE << optsToString();
+
+  wxImage::AddHandler(new wxPNGHandler);
 
   createMainWindow();
 
