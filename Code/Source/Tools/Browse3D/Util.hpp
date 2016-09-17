@@ -46,9 +46,6 @@
 #include "../../Colors.hpp"
 #include "../../Ray3.hpp"
 
-class QPoint;
-class QPointF;
-
 namespace Thea {
 
 class Image;
@@ -83,23 +80,23 @@ int numPaletteColors();
 ColorRGB const & getPaletteColor(long i);
 
 // Map a label to a color.
-ColorRGB getLabelColor(QString const & label);
+ColorRGB getLabelColor(std::string const & label);
 
 // Compute a picking ray, given a screen point and a camera.
-Ray3 computePickRay(QPointF const & p, Graphics::Camera const & camera, int width, int height);
+Ray3 computePickRay(wxRealPoint const & p, Graphics::Camera const & camera, int width, int height);
 
 // Map mouse drags to transforms.
-Vector3 dragToTranslation(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera,
+Vector3 dragToTranslation(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera,
                           Real object_distance);
-Matrix3 dragToRotation(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera);
-Matrix3 dragToRotationAroundAxis(QPoint const & start, Vector3 const & start_pick, QPoint const & end, Vector3 const & axis,
+Matrix3 dragToRotation(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera);
+Matrix3 dragToRotationAroundAxis(wxPoint const & start, Vector3 const & start_pick, wxPoint const & end, Vector3 const & axis,
                                  Vector3 const & center, int width, int height, Graphics::Camera const & camera);
-Matrix3 dragToJoystickRotation(QPoint const & start, QPoint const & end, Vector3 const & center, Real offset, int width,
+Matrix3 dragToJoystickRotation(wxPoint const & start, wxPoint const & end, Vector3 const & center, Real offset, int width,
                                int height, Graphics::Camera const & camera);
-Real dragToScale(QPoint const & start, QPoint const & end, int width, int height, Graphics::Camera const & camera);
+Real dragToScale(wxPoint const & start, wxPoint const & end, int width, int height, Graphics::Camera const & camera);
 
-// Load an image from a file, with a subsequent call to fixChannelOrdering().
-bool loadImage(Image & image, QString const & filename);
+// Load an image from a file. Fixes channel ordering if necessary.
+bool loadImage(Image & image, std::string const & path);
 
 // Make sure image channels are in order RGB[A]. Currently works only for RGB_8U and RGBA_8U.
 void fixChannelOrdering(Image & image);

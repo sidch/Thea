@@ -189,7 +189,7 @@ class THEA_API Polygon3
         Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
         c += p0.cross(p1);
 
-        p0 = p1;        
+        p0 = p1;
         v1 = incrementIterator(v1, vbegin, vend);
       }
 
@@ -228,7 +228,7 @@ class THEA_API Polygon3
           return normal.unit();
 
         p0 = p1;
-        p1 = p2;        
+        p1 = p2;
         v2 = incrementIterator(v2, vbegin, vend);
       }
 

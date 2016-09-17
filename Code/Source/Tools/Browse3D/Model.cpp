@@ -54,11 +54,15 @@
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
-#include <QFileDialog>
-#include <QFileInfo>
-#include <QMouseEvent>
+#include <wx/filedlg.h>
 #include <algorithm>
 #include <fstream>
+
+wxDEFINE_EVENT(EVT_MODEL_PATH_CHANGED,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_GEOMETRY_CHANGED,     wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_REDRAW,         wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_SYNC_SAMPLES,   wxCommandEvent);
+wxDEFINE_EVENT(EVT_MODEL_NEEDS_SYNC_SEGMENTS,  wxCommandEvent);
 
 namespace Browse3D {
 
@@ -66,14 +70,14 @@ namespace ModelInternal {
 
 bool first_file_dialog = true;
 
-QString
+std::string
 getWorkingDir()
 {
   if (first_file_dialog)
-    if (!app().options().working_dir.isEmpty() && QFileInfo(app().options().working_dir).isDir())
+    if (!app().options().working_dir.empty() && FileSystem::directoryExists(app().options().working_dir))
       return app().options().working_dir;
 
-  return QString();
+  return std::string();
 }
 
 bool
@@ -107,7 +111,7 @@ static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 } // namespace ModelInternal
 
-Model::Model(QString const & initial_mesh)
+Model::Model(std::string const & initial_mesh)
 : has_features(false),
   has_face_labels(false),
   color(ModelInternal::DEFAULT_COLOR),
@@ -131,13 +135,13 @@ Model::~Model()
   delete kdtree;
 }
 
-QString
+std::string
 Model::getName() const
 {
   if (mesh_group)
-    return toQString(mesh_group->getName());
+    return mesh_group->getName();
   else if (point_cloud)
-    return toQString(point_cloud->getName());
+    return point_cloud->getName();
   else
     return "Untitled";
 }
@@ -173,25 +177,25 @@ Model::clearPoints()
 }
 
 bool
-Model::load(QString const & filename_)
+Model::load(std::string path_)
 {
-  if (filename_.isEmpty())
+  if (path_.empty())
     return false;
 
-  QFileInfo info(filename_);
-  if (!info.exists() || info.canonicalFilePath() == QFileInfo(filename).canonicalFilePath())
+  path_ = FileSystem::resolve(path_);
+  if (!FileSystem::fileExists(path_) || path_ == FileSystem::resolve(path))
     return false;
 
-  if (filename_.toLower().endsWith(".pts"))
+  if (endsWith(toLower(path_), ".pts"))
   {
     clear();
 
     point_cloud = PointCloudPtr(new PointCloud);
-    if (!point_cloud->load(toStdString(filename_)))
+    if (!point_cloud->load(path_))
       return false;
 
     bounds = point_cloud->getBounds();
-    filename = filename_;
+    path = path_;
   }
   else
   {
@@ -203,12 +207,12 @@ Model::load(QString const & filename_)
     static CodecOBJ<Mesh> const obj_codec(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
     try
     {
-      if (filename_.endsWith(".obj", Qt::CaseInsensitive))
-        new_mesh_group->load(toStdString(filename_), obj_codec);
+      if (endsWith(toLower(path_), ".obj"))
+        new_mesh_group->load(path_, obj_codec);
       else
-        new_mesh_group->load(toStdString(filename_));
+        new_mesh_group->load(path_);
     }
-    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Couldn't load model '%s'", toStdString(filename_).c_str())
+    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Couldn't load model '%s'", path_.c_str())
 
     invalidateAll();
 
@@ -219,18 +223,18 @@ Model::load(QString const & filename_)
 
     bounds = new_mesh_group->getBounds();
 
-    THEA_CONSOLE << "Loaded model '" << filename_ << "' with bounding box " << mesh_group->getBounds().toString();
+    THEA_CONSOLE << "Loaded model '" << path_ << "' with bounding box " << mesh_group->getBounds().toString();
 
-    filename = filename_;
+    path = path_;
 
-    loadSamples(getSamplesFilename());
-    loadSegments(getSegmentsFilename());
-    loadFeatures(getDefaultFeaturesFilename());
-    loadFaceLabels(getDefaultFaceLabelsFilename());
+    loadSamples(getSamplesPath());
+    loadSegments(getSegmentsPath());
+    loadFeatures(getDefaultFeaturesPath());
+    loadFaceLabels(getDefaultFaceLabelsPath());
   }
 
-  emit filenameChanged(filename);
-  emit geometryChanged(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_PATH_CHANGED));
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_GEOMETRY_CHANGED));
 
   return true;
 }
@@ -238,10 +242,13 @@ Model::load(QString const & filename_)
 bool
 Model::selectAndLoad()
 {
-  QString filename_ = QFileDialog::getOpenFileName(app().getMainWindow(), tr("Load model"), ModelInternal::getWorkingDir(),
-                                                   tr("Model files (*.3ds *.obj *.off *.off.bin *.pts)"));
+  wxFileDialog file_dialog(app().getMainWindow(), "Load model", "", "",
+                           "Model files (*.3ds *.obj *.off *.off.bin *.ply *.pts)|*.3ds;*.obj;*.off;*.off.bin;*.ply;*.pts",
+                           wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+  if (file_dialog.ShowModal() == wxID_CANCEL)
+      return false;
 
-  bool success = load(filename_);
+  bool success = load(file_dialog.GetPath().ToStdString());
   if (success)
     ModelInternal::first_file_dialog = false;
 
@@ -432,7 +439,7 @@ Model::pick(Ray3 const & ray)
 
     valid_pick = true;
 
-    emit needsRedraw(this);
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -442,23 +449,23 @@ void
 Model::invalidatePick()
 {
   valid_pick = false;
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 void
-Model::mousePressEvent(QMouseEvent * event)
+Model::mousePressEvent(wxMouseEvent & event)
 {
-  event->accept();
+  event.StopPropagation();
 }
 
 void
-Model::mouseMoveEvent(QMouseEvent * event)
+Model::mouseMoveEvent(wxMouseEvent & event)
 {
   // Currently no-op
 }
 
 void
-Model::mouseReleaseEvent(QMouseEvent * event)
+Model::mouseReleaseEvent(wxMouseEvent & event)
 {
   // Currently no-op
 }
@@ -483,11 +490,11 @@ void
 Model::addSample(Sample const & sample)
 {
   samples.push_back(sample);
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
-Model::addPickedSample(QString const & label, bool snap_to_vertex)
+Model::addPickedSample(std::string const & label, bool snap_to_vertex)
 {
   if (valid_pick)
   {
@@ -526,7 +533,7 @@ Model::addPickedSample(QString const & label, bool snap_to_vertex)
 
     samples.push_back(sample);
 
-    saveSamples(getSamplesFilename());
+    saveSamples(getSamplesPath());
   }
 
   return valid_pick;
@@ -538,8 +545,8 @@ Model::removeSample(long index)
   if (index >= 0 && index < (long)samples.size())
   {
     samples.erase(samples.begin() + index);
-    saveSamples(getSamplesFilename());
-    emit needsRedraw(this);
+    saveSamples(getSamplesPath());
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
 
@@ -547,11 +554,11 @@ void
 Model::selectSample(long index)
 {
   selected_sample = index;
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
-Model::loadSamples(QString const & filename_)
+Model::loadSamples(std::string const & path_)
 {
   using namespace ModelInternal;
 
@@ -559,7 +566,7 @@ Model::loadSamples(QString const & filename_)
   bool status = true;
   try
   {
-    std::ifstream in(toStdString(filename_).c_str());
+    std::ifstream in(path_.c_str());
     if (!in)
       throw Error("Could not open file");
 
@@ -617,20 +624,20 @@ Model::loadSamples(QString const & filename_)
             + bary[2] * ((*v2)->getPosition());
       }
 
-      samples[(array_size_t)i] = Sample(mesh, face_index, pos, toQString(type), toQString(label));
+      samples[(array_size_t)i] = Sample(mesh, face_index, pos, type, label);
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'",
-                             toStdString(filename_).c_str())
+  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
 
-  emit needsSyncSamples(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_SYNC_SAMPLES));
+
   return status;
 }
 
 bool
-Model::saveSamples(QString const & filename_) const
+Model::saveSamples(std::string const & path_) const
 {
-  std::ofstream out(toStdString(filename_).c_str(), std::ios::binary);
+  std::ofstream out(path_.c_str(), std::ios::binary);
   if (!out)
     return false;
 
@@ -669,25 +676,22 @@ Model::saveSamples(QString const & filename_) const
     if (bary[1] <= 0 && bary[1] >= -1.0e-06) bary[1] = 0;
     if (bary[2] <= 0 && bary[2] >= -1.0e-06) bary[2] = 0;
 
-    out << toStdString(sample.type) << ' ' << sample.face_index << ' '
-        << (double)bary[0] << ' ' << (double)bary[1] << ' ' << (double)bary[2] << ' ' << toStdString(sample.label) << ' '
+    out << sample.type << ' ' << sample.face_index << ' '
+        << (double)bary[0] << ' ' << (double)bary[1] << ' ' << (double)bary[2] << ' ' << sample.label << ' '
         << (double)sample.position[0] << ' ' << (double)sample.position[1] << ' ' << (double)sample.position[2] << std::endl;
   }
 
   return true;
 }
 
-QString
-Model::getSamplesFilename() const
+std::string
+Model::getSamplesPath() const
 {
-  QString sfn = getFilename() + ".picked";
-  if (QFileInfo(sfn).exists())
+  std::string sfn = getPath() + ".picked";
+  if (FileSystem::fileExists(sfn))
     return sfn;
   else
-  {
-    QFileInfo info(getFilename());
-    return info.dir().filePath(info.baseName() + ".picked");
-  }
+    return FilePath::concat(FilePath::parent(getPath()), FilePath::baseName(getPath()) + ".picked");
 }
 
 namespace ModelInternal {
@@ -797,7 +801,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
       }
     }
 
-    emit needsRedraw(this);
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 
   return isec.getTime();
@@ -817,20 +821,20 @@ Model::promotePickedSegment(long offset)
 
   THEA_CONSOLE << getName() << ": Segment depth promotion set to " << segment_depth_promotion;
 
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 void
 Model::addSegment(Segment const & segment)
 {
   segments.push_back(segment);
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
-Model::addPickedSegment(QString const & label)
+Model::addPickedSegment(std::string const & label)
 {
-  if (label.isEmpty())
+  if (label.empty())
   {
     THEA_WARNING << getName() << ": Empty label, cannot add segment";
     return false;
@@ -844,7 +848,7 @@ Model::addPickedSegment(QString const & label)
 
   picked_segment.setLabel(label);
   segments.push_back(picked_segment);
-  saveSegments(getSegmentsFilename());
+  saveSegments(getSegmentsPath());
 
   return true;
 }
@@ -855,8 +859,8 @@ Model::removeSegment(long index)
   if (index >= 0 && index < (long)segments.size())
   {
     segments.erase(segments.begin() + index);
-    saveSegments(getSegmentsFilename());
-    emit needsRedraw(this);
+    saveSegments(getSegmentsPath());
+    wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
 
@@ -874,11 +878,11 @@ void
 Model::selectSegment(long index)
 {
   selected_segment = index;
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 }
 
 bool
-Model::loadSegments(QString const & filename_)
+Model::loadSegments(std::string const & path_)
 {
   using namespace ModelInternal;
 
@@ -887,7 +891,7 @@ Model::loadSegments(QString const & filename_)
   bool status = true;
   try
   {
-    std::ifstream in(toStdString(filename_).c_str());
+    std::ifstream in(path_.c_str());
     if (!in)
       throw Error("Could not open file");
 
@@ -896,7 +900,7 @@ Model::loadSegments(QString const & filename_)
     std::string line;
     while (getNextNonBlankLine(in, line))
     {
-      QString label = toQString(trimWhitespace(line));
+      std::string label = trimWhitespace(line);
       Segment seg(label);
 
       if (!getNextNonBlankLine(in, line))
@@ -918,26 +922,27 @@ Model::loadSegments(QString const & filename_)
         segments.push_back(seg);
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model segments from '%s'", toStdString(filename_).c_str())
+  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model segments from '%s'", path_.c_str())
 
   if (!status)
     segments.clear();
 
-  emit needsSyncSegments(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_SYNC_SEGMENTS));
+
   return status;
 }
 
 bool
-Model::saveSegments(QString const & filename_) const
+Model::saveSegments(std::string const & path_) const
 {
-  std::ofstream out(toStdString(filename_).c_str(), std::ios::binary);
+  std::ofstream out(path_.c_str(), std::ios::binary);
   if (!out)
     return false;
 
   for (array_size_t i = 0; i < segments.size(); ++i)
   {
     Segment const & seg = segments[i];
-    out << toStdString(seg.getLabel()) << '\n';
+    out << seg.getLabel() << '\n';
 
     Segment::MeshSet const & meshes = seg.getMeshes();
     for (Segment::MeshSet::const_iterator mj = meshes.begin(); mj != meshes.end(); ++mj)
@@ -964,17 +969,14 @@ Model::saveSegments(QString const & filename_) const
   return true;
 }
 
-QString
-Model::getSegmentsFilename() const
+std::string
+Model::getSegmentsPath() const
 {
-  QString sfn = getFilename() + ".labels";
-  if (QFileInfo(sfn).exists())
+  std::string sfn = getPath() + ".labels";
+  if (FileSystem::fileExists(sfn))
     return sfn;
   else
-  {
-    QFileInfo info(getFilename());
-    return info.dir().filePath(info.baseName() + ".labels");
-  }
+    return FilePath::concat(FilePath::parent(getPath()), FilePath::baseName(getPath()) + ".labels");
 }
 
 namespace ModelInternal {
@@ -1021,15 +1023,15 @@ struct VertexFeatureVisitor
 } // namespace ModelInternal
 
 bool
-Model::loadFeatures(QString const & filename_)
+Model::loadFeatures(std::string const & path_)
 {
   using namespace ModelInternal;
 
-  features_filename = filename_;
+  features_path = path_;
 
   if (point_cloud)
   {
-    has_features = point_cloud->loadFeatures(toStdString(filename_));
+    has_features = point_cloud->loadFeatures(path_);
     return has_features;
   }
 
@@ -1044,7 +1046,7 @@ Model::loadFeatures(QString const & filename_)
   has_features = true;
   try
   {
-    std::ifstream in(toStdString(filename_).c_str());
+    std::ifstream in(path_.c_str());
     if (!in)
       throw Error("Could not open file");
 
@@ -1082,7 +1084,7 @@ Model::loadFeatures(QString const & filename_)
 
     if (feat_pts.empty())
     {
-      emit needsRedraw(this);
+      wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
       return true;
     }
 
@@ -1155,10 +1157,9 @@ Model::loadFeatures(QString const & filename_)
                                  feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
     mesh_group->forEachMeshUntil(&visitor);
   }
-  THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'",
-                             toStdString(filename_).c_str())
+  THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
 
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
   return has_features;
 }
@@ -1191,17 +1192,17 @@ class FaceLabeler
 } // namespace ModelInternal
 
 bool
-Model::loadFaceLabels(QString const & filename_)
+Model::loadFaceLabels(std::string const & path_)
 {
   has_face_labels = false;
 
   if (!mesh_group)
     return has_face_labels;
 
-  std::ifstream in(toStdString(filename_).c_str());
+  std::ifstream in(path_.c_str());
   if (!in)
   {
-    THEA_WARNING << "Could not open face labels file: " << filename_;
+    THEA_WARNING << "Could not open face labels file: " << path_;
     return has_face_labels;
   }
 
@@ -1216,7 +1217,7 @@ Model::loadFaceLabels(QString const & filename_)
     char * next;
     long n = strtol(line.c_str(), &next, 10);
     if (*next != 0)  // could not parse to end of string, not an integer
-      face_colors.push_back(getLabelColor(toQString(line)));
+      face_colors.push_back(getLabelColor(line));
     else
       face_colors.push_back(getPaletteColor(n));
   }
@@ -1226,11 +1227,10 @@ Model::loadFaceLabels(QString const & filename_)
     ModelInternal::FaceLabeler flab(face_colors);
     mesh_group->forEachMeshUntil(&flab);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'",
-                             toStdString(filename_).c_str())
+  THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
 
   has_face_labels = true;
-  emit needsRedraw(this);
+  wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
   return has_face_labels;
 }
@@ -1238,7 +1238,7 @@ Model::loadFaceLabels(QString const & filename_)
 namespace ModelInternal {
 
 std::string
-getDefaultFilename(std::string model_path, std::string const & query_path, TheaArray<std::string> const & query_exts)
+getDefaultPath(std::string model_path, std::string const & query_path, TheaArray<std::string> const & query_exts)
 {
   if (FileSystem::fileExists(query_path))
     return query_path;
@@ -1276,23 +1276,41 @@ getDefaultFilename(std::string model_path, std::string const & query_path, TheaA
 
 } // namespace ModelInternal
 
-QString
-Model::getDefaultFeaturesFilename() const
+std::string
+Model::getDefaultFeaturesPath() const
 {
   TheaArray<std::string> exts;
   exts.push_back(".arff");
   exts.push_back(".features");
 
-  return toQString(ModelInternal::getDefaultFilename(toStdString(filename), toStdString(app().options().features), exts));
+  return ModelInternal::getDefaultPath(path, app().options().features, exts);
 }
 
-QString
-Model::getDefaultFaceLabelsFilename() const
+std::string
+Model::getDefaultFaceLabelsPath() const
 {
   TheaArray<std::string> exts;
   exts.push_back(".seg");
 
-  return toQString(ModelInternal::getDefaultFilename(toStdString(filename), toStdString(app().options().face_labels), exts));
+  return ModelInternal::getDefaultPath(path, app().options().face_labels, exts);
+}
+
+void
+Model::registerDisplay(ModelDisplay * display)
+{
+  if (!display) return;
+
+  Bind(EVT_MODEL_GEOMETRY_CHANGED, &ModelDisplay::modelGeometryChanged, display);
+  Bind(EVT_MODEL_NEEDS_REDRAW, &ModelDisplay::modelNeedsRedraw, display);
+}
+
+void
+Model::deregisterDisplay(ModelDisplay * display)
+{
+  if (!display) return;
+
+  Unbind(EVT_MODEL_GEOMETRY_CHANGED, &ModelDisplay::modelGeometryChanged, display);
+  Unbind(EVT_MODEL_NEEDS_REDRAW, &ModelDisplay::modelNeedsRedraw, display);
 }
 
 AxisAlignedBox3 const &

@@ -719,8 +719,16 @@ GLCaps::checkBug_cubeMapBugs()
 
     if (!isHeadless())
     {
-      glDrawBuffer(GL_FRONT);  // GL_FRONT is guaranteed to be present regardless of what sort of output device we're using
+      glDrawBuffer(GL_FRONT);
       glReadBuffer(GL_FRONT);
+
+      // Normally, GL_FRONT is guaranteed to be present regardless of what sort of output device we're using. Except in Qt 5,
+      // QOpenGLWidget does not have a front buffer and renders everything offscreen.
+      if (glGetError() != GL_NO_ERROR)
+      {
+        glDrawBuffer(GL_COLOR_ATTACHMENT0_EXT);
+        glReadBuffer(GL_COLOR_ATTACHMENT0_EXT);
+      }
     }
 
     glClearColor(0, 1, 1, 1);

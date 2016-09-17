@@ -46,17 +46,8 @@
 #include "../../AffineTransform3.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/RenderOptions.hpp"
-#include <QGLWidget>
-#include <QPoint>
-#include <QPointF>
-
-#ifdef THEA_USE_QOPENGLWIDGET
-#  include <QOpenGLWidget>
-#else
-#  include <QGLWidget>
-#endif
-
-class QMouseEvent;
+#include "../../Plugins/GL/GLHeaders.hpp"
+#include <wx/glcanvas.h>
 
 namespace Thea {
 namespace Graphics {
@@ -73,15 +64,8 @@ namespace Browse3D {
 class Model;
 
 /** An OpenGL widget to display and interact with a model. */
-class ModelDisplay
-#ifdef THEA_USE_QOPENGLWIDGET
-: public QOpenGLWidget
-#else
-: public QGLWidget
-#endif
+class ModelDisplay : public wxGLCanvas
 {
-    Q_OBJECT
-
   private:
     typedef Graphics::Camera Camera;
     typedef Graphics::RenderOptions RenderOptions;
@@ -116,7 +100,13 @@ class ModelDisplay
 
   public:
     /** Constructs the widget as a viewer for a given model. */
-    explicit ModelDisplay(QWidget * parent, Model * model_);
+    explicit ModelDisplay(wxWindow * parent, Model * model_);
+
+    /** Destructor. */
+    ~ModelDisplay();
+
+    /** Set the reference to the model, which may be null. */
+    void setModel(Model * model_);
 
     /** Get the viewing camera. */
     Graphics::Camera const & getCamera() const { return camera; }
@@ -128,29 +118,16 @@ class ModelDisplay
      * Compute a ray that emanates from the viewer's eye and passes through a given pixel on the widget. The (roughly) inverse
      * operation is project().
      */
-    Ray3 computePickRay(QPointF const & p) const;
+    Ray3 computePickRay(wxRealPoint const & p) const;
 
     /** Project a 3D point to the viewing plane. The (roughly) inverse operation is computePickRay(). */
-    QPointF project(Vector3 const & p) const;
+    wxRealPoint project(Vector3 const & p) const;
 
     /** Check if flat shading is on/off. */
     bool flatShading() const { return !render_opts.useVertexNormals(); }
 
-  public slots:
-    /** Adjust the view to fit the current model. */
-    void fitViewToModel();
-
-    /** Called when the model geometry changes. */
-    void modelGeometryChanged();
-
-    /** Render shaded polygons, without edges. */
-    void renderShaded();
-
-    /** Render only polygon edges. */
-    void renderWireframe();
-
-    /** Render shaded polygons, with edges in a different color. */
-    void renderShadedWireframe();
+    /** Check if two-sided lighting is on/off. */
+    bool twoSided() const;
 
     /** Set two-sided lighting on/off. */
     void setTwoSided(bool value);
@@ -158,33 +135,60 @@ class ModelDisplay
     /** Set flat shading on/off. */
     void setFlatShading(bool value);
 
-    /** Save a screenshot to a file. If the path is null, a default path is generated. */
-    void saveScreenshot(QString path = "");
+    /** Save a screenshot to a file. If the path is empty, a default path is used. */
+    void saveScreenshot(std::string path = "") const;
 
-  protected:
-    /** [Qt] Called to initialize OpenGL. */
-    void initializeGL();
+    //=========================================================================================================================
+    // GUI callbacks
+    //=========================================================================================================================
 
-    /** [Qt] Called when widget is resized. */
-    void resizeGL(int w, int h);
+    /** Adjust the view to fit the current model. */
+    void fitViewToModel(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called to render display. */
-    void paintGL();
+    /** Called when the model geometry changes. */
+    void modelGeometryChanged(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called when a key is pressed. */
-    void keyPressEvent(QKeyEvent * event);
+    /** Called when the model needs to be redrawn. */
+    void modelNeedsRedraw(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called when a mouse button is pressed. */
-    void mousePressEvent(QMouseEvent * event);
+    /** Render shaded polygons, without edges. */
+    void renderShaded(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called when the mouse is moved. */
-    void mouseMoveEvent(QMouseEvent * event);
+    /** Render only polygon edges. */
+    void renderWireframe(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called when a mouse button is released. */
-    void mouseReleaseEvent(QMouseEvent * event);
+    /** Render shaded polygons, with edges in a different color. */
+    void renderShadedWireframe(wxEvent & event = DUMMY_EVENT);
 
-    /** [Qt] Called when the mouse wheel is turned. */
-    void wheelEvent(QWheelEvent * event);
+    /** Set two-sided lighting on/off. */
+    void setTwoSided(wxCommandEvent & event);
+
+    /** Set flat shading on/off. */
+    void setFlatShading(wxCommandEvent & event);
+
+    /** Save a screenshot to a file.. */
+    void saveScreenshot(wxEvent & event = DUMMY_EVENT);
+
+    /** Called to render display. */
+    void paintGL(wxPaintEvent & event);
+
+    /** Called when widget is resized. */
+    void resize(wxSizeEvent & event);
+
+    /** Called when a key is pressed. */
+    void keyPressEvent(wxKeyEvent & event);
+
+    /** Called when a mouse button is pressed. */
+    void mousePressEvent(wxMouseEvent & event);
+
+    /** Called when the mouse is moved. */
+    void mouseMoveEvent(wxMouseEvent & event);
+
+    /** Called when a mouse button is released. */
+    void mouseReleaseEvent(wxMouseEvent & event);
+
+    /** Called when the mouse wheel is turned. */
+    void wheelEvent(wxMouseEvent & event);
 
   private:
     /** Update the viewing camera to fit the current model. */
@@ -200,19 +204,19 @@ class ModelDisplay
     Real getModelDistance() const;
 
     /** Drag the view window with the mouse. */
-    void panView(QMouseEvent * event);
+    void panView(wxMouseEvent & event);
 
     /** Rotate the view with the mouse. */
-    void rotateView(QMouseEvent * event);
+    void rotateView(wxMouseEvent & event);
 
     /** Roll the view with the mouse around the viewing direction. */
-    void rollView(QMouseEvent * event);
+    void rollView(wxMouseEvent & event);
 
     /** Zoom the view in or out by dragging with the mouse. */
-    void zoomView(QMouseEvent * event);
+    void zoomView(wxMouseEvent & event);
 
-    /** Zoom the view in or out by turning the scroll wheel. */
-    void zoomView(QWheelEvent * event);
+    /** Zoom the view in or out by rotating the mouse wheel. */
+    void zoomViewWheel(wxMouseEvent & event);
 
     /** Multiply the current view transform by an increment. */
     void incrementViewTransform(AffineTransform3 const & tr);
@@ -223,10 +227,11 @@ class ModelDisplay
     /** Draw the background image. */
     void drawBackground(Graphics::RenderSystem & rs);
 
-#ifdef THEA_USE_QOPENGLWIDGET
-    /** Draw text on the window. */
-    void renderText(int x, int y, QString const & str, QFont const & font = QFont());
-#endif
+    /** Get the width of the widget. */
+    int width() const { return GetSize().GetWidth(); }
+
+    /** Get the height of the widget. */
+    int height() const { return GetSize().GetHeight(); }
 
     Model * model;
 
@@ -236,11 +241,13 @@ class ModelDisplay
 
     Mode mode;
     ViewEditMode view_edit_mode;
-    QPoint view_drag_start;
-    QPoint last_cursor;
+    wxPoint view_drag_start;
+    wxPoint last_cursor;
 
     Graphics::Texture * background_texture;
     Graphics::Shader * background_shader;
+
+    wxGLContext * context;
 
 }; // class ModelDisplay
 

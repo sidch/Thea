@@ -45,6 +45,8 @@
 #include "Common.hpp"
 #include "UnorderedMap.hpp"
 
+namespace Thea {
+
 /** Union-find data structure. Original code by Kartik Kukreja, https://github.com/kartikkukreja/ */
 template <typename T = long>
 class UnionFind
@@ -190,5 +192,7 @@ UnionFind<long>::getObjectID(long const & obj) const
   else
     return obj;
 }
+
+} // namespace Thea
 
 #endif

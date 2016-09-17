@@ -43,130 +43,246 @@
 #include "App.hpp"
 #include "Model.hpp"
 #include "ModelDisplay.hpp"
-#include "ui_MainWindow.h"
 #include "Util.hpp"
 #include "../../Application.hpp"
-#include <QActionGroup>
-#include <QDir>
-#include <QFileInfo>
-#include <QList>
-#include <QStringList>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include "../../FilePath.hpp"
+#include "../../FileSystem.hpp"
+#include <wx/accel.h>
+#include <wx/button.h>
+#include <wx/checkbox.h>
+#include <wx/listbox.h>
+#include <wx/menu.h>
+#include <wx/notebook.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/splitter.h>
+#include <wx/textctrl.h>
 
 namespace Browse3D {
 
-static int const SEGMENTS_TAB_INDEX  =  0;
-static int const POINTS_TAB_INDEX    =  1;
+// Definition of object declared in common header
+wxCommandEvent DUMMY_EVENT;
 
-MainWindow::MainWindow(QWidget * parent)
-: QMainWindow(parent),
-  ui(new Ui::MainWindow),
-  model_display(NULL)
+static int const SEGMENTS_TAB_INDEX  =     0;
+static int const POINTS_TAB_INDEX    =     1;
+static Real const MIN_SPLIT_SIZE     =   300;
+
+MainWindowUI::MainWindowUI()
+: model_display(NULL),
+  toolbox(NULL),
+  points_table(NULL),
+  point_label(NULL),
+  point_snap_to_vertex(NULL),
+  segments_table(NULL),
+  segment_label(NULL)
+{}
+
+MainWindow::MainWindow(wxWindow * parent)
+: BaseType(parent, wxID_ANY, "Browse3D", wxDefaultPosition, wxSize(800, 600)),
+  model(NULL)
 {
+  init();
 }
 
 void
 MainWindow::init()
 {
-  ui->setupUi(this);
-  setWindowTitle("");
+  //==========================================================================================================================
+  // Menu
+  //==========================================================================================================================
 
-  view_type_action_group = new QActionGroup(this);
-  ui->actionViewShaded->setActionGroup(view_type_action_group);
-  ui->actionViewWireframe->setActionGroup(view_type_action_group);
-  ui->actionViewShadedWireframe->setActionGroup(view_type_action_group);
+  // Set up the main menu
+  wxMenuBar * menubar = new wxMenuBar();
 
-  // Shortcuts for menu options
-  ui->actionFileOpen->setShortcuts(QKeySequence::Open);
-  ui->actionFileSaveAs->setShortcuts(QKeySequence::SaveAs);
-  ui->actionFileQuit->setShortcuts(QKeySequence::Quit);
+  // File Menu
+  wxMenu * file_menu = new wxMenu();
+  file_menu->Append(wxID_OPEN,    "&Open");
+  file_menu->Append(wxID_SAVEAS,  "&Save");
+  file_menu->AppendSeparator();
+  file_menu->Append(wxID_EXIT,    "&Quit");
+  menubar->Append(file_menu, "&File");
 
-  // Icons for menu options/buttons
-  ui->actionFileOpen->setIcon(QIcon::fromTheme("document-open",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/document-open.svg")))));
-  ui->actionFileSaveAs->setIcon(QIcon::fromTheme("document-save-as",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/document-save-as.svg")))));
+  // View menu
+  wxMenu * view_menu = new wxMenu();
+  wxMenu * rendering_menu = new wxMenu();
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED,            "&Shaded");
+    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe");
+    rendering_menu->AppendSeparator();
+    rendering_menu->AppendCheckItem(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
+    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADING,      "&Flat shading");
+  view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
+  view_menu->Append(ID_VIEW_FIT,            "&Fit view to model");
+  menubar->Append(view_menu, "&View");
 
-  ui->actionViewFitViewToModel->setIcon(QIcon::fromTheme("zoom-fit-best",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/zoom-fit-best.svg")))));
-  ui->actionViewWireframe->setIcon(QIcon::fromTheme("view-wireframe",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-wireframe.png")))));
-  ui->actionViewShaded->setIcon(QIcon::fromTheme("view-shaded",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-shaded.png")))));
-  ui->actionViewShadedWireframe->setIcon(QIcon::fromTheme("view-shaded-wireframe",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Custom/48x48/view-shaded-wireframe.png")))));
+  // Go menu
+  wxMenu * go_menu = new wxMenu();
+  go_menu->Append(ID_GO_PREV,           "&Previous model");
+  go_menu->Append(ID_GO_NEXT,           "&Next model");
+  go_menu->AppendSeparator();
+  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features");
+  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features");
+  menubar->Append(go_menu, "&Go");
 
-  ui->actionGoPrevious->setIcon(QIcon::fromTheme("go-previous",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/go-previous.svg")))));
-  ui->actionGoNext->setIcon(QIcon::fromTheme("go-next",
-        QIcon(toQString(Application::getFullResourcePath("Icons/Tango/scalable/go-next.svg")))));
+  // Tools menu
+  wxMenu * tools_menu = new wxMenu();
+  tools_menu->Append(ID_TOOLS_SCREENSHOT,        "&Save screenshot");
+  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX,  "&Toolbox");
+  menubar->Append(tools_menu, "&Tools");
+
+  // About menu
+  wxMenu * help_menu = new wxMenu();
+  help_menu->Append(wxID_ABOUT,  "&About");
+  menubar->Append(help_menu, "&Help");
+
+  SetMenuBar(menubar);
+
+  //==========================================================================================================================
+  // Toolbar
+  //==========================================================================================================================
+
+// #define SHOW_TOOLBAR
+#ifdef SHOW_TOOLBAR
+  wxToolBar * toolbar = CreateToolBar(wxTB_HORIZONTAL | wxTB_TEXT | wxTB_NOICONS, wxID_ANY, "Main toolbar");
+  toolbar->AddTool(wxID_OPEN, "Open", wxNullBitmap, "Open a file");
+  toolbar->AddTool(ID_GO_PREV, "Previous", wxNullBitmap, "Go to the previous model");
+  toolbar->AddTool(ID_GO_NEXT, "Next", wxNullBitmap, "Go to the next model");
+  toolbar->AddSeparator();
+  toolbar->AddTool(ID_VIEW_FIT, "Fit", wxNullBitmap, "Fit view to model");
+  toolbar->AddSeparator();
+  toolbar->AddRadioTool(ID_VIEW_SHADED, "S", wxNullBitmap, wxNullBitmap, "Shaded polygons");
+  toolbar->AddRadioTool(ID_VIEW_WIREFRAME, "W", wxNullBitmap, wxNullBitmap, "Wireframe");
+  toolbar->AddRadioTool(ID_VIEW_SHADED_WIREFRAME, "SW", wxNullBitmap, wxNullBitmap, "Shading + wireframe");
+  toolbar->AddSeparator();
+  toolbar->AddTool(ID_TOOLS_TOOLBOX, "Toolbox", wxNullBitmap, "Show/hide toolbox");
+
+  toolbar->Realize();
+#endif
+
+  //==========================================================================================================================
+  // Main layout
+  //==========================================================================================================================
+
+  static Real const SASH_GRAVITY = 0.67;
+  ui.main_splitter = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+                                          wxSP_3D | wxSP_BORDER | wxSP_PERMIT_UNSPLIT | wxSP_LIVE_UPDATE);
+  ui.main_splitter->SetSashGravity(SASH_GRAVITY);
+  ui.main_splitter->SetMinimumPaneSize(MIN_SPLIT_SIZE);
+  ui.main_splitter->SetSashInvisible(false);
 
   // Create the model
   model = new Model;
 
   // An OpenGL display box for the model
-  model_display = new ModelDisplay(this, model);
-  ui->modelLayout->addWidget(model_display);
-  model_display->show();
+  ui.model_display = new ModelDisplay(ui.main_splitter, model);
+
+  // A tabbed pane for the toolbox
+  ui.toolbox = new wxNotebook(ui.main_splitter, wxID_ANY);
 
   // Segment picking interface
-  ui->segmentsTable->setColumnCount(1);
-  ui->segmentsTable->horizontalHeader()->setStretchLastSection(true);
+  wxPanel * segments_panel = new wxPanel(ui.toolbox);
+  wxBoxSizer * segments_sizer = new wxBoxSizer(wxVERTICAL);
+  segments_panel->SetSizer(segments_sizer);
+  ui.segments_table = new wxListBox(segments_panel, wxID_ANY);
+  segments_sizer->Add(ui.segments_table, 1, wxEXPAND, 0);
+  wxButton * segment_add_btn     =  new wxButton(segments_panel, ID_SEGMENT_ADD,     "Add segment");
+  wxButton * segment_remove_btn  =  new wxButton(segments_panel, ID_SEGMENT_REMOVE,  "Remove segment");
+  wxBoxSizer * segments_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+  segments_btn_sizer->Add(segment_add_btn, 1, wxEXPAND | wxRIGHT, 5);
+  segments_btn_sizer->Add(segment_remove_btn, 1, wxEXPAND | wxLEFT, 5);
+  segments_sizer->Add(segments_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+  ui.toolbox->AddPage(segments_panel, "Segments");
 
   // Point picking interface
-  ui->pointsTable->setColumnCount(1);
-  ui->pointsTable->horizontalHeader()->setStretchLastSection(true);
+  wxPanel * points_panel = new wxPanel(ui.toolbox);
+  wxBoxSizer * points_sizer = new wxBoxSizer(wxVERTICAL);
+  points_panel->SetSizer(points_sizer);
+  ui.points_table = new wxListBox(points_panel, wxID_ANY);
+  points_sizer->Add(ui.points_table, 1, wxEXPAND, 0);
+  wxButton * point_add_btn     =  new wxButton(points_panel, ID_POINT_ADD,     "Add point");
+  wxButton * point_remove_btn  =  new wxButton(points_panel, ID_POINT_REMOVE,  "Remove point");
+  wxBoxSizer * points_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+  points_btn_sizer->Add(point_add_btn, 1, wxEXPAND | wxRIGHT, 5);
+  points_btn_sizer->Add(point_remove_btn, 1, wxEXPAND | wxLEFT, 5);
+  points_sizer->Add(points_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+  ui.point_snap_to_vertex = new wxCheckBox(points_panel, wxID_ANY, "Snap point to vertex");
+  points_sizer->Add(ui.point_snap_to_vertex, 0, wxEXPAND | wxTOP, 5);
+  ui.toolbox->AddPage(points_panel, "Points");
 
-  // Setup signal/slot connections
-  connect(ui->actionFileOpen, SIGNAL(triggered(bool)), this, SLOT(selectAndLoadModel()));
-  connect(ui->actionFileQuit, SIGNAL(triggered(bool)), this, SLOT(close()));
+  // The main UI is split into two panes
+  ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
 
-  connect(ui->actionViewFitViewToModel, SIGNAL(triggered(bool)), model_display, SLOT(fitViewToModel()));
-  connect(ui->actionViewWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderWireframe()));
-  connect(ui->actionViewShaded, SIGNAL(triggered(bool)), model_display, SLOT(renderShaded()));
-  connect(ui->actionViewShadedWireframe, SIGNAL(triggered(bool)), model_display, SLOT(renderShadedWireframe()));
-  connect(ui->actionViewTwoSidedLighting, SIGNAL(toggled(bool)), model_display, SLOT(setTwoSided(bool)));
-  connect(ui->actionViewFlatShading, SIGNAL(toggled(bool)), model_display, SLOT(setFlatShading(bool)));
+  // Do the top-level layout
+  wxBoxSizer * main_sizer = new wxBoxSizer(wxVERTICAL);
+  SetSizer(main_sizer);
+  main_sizer->Add(ui.main_splitter, 1, wxEXPAND);
 
-  connect(ui->actionGoPrevious, SIGNAL(triggered(bool)), this, SLOT(loadPreviousModel()));
-  connect(ui->actionGoNext,     SIGNAL(triggered(bool)), this, SLOT(loadNextModel()));
+  //==========================================================================================================================
+  // Callbacks
+  //==========================================================================================================================
 
-  connect(ui->actionGoPreviousFeatures, SIGNAL(triggered(bool)), this, SLOT(loadPreviousFeatures()));
-  connect(ui->actionGoNextFeatures,     SIGNAL(triggered(bool)), this, SLOT(loadNextFeatures()));
+  Bind(wxEVT_MENU, &MainWindow::selectAndLoadModel, this, wxID_OPEN);
+  Bind(wxEVT_MENU, &MainWindow::OnExit, this, wxID_EXIT);
 
-  connect(ui->actionToolsSaveScreenshot, SIGNAL(triggered(bool)), model_display, SLOT(saveScreenshot()));
-  connect(ui->actionToolsToolbox, SIGNAL(toggled(bool)), this, SLOT(setShowToolbox(bool)));
+  Bind(wxEVT_MENU, &ModelDisplay::renderShaded, ui.model_display, ID_VIEW_SHADED);
+  Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::renderShadedWireframe, ui.model_display, ID_VIEW_SHADED_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::setTwoSided, ui.model_display, ID_VIEW_TWO_SIDED);
+  Bind(wxEVT_MENU, &ModelDisplay::setFlatShading, ui.model_display, ID_VIEW_FLAT_SHADING);
+  Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
 
-  connect(model, SIGNAL(filenameChanged(QString const &)), this, SLOT(setWindowTitle(QString const &)));
-  connect(model, SIGNAL(needsSyncSamples(Model const *)), this, SLOT(syncSamples()));
-  connect(model, SIGNAL(needsSyncSegments(Model const *)), this, SLOT(syncSegments()));
+  Bind(wxEVT_MENU, &MainWindow::loadPreviousModel, this, ID_GO_PREV);
+  Bind(wxEVT_MENU, &MainWindow::loadNextModel, this, ID_GO_NEXT);
+  Bind(wxEVT_MENU, &MainWindow::loadPreviousFeatures, this, ID_GO_PREV_FEATURES);
+  Bind(wxEVT_MENU, &MainWindow::loadNextFeatures, this, ID_GO_NEXT_FEATURES);
 
-  connect(ui->toolBox, SIGNAL(currentChanged(int)), this, SLOT(update()));
+  Bind(wxEVT_MENU, &ModelDisplay::saveScreenshot, ui.model_display, ID_TOOLS_SCREENSHOT);
+  Bind(wxEVT_MENU, &MainWindow::setToolboxVisible, this, ID_TOOLS_TOOLBOX);
 
-  connect(ui->buttonExpandSegment, SIGNAL(clicked()), this, SLOT(expandPickedSegment()));
-  connect(ui->buttonContractSegment, SIGNAL(clicked()), this, SLOT(contractPickedSegment()));
-  connect(ui->buttonAddSegment, SIGNAL(clicked()), this, SLOT(addPickedSegment()));
-  connect(ui->buttonRemoveSegment, SIGNAL(clicked()), this, SLOT(removeSelectedSegment()));
-  connect(ui->segmentsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSegment()));
+  Bind(wxEVT_BUTTON, &MainWindow::expandPickedSegment, this, ID_SEGMENT_EXPAND);
+  Bind(wxEVT_BUTTON, &MainWindow::contractPickedSegment, this, ID_SEGMENT_CONTRACT);
+  Bind(wxEVT_BUTTON, &MainWindow::addPickedSegment, this, ID_SEGMENT_ADD);
+  Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSegment, this, ID_SEGMENT_REMOVE);
 
-  connect(ui->buttonAddPoint, SIGNAL(clicked()), this, SLOT(addPickedSample()));
-  connect(ui->buttonRemovePoint, SIGNAL(clicked()), this, SLOT(removeSelectedSample()));
-  connect(ui->pointsTable, SIGNAL(itemSelectionChanged()), this, SLOT(selectSample()));
+  Bind(wxEVT_BUTTON, &MainWindow::addPickedSample, this, ID_POINT_ADD);
+  Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSample, this, ID_POINT_REMOVE);
 
+  model->Bind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
+  model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
+  model->Bind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
+
+  Bind(wxEVT_UPDATE_UI, &MainWindow::updateUI, this);  // synchronize menu and toolbar buttons
+
+  //==========================================================================================================================
+  // Keyboard shortcuts for menu items
+  //==========================================================================================================================
+
+  static int const NUM_ACCEL = 6;
+  wxAcceleratorEntry accel[NUM_ACCEL];
+  accel[0].Set(wxACCEL_NORMAL, (int)'F', ID_VIEW_FIT);
+  accel[1].Set(wxACCEL_NORMAL, (int)',', ID_GO_PREV);
+  accel[2].Set(wxACCEL_NORMAL, (int)'.', ID_GO_NEXT);
+  accel[3].Set(wxACCEL_CTRL,   (int)'G', ID_TOOLS_SCREENSHOT);
+  accel[4].Set(wxACCEL_NORMAL, (int)'[', ID_GO_PREV_FEATURES);
+  accel[5].Set(wxACCEL_NORMAL, (int)']', ID_GO_NEXT_FEATURES);
+  wxAcceleratorTable accel_table(NUM_ACCEL, accel);
+  SetAcceleratorTable(accel_table);
+
+/*
   // Set/sync default toggle values
   ui->actionViewShaded->trigger();
 
   ui->actionViewTwoSidedLighting->setChecked(app().options().two_sided);
-  model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
+  ui.model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
 
   ui->actionViewFlatShading->setChecked(app().options().flat);
-  model_display->setFlatShading(ui->actionViewFlatShading->isChecked());
+  ui.model_display->setFlatShading(ui->actionViewFlatShading->isChecked());
 
   setPickSegments(false);
   setPickPoints(false);
   ui->actionToolsToolbox->setChecked(false);
   ui->pickPointsSnapToVertex->setChecked(false);
+*/
 
   // Load the initial model, if any
   bool loaded = model->load(app().options().model);
@@ -176,14 +292,14 @@ MainWindow::init()
 
     // Load overlays
     overlays.clear();
-    for (int i = 0; i < app().options().overlays.size(); ++i)
+    for (array_size_t i = 0; i < app().options().overlays.size(); ++i)
     {
       Model * overlay = new Model;
       loaded = overlay->load(app().options().overlays[i]);
       if (loaded)
       {
         overlay->setTransform(app().options().overlay_transforms[i]);
-        overlay->setColor(getPaletteColor(i));
+        overlay->setColor(getPaletteColor((long)i));
         overlays.push_back(overlay);
       }
       else
@@ -194,61 +310,130 @@ MainWindow::init()
       }
     }
   }
+
+  //==========================================================================================================================
+  // Initial view
+  //==========================================================================================================================
+
+  // We have to both set the menu item and call the function since wxEVT_MENU is not generated without actually clicking
+  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false);          setToolboxVisible(false);
+  rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true);         ui.model_display->renderShaded();
+  rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(true);      ui.model_display->setTwoSided(true);
+  rendering_menu->FindItem(ID_VIEW_FLAT_SHADING)->Check(false);  ui.model_display->setFlatShading(false);
 }
 
 MainWindow::~MainWindow()
 {
+  model->Unbind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
+  model->Unbind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
+  model->Unbind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
+
+  ui.model_display->setModel(NULL);  // this is necessary else we get a segfault when the base class destructor is called after
+                                     // this, and can't find the model to deregister callbacks when destroying the display.
+  clearOverlays();
   delete model;
-  delete ui;
 }
 
 ModelDisplay *
 MainWindow::getRenderDisplay()
 {
-  return model_display;
+  return ui.model_display;
 }
 
 void
-MainWindow::selectAndLoadModel()
+MainWindow::SetTitle(wxString const & title)
+{
+  if (title.empty())
+    BaseType::SetTitle("Browse3D");
+  else
+  {
+    std::string filename = FilePath::objectName(title.ToStdString());
+    BaseType::SetTitle(filename + " - Browse3D (" + title + ")");
+  }
+}
+
+//=============================================================================================================================
+// GUI callbacks
+//=============================================================================================================================
+
+void
+MainWindow::setTitle(wxEvent & event)
+{
+  SetTitle(model->getPath());
+}
+
+void
+MainWindow::selectAndLoadModel(wxEvent & event)
 {
   if (model->selectAndLoad())
     clearOverlays();
 }
 
 void
-getMeshPatterns(QStringList & patterns)
+getMeshPatterns(TheaArray<std::string> & patterns)
 {
-  patterns << "*.3ds" << "*.obj" << "*.off" << "*.off.bin" << "*.pts";
+  patterns.clear();
+  patterns.push_back("*.3ds");
+  patterns.push_back("*.obj");
+  patterns.push_back("*.off");
+  patterns.push_back("*.off.bin");
+  patterns.push_back("*.ply");
+  patterns.push_back("*.pts");
 }
 
 void
-getFeaturePatterns(QStringList & patterns)
+getFeaturePatterns(TheaArray<std::string> & patterns)
 {
-  patterns << "*.arff" << "*.arff.*" << "*.features" << "*.features.*";
+  patterns.clear();
+  patterns.push_back("*.arff");
+  patterns.push_back("*.arff.*");
+  patterns.push_back("*.features");
+  patterns.push_back("*.features.*");
 }
 
-QStringList
-getDirFiles(QString const & filename, QStringList const & patterns)
+long
+fileIndex(TheaArray<std::string> const & files, std::string const & file, TheaArray<std::string> const * patterns = NULL)
 {
-  QFileInfo info(filename);
-  QDir dir = info.dir();
-  if (dir.exists())
-    return dir.entryList(patterns, QDir::Files | QDir::Readable, QDir::Name | QDir::IgnoreCase);
+  std::string fname = FilePath::objectName(file);
+  for (array_size_t i = 0; i < files.size(); ++i)
+    if (fname == FilePath::objectName(files[i]))
+      return (long)i;
+
+  return -1;
+}
+
+long
+fileIndex(std::string const & dir, std::string const & file, TheaArray<std::string> & files,
+          TheaArray<std::string> const * patterns = NULL)
+{
+  files.clear();
+
+  if (FileSystem::fileExists(dir))
+  {
+    files.push_back(dir);
+  }
   else
-    return QStringList();
+  {
+    std::string pat = (patterns ? stringJoin(*patterns, ' ') : "");
+    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat, false) <= 0)
+      return -1;
+  }
+
+  return fileIndex(files, file, patterns);
 }
 
 void
-MainWindow::loadPreviousModel()
+MainWindow::loadPreviousModel(wxEvent & event)
 {
-  QStringList patterns; getMeshPatterns(patterns);
-  QStringList files = getDirFiles(model->getFilename(), patterns);
-  if (files.isEmpty())
+  TheaArray<std::string> patterns;
+  getMeshPatterns(patterns);
+
+  TheaArray<std::string> files;
+  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  if (files.empty())
     return;
 
-  QFileInfo info(model->getFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -256,92 +441,81 @@ MainWindow::loadPreviousModel()
   clearOverlays();
 
   if (index == 0)
-    model->load(info.dir().filePath(files.last()));
+    model->load(files[files.size() - 1]);
   else
-    model->load(info.dir().filePath(files[index - 1]));
+    model->load(files[index - 1]);
 }
 
 void
-MainWindow::loadNextModel()
+MainWindow::loadNextModel(wxEvent & event)
 {
-  QStringList patterns; getMeshPatterns(patterns);
-  QStringList files = getDirFiles(model->getFilename(), patterns);
-  if (files.isEmpty())
+  TheaArray<std::string> patterns;
+  getMeshPatterns(patterns);
+
+  TheaArray<std::string> files;
+  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  if (files.empty())
     return;
 
-  QFileInfo info(model->getFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   clearOverlays();
 
-  if (index == files.size() - 1)
-    model->load(info.dir().filePath(files.first()));
+  if (index == (long)files.size() - 1)
+    model->load(files[0]);
   else
-    model->load(info.dir().filePath(files[index + 1]));
+    model->load(files[index + 1]);
 }
 
 void
-MainWindow::loadPreviousFeatures()
+MainWindow::loadPreviousFeatures(wxEvent & event)
 {
-  QFileInfo fdir(app().options().features);
-  if (!fdir.isDir())
+  TheaArray<std::string> patterns;
+  getFeaturePatterns(patterns);
+
+  TheaArray<std::string> files;
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
+  if (files.empty())
     return;
 
-  QStringList patterns; getFeaturePatterns(patterns);
-  QStringList files = getDirFiles(app().options().features, patterns);
-  if (files.isEmpty())
-    return;
-
-  QFileInfo info(model->getFeaturesFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   if (index == 0)
-  {
-    model->loadFeatures(fdir.dir().filePath(files.last()));
-    qDebug() << info.dir().filePath(files.last());
-  }
+    model->loadFeatures(files[files.size() - 1]);
   else
-  {
-    model->loadFeatures(fdir.dir().filePath(files[index - 1]));
-    qDebug() << info.dir().filePath(files.last());
-  }
+    model->loadFeatures(files[index - 1]);
 
-  qDebug() << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesPath();
 }
 
 void
-MainWindow::loadNextFeatures()
+MainWindow::loadNextFeatures(wxEvent & event)
 {
-  QFileInfo fdir(app().options().features);
-  if (!fdir.isDir())
+  TheaArray<std::string> patterns;
+  getFeaturePatterns(patterns);
+
+  TheaArray<std::string> files;
+  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
+  if (files.empty())
     return;
 
-  QStringList patterns; getFeaturePatterns(patterns);
-  QStringList files = getDirFiles(app().options().features, patterns);
-  if (files.isEmpty())
-    return;
-
-  QFileInfo info(model->getFeaturesFilename());
-  int index = files.indexOf(info.fileName());
-  if (index < 0 || index >= files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
-  if (index == files.size() - 1)
-    model->loadFeatures(fdir.dir().filePath(files.first()));
+  if (index == (long)files.size() - 1)
+    model->loadFeatures(files[0]);
   else
-    model->loadFeatures(fdir.dir().filePath(files[index + 1]));
+    model->loadFeatures(files[index + 1]);
 
-  qDebug() << "Loaded features " << model->getFeaturesFilename();
+  THEA_CONSOLE << "Loaded features " << model->getFeaturesPath();
 }
 
 void
@@ -354,189 +528,164 @@ MainWindow::clearOverlays()
 }
 
 void
-MainWindow::setWindowTitle(QString const & title)
+MainWindow::addPickedSample(wxEvent & event)
 {
-  if (title.isEmpty())
-    BaseType::setWindowTitle("Browse3D");
-  else
-  {
-    QFileInfo info(title);
-    BaseType::setWindowTitle(info.fileName() + " - Browse3D (" + title + ")");
-  }
-}
+  std::string label = ui.point_label->GetValue().ToStdString();
+  THEA_CONSOLE << "Adding sample with label" << label;
 
-void
-MainWindow::addPickedSample()
-{
-  QString label = ui->pointLabel->text();
-  qDebug() << "Adding sample with label" << label;
-
-  model->addPickedSample(label, ui->pickPointsSnapToVertex->isChecked());
+  model->addPickedSample(label, ui.point_snap_to_vertex->GetValue());
   model->invalidatePick();
 
-  QTableWidgetItem * item = new QTableWidgetItem(label);
-  item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-  ui->pointsTable->setRowCount((int)model->numSamples());
-  ui->pointsTable->setItem((int)model->numSamples() - 1, 0, item);
+  ui.points_table->Append(label);
 }
 
 void
-MainWindow::syncSamples()
+MainWindow::syncSamples(wxEvent & event)
 {
-  ui->pointsTable->setRowCount((int)model->numSamples());
   TheaArray<Model::Sample> const & samples = model->getSamples();
+  wxArrayString labels;
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
-    qDebug() << "Adding sample with label" << samples[i].label;
-
-    QTableWidgetItem * item = new QTableWidgetItem(samples[i].label);
-    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-    ui->pointsTable->setItem((int)i, 0, item);
+    THEA_CONSOLE << "Adding sample with label" << samples[i].label;
+    labels.Add(samples[i].label);
   }
+
+  ui.points_table->Set(labels);
 }
 
 void
-MainWindow::removeSelectedSample()
+MainWindow::removeSelectedSample(wxEvent & event)
 {
-  QList<QTableWidgetItem *> sel = ui->pointsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  ui.points_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     return;
 
-  QTableWidgetItem * item = sel.front();
-  qDebug() << "Removing sample" << item->row() << "with label" << item->text();
+  int index = sel.Item(0);
+  model->selectSample(index);
+  THEA_CONSOLE << "Removing sample " << index << " with label " << ui.points_table->GetString(index);
 
-  model->removeSample(item->row());
-  ui->pointsTable->removeRow(item->row());
+  model->removeSample(index);
+  ui.points_table->Delete(index);
 }
 
 void
-MainWindow::selectSample()
+MainWindow::selectSample(wxEvent & event)
 {
-  QList<QTableWidgetItem *> sel = ui->pointsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  ui.points_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     model->selectSample(-1);
   else
-  {
-    QTableWidgetItem * item = sel.front();
-    model->selectSample(item->row());  // ignore column
-  }
+    model->selectSample(sel.Item(0));
 }
 
 bool
 MainWindow::pickPoints() const
 {
-  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == POINTS_TAB_INDEX;
+  return ui.toolbox->IsShown() && ui.toolbox->GetSelection() == POINTS_TAB_INDEX;
 }
 
 void
-MainWindow::setPickPoints(bool value)
+MainWindow::addPickedSegment(wxEvent & event)
 {
-  ui->toolBox->setVisible(value);
-  if (value)
-    ui->toolBox->setCurrentIndex(POINTS_TAB_INDEX);
-
-  update();
-}
-
-void
-MainWindow::addPickedSegment()
-{
-  QString label = ui->segmentLabel->text();
-  qDebug() << "Adding segment with label" << label;
+  std::string label = ui.segment_label->GetValue().ToStdString();
+  THEA_CONSOLE << "Adding segment with label" << label;
 
   model->addPickedSegment(label);
   model->invalidatePickedSegment();
 
-  QTableWidgetItem * item = new QTableWidgetItem(label);
-  item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-  ui->segmentsTable->setRowCount((int)model->numSegments());
-  ui->segmentsTable->setItem((int)model->numSegments() - 1, 0, item);
+  ui.segments_table->Append(label);
 }
 
 void
-MainWindow::expandPickedSegment()
+MainWindow::expandPickedSegment(wxEvent & event)
 {
   model->promotePickedSegment(1);
 }
 
 void
-MainWindow::contractPickedSegment()
+MainWindow::contractPickedSegment(wxEvent & event)
 {
   model->promotePickedSegment(-1);
 }
 
 void
-MainWindow::syncSegments()
+MainWindow::syncSegments(wxEvent & event)
 {
-  ui->segmentsTable->setRowCount((int)model->numSegments());
   TheaArray<Segment> const & segments = model->getSegments();
+  wxArrayString labels;
   for (array_size_t i = 0; i < segments.size(); ++i)
   {
-    qDebug() << "Adding segment with label" << segments[i].getLabel();
-
-    QTableWidgetItem * item = new QTableWidgetItem(segments[i].getLabel());
-    item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
-
-    ui->segmentsTable->setItem((int)i, 0, item);
+    THEA_CONSOLE << "Adding segment with label" << segments[i].getLabel();
+    labels.Add(segments[i].getLabel());
   }
+
+  ui.segments_table->Set(labels);
 }
 
 void
-MainWindow::removeSelectedSegment()
+MainWindow::removeSelectedSegment(wxEvent & event)
 {
-  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  ui.segments_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     return;
 
-  QTableWidgetItem * item = sel.front();
-  qDebug() << "Removing segment" << item->row() << "with label" << item->text();
+  int index = sel.Item(0);
+  model->selectSegment(index);
+  THEA_CONSOLE << "Removing segment " << index << " with label " << ui.segments_table->GetString(index);
 
-  model->removeSegment(item->row());
-  ui->segmentsTable->removeRow(item->row());
+  model->removeSegment(index);
+  ui.segments_table->Delete(index);
 }
 
 void
-MainWindow::selectSegment()
+MainWindow::selectSegment(wxEvent & event)
 {
-  QList<QTableWidgetItem *> sel = ui->segmentsTable->selectedItems();
-  if (sel.isEmpty())
+  wxArrayInt sel;
+  ui.segments_table->GetSelections(sel);
+  if (sel.GetCount() <= 0)
     model->selectSegment(-1);
   else
-  {
-    QTableWidgetItem * item = sel.front();
-    model->selectSegment(item->row());  // ignore column
-  }
+    model->selectSegment(sel.Item(0));
 }
 
 bool
 MainWindow::pickSegments() const
 {
-  return ui->toolBox->isVisible() && ui->toolBox->currentIndex() == SEGMENTS_TAB_INDEX;
+  return ui.toolbox->IsShown() && ui.toolbox->GetSelection() == SEGMENTS_TAB_INDEX;
 }
 
 void
-MainWindow::setPickSegments(bool value)
+MainWindow::setToolboxVisible(wxCommandEvent & event)
 {
-  ui->toolBox->setVisible(value);
+  setToolboxVisible(event.IsChecked());
+}
+
+void
+MainWindow::setToolboxVisible(bool value)
+{
+  if (ui.toolbox->IsShown() == value)
+    return;
+
+  ui.toolbox->Show(value);
   if (value)
-    ui->toolBox->setCurrentIndex(SEGMENTS_TAB_INDEX);
-
-  update();
+    ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
+  else
+    ui.main_splitter->Unsplit(ui.toolbox);
 }
 
 void
-MainWindow::setShowToolbox(bool value)
+MainWindow::updateUI(wxUpdateUIEvent & event)
 {
-  ui->toolBox->setVisible(value);
-  update();
+  // TODO
 }
 
 void
-MainWindow::closeEvent(QCloseEvent * event)
+MainWindow::OnExit(wxEvent & event)
 {
+  Close(true);
 }
 
 } // namespace Browse3D

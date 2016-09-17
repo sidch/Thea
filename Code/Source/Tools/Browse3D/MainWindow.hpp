@@ -43,31 +43,75 @@
 #define __Browse3D_MainWindow_hpp__
 
 #include "Common.hpp"
-#include <QMainWindow>
+#include <wx/frame.h>
 
-namespace Ui {
-
-class MainWindow;
-
-}
-
-class QActionGroup;
+class wxCheckBox;
+class wxListBox;
+class wxNotebook;
+class wxSplitterWindow;
+class wxTextCtrl;
+class wxUpdateUIEvent;
 
 namespace Browse3D {
 
 class Model;
 class ModelDisplay;
 
-/** The main application window. */
-class MainWindow : public QMainWindow
+/** Holds MainWindow UI elements. */
+struct MainWindowUI
 {
-    Q_OBJECT
+  wxSplitterWindow * main_splitter;
 
-    typedef QMainWindow BaseType;
+  ModelDisplay * model_display;
+  wxNotebook * toolbox;
+
+  wxListBox * points_table;
+  wxTextCtrl * point_label;
+  wxCheckBox * point_snap_to_vertex;
+
+  wxListBox * segments_table;
+  wxTextCtrl * segment_label;
+
+  /** Default constructor. Sets all pointers to null. */
+  MainWindowUI();
+
+}; // struct MainWindow
+
+/** The main application window. */
+class MainWindow : public wxFrame
+{
+  private:
+    typedef wxFrame BaseType;
 
   public:
+    /** Custom item IDs. */
+    enum ItemID
+    {
+      ID_VIEW_SHADED,
+      ID_VIEW_WIREFRAME,
+      ID_VIEW_SHADED_WIREFRAME,
+      ID_VIEW_TWO_SIDED,
+      ID_VIEW_FLAT_SHADING,
+      ID_VIEW_FIT,
+      ID_GO_PREV,
+      ID_GO_NEXT,
+      ID_GO_PREV_FEATURES,
+      ID_GO_NEXT_FEATURES,
+      ID_TOOLS_SCREENSHOT,
+      ID_TOOLS_TOOLBOX,
+
+      ID_SEGMENT_EXPAND,
+      ID_SEGMENT_CONTRACT,
+      ID_SEGMENT_ADD,
+      ID_SEGMENT_REMOVE,
+
+      ID_POINT_ADD,
+      ID_POINT_REMOVE,
+
+    }; // enum EventID
+
     /** Constructor. */
-    explicit MainWindow(QWidget * parent = NULL);
+    explicit MainWindow(wxWindow * parent = NULL);
 
     /** Destructor. */
     ~MainWindow();
@@ -96,77 +140,83 @@ class MainWindow : public QMainWindow
     /** Check if segment-selection is on. */
     bool pickSegments() const;
 
-  public slots:
-    /** Select and load a model. */
-    void selectAndLoadModel();
+    /** [wxWidgets] Set the window title. */
+    void SetTitle(wxString const & title);
 
-    /** Load the previous model in the directory. */
-    void loadPreviousModel();
+    //=========================================================================================================================
+    // GUI callbacks
+    //=========================================================================================================================
 
-    /** Load the next model in the directory. */
-    void loadNextModel();
-
-    /** Load the previous set of features in the features directory. */
-    void loadPreviousFeatures();
-
-    /** Load the next set of features in the features directory. */
-    void loadNextFeatures();
+    /** Called when program exits. */
+    void OnExit(wxEvent & event = DUMMY_EVENT);
 
     /** Set the window title. */
-    void setWindowTitle(QString const & title);
+    void setTitle(wxEvent & event = DUMMY_EVENT);
+
+    /** Select and load a model. */
+    void selectAndLoadModel(wxEvent & event = DUMMY_EVENT);
+
+    /** Load the previous model in the directory. */
+    void loadPreviousModel(wxEvent & event = DUMMY_EVENT);
+
+    /** Load the next model in the directory. */
+    void loadNextModel(wxEvent & event = DUMMY_EVENT);
+
+    /** Load the previous set of features in the features directory. */
+    void loadPreviousFeatures(wxEvent & event = DUMMY_EVENT);
+
+    /** Load the next set of features in the features directory. */
+    void loadNextFeatures(wxEvent & event = DUMMY_EVENT);
 
     /** Add the currently picked point to the set of samples. */
-    void addPickedSample();
+    void addPickedSample(wxEvent & event = DUMMY_EVENT);
 
     /** Select the sample indicated by the table selection. */
-    void selectSample();
+    void selectSample(wxEvent & event = DUMMY_EVENT);
 
     /** Remove the selected sample. */
-    void removeSelectedSample();
+    void removeSelectedSample(wxEvent & event = DUMMY_EVENT);
 
     /** Sync the displayed list of samples with the model. */
-    void syncSamples();
+    void syncSamples(wxEvent & event = DUMMY_EVENT);
 
     /** Add the currently picked segment to the set of segments. */
-    void addPickedSegment();
+    void addPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Expand the picked segment by one level in the hierarchy. */
-    void expandPickedSegment();
+    void expandPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Contract the picked segment by one level in the hierarchy. */
-    void contractPickedSegment();
+    void contractPickedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Select the segment indicated by the table selection. */
-    void selectSegment();
+    void selectSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Remove the selected segment. */
-    void removeSelectedSegment();
+    void removeSelectedSegment(wxEvent & event = DUMMY_EVENT);
 
     /** Sync the displayed list of segments with the model. */
-    void syncSegments();
+    void syncSegments(wxEvent & event = DUMMY_EVENT);
 
     /** Show/hide the toolbox. */
-    void setShowToolbox(bool value);
+    void setToolboxVisible(wxCommandEvent & event);
 
-    /** Turn point-picking on/off. */
-    void setPickPoints(bool value);
-
-    /** Turn segment-picking on/off. */
-    void setPickSegments(bool value);
-
-  protected:
-    /** Called just before the window is closed. */
-    void closeEvent(QCloseEvent * event);
+    /** Synchronize states of menu and toolbar buttons etc. */
+    void updateUI(wxUpdateUIEvent & event);
 
   private:
     /** Get rid of all overlay models. */
     void clearOverlays();
 
-    Ui::MainWindow * ui;
-    QActionGroup * view_type_action_group;
+    /** Show or hide the toolbox. */
+    void setToolboxVisible(bool value);
+
+    // Models
     Model * model;
     TheaArray<Model *> overlays;
-    ModelDisplay * model_display;
+
+    // Widgets
+    MainWindowUI ui;
 
 }; // class MainWindow
 
