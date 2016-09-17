@@ -116,12 +116,12 @@ THEA_API long stringSplit(std::string const & s, std::string const & split_chars
  * Concatenate a sequence of serializable objects (typically strings), separated by a padding character, string or other
  * serializable object.
  */
-template <typename StringIterator, typename C>
+template <typename IteratorT, typename C>
 std::string
-stringJoin(StringIterator begin, StringIterator end, C const & padding)
+stringJoin(IteratorT begin, IteratorT end, C const & padding)
 {
   std::ostringstream out;
-  for (StringIterator iter = begin; iter != end; ++iter)
+  for (IteratorT iter = begin; iter != end; ++iter)
   {
     if (iter != begin) out << padding;
     out << *iter;
