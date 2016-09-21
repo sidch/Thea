@@ -43,6 +43,7 @@
 #define __Thea_Graphics_MeshGroup_hpp__
 
 #include "../Common.hpp"
+#include "../FilePath.hpp"
 #include "../NamedObject.hpp"
 #include "../Serializable.hpp"
 #include "../Set.hpp"
@@ -460,6 +461,8 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
 
       BinaryInputStream in(path, Endianness::LITTLE);
       mesh_codec->deserializeMeshGroup(*this, in, false, callback);
+
+      setName(FilePath::objectName(path));
 
       updateBounds();
     }
