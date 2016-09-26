@@ -43,6 +43,7 @@
 #define __Thea_VectorN_hpp__
 
 #include "Common.hpp"
+#include "Algorithms/FastCopy.hpp"
 #include "Math.hpp"
 #include <boost/type_traits/is_arithmetic.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -56,6 +57,7 @@ namespace Thea {
 
 // Forward declarations
 template <long N, typename T> class VectorN;
+template <long M, long N, typename T> class MatrixMN;
 
 /**
  * Namespace for internal classes and functions.
@@ -100,9 +102,26 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     /** Copy constructor. */
     template <typename U> VectorNBase(VectorNBase<N, U> const & src)
     {
-      for (long i = 0; i < N; ++i)
-        values[i] = static_cast<T>(src[i]);
+      Algorithms::fastCopy(&src[0], &src[0] + N, &values[0]);
     }
+
+    /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorNBase(MatrixMN<N, 1, U> const & src)
+    {
+      Algorithms::fastCopy(&src(0, 0), &src(0, 0) + N, &values[0]);
+    }
+
+    /** Initialize from a row matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorNBase(MatrixMN<1, N, U> const & src)
+    {
+      Algorithms::fastCopy(&src(0, 0), &src(0, 0) + N, &values[0]);
+    }
+
+    /** Convert the vector to a column matrix (not defined unless MatrixMN.hpp is included). */
+    MatrixMN<N, 1, T> toColumnMatrix() const;
+
+    /** Convert the vector to a row matrix (not defined unless MatrixMN.hpp is included). */
+    MatrixMN<1, N, T> toRowMatrix() const;
 
     /** Set all elements of the vector to the same value. */
     void fill(T const & fill_value)
@@ -140,6 +159,12 @@ class /* THEA_DLL_LOCAL */ VectorNBase
 
     /** Access an element of the vector mutably. */
     template <typename IndexT> T & operator[](IndexT i) { return values[i]; }
+
+    /** Access an element of the vector immutably. */
+    template <typename IndexT> T const & operator()(IndexT i) const { return values[i]; }
+
+    /** Access an element of the vector mutably. */
+    template <typename IndexT> T & operator()(IndexT i) { return values[i]; }
 
     /** Equality test. */
     bool operator==(VectorT const & rhs) const
@@ -314,6 +339,17 @@ class /* THEA_DLL_LOCAL */ VectorNBase
 
       return result;
     }
+
+    /**
+     * Construct a matrix as the outer product <code>uv^T</code> of this vector u and a second vector \a v. The element (i, j)
+     * of the matrix is u[i] * v[j]. This function is not defined unless MatrixMN.hpp is included.
+     *
+     * @note The same effect can be achieved (with two extra memory copies) by casting the vectors to a column and a row matrix
+     *   -- toColumnMatrix() and toRowMatrix() -- respectively, and then multiplying them.
+     *
+     * @param v The second vector in the product.
+     */
+    MatrixMN<N, N, T> outerProduct(VectorT const & v) const;
 
     /**
      * Get the minimum component in the vector (according to signed comparison). To compare absolute values, use minAbs()
@@ -518,6 +554,12 @@ class /* THEA_API */ VectorN : public Internal::VectorNBase<N, T>
 
     /** Copy constructor. */
     template <typename U> VectorN(VectorN<N, U> const & src) : BaseT(src) {}
+
+    /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorN(MatrixMN<N, 1, U> const & src) : BaseT(src) {}
+
+    /** Initialize from a row matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorN(MatrixMN<1, N, U> const & src) : BaseT(src) {}
 
 }; // class VectorN
 

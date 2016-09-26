@@ -43,6 +43,7 @@
 #define __Thea_MatrixMN_hpp__
 
 #include "Common.hpp"
+#include "Algorithms/FastCopy.hpp"
 #include "AddressableMatrix.hpp"
 #include "MatrixInvert.hpp"
 #include "VectorN.hpp"
@@ -86,6 +87,18 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
 
     /** Element access. Use this whenever possible to avoid the virtual function overhead of get() or set(). */
     T & operator()(long row, long col) { return m[row][col]; }
+
+    /** Element access on the matrix unrolled by rows. */
+    T const & operator()(long index) const { return m[index / N][index % N]; }
+
+    /** Element access on the matrix unrolled by rows. */
+    T & operator()(long index) { return m[index / N][index % N]; }
+
+    /** Element access on the matrix unrolled by rows. */
+    T const & operator[](long index) const { return m[index / N][index % N]; }
+
+    /** Element access on the matrix unrolled by rows. */
+    T & operator[](long index) { return m[index / N][index % N]; }
 
     T const & get(long row, long col) const { return m[row][col]; }
     T & getMutable(long row, long col) { return m[row][col]; }
@@ -503,6 +516,95 @@ class /* THEA_API */ MatrixMN<N, N, T> : public Internal::SquareMatrixN<N, T>
     }
 
 }; // class MatrixMN<M, M, T>
+
+/**
+ * A column vector as an M x 1 matrix, where M is any <b>positive</b> (non-zero) integer and T is a field. Generally used to
+ * reinterpret VectorN objects as matrices and vice versa. This involves a copy and cannot be used to modify the original
+ * objects.
+ */
+template <long M, typename T>
+class /* THEA_API */ MatrixMN<M, 1, T> : public Internal::MatrixMNBase<M, 1, T>
+{
+  private:
+    typedef Internal::MatrixMNBase<M, 1, T> BaseT;
+
+  public:
+    /** Default constructor (does not initialize anything). */
+    MatrixMN() {}
+
+    /** Initialize all components to a single value. */
+    explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
+
+    /** Initialize from a vector. */
+    template <typename U> explicit MatrixMN(Internal::VectorNBase<M, U> const & v)
+    {
+      Algorithms::fastCopy(&v[0], &v[0] + M, &(*this)(0, 0));
+    }
+
+    /** Convert to a vector. */
+    VectorN<M, T> toVector() const { return VectorN<M, T>(*this); }
+
+}; // class MatrixMN<M, 1, T>
+
+/**
+ * A row vector as a 1 x N matrix, where N is any <b>positive</b> (non-zero) integer and T is a field. Generally used to
+ * reinterpret VectorN objects as matrices and vice versa. This involves a copy and cannot be used to modify the original
+ * objects.
+ */
+template <long N, typename T>
+class /* THEA_API */ MatrixMN<1, N, T> : public Internal::MatrixMNBase<1, N, T>
+{
+  private:
+    typedef Internal::MatrixMNBase<1, N, T> BaseT;
+
+  public:
+    /** Default constructor (does not initialize anything). */
+    MatrixMN() {}
+
+    /** Initialize all components to a single value. */
+    explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
+
+    /** Initialize from a vector. */
+    template <typename U> explicit MatrixMN(Internal::VectorNBase<N, U> const & v)
+    {
+      Algorithms::fastCopy(&v[0], &v[0] + N, &(*this)(0, 0));
+    }
+
+    /** Convert to a vector. */
+    VectorN<N, T> toVector() const { return VectorN<N, T>(*this); }
+
+}; // class MatrixMN<1, N, T>
+
+namespace Internal {
+
+// Definitions of VectorN member functions to convert to N x 1 and 1 x N matrices, and evaluate the outer product.
+template <long N, typename T>
+MatrixMN<N, 1, T>
+VectorNBase<N, T>::toColumnMatrix() const
+{
+  return MatrixMN<N, 1, T>(*this);
+}
+
+template <long N, typename T>
+MatrixMN<1, N, T>
+VectorNBase<N, T>::toRowMatrix() const
+{
+  return MatrixMN<1, N, T>(*this);
+}
+
+template <long N, typename T>
+MatrixMN<N, N, T>
+VectorNBase<N, T>::outerProduct(VectorN<N, T> const & v) const
+{
+  MatrixMN<N, N, T> op;
+  for (long i = 0; i < N; ++i)
+    for (long j = 0; j < N; ++j)
+      op(i, j) = (*this)[i] * v[j];
+
+  return op;
+}
+
+} // namespace Internal
 
 /** Pre-multiply by a vector. */
 template <long M, long N, typename T>

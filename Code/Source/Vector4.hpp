@@ -65,6 +65,12 @@ class /* THEA_API */ VectorN<4, T> : public Internal::VectorNBase<4, T>
     /** Copy constructor. */
     template <typename U> VectorN(VectorN<4, U> const & src) : BaseT(src) {}
 
+    /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorN(MatrixMN<4, 1, U> const & src) : BaseT(src) {}
+
+    /** Initialize from a row matrix (not defined unless MatrixMN.hpp is included). */
+    template <typename U> explicit VectorN(MatrixMN<1, 4, U> const & src) : BaseT(src) {}
+
     /** Initialize all components of the vector. */
     VectorN(T const & x_, T const & y_, T const & z_, T const & w_)
     {

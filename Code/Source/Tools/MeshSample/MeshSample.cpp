@@ -1,4 +1,5 @@
 #include "../../Common.hpp"
+#include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -30,7 +31,8 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << " -nN   : Generate N samples [=5000]";
   THEA_CONSOLE << " -s[F] : Generate approximately uniformly separated samples";
   THEA_CONSOLE << "         with an initial oversampling factor of F";
-  THEA_CONSOLE << " -v    : Generate samples only at mesh vertices (ignores -n)";
+  THEA_CONSOLE << " -v    : Generate samples at mesh vertices (ignores -n)";
+  THEA_CONSOLE << " -f    : Generate samples at face centers (ignores -n)";
   THEA_CONSOLE << " -id   : Write the index of the face (or if -v, the vertex)";
   THEA_CONSOLE << "         from which each sample was drawn";
 
@@ -72,6 +74,28 @@ struct VertexCollector
   TheaArray<long> * indices;
 };
 
+struct FaceCenterCollector
+{
+  FaceCenterCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_, TheaArray<long> * indices_)
+  : positions(positions_), normals(normals_), indices(indices_) {}
+
+  bool operator()(Mesh const & mesh)
+  {
+    for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    {
+      positions->push_back(CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd()));
+      normals->push_back(fi->getNormal());
+      indices->push_back(fi->attr().index);
+    }
+
+    return false;
+  }
+
+  TheaArray<Vector3> * positions;
+  TheaArray<Vector3> * normals;
+  TheaArray<long> * indices;
+};
+
 int
 main(int argc, char * argv[])
 {
@@ -84,6 +108,7 @@ main(int argc, char * argv[])
   bool uniformly_separated = false;
   float oversampling_factor = -1;
   bool vertex_samples = false;
+  bool face_samples = false;
   bool output_ids = false;
 
   int curr_pos_arg = 0;
@@ -94,6 +119,8 @@ main(int argc, char * argv[])
     {
       if (arg == "-v")
         vertex_samples = true;
+      else if (arg == "-f")
+        face_samples = true;
       else if (arg == "-id")
         output_ids = true;
       else if (beginsWith(arg, "-s"))
@@ -156,12 +183,23 @@ main(int argc, char * argv[])
     TheaArray<Vector3> normals;
     TheaArray<long> indices;
 
+    bool do_random_sampling = true;
+
     if (vertex_samples)
     {
       VertexCollector collector(&positions, &normals, &indices);
       mg.forEachMeshUntil(&collector);
+      do_random_sampling = false;
     }
-    else
+
+    if (face_samples)
+    {
+      FaceCenterCollector collector(&positions, &normals, &indices);
+      mg.forEachMeshUntil(&collector);
+      do_random_sampling = false;
+    }
+
+    if (do_random_sampling)
     {
       MeshSampler<Mesh> sampler(mg);
       TheaArray< MeshSampler<Mesh>::Triangle const * > tris;

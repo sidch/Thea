@@ -129,14 +129,22 @@ FILE_PATTERNS          = *.c \
                          *.MM \
                          *.PY
 RECURSIVE              = YES
-EXCLUDE                = ../Source/Test/ ../Source/Tools/
-EXCLUDE               += ../Source/Algorithms/dx/ ../Source/Algorithms/StanHull/
-EXCLUDE               += ../Source/Algorithms/NNLS/ ../Source/Algorithms/Triangle/
+EXCLUDE                = ../Source/Test/
+EXCLUDE               += ../Source/Tools/
+EXCLUDE               += ../Source/Triangle/
+EXCLUDE               += ../Source/Algorithms/dx/
+EXCLUDE               += ../Source/Algorithms/StanHull/
+EXCLUDE               += ../Source/Algorithms/NNLS/
 EXCLUDE               += ../Source/Algorithms/BloomenthalPolygonizer/
 EXCLUDE               += ../Source/Algorithms/fibheap/
+EXCLUDE               += ../Source/Algorithms/miniball/
 EXCLUDE               += ../Source/Algorithms/ShapeFeatures/LFD/
-EXCLUDE               += ../Source/Plugins/GL/glew.c ../Source/Plugins/GL/glew.h
-EXCLUDE               += ../Source/Plugins/GL/wglew.h ../Source/Plugins/GL/glxew.h
+EXCLUDE               += ../Source/Plugins/GL/glew.c
+EXCLUDE               += ../Source/Plugins/GL/glew.h
+EXCLUDE               += ../Source/Plugins/GL/wglew.h
+EXCLUDE               += ../Source/Plugins/GL/glxew.h
+EXCLUDE               += ../Source/Plugins/CSPARSE/csparse.c
+EXCLUDE               += ../Source/Plugins/CSPARSE/csparse.h
 EXCLUDE_SYMLINKS       = NO
 EXCLUDE_PATTERNS       =
 EXCLUDE_SYMBOLS        =
