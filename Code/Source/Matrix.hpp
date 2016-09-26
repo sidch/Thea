@@ -588,7 +588,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     }
 
     /** Multiplication. */
-    Matrix operator*(Matrix const & rhs)
+    Matrix operator*(Matrix const & rhs) const
     {
       alwaysAssertM(numColumns() == rhs.numRows(), "Matrix: Matrices don't have compatible dimensions for multiplication");
 
