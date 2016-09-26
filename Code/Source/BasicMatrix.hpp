@@ -78,6 +78,9 @@ class /* THEA_API */ BasicMatrix
     /** Get the number of columns. */
     virtual long numColumns() const = 0;
 
+    /** Get the number of elements in the matrix. */
+    long numElements() const { return numRows() * numColumns(); }
+
     /** Set all elements to zero. */
     virtual void makeZero() = 0;
 

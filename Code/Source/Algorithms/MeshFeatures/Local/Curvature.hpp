@@ -135,6 +135,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      * the normal.
      *
      * @param position The position at which to compute curvature.
+     * @param normal The normal at this position.
      * @param nbd_radius The size of the neighborhood over which to compute curvature, specified as a multiple of the shape
      *   scale. A negative argument selects a default size.
      *

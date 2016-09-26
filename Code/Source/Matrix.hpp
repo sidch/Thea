@@ -208,7 +208,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Destructor. */
     ~Matrix()
     {
-      if (owns_memory) allocator.deallocate(values, (size_t)numElements());
+      if (owns_memory) allocator.deallocate(values, (size_t)this->numElements());
     }
 
     /** Assignment operator. */
@@ -222,7 +222,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
                       "Matrix: A wrapper matrix cannot be assigned a value of different dimensions");
       }
 
-      Algorithms::fastCopy(src.values, src.values + numElements(), values);
+      Algorithms::fastCopy(src.values, src.values + this->numElements(), values);
       return *this;
     }
 
@@ -232,9 +232,6 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     long numRows() const { return num_rows; }
     long numColumns() const { return num_cols; }
 
-    /** Get the number of elements in the matrix. */
-    long numElements() const { return num_rows * num_cols; }
-
     void resize(long num_rows_, long num_cols_)
     {
       alwaysAssertM(num_rows_ >= 0 && num_cols_ >= 0, "Matrix: Dimensions must be non-negative");
@@ -242,7 +239,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (num_rows != num_rows_ || num_cols != num_cols_)
       {
-        long old_num_elems = numElements();
+        long old_num_elems = this->numElements();
         long new_num_elems = num_rows_ * num_cols_;
         if (old_num_elems != new_num_elems)
         {
@@ -303,7 +300,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (!this->isEmpty())
       {
-        size_t old_num_elems = (size_t)numElements();
+        size_t old_num_elems = (size_t)this->numElements();
         Algorithms::fastCopy(values, values + old_num_elems, new_values);
         allocator.deallocate(values, old_num_elems);
       }
@@ -353,7 +350,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       if (!this->isEmpty())
       {
-        size_t old_num_elems = (size_t)numElements();
+        size_t old_num_elems = (size_t)this->numElements();
         Algorithms::fastCopy(values, values + old_num_elems, new_values);
         allocator.deallocate(values, old_num_elems);
       }
@@ -381,6 +378,30 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
       else
         return values[col * num_rows + row];
     }
+
+    /**
+     * Element access on the unrolled matrix (by columns if column-major, or rows if row-major). This is the same as
+     * data()[index].
+     */
+    T const & operator()(long index) const { return values[index]; }
+
+    /**
+     * Element access on the unrolled matrix (by columns if column-major, or rows if row-major). This is the same as
+     * data()[index].
+     */
+    T & operator()(long index) { return values[index]; }
+
+    /**
+     * Element access on the unrolled matrix (by columns if column-major, or rows if row-major). This is the same as
+     * data()[index].
+     */
+    T const & operator[](long index) const { return values[index]; }
+
+    /**
+     * Element access on the unrolled matrix (by columns if column-major, or rows if row-major). This is the same as
+     * data()[index].
+     */
+    T & operator[](long index) { return values[index]; }
 
     T const & get(long row, long col) const { return (*this)(row, col); }
     T & getMutable(long row, long col) { return (*this)(row, col); }
@@ -417,7 +438,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       if (values)
       {
-        for (T * vi = values, * e = values + numElements(); vi != e; ++vi)
+        for (T * vi = values, * e = values + this->numElements(); vi != e; ++vi)
           *vi = value;
       }
     }
@@ -488,7 +509,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       Matrix neg(numRows(), numColumns());
       T * v2 = neg.values;
-      for (T const * v1 = values, * e1 = values + numElements(); v1 != e1; ++v1, ++v2)
+      for (T const * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
         *v2 = -(*v1);
     }
 
@@ -500,7 +521,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       Matrix result(numRows(), numColumns());
       T * u = result.values;
-      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + numElements(); v1 != e1; ++v1, ++v2, ++u)
+      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
         *u = *v1 + *v2;
 
       return result;
@@ -513,7 +534,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
                     "Matrix: Can't add matrices of different dimensions");
 
       T const * v2 = rhs.values;
-      for (T * v1 = values, * e1 = values + numElements(); v1 != e1; ++v1, ++v2)
+      for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
         *v1 += *v2;
 
       return *this;
@@ -527,7 +548,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       Matrix result(numRows(), numColumns());
       T * u = result.values;
-      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + numElements(); v1 != e1; ++v1, ++v2, ++u)
+      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
         *u = *v1 - *v2;
 
       return result;
@@ -540,7 +561,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
                     "Matrix: Can't add matrices of different dimensions");
 
       T const * v2 = rhs.values;
-      for (T * v1 = values, * e1 = values + numElements(); v1 != e1; ++v1, ++v2)
+      for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
         *v1 -= *v2;
 
       return *this;
@@ -551,7 +572,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       Matrix result(numRows(), numColumns());
       T * u = result.values;
-      for (T const * v = values, * e = values + numElements(); v != e; ++v, ++u)
+      for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
         *u = s * (*v);
 
       return result;
@@ -560,7 +581,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Post-multiply by a scalar and assign. */
     Matrix & operator*=(T const & s)
     {
-      for (T * v = values, * e = values + numElements(); v != e; ++v)
+      for (T * v = values, * e = values + this->numElements(); v != e; ++v)
         (*v) *= s;
 
       return *this;
@@ -659,7 +680,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       Matrix result(numRows(), numColumns());
       T * u = result.values;
-      for (T const * v = values, * e = values + numElements(); v != e; ++v, ++u)
+      for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
         *u = s / (*v);
 
       return result;
@@ -668,7 +689,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Post-divide by a scalar and assign. */
     Matrix & operator/=(T const & s)
     {
-      for (T * v = values, * e = values + numElements(); v != e; ++v)
+      for (T * v = values, * e = values + this->numElements(); v != e; ++v)
         (*v) /= s;
 
       return *this;

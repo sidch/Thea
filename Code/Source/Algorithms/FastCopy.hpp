@@ -58,7 +58,8 @@ template <typename I1, typename I2, bool b>
 I2
 fastCopyImpl(I1 first, I1 last, I2 out, boost::integral_constant<bool, b> const &)
 {
-  while (first != last) *(out++) = *(first++);
+  typedef typename std::iterator_traits<I2>::value_type value_type;
+  while (first != last) *(out++) = static_cast<value_type>(*(first++));
   return out;
 }
 
@@ -74,7 +75,8 @@ template <typename I1, typename I2, bool b>
 I2
 fastCopyBackwardImpl(I1 first, I1 last, I2 out, boost::integral_constant<bool, b> const &)
 {
-  while (last != first) *(--out) = *(--last);
+  typedef typename std::iterator_traits<I2>::value_type value_type;
+  while (last != first) *(--out) = static_cast<value_type>(*(--last));
   return out;
 }
 
