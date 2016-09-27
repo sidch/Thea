@@ -50,7 +50,7 @@ static Algorithms::ARPACKPlugin * plugin = NULL;
 extern "C" THEA_ARPACK_API Plugin *
 dllStartPlugin(FactoryRegistry * registry_)
 {
-  plugin = new Algorithms::ARPACKPlugin(registry);
+  plugin = new Algorithms::ARPACKPlugin(registry_);
   return plugin;
 }
 
