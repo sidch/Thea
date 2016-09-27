@@ -83,8 +83,20 @@ class THEA_API Application
      */
     static void setResourceArchive(std::string const & path);
 
-    /** Get the fully qualified path to a resource. */
-    static std::string getFullResourcePath(std::string const & resource_name);
+    /** Get the fully qualified path to a resource, or the empty string if it cannot be found. */
+    static std::string getResourcePath(std::string const & resource_name);
+
+    /**
+     * Get the fully qualified path to a plugin, or the empty string if it cannot be found. The search order is:
+     * - Directory containing executable
+     * - "lib" folder in parent of above directory
+     * - User-supplied \a plugin_dirs, if not null
+     * - %System directories, e.g. <code>/usr/lib</code> and <code>/usr/local/lib</code>
+     *
+     * @param plugin_name Name of the plugin, with or without extension, relative path, leading "lib", etc.
+     * @param plugin_dirs Optional additional set of search directories.
+     */
+    static std::string getPluginPath(std::string const & plugin_name, TheaArray<std::string> const * plugin_dirs = NULL);
 
     /** Get the global plugin manager. */
     static PluginManager & getPluginManager() { return *globals.plugin_mgr; }

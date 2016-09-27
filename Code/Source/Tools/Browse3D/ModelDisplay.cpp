@@ -379,7 +379,7 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
   {
     static std::string const BG_IMAGE = "wood.jpg";
     Image bg_img;
-    if (loadImage(bg_img, Application::getFullResourcePath("Images/" + BG_IMAGE)))
+    if (loadImage(bg_img, Application::getResourcePath("Images/" + BG_IMAGE)))
     {
       Texture::Options opts = Texture::Options::defaults();
       opts.interpolateMode = Texture::InterpolateMode::BILINEAR_NO_MIPMAP;
@@ -403,9 +403,9 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
     background_shader = rs.createShader("Background shader");
 
     background_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
-                                            Application::getFullResourcePath("Materials/FlatTextureVert.glsl").c_str());
+                                            Application::getResourcePath("Materials/FlatTextureVert.glsl").c_str());
     background_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
-                                            Application::getFullResourcePath("Materials/FlatTextureFrag.glsl").c_str());
+                                            Application::getResourcePath("Materials/FlatTextureFrag.glsl").c_str());
 
     background_shader->setUniform("texture", background_texture);
   }

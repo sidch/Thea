@@ -177,7 +177,6 @@ App::parseOptions(std::vector<std::string> const & args)
   // hidden.add_options()("hidden-option", po::value<std::string>(&hidden_option), "");
 
   std::string app_dir(FilePath::parent(Application::programPath()));
-  std::string def_plugin_dir = FilePath::concat(app_dir, "../lib");
 #ifdef _MSC_VER
   // Visual Studio puts executables in Debug|Release subdirectory
   std::string def_resource_dir = FilePath::concat(app_dir, "../../../../Resources");
@@ -194,7 +193,7 @@ App::parseOptions(std::vector<std::string> const & args)
           ("help,h",               "Print this help message")
           ("version,v",            "Print the program version")
           ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"), "Configuration file (overridden by duplicate cmdline options)")
-          ("plugin-dir",           po::value<std::string>(&opts.plugin_dir)->default_value(def_plugin_dir), "Plugins directory")
+          ("plugin-dir",           po::value<std::string>(&opts.plugin_dir), "Plugins directory")
           ("resource-dir",         po::value<std::string>(&opts.resource_dir)->default_value(def_resource_dir), "Resources directory")
           ("working-dir",          po::value<std::string>(&opts.working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup, with optional transform")
@@ -331,34 +330,10 @@ void
 App::loadPlugins()
 {
   // Try to load the OpenGL plugin
-#ifdef THEA_DEBUG_BUILD
-
-#ifdef THEA_WINDOWS
-  std::string debug_plugin_path    =  FilePath::concat(opts.plugin_dir, "TheaPluginGLd");
-  std::string release_plugin_path  =  FilePath::concat(opts.plugin_dir, "TheaPluginGL");
-#else
-  std::string debug_plugin_path    =  FilePath::concat(opts.plugin_dir, "libTheaPluginGLd");
-  std::string release_plugin_path  =  FilePath::concat(opts.plugin_dir, "libTheaPluginGL");
-#endif
-
-#ifdef THEA_WINDOWS
-  std::string debug_plugin_path_ext = debug_plugin_path + ".dll";
-#elif THEA_OSX
-  std::string debug_plugin_path_ext = debug_plugin_path + ".dylib";
-#else
-  std::string debug_plugin_path_ext = debug_plugin_path + ".so";
-#endif
-
-  std::string plugin_path = FileSystem::exists(debug_plugin_path_ext) ? debug_plugin_path : release_plugin_path;
-#else
-
-#ifdef THEA_WINDOWS
-  std::string plugin_path = FilePath::concat(opts.plugin_dir, "TheaPluginGL");
-#else
-  std::string plugin_path = FilePath::concat(opts.plugin_dir, "libTheaPluginGL");
-#endif
-
-#endif
+  TheaArray<std::string> plugin_dirs; plugin_dirs.push_back(opts.plugin_dir);
+  std::string plugin_path = Application::getPluginPath("TheaPluginGL", &plugin_dirs);
+  if (plugin_path.empty())
+    throw Error("Could not locate OpenGL plugin 'TheaPluginGL'");
 
   THEA_CONSOLE << "Loading OpenGL plugin: " << plugin_path;
   gl_plugin = Application::getPluginManager().load(plugin_path);
