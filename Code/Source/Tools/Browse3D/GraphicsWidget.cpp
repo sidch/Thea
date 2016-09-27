@@ -63,9 +63,9 @@ GraphicsWidget::getPhongShader(Graphics::RenderSystem & render_system)
     phong_shader = render_system.createShader("Phong shader");
 
     phong_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
-                                       Application::getFullResourcePath("Materials/PhongVert.glsl").c_str());
+                                       Application::getResourcePath("Materials/PhongVert.glsl").c_str());
     phong_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
-                                       Application::getFullResourcePath("Materials/PhongFrag.glsl").c_str());
+                                       Application::getResourcePath("Materials/PhongFrag.glsl").c_str());
 
     setLightingUniforms(phong_shader);
     phong_shader->setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));

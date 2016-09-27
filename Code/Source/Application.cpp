@@ -140,9 +140,90 @@ Application::setResourceArchive(std::string const & path)
 }
 
 std::string
-Application::getFullResourcePath(std::string const & resource_name)
+Application::getResourcePath(std::string const & resource_name)
 {
-  return FilePath::concat(_resourceArchive(), resource_name);
+  std::string path = FilePath::concat(_resourceArchive(), resource_name);
+  return FileSystem::exists(path) ? path : std::string();
+}
+
+std::string
+Application::getPluginPath(std::string const & plugin_name, TheaArray<std::string> const * plugin_dirs)
+{
+  std::string app_dir = FilePath::parent(FileSystem::resolve(Application::programPath()));
+  std::string app_plugin_dir = FilePath::concat(FilePath::parent(app_dir), "lib");
+
+  TheaArray<std::string> search_dirs;
+  search_dirs.push_back(app_dir);             // the application directory has highest priority
+  search_dirs.push_back(app_plugin_dir);      // the relative plugins directory is next
+
+  if (plugin_dirs)                            // user-supplied search directories are next
+    search_dirs.insert(search_dirs.end(), plugin_dirs->begin(), plugin_dirs->end());
+
+  search_dirs.push_back("/usr/lib");          // system directories follow
+  search_dirs.push_back("/usr/local/lib");
+  search_dirs.push_back("/sw/lib");           //  -- Fink
+  search_dirs.push_back("/opt/local/lib");    //  -- Homebrew
+
+  std::string dir = FilePath::parent(plugin_name);
+  std::string basename = FilePath::completeBaseName(plugin_name);
+  std::string ext = FilePath::extension(plugin_name);
+
+#ifndef THEA_WINDOWS
+  if (!beginsWith(basename, "lib"))
+    basename = "lib" + basename;
+#endif
+
+#ifdef THEA_WINDOWS
+  if (ext != "dll")
+  {
+    if (!ext.empty()) basename = basename + "." + ext;  // e.g. we got something like libGL.3
+    ext = "dll";
+  }
+#elif THEA_OSX
+  if (ext != "dylib")
+  {
+    if (!ext.empty()) basename = basename + "." + ext;
+    ext = "dylib";
+  }
+#else
+  if (ext != "so")
+  {
+    if (!ext.empty()) basename = basename + "." + ext;
+    ext = "so";
+  }
+#endif
+
+  std::string debug_filename    =  basename + "d." + ext;
+  std::string release_filename  =  basename + "." + ext;
+
+  for (array_size_t i = 0; i < search_dirs.size(); ++i)
+  {
+    if (search_dirs[i].empty())  // if you need to specify the current working directory, use "."
+      continue;
+
+    std::string debug_path    =  FilePath::concat(search_dirs[i], debug_filename);
+    std::string release_path  =  FilePath::concat(search_dirs[i], release_filename);
+
+#ifdef THEA_DEBUG_BUILD
+
+    // Debug preferred over release
+    if (FileSystem::fileExists(debug_path))
+      return FileSystem::resolve(debug_path);
+    else if (FileSystem::fileExists(release_path))
+      return FileSystem::resolve(release_path);
+
+#else // THEA_DEBUG_BUILD
+
+    // Release preferred over debug
+    if (FileSystem::fileExists(release_path))
+      return FileSystem::resolve(release_path);
+    else if (FileSystem::fileExists(debug_path))
+      return FileSystem::resolve(debug_path);
+
+#endif // THEA_DEBUG_BUILD
+  }
+
+  return std::string();
 }
 
 std::string &
