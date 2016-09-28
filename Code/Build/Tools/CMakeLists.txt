@@ -91,8 +91,10 @@ ELSE()
 ENDIF()
 
 # Dependency: wxWidgets
-FIND_PACKAGE(wxWidgets COMPONENTS core base gl REQUIRED)
-INCLUDE(${wxWidgets_USE_FILE})
+FIND_PACKAGE(wxWidgets COMPONENTS core base gl)
+IF(wxWidgets_FOUND)
+  INCLUDE(${wxWidgets_USE_FILE})
+ENDIF()
 
 # Dependency: OpenCL
 FIND_PACKAGE(OpenCL)
