@@ -290,7 +290,7 @@ main(int argc, char * argv[])
 
       if (num_params < 3)
       {
-        THEA_WARNING << "Distance limit for not specified for average distance, using default of mesh scale";
+        THEA_WARNING << "Distance limit not specified for average distance, using default of mesh scale";
         max_distance = -1;
 
         if (num_params < 2)
