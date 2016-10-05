@@ -918,7 +918,7 @@ orientSDF(MG & mesh_group)
 
 struct CountComparator
 {
-  bool operator()(Mesh::Face const * f0, Mesh::Face const * f1)
+  bool operator()(Mesh::Face const * f0, Mesh::Face const * f1) const
   {
     return f0->attr().flag > f1->attr().flag || (f0->attr().flag == f1->attr().flag && f0 < f1);
   }
