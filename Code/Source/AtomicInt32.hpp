@@ -131,7 +131,10 @@ class THEA_API AtomicInt32
       return old;
 #elif defined(THEA_OSX)
       int32 old = m_value;
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
       OSAtomicAdd32(x, &m_value);
+#  pragma clang diagnostic pop
       return old;
 #endif
     }
@@ -151,8 +154,11 @@ class THEA_API AtomicInt32
 #elif defined(THEA_LINUX) || defined(THEA_FREEBSD)
       add(1);
 #elif defined(THEA_OSX)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // Note: returns the newly incremented value
       OSAtomicIncrement32(&m_value);
+#  pragma clang diagnostic pop
 #endif
     }
 
@@ -175,8 +181,11 @@ class THEA_API AtomicInt32
                     : "memory", "cc");
       return nz;
 #elif defined(THEA_OSX)
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // Note: returns the newly decremented value
       return OSAtomicDecrement32(&m_value);
+#  pragma clang diagnostic pop
 #endif
     }
 
