@@ -246,7 +246,7 @@ class THEA_API Histogram
     }
 
     /**
-     * Normalize the histogram by scaling the bin values so that they sum to 1. if they initially sum to zero, they are left
+     * Normalize the histogram by scaling the bin values so that they sum to 1. If they initially sum to zero, they are left
      * unchanged.
      */
     void normalize()
