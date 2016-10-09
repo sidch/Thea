@@ -268,22 +268,6 @@ MainWindow::init()
   wxAcceleratorTable accel_table(NUM_ACCEL, accel);
   SetAcceleratorTable(accel_table);
 
-/*
-  // Set/sync default toggle values
-  ui->actionViewShaded->trigger();
-
-  ui->actionViewTwoSidedLighting->setChecked(app().options().two_sided);
-  ui.model_display->setTwoSided(ui->actionViewTwoSidedLighting->isChecked());
-
-  ui->actionViewFlatShading->setChecked(app().options().flat);
-  ui.model_display->setFlatShading(ui->actionViewFlatShading->isChecked());
-
-  setPickSegments(false);
-  setPickPoints(false);
-  ui->actionToolsToolbox->setChecked(false);
-  ui->pickPointsSnapToVertex->setChecked(false);
-*/
-
   // Load the initial model, if any
   bool loaded = model->load(app().options().model);
   if (loaded)
@@ -316,10 +300,22 @@ MainWindow::init()
   //==========================================================================================================================
 
   // We have to both set the menu item and call the function since wxEVT_MENU is not generated without actually clicking
-  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false);          setToolboxVisible(false);
-  rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true);         ui.model_display->renderShaded();
-  rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(true);      ui.model_display->setTwoSided(true);
-  rendering_menu->FindItem(ID_VIEW_FLAT_SHADING)->Check(false);  ui.model_display->setFlatShading(false);
+  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false);   setToolboxVisible(false);
+  rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true);  ui.model_display->renderShaded();
+
+  rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(app().options().two_sided);
+  ui.model_display->setTwoSided(app().options().two_sided);
+
+  rendering_menu->FindItem(ID_VIEW_FLAT_SHADING)->Check(app().options().flat);
+  ui.model_display->setFlatShading(app().options().flat);
+
+/*
+  setPickSegments(false);
+  setPickPoints(false);
+  ui->actionToolsToolbox->setChecked(false);
+  ui->pickPointsSnapToVertex->setChecked(false);
+*/
+
 }
 
 MainWindow::~MainWindow()
