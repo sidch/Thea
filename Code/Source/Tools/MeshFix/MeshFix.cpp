@@ -1133,42 +1133,61 @@ struct VisibilityOrienter
     Vector3 const * cameras = hi_qual ? CAMERAS_HI : CAMERAS_LO;
     size_t num_cameras = hi_qual ? NUM_CAMERAS_HI : NUM_CAMERAS_LO;
 
+    TheaArray<Vector3> face_pts;
+    face_pts.reserve(32);
+
     for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     {
+      face_pts.clear();
+      {
+        Vector3 c = CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd());
+        face_pts.push_back(c);
+        for (Mesh::Face::VertexConstIterator fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
+          face_pts.push_back((*fvi)->getPosition());
+      }
+
       int best_camera = -1;
       Real best_exposure = -1;
       Vector3 best_dir;
-      for (size_t j = 0; j < num_cameras; ++j)
+
+      for (array_size_t j = 0; j < face_pts.size(); ++j)
       {
-        Vector3 c = CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd());
-        Vector3 camera_pos = mesh_center + camera_distance * cameras[j];
-        Ray3 ray(c, camera_pos - c);
-        ray.setOrigin(ray.getPoint(0.0001));
-        if (kdtree.rayIntersects<RayIntersectionTester>(ray))
-          continue;
+        Vector3 const & p = face_pts[j];
 
-        // Shoot a few jittered rays to test "openness" of the face w.r.t. this camera
-        int num_open = 0;
-        for (int k = 0; k < NUM_JITTERED; ++k)
+        for (size_t k = 0; k < num_cameras; ++k)
         {
-          Real jx = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
-          Real jy = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
-          Real jz = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
-          Ray3 jray(c, camera_pos + Vector3(jx, jy, jz) - c);
-          jray.setOrigin(ray.getPoint(0.0001));
+          Vector3 camera_pos = mesh_center + camera_distance * cameras[k];
+          Ray3 ray(p, camera_pos - p);
+          ray.setOrigin(ray.getPoint(0.0001));
+          if (kdtree.rayIntersects<RayIntersectionTester>(ray))
+            continue;
 
-          if (!kdtree.rayIntersects<RayIntersectionTester>(jray))
-            num_open++;
+          // Shoot a few jittered rays to test "openness" of the face w.r.t. this camera
+          int num_open = 0;
+          for (int h = 0; h < NUM_JITTERED; ++h)
+          {
+            Real jx = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+            Real jy = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+            Real jz = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+            Ray3 jray(p, camera_pos + Vector3(jx, jy, jz) - p);
+            jray.setOrigin(ray.getPoint(0.0001));
+
+            if (!kdtree.rayIntersects<RayIntersectionTester>(jray))
+              num_open++;
+          }
+
+          Vector3 dir = ray.getDirection().unit();
+          Real exposure = num_open / (Real)NUM_JITTERED + fabs(fi->getNormal().dot(dir));
+          if (best_camera < 0 || exposure > best_exposure)
+          {
+            best_camera = (int)k;
+            best_exposure = exposure;
+            best_dir = dir;
+          }
         }
 
-        Vector3 dir = ray.getDirection().unit();
-        Real exposure = num_open / (Real)NUM_JITTERED + fabs(fi->getNormal().dot(dir));
-        if (best_camera < 0 || exposure > best_exposure)
-        {
-          best_camera = (int)j;
-          best_exposure = exposure;
-          best_dir = dir;
-        }
+        if (best_camera >= 0)
+          break;
       }
 
       if (fi->getNormal().dot(best_dir) < 0)
