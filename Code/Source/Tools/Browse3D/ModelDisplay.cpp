@@ -290,7 +290,7 @@ ModelDisplay::setTwoSided(bool value)
     GraphicsWidget::setTwoSided(value);
     Refresh();
 
-    THEA_CONSOLE << "Two-sided lighting =" << value;
+    THEA_CONSOLE << "Two-sided lighting = " << value;
   }
 }
 
@@ -308,7 +308,7 @@ ModelDisplay::setFlatShading(bool value)
     render_opts.useVertexNormals() = !value;
     Refresh();
 
-    THEA_CONSOLE << "Flat shading =" << value;
+    THEA_CONSOLE << "Flat shading = " << value;
   }
 }
 

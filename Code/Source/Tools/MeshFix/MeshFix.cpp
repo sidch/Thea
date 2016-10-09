@@ -1,15 +1,19 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
+#include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
+#include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Graphics/VertexWelder.hpp"
 #include "../../LineSegment3.hpp"
 #include "../../Math.hpp"
+#include "../../Random.hpp"
 #include "../../UnorderedSet.hpp"
 #include <boost/program_options.hpp>
 #include <algorithm>
@@ -100,6 +104,8 @@ int t_juncts_iters = -1;
 bool do_orient = false;
 bool do_orient_sdf = false;
 bool do_orient_majority = false;
+bool do_orient_visibility = false;
+bool orient_visibility_hi_qual = false;
 
 bool do_triangulate = false;
 double triangulate_tolerance = -1;
@@ -113,6 +119,7 @@ bool tJuncts(Mesh & mesh);
 bool orient(Mesh & mesh);
 bool orientMajority(Mesh & mesh);
 void orientSDF(MG & mesh_group);
+void orientVisibility(MG & mesh_group);
 bool triangulate(Mesh & mesh);
 bool checkProblems(Mesh & mesh);
 
@@ -209,6 +216,12 @@ meshFix(int argc, char * argv[])
     mg.forEachMeshUntil(&checkProblems);
   }
 
+  if (do_orient_visibility)
+  {
+    orientVisibility(mg);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
   if (do_triangulate)
   {
     if (mg.forEachMeshUntil(&triangulate)) return -1;
@@ -234,6 +247,8 @@ parseArgs(int argc, char * argv[])
 
   static std::string const usage("\nUsage: " + string(argv[0]) + " [options] <infile> <outfile>\n"
                                    "   (all tolerances are specified as a fraction of the sub-mesh bounding box diagonal)\n");
+
+  string s_orient_visibility_qual;
 
   po::options_description visible("Allowed options");
   visible.add_options()
@@ -275,13 +290,16 @@ parseArgs(int argc, char * argv[])
           ("orient",              "Consistently orient each edge-connected component of the mesh so that normals defined by"
                                   " counter-clockwise winding point inside-out")
 
-          ("orient-sdf",          "Consistently orient each edge-connected component of the mesh so that normals defined by"
-                                  " counter-clockwise winding point inside-out, using the direction of smaller shape diameter"
-                                  " as a heuristic")
+          ("orient-sdf",          "Consistently orient each face of the mesh so that the normal defined by counter-clockwise"
+                                  " winding points inside-out, using the direction of smaller shape diameter as a heuristic")
 
           ("orient-majority",     "Consistently orient each edge-connected component of the mesh so that normals defined by"
                                   " counter-clockwise winding point inside-out, flipping faces that disagree most with their"
                                   " neighbors first")
+
+          ("orient-visibility",   po::value<string>(&s_orient_visibility_qual)->implicit_value(""),
+                                  "Consistently orient each face of the mesh so that the normal defined by counter-clockwise"
+                                  " winding points towards the direction of an external camera from which the face is visible")
 
           ("triangulate",         po::value<double>(&triangulate_tolerance),
                                   "Triangulate every face with more than 3 vertices")
@@ -380,6 +398,21 @@ parseArgs(int argc, char * argv[])
 
   if (vm.count("orient-majority") > 0)
     do_orient_majority = do_something = true;
+
+  if (vm.count("orient-visibility") > 0)
+  {
+    do_orient_visibility = do_something = true;
+    string s = toLower(s_orient_visibility_qual);
+    if (s == "hi" || s == "high")
+      orient_visibility_hi_qual = true;
+    else if (s.empty() || s == "lo" || s == "low")
+      orient_visibility_hi_qual = false;
+    else
+    {
+      THEA_ERROR << "Orient by visibility quality setting not recognized: " << s_orient_visibility_qual;
+      return -1;
+    }
+  }
 
   if (vm.count("triangulate") > 0)
     do_triangulate = do_something = true;
@@ -1001,6 +1034,161 @@ orientMajority(Mesh & mesh)
   }
 
   return false;
+}
+
+struct VisibilityOrienter
+{
+  typedef MeshKDTree<Mesh> KDTree;
+
+  VisibilityOrienter(MG & mg, bool hi_qual_ = false)
+  : hi_qual(hi_qual_)
+  {
+    kdtree.add(mg);
+    kdtree.init();
+
+    mesh_center = mg.getBounds().getCenter();
+    camera_distance = 2 * mg.getBounds().getExtent().length();
+  }
+
+  bool operator()(Mesh & mesh)
+  {
+    static Real PHI = (Real)((1.0 + std::sqrt(5.0)) / 2.0);
+    static Vector3 const CAMERAS_LO[] = {
+      Vector3( 1,  1,  1).unit(),
+      Vector3( 1,  1, -1).unit(),
+      Vector3( 1, -1,  1).unit(),
+      Vector3( 1, -1, -1).unit(),
+      Vector3(-1,  1,  1).unit(),
+      Vector3(-1,  1, -1).unit(),
+      Vector3(-1, -1,  1).unit(),
+      Vector3(-1, -1, -1).unit(),
+
+      Vector3(0,  1 / PHI,  PHI).unit(),
+      Vector3(0,  1 / PHI, -PHI).unit(),
+      Vector3(0, -1 / PHI,  PHI).unit(),
+      Vector3(0, -1 / PHI, -PHI).unit(),
+
+      Vector3( PHI, 0,  1 / PHI).unit(),
+      Vector3( PHI, 0, -1 / PHI).unit(),
+      Vector3(-PHI, 0,  1 / PHI).unit(),
+      Vector3(-PHI, 0, -1 / PHI).unit(),
+
+      Vector3( 1 / PHI,  PHI, 0).unit(),
+      Vector3(-1 / PHI,  PHI, 0).unit(),
+      Vector3( 1 / PHI, -PHI, 0).unit(),
+      Vector3(-1 / PHI, -PHI, 0).unit(),
+    };
+
+    static Vector3 const CAMERAS_HI[] = {
+      Vector3(      0,    0.5257,    0.8507),
+      Vector3(      0,    0.5257,   -0.8507),
+      Vector3(      0,   -0.5257,   -0.8507),
+      Vector3(      0,   -0.5257,    0.8507),
+      Vector3( 0.5257,    0.8507,         0),
+      Vector3( 0.5257,   -0.8507,         0),
+      Vector3(-0.5257,   -0.8507,         0),
+      Vector3(-0.5257,    0.8507,         0),
+      Vector3( 0.8507,         0,    0.5257),
+      Vector3(-0.8507,         0,    0.5257),
+      Vector3(-0.8507,         0,   -0.5257),
+      Vector3( 0.8507,         0,   -0.5257),
+      Vector3( 0.8090,    0.5000,    0.3090),
+      Vector3( 0.5000,   -0.3090,    0.8090),
+      Vector3(-0.5000,   -0.3090,    0.8090),
+      Vector3( 0.5000,    0.3090,    0.8090),
+      Vector3( 0.3090,    0.8090,   -0.5000),
+      Vector3(-0.5000,    0.3090,    0.8090),
+      Vector3(      0,    1.0000,         0),
+      Vector3( 0.8090,   -0.5000,    0.3090),
+      Vector3( 1.0000,         0,         0),
+      Vector3( 0.8090,    0.5000,   -0.3090),
+      Vector3( 0.3090,   -0.8090,   -0.5000),
+      Vector3( 0.5000,    0.3090,   -0.8090),
+      Vector3(      0,   -1.0000,         0),
+      Vector3(-0.8090,   -0.5000,    0.3090),
+      Vector3( 0.3090,   -0.8090,    0.5000),
+      Vector3(-0.5000,    0.3090,   -0.8090),
+      Vector3(      0,         0,   -1.0000),
+      Vector3(-0.8090,    0.5000,    0.3090),
+      Vector3(-1.0000,         0,         0),
+      Vector3(-0.3090,   -0.8090,   -0.5000),
+      Vector3( 0.3090,    0.8090,    0.5000),
+      Vector3(      0,         0,    1.0000),
+      Vector3(-0.3090,    0.8090,   -0.5000),
+      Vector3(-0.3090,    0.8090,    0.5000),
+      Vector3( 0.8090,   -0.5000,   -0.3090),
+      Vector3( 0.5000,   -0.3090,   -0.8090),
+      Vector3(-0.3090,   -0.8090,    0.5000),
+      Vector3(-0.8090,    0.5000,   -0.3090),
+      Vector3(-0.5000,   -0.3090,   -0.8090),
+      Vector3(-0.8090,   -0.5000,   -0.3090),
+    };
+
+    static size_t const NUM_CAMERAS_LO = sizeof(CAMERAS_LO) / sizeof(Vector3);
+    static size_t const NUM_CAMERAS_HI = sizeof(CAMERAS_HI) / sizeof(Vector3);
+
+    static int const NUM_JITTERED = 5;
+    static Real const JITTER_SCALE = 0.25;
+
+    Vector3 const * cameras = hi_qual ? CAMERAS_HI : CAMERAS_LO;
+    size_t num_cameras = hi_qual ? NUM_CAMERAS_HI : NUM_CAMERAS_LO;
+
+    for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    {
+      int best_camera = -1;
+      Real best_exposure = -1;
+      Vector3 best_dir;
+      for (size_t j = 0; j < num_cameras; ++j)
+      {
+        Vector3 c = CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd());
+        Vector3 camera_pos = mesh_center + camera_distance * cameras[j];
+        Ray3 ray(c, camera_pos - c);
+        ray.setOrigin(ray.getPoint(0.0001));
+        if (kdtree.rayIntersects<RayIntersectionTester>(ray))
+          continue;
+
+        // Shoot a few jittered rays to test "openness" of the face w.r.t. this camera
+        int num_open = 0;
+        for (int k = 0; k < NUM_JITTERED; ++k)
+        {
+          Real jx = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+          Real jy = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+          Real jz = Random::common().uniform(-JITTER_SCALE, JITTER_SCALE);
+          Ray3 jray(c, camera_pos + Vector3(jx, jy, jz) - c);
+          jray.setOrigin(ray.getPoint(0.0001));
+
+          if (!kdtree.rayIntersects<RayIntersectionTester>(jray))
+            num_open++;
+        }
+
+        Vector3 dir = ray.getDirection().unit();
+        Real exposure = num_open / (Real)NUM_JITTERED + fabs(fi->getNormal().dot(dir));
+        if (best_camera < 0 || exposure > best_exposure)
+        {
+          best_camera = (int)j;
+          best_exposure = exposure;
+          best_dir = dir;
+        }
+      }
+
+      if (fi->getNormal().dot(best_dir) < 0)
+        fi->reverseWinding();
+    }
+
+    return false;
+  }
+
+  KDTree kdtree;
+  bool hi_qual;
+  Vector3 mesh_center;
+  Real camera_distance;
+};
+
+void
+orientVisibility(MG & mesh_group)
+{
+  VisibilityOrienter func(mesh_group, orient_visibility_hi_qual);
+  mesh_group.forEachMeshUntil(&func);
 }
 
 bool
