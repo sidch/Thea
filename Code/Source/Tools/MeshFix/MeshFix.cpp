@@ -1156,7 +1156,12 @@ struct VisibilityOrienter
 
         for (size_t k = 0; k < num_cameras; ++k)
         {
+#define ORIENT_VISIBILITY_RELATIVE_CAMERAS
+#ifdef ORIENT_VISIBILITY_RELATIVE_CAMERAS
+          Vector3 camera_pos = p + camera_distance * cameras[k];
+#else
           Vector3 camera_pos = mesh_center + camera_distance * cameras[k];
+#endif
           Ray3 ray(p, camera_pos - p);
           ray.setOrigin(ray.getPoint(0.0001));
           if (kdtree.rayIntersects<RayIntersectionTester>(ray))
