@@ -1148,7 +1148,7 @@ struct VisibilityOrienter
 
       int best_camera = -1;
       Real best_exposure = -1;
-      Vector3 best_dir;
+      Vector3 best_dir = Vector3::zero();
 
       for (array_size_t j = 0; j < face_pts.size(); ++j)
       {
@@ -1195,7 +1195,7 @@ struct VisibilityOrienter
           break;
       }
 
-      if (fi->getNormal().dot(best_dir) < 0)
+      if (best_camera >= 0 && fi->getNormal().dot(best_dir) < 0)
         fi->reverseWinding();
     }
 
