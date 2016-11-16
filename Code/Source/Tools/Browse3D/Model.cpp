@@ -546,6 +546,7 @@ Model::removeSample(long index)
   {
     samples.erase(samples.begin() + index);
     saveSamples(getSamplesPath());
+    selected_sample = -1;  // since the removal in general messes up the indices
     wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
@@ -568,17 +569,17 @@ Model::loadSamples(std::string const & path_)
   {
     std::ifstream in(path_.c_str());
     if (!in)
-      throw Error("Could not open file");
+      throw Error("Couldn't open samples file '" + path_ + "'");
 
     std::string line;
     if (!getNextNonBlankLine(in, line))
-      throw Error("Could not read first line");
+      throw Error("Couldn't read first line");
 
     std::istringstream header_iss(line);
     long n;
     header_iss >> n;
     if (n < 0 || !header_iss)
-      throw Error("Could not read valid number of samples");
+      throw Error("Couldn't read valid number of samples");
 
     std::string type, label;
     long face_index;
@@ -590,7 +591,7 @@ Model::loadSamples(std::string const & path_)
     for (long i = 0; i < n; ++i)
     {
       if (!getNextNonBlankLine(in, line))
-        throw Error("Could not read line");
+        throw Error("Couldn't read line");
 
       std::istringstream iss(line);
 
@@ -860,17 +861,22 @@ Model::removeSegment(long index)
   {
     segments.erase(segments.begin() + index);
     saveSegments(getSegmentsPath());
+    selected_segment = -1;  // since the removal in general messes up the indices
     wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 }
 
 Segment *
-Model::getSegment(Mesh const * mesh)
+Model::getSegment(Mesh const * mesh, int * index)
 {
   for (array_size_t i = 0; i < segments.size(); ++i)
     if (segments[i].hasMesh(mesh, segment_depth_promotion))
+    {
+      if (index) *index = (int)i;
       return &segments[i];
+    }
 
+  if (index) *index = -1;
   return NULL;
 }
 
@@ -893,7 +899,7 @@ Model::loadSegments(std::string const & path_)
   {
     std::ifstream in(path_.c_str());
     if (!in)
-      throw Error("Could not open file");
+      throw Error("Couldn't open file");
 
     segments.clear();
 
@@ -904,7 +910,7 @@ Model::loadSegments(std::string const & path_)
       Segment seg(label);
 
       if (!getNextNonBlankLine(in, line))
-        throw Error("Could not read list of representative faces");
+        throw Error("Couldn't read list of representative faces");
 
       std::istringstream iss(line);
       long face_index = -1;
@@ -1048,7 +1054,7 @@ Model::loadFeatures(std::string const & path_)
   {
     std::ifstream in(path_.c_str());
     if (!in)
-      throw Error("Could not open file");
+      throw Error("Couldn't open file");
 
     std::string line;
     Vector3 p;
@@ -1057,7 +1063,7 @@ Model::loadFeatures(std::string const & path_)
     {
       std::istringstream line_in(line);
       if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
-        throw Error("Could not read feature");
+        throw Error("Couldn't read feature");
 
       feat_pts.push_back(p);
       feat_vals[0].push_back(f);
@@ -1075,7 +1081,7 @@ Model::loadFeatures(std::string const & path_)
         for (array_size_t i = 1; i < feat_vals.size(); ++i)
         {
           if (!(line_in >> f))
-            throw Error("Could not read feature");
+            throw Error("Couldn't read feature");
 
           feat_vals[i].push_back(f);
         }
@@ -1202,7 +1208,7 @@ Model::loadFaceLabels(std::string const & path_)
   std::ifstream in(path_.c_str());
   if (!in)
   {
-    THEA_WARNING << "Could not open face labels file: " << path_;
+    THEA_WARNING << "Couldn't open face labels file '" << path_ << '\'';
     return has_face_labels;
   }
 
@@ -1366,10 +1372,18 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
     Mesh const * mesh = mi->get();
     if (!mesh) continue;
 
-    Segment const * seg = getSegment(mesh);
+    int seg_index = -1;
+    Segment const * seg = getSegment(mesh, &seg_index);
     if (seg)
     {
-      ro.drawEdges() = false;
+      if (seg_index >= 0 && seg_index == selected_segment)
+      {
+        ro.edgeColor() = ColorRGBA(1, 0, 0, 1);
+        ro.drawEdges() = true;
+      }
+      else
+        ro.drawEdges() = false;
+
       render_system.setColor(getLabelColor(seg->getLabel()));
     }
     else if (picked_segment.hasMesh(mesh, segment_depth_promotion))

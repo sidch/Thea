@@ -100,11 +100,13 @@ class MainWindow : public wxFrame
       ID_TOOLS_SCREENSHOT,
       ID_TOOLS_TOOLBOX,
 
-      ID_SEGMENT_EXPAND,
-      ID_SEGMENT_CONTRACT,
+      ID_SEGMENT_LABEL,
       ID_SEGMENT_ADD,
       ID_SEGMENT_REMOVE,
+      ID_SEGMENT_EXPAND,
+      ID_SEGMENT_CONTRACT,
 
+      ID_POINT_LABEL,
       ID_POINT_ADD,
       ID_POINT_REMOVE,
 
@@ -198,11 +200,17 @@ class MainWindow : public wxFrame
     /** Sync the displayed list of segments with the model. */
     void syncSegments(wxEvent & event = DUMMY_EVENT);
 
+    /** Toggle the visibility state of the toolbox. */
+    void toggleToolboxVisible(wxEvent & event = DUMMY_EVENT);
+
     /** Show/hide the toolbox. */
     void setToolboxVisible(wxCommandEvent & event);
 
     /** Synchronize states of menu and toolbar buttons etc. */
     void updateUI(wxUpdateUIEvent & event);
+
+    /** Refresh the model display. */
+    void refreshDisplay(wxEvent & event = DUMMY_EVENT);
 
   private:
     /** Get rid of all overlay models. */
