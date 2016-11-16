@@ -460,8 +460,8 @@ BinaryInputStream::readNullTerminatedString()
     while ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
             (m_buffer[m_pos + n] != '\0') )
     {
-      prepareToRead(1);
       ++n;
+      prepareToRead(n);
     }
   }
 
@@ -488,8 +488,8 @@ BinaryInputStream::readLine()
     while ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
             ! isNewline(m_buffer[m_pos + n]))
     {
-      prepareToRead(1);
       ++n;
+      prepareToRead(n);
     }
   }
 

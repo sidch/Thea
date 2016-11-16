@@ -32,6 +32,8 @@ splitMesh(MG::Ptr mg)
       continue;
     }
 
+    THEA_CONSOLE << "Splitting submesh " << (*mi)->getName() << " into " << cc.size() << " connected components";
+
     has_new = true;
     for (array_size_t j = 0; j < cc.size(); ++j)
     {
