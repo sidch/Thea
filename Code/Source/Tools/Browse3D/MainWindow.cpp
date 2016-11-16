@@ -56,6 +56,7 @@
 #include <wx/panel.h>
 #include <wx/sizer.h>
 #include <wx/splitter.h>
+#include <wx/stattext.h>
 #include <wx/textctrl.h>
 
 namespace Browse3D {
@@ -185,12 +186,29 @@ MainWindow::init()
   segments_panel->SetSizer(segments_sizer);
   ui.segments_table = new wxListBox(segments_panel, wxID_ANY);
   segments_sizer->Add(ui.segments_table, 1, wxEXPAND, 0);
-  wxButton * segment_add_btn     =  new wxButton(segments_panel, ID_SEGMENT_ADD,     "Add segment");
-  wxButton * segment_remove_btn  =  new wxButton(segments_panel, ID_SEGMENT_REMOVE,  "Remove segment");
-  wxBoxSizer * segments_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
-  segments_btn_sizer->Add(segment_add_btn, 1, wxEXPAND | wxRIGHT, 5);
-  segments_btn_sizer->Add(segment_remove_btn, 1, wxEXPAND | wxLEFT, 5);
-  segments_sizer->Add(segments_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+
+  wxStaticText * segment_label_caption = new wxStaticText(segments_panel, wxID_ANY, "Label");
+  ui.segment_label = new wxTextCtrl(segments_panel, ID_SEGMENT_LABEL);
+  wxBoxSizer * segments_label_sizer = new wxBoxSizer(wxHORIZONTAL);
+  segments_label_sizer->Add(segment_label_caption, 0, wxEXPAND | wxRIGHT, 5);
+  segments_label_sizer->Add(ui.segment_label, 1, wxEXPAND | wxLEFT, 5);
+  segments_sizer->Add(segments_label_sizer, 0, wxEXPAND | wxTOP, 5);
+
+  wxButton * segment_add_btn       =  new wxButton(segments_panel, ID_SEGMENT_ADD,       "Add segment");
+  wxButton * segment_remove_btn    =  new wxButton(segments_panel, ID_SEGMENT_REMOVE,    "Remove segment");
+  wxButton * segment_expand_btn    =  new wxButton(segments_panel, ID_SEGMENT_EXPAND,    "Expand selection");
+  wxButton * segment_contract_btn  =  new wxButton(segments_panel, ID_SEGMENT_CONTRACT,  "Contract selection");
+
+  wxBoxSizer * segments_add_remove_sizer = new wxBoxSizer(wxHORIZONTAL);
+  segments_add_remove_sizer->Add(segment_add_btn, 1, wxEXPAND | wxRIGHT, 5);
+  segments_add_remove_sizer->Add(segment_remove_btn, 1, wxEXPAND | wxLEFT, 5);
+  segments_sizer->Add(segments_add_remove_sizer, 0, wxEXPAND | wxTOP, 5);
+
+  wxBoxSizer * segments_exp_contr_sizer = new wxBoxSizer(wxHORIZONTAL);
+  segments_exp_contr_sizer->Add(segment_expand_btn, 1, wxEXPAND | wxRIGHT, 5);
+  segments_exp_contr_sizer->Add(segment_contract_btn, 1, wxEXPAND | wxLEFT, 5);
+  segments_sizer->Add(segments_exp_contr_sizer, 0, wxEXPAND | wxTOP, 5);
+
   ui.toolbox->AddPage(segments_panel, "Segments");
 
   // Point picking interface
@@ -199,12 +217,21 @@ MainWindow::init()
   points_panel->SetSizer(points_sizer);
   ui.points_table = new wxListBox(points_panel, wxID_ANY);
   points_sizer->Add(ui.points_table, 1, wxEXPAND, 0);
+
+  wxStaticText * point_label_caption = new wxStaticText(points_panel, wxID_ANY, "Label");
+  ui.point_label = new wxTextCtrl(points_panel, ID_POINT_LABEL);
+  wxBoxSizer * points_label_sizer = new wxBoxSizer(wxHORIZONTAL);
+  points_label_sizer->Add(point_label_caption, 0, wxEXPAND | wxRIGHT, 5);
+  points_label_sizer->Add(ui.point_label, 1, wxEXPAND | wxLEFT, 5);
+  points_sizer->Add(points_label_sizer, 0, wxEXPAND | wxTOP, 5);
+
   wxButton * point_add_btn     =  new wxButton(points_panel, ID_POINT_ADD,     "Add point");
   wxButton * point_remove_btn  =  new wxButton(points_panel, ID_POINT_REMOVE,  "Remove point");
   wxBoxSizer * points_btn_sizer = new wxBoxSizer(wxHORIZONTAL);
   points_btn_sizer->Add(point_add_btn, 1, wxEXPAND | wxRIGHT, 5);
   points_btn_sizer->Add(point_remove_btn, 1, wxEXPAND | wxLEFT, 5);
   points_sizer->Add(points_btn_sizer, 0, wxEXPAND | wxTOP, 5);
+
   ui.point_snap_to_vertex = new wxCheckBox(points_panel, wxID_ANY, "Snap point to vertex");
   points_sizer->Add(ui.point_snap_to_vertex, 0, wxEXPAND | wxTOP, 5);
   ui.toolbox->AddPage(points_panel, "Points");
@@ -237,15 +264,29 @@ MainWindow::init()
   Bind(wxEVT_MENU, &MainWindow::loadNextFeatures, this, ID_GO_NEXT_FEATURES);
 
   Bind(wxEVT_MENU, &ModelDisplay::saveScreenshot, ui.model_display, ID_TOOLS_SCREENSHOT);
-  Bind(wxEVT_MENU, &MainWindow::setToolboxVisible, this, ID_TOOLS_TOOLBOX);
+  Bind(wxEVT_MENU, &MainWindow::toggleToolboxVisible, this, ID_TOOLS_TOOLBOX);
 
   Bind(wxEVT_BUTTON, &MainWindow::expandPickedSegment, this, ID_SEGMENT_EXPAND);
   Bind(wxEVT_BUTTON, &MainWindow::contractPickedSegment, this, ID_SEGMENT_CONTRACT);
   Bind(wxEVT_BUTTON, &MainWindow::addPickedSegment, this, ID_SEGMENT_ADD);
   Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSegment, this, ID_SEGMENT_REMOVE);
+  ui.segments_table->Bind(wxEVT_LISTBOX, &MainWindow::selectSegment, this);
+
+  // Since deselection events are not generated (known wx bug #15603)
+  ui.segments_table->Bind(wxEVT_LEFT_UP, &MainWindow::selectSegment, this);
+  ui.segments_table->Bind(wxEVT_RIGHT_UP, &MainWindow::selectSegment, this);
+  ui.segments_table->Bind(wxEVT_MIDDLE_UP, &MainWindow::selectSegment, this);
 
   Bind(wxEVT_BUTTON, &MainWindow::addPickedSample, this, ID_POINT_ADD);
   Bind(wxEVT_BUTTON, &MainWindow::removeSelectedSample, this, ID_POINT_REMOVE);
+  ui.points_table->Bind(wxEVT_LISTBOX, &MainWindow::selectSample, this);
+
+  // Since deselection events are not generated (known wx bug #15603)
+  ui.points_table->Bind(wxEVT_LEFT_UP, &MainWindow::selectSample, this);
+  ui.points_table->Bind(wxEVT_RIGHT_UP, &MainWindow::selectSample, this);
+  ui.points_table->Bind(wxEVT_MIDDLE_UP, &MainWindow::selectSample, this);
+
+  ui.toolbox->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, &MainWindow::refreshDisplay, this);
 
   model->Bind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
   model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
@@ -257,15 +298,17 @@ MainWindow::init()
   // Keyboard shortcuts for menu items
   //==========================================================================================================================
 
-  static int const NUM_ACCEL = 6;
-  wxAcceleratorEntry accel[NUM_ACCEL];
-  accel[0].Set(wxACCEL_NORMAL, (int)'F', ID_VIEW_FIT);
-  accel[1].Set(wxACCEL_NORMAL, (int)',', ID_GO_PREV);
-  accel[2].Set(wxACCEL_NORMAL, (int)'.', ID_GO_NEXT);
-  accel[3].Set(wxACCEL_CTRL,   (int)'G', ID_TOOLS_SCREENSHOT);
-  accel[4].Set(wxACCEL_NORMAL, (int)'[', ID_GO_PREV_FEATURES);
-  accel[5].Set(wxACCEL_NORMAL, (int)']', ID_GO_NEXT_FEATURES);
-  wxAcceleratorTable accel_table(NUM_ACCEL, accel);
+  wxAcceleratorEntry accel[] = {
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)'0', ID_VIEW_FIT),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)',', ID_GO_PREV),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)'.', ID_GO_NEXT),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)'G', ID_TOOLS_SCREENSHOT),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)'T', ID_TOOLS_TOOLBOX),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)'[', ID_GO_PREV_FEATURES),
+    wxAcceleratorEntry(wxACCEL_CTRL, (int)']', ID_GO_NEXT_FEATURES),
+  };
+  int num_accel = (int)(sizeof(accel) / sizeof(wxAcceleratorEntry));
+  wxAcceleratorTable accel_table(num_accel, accel);
   SetAcceleratorTable(accel_table);
 
   // Load the initial model, if any
@@ -315,7 +358,6 @@ MainWindow::init()
   ui->actionToolsToolbox->setChecked(false);
   ui->pickPointsSnapToVertex->setChecked(false);
 */
-
 }
 
 MainWindow::~MainWindow()
@@ -526,8 +568,11 @@ MainWindow::clearOverlays()
 void
 MainWindow::addPickedSample(wxEvent & event)
 {
-  std::string label = ui.point_label->GetValue().ToStdString();
-  THEA_CONSOLE << "Adding sample with label" << label;
+  std::string label = trimWhitespace(ui.point_label->GetValue().ToStdString());
+  if (label.empty())
+    return;
+
+  THEA_CONSOLE << "Adding sample with label " << label;
 
   model->addPickedSample(label, ui.point_snap_to_vertex->GetValue());
   model->invalidatePick();
@@ -542,7 +587,7 @@ MainWindow::syncSamples(wxEvent & event)
   wxArrayString labels;
   for (array_size_t i = 0; i < samples.size(); ++i)
   {
-    THEA_CONSOLE << "Adding sample with label" << samples[i].label;
+    THEA_CONSOLE << "Adding sample with label " << samples[i].label;
     labels.Add(samples[i].label);
   }
 
@@ -585,8 +630,11 @@ MainWindow::pickPoints() const
 void
 MainWindow::addPickedSegment(wxEvent & event)
 {
-  std::string label = ui.segment_label->GetValue().ToStdString();
-  THEA_CONSOLE << "Adding segment with label" << label;
+  std::string label = trimWhitespace(ui.segment_label->GetValue().ToStdString());
+  if (label.empty())
+    return;
+
+  THEA_CONSOLE << "Adding segment with label " << label;
 
   model->addPickedSegment(label);
   model->invalidatePickedSegment();
@@ -613,7 +661,7 @@ MainWindow::syncSegments(wxEvent & event)
   wxArrayString labels;
   for (array_size_t i = 0; i < segments.size(); ++i)
   {
-    THEA_CONSOLE << "Adding segment with label" << segments[i].getLabel();
+    THEA_CONSOLE << "Adding segment with label " << segments[i].getLabel();
     labels.Add(segments[i].getLabel());
   }
 
@@ -654,6 +702,12 @@ MainWindow::pickSegments() const
 }
 
 void
+MainWindow::toggleToolboxVisible(wxEvent & event)
+{
+  setToolboxVisible(!ui.toolbox->IsShown());
+}
+
+void
 MainWindow::setToolboxVisible(wxCommandEvent & event)
 {
   setToolboxVisible(event.IsChecked());
@@ -676,6 +730,12 @@ void
 MainWindow::updateUI(wxUpdateUIEvent & event)
 {
   // TODO
+}
+
+void
+MainWindow::refreshDisplay(wxEvent & event)
+{
+  ui.model_display->Refresh();
 }
 
 void

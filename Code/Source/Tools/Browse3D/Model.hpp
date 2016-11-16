@@ -283,10 +283,11 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     void removeSegment(long index);
 
     /** Get the segment containing a given mesh, or null if there is no such segment. */
-    Segment const * getSegment(Mesh const * mesh) const { return const_cast<Model *>(this)->getSegment(mesh); }
+    Segment const * getSegment(Mesh const * mesh, int * index = NULL) const
+    { return const_cast<Model *>(this)->getSegment(mesh, index); }
 
     /** Get the segment containing a given mesh, or null if there is no such segment. */
-    Segment * getSegment(Mesh const * mesh);
+    Segment * getSegment(Mesh const * mesh, int * index = NULL);
 
     /** Select a particular segment. */
     void selectSegment(long index);
