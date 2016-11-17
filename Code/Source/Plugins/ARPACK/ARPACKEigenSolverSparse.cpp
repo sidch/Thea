@@ -74,8 +74,8 @@ ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * 
   alwaysAssertM(irow.size() == scm.getValues().size(),
                 std::string(getName()) + ": irow and nzval arrays should have same size");
   alwaysAssertM(pcol.size() == (array_size_t)scm.numRows() + 1,
-                getName() + format(": pcol array should have %d + 1 = %d entries, instead has %d entries", scm.numRows(),
-                                   scm.numRows() + 1, (int)pcol.size()));
+                getName() + format(": pcol array should have %ld + 1 = %ld entries, instead has %ld entries",
+                (long)scm.numRows(), (long)scm.numRows() + 1, (long)pcol.size()));
   alwaysAssertM(nnz == pcol[pcol.size() - 1],
                 std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
 
