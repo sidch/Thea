@@ -977,6 +977,23 @@ enableWireframe(Mesh & mesh)
   return false;
 }
 
+bool
+flattenFaces(Mesh & mesh)
+{
+  mesh.isolateFaces();
+  mesh.computeAveragedVertexNormals();
+  return false;
+}
+
+bool
+averageNormals(Mesh & mesh)
+{
+  if (!mesh.hasNormals())
+    mesh.computeAveragedVertexNormals();
+
+  return false;
+}
+
 ColorRGBA8
 indexToColor(uint32 index, bool is_point)
 {
@@ -1008,6 +1025,7 @@ struct FaceColorizer
   bool operator()(Mesh & mesh)
   {
     mesh.isolateFaces();
+    if (labels) mesh.computeAveragedVertexNormals();
     mesh.addColors();
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
@@ -1112,23 +1130,6 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
 
     colorizeMeshSelection(child, child_id);
   }
-}
-
-bool
-flattenFaces(Mesh & mesh)
-{
-  mesh.isolateFaces();
-  mesh.computeAveragedVertexNormals();
-  return false;
-}
-
-bool
-averageNormals(Mesh & mesh)
-{
-  if (!mesh.hasNormals())
-    mesh.computeAveragedVertexNormals();
-
-  return false;
 }
 
 bool
@@ -1667,7 +1668,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
   else
   {
     // Initialize the shader
-    if (color_by_id || color_by_label || !selected_mesh.empty())
+    if (color_by_id || !selected_mesh.empty())
     {
       if (!face_id_shader)
       {
@@ -1709,7 +1710,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     }
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_id)
+    if (color_by_id || color_by_label)
       opts.useVertexData() = true;
 
 #ifdef DRAW_EDGES
