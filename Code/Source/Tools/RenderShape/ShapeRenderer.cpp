@@ -16,8 +16,10 @@
 #include "../../Math.hpp"
 #include "../../Matrix4.hpp"
 #include "../../Plugin.hpp"
+#include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../Vector3.hpp"
+#include <boost/functional/hash.hpp>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -70,7 +72,7 @@ class ShapeRendererImpl
     static RenderSystem * render_system;
     static Shader * point_shader;
     static Shader * mesh_shader;
-    static Shader * face_index_shader;
+    static Shader * face_id_shader;
 
     TheaArray<string> model_paths;
     TheaArray<Matrix4> transforms;
@@ -82,6 +84,9 @@ class ShapeRendererImpl
     Vector3 view_up;
     float point_size;
     bool color_by_id;
+    bool color_by_label;
+    string labels_path;
+    TheaArray<int> labels;
     string selected_mesh;
     ColorRGBA primary_color;
     ColorRGBA background_color;
@@ -101,6 +106,7 @@ class ShapeRendererImpl
     bool parseColor(string const & s, ColorRGBA & c);
     void resetArgs();
     bool loadModel(Model & model, string const & path);
+    bool loadLabels();
     bool renderModel(Model const & model, ColorRGBA const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
 
@@ -140,7 +146,7 @@ RenderSystemFactory * ShapeRendererImpl::render_system_factory = NULL;
 RenderSystem * ShapeRendererImpl::render_system = NULL;
 Shader * ShapeRendererImpl::point_shader = NULL;
 Shader * ShapeRendererImpl::mesh_shader = NULL;
-Shader * ShapeRendererImpl::face_index_shader = NULL;
+Shader * ShapeRendererImpl::face_id_shader = NULL;
 
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
@@ -177,6 +183,9 @@ ShapeRendererImpl::resetArgs()
   view_up = Vector3(0, 1, 0);
   point_size = 1.0f;
   color_by_id = false;
+  color_by_label = false;
+  labels_path = "";
+  labels.clear();
   selected_mesh = "";
   primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
   background_color = ColorRGBA(1, 1, 1, 1);
@@ -410,6 +419,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
+  THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
   THEA_CONSOLE << "                         rest of the shape as black)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
@@ -792,7 +802,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
         case 'c':
         {
-          if (argc < 1) { THEA_ERROR << "-c: Mesh color not specified"; return false; }
+          if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
 
           if (toLower(trimWhitespace(*argv)) == "id")
             color_by_id = true;
@@ -802,6 +812,16 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
             if (!parseColor(*argv, primary_color))
               return false;
           }
+
+          argv++; argc--; break;
+        }
+
+        case 'l':
+        {
+          if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
+
+          color_by_label = true;
+          labels_path = trimWhitespace(*argv);
 
           argv++; argc--; break;
         }
@@ -976,12 +996,14 @@ indexToColor(uint32 index, bool is_point)
   return color;
 }
 
-struct FaceIndexColorizer
+struct FaceColorizer
 {
   FaceIndexMap const & tri_ids;
   FaceIndexMap const & quad_ids;
+  TheaArray<int> const * labels;
 
-  FaceIndexColorizer(FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
+  FaceColorizer(FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_, TheaArray<int> const * labels_ = NULL)
+  : tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -989,6 +1011,7 @@ struct FaceIndexColorizer
     mesh.addColors();
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+    ColorRGBA8 color;
     for (array_size_t i = 0; i < tris.size(); i += 3)
     {
       FaceRef face(&mesh, (long)i / 3);
@@ -997,7 +1020,15 @@ struct FaceIndexColorizer
         throw Error(format("Could not find index of triangle %ld in mesh '%s'", (long)i / 3, mesh.getName()));
 
       uint32 id = existing->second;
-      ColorRGBA8 color = indexToColor(id, false);
+      if (labels)
+      {
+        if ((array_size_t)id >= labels->size())
+          color = ColorRGBA8(255, 0, 0, 255);
+        else
+          color = getPaletteColor((*labels)[(array_size_t)id]);
+      }
+      else
+        color = indexToColor(id, false);
 
       mesh.setColor((long)tris[i    ], color);
       mesh.setColor((long)tris[i + 1], color);
@@ -1013,7 +1044,15 @@ struct FaceIndexColorizer
         throw Error(format("Could not find index of quad %ld in mesh '%s'", (long)i / 4, mesh.getName()));
 
       uint32 id = existing->second;
-      ColorRGBA8 color = indexToColor(id, false);
+      if (labels)
+      {
+        if ((array_size_t)id >= labels->size())
+          color = ColorRGBA8(255, 0, 0, 255);
+        else
+          color = getPaletteColor((*labels)[(array_size_t)id]);
+      }
+      else
+        color = indexToColor(id, false);
 
       mesh.setColor((long)quads[i    ], color);
       mesh.setColor((long)quads[i + 1], color);
@@ -1127,6 +1166,12 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
     model.is_point_cloud = true;
 
+    if (color_by_label)
+    {
+      if (!loadLabels())
+        return false;
+    }
+
     THEA_CONSOLE << "Read " << model.points.size() << " points from '" << path << '\'';
   }
   else
@@ -1156,8 +1201,16 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     {
       if (color_by_id)
       {
-        FaceIndexColorizer id_colorizer(tri_ids, quad_ids);
+        FaceColorizer id_colorizer(tri_ids, quad_ids);
         model.mesh_group.forEachMeshUntil(&id_colorizer);
+      }
+      else if (color_by_label)
+      {
+        if (!loadLabels())
+          return false;
+
+        FaceColorizer label_colorizer(tri_ids, quad_ids, &labels);
+        model.mesh_group.forEachMeshUntil(&label_colorizer);
       }
       else if (!selected_mesh.empty())
       {
@@ -1176,6 +1229,122 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 #endif
     }
   }
+
+  return true;
+}
+
+uint32
+labelHash(string const & label)
+{
+  boost::hash<string> hasher;
+  return (uint32)hasher(label);
+}
+
+bool
+ShapeRendererImpl::loadLabels()
+{
+  if (labels_path.empty())
+  {
+    THEA_ERROR << "No labels file specified";
+    return false;
+  }
+
+  labels.clear();
+
+  string ext = toLower(FilePath::extension(labels_path));
+  if (ext == "lab")
+  {
+    // <label1 name>
+    // <face/point ids starting from 1 labeled according to label1>
+    // <label2 name>
+    // <face/point ids starting from 1 labeled according to label2>
+    // ...
+
+    ifstream in(labels_path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Could not open labels file '" << labels_path << '\'';
+      return false;
+    }
+
+    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    LabelIndexMap label_indices;
+
+    string line;
+    while (getline(in, line))
+    {
+      string label_name = trimWhitespace(line);
+      if (!getline(in, line))
+      {
+        THEA_ERROR << "Could not read list of elements for label '" << label_name << '\'';
+        return false;
+      }
+
+      int label_index = -1;
+      LabelIndexMap::const_iterator existing = label_indices.find(label_name);
+      if (existing == label_indices.end())
+      {
+        label_index = (int)labelHash(label_name);
+        label_indices[label_name] = label_index;
+      }
+      else
+        label_index = existing->second;
+
+      istringstream line_in(line);
+      long index;
+      while (line_in >> index)
+      {
+        index--;  // first face has index 1 in this format
+        if (index < 0)
+        {
+          THEA_ERROR << "Index " << index << " of element to be labeled is out of bounds";
+          return false;
+        }
+
+        if (index >= (long)labels.size())
+          labels.resize((array_size_t)(2 * (index + 1)), -1);
+
+        labels[(array_size_t)index] = label_index;
+      }
+    }
+  }
+  else
+  {
+    // <name of label of face/point 0>
+    // <name of label of face/point 1>
+    // <name of label of face/point 2>
+    // ...
+
+    ifstream in(labels_path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Could not open labels file '" << labels_path << '\'';
+      return false;
+    }
+
+    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    LabelIndexMap label_indices;
+
+    string line;
+    while (getline(in, line))
+    {
+      string label_name = trimWhitespace(line);
+
+      int label_index = -1;
+      LabelIndexMap::const_iterator existing = label_indices.find(label_name);
+      if (existing == label_indices.end())
+      {
+        label_index = (int)labelHash(label_name);
+        label_indices[label_name] = label_index;
+      }
+      else
+        label_index = existing->second;
+
+      labels.push_back(label_index);
+    }
+  }
+
+  THEA_CONSOLE << "Read labels from '" << labels_path << '\'';
 
   return true;
 }
@@ -1411,7 +1580,7 @@ initMeshShader(Shader & shader)
 }
 
 bool
-initFaceIndexShader(Shader & shader)
+initFaceIDShader(Shader & shader)
 {
   static string const VERTEX_SHADER =
 "\n"
@@ -1433,7 +1602,7 @@ initFaceIndexShader(Shader & shader)
     shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
     shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach face index shader module")
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach face ID shader module")
 
   return true;
 }
@@ -1483,6 +1652,12 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
       {
         if (color_by_id)
           render_system->setColor(indexToColor((uint32)i, true));
+        else if (color_by_label)
+        {
+          int label = labels[(array_size_t)i];
+          ColorRGBA color = (label < 0 ? ColorRGBA(1, 0, 0, 1) : getPaletteColor(label));
+          render_system->setColor(color);
+        }
 
         render_system->sendVertex(model.points[i]);
       }
@@ -1492,25 +1667,25 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
   else
   {
     // Initialize the shader
-    if (color_by_id || !selected_mesh.empty())
+    if (color_by_id || color_by_label || !selected_mesh.empty())
     {
-      if (!face_index_shader)
+      if (!face_id_shader)
       {
-        face_index_shader = render_system->createShader("Face index shader");
-        if (!face_index_shader)
+        face_id_shader = render_system->createShader("Face ID shader");
+        if (!face_id_shader)
         {
-          THEA_ERROR << "Could not create face index shader";
+          THEA_ERROR << "Could not create face ID shader";
           return false;
         }
 
-        if (!initFaceIndexShader(*face_index_shader))
+        if (!initFaceIDShader(*face_id_shader))
         {
-          THEA_ERROR << "Could not initialize face index shader";
+          THEA_ERROR << "Could not initialize face ID shader";
           return false;
         }
       }
 
-      render_system->setShader(face_index_shader);
+      render_system->setShader(face_id_shader);
     }
     else
     {
