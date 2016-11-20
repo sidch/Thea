@@ -239,7 +239,7 @@ getPaletteColor(long n)
     ColorRGBA::fromARGB(0xFF808000),
   };
 
-  return PALETTE[n % (sizeof(PALETTE) / sizeof(ColorRGBA))];
+  return PALETTE[abs(n) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
 }
 
 int
@@ -1234,11 +1234,12 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
   return true;
 }
 
+// Guaranteed to return a value between 0 and 2^32 - 1
 uint32
 labelHash(string const & label)
 {
   boost::hash<string> hasher;
-  return (uint32)hasher(label);
+  return (uint32)(hasher(label) & 0x7FFFFFFF);
 }
 
 bool
