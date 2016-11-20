@@ -163,6 +163,12 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     typedef typename FaceSet::iterator            FaceIterator;           ///< Iterator over faces.
     typedef typename FaceSet::const_iterator      FaceConstIterator;      ///< Const iterator over faces.
 
+    // Generic typedefs, each mesh class must define these for builder and codec compatibility
+    typedef Vertex        *  VertexHandle;       ///< Handle to a mesh vertex.
+    typedef Vertex const  *  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
+    typedef Face          *  FaceHandle;         ///< Handle to a mesh face.
+    typedef Face   const  *  FaceConstHandle;    ///< Handle to an immutable mesh face.
+
     /** Iterator over edges (alternate halfedges starting from the first). */
     typedef EdgeIterTmpl<HalfedgeIterator> EdgeIterator;
 

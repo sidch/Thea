@@ -1,5 +1,4 @@
 #include "../../Common.hpp"
-#include "../../FilePath.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
@@ -11,12 +10,15 @@
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Graphics/VertexWelder.hpp"
+#include "../../FilePath.hpp"
 #include "../../LineSegment3.hpp"
 #include "../../Math.hpp"
 #include "../../Random.hpp"
 #include "../../UnorderedSet.hpp"
+#include "../../UnorderedMap.hpp"
 #include <boost/program_options.hpp>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <queue>
 #include <set>
@@ -43,9 +45,15 @@ main(int argc, char * argv[])
   return status;
 }
 
+typedef TheaArray<string> LabelArray;
+typedef TheaUnorderedMap<string, int> LabelIndexMap;
+
 struct FaceAttribute
 {
+  int label_index;
   int flag;
+
+  FaceAttribute() : label_index(-1), flag(0) {}
 
   void draw(RenderSystem & render_system, RenderOptions const & options) const {}  // noop
 };
@@ -83,8 +91,8 @@ string infile, outfile;
 bool no_normals = false;
 bool no_texcoords = false;
 bool no_empty = false;
-bool flatten = false;
 
+bool do_flatten = false;
 bool do_del_danglers = false;
 
 bool do_del_dup_faces = false;
@@ -110,7 +118,10 @@ bool orient_visibility_hi_qual = false;
 bool do_triangulate = false;
 double triangulate_tolerance = -1;
 
+bool export_face_labels = false;
+
 int parseArgs(int argc, char * argv[]);
+void flatten(MG & mesh_group);
 bool delDanglers(Mesh & mesh);
 void delDuplicateFaces(MG & mesh_group, bool sorted);
 bool zipper(Mesh & mesh);
@@ -123,6 +134,55 @@ void orientVisibility(MG & mesh_group);
 bool triangulate(Mesh & mesh);
 bool checkProblems(Mesh & mesh);
 
+struct ReadCallback : public MG::ReadCallback
+{
+  ReadCallback(LabelArray & labels_) : labels(labels_) {}
+
+  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
+  {
+    string mesh_name = mesh->getName();
+    if (mesh_name.empty())
+      face->attr().label_index = -1;
+    else
+    {
+      LabelIndexMap::const_iterator existing = label_indices.find(mesh_name);
+      if (existing == label_indices.end())
+      {
+        face->attr().label_index = (int)labels.size();
+        label_indices[mesh_name] = face->attr().label_index;
+        labels.push_back(mesh_name);
+      }
+      else
+        face->attr().label_index = existing->second;
+    }
+  }
+
+  LabelArray & labels;
+  LabelIndexMap label_indices;
+
+}; // struct ReadCallback
+
+struct WriteCallback : public MG::WriteCallback
+{
+  WriteCallback(LabelArray const & labels_) : labels(labels_), faces_per_label(labels_.size()) {}
+
+  void faceWritten(Mesh const * mesh, long index, Mesh::FaceConstHandle face)
+  {
+    long lab = face->attr().label_index;
+    alwaysAssertM(lab < (long)labels.size(), "Face label index out of bounds");
+
+    if (lab < 0)
+      unlabeled_faces.push_back(index);
+    else
+      faces_per_label[(array_size_t)lab].push_back(index);
+  }
+
+  LabelArray const & labels;
+  TheaArray< TheaArray<long> > faces_per_label;
+  TheaArray<long> unlabeled_faces;
+
+}; // struct WriteCallback
+
 int
 meshFix(int argc, char * argv[])
 {
@@ -132,15 +192,13 @@ meshFix(int argc, char * argv[])
 
   Codec3DS<Mesh>::Options opts_3ds = Codec3DS<Mesh>::Options::defaults();
   opts_3ds.setIgnoreTexCoords(no_texcoords)
-          .setSkipEmptyMeshes(no_empty)
-          .setFlatten(flatten);
+          .setSkipEmptyMeshes(no_empty);
   Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(opts_3ds, opts_3ds));
 
   CodecOBJ<Mesh>::Options opts_obj = CodecOBJ<Mesh>::Options::defaults();
   opts_obj.setIgnoreTexCoords(no_texcoords)
           .setIgnoreNormals(no_normals)
-          .setSkipEmptyMeshes(no_empty)
-          .setFlatten(flatten);
+          .setSkipEmptyMeshes(no_empty);
   CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(opts_obj, opts_obj));
 
   CodecOFF<Mesh>::ReadOptions opts_off = CodecOFF<Mesh>::ReadOptions::defaults();
@@ -157,8 +215,11 @@ meshFix(int argc, char * argv[])
   codecs.push_back(codec_off);
   codecs.push_back(codec_3ds);
 
+  LabelArray labels;
+  ReadCallback read_callback(labels);
+
   MG mg(FilePath::objectName(infile));
-  mg.load(infile, codecs);
+  mg.load(infile, codecs, &read_callback);
 
   mg.updateBounds();  // load() should do this, but let's play safe
   if (mg.isEmpty())
@@ -167,7 +228,15 @@ meshFix(int argc, char * argv[])
     return -1;
   }
 
-  // The order of operations is important here -- e.g. it's better to do orient() after welding vertices
+  // The order of operations is important here -- e.g. it's better to do orient() after welding vertices. flatten() must happen
+  // right at the beginning.
+
+  if (do_flatten)
+  {
+    flatten(mg);
+    mg.forEachMeshUntil(&checkProblems);
+  }
+
   if (do_del_danglers)
   {
     mg.forEachMeshUntil(&delDanglers);
@@ -235,7 +304,51 @@ meshFix(int argc, char * argv[])
     *codec_off = CodecOFF<Mesh>(opts_off, write_opts_off);
   }
 
-  mg.save(outfile, codecs);
+  WriteCallback write_callback(labels);
+  mg.save(outfile, codecs, (export_face_labels ? &write_callback : NULL));
+
+  if (export_face_labels)
+  {
+    string lab_path = FilePath::changeCompleteExtension(outfile, "lab");
+    ofstream out(lab_path.c_str(), ios::binary);
+    if (!out)
+    {
+      THEA_ERROR << "Could not open labels output file '" << lab_path << '\'';
+      return -1;
+    }
+
+    bool first = true;
+    for (array_size_t i = 0; i < labels.size(); ++i)
+    {
+      if (write_callback.faces_per_label[i].empty())
+        continue;
+
+      if (first) first = false;
+      else out << '\n';
+
+      out << labels[i] << '\n';
+      for (array_size_t j = 0; j < write_callback.faces_per_label[i].size(); ++j)
+      {
+        if (j > 0) out << ' ';
+        out << write_callback.faces_per_label[i][j] + 1;
+      }
+      out << '\n';
+    }
+
+    if (!write_callback.unlabeled_faces.empty())
+    {
+      if (first) first = false;
+      else out << '\n';
+
+      out << "Unlabeled\n";
+      for (array_size_t j = 0; j < write_callback.unlabeled_faces.size(); ++j)
+      {
+        if (j > 0) out << ' ';
+        out << write_callback.unlabeled_faces[j] + 1;
+      }
+      out << '\n';
+    }
+  }
 
   return 0;
 }
@@ -303,6 +416,9 @@ parseArgs(int argc, char * argv[])
 
           ("triangulate",         po::value<double>(&triangulate_tolerance),
                                   "Triangulate every face with more than 3 vertices")
+
+          ("export-face-labels",  "Along with the output mesh, export a .lab file that contains, for every face in order, the"
+                                  "name of the submesh it belonged to in the input. Works even if --flatten is specified.")
   ;
 
   po::options_description desc;
@@ -365,7 +481,7 @@ parseArgs(int argc, char * argv[])
     no_empty = do_something = true;
 
   if (vm.count("flatten") > 0)
-    flatten = do_something = true;
+    do_flatten = do_something = true;
 
   if (vm.count("del-danglers") > 0)
     do_del_danglers = do_something = true;
@@ -417,6 +533,9 @@ parseArgs(int argc, char * argv[])
   if (vm.count("triangulate") > 0)
     do_triangulate = do_something = true;
 
+  if (vm.count("export-face-labels") > 0)
+    export_face_labels = do_something = true;
+
   if (!do_something)
   {
     THEA_WARNING << "No repair operation specified, no output written";
@@ -430,6 +549,60 @@ double
 scaledTolerance(Mesh const & mesh, double relative_tolerance)
 {
   return relative_tolerance * mesh.getBounds().getExtent().length();
+}
+
+struct Flattener
+{
+  Flattener(string const & mesh_name = "Flattened") { flattened = Mesh::Ptr(new Mesh(mesh_name)); }
+
+  bool operator()(Mesh const & mesh)
+  {
+    typedef TheaUnorderedMap<Mesh::Vertex const *, Mesh::Vertex *> VertexMap;
+    VertexMap vmap;
+
+    for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+    {
+      Mesh::Vertex * new_vertex = flattened->addVertex(vi->getPosition(), &vi->getNormal());
+      if (!new_vertex)
+        throw Error("Could not add copy of vertex to flattened mesh");
+
+      new_vertex->attr() = vi->attr();
+      vmap[&(*vi)] = new_vertex;
+    }
+
+    TheaArray<Mesh::Vertex *> face_vertices;
+    for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    {
+      face_vertices.clear();
+      for (Mesh::Face::VertexConstIterator fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
+      {
+        VertexMap::const_iterator existing = vmap.find(*fvi);
+        if (existing == vmap.end())
+          throw Error("Could not find copy of vertex in flattened mesh");
+
+        face_vertices.push_back(existing->second);
+      }
+
+      Mesh::Face * new_face = flattened->addFace(face_vertices.begin(), face_vertices.end());
+      if (new_face)
+        new_face->attr() = fi->attr();
+      else
+        THEA_WARNING << "Could not add copy of face to flattened mesh";  // face might be malformed, this is not a fatal error
+    }
+
+    return false;
+  }
+
+  Mesh::Ptr flattened;
+};
+
+void
+flatten(MG & mesh_group)
+{
+  Flattener flattener;
+  mesh_group.forEachMeshUntil(&flattener);
+  mesh_group.clear();
+  mesh_group.addMesh(flattener.flattened);
 }
 
 bool

@@ -61,9 +61,9 @@ template <typename MeshT>
 class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsCGALMesh<MeshT> >::type>
 {
   public:
-    typedef MeshT Mesh;  ///< Type of mesh being built.
-    typedef typename Mesh::Vertex_handle VertexHandle;  ///< Handle to a mesh vertex.
-    typedef typename Mesh::Face_handle FaceHandle;  ///< Handle to a mesh face.
+    typedef MeshT                         Mesh;          ///< Type of mesh being built.
+    typedef typename MeshT::VertexHandle  VertexHandle;  ///< Handle to a mesh vertex.
+    typedef typename MeshT::FaceHandle    FaceHandle;    ///< Handle to a mesh face.
 
     THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, shared_ptr, weak_ptr)
 

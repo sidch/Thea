@@ -942,7 +942,7 @@ struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
 
   MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
 
-  void faceAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::FaceHandle face)
+  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
   {
     if (face.hasTriangles())
     {
@@ -1275,6 +1275,9 @@ ShapeRendererImpl::loadLabels()
     while (getline(in, line))
     {
       string label_name = trimWhitespace(line);
+      if (label_name.empty())
+        continue;
+
       if (!getline(in, line))
       {
         THEA_ERROR << "Could not read list of elements for label '" << label_name << '\'';

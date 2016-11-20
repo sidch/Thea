@@ -74,15 +74,36 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
          * Called after a vertex has been read and added to the mesh. \a index is the sequential index of the vertex in the mesh
          * file, and need not correspond to the sequence in which vertices are added to the mesh.
          */
-        virtual void vertexAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::VertexHandle vertex) {}
+        virtual void vertexRead(Mesh * mesh, long index, typename Mesh::VertexHandle vertex) {}
 
         /**
          * Called after a face has been read and added to the mesh. \a index is the sequential index of the face in the mesh
          * file, and need not correspond to the sequence in which faces are added to the mesh.
          */
-        virtual void faceAdded(Mesh * mesh, long index, typename IncrementalMeshBuilder<Mesh>::FaceHandle face) {}
+        virtual void faceRead(Mesh * mesh, long index, typename Mesh::FaceHandle face) {}
 
     }; // class ReadCallback
+
+    /** Interface for callback functions that are called when a vertex or face is serialized. */
+    class WriteCallback
+    {
+      public:
+        /** Destructor. */
+        virtual ~WriteCallback() = 0;
+
+        /**
+         * Called after a vertex has been written to an output stream. \a index is the sequential index of the vertex in the
+         * output order, or -1 if the codec does not provide this information.
+         */
+        virtual void vertexWritten(Mesh const * mesh, long index, typename Mesh::VertexConstHandle vertex) {}
+
+        /**
+         * Called after a face has been written to an output stream. \a index is the sequential index of the face in the output
+         * order, or -1 if the codec does not provide this information.
+         */
+        virtual void faceWritten(Mesh const * mesh, long index, typename Mesh::FaceConstHandle face) {}
+
+    }; // class WriteCallback
 
   private:
     typedef TheaSet<MeshPtr>  MeshSet;
@@ -300,6 +321,10 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
 
     AxisAlignedBox3 const & getBounds() const { return bounds; }
 
+    using Serializable::serialize;    // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
+    using Serializable::deserialize;  // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any
+                                      // case the behavior appears to be as expected with this line.
+
     /**
      * {@inheritDoc}
      *
@@ -307,13 +332,23 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      */
     void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const
     {
+      serialize(output, codec, NULL);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * The serialized mesh group is prefixed with a header indicating the type and size of the encoding.
+     */
+    void serialize(BinaryOutputStream & output, Codec const & codec, WriteCallback * callback) const
+    {
       if (codec == Codec_AUTO())
         throw Error(getNameStr() + ": You must explicitly choose a codec for serializing mesh groups");
 
       try
       {
         MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-        mesh_codec.serializeMeshGroup(*this, output, true);
+        mesh_codec.serializeMeshGroup(*this, output, true, callback);
       }
       catch (std::bad_cast &)
       {
@@ -321,10 +356,6 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         throw FatalError(getNameStr() + ": Codec specified for mesh group serialization is not a mesh codec.");
       }
     }
-
-    using Serializable::deserialize;  // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
-                                      // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any
-                                      // case the behavior appears to be as expected with this line.
 
     /**
      * {@inheritDoc}
@@ -366,9 +397,9 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const
+    void save(std::string const & path, Codec const & codec = Codec_AUTO(), WriteCallback * callback = NULL) const
     {
-      save(path, codec, NULL);
+      save(path, codec, NULL, callback);
     }
 
     /**
@@ -376,9 +407,10 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * on a default option. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be saved.
      */
-    void save(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs) const
+    void save(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs,
+              WriteCallback * callback = NULL) const
     {
-      save(path, Codec_AUTO(), &codecs);
+      save(path, Codec_AUTO(), &codecs, callback);
     }
 
     /**
@@ -406,7 +438,8 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs) const
+    void save(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs,
+              WriteCallback * callback) const
     {
       MeshCodec<Mesh> const * mesh_codec = NULL;
 
@@ -427,7 +460,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       }
 
       BinaryOutputStream out(path, Endianness::LITTLE);
-      mesh_codec->serializeMeshGroup(*this, out, false);
+      mesh_codec->serializeMeshGroup(*this, out, false, callback);
 
       out.commit();
       if (!out.ok())
@@ -439,7 +472,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * thrown if the mesh group cannot be loaded.
      */
     void load(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs,
-              ReadCallback * callback = NULL)
+              ReadCallback * callback)
     {
       MeshCodec<Mesh> const * mesh_codec = NULL;
 
@@ -559,13 +592,10 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
 
 }; // class MeshGroup
 
-// Inline functions
-template <typename MeshT> inline
-MeshGroup<MeshT>::ReadCallback::~ReadCallback()
-{
-  // Pure virtual destructor should have a body
-  // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
-}
+// Pure virtual destructor should have a body
+// http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
+template <typename MeshT> inline MeshGroup<MeshT>::ReadCallback::~ReadCallback() {}
+template <typename MeshT> inline MeshGroup<MeshT>::WriteCallback::~WriteCallback() {}
 
 } // namespace Graphics
 } // namespace Thea

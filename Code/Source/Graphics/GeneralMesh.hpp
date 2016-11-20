@@ -104,6 +104,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     typedef typename FaceList::iterator          FaceIterator;         ///< Iterator over faces.
     typedef typename FaceList::const_iterator    FaceConstIterator;    ///< Const iterator over faces.
 
+    // Generic typedefs, each mesh class must define these for builder and codec compatibility
+    typedef Vertex        *  VertexHandle;       ///< Handle to a mesh vertex.
+    typedef Vertex const  *  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
+    typedef Face          *  FaceHandle;         ///< Handle to a mesh face.
+    typedef Face   const  *  FaceConstHandle;    ///< Handle to an immutable mesh face.
+
     /** Identifiers for the various buffers (enum class). */
     struct BufferID
     {

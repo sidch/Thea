@@ -62,7 +62,8 @@ class MeshCodec : public Codec
     THEA_DEF_POINTER_TYPES(MeshCodec, shared_ptr, weak_ptr)
 
     typedef MeshT Mesh;  ///< The mesh type.
-    typedef typename MeshGroup<MeshT>::ReadCallback ReadCallback;  ///< Called when a mesh undergoes an incremental update.
+    typedef typename MeshGroup<MeshT>::ReadCallback ReadCallback;    ///< Called when a mesh element is read.
+    typedef typename MeshGroup<MeshT>::WriteCallback WriteCallback;  ///< Called when a mesh element is written.
 
     /** Destructor. */
     virtual ~MeshCodec() {}
@@ -71,8 +72,8 @@ class MeshCodec : public Codec
      * Serialize a mesh group to a binary output stream. Optionally prefixes extra information about the mesh block such as its
      * size and type (which may have not been specified in the encoding format itself).
      */
-    virtual long serializeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool prefix_info)
-                 const = 0;
+    virtual long serializeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+                                    WriteCallback * callback) const = 0;
 
     /**
      * Deserialize a mesh group from a binary output stream. If the <code>read_prefixed_info</code> parameter is true, extra
