@@ -163,6 +163,12 @@ class CGALMesh : public CGAL::Polyhedron_3< _CGALMeshPolyhedronTraits_3<PointT>,
     typedef FaceAttributeT      FaceAttribute;      ///< Face attribute type.
     typedef FaceAttributeT      FacetAttribute;     ///< Face attribute type (synonym for FaceAttribute).
 
+    // Generic typedefs, each mesh class must define these for builder and codec compatibility
+    typedef typename BaseT::Vertex_handle        VertexHandle;       ///< Handle to a mesh vertex.
+    typedef typename BaseT::Vertex_const_handle  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
+    typedef typename BaseT::Facet_handle         FaceHandle;         ///< Handle to a mesh face.
+    typedef typename BaseT::Facet_const_handle   FaceConstHandle;    ///< Handle to an immutable mesh face.
+
     /** Create an empty mesh. */
     CGALMesh(std::string const & name = "AnonymousMesh") : NamedObject(name) {}
 

@@ -41,12 +41,12 @@ usage(int argc, char * argv[])
 
 struct ReadCallback : public MeshCodec<Mesh>::ReadCallback
 {
-  void vertexAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::VertexHandle vertex)
+  void vertexRead(Mesh * mesh, long index, Mesh::VertexHandle vertex)
   {
     vertex->attr().index = index;
   }
 
-  void faceAdded(Mesh * mesh, long index, IncrementalMeshBuilder<Mesh>::FaceHandle face)
+  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
   {
     face->attr().index = index;
   }

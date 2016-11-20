@@ -67,11 +67,12 @@ class Codec3DS : public Codec3DSBase<MeshT>
     typedef Codec3DSBase<MeshT> BaseT;
 
   public:
-    typedef MeshT Mesh;  ///< The type of mesh processed by the codec.
-    typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.
-    typedef typename MeshGroup::MeshPtr MeshPtr;  ///< A shared pointer to a mesh.
-    typedef BuilderT Builder;  ///< The mesh builder class used by the codec.
-    typedef typename BaseT::ReadCallback ReadCallback;  ///< Called when a mesh undergoes an incremental update.
+    typedef MeshT Mesh;                                   ///< The type of mesh processed by the codec.
+    typedef Graphics::MeshGroup<Mesh> MeshGroup;          ///< A group of meshes.
+    typedef typename MeshGroup::MeshPtr MeshPtr;          ///< A shared pointer to a mesh.
+    typedef BuilderT Builder;                             ///< The mesh builder class used by the codec.
+    typedef typename BaseT::ReadCallback ReadCallback;    ///< Called when a mesh element is read.
+    typedef typename BaseT::WriteCallback WriteCallback;  ///< Called when a mesh element is written.
     using BaseT::getName;
     using BaseT::_getName;
 
@@ -126,7 +127,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info) const
+    long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+                            WriteCallback * callback) const
     {
       throw Error(std::string(getName()) + ": Not implemented");
     }
@@ -271,7 +273,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
             vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex);
 
           if (callback)
-            callback->vertexAdded(mesh.get(), vertex_count, vref);
+            callback->vertexRead(mesh.get(), vertex_count, vref);
 
           vrefs.push_back(vref);
           vertex_count++;
@@ -308,7 +310,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
           typename Builder::FaceHandle fref = builder->addFace(face, face + 3);
           if (callback)
-            callback->faceAdded(mesh.get(), face_count, fref);
+            callback->faceRead(mesh.get(), face_count, fref);
 
           face_count++;
         }

@@ -60,9 +60,9 @@ class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsGeneralMesh<Mes
   public:
     THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, shared_ptr, weak_ptr)
 
-    typedef MeshT Mesh;  ///< Type of mesh being built.
-    typedef typename Mesh::Vertex * VertexHandle;  ///< Handle to a mesh vertex.
-    typedef typename Mesh::Face * FaceHandle;  ///< Handle to a mesh face.
+    typedef MeshT                         Mesh;          ///< Type of mesh being built.
+    typedef typename MeshT::VertexHandle  VertexHandle;  ///< Handle to a mesh vertex.
+    typedef typename MeshT::FaceHandle    FaceHandle;    ///< Handle to a mesh face.
 
     /** Construct from a raw mesh pointer. Ensure the mesh exists till you've finished using this builder object. */
     IncrementalMeshBuilder(Mesh * mesh_) : mesh(mesh_), num_vertices(0), num_faces(0), building(false)

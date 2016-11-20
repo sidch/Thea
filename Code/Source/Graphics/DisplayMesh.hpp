@@ -292,6 +292,12 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     typedef boost::array<long, 3> IndexTriple;  ///< Vertex indices of a single triangle.
     typedef boost::array<long, 4> IndexQuad;  ///< Vertex indices of a single quad.
 
+    // Generic typedefs, each mesh class must define these for builder and codec compatibility
+    typedef long  VertexHandle;       ///< Handle to a mesh vertex.
+    typedef long  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
+    typedef Face  FaceHandle;         ///< Handle to a mesh face.
+    typedef Face  FaceConstHandle;    ///< Handle to an immutable mesh face.
+
   private:
     // Vertex data
     VertexArray    vertices;   ///< Vertex positions.
