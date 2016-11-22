@@ -2,8 +2,10 @@
 #include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../AffineTransform3.hpp"
 #include "../../FilePath.hpp"
 #include "../../UnorderedMap.hpp"
+#include <cstdlib>
 #include <iostream>
 
 using namespace std;
@@ -13,6 +15,8 @@ using namespace Graphics;
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
+
+enum Axis { X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2 };
 
 bool
 splitMesh(MG::Ptr mg)
@@ -81,18 +85,65 @@ splitMesh(MG::Ptr mg)
   return true;
 }
 
+struct Transformer
+{
+  Transformer(AffineTransform3 const & t) : transform(t) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+      vi->setPosition(transform * vi->getPosition());
+
+    return false;
+  }
+
+  AffineTransform3 transform;
+};
+
+bool
+centerMesh(MG & mg)
+{
+  mg.updateBounds();
+  Vector3 c = mg.getBounds().getCenter();
+  Transformer tr(AffineTransform3::translation(-c));
+  mg.forEachMeshUntil(&tr);
+
+  return true;
+}
+
+bool
+rescaleMesh(MG & mg, Axis axis, Real len)
+{
+  mg.updateBounds();
+  Real ext = mg.getBounds().getExtent()[axis];
+  if (ext > 0)
+  {
+    Real s = len / ext;
+    Transformer tr(AffineTransform3::scaling(s));
+    mg.forEachMeshUntil(&tr);
+  }
+
+  return true;
+}
+
+int
+usage(int argc, char * argv[])
+{
+  THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <infile> [<infile> ...] <outfile>";
+  THEA_CONSOLE << "";
+  THEA_CONSOLE << "Options:";
+  THEA_CONSOLE << "  --binary                 :  Force a binary output encoding wherever possible";
+  THEA_CONSOLE << "  --split                  :  Make each connected component a separate submesh";
+  THEA_CONSOLE << "  --center                 :  Center the mesh bounding box at the origin (always precedes rescale)";
+  THEA_CONSOLE << "  --rescale <x|y|z> <len>  :  Rescale the mesh to a given length along an axis";
+  return 0;
+}
+
 int
 main(int argc, char * argv[])
 {
   if (argc < 3)
-  {
-    THEA_CONSOLE << "Usage: " << argv[0] << " [--binary] [--split] <infile> [<infile> ...] <outfile>";
-    THEA_CONSOLE << "";
-    THEA_CONSOLE << "Options:";
-    THEA_CONSOLE << "  --binary  :  Force a binary output encoding wherever possible";
-    THEA_CONSOLE << "  --split   :  Make each connected component a separate submesh";
-    return -1;
-  }
+    return usage(argc, argv);
 
   CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
                                                                                 .setIgnoreTexCoords(true)));
@@ -110,7 +161,11 @@ main(int argc, char * argv[])
   {
     MG::Ptr main_group;
     bool force_binary = false;
-    bool split = false;
+    bool do_split = false;
+    bool do_center = false;
+    bool do_rescale = false;
+    Axis rescale_axis = X_AXIS;
+    Real rescale_len = 1;
 
     long num_mg = 0;
     for (int i = 1; i < argc - 1; ++i)
@@ -123,7 +178,38 @@ main(int argc, char * argv[])
       }
       else if (arg == "--split")
       {
-        split = true;
+        do_split = true;
+        continue;
+      }
+      else if (arg == "--center")
+      {
+        do_center = true;
+        continue;
+      }
+      else if (arg == "--rescale")
+      {
+        if (i > argc - 4)
+          return usage(argc, argv);
+
+        arg = toLower(argv[++i]);
+        if      (arg == "x") rescale_axis = X_AXIS;
+        else if (arg == "y") rescale_axis = Y_AXIS;
+        else if (arg == "z") rescale_axis = Z_AXIS;
+        else
+        {
+          THEA_ERROR << "Invalid rescale axis: " << arg;
+          return -1;
+        }
+
+        arg = argv[++i];
+        rescale_len = atof(arg.c_str());
+        if (rescale_len <= 0)
+        {
+          THEA_ERROR << "Invalid rescale length: " << arg;
+          return -1;
+        }
+
+        do_rescale = true;
         continue;
       }
 
@@ -149,9 +235,21 @@ main(int argc, char * argv[])
       num_mg++;
     }
 
-    if (split)
+    if (do_split)
     {
       if (!splitMesh(main_group))
+        return -1;
+    }
+
+    if (do_center)
+    {
+      if (!centerMesh(*main_group))
+        return -1;
+    }
+
+    if (do_rescale)
+    {
+      if (!rescaleMesh(*main_group, rescale_axis, rescale_len))
         return -1;
     }
 
