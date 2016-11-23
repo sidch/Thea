@@ -233,6 +233,17 @@ ColorRGBA
 getPaletteColor(long n)
 {
   static ColorRGBA PALETTE[] = {
+    ColorRGBA::fromARGB(0xFFFF66FF),
+    ColorRGBA::fromARGB(0xFFFFFF66),
+    ColorRGBA::fromARGB(0xFF66FFFF),
+    ColorRGBA::fromARGB(0xFF3399FF),
+    ColorRGBA::fromARGB(0xFFFF9933),
+    ColorRGBA::fromARGB(0xFFFF3399),
+    ColorRGBA::fromARGB(0xFF99FF33),
+    ColorRGBA::fromARGB(0xFF9933FF),
+    ColorRGBA::fromARGB(0xFFFFAAAA),
+    ColorRGBA::fromARGB(0xFFAAFFAA),
+    ColorRGBA::fromARGB(0xFFAAAAFF),
     ColorRGBA::fromARGB(0xFFFF0000),
     ColorRGBA::fromARGB(0xFF00FF00),
     ColorRGBA::fromARGB(0xFF0000FF),
@@ -246,24 +257,6 @@ getPaletteColor(long n)
     ColorRGBA::fromARGB(0xFF800080),
     ColorRGBA::fromARGB(0xFF808000),
     ColorRGBA::fromARGB(0xFFA0A0A0),
-    ColorRGBA::fromARGB(0xFFFF66FF),
-    ColorRGBA::fromARGB(0xFFFFFF66),
-    ColorRGBA::fromARGB(0xFF66FFFF),
-    ColorRGBA::fromARGB(0xFF3399FF),
-    ColorRGBA::fromARGB(0xFFFF9933),
-    ColorRGBA::fromARGB(0xFFA0A0A0),
-    ColorRGBA::fromARGB(0xFFFF66FF),
-    ColorRGBA::fromARGB(0xFFFFFF66),
-    ColorRGBA::fromARGB(0xFF66FFFF),
-    ColorRGBA::fromARGB(0xFF3399FF),
-    ColorRGBA::fromARGB(0xFF33FF99),
-    ColorRGBA::fromARGB(0xFFFF9933),
-    ColorRGBA::fromARGB(0xFFFF3399),
-    ColorRGBA::fromARGB(0xFF99FF33),
-    ColorRGBA::fromARGB(0xFF9933FF),
-    ColorRGBA::fromARGB(0xFFFFAAAA),
-    ColorRGBA::fromARGB(0xFFAAFFAA),
-    ColorRGBA::fromARGB(0xFFAAAAFF),
   };
 
   return PALETTE[abs(n) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
