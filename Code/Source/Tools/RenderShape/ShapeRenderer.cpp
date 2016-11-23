@@ -221,6 +221,14 @@ ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include p
   return status;
 }
 
+// Guaranteed to return a value between 0 and 2^32 - 1
+uint32
+labelHash(string const & label)
+{
+  boost::hash<string> hasher;
+  return (uint32)(hasher(label) & 0x7FFFFFFF);
+}
+
 ColorRGBA
 getPaletteColor(long n)
 {
@@ -237,9 +245,34 @@ getPaletteColor(long n)
     ColorRGBA::fromARGB(0xFF008080),
     ColorRGBA::fromARGB(0xFF800080),
     ColorRGBA::fromARGB(0xFF808000),
+    ColorRGBA::fromARGB(0xFFA0A0A0),
+    ColorRGBA::fromARGB(0xFFFF66FF),
+    ColorRGBA::fromARGB(0xFFFFFF66),
+    ColorRGBA::fromARGB(0xFF66FFFF),
+    ColorRGBA::fromARGB(0xFF3399FF),
+    ColorRGBA::fromARGB(0xFFFF9933),
+    ColorRGBA::fromARGB(0xFFA0A0A0),
+    ColorRGBA::fromARGB(0xFFFF66FF),
+    ColorRGBA::fromARGB(0xFFFFFF66),
+    ColorRGBA::fromARGB(0xFF66FFFF),
+    ColorRGBA::fromARGB(0xFF3399FF),
+    ColorRGBA::fromARGB(0xFF33FF99),
+    ColorRGBA::fromARGB(0xFFFF9933),
+    ColorRGBA::fromARGB(0xFFFF3399),
+    ColorRGBA::fromARGB(0xFF99FF33),
+    ColorRGBA::fromARGB(0xFF9933FF),
+    ColorRGBA::fromARGB(0xFFFFAAAA),
+    ColorRGBA::fromARGB(0xFFAAFFAA),
+    ColorRGBA::fromARGB(0xFFAAAAFF),
   };
 
   return PALETTE[abs(n) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
+}
+
+ColorRGBA
+getLabelColor(long label)
+{
+  return getPaletteColor(label);
 }
 
 int
@@ -1043,7 +1076,7 @@ struct FaceColorizer
         if ((array_size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = getPaletteColor((*labels)[(array_size_t)id]);
+          color = getLabelColor((*labels)[(array_size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1067,7 +1100,7 @@ struct FaceColorizer
         if ((array_size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = getPaletteColor((*labels)[(array_size_t)id]);
+          color = getLabelColor((*labels)[(array_size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1232,14 +1265,6 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
   }
 
   return true;
-}
-
-// Guaranteed to return a value between 0 and 2^32 - 1
-uint32
-labelHash(string const & label)
-{
-  boost::hash<string> hasher;
-  return (uint32)(hasher(label) & 0x7FFFFFFF);
 }
 
 bool
@@ -1579,7 +1604,7 @@ initMeshShader(Shader & shader)
   shader.setUniform("light_color", ColorRGB(1, 1, 1));
   shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
   shader.setUniform("two_sided", 1.0f);
-  shader.setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
+  shader.setUniform("material", Vector4(0.3f, 0.7f, 0.2f, 25));
 
   return true;
 }
@@ -1660,7 +1685,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
         else if (color_by_label)
         {
           int label = labels[(array_size_t)i];
-          ColorRGBA color = (label < 0 ? ColorRGBA(1, 0, 0, 1) : getPaletteColor(label));
+          ColorRGBA color = (label < 0 ? ColorRGBA(1, 0, 0, 1) : getLabelColor(label));
           render_system->setColor(color);
         }
 
