@@ -418,7 +418,7 @@ parseArgs(int argc, char * argv[])
                                   "Triangulate every face with more than 3 vertices")
 
           ("export-face-labels",  "Along with the output mesh, export a .lab file that contains, for every face in order, the"
-                                  "name of the submesh it belonged to in the input. Works even if --flatten is specified.")
+                                  " name of the submesh it belonged to in the input. Works even if --flatten is specified.")
   ;
 
   po::options_description desc;

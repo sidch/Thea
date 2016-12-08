@@ -3,6 +3,8 @@
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../FileSystem.hpp"
+#include "../../FilePath.hpp"
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -28,13 +30,14 @@ usage(int argc, char * argv[])
 {
   THEA_CONSOLE << "Usage: " << argv[0] << " [options] <mesh> <out-pts>";
   THEA_CONSOLE << "Options:";
-  THEA_CONSOLE << " -nN   : Generate N samples [=5000]";
-  THEA_CONSOLE << " -s[F] : Generate approximately uniformly separated samples";
-  THEA_CONSOLE << "         with an initial oversampling factor of F";
-  THEA_CONSOLE << " -v    : Generate samples at mesh vertices (ignores -n)";
-  THEA_CONSOLE << " -f    : Generate samples at face centers (ignores -n)";
-  THEA_CONSOLE << " -id   : Write the index of the face (or if -v, the vertex)";
-  THEA_CONSOLE << "         from which each sample was drawn";
+  THEA_CONSOLE << " -nN       : Generate N samples [=5000]";
+  THEA_CONSOLE << " -s[F]     : Generate approximately uniformly separated samples";
+  THEA_CONSOLE << "             with an initial oversampling factor of F";
+  THEA_CONSOLE << " -v        : Generate samples at mesh vertices (ignores -n)";
+  THEA_CONSOLE << " -f        : Generate samples at face centers (ignores -n)";
+  THEA_CONSOLE << " -id       : Write the index of the face (or if -v, the vertex)";
+  THEA_CONSOLE << "             from which each sample was drawn";
+  THEA_CONSOLE << " -l <file> : Load face labels from file and write sample labels";
 
   return 0;
 }
@@ -96,6 +99,127 @@ struct FaceCenterCollector
   TheaArray<long> * indices;
 };
 
+bool
+loadLabels_Lab(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+{
+  ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not open labels file: " << path;
+    return false;
+  }
+
+  labels.clear();
+  face_labels.clear();
+
+  typedef map<string, long> LabelIndexMap;
+  LabelIndexMap labmap;
+
+  string line;
+  long label_index;
+  while (getline(in, line))
+  {
+    string label = trimWhitespace(line);
+    if (label.empty())
+      continue;
+
+    LabelIndexMap::const_iterator existing = labmap.find(label);
+    if (existing == labmap.end())
+    {
+      label_index = (long)labmap.size();
+      labmap[label] = label_index;
+    }
+    else
+      label_index = existing->second;
+
+    if (!getline(in, line))
+    {
+      THEA_ERROR << "Could not read list of faces for label '" << label << '\'';
+      return false;
+    }
+
+    istringstream line_in(line);
+    long face_index;
+    while (line_in >> face_index)
+    {
+      if (face_index < 1)
+      {
+        THEA_ERROR << "Face index out of bounds: " << face_index;
+        return false;
+      }
+
+      if (face_index > (long)face_labels.size())
+      {
+        face_labels.reserve((array_size_t)(2 * face_index));
+        face_labels.resize((array_size_t)face_index, -1);
+      }
+
+      face_labels[(array_size_t)face_index - 1] = label_index;
+    }
+  }
+
+  labels.resize((array_size_t)labmap.size());
+  for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
+    labels[(array_size_t)li->second] = li->first;
+
+  return true;
+}
+
+bool
+loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+{
+  ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not open labels file: " << path;
+    return false;
+  }
+
+  labels.clear();
+  face_labels.clear();
+
+  typedef map<string, long> LabelIndexMap;
+  LabelIndexMap labmap;
+
+  string line;
+  long label_index;
+  while (getline(in, line))
+  {
+    string label = trimWhitespace(line);
+    LabelIndexMap::const_iterator existing = labmap.find(label);
+    if (existing == labmap.end())
+    {
+      label_index = (long)labmap.size();
+      labmap[label] = label_index;
+    }
+    else
+      label_index = existing->second;
+
+    face_labels.push_back(label_index);
+  }
+
+  labels.resize((array_size_t)labmap.size());
+  for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
+    labels[(array_size_t)li->second] = li->first;
+
+  return true;
+}
+
+bool
+loadLabels(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+{
+  string ext = toLower(FilePath::extension(path));
+  if (ext == "lab")
+    return loadLabels_Lab(path, labels, face_labels);
+  else if (ext == "labels")
+  {
+    THEA_ERROR << "The '.labels' format is not currently supported";
+    return false;
+  }
+  else
+    return loadLabels_Lab(path, labels, face_labels);
+}
+
 int
 main(int argc, char * argv[])
 {
@@ -110,6 +234,7 @@ main(int argc, char * argv[])
   bool vertex_samples = false;
   bool face_samples = false;
   bool output_ids = false;
+  string labels_path;
 
   int curr_pos_arg = 0;
   for (int i = 1; i < argc; ++i)
@@ -147,6 +272,18 @@ main(int argc, char * argv[])
           return -1;
         }
       }
+      else if (arg == "-l")
+      {
+        if (i >= argc - 1)
+          return usage(argc, argv);
+
+        labels_path = argv[++i];
+        if (!FileSystem::fileExists(labels_path))
+        {
+          THEA_ERROR << "Labels file '" << labels_path << "' does not exist";
+          return -1;
+        }
+      }
       else
         return usage(argc, argv);
     }
@@ -179,10 +316,20 @@ main(int argc, char * argv[])
     MG mg("MeshGroup");
     mg.load(mesh_path, read_codecs, &read_callback);
 
+    TheaArray<string> labels;
+    TheaArray<long> face_labels;
+    bool output_labels = (!vertex_samples && !labels_path.empty());
+    if (output_labels)
+    {
+      if (!loadLabels(labels_path, labels, face_labels))
+        return -1;
+    }
+
     TheaArray<Vector3> positions;
     TheaArray<Vector3> normals;
     TheaArray<long> indices;
 
+    bool need_face_ids = (output_ids || output_labels);
     bool do_random_sampling = true;
 
     if (vertex_samples)
@@ -206,18 +353,18 @@ main(int argc, char * argv[])
 
       if (uniformly_separated)
       {
-        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (output_ids ? &tris : NULL),
+        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
                                          MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
       }
       else
       {
-        sampler.sampleEvenlyByArea(num_samples, positions, &normals, (output_ids ? &tris : NULL),
+        sampler.sampleEvenlyByArea(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
                                    MeshSampler<Mesh>::CountMode::EXACT, true);
       }
 
-      if (output_ids)
+      if (need_face_ids)
       {
-        alwaysAssertM(tris.size() >= positions.size(), "Triangle ID's not initialized");
+        alwaysAssertM(tris.size() >= positions.size(), "Triangle IDs not initialized");
 
         indices.resize(positions.size());
         for (array_size_t i = 0; i < positions.size(); ++i)
@@ -254,6 +401,13 @@ main(int argc, char * argv[])
 
       if (output_ids)
         out << ' ' << indices[i];
+
+      if (output_labels)
+      {
+        long label_index = (indices[i] < 0 || indices[i] >= (long)face_labels.size()
+                          ? -1 : face_labels[(array_size_t)indices[i]]);
+        out << " \"" << (label_index < 0 ? "" : labels[(array_size_t)label_index]) << '"';
+      }
 
       out << '\n';
     }
