@@ -639,19 +639,38 @@ class /* THEA_API */ KDTreeN
     /**
      * Enable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points.
      *
+     * @param num_acceleration_samples_ Number of sampled points in the acceleration structure. If this number is zero, no
+     *   structure will be created. If it is negative, the number will be automatically determined as a fraction of the number
+     *   of elements. In the latter case, if the number is very small, no structure will be created.
+     *
      * @see disableNearestNeighborAcceleration()
      */
     void enableNearestNeighborAcceleration(long num_acceleration_samples_ = -1)
     {
-      accelerate_nn_queries = true;
+      if (num_acceleration_samples_ < 0)
+      {
+        static long const MIN_ACCEL_SAMPLES = 10;
 
-      if (valid_acceleration_structure && num_acceleration_samples != num_acceleration_samples_)
-        valid_acceleration_structure = false;
+        num_acceleration_samples_ = std::min(250L, (long)std::ceil(0.1 * numElements()));
+        accelerate_nn_queries = (num_acceleration_samples_ >= MIN_ACCEL_SAMPLES);
+      }
+      else
+        accelerate_nn_queries = (num_acceleration_samples_ > 0);
 
-      num_acceleration_samples = num_acceleration_samples_;
+      if (accelerate_nn_queries)
+      {
+        if (valid_acceleration_structure && num_acceleration_samples != num_acceleration_samples_)
+          valid_acceleration_structure = false;
+
+        num_acceleration_samples = num_acceleration_samples_;
+      }
     }
 
-    /** Disable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points off. */
+    /**
+     * Disable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points.
+     *
+     * @see enableNearestNeighborAcceleration()
+     */
     void disableNearestNeighborAcceleration(bool deallocate_memory = true)
     {
       accelerate_nn_queries = false;

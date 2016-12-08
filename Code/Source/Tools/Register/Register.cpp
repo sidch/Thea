@@ -26,10 +26,11 @@ int MAX_SMOOTHING_ROUNDS = 3;
 struct Sample
 {
   Sample() {}
-  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::zero()) : p(p_), n(n_) {}
+  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::zero(), int label_ = -1) : p(p_), n(n_), label(label_) {}
 
   Vector3 p;
   Vector3 n;
+  int label;
 };
 
 namespace Thea {
@@ -52,40 +53,8 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 } // namespace Algorithms
 } // namespace Thea
 
-template <typename T>
-class AccelKDTree : public KDTreeN<T, 3>
-{
-  private:
-    typedef KDTreeN<T, 3> BaseType;
-
-  public:
-    template <typename InputIterator> AccelKDTree(InputIterator begin, InputIterator end) { init(begin, end); }
-
-    template <typename InputIterator> void init(InputIterator begin, InputIterator end)
-    {
-      TheaArray<T> subsampled;
-      for (InputIterator ii = begin; ii != end; ++ii)
-        if (Random::common().uniform01() < 0.02f)
-          subsampled.push_back(*ii);
-
-      coarse_kdtree.init(subsampled.begin(), subsampled.end());
-      BaseType::init(begin, end);
-    }
-
-    template <typename MetricT, typename QueryT>
-    long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, Vector3 * closest_point = NULL)
-    const
-    {
-      double ubound = coarse_kdtree.template distance<MetricT>(query, dist_bound);
-      return static_cast<BaseType const *>(this)->template closestElement<MetricT>(query, ubound, dist, closest_point);
-    }
-
-  private:
-    BaseType coarse_kdtree;
-};
-
 typedef TheaArray<Sample> SampleArray;
-typedef AccelKDTree<Sample> KDTree;
+typedef KDTreeN<Sample, 3> KDTree;
 typedef BoundedArrayN<MAX_NBRS, array_size_t> NeighborSet;
 typedef TheaArray<NeighborSet> NeighborSets;
 typedef TheaArray<Vector3> OffsetArray;
@@ -96,6 +65,14 @@ struct AngleFilter : public Filter<Sample>
   bool allows(Sample const & sample) const { return n.dot(sample.n) >= 0; }
 
   Vector3 n;
+};
+
+struct LabelFilter : public Filter<Sample>
+{
+  LabelFilter(int label_) : label(label_) {}
+  bool allows(Sample const & sample) const { return sample.label == label; }
+
+  int label;
 };
 
 inline float
@@ -319,7 +296,10 @@ alignNonRigid(SampleArray samples1, SampleArray samples2, TheaArray<Vector3> con
 
   // Init kd-trees
   KDTree kdtree1(samples1.begin(), samples1.end());
+  kdtree1.enableNearestNeighborAcceleration();
+
   KDTree kdtree2(samples2.begin(), samples2.end());
+  kdtree2.enableNearestNeighborAcceleration();
 
   THEA_CONSOLE << "Initialized kd-trees";
 
@@ -403,6 +383,7 @@ alignNonRigid(SampleArray samples1, SampleArray samples2, TheaArray<Vector3> con
         offset_samples2[i].p += offsets2[i];
 
       KDTree offset_kdtree2(offset_samples2.begin(), offset_samples2.end());
+      offset_kdtree2.enableNearestNeighborAcceleration();
 
       for (array_size_t i = 0; i < samples1.size(); ++i)
       {
