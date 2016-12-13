@@ -8,7 +8,9 @@
 #include "../../AffineTransform3.hpp"
 #include "../../BoundedArrayN.hpp"
 #include "../../BoundedSortedArrayN.hpp"
+#include "../../UnorderedMap.hpp"
 #include "../../Vector3.hpp"
+#include <boost/functional/hash.hpp>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -19,9 +21,13 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
+typedef TheaUnorderedMap<long, string> IndexLabelMap;
+
 static int const MAX_NBRS = 8;
 int MAX_ROUNDS = 25;
 int MAX_SMOOTHING_ROUNDS = 3;
+bool USE_LABELS = false;
+IndexLabelMap LABELS;
 
 struct Sample
 {
@@ -59,19 +65,12 @@ typedef BoundedArrayN<MAX_NBRS, array_size_t> NeighborSet;
 typedef TheaArray<NeighborSet> NeighborSets;
 typedef TheaArray<Vector3> OffsetArray;
 
-struct AngleFilter : public Filter<Sample>
+struct NNFilter : public Filter<Sample>
 {
-  AngleFilter(Vector3 const & n_) : n(n_) {}
-  bool allows(Sample const & sample) const { return n.dot(sample.n) >= 0; }
+  NNFilter(Vector3 const & n_, int label_) : n(n_), label(label_) {}
+  bool allows(Sample const & sample) const { return (!USE_LABELS || sample.label == label) && n.dot(sample.n) >= 0; }
 
   Vector3 n;
-};
-
-struct LabelFilter : public Filter<Sample>
-{
-  LabelFilter(int label_) : label(label_) {}
-  bool allows(Sample const & sample) const { return sample.label == label; }
-
   int label;
 };
 
@@ -86,8 +85,38 @@ kernelEpanechnikovSqDist(float squared_dist, float squared_bandwidth)
   return nrm_sqdist < 1 ? SCALE * (1 - nrm_sqdist) : 0;
 }
 
+string
+readQuotedString(istream & in)
+{
+  char c;
+  while (in.get(c))
+  {
+    if (c == '"')
+    {
+      ostringstream oss;
+      while (in.get(c))
+      {
+        if (c == '"') break;
+        oss << c;
+      }
+
+      return oss.str();
+    }
+  }
+
+  return "";
+}
+
+// Guaranteed to return a value between 0 and 2^32 - 1
+long
+labelHash(string const & label)
+{
+  boost::hash<string> hasher;
+  return (long)(hasher(label) & 0x7FFFFFFF);
+}
+
 bool
-loadSamples(string const & path, SampleArray & samples)
+loadSamples(string const & path, SampleArray & samples, bool read_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -105,7 +134,19 @@ loadSamples(string const & path, SampleArray & samples)
     if (!(line_in >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2]))
       continue;
 
-    samples.push_back(Sample(p, n));
+    int label_hash = -1;
+    if (read_labels)
+    {
+      string label = readQuotedString(line_in);
+      if (!trimWhitespace(label).empty())
+      {
+        label_hash = labelHash(label);
+        if (LABELS.find(label_hash) == LABELS.end())
+          LABELS[label_hash] = label;
+      }
+    }
+
+    samples.push_back(Sample(p, n, label_hash));
   }
 
   THEA_CONSOLE << "Read " << samples.size() << " samples from file '" << path << '\'';
@@ -175,7 +216,7 @@ updateOffsets(SampleArray const & src_samples, KDTree const & tgt_kdtree, Offset
   {
     Vector3 offset_p = src_samples[i].p + src_offsets[i];
 
-    AngleFilter filter(src_samples[i].n);
+    NNFilter filter(src_samples[i].n, src_samples[i].label);
     const_cast<KDTree &>(tgt_kdtree).pushFilter(&filter);
       long nn_index = tgt_kdtree.closestElement<MetricL2>(offset_p);
     const_cast<KDTree &>(tgt_kdtree).popFilter();
@@ -387,7 +428,7 @@ alignNonRigid(SampleArray samples1, SampleArray samples2, TheaArray<Vector3> con
 
       for (array_size_t i = 0; i < samples1.size(); ++i)
       {
-        AngleFilter filter(samples1[i].n);
+        NNFilter filter(samples1[i].n, samples1[i].label);
         offset_kdtree2.pushFilter(&filter);
           long nn_index = offset_kdtree2.closestElement<MetricL2>(samples1[i].p);
         offset_kdtree2.popFilter();
@@ -422,6 +463,7 @@ main(int argc, char * argv[])
     THEA_CONSOLE << "Options:";
     THEA_CONSOLE << "  [--rounds <num-rounds>]";
     THEA_CONSOLE << "  [--smooth <num-rounds>]";
+    THEA_CONSOLE << "  [--labels]";
     THEA_CONSOLE << "  [--salient <file1> <file2>]";
     THEA_CONSOLE << "  [--max-salient <num-points>]";
     THEA_CONSOLE << "  [--salient-exclude-prefix <prefix>]+";
@@ -472,6 +514,10 @@ main(int argc, char * argv[])
         return -1;
       }
     }
+    else if (arg == "--labels")
+    {
+      USE_LABELS = true;
+    }
     else if (arg == "--salient")
     {
       if (i >= argc - 2)
@@ -519,10 +565,11 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Max iterations: " << MAX_ROUNDS;
   THEA_CONSOLE << "Max smoothing iterations: " << MAX_SMOOTHING_ROUNDS;
+  THEA_CONSOLE << "Match labels: " << USE_LABELS;
   THEA_CONSOLE << "Max salient points: " << max_salient;
 
   SampleArray samples1, samples2;
-  if (!loadSamples(samples_path1, samples1) || !loadSamples(samples_path2, samples2))
+  if (!loadSamples(samples_path1, samples1, USE_LABELS) || !loadSamples(samples_path2, samples2, USE_LABELS))
     return false;
 
   bool has_salient = (!salient_path1.empty() && !salient_path2.empty());
@@ -622,20 +669,58 @@ main(int argc, char * argv[])
     Vector3 const & p = samples1[i].p;
     Vector3 const & n = offsets1[i];
     out_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
-            << n[0] << ' ' << n[1] << ' ' << n[2] << endl;
+            << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
   }
+  out_pts.close();
 
   THEA_CONSOLE << "Wrote points with offsets to " << pts_with_offsets_path1;
 
   string offset_pts_path1 = FilePath::concat(FilePath::parent(offsets_path1),
                                              FilePath::baseName(samples_path1) + "_deformed.pts");
   ofstream out_def_pts(offset_pts_path1.c_str(), ios::binary);
+
+  ofstream out_def_labels;
+  if (USE_LABELS)
+  {
+    string offset_labels_path1 = FilePath::changeExtension(offset_pts_path1, "labels");
+    out_def_labels.open(offset_labels_path1, ios::binary);
+  }
+
   for (array_size_t i = 0; i < samples1.size(); ++i)
   {
     Vector3 p = samples1[i].p + offsets1[i];
     Vector3 const & n = samples1[i].n;
     out_def_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
-                << n[0] << ' ' << n[1] << ' ' << n[2] << endl;
+                << n[0] << ' ' << n[1] << ' ' << n[2];
+
+    if (USE_LABELS)
+    {
+      long label_hash = samples1[i].label;
+      if (label_hash >= 0)
+      {
+        IndexLabelMap::const_iterator existing = LABELS.find(label_hash);
+        if (existing != LABELS.end())
+        {
+          out_def_pts << " \"" << existing->second << "\"\n";
+          out_def_labels << existing->second << '\n';
+        }
+        else
+        {
+          out_def_pts << " \"\"\n";
+          out_def_labels << '\n';
+        }
+      }
+      else
+      {
+        out_def_pts << " \"\"\n";
+        out_def_labels << '\n';
+      }
+    }
+    else
+    {
+      out_def_pts << '\n';
+      out_def_labels << '\n';
+    }
   }
 
   THEA_CONSOLE << "Wrote offset (deformed) points to " << offset_pts_path1;
