@@ -683,7 +683,7 @@ main(int argc, char * argv[])
   if (USE_LABELS)
   {
     string offset_labels_path1 = FilePath::changeExtension(offset_pts_path1, "labels");
-    out_def_labels.open(offset_labels_path1, ios::binary);
+    out_def_labels.open(offset_labels_path1.c_str(), ios::binary);
   }
 
   for (array_size_t i = 0; i < samples1.size(); ++i)
