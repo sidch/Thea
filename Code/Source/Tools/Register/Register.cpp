@@ -1,6 +1,5 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
-#include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/Filter.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -9,13 +8,17 @@
 #include "../../BoundedArrayN.hpp"
 #include "../../BoundedSortedArrayN.hpp"
 #include "../../UnorderedMap.hpp"
+#include "../../UnionFind.hpp"
 #include "../../Vector3.hpp"
 #include <boost/functional/hash.hpp>
+#include <algorithm>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <string>
-#include <cstdlib>
-#include <cstring>
+
+// #define CONNECTED_COMPONENTS
 
 using namespace std;
 using namespace Thea;
@@ -31,12 +34,14 @@ IndexLabelMap LABELS;
 
 struct Sample
 {
-  Sample() {}
-  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::zero(), int32 label_ = -1) : p(p_), n(n_), label(label_) {}
+  Sample() : active(true) {}
+  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::zero(), int32 label_ = -1, bool active_ = true)
+  : p(p_), n(n_), label(label_), active(active_) {}
 
   Vector3 p;
   Vector3 n;
   int32 label;
+  bool active;
 };
 
 class Offset
@@ -236,6 +241,12 @@ updateOffsets(SampleArray const & src_samples, KDTree const & tgt_kdtree, Offset
     if (selected_label >= 0 && src_samples[i].label != selected_label)
       continue;
 
+    if (!src_samples[i].active)
+    {
+      src_offsets[i].unset();
+      continue;
+    }
+
     Vector3 offset_p = src_samples[i].p + src_offsets[i].d();
 
     NNFilter filter(src_samples[i].n, src_samples[i].label);
@@ -244,7 +255,10 @@ updateOffsets(SampleArray const & src_samples, KDTree const & tgt_kdtree, Offset
     const_cast<KDTree &>(tgt_kdtree).popFilter();
 
     if (nn_index >= 0)
-      src_offsets[i].set(tgt_kdtree.getElements()[(array_size_t)nn_index].p - src_samples[i].p);
+    {
+      Sample const & nn_sample = tgt_kdtree.getElements()[(array_size_t)nn_index];
+      src_offsets[i].set(nn_sample.p - src_samples[i].p);  // no transform here
+    }
     else
       src_offsets[i].unset();
   }
@@ -341,39 +355,257 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
   cout << " smooth(" << offsets.size() << ", " << num_rounds << ')' << flush;
 }
 
-void
-initOffsetsForLabel(int32 selected_label, SampleArray const & samples1, KDTree & kdtree1, SampleArray const & samples2,
-                    KDTree & kdtree2, OffsetArray & offsets1, OffsetArray & offsets2)
+#ifdef CONNECTED_COMPONENTS
+
+Vector3
+computeCentroid(SampleArray const & samples, int32 selected_label = -1, bool only_active = false)
 {
-//   Vector3 c1 = CentroidN<Sample, 3>::compute(samples1.begin(), samples1.end());
-//   Vector3 c2 = CentroidN<Sample, 3>::compute(samples2.begin(), samples2.end());
-//
-//   Vector3 offset = c1 - c2;
-//   for (array_size_t i = 0; i < samples2.size(); ++i)
-//     samples2[i].p += offset;
-//
-//   THEA_CONSOLE << "Aligned centroids";
-
-  AxisAlignedBox3 bounds1 = computeBounds(samples1, selected_label);
-  AxisAlignedBox3 bounds2 = computeBounds(samples2, selected_label);
-
-  if (bounds1.isNull() || bounds2.isNull())
+  Vector3 sum_c = Vector3::zero();
+  double sum_weights = 0;
+  for (array_size_t i = 0; i < samples.size(); ++i)
   {
-    for (array_size_t i = 0; i < samples1.size(); ++i)
-      if (selected_label < 0 || samples1[i].label == selected_label)
-        offsets1[i].unset();
+    if ((selected_label < 0 || samples[i].label == selected_label) && (!only_active || samples[i].active))
+      continue;
 
-    for (array_size_t i = 0; i < samples2.size(); ++i)
-      if (selected_label < 0 || samples2[i].label == selected_label)
-        offsets2[i].unset();
-
-    return;
+    sum_c += samples[i].p;
+    sum_weights += 1.0;
   }
 
-  AffineTransform3 tr_1_to_2 = AffineTransform3::translation(bounds2.getCenter());
-  if (bounds1.getExtent().squaredLength() > 1e-20 && bounds2.getExtent().squaredLength() > 1e-20)
-    tr_1_to_2 = tr_1_to_2 * AffineTransform3::scaling(bounds2.getExtent() / bounds1.getExtent());
-  tr_1_to_2 = tr_1_to_2 * AffineTransform3::translation(-bounds1.getCenter());
+  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::zero());
+}
+
+Vector3
+computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, int32 selected_label = -1,
+                        bool only_active = false)
+{
+  TheaArray<array_size_t> selected_samples;
+  for (array_size_t i = 0; i < samples.size(); ++i)
+    if ((selected_label < 0 || samples[i].label == selected_label) && (!only_active || samples[i].active))
+      selected_samples.push_back(i);
+
+  if (selected_samples.empty())
+    return Vector3::zero();
+
+  UnionFind<array_size_t> uf(selected_samples.begin(), selected_samples.end());
+  for (array_size_t i = 0; i < selected_samples.size(); ++i)
+  {
+    array_size_t index = selected_samples[i];
+    long src_id = uf.getObjectID(index);
+    for (int j = 0; j < nbrs[index].size(); ++j)
+      uf.merge(src_id, uf.getObjectID(nbrs[index][j]));
+  }
+
+  Vector3 sum_c = Vector3::zero();
+  double sum_weights = 0;
+  for (array_size_t i = 0; i < selected_samples.size(); ++i)
+  {
+    array_size_t index = selected_samples[i];
+    double weight = uf.sizeOfSet(uf.getObjectID(index)) / (double)selected_samples.size();
+    sum_c += weight * samples[index].p;
+    sum_weights += weight;
+  }
+
+  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::zero());
+}
+
+#endif // CONNECTED_COMPONENTS
+
+// Returns transform of samples1 to align them to samples2
+AffineTransform3
+initTransform(int32 selected_label,
+              SampleArray const & samples1, NeighborSets const & nbrs1, KDTree & kdtree1,
+              SampleArray const & samples2, NeighborSets const & nbrs2, KDTree & kdtree2)
+{
+  AffineTransform3 tr = AffineTransform3::identity();
+
+#ifdef CONNECTED_COMPONENTS
+  if (selected_label < 0)
+#endif
+  {
+    AxisAlignedBox3 selected_bounds1 = computeBounds(samples1, selected_label);
+    AxisAlignedBox3 selected_bounds2 = computeBounds(samples2, selected_label);
+
+    tr = AffineTransform3::translation(selected_bounds2.getCenter());
+    if (selected_bounds1.getExtent().squaredLength() > 1e-20 && selected_bounds2.getExtent().squaredLength() > 1e-20)
+      tr = tr * AffineTransform3::scaling(selected_bounds2.getExtent() / selected_bounds1.getExtent());
+    tr = tr * AffineTransform3::translation(-selected_bounds1.getCenter());
+  }
+#ifdef CONNECTED_COMPONENTS
+  else
+  {
+    Vector3 c1 = computeCentroid(samples1, selected_label, true);
+    Vector3 c2 = computeCentroid(samples2, selected_label, true);
+
+    tr = AffineTransform3::translation(c2 - c1);
+  }
+#endif
+
+  return tr;
+}
+
+#ifdef CONNECTED_COMPONENTS
+
+void
+selectSamples(SampleArray const & all_samples, int selected_label, TheaArray<array_size_t> & selected_samples)
+{
+  selected_samples.clear();
+
+  for (array_size_t i = 0; i < all_samples.size(); ++i)
+    if (selected_label < 0 || all_samples[i].label == selected_label)
+      selected_samples.push_back(i);
+}
+
+void
+findConnectedComponents(TheaArray<array_size_t> const & selected_samples, NeighborSets const & nbrs,
+                        UnionFind<array_size_t> & uf)
+{
+  for (array_size_t i = 0; i < selected_samples.size(); ++i)
+  {
+    array_size_t index = selected_samples[i];
+    long src_id = uf.getObjectID(index);
+    for (int j = 0; j < nbrs[index].size(); ++j)
+      uf.merge(src_id, uf.getObjectID(nbrs[index][j]));
+  }
+}
+
+void
+computeComponentProperties(SampleArray const & all_samples, TheaArray<array_size_t> const & selected_samples,
+                           UnionFind<array_size_t> const & uf, TheaArray<long> & cc_reps, TheaArray<long> & cc_counts,
+                           TheaArray<AxisAlignedBox3> & cc_bounds)
+{
+  array_size_t ncc = (array_size_t)uf.numSets();
+  cc_reps.resize(ncc); fill(cc_reps.begin(), cc_reps.end(), -1);
+  cc_counts.resize(ncc); fill(cc_counts.begin(), cc_counts.end(), 0);
+  cc_bounds.resize(ncc); fill(cc_bounds.begin(), cc_bounds.end(), AxisAlignedBox3());
+
+  typedef TheaUnorderedMap<long, array_size_t> RepSetMap;  // maps from ID of set's representative sample to set ID
+  RepSetMap set_ids;
+
+  for (array_size_t i = 0; i < selected_samples.size(); ++i)
+  {
+    long rep_id = uf.find(uf.getObjectID(selected_samples[i]));
+    RepSetMap::const_iterator existing = set_ids.find(rep_id);
+    array_size_t set_id;
+    if (existing == set_ids.end())
+    {
+      set_id = (array_size_t)set_ids.size();
+      set_ids[rep_id] = set_id;
+      cc_reps[set_id] = rep_id;
+    }
+    else
+      set_id = existing->second;
+
+    cc_counts[set_id]++;
+    cc_bounds[set_id].merge(all_samples[selected_samples[i]].p);
+  }
+}
+
+template <typename T>
+void
+sortIndices(TheaArray<T> const & values, TheaArray<array_size_t> & sorted_indices, bool descending = false)
+{
+  sorted_indices.resize(values.size());
+  for (array_size_t i = 0; i < sorted_indices.size(); ++i)
+    sorted_indices[i] = i;
+
+  for (array_size_t i = 0; i < sorted_indices.size(); ++i)
+    for (array_size_t j = i + 1; j < sorted_indices.size(); ++j)
+      if ((values[sorted_indices[i]] < values[sorted_indices[j]]) == descending)
+        swap(sorted_indices[i], sorted_indices[j]);
+}
+
+void
+deactivateSmallComponents(TheaArray<array_size_t> const & selected_samples, UnionFind<array_size_t> const & uf,
+                          long num_active_sets, TheaArray<long> const & cc_reps, TheaArray<array_size_t> const & cc_sorted,
+                          SampleArray & all_samples)
+{
+  for (array_size_t i = 0; i < selected_samples.size(); ++i)
+  {
+    long rep = uf.find(uf.getObjectID(selected_samples[i]));
+    for (array_size_t j = (array_size_t)num_active_sets; j < cc_sorted.size(); ++j)
+      if (rep == cc_reps[cc_sorted[j]])
+      {
+        all_samples[selected_samples[i]].active = false;
+        break;
+      }
+  }
+}
+
+#endif // CONNECTED_COMPONENTS
+
+void
+initOffsetsForLabel(int32 selected_label,
+                    SampleArray & samples1, NeighborSets const & nbrs1, KDTree & kdtree1,
+                    SampleArray & samples2, NeighborSets const & nbrs2, KDTree & kdtree2,
+                    OffsetArray & offsets1, OffsetArray & offsets2)
+{
+  string label_name = "all";
+  if (selected_label >= 0)
+  {
+    IndexLabelMap::const_iterator existing = LABELS.find(selected_label);
+    label_name = (existing != LABELS.end() ? existing->second : "anonymous");
+  }
+
+#ifdef CONNECTED_COMPONENTS
+  if (selected_label >= 0)
+  {
+    //=========================================================================================================================
+    // Select samples to be processed
+    //=========================================================================================================================
+
+    TheaArray<array_size_t> selected_samples1, selected_samples2;
+    selectSamples(samples1, selected_label, selected_samples1);
+    selectSamples(samples2, selected_label, selected_samples2);
+
+    if (selected_samples1.empty() || selected_samples2.empty())
+    {
+      for (array_size_t i = 0; i < samples1.size(); ++i)
+        if (selected_label < 0 || samples1[i].label == selected_label)
+          offsets1[i].unset();
+
+      for (array_size_t i = 0; i < samples2.size(); ++i)
+        if (selected_label < 0 || samples2[i].label == selected_label)
+          offsets2[i].unset();
+
+      return;
+    }
+
+    //=========================================================================================================================
+    // Find connected components
+    //=========================================================================================================================
+
+    UnionFind<array_size_t> uf1(selected_samples1.begin(), selected_samples1.end());
+    findConnectedComponents(selected_samples1, nbrs1, uf1);
+
+    UnionFind<array_size_t> uf2(selected_samples2.begin(), selected_samples2.end());
+    findConnectedComponents(selected_samples2, nbrs2, uf2);
+
+    THEA_CONSOLE << "Label '" << label_name << "' in shape 1 has " << uf1.numSets() << " connected component(s)";
+    THEA_CONSOLE << "Label '" << label_name << "' in shape 2 has " << uf2.numSets() << " connected component(s)";
+
+    //=========================================================================================================================
+    // Map connected components to each other
+    //=========================================================================================================================
+
+    TheaArray<long> cc_reps1, cc_reps2;
+    TheaArray<long> cc_counts1, cc_counts2;
+    TheaArray<AxisAlignedBox3> cc_bounds1, cc_bounds2;
+    computeComponentProperties(samples1, selected_samples1, uf1, cc_reps1, cc_counts1, cc_bounds1);
+    computeComponentProperties(samples2, selected_samples2, uf2, cc_reps2, cc_counts2, cc_bounds2);
+
+    TheaArray<array_size_t> cc_sorted1, cc_sorted2;
+    sortIndices(cc_counts1, cc_sorted1, true);
+    sortIndices(cc_counts2, cc_sorted2, true);
+
+    if (cc_sorted1.size() > 2)
+      deactivateSmallComponents(selected_samples1, uf1, 2, cc_reps1, cc_sorted1, samples1);
+
+    if (cc_sorted2.size() > 2)
+      deactivateSmallComponents(selected_samples2, uf2, 2, cc_reps2, cc_sorted2, samples2);
+  }
+#endif
+
+  AffineTransform3 tr_1_to_2 = initTransform(selected_label, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2);
   AffineTransform3 tr_2_to_1 = tr_1_to_2.inverse();
 
   // Compute forward offsets
@@ -381,46 +613,34 @@ initOffsetsForLabel(int32 selected_label, SampleArray const & samples1, KDTree &
     updateOffsets(samples1, kdtree2, offsets1, selected_label);
   kdtree2.clearTransform();
 
-  for (array_size_t i = 0; i < samples1.size(); ++i)
-    if (selected_label < 0 || samples1[i].label == selected_label)
-      offsets1[i].set(tr_1_to_2 * (samples1[i].p + offsets1[i].d()) - samples1[i].p);
-
   // Compute backward offsets
   kdtree1.setTransform(tr_1_to_2);  // align bounding boxes in first iteration
     updateOffsets(samples2, kdtree1, offsets2, selected_label);
   kdtree1.clearTransform();
 
-  for (array_size_t i = 0; i < samples2.size(); ++i)
-    if (selected_label < 0 || samples2[i].label == selected_label)
-      offsets2[i].set(tr_2_to_1 * (samples2[i].p + offsets2[i].d()) - samples2[i].p);
-
   if (selected_label >= 0)
-  {
-    IndexLabelMap::const_iterator existing = LABELS.find(selected_label);
-    if (existing != LABELS.end())
-      cout << "Initialized offsets for label '" << existing->second << '\'' << endl;
-    else
-      cout << "Initialized offsets for anonymous label" << endl;
-  }
+    cout << "Initialized offsets for label: " << label_name << endl;
   else
     cout << "Initialized offsets for all samples" << endl;
 }
 
 void
-initOffsets(SampleArray const & samples1, KDTree & kdtree1, SampleArray const & samples2, KDTree & kdtree2,
+initOffsets(SampleArray & samples1, NeighborSets const & nbrs1, KDTree & kdtree1,
+            SampleArray & samples2, NeighborSets const & nbrs2, KDTree & kdtree2,
             OffsetArray & offsets1, OffsetArray & offsets2)
 {
   // For initial correspondences, we'll match bounding boxes, per-label if labels are available, else globally for the shapes
   if (USE_LABELS)
   {
     for (IndexLabelMap::const_iterator li = LABELS.begin(); li != LABELS.end(); ++li)
-      initOffsetsForLabel(li->first, samples1, kdtree1, samples2, kdtree2, offsets1, offsets2);
+      initOffsetsForLabel(li->first, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
 
-    initOffsetsForLabel(0, samples1, kdtree1, samples2, kdtree2, offsets1, offsets2);  // no label supplied for these samples
+    // No label supplied for these samples
+    initOffsetsForLabel(0, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
   }
   else
   {
-    initOffsetsForLabel(-1, samples1, kdtree1, samples2, kdtree2, offsets1, offsets2);
+    initOffsetsForLabel(-1, samples1, nbrs2, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
   }
 }
 
@@ -436,7 +656,7 @@ enforceConstraints(SampleArray const & samples1, SampleArray const & samples2, T
 //
 // TODO: Do salient points and point labels play nice with each other?
 bool
-alignNonRigid(SampleArray const & samples1, SampleArray const & samples2, TheaArray<Vector3> const & salient1,
+alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3> const & salient1,
               TheaArray<Vector3> const & salient2, OffsetArray & offsets1)
 {
   // Init kd-trees
@@ -489,7 +709,7 @@ alignNonRigid(SampleArray const & samples1, SampleArray const & samples2, TheaAr
   OffsetArray offsets2(samples2.size());
 
   // Initialize offsets per-label if available, else globally
-  initOffsets(samples1, kdtree1, samples2, kdtree2, offsets1, offsets2);
+  initOffsets(samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
 
   for (int round = 0; round < MAX_ROUNDS; ++round)
   {
@@ -744,63 +964,82 @@ main(int argc, char * argv[])
     return -1;
   }
 
-  ofstream out(offsets_path1.c_str(), ios::binary);
-  if (!out)
+  //===========================================================================================================================
+  // Save offsets, 3 numbers per line
+  //===========================================================================================================================
   {
-    THEA_ERROR << "Could not open output file '" << offsets_path1 << "' for writing";
-    return -1;
+    ofstream out(offsets_path1.c_str(), ios::binary);
+    if (!out)
+    {
+      THEA_ERROR << "Could not open output file '" << offsets_path1 << "' for writing";
+      return -1;
+    }
+
+    for (array_size_t i = 0; i < offsets1.size(); ++i)
+    {
+      Vector3 const & d = offsets1[i].d();
+      out << d[0] << ' ' << d[1] << ' ' << d[2] << endl;
+    }
+
+    THEA_CONSOLE << "Wrote offsets to " << offsets_path1;
   }
 
-  for (array_size_t i = 0; i < offsets1.size(); ++i)
+  //===========================================================================================================================
+  // Save source points plus offsets, 6 numbers per line
+  //===========================================================================================================================
   {
-    Vector3 const & d = offsets1[i].d();
-    out << d[0] << ' ' << d[1] << ' ' << d[2] << endl;
+    string pts_with_offsets_path1 = FilePath::concat(FilePath::parent(offsets_path1),
+                                                     FilePath::baseName(samples_path1) + "_with_offsets.pts");
+    ofstream out_pts(pts_with_offsets_path1.c_str(), ios::binary);
+    for (array_size_t i = 0; i < samples1.size(); ++i)
+    {
+      Vector3 const & p = samples1[i].p;
+      Vector3 const & n = offsets1[i].d();
+      out_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
+              << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
+    }
+
+    THEA_CONSOLE << "Wrote points with offsets to " << pts_with_offsets_path1;
   }
 
-  THEA_CONSOLE << "Wrote offsets to " << offsets_path1;
-
-  string pts_with_offsets_path1 = FilePath::concat(FilePath::parent(offsets_path1),
-                                                   FilePath::baseName(samples_path1) + "_with_offsets.pts");
-  ofstream out_pts(pts_with_offsets_path1.c_str(), ios::binary);
-  for (array_size_t i = 0; i < samples1.size(); ++i)
+  //===========================================================================================================================
+  // Save deformed source points plus labels, and the labels individually
+  //===========================================================================================================================
   {
-    Vector3 const & p = samples1[i].p;
-    Vector3 const & n = offsets1[i].d();
-    out_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
-            << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
-  }
-  out_pts.close();
+    string offset_pts_path1 = FilePath::concat(FilePath::parent(offsets_path1),
+                                               FilePath::baseName(samples_path1) + "_deformed.pts");
+    ofstream out_def_pts(offset_pts_path1.c_str(), ios::binary);
 
-  THEA_CONSOLE << "Wrote points with offsets to " << pts_with_offsets_path1;
-
-  string offset_pts_path1 = FilePath::concat(FilePath::parent(offsets_path1),
-                                             FilePath::baseName(samples_path1) + "_deformed.pts");
-  ofstream out_def_pts(offset_pts_path1.c_str(), ios::binary);
-
-  ofstream out_def_labels;
-  if (USE_LABELS)
-  {
-    string offset_labels_path1 = FilePath::changeExtension(offset_pts_path1, "labels");
-    out_def_labels.open(offset_labels_path1.c_str(), ios::binary);
-  }
-
-  for (array_size_t i = 0; i < samples1.size(); ++i)
-  {
-    Vector3 p = samples1[i].p + offsets1[i].d();
-    Vector3 const & n = samples1[i].n;
-    out_def_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
-                << n[0] << ' ' << n[1] << ' ' << n[2];
-
+    ofstream out_def_labels;
     if (USE_LABELS)
     {
-      int32 label_hash = samples1[i].label;
-      if (label_hash >= 0)
+      string offset_labels_path1 = FilePath::changeExtension(offset_pts_path1, "labels");
+      out_def_labels.open(offset_labels_path1.c_str(), ios::binary);
+    }
+
+    for (array_size_t i = 0; i < samples1.size(); ++i)
+    {
+      Vector3 p = samples1[i].p + offsets1[i].d();
+      Vector3 const & n = samples1[i].n;
+      out_def_pts << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
+                  << n[0] << ' ' << n[1] << ' ' << n[2];
+
+      if (USE_LABELS)
       {
-        IndexLabelMap::const_iterator existing = LABELS.find(label_hash);
-        if (existing != LABELS.end())
+        int32 label_hash = samples1[i].label;
+        if (label_hash >= 0)
         {
-          out_def_pts << " \"" << existing->second << "\"\n";
-          out_def_labels << existing->second << '\n';
+          IndexLabelMap::const_iterator existing = LABELS.find(label_hash);
+          if (existing != LABELS.end())
+          {
+            out_def_pts << " \"" << existing->second << "\"\n";
+            out_def_labels << existing->second << '\n';
+          }
+          else
+          {
+            out_def_pts << " \"\"\n";
+            out_def_labels << '\n';
+          }
         }
         else
         {
@@ -810,18 +1049,50 @@ main(int argc, char * argv[])
       }
       else
       {
-        out_def_pts << " \"\"\n";
+        out_def_pts << '\n';
         out_def_labels << '\n';
       }
     }
-    else
-    {
-      out_def_pts << '\n';
-      out_def_labels << '\n';
-    }
+
+    THEA_CONSOLE << "Wrote offset (deformed) points to " << offset_pts_path1;
   }
 
-  THEA_CONSOLE << "Wrote offset (deformed) points to " << offset_pts_path1;
+  //===========================================================================================================================
+  // Save source and target points, colored by target point position
+  //===========================================================================================================================
+  {
+    string colored_pts_path1 = FilePath::concat(FilePath::parent(offsets_path1),
+                                                FilePath::baseName(samples_path1) + "_colored.pts");
+    ofstream out_colored_pts1(colored_pts_path1.c_str(), ios::binary);
+
+    AxisAlignedBox3 bounds2 = computeBounds(samples2);
+    Vector3 center2 = bounds2.getCenter(), half_ext2 = 0.5f * bounds2.getExtent();
+
+    for (array_size_t i = 0; i < samples1.size(); ++i)
+    {
+      Vector3 p = samples1[i].p;
+      Vector3 p_def = p + offsets1[i].d();
+      Vector3 n = (p_def - center2) / half_ext2;
+      out_colored_pts1 << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
+                       << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
+    }
+
+    out_colored_pts1.close();
+
+    string colored_pts_path2 = FilePath::concat(FilePath::parent(offsets_path1),
+                                                FilePath::baseName(samples_path2) + "_colored.pts");
+    ofstream out_colored_pts2(colored_pts_path2.c_str(), ios::binary);
+
+    for (array_size_t i = 0; i < samples2.size(); ++i)
+    {
+      Vector3 const & p = samples2[i].p;
+      Vector3 n = (p - center2) / half_ext2;
+      out_colored_pts2 << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
+                       << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
+    }
+
+    THEA_CONSOLE << "Wrote points colored by correspondences to " << colored_pts_path1 << " and " << colored_pts_path2;
+  }
 
   return 0;
 }
