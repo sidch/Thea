@@ -96,6 +96,14 @@ struct NNFilter : public Filter<Sample const *>
   int32 label;
 };
 
+struct NNFilterLabelOnly : public Filter<Sample const *>
+{
+  NNFilterLabelOnly(int32 label_) : label(label_) {}
+  bool allows(Sample const * const & sample) const { return (!USE_LABELS || sample->label == label); }
+
+  int32 label;
+};
+
 inline float
 kernelEpanechnikovSqDist(float squared_dist, float squared_bandwidth)
 {
@@ -771,22 +779,27 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3>
 }
 
 int
+usage(int argc, char * argv[])
+{
+  THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <ptfile1> <ptfile2> <offset-outfile1>";
+  THEA_CONSOLE << "";
+  THEA_CONSOLE << "Options:";
+  THEA_CONSOLE << "  [--rounds <num-rounds>]";
+  THEA_CONSOLE << "  [--smooth <num-rounds>]";
+  THEA_CONSOLE << "  [--labels]";
+  THEA_CONSOLE << "  [--salient <file1> <file2>]";
+  THEA_CONSOLE << "  [--max-salient <num-points>]";
+  THEA_CONSOLE << "  [--salient-exclude-prefix <prefix>]+";
+  THEA_CONSOLE << "";
+
+  return -1;
+}
+
+int
 main(int argc, char * argv[])
 {
   if (argc < 4)
-  {
-    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <ptfile1> <ptfile2> <offset-outfile1>";
-    THEA_CONSOLE << "";
-    THEA_CONSOLE << "Options:";
-    THEA_CONSOLE << "  [--rounds <num-rounds>]";
-    THEA_CONSOLE << "  [--smooth <num-rounds>]";
-    THEA_CONSOLE << "  [--labels]";
-    THEA_CONSOLE << "  [--salient <file1> <file2>]";
-    THEA_CONSOLE << "  [--max-salient <num-points>]";
-    THEA_CONSOLE << "  [--salient-exclude-prefix <prefix>]+";
-    THEA_CONSOLE << "";
-    return -1;
-  }
+    return usage(argc, argv);
 
   string samples_path1;
   string samples_path2;
@@ -879,6 +892,9 @@ main(int argc, char * argv[])
       positional++;
     }
   }
+
+  if (positional < 3)
+    return usage(argc, argv);
 
   THEA_CONSOLE << "Max iterations: " << MAX_ROUNDS;
   THEA_CONSOLE << "Max smoothing iterations: " << MAX_SMOOTHING_ROUNDS;
@@ -1108,15 +1124,20 @@ main(int argc, char * argv[])
     KDTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
     kdtree2.enableNearestNeighborAcceleration();
 
+    long num_matched = 0;
     for (array_size_t i = 0; i < samples1.size(); ++i)
     {
       Vector3 p1 = samples1[i].p;
 
       Vector3 deformed_p1 = p1 + offsets1[i].d();
-      long nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
+      NNFilterLabelOnly filter(samples1[i].label);
+      kdtree2.pushFilter(&filter);
+        long nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
+      kdtree2.popFilter();
+
       if (nn_index < 0)
       {
-        THEA_WARNING << "No corresponding target point found for source point " << p1.toString();
+        // THEA_WARNING << "No corresponding target point found for source point " << p1.toString();
         continue;
       }
 
@@ -1124,9 +1145,11 @@ main(int argc, char * argv[])
 
       out_corr << p1[0] << ' ' << p1[1] << ' ' << p1[2] << ' '
                << p2[0] << ' ' << p2[1] << ' ' << p2[2] << '\n';
+
+      num_matched++;
     }
 
-    THEA_CONSOLE << "Wrote correspondences points to " << corr_path;
+    THEA_CONSOLE << "Wrote correspondences for " << num_matched << '/' << samples1.size() << " point(s) to " << corr_path;
   }
 
   return 0;
