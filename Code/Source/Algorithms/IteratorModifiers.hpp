@@ -121,6 +121,22 @@ class PtrToRefIterator<T const, T const * const *> : public std::iterator<std::r
 
 #undef THEA_PTR_PTR_TO_REF_ITERATOR_BODY
 
+/**
+ * Converts an iterator dereferencing to T, to an iterator dereferencing to T *. The new iterator supports the operations (e.g.
+ * increment and comparison) of the original iterator.
+ */
+template <typename T, typename RefIterator>
+class RefToPtrIterator : public RefIterator
+{
+  public:
+    /** Constructor. */
+    RefToPtrIterator(RefIterator const & ii = RefIterator()) : RefIterator(ii) {}
+
+    /** Dereferences the iterator to an object of type T. */
+    T * operator*() const { return &(this->RefIterator::operator*()); }
+
+}; // class RefToPtrIterator
+
 } // namespace Algorithms
 } // namespace Thea
 

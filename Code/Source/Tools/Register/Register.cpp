@@ -1,6 +1,7 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
 #include "../../Algorithms/Filter.hpp"
+#include "../../Algorithms/IteratorModifiers.hpp"
 #include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
@@ -80,15 +81,16 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 } // namespace Thea
 
 typedef TheaArray<Sample> SampleArray;
-typedef KDTreeN<Sample, 3> KDTree;
+typedef RefToPtrIterator<Sample const, SampleArray::const_iterator> SamplePtrIterator;
+typedef KDTreeN<Sample const *, 3> KDTree;
 typedef BoundedArrayN<MAX_NBRS, array_size_t> NeighborSet;
 typedef TheaArray<NeighborSet> NeighborSets;
 typedef TheaArray<Offset> OffsetArray;
 
-struct NNFilter : public Filter<Sample>
+struct NNFilter : public Filter<Sample const *>
 {
   NNFilter(Vector3 const & n_, int32 label_) : n(n_), label(label_) {}
-  bool allows(Sample const & sample) const { return (!USE_LABELS || sample.label == label) && n.dot(sample.n) >= 0; }
+  bool allows(Sample const * const & sample) const { return (!USE_LABELS || sample->label == label) && n.dot(sample->n) >= 0; }
 
   Vector3 n;
   int32 label;
@@ -256,8 +258,8 @@ updateOffsets(SampleArray const & src_samples, KDTree const & tgt_kdtree, Offset
 
     if (nn_index >= 0)
     {
-      Sample const & nn_sample = tgt_kdtree.getElements()[(array_size_t)nn_index];
-      src_offsets[i].set(nn_sample.p - src_samples[i].p);  // no transform here
+      Sample const * nn_sample = tgt_kdtree.getElements()[(array_size_t)nn_index];
+      src_offsets[i].set(nn_sample->p - src_samples[i].p);  // no transform here
     }
     else
       src_offsets[i].unset();
@@ -660,10 +662,10 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3>
               TheaArray<Vector3> const & salient2, OffsetArray & offsets1)
 {
   // Init kd-trees
-  KDTree kdtree1(samples1.begin(), samples1.end());
+  KDTree kdtree1(SamplePtrIterator(samples1.begin()), SamplePtrIterator(samples1.end()));
   kdtree1.enableNearestNeighborAcceleration();
 
-  KDTree kdtree2(samples2.begin(), samples2.end());
+  KDTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
   kdtree2.enableNearestNeighborAcceleration();
 
   THEA_CONSOLE << "Initialized kd-trees";
@@ -738,7 +740,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3>
       for (array_size_t i = 0; i < samples2.size(); ++i)
         offset_samples2[i].p += offsets2[i].d();
 
-      KDTree offset_kdtree2(offset_samples2.begin(), offset_samples2.end());
+      KDTree offset_kdtree2(SamplePtrIterator(offset_samples2.begin()), SamplePtrIterator(offset_samples2.end()));
       offset_kdtree2.enableNearestNeighborAcceleration();
 
       for (array_size_t i = 0; i < samples1.size(); ++i)
@@ -1092,6 +1094,39 @@ main(int argc, char * argv[])
     }
 
     THEA_CONSOLE << "Wrote points colored by correspondences to " << colored_pts_path1 << " and " << colored_pts_path2;
+  }
+
+
+  //===========================================================================================================================
+  // Write pairs of corresponding points
+  //===========================================================================================================================
+  {
+    string corr_path = FilePath::concat(FilePath::parent(offsets_path1),
+                           FilePath::baseName(samples_path1) + "___corr___" + FilePath::baseName(samples_path2) + ".pts");
+    ofstream out_corr(corr_path.c_str(), ios::binary);
+
+    KDTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
+    kdtree2.enableNearestNeighborAcceleration();
+
+    for (array_size_t i = 0; i < samples1.size(); ++i)
+    {
+      Vector3 p1 = samples1[i].p;
+
+      Vector3 deformed_p1 = p1 + offsets1[i].d();
+      long nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
+      if (nn_index < 0)
+      {
+        THEA_WARNING << "No corresponding target point found for source point " << p1.toString();
+        continue;
+      }
+
+      Vector3 p2 = kdtree2.getElements()[nn_index]->p;
+
+      out_corr << p1[0] << ' ' << p1[1] << ' ' << p1[2] << ' '
+               << p2[0] << ' ' << p2[1] << ' ' << p2[2] << '\n';
+    }
+
+    THEA_CONSOLE << "Wrote correspondences points to " << corr_path;
   }
 
   return 0;
