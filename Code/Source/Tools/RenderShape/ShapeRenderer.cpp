@@ -985,9 +985,9 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       int axis = view_up.maxAbsAxis();
       switch (axis)
       {
-        case 0:  view.dir = Vector3(-Math::sign(view.up[0]),   Math::sign(view.up[0]),  -1); break;
-        case 2:  view.dir = Vector3(-Math::sign(view.up[2]),   1,                       -Math::sign(view.up[2])); break;
-        default: view.dir = Vector3(-Math::sign(view.up[1]),  -Math::sign(view.up[1]),  -1);
+        case 0:  view.dir = Vector3(-Math::sign(view_up[0]),   Math::sign(view_up[0]),  -1); break;
+        case 2:  view.dir = Vector3(-Math::sign(view_up[2]),   1,                       -Math::sign(view_up[2])); break;
+        default: view.dir = Vector3(-Math::sign(view_up[1]),  -Math::sign(view_up[1]),  -1);
       }
     }
     else
@@ -1606,15 +1606,20 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     }
     else
     {
+      bool needs_normals = true;
+
       if (color_by_id)
       {
         FaceColorizer id_colorizer(tri_ids, quad_ids);
         model.mesh_group.forEachMeshUntil(&id_colorizer);
+        needs_normals = false;
       }
       else if (color_by_label)
       {
         if (!loadLabels(model, &tri_ids, &quad_ids))
           return false;
+
+        needs_normals = false;
       }
       else if (color_by_features)
       {
@@ -1624,8 +1629,10 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       else if (!selected_mesh.empty())
       {
         colorizeMeshSelection(model.mesh_group, 0);
+        needs_normals = false;
       }
-      else
+
+      if (needs_normals)
       {
         if (flat)
           model.mesh_group.forEachMeshUntil(flattenFaces);
