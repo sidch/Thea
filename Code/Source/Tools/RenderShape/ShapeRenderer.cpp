@@ -1340,7 +1340,7 @@ getNextNonBlankLine(istream & in, string & line)
 }
 
 ColorRGB
-featToColor(Real f0, Real const * f2, Real const * f1)
+featToColor(Real f0, Real const * f1, Real const * f2)
 {
   if (!f2)
   {
