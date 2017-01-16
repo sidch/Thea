@@ -44,6 +44,7 @@
 
 #include "Common.hpp"
 #include "../../AffineTransform3.hpp"
+#include "../../Vector4.hpp"
 #include <wx/app.h>
 #include <vector>
 
@@ -94,9 +95,12 @@ class App : public wxApp
       ColorRGB bg_color;                                    ///< Background color.
       bool two_sided;                                       ///< Use two-sided lighting?
       bool flat;                                            ///< Flat-shade all meshes?
+      Vector4 material;                                     ///< Surface material coefficients (kd, ka, ks, ksp).
       bool fancy_points;                                    ///< Draw points as shaded spheres?
       bool fancy_colors;                                    ///< Color points by a function of position?
       Real point_scale;                                     ///< Scale point sizes by this factor.
+      bool no_axes;                                         ///< Hide the coordinate axes?
+      bool no_shading;                                      ///< No shading, just render raw colors?
 
     }; // struct Options
 

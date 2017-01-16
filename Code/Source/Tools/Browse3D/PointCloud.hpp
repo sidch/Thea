@@ -119,10 +119,6 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     void reconstructSurface(Graphics::RenderSystem & render_system,
                             Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
-    /** Draw the point cloud as a reconstructed surface. */
-    void drawSurface(Graphics::RenderSystem & render_system,
-                     Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
-
     /** Get the color of a point. */
     ColorRGBA getColor(array_size_t point_index) const;
 

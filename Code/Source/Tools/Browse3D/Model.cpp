@@ -1285,7 +1285,7 @@ getDefaultPath(std::string model_path, std::string const & query_path, TheaArray
 
     for (array_size_t j = 0; j < query_exts.size(); ++j)
     {
-      std::string ffn = FilePath::concat(dir, model_path + query_exts[j]);
+      std::string ffn = FilePath::concat(dir, FilePath::objectName(model_path) + query_exts[j]);
       if (FileSystem::exists(ffn))
         return ffn;
     }
@@ -1316,6 +1316,7 @@ Model::getDefaultFeaturesPath() const
   TheaArray<std::string> exts;
   exts.push_back(".arff");
   exts.push_back(".features");
+  exts.push_back(".feat");
 
   return ModelInternal::getDefaultPath(path, app().options().features, exts);
 }
@@ -1500,7 +1501,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
-  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
+  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 1, 1));
 
   if (hasTransform())
   {

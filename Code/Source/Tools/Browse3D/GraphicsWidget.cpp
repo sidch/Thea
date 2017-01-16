@@ -40,6 +40,7 @@
 //============================================================================
 
 #include "GraphicsWidget.hpp"
+#include "App.hpp"
 #include "../../Graphics/Shader.hpp"
 #include "../../Application.hpp"
 
@@ -50,7 +51,7 @@ Graphics::Shader * phong_shader = NULL;
 
 Vector3 GraphicsWidget::light_dir       =  Vector3(-1, -1, -2);
 ColorRGB GraphicsWidget::light_color    =  ColorRGB(1, 1, 1);
-ColorRGB GraphicsWidget::ambient_color  =  ColorRGB(1, 0.8f, 0.7f);
+ColorRGB GraphicsWidget::ambient_color  =  ColorRGB(1, 1, 1);
 bool GraphicsWidget::two_sided          =  true;
 
 Graphics::Shader *
@@ -68,7 +69,7 @@ GraphicsWidget::getPhongShader(Graphics::RenderSystem & render_system)
                                        Application::getResourcePath("Materials/PhongFrag.glsl").c_str());
 
     setLightingUniforms(phong_shader);
-    phong_shader->setUniform("material", Vector4(0.2f, 0.6f, 0.2f, 25));
+    phong_shader->setUniform("material", (app().options().no_shading ? Vector4(1, 0, 0, 0) : app().options().material));
   }
 
   return phong_shader;

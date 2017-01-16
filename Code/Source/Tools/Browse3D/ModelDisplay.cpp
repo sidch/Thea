@@ -356,7 +356,8 @@ ModelDisplay::paintGL(wxPaintEvent & event)
   for (long i = 0; i < num_overlays; ++i)
     overlays[i]->draw(rs, render_opts);
 
-  drawAxes(rs);
+  if (!app().options().no_axes)
+    drawAxes(rs);
 
   glFlush();
   SwapBuffers();
