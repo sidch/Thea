@@ -51,6 +51,7 @@
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
+#include "../../BoundedSortedArrayN.hpp"
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
@@ -987,6 +988,20 @@ Model::getSegmentsPath() const
 
 namespace ModelInternal {
 
+ColorRGB
+featToColor(Real f0, Real const * f2, Real const * f1)
+{
+  if (!f2)
+  {
+    if (!f1)
+      return ColorRGB::jetColorMap(0.2 + 0.6 * f0);
+    else
+      return ColorRGB(f0, *f1, 1.0f);
+  }
+  else
+    return ColorRGB(f0, *f1, *f2);
+}
+
 typedef Algorithms::KDTreeN<Vector3, 3> PointKDTree;
 
 struct VertexFeatureVisitor
@@ -996,23 +1011,35 @@ struct VertexFeatureVisitor
 
   bool operator()(Mesh & mesh)
   {
+    static int const MAX_NBRS = 8;
+
+    BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
-      long nn_index = fkdtree->closestElement<Algorithms::MetricL2>(vi->getPosition());
-      if (nn_index >= 0)
+      nbrs.clear();
+      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
+      if (num_nbrs > 0)
       {
-        if (!feat_vals2)
+        ColorRGB c(0, 0, 0);
+        double sum_weights = 0;
+        for (int j = 0; j < num_nbrs; ++j)
         {
-          if (!feat_vals1)
-            vi->attr().setColor(ColorRGB::jetColorMap(0.2 + 0.6 * feat_vals0[nn_index]));
-          else
-            vi->attr().setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], 1.0f));
+          double dist = nbrs[j].getDistance<Algorithms::MetricL2>();
+          double weight = Math::fastMinusExp(dist * dist);
+          long nn_index = nbrs[j].getTargetIndex();
+          sum_weights += weight;
+          c += weight * featToColor(feat_vals0[nn_index],
+                                    (feat_vals1 ? &feat_vals1[nn_index] : NULL),
+                                    (feat_vals2 ? &feat_vals2[nn_index] : NULL));
         }
-        else
-          vi->attr().setColor(ColorRGB(feat_vals0[nn_index], feat_vals1[nn_index], feat_vals2[nn_index]));
+
+        vi->attr().setColor(sum_weights > 0 ? c / sum_weights : c);
       }
       else
-        THEA_CONSOLE << "No nearest neighbor found!";
+      {
+        THEA_WARNING << "No nearest neighbor found!";
+        vi->attr().setColor(ColorRGB(1, 1, 1));
+      }
     }
 
     mesh.invalidateGPUBuffers(Mesh::BufferID::VERTEX_COLOR);
