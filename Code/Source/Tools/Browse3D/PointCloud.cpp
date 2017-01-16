@@ -445,7 +445,7 @@ PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string
   if (FileSystem::fileExists(app_features_path))
     return app_features_path;
 
-  static std::string const EXTS[] = { ".arff", ".features" };  // in order of decreasing priority
+  static std::string const EXTS[] = { ".arff", ".features", ".feat" };  // in order of decreasing priority
   static size_t NUM_EXTS = sizeof(EXTS) / sizeof(std::string);
   static int const NUM_DIRS = 3;
 
