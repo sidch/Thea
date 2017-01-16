@@ -1012,6 +1012,7 @@ struct VertexFeatureVisitor
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;
+    Real scale2 = std::max(mesh.getBounds().getExtent().squaredLength(), (Real)1.0e-16);
 
     BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
@@ -1025,7 +1026,7 @@ struct VertexFeatureVisitor
         for (int j = 0; j < num_nbrs; ++j)
         {
           double dist = nbrs[j].getDistance<Algorithms::MetricL2>();
-          double weight = Math::fastMinusExp(dist * dist);
+          double weight = Math::fastMinusExp(dist * dist / scale2);
           long nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
