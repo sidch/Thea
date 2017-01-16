@@ -1323,6 +1323,7 @@ struct VertexColorizer
     BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
     for (array_size_t i = 0; i < vertices.size(); ++i)
     {
+      nbrs.clear();
       long num_nbrs = fkdtree->kClosestPairs<MetricL2>(vertices[i], nbrs);
       if (num_nbrs > 0)
       {
