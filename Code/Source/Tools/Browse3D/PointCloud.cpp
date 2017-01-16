@@ -715,9 +715,4 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
   render_system.popShader();
 }
 
-void
-PointCloud::drawSurface(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
-{
-}
-
 } // namespace Browse3D

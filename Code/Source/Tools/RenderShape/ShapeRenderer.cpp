@@ -22,6 +22,7 @@
 #include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../Vector3.hpp"
+#include "../../Vector4.hpp"
 #include <boost/functional/hash.hpp>
 #include <cstdio>
 #include <fstream>
@@ -97,6 +98,7 @@ class ShapeRendererImpl
     string features_path;
     bool accentuate_features;
     string selected_mesh;
+    Vector4 material;
     ColorRGBA primary_color;
     ColorRGBA background_color;
     int antialiasing_level;
@@ -113,6 +115,7 @@ class ShapeRendererImpl
     bool parseViewFile(string const & path);
     bool parseViewUp(string const & s, Vector3 & up);
     bool parseColor(string const & s, ColorRGBA & c);
+    int parseVector(string const & str, Vector4 & v);
     void resetArgs();
     bool loadModel(Model & model, string const & path);
     bool loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids);
@@ -200,6 +203,7 @@ ShapeRendererImpl::resetArgs()
   features_path = "";
   accentuate_features = false;
   selected_mesh = "";
+  material = Vector4(0.3f, 0.7f, 0.2f, 25);
   primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
   background_color = ColorRGBA(1, 1, 1, 1);
   antialiasing_level = 1;
@@ -463,6 +467,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -e                    (accentuate features)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
   THEA_CONSOLE << "                         rest of the shape as black)";
+  THEA_CONSOLE << "  -k 'ka kd ks ksp'     (material coefficients)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
@@ -707,6 +712,31 @@ ShapeRendererImpl::parseColor(string const & s, ColorRGBA & c)
   return true;
 }
 
+// Returns number of components found
+int
+ShapeRendererImpl::parseVector(string const & str, Vector4 & v)
+{
+  string s = trimWhitespace(str);
+  if (s.length() >= 2 && s[0] == '(' && s[s.length() - 1] == ')')
+    s = s.substr(1, s.length() - 2);
+
+  double x[4];
+  size_t num_parsed = sscanf(s.c_str(), " %lf , %lf , %lf , %lf", &x[0], &x[1], &x[2], &x[3]);
+  if (num_parsed < 2)
+    num_parsed = sscanf(s.c_str(), " %lf %lf %lf %lf", &x[0], &x[1], &x[2], &x[3]);
+
+  if (num_parsed > 0)
+  {
+    v.fill(-1);
+    for (size_t i = 0; i < num_parsed; ++i)
+      v[i] = (Real)x[i];
+  }
+  else
+    THEA_ERROR << "Could not parse vector '" << s << '\'';
+
+  return (int)num_parsed;
+}
+
 bool
 ShapeRendererImpl::parseArgs(int argc, char ** argv)
 {
@@ -889,6 +919,23 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
           selected_mesh = toLower(*argv);
 
+          argv++; argc--; break;
+        }
+
+        case 'k':
+        {
+          if (argc < 1) { THEA_ERROR << "-k: Material coefficients not specified"; return false; }
+
+          Vector4 m;
+          int num_fields = parseVector(*argv, m);
+          if (num_fields <= 0)
+            return false;
+
+          for (int i = 0; i < num_fields; ++i)
+            if (m[i] >= -0.001)
+              material[i] = m[i];
+
+          THEA_CONSOLE << material;
           argv++; argc--; break;
         }
 
@@ -1840,7 +1887,7 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader)
+initMeshShader(Shader & shader, Vector4 const & material)
 {
   static string const VERTEX_SHADER =
 // "varying vec3 position;  // position in camera space\n"
@@ -1891,7 +1938,7 @@ initMeshShader(Shader & shader)
   shader.setUniform("light_color", ColorRGB(1, 1, 1));
   shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
   shader.setUniform("two_sided", 1.0f);
-  shader.setUniform("material", Vector4(0.3f, 0.7f, 0.2f, 25));
+  shader.setUniform("material", material);
 
   return true;
 }
@@ -2011,7 +2058,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader))
+        if (!initMeshShader(*mesh_shader, material))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;

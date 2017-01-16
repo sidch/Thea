@@ -60,7 +60,8 @@ namespace Browse3D {
 
 App::Options::Options()
 : accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false), bg_plain(false),
-  bg_color(ColorRGB::black()), two_sided(true), flat(false), fancy_points(false), fancy_colors(false)
+  bg_color(ColorRGB::black()), two_sided(true), flat(false), material(0.3f, 0.7f, 0.2f, 25), fancy_points(false),
+  fancy_colors(false), point_scale(1), no_axes(false)
 {
 }
 
@@ -95,9 +96,12 @@ App::optsToString() const
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
       << "\n  flat = " << opts.flat
+      << "\n  material = " << opts.material.toString()
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
       << "\n  point-scale = " << opts.point_scale
+      << "\n  no-axes = " << opts.no_axes
+      << "\n  no-shading= " << opts.no_shading
       << '\n';
 
   return oss.str();
@@ -154,6 +158,26 @@ parseModel(std::string const & str, std::string & path, AffineTransform3 & trans
   return true;
 }
 
+// Returns number of components found
+int
+parseVector(std::string const & str, Vector4 & v)
+{
+  std::string s = trimWhitespace(str);
+  if (s.length() >= 2 && s[0] == '(' && s[s.length() - 1] == ')')
+    s = s.substr(1, s.length() - 2);
+
+  double x[4];
+  size_t num_parsed = std::sscanf(s.c_str(), " %lf , %lf , %lf , %lf", &x[0], &x[1], &x[2], &x[3]);
+  if (num_parsed < 2)
+    num_parsed = std::sscanf(s.c_str(), " %lf %lf %lf %lf", &x[0], &x[1], &x[2], &x[3]);
+
+  v.fill(-1);
+  for (size_t i = 0; i < num_parsed; ++i)
+    v[i] = (Real)x[i];
+
+  return (int)num_parsed;
+}
+
 bool
 App::parseOptions(int argc, char * argv[])
 {
@@ -187,6 +211,7 @@ App::parseOptions(std::vector<std::string> const & args)
   std::string s_model;
   std::vector<std::string> s_overlays;
   std::string s_bg_color;
+  std::string s_material;
 
   po::options_description visible("Allowed options");
   visible.add_options()
@@ -206,10 +231,13 @@ App::parseOptions(std::vector<std::string> const & args)
           ("graph,g",              "Show point adjacency graph")
           ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
-          ("flat",                 "Flat shade all meshes?")
-          ("fancy-points",         "Draw points as shaded spheres?")
-          ("fancy-colors,c",       "Color points by a function of position?")
+          ("flat,0",               "Flat shade all meshes")
+          ("material,k",           po::value<std::string>(&s_material), "Surface material coefficients (ka, kd, ks, ksp)")
+          ("fancy-points",         "Draw points as shaded spheres")
+          ("fancy-colors,c",       "Color points by a function of position")
           ("point-scale,s",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
+          ("no-axes",              "Hide the coordinate axes")
+          ("no-shading",           "No shading, just render raw colors")
   ;
 
   po::options_description desc;
@@ -295,6 +323,8 @@ App::parseOptions(std::vector<std::string> const & args)
   opts.flat                 =  (vm.count("flat") > 0);
   opts.fancy_points         =  (vm.count("fancy-points") > 0);
   opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
+  opts.no_axes              =  (vm.count("no-axes") > 0);
+  opts.no_shading           =  (vm.count("no-shading") > 0);
 
   if (!s_bg_color.empty())
   {
@@ -311,6 +341,21 @@ App::parseOptions(std::vector<std::string> const & args)
   {
     opts.bg_plain = false;
     opts.bg_color = ColorRGB::black();
+  }
+
+  if (!s_material.empty())
+  {
+    Vector4 m;
+    int num_fields = parseVector(s_material, m);
+    if (num_fields <= 0)
+    {
+      THEA_ERROR << "Could not parse material: " << s_material;
+      return false;
+    }
+
+    for (int i = 0; i < num_fields; ++i)
+      if (m[i] >= -0.001)
+        opts.material[i] = m[i];
   }
 
   Application::setResourceArchive(opts.resource_dir);
