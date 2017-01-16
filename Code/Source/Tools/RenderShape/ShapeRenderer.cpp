@@ -1,7 +1,9 @@
 #include "ShapeRenderer.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
+#include "../../Algorithms/KDTreeN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"
+#include "../../Algorithms/MetricL2.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshCodec.hpp"
@@ -34,6 +36,8 @@ using namespace Graphics;
 
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
+typedef std::pair<Mesh const *, long> FaceRef;
+typedef TheaUnorderedMap<FaceRef, uint32> FaceIndexMap;
 
 struct View
 {
@@ -54,6 +58,7 @@ struct Model
   MG mesh_group;
   bool is_point_cloud;
   TheaArray<Vector3> points;
+  TheaArray<ColorRGBA> point_colors;
 };
 
 enum PointUsage
@@ -85,8 +90,11 @@ class ShapeRendererImpl
     float point_size;
     bool color_by_id;
     bool color_by_label;
+    bool color_by_features;
     string labels_path;
     TheaArray<int> labels;
+    string features_path;
+    bool accentuate_features;
     string selected_mesh;
     ColorRGBA primary_color;
     ColorRGBA background_color;
@@ -106,7 +114,8 @@ class ShapeRendererImpl
     bool parseColor(string const & s, ColorRGBA & c);
     void resetArgs();
     bool loadModel(Model & model, string const & path);
-    bool loadLabels();
+    bool loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids);
+    bool loadFeatures(Model & model);
     bool renderModel(Model const & model, ColorRGBA const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
 
@@ -184,8 +193,11 @@ ShapeRendererImpl::resetArgs()
   point_size = 1.0f;
   color_by_id = false;
   color_by_label = false;
+  color_by_features = false;
   labels_path = "";
   labels.clear();
+  features_path = "";
+  accentuate_features = false;
   selected_mesh = "";
   primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
   background_color = ColorRGBA(1, 1, 1, 1);
@@ -446,12 +458,14 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
+  THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
+  THEA_CONSOLE << "  -e                    (accentuate features)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
   THEA_CONSOLE << "                         rest of the shape as black)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
-  THEA_CONSOLE << "  -f                    (flat shading)";
+  THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "";
 
@@ -852,6 +866,22 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
+        case 'f':
+        {
+          if (argc < 1) { THEA_ERROR << "-f: Features not specified"; return false; }
+
+          color_by_features = true;
+          features_path = trimWhitespace(*argv);
+
+          argv++; argc--; break;
+        }
+
+        case 'e':
+        {
+          accentuate_features = true;
+          break;
+        }
+
         case 'm':
         {
           if (argc < 1) { THEA_ERROR << "-m: Selected mesh not specified"; return false; }
@@ -884,7 +914,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
-        case 'f':
+        case '0':
         {
           flat = true;
           break;
@@ -949,17 +979,28 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   if (views.empty())
   {
     View view;
-    view.dir = Vector3(-1, -1, -1);
-    view.up = Vector3(0, 1, 0);
+    if (has_up)
+    {
+      view.up = view_up;
+      int axis = view_up.maxAbsAxis();
+      switch (axis)
+      {
+        case 0:  view.dir = Vector3(-Math::sign(view.up[0]),   Math::sign(view.up[0]),  -1); break;
+        case 2:  view.dir = Vector3(-Math::sign(view.up[2]),   1,                       -Math::sign(view.up[2])); break;
+        default: view.dir = Vector3(-Math::sign(view.up[1]),  -Math::sign(view.up[1]),  -1);
+      }
+    }
+    else
+    {
+      view.up = Vector3(0, 1, 0);
+      view.dir = Vector3(-1, -1, -1);
+    }
 
     views.push_back(view);
   }
 
   return true;
 }
-
-typedef std::pair<Mesh const *, long> FaceRef;
-typedef TheaUnorderedMap<FaceRef, uint32> FaceIndexMap;
 
 struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
 {
@@ -1108,160 +1149,8 @@ struct FaceColorizer
   }
 };
 
-void
-ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
-{
-  for (MG::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
-  {
-    Mesh & mesh = **mi;
-
-    uint32 mesh_id = 0;
-    if (parent_id != 0)
-      mesh_id = parent_id;
-    else if (!selected_mesh.empty() && toLower(mesh.getName()) == selected_mesh)
-      mesh_id = 0xFFFFFF;
-
-    ColorRGBA8 color = indexToColor(mesh_id, false);
-
-    mesh.isolateFaces();
-    mesh.addColors();
-
-    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
-    for (array_size_t i = 0; i < tris.size(); i += 3)
-    {
-      mesh.setColor((long)tris[i    ], color);
-      mesh.setColor((long)tris[i + 1], color);
-      mesh.setColor((long)tris[i + 2], color);
-    }
-
-    Mesh::IndexArray const & quads = mesh.getQuadIndices();
-    for (array_size_t i = 0; i < quads.size(); i += 4)
-    {
-      mesh.setColor((long)quads[i    ], color);
-      mesh.setColor((long)quads[i + 1], color);
-      mesh.setColor((long)quads[i + 2], color);
-      mesh.setColor((long)quads[i + 3], color);
-    }
-  }
-
-  for (MG::GroupConstIterator ci = mg.childrenBegin(); ci != mg.childrenEnd(); ++ci)
-  {
-    MG & child = **ci;
-    uint32 child_id = 0;
-
-    if (parent_id != 0)
-      child_id = parent_id;
-    else if (!selected_mesh.empty() && toLower(child.getName()) == selected_mesh)
-      child_id = 0xFFFFFF;
-
-    colorizeMeshSelection(child, child_id);
-  }
-}
-
 bool
-ShapeRendererImpl::loadModel(Model & model, string const & path)
-{
-  model.mesh_group.clear();
-  model.points.clear();
-  model.is_point_cloud = false;
-
-  if (endsWith(toLower(path), ".pts"))
-  {
-    ifstream in(path.c_str());
-    if (!in)
-    {
-      THEA_ERROR << "Could not open points file '" << path << '\'';
-      return false;
-    }
-
-    string line;
-    double x, y, z;
-    while (getline(in, line))
-    {
-      if (trimWhitespace(line).empty())
-        continue;
-
-      istringstream line_in(line);
-      if (!(line_in >> x >> y >> z))
-      {
-        THEA_ERROR << "Could not read point " << model.points.size() << " from '" << path << '\'';
-        return false;
-      }
-
-      model.points.push_back(Vector3((Real)x, (Real)y, (Real)z));
-    }
-
-    model.is_point_cloud = true;
-
-    if (color_by_label)
-    {
-      if (!loadLabels())
-        return false;
-    }
-
-    THEA_CONSOLE << "Read " << model.points.size() << " points from '" << path << '\'';
-  }
-  else
-  {
-    FaceIndexMap tri_ids, quad_ids;
-    try
-    {
-      MeshReadCallback callback(tri_ids, quad_ids);
-      model.mesh_group.load(path, Codec_AUTO(), &callback);
-    }
-    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
-
-    if (model.convert_to_points)
-    {
-      MeshSampler<Mesh> sampler(model.mesh_group);
-
-      double out_scale = min(out_width, out_height);
-      long max_samples = (long)ceil(10 * out_scale);
-      long npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
-
-      THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
-
-      model.mesh_group.clear();
-      model.is_point_cloud = true;
-    }
-    else
-    {
-      if (color_by_id)
-      {
-        FaceColorizer id_colorizer(tri_ids, quad_ids);
-        model.mesh_group.forEachMeshUntil(&id_colorizer);
-      }
-      else if (color_by_label)
-      {
-        if (!loadLabels())
-          return false;
-
-        FaceColorizer label_colorizer(tri_ids, quad_ids, &labels);
-        model.mesh_group.forEachMeshUntil(&label_colorizer);
-      }
-      else if (!selected_mesh.empty())
-      {
-        colorizeMeshSelection(model.mesh_group, 0);
-      }
-      else
-      {
-        if (flat)
-          model.mesh_group.forEachMeshUntil(flattenFaces);
-        else
-          model.mesh_group.forEachMeshUntil(averageNormals);
-      }
-
-#ifdef DRAW_EDGES
-      model.mesh_group.forEachMeshUntil(enableWireframe);
-#endif
-    }
-  }
-
-  return true;
-}
-
-bool
-ShapeRendererImpl::loadLabels()
+ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids)
 {
   if (labels_path.empty())
   {
@@ -1269,8 +1158,7 @@ ShapeRendererImpl::loadLabels()
     return false;
   }
 
-  labels.clear();
-
+  TheaArray<int> labels;
   string ext = toLower(FilePath::extension(labels_path));
   if (ext == "lab")
   {
@@ -1367,7 +1255,389 @@ ShapeRendererImpl::loadLabels()
     }
   }
 
+  if (model.is_point_cloud)
+  {
+    if (labels.size() != model.points.size())
+    {
+      THEA_ERROR << "Label points are not in one-one correspondence with model points";
+      return false;
+    }
+
+    model.point_colors.resize(model.points.size());
+    for (array_size_t i = 0; i < model.points.size(); ++i)
+      model.point_colors[i] = (labels[i] < 0 ? ColorRGBA(1, 0, 0, 1) : getLabelColor(labels[i]));
+  }
+  else
+  {
+    alwaysAssertM(tri_ids && quad_ids, "Face IDs necessary for coloring by label");
+    FaceColorizer label_colorizer(*tri_ids, *quad_ids, &labels);
+    model.mesh_group.forEachMeshUntil(&label_colorizer);
+  }
+
   THEA_CONSOLE << "Read labels from '" << labels_path << '\'';
+
+  return true;
+}
+
+istream &
+getNextNonBlankLine(istream & in, string & line)
+{
+  while (getline(in, line))
+  {
+    if (!trimWhitespace(line).empty())
+      break;
+  }
+
+  return in;
+}
+
+ColorRGB
+featToColor(Real f0, Real const * f2, Real const * f1)
+{
+  if (!f2)
+  {
+    if (!f1)
+      return ColorRGB::jetColorMap(0.2 + 0.6 * f0);
+    else
+      return ColorRGB(f0, *f1, 1.0f);
+  }
+  else
+    return ColorRGB(f0, *f1, *f2);
+}
+
+typedef KDTreeN<Vector3, 3> PointKDTree;
+
+struct VertexColorizer
+{
+  VertexColorizer(PointKDTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
+
+  bool operator()(Mesh & mesh)
+  {
+    mesh.addColors();
+
+    Mesh::VertexArray const & vertices = mesh.getVertices();
+    for (array_size_t i = 0; i < vertices.size(); ++i)
+    {
+      long nn_index = fkdtree->closestElement<MetricL2>(vertices[i]);
+      if (nn_index >= 0)
+      {
+        mesh.setColor((long)i, featToColor(feat_vals0[nn_index],
+                                           (feat_vals1 ? &feat_vals1[nn_index] : NULL),
+                                           (feat_vals2 ? &feat_vals2[nn_index] : NULL)));
+      }
+      else
+      {
+        THEA_WARNING << "No nearest neighbor found!";
+        mesh.setColor((long)i, ColorRGB(1, 1, 1));
+      }
+    }
+
+    return false;
+  }
+
+  PointKDTree * fkdtree;
+  Real const * feat_vals0;
+  Real const * feat_vals1;
+  Real const * feat_vals2;
+};
+
+bool
+ShapeRendererImpl::loadFeatures(Model & model)
+{
+  TheaArray<Vector3> feat_pts;
+  TheaArray< TheaArray<Real> > feat_vals(1);
+  try
+  {
+    ifstream in(features_path.c_str());
+    if (!in)
+      throw Error("Couldn't open file");
+
+    string line;
+    Vector3 p;
+    Real f;
+    while (getNextNonBlankLine(in, line))
+    {
+      istringstream line_in(line);
+      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
+        throw Error("Couldn't read feature");
+
+      feat_pts.push_back(p);
+      feat_vals[0].push_back(f);
+
+      if (feat_pts.size() == 1)
+      {
+        while (line_in >> f)
+        {
+          feat_vals.push_back(TheaArray<Real>());
+          feat_vals.back().push_back(f);
+        }
+      }
+      else
+      {
+        for (array_size_t i = 1; i < feat_vals.size(); ++i)
+        {
+          if (!(line_in >> f))
+            throw Error("Couldn't read feature");
+
+          feat_vals[i].push_back(f);
+        }
+      }
+    }
+
+    if (feat_pts.empty())
+      return true;
+
+    if (accentuate_features)
+    {
+      if (feat_vals.size() == 3)
+      {
+        Real abs_max = -1;
+        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        {
+          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          {
+            Real abs_feat_val = fabs(feat_vals[i][j]);
+            if (abs_feat_val > abs_max)
+              abs_max = abs_feat_val;
+          }
+        }
+
+        if (abs_max > 0)
+        {
+          for (array_size_t i = 0; i < feat_vals.size(); ++i)
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp(0.5 * (feat_vals[i][j]  / abs_max + 1), (Real)0, (Real)1);
+        }
+      }
+      else
+      {
+        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        {
+          TheaArray<Real> sorted = feat_vals[i];
+          sort(sorted.begin(), sorted.end());
+
+          array_size_t tenth = (int)(0.1 * sorted.size());
+          Real lo = *(sorted.begin() + tenth);
+
+          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          Real hi = *(sorted.begin() + ninetieth);
+
+          Real range = hi - lo;
+
+          if (range < 1e-20)
+          {
+            lo = sorted.front();
+            hi = sorted.back();
+            range = hi - lo;
+
+            if (range < 1e-20)
+              continue;
+          }
+
+          if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
+          {
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
+          }
+          else
+          {
+            Real abs_max = max(fabs(lo), fabs(hi));
+            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+              feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
+          }
+        }
+      }
+    }
+  }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, WARNING, "Couldn't load model features from '%s'", features_path.c_str())
+
+  if (model.is_point_cloud)
+  {
+    if (feat_vals[0].size() != model.points.size())
+    {
+      THEA_ERROR << "Feature points are not in one-one correspondence with model points";
+      return false;
+    }
+
+    model.point_colors.resize(model.points.size());
+    for (array_size_t i = 0; i < model.points.size(); ++i)
+    {
+      model.point_colors[i] = featToColor(feat_vals[0][i],
+                                          (feat_vals.size() > 1 ? &feat_vals[1][i] : NULL),
+                                          (feat_vals.size() > 2 ? &feat_vals[2][i] : NULL));
+    }
+  }
+  else
+  {
+    PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
+    VertexColorizer visitor(&fkdtree,
+                            &feat_vals[0][0],
+                            feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
+                            feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
+    model.mesh_group.forEachMeshUntil(&visitor);
+  }
+
+  THEA_CONSOLE << "Read features from '" << features_path << '\'';
+
+  return true;
+}
+
+void
+ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
+{
+  for (MG::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
+  {
+    Mesh & mesh = **mi;
+
+    uint32 mesh_id = 0;
+    if (parent_id != 0)
+      mesh_id = parent_id;
+    else if (!selected_mesh.empty() && toLower(mesh.getName()) == selected_mesh)
+      mesh_id = 0xFFFFFF;
+
+    ColorRGBA8 color = indexToColor(mesh_id, false);
+
+    mesh.isolateFaces();
+    mesh.addColors();
+
+    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+    for (array_size_t i = 0; i < tris.size(); i += 3)
+    {
+      mesh.setColor((long)tris[i    ], color);
+      mesh.setColor((long)tris[i + 1], color);
+      mesh.setColor((long)tris[i + 2], color);
+    }
+
+    Mesh::IndexArray const & quads = mesh.getQuadIndices();
+    for (array_size_t i = 0; i < quads.size(); i += 4)
+    {
+      mesh.setColor((long)quads[i    ], color);
+      mesh.setColor((long)quads[i + 1], color);
+      mesh.setColor((long)quads[i + 2], color);
+      mesh.setColor((long)quads[i + 3], color);
+    }
+  }
+
+  for (MG::GroupConstIterator ci = mg.childrenBegin(); ci != mg.childrenEnd(); ++ci)
+  {
+    MG & child = **ci;
+    uint32 child_id = 0;
+
+    if (parent_id != 0)
+      child_id = parent_id;
+    else if (!selected_mesh.empty() && toLower(child.getName()) == selected_mesh)
+      child_id = 0xFFFFFF;
+
+    colorizeMeshSelection(child, child_id);
+  }
+}
+
+bool
+ShapeRendererImpl::loadModel(Model & model, string const & path)
+{
+  model.mesh_group.clear();
+  model.points.clear();
+  model.is_point_cloud = false;
+
+  if (endsWith(toLower(path), ".pts"))
+  {
+    ifstream in(path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Could not open points file '" << path << '\'';
+      return false;
+    }
+
+    string line;
+    double x, y, z;
+    while (getline(in, line))
+    {
+      if (trimWhitespace(line).empty())
+        continue;
+
+      istringstream line_in(line);
+      if (!(line_in >> x >> y >> z))
+      {
+        THEA_ERROR << "Could not read point " << model.points.size() << " from '" << path << '\'';
+        return false;
+      }
+
+      model.points.push_back(Vector3((Real)x, (Real)y, (Real)z));
+    }
+
+    model.is_point_cloud = true;
+
+    if (color_by_label)
+    {
+      if (!loadLabels(model, NULL, NULL))
+        return false;
+    }
+    else if (color_by_features)
+    {
+      if (!loadFeatures(model))
+        return false;
+    }
+
+    THEA_CONSOLE << "Read " << model.points.size() << " points from '" << path << '\'';
+  }
+  else
+  {
+    FaceIndexMap tri_ids, quad_ids;
+    try
+    {
+      MeshReadCallback callback(tri_ids, quad_ids);
+      model.mesh_group.load(path, Codec_AUTO(), &callback);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
+
+    if (model.convert_to_points)
+    {
+      MeshSampler<Mesh> sampler(model.mesh_group);
+
+      double out_scale = min(out_width, out_height);
+      long max_samples = (long)ceil(10 * out_scale);
+      long npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
+
+      THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
+
+      model.mesh_group.clear();
+      model.is_point_cloud = true;
+    }
+    else
+    {
+      if (color_by_id)
+      {
+        FaceColorizer id_colorizer(tri_ids, quad_ids);
+        model.mesh_group.forEachMeshUntil(&id_colorizer);
+      }
+      else if (color_by_label)
+      {
+        if (!loadLabels(model, &tri_ids, &quad_ids))
+          return false;
+      }
+      else if (color_by_features)
+      {
+        if (!loadFeatures(model))
+          return false;
+      }
+      else if (!selected_mesh.empty())
+      {
+        colorizeMeshSelection(model.mesh_group, 0);
+      }
+      else
+      {
+        if (flat)
+          model.mesh_group.forEachMeshUntil(flattenFaces);
+        else
+          model.mesh_group.forEachMeshUntil(averageNormals);
+      }
+
+#ifdef DRAW_EDGES
+      model.mesh_group.forEachMeshUntil(enableWireframe);
+#endif
+    }
+  }
 
   return true;
 }
@@ -1675,12 +1945,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
       {
         if (color_by_id)
           render_system->setColor(indexToColor((uint32)i, true));
-        else if (color_by_label)
-        {
-          int label = labels[(array_size_t)i];
-          ColorRGBA color = (label < 0 ? ColorRGBA(1, 0, 0, 1) : getLabelColor(label));
-          render_system->setColor(color);
-        }
+        else if (color_by_label || color_by_features)
+          render_system->setColor(model.point_colors[i]);
 
         render_system->sendVertex(model.points[i]);
       }
@@ -1732,7 +1998,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     }
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_id || color_by_label)
+    if (color_by_id || color_by_label || color_by_features)
       opts.useVertexData() = true;
 
 #ifdef DRAW_EDGES
