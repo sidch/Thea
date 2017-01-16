@@ -1316,6 +1316,7 @@ struct VertexColorizer
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;  // ok to have a few neighbors for output quality -- this is an offline renderer
+    Real scale2 = max(mesh.getBounds().getExtent().squaredLength(), (Real)1.0e-16);
 
     mesh.addColors();
 
@@ -1332,7 +1333,7 @@ struct VertexColorizer
         for (int j = 0; j < num_nbrs; ++j)
         {
           double dist = nbrs[j].getDistance<MetricL2>();
-          double weight = Math::fastMinusExp(dist * dist);
+          double weight = Math::fastMinusExp(dist * dist / scale2);
           long nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
