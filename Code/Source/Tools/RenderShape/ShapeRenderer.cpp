@@ -11,6 +11,7 @@
 #include "../../Plugins/GL/GLHeaders.hpp"
 #include "../../Application.hpp"
 #include "../../Ball3.hpp"
+#include "../../BoundedSortedArrayN.hpp"
 #include "../../ColorRGBA.hpp"
 #include "../../CoordinateFrame3.hpp"
 #include "../../FilePath.hpp"
@@ -1314,17 +1315,31 @@ struct VertexColorizer
 
   bool operator()(Mesh & mesh)
   {
+    static int const MAX_NBRS = 8;  // ok to have a few neighbors for output quality -- this is an offline renderer
+
     mesh.addColors();
 
     Mesh::VertexArray const & vertices = mesh.getVertices();
+    BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
     for (array_size_t i = 0; i < vertices.size(); ++i)
     {
-      long nn_index = fkdtree->closestElement<MetricL2>(vertices[i]);
-      if (nn_index >= 0)
+      long num_nbrs = fkdtree->kClosestPairs<MetricL2>(vertices[i], nbrs);
+      if (num_nbrs > 0)
       {
-        mesh.setColor((long)i, featToColor(feat_vals0[nn_index],
-                                           (feat_vals1 ? &feat_vals1[nn_index] : NULL),
-                                           (feat_vals2 ? &feat_vals2[nn_index] : NULL)));
+        ColorRGB c(0, 0, 0);
+        double sum_weights = 0;
+        for (int j = 0; j < num_nbrs; ++j)
+        {
+          double dist = nbrs[j].getDistance<MetricL2>();
+          double weight = Math::fastMinusExp(dist * dist);
+          long nn_index = nbrs[j].getTargetIndex();
+          sum_weights += weight;
+          c += weight * featToColor(feat_vals0[nn_index],
+                                    (feat_vals1 ? &feat_vals1[nn_index] : NULL),
+                                    (feat_vals2 ? &feat_vals2[nn_index] : NULL));
+        }
+
+        mesh.setColor((long)i, sum_weights > 0 ? c / sum_weights : c);
       }
       else
       {
