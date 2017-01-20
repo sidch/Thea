@@ -1012,13 +1012,17 @@ struct VertexFeatureVisitor
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;
-    Real scale2 = std::max(mesh.getBounds().getExtent().squaredLength(), (Real)1.0e-16);
+    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().length(), (Real)1.0e-8);
+    Real scale2 = scale * scale;
 
     BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
       nbrs.clear();
-      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
+      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
+      if (num_nbrs <= 0)
+        num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
+
       if (num_nbrs > 0)
       {
         ColorRGB c(0, 0, 0);
@@ -1285,7 +1289,7 @@ getDefaultPath(std::string model_path, std::string const & query_path, TheaArray
 
     for (array_size_t j = 0; j < query_exts.size(); ++j)
     {
-      std::string ffn = FilePath::concat(dir, FilePath::objectName(model_path) + query_exts[j]);
+      std::string ffn = FilePath::concat(dir, model_path + query_exts[j]);
       if (FileSystem::exists(ffn))
         return ffn;
     }
@@ -1316,7 +1320,6 @@ Model::getDefaultFeaturesPath() const
   TheaArray<std::string> exts;
   exts.push_back(".arff");
   exts.push_back(".features");
-  exts.push_back(".feat");
 
   return ModelInternal::getDefaultPath(path, app().options().features, exts);
 }
@@ -1501,7 +1504,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
   const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
-  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 1, 1));
+  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
 
   if (hasTransform())
   {

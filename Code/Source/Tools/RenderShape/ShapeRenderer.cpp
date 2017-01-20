@@ -1363,7 +1363,8 @@ struct VertexColorizer
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;  // ok to have a few neighbors for output quality -- this is an offline renderer
-    Real scale2 = max(mesh.getBounds().getExtent().squaredLength(), (Real)1.0e-16);
+    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().length(), (Real)1.0e-8);
+    Real scale2 = scale * scale;
 
     mesh.addColors();
 
@@ -1372,7 +1373,10 @@ struct VertexColorizer
     for (array_size_t i = 0; i < vertices.size(); ++i)
     {
       nbrs.clear();
-      long num_nbrs = fkdtree->kClosestPairs<MetricL2>(vertices[i], nbrs);
+      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
+      if (num_nbrs <= 0)
+        num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs);
+
       if (num_nbrs > 0)
       {
         ColorRGB c(0, 0, 0);
