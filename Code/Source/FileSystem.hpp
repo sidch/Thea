@@ -122,6 +122,7 @@ class THEA_API FileSystem
      *   (without path) match at least one of the patterns. E.g. \a patterns = "*.txt *.png" will return only files with names
      *   ending in .txt or .png.
      * @param recursive If true, subdirectories are searched recursively. The name of each such subdirectory is also returned.
+     * @param ignore_case If true, object names are matched to patterns without distinguishing between uppercase and lowercase.
      *
      * @return The number of objects found, equal to the size of \a objects. If the supplied path is not a directory, returns a
      *   negative value.
@@ -130,7 +131,8 @@ class THEA_API FileSystem
                                      TheaArray<std::string> & objects,
                                      int types = -1,
                                      std::string const & patterns = "",
-                                     bool recursive = false);
+                                     bool recursive = false,
+                                     bool ignore_case = false);
 
     /**
      * Remove a file, a symbolic link, or a directory. If the path is a directory, the operation succeeds only if the directory

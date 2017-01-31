@@ -453,7 +453,9 @@ fileIndex(std::string const & dir, std::string const & file, TheaArray<std::stri
   else
   {
     std::string pat = (patterns ? stringJoin(*patterns, ' ') : "");
-    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat, false) <= 0)
+    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat,
+                                         false /* recursive */,
+                                         true /* ignore_case */) <= 0)
       return -1;
   }
 
