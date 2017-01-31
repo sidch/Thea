@@ -139,7 +139,7 @@ namespace FileSystemInternal {
 
 bool
 objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, int types,
-                           TheaArray<std::string> const & patterns)
+                           TheaArray<std::string> const & patterns, bool ignore_case)
 {
   if (types > 0 && types != FileSystem::ObjectType::ALL)
   {
@@ -170,6 +170,9 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
     std::string name = object.path().filename();
 #endif
 
+    if (ignore_case)
+      name = toLower(name);
+
     bool ok = false;
     for (array_size_t i = 0; !ok && i < patterns.size(); ++i)
       if (patternMatch(patterns[i], name))
@@ -186,14 +189,22 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
 
 long
 FileSystem::getDirectoryContents(std::string const & dir, TheaArray<std::string> & objects, int types,
-                                 std::string const & patterns, bool recursive)
+                                 std::string const & patterns, bool recursive, bool ignore_case)
 {
   if (!directoryExists(dir))
     return -1;
 
   TheaArray<std::string> patlist;
   if (!patterns.empty())
+  {
     stringSplit(patterns, ' ', patlist, true);
+
+    if (ignore_case)
+    {
+      for (array_size_t i = 0; i < patlist.size(); ++i)
+        patlist[i] = toLower(patlist[i]);
+    }
+  }
 
   objects.clear();
 
@@ -201,14 +212,14 @@ FileSystem::getDirectoryContents(std::string const & dir, TheaArray<std::string>
   {
     boost::filesystem::recursive_directory_iterator objects_end;
     for (boost::filesystem::recursive_directory_iterator iter(dir); iter != objects_end; ++iter)
-      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist))
+      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist, ignore_case))
         objects.push_back(iter->path().string());
   }
   else
   {
     boost::filesystem::directory_iterator objects_end;
     for (boost::filesystem::directory_iterator iter(dir); iter != objects_end; ++iter)
-      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist))
+      if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist, ignore_case))
         objects.push_back(iter->path().string());
   }
 
