@@ -111,11 +111,13 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     MatrixMode getMatrixMode() const;
     void setMatrixMode(MatrixMode mode);
     void pushMatrix();
+    void pushViewMatrices();
     Matrix4 getMatrix(MatrixMode mode) const;
     void setMatrix(Matrix4 const & m);
     void setIdentityMatrix();
     void multMatrix(Matrix4 const & m);
     void popMatrix();
+    void popViewMatrices();
 
     void beginIndexedPrimitives();
     void setVertexArray(VAR const * vertices);

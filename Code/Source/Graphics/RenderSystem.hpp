@@ -257,6 +257,13 @@ class THEA_API RenderSystem : public AbstractNamedObject
     /** Save the matrix of the current matrix mode by pushing it onto the stack. */
     virtual void pushMatrix() = 0;
 
+    /**
+     * Save modelview and projection matrices, ensuring the current matrix mode is restored at the end.
+     *
+     * @see popViewMatrices()
+     */
+    virtual void pushViewMatrices() = 0;
+
     /** Get the current matrix of the specified matrix mode. */
     virtual Matrix4 getMatrix(MatrixMode mode) const = 0;
 
@@ -287,6 +294,14 @@ class THEA_API RenderSystem : public AbstractNamedObject
 
     /** Restore the last saved matrix of the current matrix mode from the stack. */
     virtual void popMatrix() = 0;
+
+    /**
+     * Restore modelview and projection matrices from the respective stacks, ensuring the current matrix mode is restored at the
+     * end.
+     *
+     * @see pushViewMatrices().
+     */
+    virtual void popViewMatrices() = 0;
 
     /** Prepare to draw a set of indexed primitives, after saving the current array states on the stack. */
     virtual void beginIndexedPrimitives() = 0;

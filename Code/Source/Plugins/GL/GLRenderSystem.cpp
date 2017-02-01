@@ -612,6 +612,18 @@ GLRenderSystem::pushMatrix()
   glPushMatrix();
 }
 
+void
+GLRenderSystem::pushViewMatrices()
+{
+  GLint gl_mode;
+  glGetIntegerv(GL_MATRIX_MODE, &gl_mode);
+
+  glMatrixMode(GL_MODELVIEW); glPushMatrix();
+  glMatrixMode(GL_PROJECTION); glPushMatrix();
+
+  glMatrixMode(gl_mode);
+}
+
 Matrix4
 GLRenderSystem::getMatrix(MatrixMode mode) const
 {
@@ -652,6 +664,18 @@ void
 GLRenderSystem::popMatrix()
 {
   glPopMatrix();
+}
+
+void
+GLRenderSystem::popViewMatrices()
+{
+  GLint gl_mode;
+  glGetIntegerv(GL_MATRIX_MODE, &gl_mode);
+
+  glMatrixMode(GL_PROJECTION); glPopMatrix();
+  glMatrixMode(GL_MODELVIEW); glPopMatrix();
+
+  glMatrixMode(gl_mode);
 }
 
 void
