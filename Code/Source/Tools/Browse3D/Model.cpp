@@ -114,7 +114,7 @@ static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 Model::Model(std::string const & initial_mesh)
 : has_features(false),
-  has_face_labels(false),
+  has_elem_labels(false),
   color(ModelInternal::DEFAULT_COLOR),
   valid_pick(false),
   selected_sample(-1),
@@ -166,7 +166,7 @@ Model::clearMesh()
 {
   if (mesh_group) mesh_group->clear();
   has_features = false;
-  has_face_labels = false;
+  has_elem_labels = false;
   samples.clear();
   segments.clear();
 }
@@ -231,8 +231,9 @@ Model::load(std::string path_)
     loadSamples(getSamplesPath());
     loadSegments(getSegmentsPath());
     loadFeatures(getDefaultFeaturesPath());
-    loadFaceLabels(getDefaultFaceLabelsPath());
   }
+
+  loadElementLabels(getDefaultElementLabelsPath());
 
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_PATH_CHANGED));
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_GEOMETRY_CHANGED));
@@ -1209,70 +1210,76 @@ namespace ModelInternal {
 class FaceLabeler
 {
   public:
-    FaceLabeler(TheaArray<ColorRGBA> const & face_colors_) : face_colors(face_colors_) {}
+    FaceLabeler(TheaArray<ColorRGBA> const & elem_colors_) : elem_colors(elem_colors_) {}
 
     bool operator()(Mesh & mesh) const
     {
       for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
         long index = fi->attr().getIndex();
-        if (index < 0 || index >= (long)face_colors.size())
+        if (index < 0 || index >= (long)elem_colors.size())
           throw Error("Face index out of range of face labels array");
 
-        fi->attr().setColor(face_colors[(array_size_t)index]);
+        fi->attr().setColor(elem_colors[(array_size_t)index]);
       }
 
       return false;
     }
 
   private:
-    TheaArray<ColorRGBA> const & face_colors;
+    TheaArray<ColorRGBA> const & elem_colors;
 };
 
 } // namespace ModelInternal
 
 bool
-Model::loadFaceLabels(std::string const & path_)
+Model::loadElementLabels(std::string const & path_)
 {
-  has_face_labels = false;
+  has_elem_labels = false;
 
-  if (!mesh_group)
-    return has_face_labels;
+  if (!mesh_group && !point_cloud)
+    return has_elem_labels;
 
   std::ifstream in(path_.c_str());
   if (!in)
   {
     THEA_WARNING << "Couldn't open face labels file '" << path_ << '\'';
-    return has_face_labels;
+    return has_elem_labels;
   }
 
-  TheaArray<ColorRGBA> face_colors;
+  TheaArray<ColorRGBA> elem_colors;
   std::string line;
-  while (in)
+  while (std::getline(in, line))
   {
-    std::getline(in, line);
     line = trimWhitespace(line);
+    // An empty line is a null label, don't skip it
 
     // Check if this is an integer, if so, use as is.
     char * next;
     long n = strtol(line.c_str(), &next, 10);
     if (*next != 0)  // could not parse to end of string, not an integer
-      face_colors.push_back(getLabelColor(line));
+      elem_colors.push_back(getLabelColor(line));
     else
-      face_colors.push_back(getPaletteColor(n));
+      elem_colors.push_back(getPaletteColor(n));
   }
 
-  try
+  if (mesh_group)
   {
-    ModelInternal::FaceLabeler flab(face_colors);
-    mesh_group->forEachMeshUntil(&flab);
+    try
+    {
+      ModelInternal::FaceLabeler flab(elem_colors);
+      mesh_group->forEachMeshUntil(&flab);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return has_elem_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
   }
-  THEA_STANDARD_CATCH_BLOCKS(return has_face_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
+  else
+    if (!point_cloud->setPointColors(elem_colors))
+      return has_elem_labels;
 
-  has_face_labels = true;
+  has_elem_labels = true;
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
-  return has_face_labels;
+  return has_elem_labels;
 }
 
 namespace ModelInternal {
@@ -1327,12 +1334,12 @@ Model::getDefaultFeaturesPath() const
 }
 
 std::string
-Model::getDefaultFaceLabelsPath() const
+Model::getDefaultElementLabelsPath() const
 {
   TheaArray<std::string> exts;
   exts.push_back(".seg");
 
-  return ModelInternal::getDefaultPath(path, app().options().face_labels, exts);
+  return ModelInternal::getDefaultPath(path, app().options().elem_labels, exts);
 }
 
 void
@@ -1559,7 +1566,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
           ro.sendColors() = true;
           ro.useVertexData() = true;
         }
-        else if (has_face_labels)
+        else if (has_elem_labels)
         {
           ro.sendColors() = true;
           ro.useVertexData() = false;

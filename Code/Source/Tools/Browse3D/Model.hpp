@@ -319,13 +319,13 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     //========================================================================================================================
 
     /** Load face labels from a file. */
-    bool loadFaceLabels(std::string const & path_);
+    bool loadElementLabels(std::string const & path_);
 
     /** Get the path of the currently loaded face labels. */
-    std::string const & getFaceLabelsPath() const { return face_labels_path; }
+    std::string const & getElementLabelsPath() const { return elem_labels_path; }
 
     /** Check if the model has currently loaded face labels. */
-    bool hasFaceLabels() const { return has_face_labels; }
+    bool hasElementLabels() const { return has_elem_labels; }
 
     //========================================================================================================================
     // Bounding boxes
@@ -389,7 +389,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     std::string getDefaultFeaturesPath() const;
 
     /** Get the default path to the file in which the face labels are stored. */
-    std::string getDefaultFaceLabelsPath() const;
+    std::string getDefaultElementLabelsPath() const;
 
     /** Draw the mesh group colored by segment. */
     void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
@@ -402,8 +402,8 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     std::string features_path;
     bool has_features;
 
-    std::string face_labels_path;
-    bool has_face_labels;
+    std::string elem_labels_path;
+    bool has_elem_labels;
 
     ColorRGBA color;
     AxisAlignedBox3 bounds;

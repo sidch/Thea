@@ -69,12 +69,17 @@ void
 PointCloud::clear()
 {
   points.clear();
-  graph.clear();
 
   has_normals = false;
-  has_graph = false;
-
   bounds.setNull();
+
+  colors.clear();
+  features.clear();
+
+  has_graph = false;
+  graph.clear();
+
+  changed_buffers = 0xFFFF;
 }
 
 bool
@@ -487,6 +492,20 @@ PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string
   return "";
 }
 
+bool
+PointCloud::setPointColors(TheaArray<ColorRGBA> const & colors_)
+{
+  if (colors_.size() < points.size())
+  {
+    THEA_ERROR << getName() << ": Number of colors < number of points";
+    return false;
+  }
+
+  colors = colors_;
+
+  return true;
+}
+
 AxisAlignedBox3 const &
 PointCloud::getBounds() const
 {
@@ -515,7 +534,11 @@ PointCloud::getColor(array_size_t point_index) const
   alwaysAssertM(point_index >= 0 && point_index < points.size(),
                 format("%s: Index %ld out of bounds", getName(), (long)point_index));
 
-  if (!features.empty())
+  if (!colors.empty())
+  {
+    return colors[point_index];
+  }
+  else if (!features.empty())
   {
     switch (features.size())
     {
@@ -602,11 +625,11 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     vertices_var = var_area->createArray(vertex_bytes);
     if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
 
-    TheaArray<Vector3> vertices(points.size());
+    TheaArray<Vector3> vbuf(points.size());
     for (array_size_t i = 0; i < points.size(); ++i)
-      vertices[i] = points[i].p;
+      vbuf[i] = points[i].p;
 
-    vertices_var->updateVectors(0, (long)vertices.size(), &vertices[0]);
+    vertices_var->updateVectors(0, (long)vbuf.size(), &vbuf[0]);
   }
 
   if (has_colors)
@@ -614,11 +637,11 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     colors_var = var_area->createArray(color_bytes);
     if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
 
-    TheaArray<ColorRGBA> colors(points.size());
+    TheaArray<ColorRGBA> cbuf(points.size());
     for (array_size_t i = 0; i < points.size(); ++i)
-      colors[i] = getColor(i);
+      cbuf[i] = getColor(i);
 
-    colors_var->updateColors(0, (long)colors.size(), &colors[0]);
+    colors_var->updateColors(0, (long)cbuf.size(), &cbuf[0]);
   }
 
   changed_buffers = 0;

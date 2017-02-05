@@ -96,6 +96,9 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     /** Load features from a file. */
     bool loadFeatures(std::string const & filename_);
 
+    /** Explicitly set the color of each point. Overrides any colors derived from features. */
+    bool setPointColors(TheaArray<ColorRGBA> const & colors_);
+
     AxisAlignedBox3 const & getBounds() const;
 
     void updateBounds();
@@ -128,6 +131,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     bool normals_are_normalized;
     AxisAlignedBox3 bounds;
 
+    TheaArray<ColorRGBA> colors;
     TheaArray< TheaArray<Real> > features;
 
     bool has_graph;
