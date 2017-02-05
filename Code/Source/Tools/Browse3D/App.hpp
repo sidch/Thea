@@ -83,7 +83,7 @@ class App : public wxApp
       TheaArray<std::string> overlays;                     ///< The initial overlays to load.
       TheaArray<AffineTransform3> overlay_transforms;      ///< The transforms of the overlays.
       std::string features;                                ///< Path to directory/file containing features to load.
-      std::string face_labels;                             ///< Path to directory/file containing face labels to load.
+      std::string elem_labels;                             ///< Path to directory/file containing face/point labels to load.
 
       bool accentuate_features;                             ///< Make feature distributions easier to view?
       bool color_cube_features;                             /**< Map 0-centered 3D feature sets to RGB color-cube, if

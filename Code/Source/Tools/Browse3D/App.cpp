@@ -87,7 +87,7 @@ App::optsToString() const
       << "\n  model = " << opts.model
       << "\n  overlays = { " << stringJoin(opts.overlays, ", ") << " }"
       << "\n  features = " << opts.features
-      << "\n  face-labels = " << opts.face_labels
+      << "\n  elem-labels = " << opts.elem_labels
       << "\n  emph-features = " << opts.accentuate_features
       << "\n  color-cube = " << opts.color_cube_features
       << "\n  show-normals = " << opts.show_normals
@@ -224,7 +224,7 @@ App::parseOptions(std::vector<std::string> const & args)
           ("model",                po::value<std::string>(&s_model), "Model to load on startup, with optional transform")
           ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
           ("features,f",           po::value<std::string>(&opts.features), "Directory/file containing features to load")
-          ("face-labels,l",        po::value<std::string>(&opts.face_labels), "Directory/file containing face labels to load")
+          ("elem-labels,l",        po::value<std::string>(&opts.elem_labels), "Directory/file containing face/point labels to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("normals,n",            "Draw normals as arrows")
@@ -315,7 +315,7 @@ App::parseOptions(std::vector<std::string> const & args)
   }
 
   opts.features             =  FileSystem::resolve(opts.features);
-  opts.face_labels          =  FileSystem::resolve(opts.face_labels);
+  opts.elem_labels          =  FileSystem::resolve(opts.elem_labels);
   opts.accentuate_features  =  (vm.count("emph-features") > 0);
   opts.color_cube_features  =  (vm.count("color-cube") > 0);
   opts.show_normals         =  (vm.count("normals") > 0);

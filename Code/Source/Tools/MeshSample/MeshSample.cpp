@@ -165,6 +165,94 @@ loadLabels_Lab(string const & path, TheaArray<string> & labels, TheaArray<long> 
   return true;
 }
 
+struct FaceToMeshMapper
+{
+  bool operator()(Mesh const & mesh)
+  {
+    for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
+    {
+      long face_index = fi->attr().index;
+      if (face_index >= (long)mapping.size())
+      {
+        mapping.reserve((array_size_t)(2 * (face_index + 1)));
+        mapping.resize((array_size_t)(face_index + 1), NULL);
+      }
+
+      mapping[(array_size_t)face_index] = &mesh;
+    }
+
+    return false;
+  }
+
+  TheaArray<Mesh const *> mapping;
+};
+
+bool
+loadLabels_Labels(string const & path, MG const & mg, TheaArray<string> & labels, TheaArray<long> & face_labels)
+{
+  ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Could not open labels file: " << path;
+    return false;
+  }
+
+  labels.clear();
+  face_labels.clear();
+
+  typedef map<string, long> LabelIndexMap;
+  LabelIndexMap labmap;
+
+  FaceToMeshMapper f2m;
+  mg.forEachMeshUntil(&f2m);
+  face_labels.resize(f2m.mapping.size(), -1);
+
+  string line;
+  long label_index;
+  while (getline(in, line))
+  {
+    string label = trimWhitespace(line);
+    if (label.empty())
+      continue;
+
+    LabelIndexMap::const_iterator existing = labmap.find(label);
+    if (existing == labmap.end())
+    {
+      label_index = (long)labmap.size();
+      labmap[label] = label_index;
+    }
+    else
+      label_index = existing->second;
+
+    if (!getline(in, line))
+    {
+      THEA_ERROR << "Could not read representative faces for label '" << label << '\'';
+      return false;
+    }
+
+    istringstream line_in(line);
+    long face_index;
+    while (line_in >> face_index)
+    {
+      if (face_index < 0 || face_index >= (long)face_labels.size())
+      {
+        THEA_ERROR << "Face index out of bounds: " << face_index;
+        return false;
+      }
+
+      Mesh const * selected_mesh = f2m.mapping[(array_size_t)face_index];
+      for (Mesh::FaceConstIterator fi = selected_mesh->facesBegin(); fi != selected_mesh->facesEnd(); ++fi)
+        face_labels[(array_size_t)fi->attr().index] = label_index;
+    }
+  }
+
+  labels.resize((array_size_t)labmap.size());
+  for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
+    labels[(array_size_t)li->second] = li->first;
+
+  return true;
+}
+
 bool
 loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
 {
@@ -206,18 +294,15 @@ loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray
 }
 
 bool
-loadLabels(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+loadLabels(string const & path, MG const & mg, TheaArray<string> & labels, TheaArray<long> & face_labels)
 {
   string ext = toLower(FilePath::extension(path));
   if (ext == "lab")
     return loadLabels_Lab(path, labels, face_labels);
   else if (ext == "labels")
-  {
-    THEA_ERROR << "The '.labels' format is not currently supported";
-    return false;
-  }
+    return loadLabels_Labels(path, mg, labels, face_labels);
   else
-    return loadLabels_Lab(path, labels, face_labels);
+    return loadLabels_FaceLabels(path, labels, face_labels);
 }
 
 int
@@ -321,7 +406,7 @@ main(int argc, char * argv[])
     bool output_labels = (!vertex_samples && !labels_path.empty());
     if (output_labels)
     {
-      if (!loadLabels(labels_path, labels, face_labels))
+      if (!loadLabels(labels_path, mg, labels, face_labels))
         return -1;
     }
 
