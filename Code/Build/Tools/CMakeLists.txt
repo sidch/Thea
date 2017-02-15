@@ -128,6 +128,7 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
+                    ${OPENCL_INCLUDE_DIRS}
                     ${OPENGL_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
                     ${Lib3ds_INCLUDE_DIRS}
