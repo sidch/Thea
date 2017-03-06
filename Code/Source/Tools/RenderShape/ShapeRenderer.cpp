@@ -18,6 +18,7 @@
 #include "../../FileSystem.hpp"
 #include "../../Math.hpp"
 #include "../../Matrix4.hpp"
+#include "../../Memory.hpp"
 #include "../../Plugin.hpp"
 #include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
@@ -105,6 +106,7 @@ class ShapeRendererImpl
     PointUsage show_points;
     bool flat;
     bool save_depth;
+    bool print_camera;
 
     bool loadPlugins(int argc, char ** argv);
     bool parseArgs(int argc, char ** argv);
@@ -210,6 +212,7 @@ ShapeRendererImpl::resetArgs()
   show_points = POINTS_NONE;
   flat = false;
   save_depth = false;
+  print_camera = false;
 }
 
 int
@@ -334,6 +337,18 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
+  typedef Thea::shared_ptr<Model> ModelPtr;
+  TheaArray<ModelPtr> overlay_models;
+  for (array_size_t i = 1; i < model_paths.size(); ++i)
+  {
+    ModelPtr overlay_model(new Model);
+    overlay_model->convert_to_points = (show_points & POINTS_OVERLAY);
+    if (!loadModel(*overlay_model, model_paths[i]))
+      return -1;
+
+    overlay_models.push_back(overlay_model);
+  }
+
   // Do the rendering
   for (array_size_t v = 0; v < views.size(); ++v)
   {
@@ -341,6 +356,8 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     {
       // Initialize the camera
       Camera camera = model.fitCamera(transforms[0], views[v], zoom, buffer_width, buffer_height);
+      if (print_camera)
+        THEA_CONSOLE << "Camera for view " << v << " is: " << camera.toString();
 
       // Render the mesh to the offscreen framebuffer
       render_system->pushFramebuffer();
@@ -367,20 +384,17 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
 
           // Draw overlay models
-          for (array_size_t i = 1; i < model_paths.size(); ++i)
+          for (array_size_t i = 0; i < overlay_models.size(); ++i)
           {
-            model.convert_to_points = (show_points & POINTS_OVERLAY);
-            if (!loadModel(model, model_paths[i]))
-              return -1;
-
+            Model const & overlay = *overlay_models[i];
             ColorRGBA overlay_color = getPaletteColor((long)i - 1);
-            overlay_color.a() = (!color_by_id && !model.is_point_cloud ? 0.5f : 1.0f);
+            overlay_color.a() = (!color_by_id && !overlay.is_point_cloud ? 0.5f : 1.0f);
 
             render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
 
             render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
               render_system->multMatrix(transforms[i]);
-              renderModel(model, overlay_color);
+              renderModel(overlay, overlay_color);
             render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
           }
 
@@ -473,6 +487,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         high quality)";
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
+  THEA_CONSOLE << "  -w cam                (print the camera parameters)";
   THEA_CONSOLE << "";
 
   return false;
@@ -972,6 +987,19 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         {
           save_depth = true;
           break;
+        }
+
+        case 'w':
+        {
+          if (argc < 1) { THEA_ERROR << "-w: Field to write not specified"; return false; }
+          if (string(*argv) == "cam")
+            print_camera = true;
+          else
+          {
+            THEA_ERROR << "Unknown field to write: '" << *argv << '\'';
+            return false;
+          }
+          argv++; argc--; break;
         }
       }
     }
