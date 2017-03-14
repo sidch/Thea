@@ -423,6 +423,19 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
         image.save(path);
 
+        if (print_camera)
+        {
+          string cam_path = out_path;
+          if (views.size() > 1)
+          {
+            cam_path = FilePath::concat(FilePath::parent(cam_path),
+                                    FilePath::baseName(cam_path) + format("_%06ld.", (long)v) + "camera");
+          }
+          ofstream cam_file(cam_path, ios::out);
+          cam_file << camera.toString() << endl;
+          cam_file.close();
+        }
+
         // Grab and save the depth image
         if (save_depth)
         {
