@@ -56,6 +56,8 @@ bool abs_values = false;
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
+bool computeBounds(MG & mg, TheaArray<double> & values);
+bool computeExtent(MG & mg, TheaArray<double> & values);
 bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
                               double reduction_ratio, TheaArray<double> & values);
 bool computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio,
@@ -160,7 +162,23 @@ main(int argc, char * argv[])
   for (int i = 1; i < argc; ++i)
   {
     string feat = string(argv[i]);
-    if (beginsWith(feat, "--ch="))
+    if (feat == "--bbox")
+    {
+      TheaArray<double> values;
+      if (!computeBounds(mg, values))
+        return -1;
+
+      features.insert(features.end(), values.begin(), values.end());
+    }
+    else if (feat == "--ext")
+    {
+      TheaArray<double> values;
+      if (!computeExtent(mg, values))
+        return -1;
+
+      features.insert(features.end(), values.begin(), values.end());
+    }
+    else if (beginsWith(feat, "--ch="))
     {
       long num_bins, num_samples;
       double reduction_ratio;
@@ -350,21 +368,22 @@ int
 usage(int argc, char * argv[])
 {
   THEA_CONSOLE << "";
-  THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <outfile> [<feature0> <feature1> ...]";
-  THEA_CONSOLE << "    <featureN> must be one of:";
-  THEA_CONSOLE << "        --ch=<num-bins>[,<num-samples>[,<reduction-ratio>]]";
-  THEA_CONSOLE << "        --dh=<metric>,<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]";
-  THEA_CONSOLE << "        --sdf=<num-bins>[,<num-samples>]";
-  THEA_CONSOLE << "";
-  THEA_CONSOLE << "    The following options may also be specified:";
-  THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
-  THEA_CONSOLE << "        --binary (outputs features in binary format)";
-  THEA_CONSOLE << "        --featscale=<factor> (scales feature values by the factor)";
-  THEA_CONSOLE << "        --is-oriented (assumes mesh normals consistently point outward)";
-  THEA_CONSOLE << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)";
-  THEA_CONSOLE << "        --normalize (rescale mesh so --meshscale == 1)";
-  THEA_CONSOLE << "        --shift01 (maps features in [-1, 1] to [0, 1])";
-  THEA_CONSOLE << "";
+  THEA_CONSOLE << "Usage: " << argv[0] << " <mesh> <outfile> [<feature0> <feature1> ...]\n"
+               << "    <featureN> must be one of:\n"
+               << "        --bbox\n"
+               << "        --ext\n"
+               << "        --ch=<num-bins>[,<num-samples>[,<reduction-ratio>]]\n"
+               << "        --dh=<metric>,<num-bins>[,<num-samples>[,<max_distance>[,<reduction-ratio>]]]\n"
+               << "        --sdf=<num-bins>[,<num-samples>]\n"
+               << '\n'
+               << "    The following options may also be specified:\n"
+               << "        --abs (uses the absolute value of every feature)\n"
+               << "        --binary (outputs features in binary format)\n"
+               << "        --featscale=<factor> (scales feature values by the factor)\n"
+               << "        --is-oriented (assumes mesh normals consistently point outward)\n"
+               << "        --meshscale={bsphere|bbox|avgdist} (used to set neighborhood scales)\n"
+               << "        --normalize (rescale mesh so --meshscale == 1)\n"
+               << "        --shift01 (maps features in [-1, 1] to [0, 1])\n";
 
   return -1;
 }
@@ -405,6 +424,46 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
       return bsphere.getDiameter();
     }
   }
+}
+
+bool
+computeBounds(MG & mg, TheaArray<double> & values)
+{
+  THEA_CONSOLE << "Computing mesh bounding box";
+
+  values.resize(6);
+
+  mg.updateBounds();
+  Vector3 lo = mg.getBounds().getLow();
+  Vector3 hi = mg.getBounds().getHigh();
+  values[0] = lo[0];
+  values[1] = lo[1];
+  values[2] = lo[2];
+  values[3] = hi[0];
+  values[4] = hi[1];
+  values[5] = hi[2];
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeExtent(MG & mg, TheaArray<double> & values)
+{
+  THEA_CONSOLE << "Computing mesh extent";
+
+  values.resize(3);
+
+  mg.updateBounds();
+  Vector3 ext = mg.getBounds().getExtent();
+  values[0] = ext[0];
+  values[1] = ext[1];
+  values[2] = ext[2];
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
 }
 
 bool
