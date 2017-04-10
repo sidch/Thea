@@ -149,7 +149,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     /** Constant to use with the copy_memory option (evaluates to false). */
     static bool const NO_COPY;
 
-    /** Open a file as a binary input stream. If the file cannot be opened, a zero length buffer is presented. */
+    /** Open a file as a binary input stream. If the file cannot be opened, an error is thrown. */
     BinaryInputStream(std::string const & path, Endianness file_endian);
 
     /**
