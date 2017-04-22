@@ -25,6 +25,7 @@
 #include "../../Vector3.hpp"
 #include "../../Vector4.hpp"
 #include <boost/functional/hash.hpp>
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -107,6 +108,7 @@ class ShapeRendererImpl
     bool flat;
     bool save_depth;
     bool print_camera;
+    int palette_shift;
 
     bool loadPlugins(int argc, char ** argv);
     bool parseArgs(int argc, char ** argv);
@@ -124,6 +126,10 @@ class ShapeRendererImpl
     bool loadFeatures(Model & model);
     bool renderModel(Model const & model, ColorRGBA const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
+    ColorRGBA getPaletteColor(long n) const;
+    ColorRGBA getLabelColor(long label) const;
+
+    friend struct FaceColorizer;
 
   public:
     ShapeRendererImpl(int argc, char * argv[]);  // just loads plugins and initializes variables
@@ -213,6 +219,7 @@ ShapeRendererImpl::resetArgs()
   flat = false;
   save_depth = false;
   print_camera = false;
+  palette_shift = 0;
 }
 
 int
@@ -246,11 +253,12 @@ uint32
 labelHash(string const & label)
 {
   boost::hash<string> hasher;
-  return (uint32)(hasher(label) & 0x7FFFFFFF);
+  string rev = label; reverse(rev.begin(), rev.end());
+  return (uint32)((hasher(label) + hasher(rev)) & 0x7FFFFFFF);
 }
 
 ColorRGBA
-getPaletteColor(long n)
+ShapeRendererImpl::getPaletteColor(long n) const
 {
   static ColorRGBA PALETTE[] = {
     ColorRGBA::fromARGB(0xFFFF66FF),
@@ -279,11 +287,11 @@ getPaletteColor(long n)
     ColorRGBA::fromARGB(0xFFA0A0A0),
   };
 
-  return PALETTE[abs(n) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
+  return PALETTE[abs(n + palette_shift) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
 }
 
 ColorRGBA
-getLabelColor(long label)
+ShapeRendererImpl::getLabelColor(long label) const
 {
   return getPaletteColor(label);
 }
@@ -390,7 +398,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
             ColorRGBA overlay_color = getPaletteColor((long)i - 1);
             overlay_color.a() = (!color_by_id && !overlay.is_point_cloud ? 0.5f : 1.0f);
 
-            render_system->setPolygonOffset(-1.0f);  // make sure overlays appear on top of primary shape
+            render_system->setPolygonOffset(true, -1.0f);  // make sure overlays appear on top of primary shape
 
             render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
               render_system->multMatrix(transforms[i]);
@@ -488,6 +496,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "  -w cam                (print the camera parameters)";
+  THEA_CONSOLE << "  -i <shift>            (rotate palette colors by <shift> positions)";
   THEA_CONSOLE << "";
 
   return false;
@@ -1001,6 +1010,17 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           }
           argv++; argc--; break;
         }
+
+        case 'i':
+        {
+          if (argc < 1) { THEA_ERROR << "-i: Palette shift not specified"; return false; }
+          if (sscanf(*argv, " %d", &palette_shift) != 1)
+          {
+            THEA_ERROR << "Could not parse palette shift: '" << *argv << '\'';
+            return false;
+          }
+          argv++; argc--; break;
+        }
       }
     }
     else
@@ -1039,7 +1059,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
         default:
         {
-          THEA_ERROR << "Too many positional arguments";
+          THEA_ERROR << "Extra positional argument: '" << arg << '\'';
           return false;
         }
       }
@@ -1158,12 +1178,14 @@ indexToColor(uint32 index, bool is_point)
 
 struct FaceColorizer
 {
+  ShapeRendererImpl const * parent;
   FaceIndexMap const & tri_ids;
   FaceIndexMap const & quad_ids;
   TheaArray<int> const * labels;
 
-  FaceColorizer(FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_, TheaArray<int> const * labels_ = NULL)
-  : tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_) {}
+  FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_,
+                TheaArray<int> const * labels_ = NULL)
+  : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -1186,7 +1208,7 @@ struct FaceColorizer
         if ((array_size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = getLabelColor((*labels)[(array_size_t)id]);
+          color = parent->getLabelColor((*labels)[(array_size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1210,7 +1232,7 @@ struct FaceColorizer
         if ((array_size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = getLabelColor((*labels)[(array_size_t)id]);
+          color = parent->getLabelColor((*labels)[(array_size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1295,6 +1317,97 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       }
     }
   }
+  else if (ext == "labels")
+  {
+    // <label1 name>
+    // <representative face ids starting from 0, one per submesh labeled according to label1>
+    // <label2 name>
+    // <representative face ids starting from 0, one per submesh labeled according to label2>
+    // ...
+
+    if (model.is_point_cloud)
+    {
+      THEA_ERROR << "The .labels format is supported only for meshes";
+      return false;
+    }
+
+    ifstream in(labels_path.c_str());
+    if (!in)
+    {
+      THEA_ERROR << "Could not open labels file '" << labels_path << '\'';
+      return false;
+    }
+
+    // Build mapping from face indices to their parent meshes
+    TheaArray<Mesh const *> face_meshes((array_size_t)(tri_ids->size() + quad_ids->size()), NULL);
+    for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
+      face_meshes[fi->second] = fi->first.first;
+
+    for (FaceIndexMap::const_iterator fi = quad_ids->begin(); fi != quad_ids->end(); ++fi)
+      face_meshes[fi->second] = fi->first.first;
+
+    // Build map from meshes to their labels
+    typedef TheaUnorderedMap<Mesh const *, int> MeshLabelMap;
+    MeshLabelMap mesh_labels;
+
+    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    LabelIndexMap label_indices;
+
+    string line;
+    while (getline(in, line))
+    {
+      string label_name = trimWhitespace(line);
+      if (label_name.empty())
+        continue;
+
+      if (!getline(in, line))
+      {
+        THEA_ERROR << "Could not read list of representative faces for label '" << label_name << '\'';
+        return false;
+      }
+
+      int label_index = -1;
+      LabelIndexMap::const_iterator existing = label_indices.find(label_name);
+      if (existing == label_indices.end())
+      {
+        label_index = (int)labelHash(label_name);
+        label_indices[label_name] = label_index;
+      }
+      else
+        label_index = existing->second;
+
+      istringstream line_in(line);
+      long rep_index;
+      while (line_in >> rep_index)
+      {
+        if (rep_index < 0)
+        {
+          THEA_ERROR << "Index " << rep_index << " of element to be labeled is out of bounds";
+          return false;
+        }
+
+        Mesh const * mesh = face_meshes[rep_index];
+        if (!mesh)
+        {
+          THEA_ERROR << "Face " << rep_index << " not associated with a parent mesh";
+          return false;
+        }
+
+        mesh_labels[mesh] = label_index;
+      }
+    }
+
+    // Map from mesh labels to face labels
+    labels.resize(face_meshes.size(), -1);
+    for (array_size_t i = 0; i < labels.size(); ++i)
+    {
+      if (face_meshes[i])
+      {
+        MeshLabelMap::const_iterator existing = mesh_labels.find(face_meshes[i]);
+        labels[i] = (existing != mesh_labels.end() ? existing->second : -1);
+      }
+    }
+  }
   else
   {
     // <name of label of face/point 0>
@@ -1346,7 +1459,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
   else
   {
     alwaysAssertM(tri_ids && quad_ids, "Face IDs necessary for coloring by label");
-    FaceColorizer label_colorizer(*tri_ids, *quad_ids, &labels);
+    FaceColorizer label_colorizer(this, *tri_ids, *quad_ids, &labels);
     model.mesh_group.forEachMeshUntil(&label_colorizer);
   }
 
@@ -1706,7 +1819,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
       if (color_by_id)
       {
-        FaceColorizer id_colorizer(tri_ids, quad_ids);
+        FaceColorizer id_colorizer(this, tri_ids, quad_ids);
         model.mesh_group.forEachMeshUntil(&id_colorizer);
         needs_normals = false;
       }
