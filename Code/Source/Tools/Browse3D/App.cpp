@@ -235,7 +235,7 @@ App::parseOptions(std::vector<std::string> const & args)
           ("material,k",           po::value<std::string>(&s_material), "Surface material coefficients (ka, kd, ks, ksp)")
           ("fancy-points",         "Draw points as shaded spheres")
           ("fancy-colors,c",       "Color points by a function of position")
-          ("point-scale,s",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
+          ("point-scale,p",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
           ("no-axes",              "Hide the coordinate axes")
           ("no-shading",           "No shading, just render raw colors")
   ;
