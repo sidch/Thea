@@ -77,4 +77,10 @@ ColorRGB8::fromARGB(uint32 argb)
                    (uint8)( argb        & 0xFF));
 }
 
+std::string
+ColorRGB8::toString() const
+{
+  return format("RGB(%d, %d, %d)", (int)c[0], (int)c[1], (int)c[2]);
+}
+
 } // namespace Thea

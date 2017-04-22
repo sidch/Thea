@@ -287,7 +287,8 @@ ShapeRendererImpl::getPaletteColor(long n) const
     ColorRGBA::fromARGB(0xFFA0A0A0),
   };
 
-  return PALETTE[abs(n + palette_shift) % (sizeof(PALETTE) / sizeof(ColorRGBA))];
+  static long const PALETTE_SIZE = (long)(sizeof(PALETTE) / sizeof(ColorRGBA));
+  return PALETTE[abs((n % (PALETTE_SIZE + palette_shift)) % PALETTE_SIZE)];
 }
 
 ColorRGBA
@@ -469,7 +470,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -o <overlay-shape>    (may be mesh or point set)";
-  THEA_CONSOLE << "  -p <scope>            (show 'none' | 'primary' | 'overlay' | 'all' shapes";
+  THEA_CONSOLE << "  -s <scope>            (show 'none' | 'primary' | 'overlay' | 'all' shapes";
   THEA_CONSOLE << "                         as points)";
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
@@ -481,7 +482,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                           each one of +, - or 0;";
   THEA_CONSOLE << "                         or file containing one of the above per line)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
-  THEA_CONSOLE << "  -s <pixels>           (size of points in pixels -- can be fractional)";
+  THEA_CONSOLE << "  -p <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
@@ -496,7 +497,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "  -w cam                (print the camera parameters)";
-  THEA_CONSOLE << "  -i <shift>            (rotate palette colors by <shift> positions)";
+  THEA_CONSOLE << "  -i <shift>            (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "";
 
   return false;
@@ -798,9 +799,9 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
-        case 'p':
+        case 's':
         {
-          if (argc < 1) { THEA_ERROR << "-p: Shapes to show as points not specified"; return false; }
+          if (argc < 1) { THEA_ERROR << "-s: Shapes to show as points not specified"; return false; }
           string scope = toLower(*argv);
           if (scope == "all")
             show_points = POINTS_ALL;
@@ -879,9 +880,9 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
-        case 's':
+        case 'p':
         {
-          if (argc < 1) { THEA_ERROR << "-s: Point size not specified"; return false; }
+          if (argc < 1) { THEA_ERROR << "-p: Point size not specified"; return false; }
           if (sscanf(*argv, " %f", &point_size) != 1)
           {
             THEA_ERROR << "Could not parse point size '" << *argv << '\'';
@@ -1341,10 +1342,10 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     // Build mapping from face indices to their parent meshes
     TheaArray<Mesh const *> face_meshes((array_size_t)(tri_ids->size() + quad_ids->size()), NULL);
     for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
-      face_meshes[fi->second] = fi->first.first;
+      face_meshes[(array_size_t)fi->second] = fi->first.first;
 
     for (FaceIndexMap::const_iterator fi = quad_ids->begin(); fi != quad_ids->end(); ++fi)
-      face_meshes[fi->second] = fi->first.first;
+      face_meshes[(array_size_t)fi->second] = fi->first.first;
 
     // Build map from meshes to their labels
     typedef TheaUnorderedMap<Mesh const *, int> MeshLabelMap;

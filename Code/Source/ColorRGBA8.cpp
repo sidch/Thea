@@ -68,4 +68,10 @@ ColorRGBA8::fromARGB(uint32 argb)
                     (uint8)((argb >> 24) & 0xFF));
 }
 
+std::string
+ColorRGBA8::toString() const
+{
+  return format("RGBA(%d, %d, %d, %d)", (int)c[0], (int)c[1], (int)c[2], (int)c[3]);
+}
+
 } // namespace Thea

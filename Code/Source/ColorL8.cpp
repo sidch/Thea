@@ -70,7 +70,7 @@ ColorL::ColorL(ColorRGBA const & other)
 std::string
 ColorL8::toString() const
 {
-  return format("L8(%u)", val);
+  return format("L8(%d)", (int)val);
 }
 
 } // namespace Thea
