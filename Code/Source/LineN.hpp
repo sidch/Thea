@@ -111,11 +111,17 @@ class /* THEA_DLL_LOCAL */ LineNBase
       return point + t * direction;
     }
 
+    /** Get the distance of this line from another line. */
+    T distance(LineT const & other) const
+    {
+      return std::sqrt(squaredDistance(other));
+    }
+
     /**
-     * Get the point on this line closest to a given line. Optionally also returns the point on the other line closest to this
-     * line.
+     * Get the point on this line and the point on another line closest to each other, and return the squared distance between
+     * them.
      */
-    VectorT closestPoint(LineT const & other, VectorT * other_closest_point = NULL) const
+    T squaredDistance(LineT const & other, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
     {
       // Adapted from Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
 
@@ -124,7 +130,7 @@ class /* THEA_DLL_LOCAL */ LineNBase
       T f = other.direction.dot(r);
       T denom = 1 - b * b; // always nonnegative
 
-      // If segments not parallel, compute closest point on L1 to L2. Else pick arbitrary s (here 0)
+      // If segments not parallel, compute closest point on L1 to L2. Else pick arbitrary s (here 0).
       T s = 0;
       if (Math::fuzzyGt(denom, static_cast<T>(0)))
       {
@@ -132,14 +138,17 @@ class /* THEA_DLL_LOCAL */ LineNBase
         s = (b * f - c) / denom;
       }
 
-      if (other_closest_point)
-      {
-        // Compute point on L2 closest to S1(s) using t = Dot((P1+D1*s)-P2,D2) / Dot(D2,D2) = (b*s + f)
-        T t = b * s + f;
-        *other_closest_point = other.point + t * direction;
-      }
+      VectorT c1 = point + s * direction;
+      if (this_pt)
+        *this_pt = c1;
 
-      return point + s * direction;
+      // Compute point on L2 closest to S1(s) using t = Dot((P1+D1*s)-P2,D2) / Dot(D2,D2) = (b*s + f)
+      T t = b * s + f;
+      VectorT c2 = other.point + t * direction;
+      if (other_pt)
+        *other_pt = c2;
+
+      return (c1 - c2).squaredLength();
     }
 
     /** Get a textual description of the line. */

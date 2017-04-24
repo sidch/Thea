@@ -120,7 +120,7 @@ class /* THEA_API */ Symmetry3<T *>
 
 // Symmetries of point clouds.
 template <typename T>
-class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsPointN<T, 3> >::type>
+class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
 {
   public:
     template <typename InputIterator>

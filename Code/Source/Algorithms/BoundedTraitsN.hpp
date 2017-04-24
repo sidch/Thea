@@ -39,22 +39,82 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_BoundedObjectTraitsN_hpp__
-#define __Thea_Algorithms_BoundedObjectTraitsN_hpp__
+#ifndef __Thea_Algorithms_BoundedTraitsN_hpp__
+#define __Thea_Algorithms_BoundedTraitsN_hpp__
 
 #include "../Common.hpp"
 #include "../AxisAlignedBoxN.hpp"
 #include "../BallN.hpp"
+#include "../BoxN.hpp"
+#include "../LineSegmentN.hpp"
 #include "../Triangle3.hpp"
 #include "PointTraitsN.hpp"
 #include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/is_pointer.hpp>
 
 namespace Thea {
 namespace Algorithms {
 
+//=============================================================================================================================
+// Flag that should be set to true for bounded objects
+//=============================================================================================================================
+
+/**
+ * Has boolean member <code>value = true</code> if <code>T</code> is a geometrically bounded object in n-D space, else
+ * <code>value = false</code>. Unless you specialize the class to set the value to true, it is false by default.
+ *
+ * @see BoundedTraitsN
+ */
+template <typename T, long N, typename Enable = void>
+class IsBoundedN
+{
+  public:
+    static bool const value = false;
+};
+
+// Partial specialization for const and pointer types
+template <typename T, long N> class IsBoundedN<T const, N> { public: static bool const value = IsBoundedN<T, N>::value; };
+template <typename T, long N> class IsBoundedN<T *, N>     { public: static bool const value = IsBoundedN<T, N>::value; };
+
+// Points are bounded
+template <typename T, long N>
+class IsBoundedN< T, N, typename boost::enable_if< IsRawPointN<T, N> >::type >
+{ public: static bool const value = true; };
+
+// ... as are many simple geometric objects
+template <long N, typename S> class IsBoundedN< AxisAlignedBoxN<N, S>, N >         { public: static bool const value = true; };
+template <long N, typename S> class IsBoundedN< BallN<N, S>, N >                   { public: static bool const value = true; };
+template <long N, typename S> class IsBoundedN< BoxN<N, S>, N >                    { public: static bool const value = true; };
+template <long N, typename S> class IsBoundedN< LineSegmentN<N, S>, N >            { public: static bool const value = true; };
+template <typename VertexTripleT> class IsBoundedN< Triangle3<VertexTripleT>, 3 >  { public: static bool const value = true; };
+
+/** Same as IsBoundedN (no need to specialize it separately), except false for const or pointer types. */
+template <typename T, long N>
+class /* THEA_API */ IsRawBoundedN
+{
+  public:
+    static bool const value = IsBoundedN<T, N>::value
+                           && !boost::is_const<T>::value
+                           && !boost::is_pointer<T>::value;
+};
+
+/** Same as IsBoundedN (no need to specialize it separately), except false for pointer types. */
+template <typename T, long N>
+class /* THEA_API */ IsNonReferencedBoundedN
+{
+  public:
+    static bool const value = IsBoundedN<T, N>::value
+                           && !boost::is_pointer<T>::value;
+};
+
+//=============================================================================================================================
+// Traits class to get bounding volumes of bounded objects
+//=============================================================================================================================
+
 /** Traits class for a bounded object in N-space. */
 template <typename T, long N, typename ScalarT = Real, typename Enable = void>
-class /* THEA_API */ BoundedObjectTraitsN
+class /* THEA_API */ BoundedTraitsN
 {
   public:
     /** Get a bounding range for an object. */
@@ -69,40 +129,52 @@ class /* THEA_API */ BoundedObjectTraitsN
     /** Get the minimum position of the object along a particular coordinate axis. */
     static ScalarT getLow(T const & t, long coord) { return t.getBounds().getLow()[coord]; }
 
-}; // class BoundedObjectTraitsN
+}; // class BoundedTraitsN
+
+// Specialization for const types
+template <typename T, long N, typename ScalarT>
+struct /* THEA_API */ BoundedTraitsN<T const, N, ScalarT>
+{
+  template <typename RangeT> static void getBounds(T const & t, RangeT & bounds)
+  { BoundedTraitsN<T, N, ScalarT>::getBounds(t, bounds); }
+
+  static VectorN<N, ScalarT> getCenter(T const & t)  { return BoundedTraitsN<T, N, ScalarT>::getCenter(t);      }
+  static ScalarT getHigh(T const & t, long coord)    { return BoundedTraitsN<T, N, ScalarT>::getHigh(t, coord); }
+  static ScalarT getLow(T const & t, long coord)     { return BoundedTraitsN<T, N, ScalarT>::getLow(t, coord);  }
+};
 
 // Specialization for pointer types
 template <typename T, long N, typename ScalarT>
-struct /* THEA_API */ BoundedObjectTraitsN<T *, N, ScalarT>
+struct /* THEA_API */ BoundedTraitsN<T *, N, ScalarT>
 {
   template <typename RangeT> static void getBounds(T const * t, RangeT & bounds)
   {
-    debugAssertM(t, "BoundedObjectTraitsN: Can't get bounds of null object");
-    BoundedObjectTraitsN<T, N, ScalarT>::getBounds(*t, bounds);
+    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    BoundedTraitsN<T, N, ScalarT>::getBounds(*t, bounds);
   }
 
   static VectorN<N, ScalarT> getCenter(T const * t)
   {
-    debugAssertM(t, "BoundedObjectTraitsN: Can't get center of null object");
-    return BoundedObjectTraitsN<T, N, ScalarT>::getCenter(*t);
+    debugAssertM(t, "BoundedTraitsN: Can't get center of null object");
+    return BoundedTraitsN<T, N, ScalarT>::getCenter(*t);
   }
 
   static ScalarT getHigh(T const * t, long coord)
   {
-    debugAssertM(t, "BoundedObjectTraitsN: Can't get bounds of null object");
-    return BoundedObjectTraitsN<T, N, ScalarT>::getHigh(*t, coord);
+    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    return BoundedTraitsN<T, N, ScalarT>::getHigh(*t, coord);
   }
 
   static ScalarT getLow(T const * t, long coord)
   {
-    debugAssertM(t, "BoundedObjectTraitsN: Can't get bounds of null object");
-    return BoundedObjectTraitsN<T, N, ScalarT>::getLow(*t, coord);
+    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    return BoundedTraitsN<T, N, ScalarT>::getLow(*t, coord);
   }
 };
 
 // Specialization for points
 template <typename T, long N, typename ScalarT>
-struct /* THEA_API */ BoundedObjectTraitsN<T, N, ScalarT, typename boost::enable_if< IsPointN<T, N> >::type>
+struct /* THEA_API */ BoundedTraitsN<T, N, ScalarT, typename boost::enable_if< IsRawPointN<T, N> >::type>
 {
   static void getBounds(T const & t, AxisAlignedBoxN<N, ScalarT> & bounds)
   {
@@ -122,7 +194,7 @@ struct /* THEA_API */ BoundedObjectTraitsN<T, N, ScalarT, typename boost::enable
 
 // Specialization for AxisAlignedBoxN
 template <long N, typename ScalarT>
-struct /* THEA_API */ BoundedObjectTraitsN< AxisAlignedBoxN<N, ScalarT>, N, ScalarT >
+struct /* THEA_API */ BoundedTraitsN< AxisAlignedBoxN<N, ScalarT>, N, ScalarT >
 {
   static void getBounds(AxisAlignedBoxN<N, ScalarT> const & t, AxisAlignedBoxN<N, ScalarT> & bounds) { bounds = t; }
 
@@ -136,7 +208,7 @@ struct /* THEA_API */ BoundedObjectTraitsN< AxisAlignedBoxN<N, ScalarT>, N, Scal
 
 // Specialization for BallN
 template <long N, typename ScalarT>
-struct /* THEA_API */ BoundedObjectTraitsN< BallN<N, ScalarT>, N, ScalarT >
+struct /* THEA_API */ BoundedTraitsN< BallN<N, ScalarT>, N, ScalarT >
 {
   static void getBounds(BallN<N, ScalarT> const & t, AxisAlignedBoxN<N, ScalarT> & bounds) { bounds = t.getBounds(); }
   static void getBounds(BallN<N, ScalarT> const & t, BallN<N, ScalarT> & bounds)           { bounds = t; }
@@ -148,7 +220,7 @@ struct /* THEA_API */ BoundedObjectTraitsN< BallN<N, ScalarT>, N, ScalarT >
 
 // Specialization for Triangle3
 template <typename VertexTripleT, typename ScalarT>
-struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, ScalarT >
+struct /* THEA_API */ BoundedTraitsN< Triangle3<VertexTripleT>, 3, ScalarT >
 {
   typedef Triangle3<VertexTripleT> Triangle;
 
@@ -156,7 +228,7 @@ struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, ScalarT
 
   // TODO: Make this tighter
   static void getBounds(Triangle const & t, Ball3 & bounds)
-  { BoundedObjectTraitsN<AxisAlignedBox3, 3, ScalarT>::getBounds(t.getBounds(), bounds); }
+  { BoundedTraitsN<AxisAlignedBox3, 3, ScalarT>::getBounds(t.getBounds(), bounds); }
 
   static VectorN<3, ScalarT> getCenter(Triangle const & t) { return (t.getVertex(0) + t.getVertex(1) + t.getVertex(2)) / 3; }
 
@@ -170,6 +242,6 @@ struct /* THEA_API */ BoundedObjectTraitsN< Triangle3<VertexTripleT>, 3, ScalarT
 } // namespace Algorithms
 } // namespace Thea
 
-#include "BoundedObjectTraitsN_Transform.hpp"
+#include "BoundedTraitsN_Transform.hpp"
 
 #endif

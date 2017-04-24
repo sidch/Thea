@@ -44,30 +44,33 @@
 
 #include "../Common.hpp"
 #include "../VectorN.hpp"
+#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/is_pointer.hpp>
 
 namespace Thea {
 namespace Algorithms {
+
+//=============================================================================================================================
+// Flag that should be set to true for objects equivalent to single points
+//=============================================================================================================================
 
 /**
  * Has boolean member <code>value = true</code> if <code>T</code> can be identified with a single point in n-D space, else
  * <code>value = false</code>. Unless you specialize the class to set the value to true, it is false by default.
  *
- * @see PointTraitsN
+ * @see TraitsN
  */
-template <typename PointT, long N>
+template <typename T, long N, typename Enable = void>
 class /* THEA_API */ IsPointN
 {
   public:
     static bool const value = false;
 };
 
-// Partial specialization of PointTraitsN for const types
-template <typename PointT, long N>
-class /* THEA_API */ IsPointN<PointT const, N>
-{
-  public:
-    static bool const value = IsPointN<PointT, N>::value;
-};
+// Partial specialization for const and pointer types
+template <typename T, long N> class IsPointN<T const, N>  { public: static bool const value = IsPointN<T, N>::value; };
+template <typename T, long N> class IsPointN<T *, N>      { public: static bool const value = IsPointN<T, N>::value; };
 
 // Specialization for VectorN
 template <long N, typename ScalarT>
@@ -76,6 +79,29 @@ class /* THEA_API */ IsPointN< VectorN<N, ScalarT>, N >
   public:
     static bool const value = true;
 };
+
+/** Same as IsPointN (no need to specialize it separately), except false for const or pointer types. */
+template <typename T, long N>
+class /* THEA_API */ IsRawPointN
+{
+  public:
+    static bool const value = IsPointN<T, N>::value
+                           && !boost::is_const<T>::value
+                           && !boost::is_pointer<T>::value;
+};
+
+/** Same as IsPointN (no need to specialize it separately), except false for pointer types. */
+template <typename T, long N>
+class /* THEA_API */ IsNonReferencedPointN
+{
+  public:
+    static bool const value = IsPointN<T, N>::value
+                           && !boost::is_pointer<T>::value;
+};
+
+//=============================================================================================================================
+// Traits class to get position of a point-like object
+//=============================================================================================================================
 
 /**
  * Traits for an object which can be identified with a single point in N-space.

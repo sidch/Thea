@@ -109,7 +109,7 @@ class /* THEA_API */ CentroidN<T *, N, ScalarT>
 
 // Centroid of objects that map to single points in N-space.
 template <typename T, long N, typename ScalarT>
-class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsPointN<T, N> >::type>
+class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, N> >::type>
 {
   public:
     typedef VectorN<N, ScalarT> VectorT;

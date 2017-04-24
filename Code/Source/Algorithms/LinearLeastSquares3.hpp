@@ -113,7 +113,7 @@ class /* THEA_API */ LinearLeastSquares3<T *>
 
 // Fitting linear models to sets of objects that map to single points in 3-space.
 template <typename T>
-class LinearLeastSquares3<T, typename boost::enable_if< IsPointN<T, 3> >::type>
+class LinearLeastSquares3<T, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
 {
   private:
     typedef VectorN<3, double> DVec3;
@@ -153,7 +153,7 @@ class LinearLeastSquares3<T, typename boost::enable_if< IsPointN<T, 3> >::type>
       double eigenvalue = eigenSolveSmallest(cov, eigenvector);
 
       plane = Plane3::fromPointAndNormal(Vector3(center), Vector3(eigenvector));
-      
+
       if (centroid) *centroid = center;
       return eigenvalue;
     }

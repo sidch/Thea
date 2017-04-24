@@ -91,7 +91,7 @@ class /* THEA_API */ LinearLeastSquares2<T *>
 
 // Fitting lines to sets of objects that map to single points in 2-space.
 template <typename T>
-class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsPointN<T, 2> >::type>
+class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsNonReferencedPointN<T, 2> >::type>
 {
   public:
     template <typename InputIterator>

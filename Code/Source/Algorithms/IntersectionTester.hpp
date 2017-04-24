@@ -136,7 +136,7 @@ struct IntersectionTesterImpl<A, B, N, T,
                               typename boost::enable_if_c< !IsPointN<A, N>::value
                                                         && !IntersectionTesterInternal::TransformedObjectCheck<A>::value
                                                         && !boost::is_pointer<A>::value
-                                                        && IsPointN<B, N>::value >::type>
+                                                        && IsNonReferencedPointN<B, N>::value >::type>
 {
   static bool intersects(A const & a, B const & b) { return a.intersects(PointTraitsN<B, N, T>::getPosition(b)); }
 };
@@ -144,7 +144,7 @@ struct IntersectionTesterImpl<A, B, N, T,
 // Only the first object is a point
 template <typename A, typename B, long N, typename T>
 struct IntersectionTesterImpl<A, B, N, T,
-                              typename boost::enable_if_c< IsPointN<A, N>::value
+                              typename boost::enable_if_c< IsNonReferencedPointN<A, N>::value
                                                         && !IsPointN<B, N>::value
                                                         && !IntersectionTesterInternal::TransformedObjectCheck<B>::value
                                                         && !boost::is_pointer<B>::value >::type>

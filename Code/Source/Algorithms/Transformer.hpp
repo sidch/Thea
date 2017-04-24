@@ -132,7 +132,7 @@ struct /* THEA_API */ TransformerImpl<ObjT *, TransT, N, ScalarT>
 //=============================================================================================================================
 
 template <typename ObjT, typename TransT, long N, typename ScalarT>
-struct TransformerImpl<ObjT, TransT, N, ScalarT, typename boost::enable_if< IsPointN<ObjT, N> >::type>
+struct TransformerImpl<ObjT, TransT, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<ObjT, N> >::type>
 {
   typedef VectorN<N, ScalarT> Result;
   static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, N, ScalarT>::getPosition(obj); }
