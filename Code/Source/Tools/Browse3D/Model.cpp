@@ -433,20 +433,40 @@ Real
 Model::pick(Ray3 const & ray)
 {
   RayStructureIntersection3 isec = rayIntersection(ray);
+  long index = -1;
+  Real t = -1;
   if (isec.isValid())
   {
-    array_size_t index = (array_size_t)isec.getElementIndex();
-    KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
+    index = isec.getElementIndex();
+    picked_sample.position = ray.getPoint(isec.getTime());
+    t = isec.getTime();
+  }
+  else
+  {
+    KDTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, true);
+    if (cp.isValid())
+    {
+      t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().fastUnit());
+      if (t >= 0)
+      {
+        index = cp.getTargetIndex();
+        picked_sample.position = cp.getTargetPoint();
+      }
+    }
+  }
+
+  if (index >= 0)
+  {
+    KDTree::VertexTriple const & triple = kdtree->getElements()[(array_size_t)index].getVertices();
     picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
     picked_sample.face_index = triple.getMeshFace()->attr().getIndex();
-    picked_sample.position = ray.getPoint(isec.getTime());
 
     valid_pick = true;
 
     wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
   }
 
-  return isec.getTime();
+  return t;
 }
 
 void
