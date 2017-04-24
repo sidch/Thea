@@ -130,7 +130,7 @@ class /* THEA_API */ RayN
       return std::string("[origin: ") + origin.toString() + ", direction: " + direction.toString() + ']';
     }
 
-  private:
+		private:
     VectorT origin;     ///< Origin of the ray.
     VectorT direction;  ///< Direction of the ray.
 

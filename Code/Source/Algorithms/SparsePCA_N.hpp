@@ -105,7 +105,7 @@ class /* THEA_API */ SparsePCA_N<T *, N, ScalarT>
 
 // Principal component analysis of objects that map to single points in N-space.
 template <long N, typename T, typename ScalarT>
-class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsPointN<T, N> >::type>
+class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, N> >::type>
 {
   public:
     typedef VectorN<N, ScalarT> VectorT;

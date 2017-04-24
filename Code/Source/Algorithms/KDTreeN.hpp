@@ -50,7 +50,7 @@
 #include "../Noncopyable.hpp"
 #include "../Random.hpp"
 #include "../Transformable.hpp"
-#include "BoundedObjectTraitsN.hpp"
+#include "BoundedTraitsN.hpp"
 #include "Filter.hpp"
 #include "ProximityQueryStructureN.hpp"
 #include "RangeQueryStructure.hpp"
@@ -122,10 +122,9 @@ class PointTraitsN< KDTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
 };
 
 /**
- * A kd-tree for a set of objects in N-space. The requirements on the optional template parameters are:
- *
- * - <code>NodeAttributeT</code> must be default-constructible.
- * - <code>BoundedObjectTraitsT</code> must support obtaining bounding volumes for objects of type T.
+ * A kd-tree for a set of bounded objects in N-space. IsBoundedNN<T, N> must evaluate to true, and BoundedTraitsN<T, N>
+ * appropriately defined to compute bounding boxes of T objects. The optional template parameter <code>NodeAttributeT</code>
+ * must be default-constructible.
  *
  * An affine transformation may be applied to the kd-tree. The tree does <em>not</em> need to be recomputed after the
  * transformation, though all operations may be somewhat slower (the precise overhead depends on how difficult it is to compute
@@ -135,8 +134,7 @@ class PointTraitsN< KDTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
 template < typename T,
            long N,
            typename ScalarT = Real,
-           typename NodeAttributeT = NullAttribute,
-           typename BoundedObjectTraitsT = BoundedObjectTraitsN<T, N, ScalarT> >
+           typename NodeAttributeT = NullAttribute >
 class /* THEA_API */ KDTreeN
 : public RangeQueryStructure<T>,
   public ProximityQueryStructureN<N, ScalarT>,
@@ -149,6 +147,7 @@ class /* THEA_API */ KDTreeN
     typedef ProximityQueryStructureN<N, ScalarT>           ProximityQueryBaseT;
     typedef RayQueryStructureN<N, ScalarT>                 RayQueryBaseT;
     typedef Transformable< AffineTransformN<N, ScalarT> >  TransformableBaseT;
+    typedef BoundedTraitsN<T, N, ScalarT>                  BoundedTraitsT;
 
   public:
     typedef array_size_t ElementIndex;  ///< Index of an element in the kd-tree.
@@ -367,10 +366,9 @@ class /* THEA_API */ KDTreeN
   public:
     THEA_DEF_POINTER_TYPES(KDTreeN, shared_ptr, weak_ptr)
 
-    typedef T                     Element;              ///< Type of elements in the kd-tree.
-    typedef T                     value_type;           ///< Type of elements in the kd-tree (STL convention).
-    typedef NodeAttributeT        NodeAttribute;        ///< Attributes attached to nodes.
-    typedef BoundedObjectTraitsT  BoundedObjectTraits;  ///< Gives bounding volumes for elements.
+    typedef T                                    Element;              ///< Type of elements in the kd-tree.
+    typedef T                                    value_type;           ///< Type of elements in the kd-tree (STL convention).
+    typedef NodeAttributeT                       NodeAttribute;        ///< Attributes attached to nodes.
 
     typedef typename ProximityQueryBaseT::VectorT              VectorT;                    ///< Vector in N-space.
     typedef AxisAlignedBoxN<N, ScalarT>                        AxisAlignedBoxT;            ///< Axis-aligned box in N-space.
@@ -603,7 +601,7 @@ class /* THEA_API */ KDTreeN
       {
         root->elems[i] = i;
 
-        BoundedObjectTraitsT::getBounds(elems[i], elem_bounds);
+        BoundedTraitsT::getBounds(elems[i], elem_bounds);
         root->bounds.merge(elem_bounds);
       }
 
@@ -840,7 +838,7 @@ class /* THEA_API */ KDTreeN
      * Get the closest pair of elements between this structure and another structure, whose separation is less than a specified
      * upper bound.
      *
-     * @param query Query object. BoundedObjectTraitsN<QueryT, N, ScalarT> must be defined.
+     * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
      * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
      *   and stored in the returned structure.
@@ -854,13 +852,18 @@ class /* THEA_API */ KDTreeN
       if (!root) return NeighborPair(-1);
 
       AxisAlignedBoxT query_bounds;
-      BoundedObjectTraitsN<QueryT, N, ScalarT>::getBounds(query, query_bounds);
+      getObjectBounds(query, query_bounds);
 
       // Early pruning if the entire structure is too far away from the query
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
       {
-        double lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
+        double lower_bound;
+        if (IsBoundedN<QueryT, N>::value)
+          lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
+        else
+          lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query);
+
         if (lower_bound > mon_approx_dist_bound)
           return NeighborPair(-1);
       }
@@ -874,7 +877,10 @@ class /* THEA_API */ KDTreeN
       }
 
       NeighborPair pair(-1, -1, mon_approx_dist_bound);
-      closestPair<MetricT>(root, query, query_bounds, pair, get_closest_points);
+      if (IsBoundedN<QueryT, N>::value)
+        closestPair<MetricT>(root, query, query_bounds, pair, get_closest_points);
+      else
+        closestPair<MetricT>(root, query, query, pair, get_closest_points);
 
       return pair;
     }
@@ -882,9 +888,9 @@ class /* THEA_API */ KDTreeN
     /**
      * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (k). The template
      * type BoundedNeighborPairSetT should typically be BoundedSortedArray<NeighborPair> or BoundedSortedArrayN<k, NeighborPair>
-     * if only a few neighbors are requested. BoundedObjectTraitsN<QueryT, N, ScalarT> must be defined.
+     * if only a few neighbors are requested. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
      *
-     * @param query Query object. BoundedObjectTraitsN<QueryT, N, ScalarT> must be defined.
+     * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
      * @param k_closest_pairs The k (or fewer) nearest neighbors are placed here.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
@@ -909,13 +915,18 @@ class /* THEA_API */ KDTreeN
       if (!root) return 0;
 
       AxisAlignedBoxT query_bounds;
-      BoundedObjectTraitsN<QueryT, N, ScalarT>::getBounds(query, query_bounds);
+      getObjectBounds(query, query_bounds);
 
       // Early pruning if the entire structure is too far away from the query
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
       {
-        double lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
+        double lower_bound;
+        if (IsBoundedN<QueryT, N>::value)
+          lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query_bounds);
+        else
+          lower_bound = MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*root), query);
+
         if (lower_bound > mon_approx_dist_bound)
           return 0;
 
@@ -923,8 +934,16 @@ class /* THEA_API */ KDTreeN
           return 0;
       }
 
-      kClosestPairs<MetricT>(root, query, query_bounds, k_closest_pairs, dist_bound, get_closest_points,
-                             use_as_query_index_and_swap);
+      if (IsBoundedN<QueryT, N>::value)
+      {
+        kClosestPairs<MetricT>(root, query, query_bounds, k_closest_pairs, dist_bound, get_closest_points,
+                               use_as_query_index_and_swap);
+      }
+      else
+      {
+        kClosestPairs<MetricT>(root, query, query, k_closest_pairs, dist_bound, get_closest_points,
+                               use_as_query_index_and_swap);
+      }
 
       return k_closest_pairs.size();
     }
@@ -1060,8 +1079,8 @@ class /* THEA_API */ KDTreeN
       bool operator()(ElementIndex a, ElementIndex b)
       {
         // Compare object min coords
-        return BoundedObjectTraitsT::getLow(tree->elems[a], coord)
-             < BoundedObjectTraitsT::getLow(tree->elems[b], coord);
+        return BoundedTraitsT::getLow(tree->elems[a], coord)
+             < BoundedTraitsT::getLow(tree->elems[b], coord);
       }
     };
 
@@ -1132,7 +1151,7 @@ class /* THEA_API */ KDTreeN
       for (ElementIndex i = 0; i < start->num_elems - mid; ++i)
       {
         ElementIndex index = start->elems[i];
-        BoundedObjectTraitsT::getBounds(elems[index], elem_bounds);
+        BoundedTraitsT::getBounds(elems[index], elem_bounds);
 
         start->lo->elems[start->lo->num_elems++] = index;
 
@@ -1150,7 +1169,7 @@ class /* THEA_API */ KDTreeN
       for (ElementIndex i = start->num_elems - mid; i < start->num_elems; ++i)
       {
         ElementIndex index = start->elems[i];
-        BoundedObjectTraitsT::getBounds(elems[index], elem_bounds);
+        BoundedTraitsT::getBounds(elems[index], elem_bounds);
 
         start->hi->elems[start->hi->num_elems++] = index;
 
@@ -1222,6 +1241,19 @@ class /* THEA_API */ KDTreeN
       return true;
     }
 
+    /** Get the bounding box for an object, if it is bounded. */
+    template <typename U>
+    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
+                                typename boost::enable_if< IsBoundedN<U, N> >::type * dummy = NULL)
+    {
+      BoundedTraitsN<U, N, ScalarT>::getBounds(u, bounds);
+    }
+
+    /** A dummy function that is a no-op for unbounded objects. */
+    template <typename U>
+    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
+                                typename boost::disable_if< IsBoundedN<U, N> >::type * dummy = NULL) {}
+
     /** Get a bounding box for a node, in world space. */
     AxisAlignedBoxT getBoundsWorldSpace(Node const & node) const
     {
@@ -1234,8 +1266,8 @@ class /* THEA_API */ KDTreeN
      * Recursively look for the closest pair of points between two elements. Only pairs separated by less than the current
      * minimum distance will be considered.
      */
-    template <typename MetricT, typename QueryT>
-    void closestPair(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds, NeighborPair & pair,
+    template <typename MetricT, typename QueryT, typename ProxyT>
+    void closestPair(Node const * start, QueryT const & query, ProxyT const & query_proxy, NeighborPair & pair,
                      bool get_closest_points) const
     {
       if (!start->lo)  // leaf
@@ -1244,8 +1276,8 @@ class /* THEA_API */ KDTreeN
       {
         // Figure out which child is closer (optimize for point queries?)
         Node const * n[2] = { start->lo, start->hi };
-        double mad[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_bounds),
-                          MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_bounds) };
+        double mad[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_proxy),
+                          MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_proxy) };
 
         if (mad[1] > mad[0])
         {
@@ -1255,7 +1287,7 @@ class /* THEA_API */ KDTreeN
 
         for (int i = 0; i < 2; ++i)
           if (pair.getMonotoneApproxDistance() < 0 || mad[i] <= pair.getMonotoneApproxDistance())
-            closestPair<MetricT>(n[i], query, query_bounds, pair, get_closest_points);
+            closestPair<MetricT>(n[i], query, query_proxy, pair, get_closest_points);
       }
     }
 
@@ -1332,8 +1364,8 @@ class /* THEA_API */ KDTreeN
      * Recursively look for the k closest elements to a query object. Only elements at less than the specified maximum distance
      * will be considered.
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
-    void kClosestPairs(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds,
+    template <typename MetricT, typename QueryT, typename ProxyT, typename BoundedNeighborPairSet>
+    void kClosestPairs(Node const * start, QueryT const & query, ProxyT const & query_proxy,
                        BoundedNeighborPairSet & k_closest_pairs, double dist_bound, bool get_closest_points,
                        long use_as_query_index_and_swap)
     const
@@ -1344,8 +1376,8 @@ class /* THEA_API */ KDTreeN
       {
         // Figure out which child is closer (optimize for point queries?)
         Node const * n[2] = { start->lo, start->hi };
-        double d[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_bounds),
-                        MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_bounds) };
+        double d[2] = { MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[0]), query_proxy),
+                        MetricT::template monotoneApproxDistance<N, ScalarT>(getBoundsWorldSpace(*n[1]), query_proxy) };
 
         if (d[1] > d[0])
         {
@@ -1359,7 +1391,7 @@ class /* THEA_API */ KDTreeN
           if ((mon_approx_dist_bound < 0 || d[i] <= mon_approx_dist_bound)
             && k_closest_pairs.isInsertable(NeighborPair(0, 0, d[i])))
           {
-            kClosestPairs<MetricT>(n[i], query, query_bounds, k_closest_pairs, dist_bound, get_closest_points,
+            kClosestPairs<MetricT>(n[i], query, query_proxy, k_closest_pairs, dist_bound, get_closest_points,
                                    use_as_query_index_and_swap);
           }
       }
@@ -1675,7 +1707,7 @@ class /* THEA_API */ KDTreeN
       for (array_size_t i = 0; i < acceleration_samples.size(); ++i)
       {
         long elem_index = Random::common().integer(0, (int32)num_elems - 1);
-        VectorT p = BoundedObjectTraitsT::getCenter(elems[elem_index]);
+        VectorT p = BoundedTraitsT::getCenter(elems[elem_index]);
 
         // Snap point to element, else it's not a valid NN proxy
         MetricT::template closestPoints<N, ScalarT>(p, elems[elem_index], src_cp, dst_cp);
@@ -1727,14 +1759,14 @@ class /* THEA_API */ KDTreeN
      * object if they exist.
      */
     template <typename MetricT, typename E, typename S, typename A, typename B>
-    double accelerationBound(KDTreeN<E, N, S, A, B> const & query, double dist_bound) const
+    double accelerationBound(KDTreeN<E, N, S, A> const & query, double dist_bound) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
       if (accel)
       {
         if (query.hasNearestNeighborAcceleration())
         {
-          typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
+          typename KDTreeN<E, N, S, A>::NearestNeighborAccelerationStructure const * query_accel
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
@@ -1747,7 +1779,7 @@ class /* THEA_API */ KDTreeN
       {
         if (query.hasNearestNeighborAcceleration())
         {
-          typename KDTreeN<E, N, S, A, B>::NearestNeighborAccelerationStructure const * query_accel
+          typename KDTreeN<E, N, S, A>::NearestNeighborAccelerationStructure const * query_accel
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
@@ -1789,8 +1821,8 @@ class /* THEA_API */ KDTreeN
 }; // class KDTreeN
 
 // Static variables
-template <typename T, long N, typename S, typename A, typename B>
-Real const KDTreeN<T, N, S, A, B>::BOUNDS_EXPANSION_FACTOR = 1.05f;
+template <typename T, long N, typename S, typename A>
+Real const KDTreeN<T, N, S, A>::BOUNDS_EXPANSION_FACTOR = 1.05f;
 
 } // namespace Algorithms
 } // namespace Thea

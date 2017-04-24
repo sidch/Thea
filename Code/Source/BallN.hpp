@@ -145,8 +145,14 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     template <typename OtherType> T squaredDistance(OtherType const & other) const
     { T x = distance(other); return x * x; }
 
-    /** Get the squared distance of the ball from an axis-aligned box. */
-    T squaredDistance(AxisAlignedBoxN<N, T> const & aab) const { T x = distance(aab); return x * x; }
+    /** Get the squared distance of the ball from an axis-aligned box and optionally return the closest pair of points. */
+    T squaredDistance(AxisAlignedBoxN<N, T> const & aab, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
+    {
+      if (this_pt || other_pt)
+        throw FatalError("BallN: Finding closest points between ball and box not yet implemented");
+
+      T x = distance(aab); return x * x;
+    }
 
     /** Get a bounding box for the ball. */
     AxisAlignedBoxN<N, T> getBounds() const

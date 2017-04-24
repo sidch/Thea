@@ -96,7 +96,7 @@ class /* THEA_API */ PCA_N<T *, N, ScalarT>
 
 // Principal component analysis of objects that map to single points in 2-space.
 template <typename T, typename ScalarT>
-class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsPointN<T, 2> >::type>
+class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 2> >::type>
 {
   public:
     typedef VectorN<2, ScalarT> VectorT;
@@ -162,7 +162,7 @@ class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsPointN<T, 2> >::type>
 
 // Principal component analysis of objects that map to single points in 3-space.
 template <typename T, typename ScalarT>
-class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsPointN<T, 3> >::type>
+class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
 {
   public:
     typedef VectorN<3, ScalarT> VectorT;

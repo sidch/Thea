@@ -39,23 +39,30 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_BoundedObjectTraitsN_Transform_hpp__
-#define __Thea_Algorithms_BoundedObjectTraitsN_Transform_hpp__
+#ifndef __Thea_Algorithms_BoundedTraitsN_Transform_hpp__
+#define __Thea_Algorithms_BoundedTraitsN_Transform_hpp__
 
 #include "TransformedObject.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
+template <typename ObjectT, typename TransformT, long N>
+class IsBoundedN< TransformedObject<ObjectT, TransformT>, N >
+{
+  public:
+    static bool const value = IsBoundedN<ObjectT, N>::value;
+};
+
 template <typename ObjectT, typename TransformT, long N, typename ScalarT>
-class /* THEA_API */ BoundedObjectTraitsN< TransformedObject<ObjectT, TransformT>, N, ScalarT >
+class /* THEA_API */ BoundedTraitsN< TransformedObject<ObjectT, TransformT>, N, ScalarT >
 {
   public:
     typedef TransformedObject<ObjectT, TransformT> TO;
 
     template <typename RangeT> static void getBounds(TO const & t, RangeT & bounds)
     {
-      BoundedObjectTraitsN<ObjectT, N, ScalarT>::getBounds(t.getObject(), bounds);
+      BoundedTraitsN<ObjectT, N, ScalarT>::getBounds(t.getObject(), bounds);
       bounds = bounds.transformAndBound(t.getTransform());
     }
 
@@ -80,7 +87,7 @@ class /* THEA_API */ BoundedObjectTraitsN< TransformedObject<ObjectT, TransformT
       return bounds.getLow()[coord];
     }
 
-}; // class BoundedObjectTraitsN
+}; // class BoundedTraitsN
 
 } // namespace Algorithms
 } // namespace Thea

@@ -37,6 +37,15 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
+//============== License for line-triangle distance calculation ==============
+//
+// David Eberly, Geometric Tools, Redmond WA 98052
+// Copyright (c) 1998-2017
+// Distributed under the Boost Software License, Version 1.0.
+// http://www.boost.org/LICENSE_1_0.txt
+// http://www.geometrictools.com/License/Boost/LICENSE_1_0.txt
+// File Version: 3.0.0 (2016/06/19)
+//
 //============================================================================
 
 #ifndef __Thea_Triangle3_hpp__
@@ -324,16 +333,6 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /** Get the distance of the triangle from a point. */
     Real distance(Vector3 const & p) const { return std::sqrt(squaredDistance(p)); }
 
-    /** Get the distance of the triangle from another triangle. */
-    template <typename OtherVertexTripleT>
-    Real distance(Triangle3Base<OtherVertexTripleT> const & other) const { return std::sqrt(squaredDistance(other)); }
-
-    /** Get the distance of the triangle from a ball. */
-    Real distance(Ball3 const & ball) const
-    {
-      return std::max(distance(ball.getCenter()) - ball.getRadius(), static_cast<Real>(0));
-    }
-
     /** Get the squared distance of the triangle from a point. */
     Real squaredDistance(Vector3 const & p) const
     {
@@ -352,18 +351,21 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
         return Triangle3Internal::closestPointOnTrianglePerimeter(getVertex(0), getVertex(1), getVertex(2), p);
     }
 
-    /** Get the squared distance of the triangle from another triangle. */
-    template <typename OtherVertexTripleT> Real squaredDistance(Triangle3Base<OtherVertexTripleT> const & other) const
-    {
-      Vector3 p, q;
-      return closestPoints(other, p, q);
-    }
-
-    /** Get the closest pair of points between two triangles, and the square of the distance between them. */
+    /** Get the distance of the triangle from another triangle. */
     template <typename OtherVertexTripleT>
-    Real closestPoints(Triangle3Base<OtherVertexTripleT> const & other, Vector3 & this_pt, Vector3 & other_pt) const
+    Real distance(Triangle3Base<OtherVertexTripleT> const & other) const { return std::sqrt(squaredDistance(other)); }
+
+    /**
+     * Get the squared distance between this triangle and another triangle, and optionally return the closest pair of points.
+     */
+    template <typename OtherVertexTripleT>
+    Real squaredDistance(Triangle3Base<OtherVertexTripleT> const & other, Vector3 * this_pt = NULL, Vector3 * other_pt = NULL)
+         const
     {
       // From Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
+
+      Vector3 c1, c2;
+      Real min_sqdist = std::numeric_limits<Real>::max();
 
       // First test for intersection
       bool coplanar;
@@ -371,105 +373,211 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       if (intersects(other, coplanar, seg))
       {
         if (coplanar)
-          this_pt = other_pt = (Real)0.5 * (getCentroid() + other.getCentroid());  // FIXME: This needn't be in the intersection
+          c1 = c2 = (Real)0.5 * (getCentroid() + other.getCentroid());  // FIXME: This needn't be in the intersection
         else
-          this_pt = other_pt = (Real)0.5 * (seg.getPoint(0) + seg.getPoint(1));
+          c1 = c2 = (Real)0.5 * (seg.getPoint(0) + seg.getPoint(1));
 
-        return 0;
+        min_sqdist = 0;
       }
-
-      Real min_sqdist = std::numeric_limits<Real>::max();
-
-      // Edge-edge distances
-      Vector3 p, q;
-      Real d, s, t;
-      for (int i = 0; i < 3; ++i)
+      else
       {
-        int i2 = (i + 1) % 3;
-
-        for (int j = 0; j < 3; ++j)
+        // Edge-edge distances
+        Vector3 p, q;
+        Real d2, s, t;
+        for (int i = 0; i < 3; ++i)
         {
-          int j2 = (j + 1) % 3;
-          d = Internal::closestPtSegmentSegment(getVertex(i), getVertex(i2), other.getVertex(j), other.getVertex(j2),
-                                                s, t, p, q);
-          if (d < min_sqdist)
+          int i2 = (i + 1) % 3;
+
+          for (int j = 0; j < 3; ++j)
           {
-            min_sqdist = d;
-            this_pt = p;
-            other_pt = q;
+            int j2 = (j + 1) % 3;
+            d2 = Internal::closestPtSegmentSegment(getVertex(i), getVertex(i2), other.getVertex(j), other.getVertex(j2),
+                                                   s, t, p, q);
+            if (d2 < min_sqdist)
+            {
+              min_sqdist = d2;
+              c1 = p;
+              c2 = q;
+            }
+          }
+        }
+
+        // Distance from vertex of triangle 2 to triangle 1, if the former projects inside the latter
+        for (int i = 0; i < 3; ++i)
+        {
+          q = other.getVertex(i);
+          p = getPlane().closestPoint(q);
+          if (contains(p))
+          {
+            d2 = (p - q).squaredLength();
+            if (d2 < min_sqdist)
+            {
+              min_sqdist = d2;
+              c1 = p;
+              c2 = q;
+            }
+          }
+        }
+
+        // Distance from vertex of triangle 1 to triangle 2, if the former projects inside the latter
+        for (int i = 0; i < 3; ++i)
+        {
+          p = getVertex(i);
+          q = other.getPlane().closestPoint(p);
+          if (other.contains(q))
+          {
+            d2 = (p - q).squaredLength();
+            if (d2 < min_sqdist)
+            {
+              min_sqdist = d2;
+              c1 = p;
+              c2 = q;
+            }
           }
         }
       }
 
-      // Distance from vertex of triangle 2 to triangle 1, if the former projects inside the latter
-      for (int i = 0; i < 3; ++i)
-      {
-        q = other.getVertex(i);
-        p = getPlane().closestPoint(q);
-        if (contains(p))
-        {
-          d = (p - q).squaredLength();
-          if (d < min_sqdist)
-          {
-            min_sqdist = d;
-            this_pt = p;
-            other_pt = q;
-          }
-        }
-      }
+      if (this_pt)  *this_pt  = c1;
+      if (other_pt) *other_pt = c2;
 
-      // Distance from vertex of triangle 1 to triangle 2, if the former projects inside the latter
-      for (int i = 0; i < 3; ++i)
-      {
-        p = getVertex(i);
-        q = other.getPlane().closestPoint(p);
-        if (other.contains(q))
-        {
-          d = (p - q).squaredLength();
-          if (d < min_sqdist)
-          {
-            min_sqdist = d;
-            this_pt = p;
-            other_pt = q;
-          }
-        }
-      }
-
-      return d;
+      return min_sqdist;
     }
 
-    /** Get the squared distance of the triangle from a ball. */
-    Real squaredDistance(Ball3 const & ball) const { Real x = distance(ball); return x * x; }
-
-    /**
-     * Get the point on this triangle and the point on a ball closest to each other, and return the squared distance between
-     * them.
-     */
-    Real closestPoints(Ball3 const & ball, Vector3 & this_pt, Vector3 & ball_pt) const
+    /** Get the distance of this triangle from a ball. */
+    Real distance(Ball3 const & ball) const
     {
-      this_pt = closestPoint(ball.getCenter());
+      return std::max(distance(ball.getCenter()) - ball.getRadius(), static_cast<Real>(0));
+    }
 
-      Vector3 diff = this_pt - ball.getCenter();
+    /** Get the squared distance between this triangle and a ball, and optionally return the closest pair of points. */
+    Real squaredDistance(Ball3 const & ball, Vector3 * this_pt = NULL, Vector3 * ball_pt = NULL) const
+    {
+      if (!this_pt && !ball_pt)
+      {
+        Real x = distance(ball);
+        return x * x;
+      }
+
+      Vector3 c1 = closestPoint(ball.getCenter());
+      Vector3 c2;
+
+      Vector3 diff = c1 - ball.getCenter();
       Real d2 = diff.squaredLength();
       Real r2 = ball.getRadius() * ball.getRadius();
       if (d2 < r2)  // point inside ball
       {
-        ball_pt = this_pt;
-        return 0;
+        c2 = c1;
+        d2 = 0;
       }
       else
       {
         if (r2 < 1e-30)
-        {
-          ball_pt = ball.getCenter();
-          return d2;
-        }
+          c2 = ball.getCenter();
         else
         {
-          ball_pt = ball.getCenter() + std::sqrt(r2 / d2) * diff;
-          return (this_pt - ball_pt).squaredLength();
+          c2 = ball.getCenter() + std::sqrt(r2 / d2) * diff;
+          d2 = (c1 - c2).squaredLength();
         }
       }
+
+      if (this_pt) *this_pt = c1;
+      if (ball_pt) *ball_pt = c2;
+
+      return d2;
+    }
+
+    /** Get the distance of this triangle from an infinite line. */
+    Real distance(Line3 const & line) const
+    {
+      return std::sqrt(squaredDistance(line));
+    }
+
+    /**
+     * Get the squared distance between this triangle and an infinite line, and optionally return the closest pair of points.
+     */
+    Real squaredDistance(Line3 const & line, Vector3 * this_pt = NULL, Vector3 * line_pt = NULL) const
+    {
+      // Two tests where one would suffice, but for now it avoids having to code a new function or modify an existing one.
+      // Shift the ray origins to ensure the rays overlap and there are no errors at line.getPoint().
+
+      // Forward half
+      {
+        Ray3 ray(line.getPoint() - line.getDirection(), line.getDirection());
+        Real t = rayIntersectionTime(ray);
+        if (t >= 0)
+        {
+          Vector3 c = ray.getPoint(t);
+          if (this_pt) *this_pt = c;
+          if (line_pt) *line_pt = c;
+          return 0;
+        }
+      }
+
+      // Backward half
+      {
+        Ray3 ray(line.getPoint() + line.getDirection(), -line.getDirection());
+        Real t = rayIntersectionTime(ray);
+        if (t >= 0)
+        {
+          Vector3 c = ray.getPoint(t);
+          if (this_pt) *this_pt = c;
+          if (line_pt) *line_pt = c;
+          return 0;
+        }
+      }
+
+      return squaredDistanceToPerimeter(line, this_pt, line_pt);
+    }
+
+    /** Get the distance of this triangle from a line segment. */
+    Real distance(LineSegment3 const & seg) const
+    {
+      return std::sqrt(squaredDistance(seg));
+    }
+
+    /**
+     * Get the squared distance between this triangle and a line segment, and optionally return the closest pair of points.
+     */
+    Real squaredDistance(LineSegment3 const & seg, Vector3 * this_pt = NULL, Vector3 * seg_pt = NULL) const
+    {
+      // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
+
+      Ray3 ray(seg.getEndpoint(0), seg.getDirection());
+      Real t = rayIntersectionTime(ray);
+      if (t >= 0 && t <= 1)
+      {
+        Vector3 c = ray.getPoint(t);
+        if (this_pt) *this_pt = c;
+        if (seg_pt)  *seg_pt  = c;
+        return 0;
+      }
+
+      return squaredDistanceToPerimeter(seg, this_pt, seg_pt);
+    }
+
+    /** Get the distance of this triangle from a ray. */
+    Real distance(Ray3 const & ray) const
+    {
+      return std::sqrt(squaredDistance(ray));
+    }
+
+    /**
+     * Get the squared distance between this triangle and a ray, and optionally return the closest pair of points.
+     */
+    Real squaredDistance(Ray3 const & ray, Vector3 * this_pt = NULL, Vector3 * ray_pt = NULL) const
+    {
+      // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
+
+      Real t = rayIntersectionTime(ray);
+      if (t >= 0)
+      {
+        Vector3 c = ray.getPoint(t);
+        if (this_pt) *this_pt = c;
+        if (ray_pt)  *ray_pt  = c;
+        return 0;
+      }
+
+      return squaredDistanceToPerimeter(ray, this_pt, ray_pt);
     }
 
     Real rayIntersectionTime(Ray3 const & ray, Real max_time = -1) const
@@ -491,6 +599,32 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     }
 
   protected:
+    /**
+     * Get the squared distance between the perimiter of this triangle and a line-like object (Line3, Ray3 or LineSegment3), and
+     * optionally return the closest pair of points.
+     */
+    template <typename LineLikeT>
+    Real squaredDistanceToPerimeter(LineLikeT const & line, Vector3 * this_pt = NULL, Vector3 * line_pt = NULL) const
+    {
+      // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
+
+      Real d2 = -1;
+      Vector3 c1, c2;
+      for (int i = 0; i < 3; ++i)
+      {
+        LineSegment3 edge(getVertex(i), getVertex((i + 1) % 3));
+        Real edge_d2 = edge.squaredDistance(line, (this_pt ? &c1 : NULL), (line_pt ? &c2 : NULL));
+        if (d2 < 0 || edge_d2 < d2)
+        {
+          d2 = edge_d2;
+          if (this_pt) *this_pt = c1;
+          if (line_pt) *line_pt = c2;
+        }
+      }
+
+      return d2;
+    }
+
     VertexTriple  vertices;      ///< The vertices of the triangle.
     Plane3        plane;         ///< Plane of the triangle.
     int           primary_axis;  ///< Primary axis (closest to normal).

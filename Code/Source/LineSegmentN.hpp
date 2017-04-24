@@ -43,21 +43,23 @@
 #define __Thea_LineSegmentN_hpp__
 
 #include "Common.hpp"
-#include "AxisAlignedBoxN.hpp"
+#include "LineN.hpp"
 #include "Math.hpp"
+#include "RayN.hpp"
 #include "VectorN.hpp"
 
 namespace Thea {
 
 // Forward declarations
 template <long N, typename T> class LineSegmentN;
+template <long N, typename T> class AxisAlignedBoxN;
 
 namespace Internal {
 
-// Get the closest pair of points between two line segments, and the square of the distance between them. From Christer Ericson,
-// "Real-Time Collision Detection", Morgan-Kaufman, 2005.
-template <long N, typename T> T closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1,
-                                                        VectorN<N, T> const & p2, VectorN<N, T> const & q2,
+// Get the closest pair of points between two line segments, and the square of the distance between them. Adapted from Christer
+// Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
+template <long N, typename T> T closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, bool is_line1,
+                                                        VectorN<N, T> const & p2, VectorN<N, T> const & q2, bool is_line2,
                                                         T & s, T & t, VectorN<N, T> & c1, VectorN<N, T> & c2);
 
 /**
@@ -85,6 +87,9 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
 
     /** Get an endpoint of the line segment: 0 returns the first endpoint and 1 returns the second. */
     VectorT getEndpoint(int i) const { return i == 0 ? point : point + direction; }
+
+    /** Get the unnormalized direction vector of the segment from the first endpoint to the second. */
+    VectorT const & getDirection() const { return direction; }
 
     /** Get a point on the line segment: \a t = 0 maps to the first endpoint and \a t = 1 maps to the second. */
     VectorT getPoint(Real t) const { return point + t * direction; }
@@ -116,7 +121,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
       if (Math::fuzzyEq(d2, static_cast<T>(0)))
         return point;
 
-      // The vector from the end of the segment to the point in question
+      // The vector from the end of the segment to the point in question.
       VectorT v(p - point);
 
       // Projection of v onto the line segment scaled by the length of the segment.
@@ -148,18 +153,66 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
       }
     }
 
-    /**
-     * Get the point on this line segment closest to a given line segment. Optionally also returns the point on the other
-     * segment closest to this one.
-     */
-    VectorT closestPoint(LineSegmentT const & other, VectorT * other_closest_point = NULL) const
+    /** Get the distance of this segment from another segment. */
+    T distance(LineSegmentT const & other) const
+    {
+      return std::sqrt(squaredDistance(other));
+    }
+
+    /** Get the squared distance between this segment and another segment, and optionally return the closest pair of points. */
+    T squaredDistance(LineSegmentT const & other, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment(point, point + direction, other.point, other.point + other.direction, s, t, c1, c2);
+      Internal::closestPtSegmentSegment(point, point + direction, false, other.point, other.point + other.direction, false,
+                                        s, t, c1, c2);
 
-      if (other_closest_point) *other_closest_point = c2;
-      return c1;
+      if (this_pt)  *this_pt  = c1;
+      if (other_pt) *other_pt = c2;
+
+      return (c1 - c2).squaredLength();
+    }
+
+    /** Get the distance of this segment from an infinite line. */
+    T distance(LineN<N, T> const & line) const
+    {
+      return std::sqrt(squaredDistance(line));
+    }
+
+    /** Get the squared distance between this segment and an infinite line, and optionally return the closest pair of points. */
+    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = NULL, VectorT * line_pt = NULL) const
+    {
+      VectorT c1, c2;
+      T s, t;
+      Internal::closestPtSegmentSegment(point, point + direction, false, line.getPoint(), line.getPoint() + line.getDirection(),
+                                        true, s, t, c1, c2);
+
+      if (this_pt) *this_pt = c1;
+      if (line_pt) *line_pt = c2;
+
+      return (c1 - c2).squaredLength();
+    }
+
+    /** Get the distance of this segment from a ray. */
+    T distance(RayN<N, T> const & ray) const
+    {
+      return std::sqrt(squaredDistance(ray));
+    }
+
+    /** Get the squared distance between this segment and a ray, and optionally return the closest pair of points. */
+    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = NULL, VectorT * ray_pt = NULL) const
+    {
+      VectorT c1, c2;
+      T s, t;
+      Internal::closestPtSegmentSegment(point, point + direction, false, ray.getOrigin(), ray.getOrigin() + ray.getDirection(),
+                                        true, s, t, c1, c2);
+      if (t < 0)
+        c2 = ray.getOrigin();
+
+      if (this_pt) *this_pt = c1;
+      if (ray_pt)  *ray_pt  = c2;
+
+      return (c1 - c2).squaredLength();
     }
 
     /** Get a bounding box for the line segment. */
@@ -200,7 +253,8 @@ namespace Internal {
 
 template <long N, typename T>
 T
-closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, VectorN<N, T> const & p2, VectorN<N, T> const & q2,
+closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, bool is_line1,
+                        VectorN<N, T> const & p2, VectorN<N, T> const & q2, bool is_line2,
                         T & s, T & t, VectorN<N, T> & c1, VectorN<N, T> & c2)
 {
   typedef VectorN<N, T> VectorT;
@@ -228,7 +282,9 @@ closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, Vect
       // First segment degenerates into a point
       s = 0;
       t = f / e;  // s = 0 => t = (b*s + f) / e = f / e
-      t = Math::clamp(t, static_cast<T>(0), static_cast<T>(1));
+
+      if (!is_line2)
+        t = Math::clamp(t, static_cast<T>(0), static_cast<T>(1));
     }
   }
   else
@@ -236,9 +292,12 @@ closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, Vect
     T c = d1.dot(r);
     if (Math::fuzzyEq(e, static_cast<T>(0)))
     {
-        // Second segment degenerates into a point
-        t = 0;
-        s = Math::clamp(-c / a, static_cast<T>(0), static_cast<T>(1));  // t = 0 => s = (b*t - c) / a = -c / a
+      // Second segment degenerates into a point
+      t = 0;
+      s = -c / a;
+
+      if (!is_line1)
+        s = Math::clamp(s, static_cast<T>(0), static_cast<T>(1));  // t = 0 => s = (b*t - c) / a = -c / a
     }
     else
     {
@@ -248,24 +307,38 @@ closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, Vect
 
       // If segments not parallel, compute closest point on L1 to L2, and clamp to segment S1. Else pick arbitrary s (here 0)
       if (denom != 0)
-        s = Math::clamp((b * f - c * e) / denom, static_cast<T>(0), static_cast<T>(1));
+      {
+        s = (b * f - c * e) / denom;
+
+        if (!is_line1)
+          s = Math::clamp(s, static_cast<T>(0), static_cast<T>(1));
+      }
       else
         s = 0;
 
       // Compute point on L2 closest to S1(s) using t = Dot((P1+D1*s)-P2,D2) / Dot(D2,D2) = (b*s + f) / e
       t = (b * s + f) / e;
 
-      // If t in [0,1] done. Else clamp t, recompute s for the new value of t using
-      // s = Dot((P2+D2*t)-P1,D1) / Dot(D1,D1)= (t*b - c) / a and clamp s to [0, 1]
-      if (t < 0)
+      if (!is_line2)
       {
-        t = 0;
-        s = Math::clamp(-c / a, static_cast<T>(0), static_cast<T>(1));
-      }
-      else if (t > 1)
-      {
-        t = 1;
-        s = Math::clamp((b - c) / a, static_cast<T>(0), static_cast<T>(1));
+        // If t in [0,1] done. Else clamp t, recompute s for the new value of t using
+        // s = Dot((P2+D2*t)-P1,D1) / Dot(D1,D1)= (t*b - c) / a and clamp s to [0, 1]
+        if (t < 0)
+        {
+          t = 0;
+          s = -c / a;
+
+          if (!is_line1)
+            s = Math::clamp(s, static_cast<T>(0), static_cast<T>(1));
+        }
+        else if (t > 1)
+        {
+          t = 1;
+          s = (b - c) / a;
+
+          if (!is_line1)
+            s = Math::clamp(s, static_cast<T>(0), static_cast<T>(1));
+        }
       }
     }
   }

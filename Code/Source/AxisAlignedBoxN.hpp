@@ -44,7 +44,10 @@
 
 #include "Common.hpp"
 #include "Math.hpp"
+#include "LineN.hpp"
+#include "LineSegmentN.hpp"
 #include "RayIntersectableN.hpp"
+#include "RayN.hpp"
 #include "VectorN.hpp"
 #include <bitset>
 
@@ -364,6 +367,12 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       return (vmin - vmax).squaredLength();
     }
 
+    /** Get the point in this box closest to a given point. */
+    VectorT closestPoint(VectorT const & p) const
+    {
+      return p.min(hi).max(lo);
+    }
+
     /** Get the closest distance to a point. Returns zero if the box is null. */
     T distance(VectorT const & point) const { return std::sqrt(squaredDistance(point)); }
 
@@ -377,6 +386,33 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 
       VectorT vdiff = (hi - point).max(point - lo);
       return vdiff.squaredLength();
+    }
+
+    /** Get the distance between this box and an infinite line. */
+    T distance(LineN<N, T> const & line) const { return std::sqrt(squaredDistance(line)); }
+
+    /** Get the squared distance between this box and an infinite line, and optionally return the closest pair of points. */
+    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = NULL, VectorT * line_pt = NULL) const
+    {
+      throw FatalError(format("AxisAlignedBoxN: Distance between line and box not implemented in %ld dimension(s)", N));
+    }
+
+    /** Get the distance between this box and a line segment. */
+    T distance(LineSegmentN<N, T> const & seg) const { return std::sqrt(squaredDistance(seg)); }
+
+    /** Get the squared distance between this box and a line segment, and optionally return the closest pair of points. */
+    T squaredDistance(LineSegmentN<N, T> const & seg, VectorT * this_pt = NULL, VectorT * seg_pt = NULL) const
+    {
+      throw FatalError(format("AxisAlignedBoxN: Distance between line segment and box not implemented in %ld dimension(s)", N));
+    }
+
+    /** Get the distance between this box and a ray. */
+    T distance(RayN<N, T> const & ray) const { return std::sqrt(squaredDistance(ray)); }
+
+    /** Get the squared distance between this box and a ray, and optionally return the closest pair of points. */
+    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = NULL, VectorT * ray_pt = NULL) const
+    {
+      throw FatalError(format("AxisAlignedBoxN: Distance between ray and box not implemented in %ld dimension(s)", N));
     }
 
     /** Get a string representing the box as "[low, high]", or "[null]" if the box is null. */
