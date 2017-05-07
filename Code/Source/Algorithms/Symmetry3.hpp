@@ -162,6 +162,8 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
       Vector3 eigenvectors[3];
       Vector3 centroid;
       PCA_N<T, 3>::compute(begin, end, eigenvalues, eigenvectors, &centroid);
+      if (precomputed_centroid)
+        centroid = *precomputed_centroid;  // override
 
       double best_error = max_mean_squared_error;
       bool found = false;
@@ -188,11 +190,10 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
     static double computeMeanSquaredError(Plane3 const & plane, InputIterator begin, InputIterator end,
                                           ProximityQueryStructureT const & prox_query_struct, double unmatched_error)
     {
-      Vector3 normal = plane.getNormal();
-      Vector3 cp;
       double sqrt_unmatched_error = std::sqrt(unmatched_error);
       double total_error = 0;
       long total_count = 0;
+      Vector3 cp;
       for (InputIterator pi = begin; pi != end; ++pi, ++total_count)
       {
         Vector3 reflected = plane.reflect(PointTraitsN<T, 3>::getPosition(*pi));

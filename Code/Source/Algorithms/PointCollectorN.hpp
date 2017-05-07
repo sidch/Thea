@@ -140,7 +140,7 @@ class /* THEA_API */ PointCollectorN
       }
     }
 
-    /* Add all vertices of a mesh to the collection. */
+    /** Add all vertices of a mesh to the collection. */
     template <typename MeshT> void addMeshVertices(MeshT const & mesh)
     {
       alwaysAssertM(collection, "PointCollectorN: Collection must be non-null");
@@ -149,7 +149,7 @@ class /* THEA_API */ PointCollectorN
       mesh_vertex_collector.addVertices(mesh, *collection);
     }
 
-    /* Add all vertices of a mesh group to the collection. */
+    /** Add all vertices of a mesh group to the collection. */
     template <typename MeshT> void addMeshVertices(Graphics::MeshGroup<MeshT> const & mesh_group)
     {
       for (typename Graphics::MeshGroup<MeshT>::MeshConstIterator mi = mesh_group.meshesBegin();

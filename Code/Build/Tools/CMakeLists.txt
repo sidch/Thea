@@ -184,6 +184,40 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND)
 ENDIF()
 
 #===========================================================
+# GeoSphere
+#===========================================================
+
+# Source file lists
+FILE(GLOB GeoSphereSources
+     ${SourceRoot}/Tools/GeoSphere/*.cpp)
+
+# Libraries to link to
+SET(GeoSphereLibraries
+    Thea
+    ${Lib3ds_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${PLATFORM_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(GeoSphere ${GeoSphereSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(GeoSphere ${GeoSphereLibraries})
+
+# Linker flags
+IF(Thea_LDFLAGS)
+  SET_TARGET_PROPERTIES(GeoSphere PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
+ENDIF()
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(GeoSphere "${GeoSphereLibraries}")
+ENDIF()
+
+SET(TheaAllTools ${TheaAllTools} GeoSphere)
+
+#===========================================================
 # GIP
 #===========================================================
 
