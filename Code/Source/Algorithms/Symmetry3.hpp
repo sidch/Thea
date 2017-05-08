@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "CentroidN.hpp"
+#include "GeodesicSphere3.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
 #include "../Math.hpp"
@@ -103,7 +104,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
         return false;
 
       if (num_rounds <= 0)
-        num_rounds = 3;
+        num_rounds = 5;
 
       Vector3 centroid = (precomputed_centroid ? *precomputed_centroid : CentroidN<T, 3>::compute(begin, end));
       Real radius = 0;
@@ -114,14 +115,14 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
 
       TheaArray<Vector3> vertices;
       TheaArray<long> triangles;
-      GeodesicSphere3::compute(1, vertices, &triangles);
+      GeodesicSphere3::compute(2, vertices, &triangles);
 
       long best_dir = -1;
       double best_error = -1;
       array_size_t first_vertex_of_round = 0;
       for (long round = 0; round < num_rounds; ++round)
       {
-        for (size_t i = first_vertex_of_round; i < vertices.size(); ++i)
+        for (array_size_t i = first_vertex_of_round; i < vertices.size(); ++i)
         {
           Plane3 candidate = Plane3::fromPointAndNormal(centroid, vertices[i]);
           double err = symmetryError(begin, end, candidate, centroid, radius);
@@ -132,6 +133,8 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
             plane = candidate;
           }
         }
+
+        THEA_DEBUG << "GeodesicSphere3: Round " << round << ", best plane = " << plane.toString() << ", error = " << best_error;
 
         // Further localize the search to a smaller set of directions more tightly clustered around the best one
         if (round < num_rounds - 1)
@@ -246,8 +249,6 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
       double sum_weights = total_count[0] + total_count[1];
       dist_error /= sum_weights;
       count_error /= sum_weights;
-
-      THEA_ERROR << "plane = " << plane.toString() << ", dist_error = " << dist_error << ", count_error = " << count_error;
 
       return 0.5f * (dist_error + count_error);
     }
