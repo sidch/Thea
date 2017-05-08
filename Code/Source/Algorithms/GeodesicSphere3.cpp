@@ -132,7 +132,7 @@ GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaAr
   for (array_size_t i = 0; i < 12; ++i)
     vertices[i] = ICO_VERTS[i];
 
-  if (triangles && num_subdivs == 0)
+  if (num_subdivs == 0 && triangles)
   {
     triangles->resize(20 * 3);
     for (array_size_t i = 0; i < 20; ++i)
@@ -145,11 +145,41 @@ GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaAr
 
   if (num_subdivs > 0)
   {
+    if (triangles)
+      triangles->clear();
+
     GeodesicSphere3Internal::MidpointMap midpoints;
     for (array_size_t i = 0; i < 20; ++i)
     {
       GeodesicSphere3Internal::geodesicSphereSubdivide(num_subdivs, ICO_TRIS[i][0], ICO_TRIS[i][1], ICO_TRIS[i][2],
                                                        vertices, triangles, midpoints);
+    }
+  }
+
+  return true;
+}
+
+bool
+GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaArray<long> const & old_triangles,
+                         TheaArray<long> * new_triangles)
+{
+  if (num_subdivs < 0)
+  {
+    THEA_ERROR << "GeodesicSphere3: Number of subdivisions must be non-negative";
+    return false;
+  }
+
+  if (num_subdivs > 0)
+  {
+    if (new_triangles)
+      new_triangles->clear();
+
+    GeodesicSphere3Internal::MidpointMap midpoints;
+    for (array_size_t i = 0; i < old_triangles.size(); i += 3)
+    {
+      GeodesicSphere3Internal::geodesicSphereSubdivide(num_subdivs,
+                                                       old_triangles[i], old_triangles[i + 1], old_triangles[i + 2],
+                                                       vertices, new_triangles, midpoints);
     }
   }
 

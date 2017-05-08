@@ -66,6 +66,21 @@ class THEA_API GeodesicSphere3
      */
     static bool compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaArray<long> * triangles = NULL);
 
+    /**
+     * Recursively subdivides a given set of triangles formed from vertices on the unit sphere, projecting each new vertex to
+     * the surface of the sphere. This function is useful for generating only a part of the full geodesic sphere.
+     *
+     * @param num_subdivs The number of recursive subdivisions. 0 is a no-op.
+     * @param vertices Used to pass the initial set of vertices, and to return the new vertices, pushed onto the end of the
+     *   list.
+     * @param old_triangles The existing set of triangles to subdivide, as triplets of vertex indices.
+     * @param new_triangles If not null, used to return the new faces, as triplets of vertex indices.
+     *
+     * @return True on success, false on error.
+     */
+    static bool compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaArray<long> const & old_triangles,
+                        TheaArray<long> * new_triangles = NULL);
+
 }; // class GeodesicSphere3
 
 } // namespace Algorithms
