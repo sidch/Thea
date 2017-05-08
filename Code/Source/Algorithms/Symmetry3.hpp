@@ -33,7 +33,7 @@
 // CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
 // SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE),
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 //
@@ -43,11 +43,11 @@
 #define __Thea_Algorithms_Symmetry3_hpp__
 
 #include "../Common.hpp"
+#include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
-#include "KDTreeN.hpp"
-#include "MetricL2.hpp"
-#include "PCA_N.hpp"
 #include "PointTraitsN.hpp"
+#include "../Math.hpp"
+#include "../UnorderedSet.hpp"
 #include <boost/utility/enable_if.hpp>
 #include <cmath>
 
@@ -60,38 +60,19 @@ class /* THEA_API */ Symmetry3
 {
   public:
     /**
-     * Find a plane of (global) reflective symmetry of a set of objects. Passing a negative value for any of the numeric
-     * parameters indicates that a default value should be chosen. A kd-tree will be constructed to answer proximity queries on
-     * the set of objects. To use a precomputed query structure instead, use the other form of this function.
+     * Find a plane of (global) reflective symmetry of a set of objects.
      *
      * @param begin The first object.
      * @param end One position beyond the last object.
      * @param plane Used to store the resulting symmetry plane.
      * @param precomputed_centroid The precomputed centroid of the objects. If NULL, the centroid will be computed from the
      *   input data.
-     * @param max_rms_error The maximum allowed error, measured as the root of the average squared distance (RMS) of the
-     *   reflections of the objects in the candidate plane to their respective closest neighbors.
+     *
+     * @return The error, in the range 0 (best) to 1 (worst), of the symmetry relation.
      */
     template <typename InputIterator>
-    static bool findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
-                          Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1);
-
-    /**
-     * Find a plane of (global) reflective symmetry of a set of objects. Passing a negative value for any of the numeric
-     * parameters indicates that a default value should be chosen.
-     *
-     * @param begin The first objects.
-     * @param end One position beyond the last object.
-     * @param plane Used to store the resulting symmetry plane.
-     * @param prox_query_struct A structure that quickly answers proximity queries on the input set.
-     * @param precomputed_centroid The precomputed centroid of the objects. If NULL, the centroid will be computed from the
-     *   input data.
-     * @param max_rms_error The maximum allowed error, measured as the root of the average squared distance (RMS) of the
-     *   reflections of the objects in the candidate plane to their respective closest neighbors.
-     */
-    template <typename InputIterator, typename ProximityQueryStructureT>
-    static bool findPlane(InputIterator begin, InputIterator end, ProximityQueryStructureT const & prox_query_struct,
-                          Plane3 & plane, Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1);
+    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
+                            Vector3 const * precomputed_centroid = NULL);
 
 }; // class Symmetry3
 
@@ -101,19 +82,10 @@ class /* THEA_API */ Symmetry3<T *>
 {
   public:
     template <typename InputIterator>
-    static bool findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
-                          Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1)
+    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 const * precomputed_centroid = NULL)
     {
       return Symmetry3<T>::findPlane(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                     plane, precomputed_centroid, max_rms_error);
-    }
-
-    template <typename InputIterator, typename ProximityQueryStructureT>
-    static bool findPlane(InputIterator begin, InputIterator end, ProximityQueryStructureT const & prox_query_struct,
-                          Plane3 & plane, Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1)
-    {
-      return Symmetry3<T>::findPlane(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                     prox_query_struct, plane, precomputed_centroid, max_rms_error);
+                                     plane, precomputed_centroid);
     }
 
 }; // class Symmetry3<T *>
@@ -124,90 +96,160 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
 {
   public:
     template <typename InputIterator>
-    static bool findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
-                          Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1)
-    {
-      KDTreeN<T, 3> kdtree(begin, end);
-      return findPlane(begin, end, kdtree, plane, precomputed_centroid, max_rms_error);
-    }
-
-    template <typename InputIterator, typename ProximityQueryStructureT>
-    static bool findPlane(InputIterator begin, InputIterator end, ProximityQueryStructureT const & prox_query_struct,
-                          Plane3 & plane, Vector3 const * precomputed_centroid = NULL, double max_rms_error = -1)
+    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 const * precomputed_centroid = NULL,
+                            long num_rounds = -1)
     {
       if (begin == end)  // no points, early exit
         return false;
 
-      // Choose a default RMS error if none was specified.
-      double max_mean_squared_error;
-      if (max_rms_error < 0)
+      if (num_rounds <= 0)
+        num_rounds = 3;
+
+      Vector3 centroid = (precomputed_centroid ? *precomputed_centroid : CentroidN<T, 3>::compute(begin, end));
+      Real radius = 0;
+      for (InputIterator pi = begin; pi != end; ++pi)
+        radius = std::max(radius, (PointTraitsN<T, 3>::getPosition(*pi) - centroid).squaredLength());
+
+      radius = std::sqrt(radius);
+
+      TheaArray<Vector3> vertices;
+      TheaArray<long> triangles;
+      GeodesicSphere3::compute(1, vertices, &triangles);
+
+      long best_dir = -1;
+      double best_error = -1;
+      array_size_t first_vertex_of_round = 0;
+      for (long round = 0; round < num_rounds; ++round)
       {
-        // The threshold should be proportional to the extent of the point set
-        AxisAlignedBox3 aab;
-        long num_points = 0;
-        for (InputIterator pi = begin; pi != end; ++pi, ++num_points)
-          aab.merge(PointTraitsN<T, 3>::getPosition(*pi));
-
-        double scale = num_points > 1000 ? 10.0 / num_points : 0.01;
-        max_mean_squared_error = scale * scale * aab.getExtent().squaredLength();
-      }
-      else
-        max_mean_squared_error = max_rms_error * max_rms_error;
-
-      // Error attributed to an unmatched point
-      double unmatched_error = 100 * max_mean_squared_error;  // allow 10 times the maximum mean separation
-
-      // Compute PCA axes of the point set
-      Real eigenvalues[3];
-      Vector3 eigenvectors[3];
-      Vector3 centroid;
-      PCA_N<T, 3>::compute(begin, end, eigenvalues, eigenvectors, &centroid);
-      if (precomputed_centroid)
-        centroid = *precomputed_centroid;  // override
-
-      double best_error = max_mean_squared_error;
-      bool found = false;
-      for (int i = 0; i < 3; ++i)
-      {
-        Vector3 test_normal = eigenvectors[i].fastUnit();
-        Plane3 test_plane = Plane3::fromPointAndNormal(centroid, test_normal);
-
-        double err = computeMeanSquaredError(test_plane, begin, end, prox_query_struct, unmatched_error);
-        if (err < best_error)
+        for (size_t i = first_vertex_of_round; i < vertices.size(); ++i)
         {
-          plane = test_plane;
-          best_error = err;
-          found = true;
+          Plane3 candidate = Plane3::fromPointAndNormal(centroid, vertices[i]);
+          double err = symmetryError(begin, end, candidate, centroid, radius);
+          if (best_dir < 0 || err < best_error)
+          {
+            best_dir = (long)i;
+            best_error = err;
+            plane = candidate;
+          }
+        }
+
+        // Further localize the search to a smaller set of directions more tightly clustered around the best one
+        if (round < num_rounds - 1)
+        {
+          first_vertex_of_round = vertices.size();
+          TheaArray<long> tris_to_subdivide;
+
+          // Collect triangles incident on the best direction vertex
+          TheaUnorderedSet<long> nbr_verts;
+          for (array_size_t i = 0; i < triangles.size(); i += 3)
+          {
+            if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
+            {
+              tris_to_subdivide.push_back(triangles[i    ]);
+              tris_to_subdivide.push_back(triangles[i + 1]);
+              tris_to_subdivide.push_back(triangles[i + 2]);
+
+              if (triangles[i    ] != best_dir) nbr_verts.insert(triangles[i    ]);
+              if (triangles[i + 1] != best_dir) nbr_verts.insert(triangles[i + 1]);
+              if (triangles[i + 2] != best_dir) nbr_verts.insert(triangles[i + 2]);
+            }
+          }
+
+          // Collect triangles incident on the one-hop neighbor vertices
+          for (array_size_t i = 0; i < triangles.size(); i += 3)
+          {
+            if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
+              continue;  // already added
+
+            if (nbr_verts.find((long)triangles[i    ]) != nbr_verts.end()
+             || nbr_verts.find((long)triangles[i + 1]) != nbr_verts.end()
+             || nbr_verts.find((long)triangles[i + 2]) != nbr_verts.end())
+            {
+              tris_to_subdivide.push_back(triangles[i    ]);
+              tris_to_subdivide.push_back(triangles[i + 1]);
+              tris_to_subdivide.push_back(triangles[i + 2]);
+            }
+          }
+
+          triangles.clear();
+          GeodesicSphere3::compute(1, vertices, tris_to_subdivide, &triangles);
         }
       }
 
-      return found;
+      return best_error;
     }
 
   private:
-    // Compute the mean squared matching error between the reflection of the point set and the unreflected data.
-    template <typename InputIterator, typename ProximityQueryStructureT>
-    static double computeMeanSquaredError(Plane3 const & plane, InputIterator begin, InputIterator end,
-                                          ProximityQueryStructureT const & prox_query_struct, double unmatched_error)
+    /** Measure the quality of a candidate symmetry plane. Returns a number between 0 (best) and 1 (worst). */
+    template <typename InputIterator>
+    static double symmetryError(InputIterator begin, InputIterator end, Plane3 const & plane, Vector3 const & centroid,
+                                Real radius)
     {
-      double sqrt_unmatched_error = std::sqrt(unmatched_error);
-      double total_error = 0;
-      long total_count = 0;
-      Vector3 cp;
-      for (InputIterator pi = begin; pi != end; ++pi, ++total_count)
-      {
-        Vector3 reflected = plane.reflect(PointTraitsN<T, 3>::getPosition(*pi));
+      static size_t const NUM_BINS = 10;
 
-        // Without the ".template", C++ thinks the '<' is "less-than". See Vandevoorde and Josuttis, "C++ Templates: The
-        // Complete Guide", p.44.
-        long index = prox_query_struct.template closestElement<MetricL2>(reflected, sqrt_unmatched_error, NULL, &cp);
-        if (index >= 0)
-          total_error += (reflected - cp).squaredLength();
-        else
-          total_error += unmatched_error;
+      double bins[2][NUM_BINS][NUM_BINS];  // 0: negative side, 1: positive side
+      long count[2][NUM_BINS][NUM_BINS];
+
+      for (size_t i = 0; i < NUM_BINS; ++i)
+        for (size_t j = 0; j < NUM_BINS; ++j)
+        {
+          bins[0][i][j] = bins[1][i][j] = 0.0;
+          count[0][i][j] = count[1][i][j] = 0;
+        }
+
+      Vector3 nrm = plane.getNormal();
+      Vector3 u, v; nrm.createOrthonormalBasis(u, v);
+
+      long total_count[2] = { 0, 0 };
+      for (InputIterator pi = begin; pi != end; ++pi)
+      {
+        Vector3 p = PointTraitsN<T, 3>::getPosition(*pi) - centroid;
+        Real pu = 0.5f * (p.dot(u) / radius + 1);
+        Real pv = 0.5f * (p.dot(v) / radius + 1);
+
+        int bin_i = Math::clamp((int)(NUM_BINS * pu), 0, NUM_BINS - 1);
+        int bin_j = Math::clamp((int)(NUM_BINS * pv), 0, NUM_BINS - 1);
+
+        Real pw = p.dot(nrm);
+        if (pw >= 0)
+        {
+          bins[1][bin_i][bin_j] += pw;
+          count[1][bin_i][bin_j]++;
+          total_count[1]++;
+        }
+
+        if (pw <= 0)  // double-count points exactly on the plane, if any
+        {
+          bins[0][bin_i][bin_j] += std::fabs(pw);
+          count[0][bin_i][bin_j]++;
+          total_count[0]++;
+        }
       }
 
-      return total_count <= 0 ? 0 : total_error / total_count;
+      double dist_error = 0, count_error = 0;
+      for (size_t i = 0; i < NUM_BINS; ++i)
+        for (size_t j = 0; j < NUM_BINS; ++j)
+        {
+          long c0 = count[0][i][j];
+          long c1 = count[1][i][j];
+          if (c0 == 0 && c1 == 0)
+            continue;
+
+          double avg0 = c0 > 0 ? bins[0][i][j] / c0 : 0.0;
+          double avg1 = c1 > 0 ? bins[1][i][j] / c1 : 0.0;
+
+          double weight = c0 + c1;
+          dist_error += (std::fabs(avg0 - avg1) / radius) * weight;
+          count_error += (c0 < c1 ? 1.0 - c0 / (double)c1 : 1.0 - c1 / (double)c0) * weight;
+        }
+
+      double sum_weights = total_count[0] + total_count[1];
+      dist_error /= sum_weights;
+      count_error /= sum_weights;
+
+      THEA_ERROR << "plane = " << plane.toString() << ", dist_error = " << dist_error << ", count_error = " << count_error;
+
+      return 0.5f * (dist_error + count_error);
     }
 
 }; // class Symmetry3<Point3>
