@@ -130,6 +130,7 @@ INCLUDE_DIRECTORIES(BEFORE
 # Source file lists
 FILE(GLOB TheaSources
      ${SourceRoot}/*.cpp
+     ${SourceRoot}/Triangle/*.c
      ${SourceRoot}/Algorithms/*.cpp
      ${SourceRoot}/Algorithms/ImageFeatures/*.cpp
      ${SourceRoot}/Algorithms/MeshFeatures/*.cpp
@@ -139,8 +140,6 @@ FILE(GLOB TheaSources
      ${SourceRoot}/Algorithms/miniball/*.cpp
      ${SourceRoot}/Algorithms/NNLS/*.c
      ${SourceRoot}/Algorithms/StanHull/*.cpp
-     ${SourceRoot}/Algorithms/Triangle/*.c
-     ${SourceRoot}/Database/*.cpp
      ${SourceRoot}/Graphics/*.cpp)
 
 # Libraries to link to
