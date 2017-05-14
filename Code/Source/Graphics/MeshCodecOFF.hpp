@@ -254,7 +254,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -361,7 +361,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);

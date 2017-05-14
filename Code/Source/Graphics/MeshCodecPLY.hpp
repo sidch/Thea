@@ -450,7 +450,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
     {
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -604,7 +604,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     void deserializeBinary(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
     {
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh0"));
+      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);

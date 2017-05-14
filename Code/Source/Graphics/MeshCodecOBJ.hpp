@@ -239,7 +239,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       double x, y, z;
       long index;
 
-      std::string group_name = read_opts.flatten ? "FlattenedMesh" : "AnonymousMesh0";
+      std::string group_name = std::string(mesh_group.getName()) + (read_opts.flatten ? "/FlattenedMesh" : "/AnonymousMesh0");
       int anon_index = 0;
 
       MeshPtr mesh;
@@ -432,7 +432,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           // Read the new group name
           group_name = trimWhitespace(line.substr(1));
           if (group_name.empty())
-            group_name = format("AnonymousMesh%d", ++anon_index);
+            group_name = format("%s/AnonymousMesh%d", mesh_group.getName(), ++anon_index);
 
           // Create a new mesh and a builder for it
           mesh = MeshPtr(new Mesh(group_name));

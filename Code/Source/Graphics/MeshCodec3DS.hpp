@@ -198,7 +198,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
       if (read_opts.flatten)
       {
-        MeshPtr mesh(new Mesh("FlattenedMesh"));
+        MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/FlattenedMesh"));
         Builder flat_builder(mesh);
         flat_builder.begin();
 
