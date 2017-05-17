@@ -54,7 +54,7 @@
 #define __Thea_Graphics_TextureFormat_hpp__
 
 #include "../Common.hpp"
-#include "../Image.hpp"
+#include "../AbstractImage.hpp"
 
 namespace Thea {
 namespace Graphics {
