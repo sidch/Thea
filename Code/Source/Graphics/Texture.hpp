@@ -43,8 +43,8 @@
 #define __Thea_Graphics_Texture_hpp__
 
 #include "../Common.hpp"
+#include "../AbstractImage.hpp"
 #include "../NamedObject.hpp"
-#include "../Image.hpp"
 #include "TextureFormat.hpp"
 
 namespace Thea {

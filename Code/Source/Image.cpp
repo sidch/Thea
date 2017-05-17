@@ -478,8 +478,11 @@ Image::clear()
 }
 
 void
-Image::resize(Type type_, int width_, int height_)
+Image::resize(Type type_, int width_, int height_, int depth_)
 {
+  if (depth_ != 1)
+    throw Error("2D image must have depth 1");
+
   if (type_ == Type::UNKNOWN || width_ <= 0 || height_ <= 0)
     throw Error("Cannot resize image to unknown type or non-positive size (use clear() function to destroy data)");
 
@@ -560,15 +563,15 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 }
 
 void const *
-Image::getScanLine(int row) const
+Image::getScanLine(int row, int z) const
 {
-  return isValid() ? fip_img->getScanLine(row) : NULL;
+  return z == 0 && isValid() ? fip_img->getScanLine(row) : NULL;
 }
 
 void *
-Image::getScanLine(int row)
+Image::getScanLine(int row, int z)
 {
-  return isValid() ? fip_img->getScanLine(row) : NULL;
+  return z == 0 && isValid()? fip_img->getScanLine(row) : NULL;
 }
 
 int

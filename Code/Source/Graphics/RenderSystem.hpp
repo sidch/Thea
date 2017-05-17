@@ -43,7 +43,7 @@
 #define __Thea_Graphics_RenderSystem_hpp__
 
 #include "../Common.hpp"
-#include "../Image.hpp"
+#include "../AbstractImage.hpp"
 #include "../Colors.hpp"
 #include "../Map.hpp"
 #include "../NamedObject.hpp"
