@@ -64,6 +64,7 @@ class /* THEA_API */ ImageMatrix : public AddressableMatrix<T>, public Resizable
     ImageMatrix(Image * image_) : image(image_)
     {
       alwaysAssertM(image, "ImageMatrix: Cannot initialize from a null image");
+      alwaysAssertM(image->getDepth() == 1, "ImageMatrix: The image must be 2D");
       alwaysAssertM(image->hasByteAlignedPixels(), "ImageMatrix: The image must have byte-aligned pixels");
       alwaysAssertM(image->getBitsPerPixel() / CHAR_BIT == sizeof(T),
                     "ImageMatrix: The number of bytes per pixel does not match the size of the matrix data type");
