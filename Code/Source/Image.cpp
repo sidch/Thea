@@ -50,6 +50,7 @@
 //============================================================================
 
 #include "Image.hpp"
+#include "Algorithms/FastCopy.hpp"
 #include "Array.hpp"
 #include "FilePath.hpp"
 #include "UnorderedMap.hpp"
@@ -154,6 +155,15 @@ typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
   return Image::Type::UNKNOWN;
 }
 
+// Returns bytes consumed by an aligned row
+int
+scanWidth(int width, int bpp, int alignment)
+{
+  int width_bits = width * bpp;
+  int row_bytes = width_bits / 8 + (width_bits % 8 ? 0 : 1);
+  return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
+}
+
 static ImageCodec const *
 codecFromPath(std::string const & path)
 {
@@ -163,6 +173,7 @@ codecFromPath(std::string const & path)
   static CodecMap codec_map;
   if (codec_map.empty())  // only on the first call
   {
+    // 2D formats
     codec_map["BMP"  ] = ICPtr(new CodecBMP());
     codec_map["CUT"  ] = ICPtr(new CodecCUT());
     codec_map["DDS"  ] = ICPtr(new CodecDDS());
@@ -202,6 +213,9 @@ codecFromPath(std::string const & path)
     codec_map["WBMP" ] = ICPtr(new CodecWBMP());
     codec_map["XBM"  ] = ICPtr(new CodecXBM());
     codec_map["XPM"  ] = ICPtr(new CodecXPM());
+
+    // 3D formats
+    codec_map["3BM"  ] = ICPtr(new Codec3BM());
   }
 
   CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::extension(path)));
@@ -211,7 +225,23 @@ codecFromPath(std::string const & path)
     return existing->second.get();
 }
 
+// Currently only detects 3D formats, the rest are handled by FreeImage
+ImageCodec const *
+codecFromMagic(int64 num_bytes, uint8 const * buf)
+{
+  static Codec3BM const CODEC_3BM;
+
+  if (num_bytes >= 3 && buf[0] == (uint8)'3' && buf[1] == (uint8)'B' && buf[2] == (uint8)'M' && buf[3] == (uint8)'0')
+    return &CODEC_3BM;
+
+  return NULL;
+}
+
 } // namespace ImageInternal
+
+//=============================================================================================================================
+// 2D formats
+//=============================================================================================================================
 
 #define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
 long                                                                                                                          \
@@ -338,6 +368,233 @@ THEA_DEF_DESERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
 
+//=============================================================================================================================
+// 3D formats
+//=============================================================================================================================
+
+long
+Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const
+{
+  if (!image.isValid())
+    throw Error(std::string(getName()) + ": Cannot serialize an invalid image");
+
+  Image::Type type = image.getType();
+  int width   =  image.getWidth();
+  int height  =  image.getHeight();
+  int depth   =  image.getDepth();
+
+  if (type != Image::Type::LUMINANCE_8U
+   && type != Image::Type::RGB_8U
+   && type != Image::Type::RGBA_8U)
+    throw Error(std::string(getName()) + ": Can only serialize 8-bit luminance, RGB or RGBA images");
+
+  output.setEndianness(Endianness::LITTLE);
+
+  int bpp = image.getBitsPerPixel();
+  int stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+
+  static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
+  static uint64 const INFO_HEADER_SIZE = 72;
+  uint64 data_size = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
+  uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_size;
+
+  if (prefix_info)
+    output.writeUInt64(size_in_bytes);
+
+  // Write file header (32 bytes):
+  //   4 bytes: Magic string "3BM\0"
+  //   4 bytes: Version
+  //   8 bytes: Size of the whole file in bytes
+  //   8 bytes: Reserved
+  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
+
+  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'3', (uint8)'0' };
+  output.writeBytes(4, MAGIC);
+  output.writeUInt32(0x0001);
+  output.writeUInt64(size_in_bytes);
+  output.writeUInt64(0);
+  output.writeUInt64(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
+
+  // Write info header (72 bytes):
+  //   8 bytes: Size of this header (72 bytes)
+  //   8 bytes: Width of the bitmap in voxels
+  //   8 bytes: Height of the bitmap in voxels
+  //   8 bytes: Depth of the bitmap in voxels
+  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
+  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
+  //   8 bytes: Size of raw image data
+  //   8 bytes: Width resolution in voxels/meter
+  //   8 bytes: Height resolution in voxels/meter
+  //   8 bytes: Depth resolution in voxels/meter
+
+  output.writeUInt64(INFO_HEADER_SIZE);
+  output.writeUInt64((uint64)width);
+  output.writeUInt64((uint64)height);
+  output.writeUInt64((uint64)depth);
+  output.writeUInt32((uint32)bpp);
+  output.writeUInt32(0);
+  output.writeUInt64(data_size);
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+
+  // Write image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
+  if (width > 0 && height > 0 && depth > 0 && bpp > 0)
+  {
+    int bytes_pp = bpp / 8;
+    TheaArray<uint8> row_buf((array_size_t)stream_scan_width, 0);
+    for (int i = 0; i < depth; ++i)
+      for (int j = 0; j < height; ++j)
+      {
+        uint8 const * in_pixel = (uint8 const *)image.getScanLine(j, i);
+        uint8 * out_pixel = &row_buf[0];
+
+        switch (bytes_pp)
+        {
+          case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
+          case 3:
+          {
+            for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[0] = in_pixel[Image::Channel::BLUE ];
+              out_pixel[1] = in_pixel[Image::Channel::GREEN];
+              out_pixel[2] = in_pixel[Image::Channel::RED  ];
+            }
+            break;
+          }
+          default: // 4
+          {
+            for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[0] = in_pixel[Image::Channel::BLUE ];
+              out_pixel[1] = in_pixel[Image::Channel::GREEN];
+              out_pixel[2] = in_pixel[Image::Channel::RED  ];
+              out_pixel[3] = in_pixel[Image::Channel::ALPHA];
+            }
+            break;
+          }
+        }
+
+        output.writeBytes((int64)stream_scan_width, &row_buf[0]);
+      }
+  }
+
+  return (long)(prefix_info ? size_in_bytes + 4 : size_in_bytes);
+}
+
+void
+Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const
+{
+  // Get the size of the image block in bytes
+  input.setEndianness(Endianness::LITTLE);
+  uint64 prefixed_size = read_prefixed_info ? input.readUInt64() : 0 /* we'll fix this below */;
+
+  int64 start_position = input.getPosition();
+
+  // Read file header (32 bytes):
+  //   4 bytes: Magic string "3BM\0"
+  //   4 bytes: Version
+  //   8 bytes: Size of the whole file in bytes
+  //   8 bytes: Reserved
+  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
+
+  uint8 magic[4];
+  input.readBytes(4, &magic);
+  if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'0')
+    throw Error(std::string(getName()) + ": Image is not in 3BM format");
+
+  input.skip(4);
+  uint64 size = input.readUInt64();
+  if (prefixed_size > 0 && size != prefixed_size)
+    throw Error(std::string(getName()) + ": Prefixed size does not match image size from header");
+
+  input.skip(8);
+  uint64 bitmap_offset = input.readUInt64();
+
+  // Read info header (72 bytes):
+  //   8 bytes: Size of this header (72 bytes)
+  //   8 bytes: Width of the bitmap in voxels
+  //   8 bytes: Height of the bitmap in voxels
+  //   8 bytes: Depth of the bitmap in voxels
+  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
+  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
+  //   8 bytes: Size of raw image data
+  //   8 bytes: Width resolution in voxels/meter
+  //   8 bytes: Height resolution in voxels/meter
+  //   8 bytes: Depth resolution in voxels/meter
+
+  input.skip(8);
+  int width   =  (int)input.readUInt64();
+  int height  =  (int)input.readUInt64();
+  int depth   =  (int)input.readUInt64();
+
+  int bpp = (int)input.readUInt32();
+  if (bpp != 8 && bpp != 24 && bpp != 32)
+    throw Error(std::string(getName()) + ": Only 8, 24 and 32-bit bitmaps currently supported");
+
+  uint32 compression = input.readUInt32();
+  if (compression != 0)
+    throw Error(std::string(getName()) + ": Unsupported compression method");
+
+  int stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  uint64 data_size = input.readUInt64();
+  if (data_size != (uint64)stream_scan_width * (uint64)height * (uint64)depth)
+    throw Error(std::string(getName()) + ": Pixel data block size does not match image dimensions");
+
+  // Read image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
+  input.setPosition(start_position + (int64)bitmap_offset);
+
+  Image::Type type = Image::Type::UNKNOWN;
+  switch (bpp)
+  {
+    case 8   :  type = Image::Type::LUMINANCE_8U; break;
+    case 24  :  type = Image::Type::RGB_8U; break;
+    case 32  :  type = Image::Type::RGBA_8U; break;
+    default  :  throw Error(format("%s: Bit depth %d not supported", getName(), bpp));
+  }
+
+  image.resize(type, width, height, depth);
+  if (width <= 0 || height <= 0 || depth <= 0 || bpp <= 0)
+    return;
+
+  int bytes_pp = bpp / 8;
+  TheaArray<uint8> row_buf((array_size_t)stream_scan_width);
+  for (int i = 0; i < depth; ++i)
+    for (int j = 0; j < height; ++j)
+    {
+      input.readBytes(stream_scan_width, &row_buf[0]);
+
+      uint8 const * in_pixel = &row_buf[0];
+      uint8 * out_pixel = (uint8 *)image.getScanLine(j, i);
+
+      switch (bytes_pp)
+      {
+        case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
+        case 3:
+        {
+          for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          {
+            out_pixel[Image::Channel::RED  ] = in_pixel[2];
+            out_pixel[Image::Channel::GREEN] = in_pixel[1];
+            out_pixel[Image::Channel::BLUE ] = in_pixel[0];
+          }
+          break;
+        }
+        default: // 4
+        {
+          for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          {
+            out_pixel[Image::Channel::RED  ] = in_pixel[2];
+            out_pixel[Image::Channel::GREEN] = in_pixel[1];
+            out_pixel[Image::Channel::BLUE ] = in_pixel[0];
+            out_pixel[Image::Channel::ALPHA] = in_pixel[3];
+          }
+          break;
+        }
+      }
+    }
+}
+
 int
 Image::Type::numChannels() const
 {
@@ -413,18 +670,23 @@ Image::Type::hasByteAlignedChannels() const
 }
 
 Image::Image()
-: fip_img(new fipImage), type(Type::UNKNOWN)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(NULL)
 {
   cacheTypeProperties();
 }
 
-Image::Image(Type type_, int width, int height)
-: fip_img(NULL), type(type_)
+Image::Image(Type type_, int width_, int height_, int depth_)
+: type(type_), width(width_), height(height_), depth(depth_), fip_img(NULL)
 {
-  if (type == Type::UNKNOWN || width <= 0 || height <= 0)
+  if (type == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
     throw Error("Cannot initialize image of unknown type or non-positive size");
 
-  fip_img = new fipImage(ImageInternal::typeToFreeImageType(type), width, height, ImageInternal::typeToFreeImageBPP(type));
+  if (depth_ == 1)
+    fip_img = new fipImage(ImageInternal::typeToFreeImageType(type_), width_, height_,
+                           ImageInternal::typeToFreeImageBPP(type_));
+  else
+    resize(type_, width_, height_, depth_);
+
   if (!isValid())
     throw Error("Could not create an image of the specified type and dimensions");
 
@@ -432,28 +694,52 @@ Image::Image(Type type_, int width, int height)
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec)
-: fip_img(new fipImage), type(Type::UNKNOWN)
+: type(Type::UNKNOWN), fip_img(NULL)
 {
   deserialize(input, codec);
 }
 
-Image::Image(std::string const & filename, Codec const & codec)
-: fip_img(new fipImage), type(Type::UNKNOWN)
+Image::Image(std::string const & path, Codec const & codec)
+: type(Type::UNKNOWN), fip_img(NULL)
 {
-  load(filename, codec);
+  load(path, codec);
 }
 
 Image::Image(Image const & src)
-: fip_img(new fipImage(*src.fip_img)), type(src.type)
+: type(Type::UNKNOWN), fip_img(NULL)
 {
+  *this = src;
   cacheTypeProperties();
 }
 
 Image &
 Image::operator=(Image const & src)
 {
-  *fip_img = *src.fip_img;
   type = src.type;
+  width = src.width;
+  height = src.height;
+  depth = src.depth;
+
+  if (src.depth == 1)
+  {
+    if (src.fip_img)
+    {
+      if (!fip_img)
+        fip_img = new fipImage(*src.fip_img);
+      else
+        *fip_img = *src.fip_img;
+    }
+    else
+      fip_img = NULL;
+
+    data.clear();
+  }
+  else
+  {
+    data = src.data;
+    delete fip_img; fip_img = NULL;
+  }
+
   cacheTypeProperties();
 
   return *this;
@@ -467,59 +753,74 @@ Image::~Image()
 bool
 Image::isValid() const
 {
-  return fip_img->isValid() != 0;
+  return type != Type::UNKNOWN && width >= 0 && height >= 0 && depth >= 0
+      && (depth != 1 || (fip_img && fip_img->isValid() != 0));
 }
 
 void
 Image::clear()
 {
-  fip_img->clear();
   type = Type::UNKNOWN;
+  width = height = depth = 0;
+
+  if (fip_img)
+  {
+    fip_img->clear();
+    fip_img = NULL;
+  }
+
+  data.clear();
 }
 
 void
 Image::resize(Type type_, int width_, int height_, int depth_)
 {
-  if (depth_ != 1)
-    throw Error("2D image must have depth 1");
-
-  if (type_ == Type::UNKNOWN || width_ <= 0 || height_ <= 0)
+  if (type_ == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
     throw Error("Cannot resize image to unknown type or non-positive size (use clear() function to destroy data)");
 
-  if (type_ == type && width_ == getWidth() && height_ == getHeight())
+  if (type_ == type && width_ == getWidth() && height_ == getHeight() && depth_ == getDepth())
     return;
 
-  fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width_, height_, ImageInternal::typeToFreeImageBPP(type_));
-  if (!isValid())
-    throw Error("Could not resize the image to the specified type and dimensions");
+  if (depth_ == 1)
+  {
+    if (!fip_img)
+      fip_img = new fipImage;
+
+    fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width_, height_, ImageInternal::typeToFreeImageBPP(type_));
+    if (!isValid())
+      throw Error("Could not resize the image to the specified type and dimensions");
+  }
+  else
+  {
+    if (type_.getBitsPerPixel() % 8 != 0)
+      throw Error("Non-2D image must have byte-aligned pixels");
+
+    int scan_width = ImageInternal::scanWidth(width_, type_.getBitsPerPixel(), (int)ROW_ALIGNMENT);
+    int64 buf_size = scan_width * height_ * depth_;
+    data.resize((array_size_t)buf_size);
+  }
 
   type = type_;
+  width = width_;
+  height = height_;
+  depth = depth_;
 
   cacheTypeProperties();
-}
-
-int
-Image::getWidth() const
-{
-  return isValid() ? fip_img->getWidth() : 0;
-}
-
-int
-Image::getHeight() const
-{
-  return isValid() ? fip_img->getHeight() : 0;
 }
 
 void const *
 Image::getData() const
 {
-  return isValid() ? fip_img->accessPixels() : NULL;
+  return const_cast<Image *>(this)->getData();
 }
 
 void *
 Image::getData()
 {
-  return isValid() ? fip_img->accessPixels() : NULL;
+  if (depth == 1)
+    return isValid() ? fip_img->accessPixels() : NULL;
+  else
+    return data.empty() ? NULL : &data[0];
 }
 
 double
@@ -565,25 +866,39 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 void const *
 Image::getScanLine(int row, int z) const
 {
-  return z == 0 && isValid() ? fip_img->getScanLine(row) : NULL;
+  return const_cast<Image *>(this)->getScanLine(row, z);
 }
 
 void *
 Image::getScanLine(int row, int z)
 {
-  return z == 0 && isValid()? fip_img->getScanLine(row) : NULL;
+  alwaysAssertM(z >= 0 && z < depth, "Image: Z value out of bounds");
+
+  if (!isValid())
+    return NULL;
+
+  if (depth == 1)
+    return fip_img->getScanLine(row);
+  else
+  {
+    int scan_width = ImageInternal::scanWidth(width, type.getBitsPerPixel(), (int)ROW_ALIGNMENT);
+    return &data[(z * scan_width + row) * height];
+  }
 }
 
 int
 Image::getScanWidth() const
 {
-  return isValid() ? fip_img->getScanWidth() : 0;
+  if (depth == 1)
+    return isValid() ? fip_img->getScanWidth() : 0;
+  else
+    return width + ((int)ROW_ALIGNMENT - (width % (int)ROW_ALIGNMENT)) % (int)ROW_ALIGNMENT;
 }
 
 int
 Image::getRowAlignment() const
 {
-  return 4;  // the current FreeImage default
+  return depth == 1 ? 4 : ROW_ALIGNMENT;  // the current FreeImage default is 4
 }
 
 namespace ImageInternal {
@@ -606,8 +921,14 @@ filterToFreeImageFilter(Image::Filter filter)
 } // namespace ImageInternal
 
 bool
-Image::rescale(int new_width, int new_height, Filter filter)
+Image::rescale(int new_width, int new_height, int new_depth, Filter filter)
 {
+  if (depth != 1 || new_depth != 1)
+  {
+    THEA_ERROR << "Image: Rescaling non-2D images currently not supported";
+    return false;
+  }
+
   if (!isValid())
   {
     THEA_ERROR << "Image: Attempting to rescale an invalid image";
@@ -656,7 +977,7 @@ Image::deserialize(BinaryInputStream & input, Codec const & codec)
 }
 
 void
-Image::save(std::string const & filename, Codec const & codec) const
+Image::save(std::string const & path, Codec const & codec) const
 {
   if (!isValid())
     throw Error("Can't save an invalid image");
@@ -664,9 +985,9 @@ Image::save(std::string const & filename, Codec const & codec) const
   ImageCodec const * c = NULL;
   if (codec == Codec_AUTO())
   {
-    c = ImageInternal::codecFromPath(filename);
+    c = ImageInternal::codecFromPath(path);
     if (!c)
-      throw Error("Could not detect codec from filename");
+      throw Error("Could not detect codec from path");
   }
 
   if (!c)
@@ -676,7 +997,7 @@ Image::save(std::string const & filename, Codec const & codec) const
       throw Error("Codec specified for saving image is not an image codec.");
   }
 
-  BinaryOutputStream out(filename, Endianness::LITTLE);
+  BinaryOutputStream out(path, Endianness::LITTLE);
   if (!out.ok())
     throw Error("Could not open image file for writing");
 
@@ -688,9 +1009,9 @@ Image::save(std::string const & filename, Codec const & codec) const
 }
 
 void
-Image::load(std::string const & filename, Codec const & codec)
+Image::load(std::string const & path, Codec const & codec)
 {
-  BinaryInputStream in(filename, Endianness::LITTLE);
+  BinaryInputStream in(path, Endianness::LITTLE);
   int64 file_size = in.size();
   if (file_size <= 0)
     throw Error("Image file does not exist or is empty");
@@ -723,16 +1044,29 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
   TheaArray<uint8> img_block((array_size_t)size);
   input.readBytes((int64)size, &img_block[0]);
 
-  // Decode the image
-  fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);
-  if (!fip_img->loadFromMemory(mem))
-    throw Error("Could not load image from memory stream");
-
-  type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());
-  if (type == Type::UNKNOWN)
+  ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, (size > 0 ? &img_block[0] : NULL));
+  if (detected_codec)
+    detected_codec->deserializeImage(*this, input, false);
+  else
   {
-    clear();
-    throw Error("Image was successfully decoded but it has a format for which this library does not provide an interface");
+    // Decode via FreeImage
+    if (!fip_img)
+      fip_img = new fipImage;
+
+    fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);
+    if (!fip_img->loadFromMemory(mem))
+      throw Error("Could not load image from memory stream");
+
+    type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());
+    if (type == Type::UNKNOWN)
+    {
+      clear();
+      throw Error("Image was successfully decoded but it has a format for which this library does not provide an interface");
+    }
+
+    width = fip_img->getWidth();
+    height = fip_img->getHeight();
+    depth = 1;
   }
 
   cacheTypeProperties();

@@ -44,6 +44,8 @@
 
 #include "Common.hpp"
 #include "AbstractImage.hpp"
+#include "AlignedAllocator.hpp"
+#include "Array.hpp"
 #include "IOStream.hpp"
 #include "Serializable.hpp"
 
@@ -62,7 +64,7 @@ class THEA_API Image : public AbstractImage, public Serializable
     Image();
 
     /** Construct an uninitialized image of the specified type and pixel dimensions, which must have valid non-zero values. */
-    Image(Type type_, int width, int height);
+    Image(Type type_, int width_, int height_, int depth_ = 1);
 
     /**
      * Construct an image by deserializing it from an input stream.
@@ -76,7 +78,7 @@ class THEA_API Image : public AbstractImage, public Serializable
      *
      * @see load()
      */
-    Image(std::string const & filename, Codec const & codec = Codec_AUTO());
+    Image(std::string const & path, Codec const & codec = Codec_AUTO());
 
     /* Copy constructor. */
     Image(Image const & src);
@@ -89,10 +91,10 @@ class THEA_API Image : public AbstractImage, public Serializable
 
     bool isValid() const;
     void clear();
-    void resize(Type type, int width, int height, int depth = 1);
-    int getWidth() const;
-    int getHeight() const;
-    int getDepth() const { return 1; }
+    void resize(Type type, int width_, int height_, int depth = 1);
+    int getWidth() const { return width; }
+    int getHeight() const { return height; }
+    int getDepth() const { return depth; }
     Type getType() const { return type; }
 
     /**
@@ -191,7 +193,7 @@ class THEA_API Image : public AbstractImage, public Serializable
     bool convert(Type dst_type, Image & dst) const;
 
     /** Rescale the image to a new width and height. */
-    bool rescale(int new_width, int new_height, Filter filter = Filter::AUTO);
+    bool rescale(int new_width, int new_height, int new_depth = 1, Filter filter = Filter::AUTO);
 
     /**
      * {@inheritDoc}
@@ -211,13 +213,13 @@ class THEA_API Image : public AbstractImage, public Serializable
      * Save the image to an image file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will
      * be thrown if the image cannot be saved.
      */
-    void save(std::string const & filename, Codec const & codec = Codec_AUTO()) const;
+    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const;
 
     /**
      * Load the image from an image file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception
      * will be thrown if the image cannot be loaded.
      */
-    void load(std::string const & filename, Codec const & codec = Codec_AUTO());
+    void load(std::string const & path, Codec const & codec = Codec_AUTO());
 
     /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
     fipImage const * _getFreeImage() const { return fip_img; }
@@ -235,8 +237,18 @@ class THEA_API Image : public AbstractImage, public Serializable
     /** Cache properties related to the image type. */
     void cacheTypeProperties();
 
-    fipImage * fip_img;
+    // Scanline alignment when allocating custom arrays
+    static size_t const ROW_ALIGNMENT = 16;  // SSE requires 16 byte alignment
+
+    // Image parameters
     Type type;
+    int width;
+    int height;
+    int depth;
+
+    // Image data
+    fipImage * fip_img;
+    TheaArray< uint8, AlignedAllocator<uint8, ROW_ALIGNMENT> > data;  // pixel buffer when fipImage won't work, e.g. 3D images
 
     // Cached type properties for fast access
     int   num_channels;
@@ -283,6 +295,8 @@ class THEA_API ImageCodec : public Codec
   };
 
 // TODO: Add options to all the ones that support them
+
+// 2D formats
 THEA_DEF_IMAGE_CODEC(CodecBMP,     "Windows or OS/2 Bitmap File (*.BMP)")
 THEA_DEF_IMAGE_CODEC(CodecCUT,     "Dr. Halo (*.CUT)")
 THEA_DEF_IMAGE_CODEC(CodecDDS,     "DirectDraw Surface (*.DDS)")
@@ -315,6 +329,9 @@ THEA_DEF_IMAGE_CODEC(CodecTIFF,    "Tagged Image File Format (*.TIF, *.TIFF)")
 THEA_DEF_IMAGE_CODEC(CodecWBMP,    "Wireless Bitmap (*.WBMP)")
 THEA_DEF_IMAGE_CODEC(CodecXBM,     "X11 Bitmap Format (*.XBM)")
 THEA_DEF_IMAGE_CODEC(CodecXPM,     "X11 Pixmap Format (*.XPM)")
+
+// 3D formats
+THEA_DEF_IMAGE_CODEC(Codec3BM,     "3D Bitmap (*.3BM)")
 
 /** JPEG image codec. */
 class THEA_API CodecJPEG : public ImageCodec

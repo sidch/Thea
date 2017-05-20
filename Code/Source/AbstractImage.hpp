@@ -54,6 +54,8 @@ namespace Thea {
 class THEA_API AbstractImage
 {
   public:
+    THEA_DEF_POINTER_TYPES(AbstractImage, shared_ptr, weak_ptr)
+
     /**
      * Indices for the color channels in a single pixel. E.g. for a 24-bit RGB bitmap (8 bits per channel), the individual
      * components for the pixel at address <code>unsigned char * p</code> may be accessed as <code>p[Channel::RED]</code>,
