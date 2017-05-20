@@ -16,6 +16,7 @@
 #include "../../CoordinateFrame3.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
+#include "../../Image.hpp"
 #include "../../Math.hpp"
 #include "../../Matrix4.hpp"
 #include "../../Memory.hpp"
@@ -82,6 +83,8 @@ class ShapeRendererImpl
     static Shader * point_shader;
     static Shader * mesh_shader;
     static Shader * face_id_shader;
+    static Texture * matcap_tex;
+    static Texture * tex3d;
 
     TheaArray<string> model_paths;
     TheaArray<Matrix4> transforms;
@@ -99,8 +102,11 @@ class ShapeRendererImpl
     TheaArray<int> labels;
     string features_path;
     bool accentuate_features;
+    bool color_by_tex3d;
+    string tex3d_path;
     string selected_mesh;
     Vector4 material;
+    string matcap_path;
     ColorRGBA primary_color;
     ColorRGBA background_color;
     int antialiasing_level;
@@ -168,6 +174,8 @@ RenderSystem * ShapeRendererImpl::render_system = NULL;
 Shader * ShapeRendererImpl::point_shader = NULL;
 Shader * ShapeRendererImpl::mesh_shader = NULL;
 Shader * ShapeRendererImpl::face_id_shader = NULL;
+Texture * ShapeRendererImpl::matcap_tex = NULL;
+Texture * ShapeRendererImpl::tex3d = NULL;
 
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
@@ -210,8 +218,11 @@ ShapeRendererImpl::resetArgs()
   labels.clear();
   features_path = "";
   accentuate_features = false;
+  color_by_tex3d = false;
+  tex3d_path = "";
   selected_mesh = "";
   material = Vector4(0.3f, 0.7f, 0.2f, 25);
+  matcap_path = "";
   primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
   background_color = ColorRGBA(1, 1, 1, 1);
   antialiasing_level = 1;
@@ -346,6 +357,28 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
+  matcap_tex = NULL;
+  if (!matcap_path.empty())
+  {
+    try
+    {
+      Image matcap_img(matcap_path);
+      matcap_tex = render_system->createTexture("Matcap", matcap_img);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create matcap texture")
+  }
+
+  tex3d = NULL;
+  if (!tex3d_path.empty())
+  {
+    try
+    {
+      Image tex3d_img(tex3d_path);
+      tex3d = render_system->createTexture("Texture3D", tex3d_img);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 3D texture")
+  }
+
   typedef Thea::shared_ptr<Model> ModelPtr;
   TheaArray<ModelPtr> overlay_models;
   for (array_size_t i = 1; i < model_paths.size(); ++i)
@@ -375,6 +408,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         render_system->pushDepthFlags();
         render_system->pushColorFlags();
         render_system->pushShapeFlags();
+        render_system->pushTextures();
         render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
         render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
 
@@ -409,6 +443,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
         render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
         render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+        render_system->popTextures();
         render_system->popShapeFlags();
         render_system->popColorFlags();
         render_system->popDepthFlags();
@@ -417,7 +452,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         Image image(Image::Type::RGB_8U, buffer_width, buffer_height);
         color_tex->getImage(image);
 
-        if (antialiasing_level > 1 && !image.rescale(out_width, out_height, Image::Filter::BICUBIC))
+        if (antialiasing_level > 1 && !image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
         {
           THEA_ERROR << "Could not rescale image to output dimensions";
           return -1;
@@ -438,7 +473,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           Image depth_image(Image::Type::LUMINANCE_16U, buffer_width, buffer_height);
           depth_tex->getImage(depth_image);
 
-          if (antialiasing_level > 1 && !depth_image.rescale(out_width, out_height, Image::Filter::BICUBIC))
+          if (antialiasing_level > 1 && !depth_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
           {
             THEA_ERROR << "Could not rescale depth image to output dimensions";
             return -1;
@@ -454,6 +489,9 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     }
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (long)v)
   }
+
+  render_system->destroyTexture(tex3d);
+  render_system->destroyTexture(matcap_tex);
 
   THEA_CONSOLE << "Rendered " << views.size() << " view(s) of the shape";
 
@@ -487,10 +525,12 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         points by point ID)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
+  THEA_CONSOLE << "  -3 <path>             (color mesh by a 3D texture)";
   THEA_CONSOLE << "  -e                    (accentuate features)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
   THEA_CONSOLE << "                         rest of the shape as black)";
-  THEA_CONSOLE << "  -k 'ka kd ks ksp'     (material coefficients)";
+  THEA_CONSOLE << "  -k 'ka kd ks ksp'     (Phong material coefficients)";
+  THEA_CONSOLE << "  -k <path>             (texture to be used as matcap material)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
@@ -896,28 +936,12 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
-        case 'c':
-        {
-          if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
-
-          if (toLower(trimWhitespace(*argv)) == "id")
-            color_by_id = true;
-          else
-          {
-            color_by_id = false;
-            if (!parseColor(*argv, primary_color))
-              return false;
-          }
-
-          argv++; argc--; break;
-        }
-
         case 'l':
         {
           if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
 
           color_by_label = true;
-          labels_path = trimWhitespace(*argv);
+          labels_path = *argv;
 
           argv++; argc--; break;
         }
@@ -927,7 +951,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           if (argc < 1) { THEA_ERROR << "-f: Features not specified"; return false; }
 
           color_by_features = true;
-          features_path = trimWhitespace(*argv);
+          features_path = *argv;
 
           argv++; argc--; break;
         }
@@ -936,6 +960,16 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         {
           accentuate_features = true;
           break;
+        }
+
+        case '3':
+        {
+          if (argc < 1) { THEA_ERROR << "-3: Texture image not specified"; return false; }
+
+          color_by_tex3d = true;
+          tex3d_path = *argv;
+
+          argv++; argc--; break;
         }
 
         case 'm':
@@ -949,18 +983,22 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
         case 'k':
         {
-          if (argc < 1) { THEA_ERROR << "-k: Material coefficients not specified"; return false; }
+          if (argc < 1) { THEA_ERROR << "-k: Material not specified"; return false; }
 
-          Vector4 m;
-          int num_fields = parseVector(*argv, m);
-          if (num_fields <= 0)
-            return false;
+          if (FileSystem::fileExists(*argv))
+            matcap_path = *argv;
+          else
+          {
+            Vector4 m;
+            int num_fields = parseVector(*argv, m);
+            if (num_fields <= 0)
+              return false;
 
-          for (int i = 0; i < num_fields; ++i)
-            if (m[i] >= -0.001)
-              material[i] = m[i];
+            for (int i = 0; i < num_fields; ++i)
+              if (m[i] >= -0.001)
+                material[i] = m[i];
+          }
 
-          THEA_CONSOLE << material;
           argv++; argc--; break;
         }
 
@@ -2033,58 +2071,108 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader, Vector4 const & material)
+initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex = NULL, Texture * tex3d = NULL,
+               AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
-// "varying vec3 position;  // position in camera space\n"
+"varying vec3 src_pos;  // position in mesh coordinates\n"
 "varying vec3 normal;  // normal in camera space\n"
 "\n"
 "void main()\n"
 "{\n"
 "  gl_Position = ftransform();\n"
 "\n"
-// "  position = vec3(gl_ModelViewMatrix * gl_Vertex);  // assume rigid transform, so we can drop w\n"
+"  src_pos = vec3(gl_Vertex);\n"
 "  normal = gl_NormalMatrix * gl_Normal;\n"
 "\n"
 "  gl_FrontColor = gl_Color;\n"
 "  gl_BackColor = gl_Color;\n"
 "}\n";
 
-  static string const FRAGMENT_SHADER =
+  static string const FRAGMENT_SHADER_HEADER_1 =
+"uniform float two_sided;\n"
+"varying vec3 src_pos;  // position in mesh coordinates\n"
+"varying vec3 normal;  // normal in camera space\n";
+
+  static string const FRAGMENT_SHADER_HEADER_PHONG =
 "uniform vec3 ambient_color;\n"
 "uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n"
 "uniform vec3 light_color;\n"
-"uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n"
-"uniform float two_sided;\n"
-"\n"
-// "varying vec3 position;  // position in camera space\n"
-"varying vec3 normal;  // normal in camera space\n"
-"\n"
+"uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n";
+
+  static string const FRAGMENT_SHADER_HEADER_MATCAP =
+"uniform sampler2D matcap_tex;\n"
+"uniform vec3 bbox_lo;\n"
+"uniform vec3 bbox_hi;\n";
+
+  static string const FRAGMENT_SHADER_HEADER_TEX3D =
+"uniform sampler2D tex3d;\n";
+
+  static string const FRAGMENT_SHADER_BODY_1 =
 "void main()\n"
 "{\n"
 "  vec3 N = normalize(normal);\n"
+"  vec4 color = gl_Color;\n";
+
+  static string const FRAGMENT_SHADER_BODY_TEX3D =
+"  vec3 tex3d_p = (src_pos - bbox_lo) / (bbox_hi - bbox_lo);\n"
+"  vec4 tex3d_color = texture3D(tex3d, tex3d_p);\n"
+"  color.rgb = tex3d_color.rgb * color.rgb\n";
+
+  static string const FRAGMENT_SHADER_BODY_PHONG =
+"  vec3 ambt_color = material[0] * color.rgb * ambient_color;\n"
 "  vec3 L = normalize(light_dir);\n"
-"\n"
-"  vec3 ambt_color = material[0] * gl_Color.rgb * ambient_color;\n"
-"\n"
 "  float NdL = -dot(N, L);\n"
-"  vec3 lamb_color = (NdL >= -two_sided) ? material[1] * abs(NdL) * gl_Color.rgb * light_color : vec3(0.0, 0.0, 0.0);\n"
-"\n"
-"  gl_FragColor = vec4(ambt_color + lamb_color, gl_Color.a);\n"
+"  vec3 lamb_color = (NdL >= -two_sided) ? material[1] * abs(NdL) * color.rgb * light_color : vec3(0.0, 0.0, 0.0);\n"
+"  gl_FragColor = vec4(ambt_color + lamb_color, color.a);\n"
 "}\n";
+
+  static string const FRAGMENT_SHADER_BODY_MATCAP =
+"  vec2 matcap_uv = N.xy * (two_sided > 0.5 ? sign(N.z) : 1.0);\n"
+"  vec4 matcap_color = texture2D(matcap_tex, 0.5 * (matcap_uv + vec2(1.0, 1.0)));\n"
+"  gl_FragColor = vec4(color.rgb * matcap_color.rgb, color.a);\n"
+"}\n";
+
+  string fragment_shader = FRAGMENT_SHADER_HEADER_1;
+  if (matcap_tex)
+    fragment_shader += FRAGMENT_SHADER_HEADER_MATCAP;
+  else
+    fragment_shader += FRAGMENT_SHADER_HEADER_PHONG;
+
+  if (tex3d) fragment_shader += FRAGMENT_SHADER_HEADER_TEX3D;
+
+  fragment_shader += FRAGMENT_SHADER_BODY_1;
+  if (tex3d) fragment_shader += FRAGMENT_SHADER_BODY_TEX3D;
+  if (matcap_tex)
+    fragment_shader += FRAGMENT_SHADER_BODY_MATCAP;
+  else
+    fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
   try
   {
     shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
-    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
+    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, fragment_shader.c_str());
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach mesh shader module")
 
-  shader.setUniform("light_dir", Vector3(-1, -1, -2));
-  shader.setUniform("light_color", ColorRGB(1, 1, 1));
-  shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
   shader.setUniform("two_sided", 1.0f);
-  shader.setUniform("material", material);
+
+  if (matcap_tex)
+    shader.setUniform("matcap_tex", matcap_tex);
+  else
+  {
+    shader.setUniform("light_dir", Vector3(-1, -1, -2));
+    shader.setUniform("light_color", ColorRGB(1, 1, 1));
+    shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
+    shader.setUniform("material", material);
+  }
+
+  if (tex3d)
+  {
+    shader.setUniform("tex3d", tex3d);
+    shader.setUniform("bbox_lo", bbox.getLow());
+    shader.setUniform("bbox_hi", bbox.getHigh());
+  }
 
   return true;
 }
@@ -2204,7 +2292,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material))
+        if (!initMeshShader(*mesh_shader, material, matcap_tex, tex3d, model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
