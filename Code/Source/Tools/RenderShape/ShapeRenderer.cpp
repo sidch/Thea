@@ -2189,8 +2189,8 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
 
     // Tightly fit the shape within the texture volume, without distorting the shape or the cubical voxels
     int width   =  tex3d->getWidth();
-    int height  =  tex3d->getDepth();
-    int depth   =  tex3d->getHeight();
+    int height  =  tex3d->getHeight();
+    int depth   =  tex3d->getDepth();
     Vector3 box_ext = bbox.getExtent();
     Vector3 vol_ext(width, depth, height);
     Vector3 dim_ratio = vol_ext / box_ext;
