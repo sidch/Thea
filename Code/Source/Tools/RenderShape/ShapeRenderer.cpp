@@ -374,7 +374,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     try
     {
       Image tex3d_img(tex3d_path);
-      tex3d = render_system->createTexture("Texture3D", tex3d_img);
+      tex3d = render_system->createTexture("Texture3D", tex3d_img, Texture::Format::AUTO(), Texture::Dimension::DIM_3D);
     }
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 3D texture")
   }
@@ -2101,12 +2101,12 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
 "uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n";
 
   static string const FRAGMENT_SHADER_HEADER_MATCAP =
-"uniform sampler2D matcap_tex;\n"
-"uniform vec3 bbox_lo;\n"
-"uniform vec3 bbox_hi;\n";
+"uniform sampler2D matcap_tex;\n";
 
   static string const FRAGMENT_SHADER_HEADER_TEX3D =
-"uniform sampler2D tex3d;\n";
+"uniform sampler3D tex3d;\n"
+"uniform vec3 bbox_lo;\n"
+"uniform vec3 bbox_hi;\n";
 
   static string const FRAGMENT_SHADER_BODY_1 =
 "void main()\n"
@@ -2117,7 +2117,7 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   static string const FRAGMENT_SHADER_BODY_TEX3D =
 "  vec3 tex3d_p = (src_pos - bbox_lo) / (bbox_hi - bbox_lo);\n"
 "  vec4 tex3d_color = texture3D(tex3d, tex3d_p);\n"
-"  color.rgb = tex3d_color.rgb * color.rgb\n";
+"  color.rgb = tex3d_color.rgb * color.rgb;\n";
 
   static string const FRAGMENT_SHADER_BODY_PHONG =
 "  vec3 ambt_color = material[0] * color.rgb * ambient_color;\n"
@@ -2148,6 +2148,8 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   else
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
+  THEA_CONSOLE << fragment_shader;
+
   try
   {
     shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
@@ -2170,8 +2172,20 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   if (tex3d)
   {
     shader.setUniform("tex3d", tex3d);
-    shader.setUniform("bbox_lo", bbox.getLow());
-    shader.setUniform("bbox_hi", bbox.getHigh());
+
+    // Tightly fit the shape within the texture volume, without distorting the shape or the cubical voxels
+    int width   =  tex3d->getWidth();
+    int height  =  tex3d->getDepth();
+    int depth   =  tex3d->getHeight();
+    Vector3 box_ext = bbox.getExtent();
+    Vector3 vol_ext(width, depth, height);
+    Vector3 dim_ratio = vol_ext / box_ext;
+    int fit_axis = dim_ratio.minAxis();
+    box_ext = vol_ext / dim_ratio[fit_axis];
+    Vector3 center = bbox.getCenter();
+
+    shader.setUniform("bbox_lo", center - 0.5 * box_ext);
+    shader.setUniform("bbox_hi", center + 0.5 * box_ext);
   }
 
   return true;

@@ -91,7 +91,7 @@ class THEA_API Image : public AbstractImage, public Serializable
 
     bool isValid() const;
     void clear();
-    void resize(Type type, int width_, int height_, int depth = 1);
+    void resize(Type type, int width_, int height_, int depth_ = 1);
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     int getDepth() const { return depth; }
@@ -238,7 +238,7 @@ class THEA_API Image : public AbstractImage, public Serializable
     void cacheTypeProperties();
 
     // Scanline alignment when allocating custom arrays
-    static size_t const ROW_ALIGNMENT = 16;  // SSE requires 16 byte alignment
+    static size_t const ROW_ALIGNMENT = 8;  // would prefer 16 for SSE compatibility, but OpenGL supports a max of 8
 
     // Image parameters
     Type type;

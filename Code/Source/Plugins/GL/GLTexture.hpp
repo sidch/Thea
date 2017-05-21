@@ -84,8 +84,8 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
     Dimension getDimension() const { return dimension; }
 
     void updateImage(AbstractImage const & image, Face face = Face::POS_X);
-    void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height, int dst_x, int dst_y,
-                        int dst_z = 0, Face face = Face::POS_X);
+    void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
+                        int src_depth, int dst_x, int dst_y, int dst_z, Face face = Face::POS_X);
 
     void getImage(AbstractImage & image, Face face = Face::POS_X) const;
     void getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,

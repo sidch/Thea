@@ -160,7 +160,7 @@ int
 scanWidth(int width, int bpp, int alignment)
 {
   int width_bits = width * bpp;
-  int row_bytes = width_bits / 8 + (width_bits % 8 ? 0 : 1);
+  int row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
   return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
 }
 
@@ -231,7 +231,7 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
 {
   static Codec3BM const CODEC_3BM;
 
-  if (num_bytes >= 3 && buf[0] == (uint8)'3' && buf[1] == (uint8)'B' && buf[2] == (uint8)'M' && buf[3] == (uint8)'0')
+  if (num_bytes >= 4 && buf[0] == (uint8)'3' && buf[1] == (uint8)'B' && buf[2] == (uint8)'M' && buf[3] == (uint8)'\0')
     return &CODEC_3BM;
 
   return NULL;
@@ -408,7 +408,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   //   8 bytes: Reserved
   //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
 
-  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'3', (uint8)'0' };
+  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'M', (uint8)'\0' };
   output.writeBytes(4, MAGIC);
   output.writeUInt32(0x0001);
   output.writeUInt64(size_in_bytes);
@@ -500,7 +500,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
 
   uint8 magic[4];
   input.readBytes(4, &magic);
-  if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'0')
+  if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'\0')
     throw Error(std::string(getName()) + ": Image is not in 3BM format");
 
   input.skip(4);
@@ -676,21 +676,9 @@ Image::Image()
 }
 
 Image::Image(Type type_, int width_, int height_, int depth_)
-: type(type_), width(width_), height(height_), depth(depth_), fip_img(NULL)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(NULL)
 {
-  if (type == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
-    throw Error("Cannot initialize image of unknown type or non-positive size");
-
-  if (depth_ == 1)
-    fip_img = new fipImage(ImageInternal::typeToFreeImageType(type_), width_, height_,
-                           ImageInternal::typeToFreeImageBPP(type_));
-  else
-    resize(type_, width_, height_, depth_);
-
-  if (!isValid())
-    throw Error("Could not create an image of the specified type and dimensions");
-
-  cacheTypeProperties();
+  resize(type_, width_, height_, depth_);
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec)
@@ -787,8 +775,6 @@ Image::resize(Type type_, int width_, int height_, int depth_)
       fip_img = new fipImage;
 
     fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width_, height_, ImageInternal::typeToFreeImageBPP(type_));
-    if (!isValid())
-      throw Error("Could not resize the image to the specified type and dimensions");
   }
   else
   {
@@ -806,6 +792,9 @@ Image::resize(Type type_, int width_, int height_, int depth_)
   depth = depth_;
 
   cacheTypeProperties();
+
+  if (!isValid())
+    throw Error("Could not resize the image to the specified type and dimensions");
 }
 
 void const *
@@ -882,7 +871,7 @@ Image::getScanLine(int row, int z)
   else
   {
     int scan_width = ImageInternal::scanWidth(width, type.getBitsPerPixel(), (int)ROW_ALIGNMENT);
-    return &data[(z * scan_width + row) * height];
+    return &data[(z * height + row) * scan_width];
   }
 }
 
@@ -1039,14 +1028,20 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
   input.setEndianness(Endianness::LITTLE);
   uint32 size = read_prefixed_info ? input.readUInt32() : input.size();
 
+  if (size <= 0)
+    throw Error("No image data found");
+
   // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
   // stream?)
   TheaArray<uint8> img_block((array_size_t)size);
   input.readBytes((int64)size, &img_block[0]);
 
-  ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, (size > 0 ? &img_block[0] : NULL));
+  ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, &img_block[0]);
   if (detected_codec)
-    detected_codec->deserializeImage(*this, input, false);
+  {
+    BinaryInputStream mem_stream(&img_block[0], (int64)size, Endianness::LITTLE, /* copy_memory = */ false);
+    detected_codec->deserializeImage(*this, mem_stream, false);
+  }
   else
   {
     // Decode via FreeImage

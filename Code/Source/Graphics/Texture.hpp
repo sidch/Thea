@@ -173,16 +173,16 @@ class THEA_API Texture : public AbstractNamedObject
     /** Update a part of (a face of) the texture from a pixel buffer. The face argument is ignored for non-cube map textures. */
     virtual void updateSubImage(AbstractImage const & image, int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X)
     {
-      updateSubImage(image, 0, 0, image.getWidth(), image.getHeight(), dst_x, dst_y, dst_z, face);
+      updateSubImage(image, 0, 0, 0, image.getWidth(), image.getHeight(), image.getDepth(), dst_x, dst_y, dst_z, face);
     }
 
     /**
      * Update a part of (a face of) the texture from a portion of a pixel buffer. The block of the source image with corner
-     * (\a src_x, \a src_y) and size \a src_width x \a src_height is copied to the corresponding block of the texture with
-     * corner (\a dst_x, \a dst_y). The face argument is ignored for non-cube map textures.
+     * (\a src_x, \a src_y, \a src_z) and size \a src_width x \a src_height x \a src_depth is copied to the corresponding block
+     * of the texture with corner (\a dst_x, \a dst_y, \a dst_z). The face argument is ignored for non-cube map textures.
      */
-    virtual void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height,
-                                int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X) = 0;
+    virtual void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
+                                int src_depth, int dst_x, int dst_y, int dst_z, Face face = Face::POS_X) = 0;
 
     /** Copy (a face of) the texture into a pixel buffer. The face argument is ignored for non-cube map textures. */
     virtual void getImage(AbstractImage & image, Face face = Face::POS_X) const = 0;
