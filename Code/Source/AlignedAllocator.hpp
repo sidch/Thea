@@ -55,6 +55,10 @@ namespace Thea {
 /**
  * Allocates aligned memory blocks.
  *
+ * @note Currently only supports N = a power-of-two multiple of sizeof(void *) on Linux/macOS because of limitations of
+ * <tt>posix_memalign</tt>. Hence, N must be a minimum of 4 (32-bit) or 8 (64-bit) on such systems. On Windows, any power-of-two
+ * is supported.
+ *
  * From http://stackoverflow.com/a/8545389
  */
 template <typename T, size_t N = 16>

@@ -163,18 +163,24 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, Abstra
   if (!images[0] || !images[0]->isValid())
     throw Error(std::string(getName()) + ": All source images must be valid");
 
+  if (images[0]->getDepth() != 1)
+    throw Error(std::string(getName()) + ": Cube-mapped textures cannot be 3D");
+
   AbstractImage::Type type = images[0]->getType();
   width  = images[0]->getWidth();
   height = images[0]->getHeight();
-  depth = 1;
+  depth  = images[0]->getDepth();
 
   for (int i = 1; i < 6; ++i)
   {
     if (!images[i] || !images[i]->isValid())
       throw Error(std::string(getName()) + ": All source images must be valid");
 
-    if (images[i]->getType() != type || images[i]->getWidth() != width || images[i]->getHeight() != height)
+    if (images[i]->getType() != type
+     || images[i]->getWidth() != width || images[i]->getHeight() != height || images[i]->getDepth() != depth)
+    {
       throw Error(std::string(getName()) + ": All source images must have identical type and dimensions");
+    }
   }
 
   Format const * bytes_format = TextureFormat::fromImageType(type);
@@ -320,6 +326,7 @@ GLTexture::setOptions(Options const & options)
 
   glTexParameteri(gl_target, GL_TEXTURE_WRAP_S, wrap);
   glTexParameteri(gl_target, GL_TEXTURE_WRAP_T, wrap);
+  glTexParameteri(gl_target, GL_TEXTURE_WRAP_R, wrap);
 
   THEA_CHECK_GL_OK
 
@@ -421,7 +428,7 @@ GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * 
     Format const * bytes_format = TextureFormat::fromImageType(image.getType());
     width  = image.getWidth();
     height = image.getHeight();
-    depth  = 1;
+    depth  = image.getDepth();
 
     doSanityChecks();
 
@@ -433,21 +440,22 @@ GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * 
 }
 
 void
-GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_width, int src_height,
-                          int dst_x, int dst_y, int dst_z, Face face)
+GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
+                          int src_depth, int dst_x, int dst_y, int dst_z, Face face)
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
 
-  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
-  int src_depth = 1;
-
-  alwaysAssertM(src_x >= 0 && src_y >= 0
-             && src_x + src_width <= image.getWidth() && src_y + src_height <= image.getHeight(),
+  alwaysAssertM(src_x >= 0 && src_y >= 0 && src_z >= 0
+             && src_x + src_width <= image.getWidth()
+             && src_y + src_height <= image.getHeight()
+             && src_z + src_depth <= image.getDepth(),
                 std::string(getName()) + ": All or part of subimage lies outside source image boundaries");
   alwaysAssertM(dst_x >= 0 && dst_y >= 0 && dst_z >= 0
              && dst_x + src_width <= width && dst_y + src_height <= height && dst_z + src_depth <= depth,
                 std::string(getName()) + ": All or part of subimage lies outside texture boundaries");
+
+  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
 
   { GLScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GLClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
