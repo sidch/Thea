@@ -936,6 +936,22 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           argv++; argc--; break;
         }
 
+        case 'c':
+        {
+          if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
+
+          if (toLower(trimWhitespace(*argv)) == "id")
+            color_by_id = true;
+          else
+          {
+            color_by_id = false;
+            if (!parseColor(*argv, primary_color))
+              return false;
+          }
+
+          argv++; argc--; break;
+        }
+
         case 'l':
         {
           if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
@@ -2147,8 +2163,6 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
     fragment_shader += FRAGMENT_SHADER_BODY_MATCAP;
   else
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
-
-  THEA_CONSOLE << fragment_shader;
 
   try
   {
