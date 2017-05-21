@@ -816,6 +816,8 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   argc--;
   int pos = 0;
 
+  bool explicit_primary_color = false;
+
   while (argc > 0)
   {
     string arg = *argv;
@@ -948,6 +950,8 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
             if (!parseColor(*argv, primary_color))
               return false;
           }
+
+          explicit_primary_color = true;
 
           argv++; argc--; break;
         }
@@ -1126,6 +1130,12 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
     THEA_ERROR << "Too few positional arguments";
     return usage();
   }
+
+  // If no primary color was explicitly specified, set it to white by default if we're also going to multiply it by the matcap
+  // or 3D texture color. The assumption is that the latter colors should be presented accurately unless the user explicitly
+  // modulates them by an additional color.
+  if (!explicit_primary_color && (!matcap_path.empty() || color_by_tex3d))
+    primary_color = ColorRGBA(1, 1, 1, 1);
 
   if (views.empty())
   {
