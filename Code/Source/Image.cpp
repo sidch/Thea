@@ -1107,6 +1107,12 @@ Image::convert(Type dst_type, Image & dst) const
     if (&dst != this) dst = *this;
     status = true;
   }
+  else if (depth != 1)
+  {
+    // TODO
+    THEA_ERROR << "Image: Format conversion of non-2D images currently not supported";
+    return false;
+  }
   else
   {
     FREE_IMAGE_TYPE src_fitype = ImageInternal::typeToFreeImageType(type);
