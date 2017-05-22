@@ -2143,7 +2143,7 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   static string const FRAGMENT_SHADER_BODY_TEX3D =
 "  vec3 tex3d_p = (src_pos - bbox_lo) / (bbox_hi - bbox_lo);\n"
 "  vec4 tex3d_color = texture3D(tex3d, tex3d_p);\n"
-"  color.rgb = tex3d_color.rgb * color.rgb;\n";
+"  color.rgb = mix(color.rgb, tex3d_color.rgb, tex3d_color.a);\n";
 
   static string const FRAGMENT_SHADER_BODY_PHONG =
 "  vec3 ambt_color = material[0] * color.rgb * ambient_color;\n"
