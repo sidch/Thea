@@ -749,7 +749,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
       writeString("property float z\n", out);
 
       writeString(format("element face %ld\n", num_faces), out);
-      writeString("property list int int vertex_index\n", out);
+      writeString("property list int int vertex_indices\n", out);
 
       writeString("end_header\n", out);
     }
