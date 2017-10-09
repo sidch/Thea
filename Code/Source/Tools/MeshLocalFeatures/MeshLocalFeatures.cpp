@@ -244,7 +244,7 @@ main(int argc, char * argv[])
     if (elem < 0)
     {
       THEA_ERROR << "Could not find nearest neighbor of query point " << pts[i] << " on mesh";
-      return false;
+      return -1;
     }
 
     Vector3 cn = kdtree.getElements()[(array_size_t)elem].getNormal();

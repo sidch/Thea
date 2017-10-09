@@ -278,7 +278,7 @@ main(int argc, char * argv[])
           if (elem < 0)
           {
             THEA_ERROR << "Could not find nearest neighbor of sample " << i << " on mesh";
-            return false;
+            return -1;
           }
 
           sample_normals[i] = kdtree.getElements()[(array_size_t)elem].getNormal();
