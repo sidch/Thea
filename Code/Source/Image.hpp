@@ -291,6 +291,7 @@ class THEA_API ImageCodec : public Codec
 #define THEA_DEF_IMAGE_CODEC(name, desc)                                                                                      \
   class THEA_API name : public ImageCodec                                                                                     \
   {                                                                                                                           \
+    public: name() {}                                                                                                         \
     THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                     \
   };
 
