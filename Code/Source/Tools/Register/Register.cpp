@@ -903,7 +903,7 @@ main(int argc, char * argv[])
 
   SampleArray samples1, samples2;
   if (!loadSamples(samples_path1, samples1, USE_LABELS) || !loadSamples(samples_path2, samples2, USE_LABELS))
-    return false;
+    return -1;
 
   bool has_salient = (!salient_path1.empty() && !salient_path2.empty());
   TheaArray<Vector3> salient1, salient2;
