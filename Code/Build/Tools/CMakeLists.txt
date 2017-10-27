@@ -47,7 +47,6 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Locate Thea dependencies
-SET(Thea_FIND_CGAL       TRUE)
 SET(Thea_FIND_Lib3ds     TRUE)
 SET(Thea_FIND_FreeImage  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
@@ -102,9 +101,6 @@ FIND_PACKAGE(OpenCL)
 # Definitions, compiler switches etc.
 IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
-  STRING(REPLACE ";" " " EXTRA_DEBUG_CFLAGS "${CGAL_DEBUG_CFLAGS}")
-  STRING(REPLACE ";" " " EXTRA_RELEASE_CFLAGS "${CGAL_RELEASE_CFLAGS}")
-
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-strict-aliasing")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_DEBUG_CFLAGS} -g2")
   SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -O2")
@@ -130,8 +126,7 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
                     ${OPENGL_INCLUDE_DIRS}
                     ${Boost_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS}
-                    ${CGAL_INCLUDE_DIRS})
+                    ${Lib3ds_INCLUDE_DIRS})
 
 IF(OPENCL_FOUND)
   INCLUDE_DIRECTORIES(BEFORE ${OPENCL_INCLUDE_DIRS})

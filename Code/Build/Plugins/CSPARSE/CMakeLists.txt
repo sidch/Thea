@@ -18,7 +18,7 @@ ENDIF(POLICY CMP0003)
 
 # See cmake --help-policy CMP0042 for details on this one
 IF(POLICY CMP0042)
-  CMAKE_POLICY(SET CMP0042 OLD)
+  CMAKE_POLICY(SET CMP0042 NEW)
 ENDIF(POLICY CMP0042)
 
 # If you don't want the full compiler output, remove the following line
