@@ -27,7 +27,10 @@ IF(Thea_FIND_Boost)
   ELSE()
     SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT})
   ENDIF()
-  FIND_PACKAGE(Boost COMPONENTS filesystem system thread REQUIRED)
+  IF(NOT Thea_FIND_Boost_COMPONENTS)
+    SET(Thea_FIND_Boost_COMPONENTS filesystem system thread)
+  ENDIF(NOT Thea_FIND_Boost_COMPONENTS)
+  FIND_PACKAGE(Boost COMPONENTS ${Thea_FIND_Boost_COMPONENTS} REQUIRED)
 ENDIF()
 
 # Dependency: FreeImage
@@ -85,7 +88,7 @@ SET(PLATFORM_LIBRARIES ${PLATFORM_LIBRARIES} ${CMAKE_DL_LIBS})  # for loading pl
 
 # Unset parameters
 SET(Thea_FIND_Boost      FALSE)
-SET(Thea_FIND_G3D        FALSE)
+SET(Thea_FIND_Boost_COMPONENTS )
 SET(Thea_FIND_FreeImage  FALSE)
 SET(Thea_FIND_Lib3ds     FALSE)
 SET(Thea_FIND_CLUTO      FALSE)
