@@ -47,6 +47,7 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Locate Thea dependencies
+SET(Thea_FIND_Boost      FALSE)   # we'll find it below
 SET(Thea_FIND_Lib3ds     TRUE)
 SET(Thea_FIND_FreeImage  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
@@ -61,7 +62,7 @@ IF(EXISTS ${THEA_INSTALLATIONS_ROOT}/installed-boost)
 ELSE()
   SET(BOOST_ROOT ${THEA_INSTALLATIONS_ROOT})
 ENDIF()
-FIND_PACKAGE(Boost COMPONENTS program_options thread REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS filesystem program_options system thread REQUIRED)
 
 # Dependency: OpenGL
 IF(THEA_GL_OSMESA)
