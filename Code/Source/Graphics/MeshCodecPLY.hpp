@@ -184,23 +184,31 @@ class CodecPLY : public CodecPLYBase<MeshT>
     {
       private:
         bool skip_empty_meshes;
+        bool store_vertex_indices;
+        bool store_face_indices;
         bool verbose;
 
         friend class CodecPLY;
 
       public:
         /** Constructor. Sets default values. */
-        ReadOptions() : skip_empty_meshes(true), verbose(false) {}
+        ReadOptions() : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), verbose(false) {}
 
         /** Skip meshes with no faces? */
         ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
+
+        /** Store vertex indices in mesh? */
+        ReadOptions & setStoreVertexIndices(bool value) { store_vertex_indices = value; return *this; }
+
+        /** Store face indices in mesh? */
+        ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
 
         /** Print debugging information? */
         ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * ReadOptions().setSkipEmptyMeshes(true).setVerbose(false).
+         * ReadOptions().setSkipEmptyMeshes(true).setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -486,7 +494,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
               if (!(vstr >> x >> y >> z))
                 throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
 
-              typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z));
+              typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z),
+                                                                      (read_opts.store_vertex_indices ? num_vertices : -1));
               if (callback)
                 callback->vertexRead(mesh.get(), num_vertices, vref);
 
@@ -528,7 +537,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
                 if (!skip)
                 {
-                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
+                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end(),
+                                                                      (read_opts.store_face_indices ? num_faces : -1));
                   if (callback)
                     callback->faceRead(mesh.get(), num_faces, fref);
 
@@ -635,7 +645,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
               for (array_size_t k = 3; k < block.props.size(); ++i)
                 skipBinaryProperty(in, block.props[k]);
 
-              typename Builder::VertexHandle vref = builder.addVertex(vertex);
+              typename Builder::VertexHandle vref = builder.addVertex(vertex,
+                                                                      (read_opts.store_vertex_indices ? num_vertices : -1));
               if (callback)
                 callback->vertexRead(mesh.get(), num_vertices, vref);
 
@@ -673,7 +684,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
                 if (!skip)
                 {
-                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end());
+                  typename Builder::FaceHandle fref = builder.addFace(face.begin(), face.end(),
+                                                                      (read_opts.store_face_indices ? num_faces : -1));
                   if (callback)
                     callback->faceRead(mesh.get(), num_faces, fref);
 
@@ -701,22 +713,12 @@ class CodecPLY : public CodecPLYBase<MeshT>
       THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
     }
 
-    /** Count the number of vertices and faces in a general/DCEL/display mesh (increments parameters). */
+    /** Count the number of vertices and faces in a mesh. */
     template <typename _MeshT>
-    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces,
-                         typename boost::disable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL)
+    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces)
     {
       num_vertices += mesh.numVertices();
       num_faces += mesh.numFaces();
-    }
-
-    /** Count the number of vertices and faces in a CGAL mesh (increments parameters). */
-    template <typename _MeshT>
-    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces,
-                         typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL)
-    {
-      num_vertices += (long)mesh.size_of_vertices();
-      num_faces += (long)mesh.size_of_vertices();
     }
 
     /** Count the number of vertices and faces in a mesh group (increments parameters). */
@@ -842,29 +844,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
         vertex_indices[DisplayMeshVRef(&mesh, (long)i)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, (long)i);
-      }
-    }
-
-    /** Write out all the vertices from a CGAL mesh and map them to indices. */
-    template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL) const
-    {
-      long vertex_index = (long)vertex_indices.size();
-      for (typename Mesh::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi, ++vertex_index)
-      {
-        if (write_opts.binary)
-        {
-          output.writeFloat32((float32)vi->point().x());
-          output.writeFloat32((float32)vi->point().y());
-          output.writeFloat32((float32)vi->point().z());
-        }
-        else
-          writeString(format("%f %f %f\n", vi->point().x(), vi->point().y(), vi->point().z()), output);
-
-        vertex_indices[&(*vi)] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index, vi);
       }
     }
 
@@ -1023,53 +1002,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
             callback->faceWritten(&mesh, next_index++, face);
           }
         }
-      }
-    }
-
-    /** Write out all the faces from a CGAL mesh. */
-    template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL) const
-    {
-      for (typename Mesh::Facet_const_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); ++fi)
-      {
-        typename Mesh::Facet const & facet = *fi;
-        if (facet.facet_degree() < 3) continue;
-
-        if (write_opts.binary)
-        {
-          output.writeInt32((int32)facet.facet_degree());
-
-          typename Mesh::Facet::Halfedge_around_facet_const_circulator ei = facet.facet_begin();
-          do
-          {
-            typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-            output.writeInt32((int32)ii->second);
-
-          } while (++ei != facet.facet_begin());
-        }
-        else
-        {
-          std::ostringstream os; os << facet.facet_degree();
-
-          typename Mesh::Facet::Halfedge_around_facet_const_circulator ei = facet.facet_begin();
-          do
-          {
-            typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-            os << ' ' << ii->second;
-
-          } while (++ei != facet.facet_begin());
-
-          os << '\n';
-          writeString(os.str(), output);
-        }
-
-        if (callback) callback->faceWritten(&mesh, next_index++, fi);
       }
     }
 

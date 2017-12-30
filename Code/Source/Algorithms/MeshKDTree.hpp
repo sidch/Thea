@@ -51,9 +51,9 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * A kd-tree on mesh triangles. Implemented for general, DCEL, CGAL and display meshes.
+ * A kd-tree on mesh triangles. Implemented for general, DCEL and display meshes.
  *
- * @see GeneralMesh, DCELMesh, CGALMesh, DisplayMesh
+ * @see GeneralMesh, DCELMesh, DisplayMesh
  */
 template <typename MeshT, typename NodeAttributeT = NullAttribute>
 class MeshKDTree : public Algorithms::KDTreeN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT >

@@ -302,11 +302,6 @@ class THEA_API IMLSSurface : private Noncopyable
     void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
                  typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL);
 
-    /** Add a CGAL mesh to the polygon soup. \a tris is used to store the generated triangles. */
-    template <typename MeshT>
-    void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                 typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type * dummy = NULL);
-
     /** Add a mesh group to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
     void addMeshGroup(Graphics::MeshGroup<MeshT> const & mg, TheaArray<IndexedTriangle> & tris);
@@ -542,80 +537,6 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
         he = he->next();
 
       } while (he != fi->getHalfedge());
-
-#ifdef THEA_DEBUG_BUILD
-      long num_tris = poly.triangulate(tri_indices);
-      debugAssertM(tri_indices.size() == static_cast<array_size_t>(3 * num_tris), "IMLSSurface: Mesh face triangulation error");
-#else
-      poly.triangulate(tri_indices);
-#endif
-
-      for (array_size_t i = 0; i < tri_indices.size(); i += 3)
-        tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts,
-                                       static_cast<array_size_t>(tri_indices[i]),
-                                       static_cast<array_size_t>(tri_indices[i + 1]),
-                                       static_cast<array_size_t>(tri_indices[i + 2]))));
-    }
-  }
-}
-
-template <typename MeshT>
-void
-IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                     typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type * dummy)
-{
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
-  VertexIndexMap vertex_indices;
-
-  array_size_t base = verts.size();
-  array_size_t new_size = verts.size() + static_cast<array_size_t>(mesh.size_of_vertices());
-  verts.resize(new_size);
-  phi.resize(new_size);
-
-  array_size_t i = base;
-  for (typename MeshT::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi, ++i)
-  {
-    verts[i]  =  vi->point();
-    phi[i]    =  0;
-    vertex_indices[&(*vi)] = i;
-  }
-
-  array_size_t i0, i1, i2, i3;
-  Polygon3 poly;
-  TheaArray<long> tri_indices;
-  for (typename MeshT::Facet_const_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); ++fi)
-  {
-    if (fi->is_triangle())
-    {
-      typename MeshT::Facet::Halfedge_around_facet_const_circulator hc = fi->facet_begin();
-      i0 = vertex_indices[&(*(hc->vertex()))]; ++hc;
-      i1 = vertex_indices[&(*(hc->vertex()))]; ++hc;
-      i2 = vertex_indices[&(*(hc->vertex()))];
-
-      tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts, i0, i1, i2)));
-    }
-    else if (fi->is_quad())
-    {
-      // FIXME: Handle non-convex quads
-
-      typename MeshT::Facet::Halfedge_around_facet_const_circulator hc = fi->facet_begin();
-      i0 = vertex_indices[&(*(hc->vertex()))]; ++hc;
-      i1 = vertex_indices[&(*(hc->vertex()))]; ++hc;
-      i2 = vertex_indices[&(*(hc->vertex()))]; ++hc;
-      i3 = vertex_indices[&(*(hc->vertex()))];
-
-      tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts, i0, i1, i2)));
-      tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts, i0, i2, i3)));
-    }
-    else if (fi->facet_degree() > 0)
-    {
-      poly.clear();
-      typename MeshT::Facet::Halfedge_around_facet_const_circulator hc = fi->facet_begin();
-      do
-      {
-        poly.addVertex(hc->vertex()->point(), static_cast<long>(vertex_indices[&(*(hc->vertex()))]));
-
-      } while (++hc != fi->facet_begin());
 
 #ifdef THEA_DEBUG_BUILD
       long num_tris = poly.triangulate(tri_indices);

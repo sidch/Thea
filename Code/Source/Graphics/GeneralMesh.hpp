@@ -132,6 +132,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Constructor. */
     GeneralMesh(std::string const & name = "AnonymousMesh")
     : NamedObject(name),
+      max_vertex_index(-1),
+      max_face_index(-1),
       buffered_rendering(false),
       buffered_wireframe(false),
       changed_buffers(BufferID::ALL),
@@ -192,13 +194,15 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Get an iterator pointing to the position beyond the last face. */
     FaceIterator facesEnd() { return faces.end(); }
 
-    /** Deletes all data in the mesh. */
+    /** Deletes all data in the mesh and resets automatic element indexing. */
     void clear()
     {
       vertices.clear();
       edges.clear();
       faces.clear();
       bounds = AxisAlignedBox3();
+      max_vertex_index = -1;
+      max_face_index = -1;
 
       packed_vertex_positions.clear();
       packed_vertex_normals.clear();
@@ -286,6 +290,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
           fi->copyTo(*dfi, *vertex_map, *edge_map, *face_map);
       }
 
+      dst.max_vertex_index = max_vertex_index;
+      dst.max_face_index = max_face_index;
       dst.bounds = bounds;
       dst.buffered_rendering = buffered_rendering;
       dst.buffered_wireframe = buffered_wireframe;
@@ -333,12 +339,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     bool hasVertexTexCoords() const { return HasTexCoord<Vertex>::value; }
 
     /**
-     * Add a vertex to the mesh, with optional precomputed normal, color and texture coordinates. Automatically calls
-     * invalidateGPUBuffers() to schedule a resync with the GPU.
+     * Add a vertex to the mesh, with optional precomputed normal, color, texture coordinates and index. If the index is
+     * negative, a new, unique index is generated for the vertex. Automatically calls invalidateGPUBuffers() to schedule a
+     * resync with the GPU.
      *
      * @return A pointer to the newly created vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                        Vector2 const * texcoord = NULL)
     {
       if (normal)
@@ -352,20 +359,28 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       if (color)     setVertexColor<Vertex>(vertex, *color);
       if (texcoord)  setVertexTexCoord<Vertex>(vertex, *texcoord);
 
+      if (index < 0)
+        index = (++max_vertex_index);
+      else if (index > max_vertex_index)
+        max_vertex_index = index;
+
+      vertex->setIndex(index);
+
       return vertex;
     }
 
     /**
-     * Add a face to the mesh, specified by the sequence of vertices obtained by dereferencing [vbegin, vend).
-     * VertexInputIterator must dereference to a pointer to a Vertex. Unless the mesh is already in an inconsistent state,
-     * failure to add the face will not affect the mesh.
+     * Add a face to the mesh, specified by the sequence of vertices obtained by dereferencing [vbegin, vend) and an optional
+     * index. VertexInputIterator must dereference to a pointer to a Vertex. If the index is negative, a new, unique index is
+     * generated for the face. Unless the mesh is already in an inconsistent state, failure to add the face will not affect the
+     * mesh.
      *
      * Automatically calls invalidateGPUBuffers() to schedule a resync with the GPU.
      *
      * @return A pointer to the newly created face, or null on error.
      */
     template <typename VertexInputIterator>
-    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend)
+    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, long index = -1)
     {
       // Create the (initially empty) face
       faces.push_back(Face());
@@ -373,7 +388,16 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       // Initialize the face
       face = initFace(face, vbegin, vend);
-      if (!face)
+      if (face)
+      {
+        if (index < 0)
+          index = (++max_face_index);
+        else if (index > max_face_index)
+          max_face_index = index;
+
+        face->setIndex(index);
+      }
+      else
         faces.pop_back();
 
       return face;
@@ -1521,9 +1545,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       packed_tris.clear();
       packed_quads.clear();
 
-      uint32 index = 0;
+      uint32 packing_index = 0;
       for (VertexIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
-        vi->setIndex(index++);
+        vi->setPackingIndex(packing_index++);
 
       has_large_polys = false;
       for (FaceConstIterator fi = faces.begin(); fi != faces.end(); ++fi)
@@ -1531,17 +1555,17 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         if (fi->isTriangle())
         {
           typename Face::VertexConstIterator vi = fi->verticesBegin();
-          packed_tris.push_back((*(vi++))->getIndex());
-          packed_tris.push_back((*(vi++))->getIndex());
-          packed_tris.push_back((*vi)->getIndex());
+          packed_tris.push_back((*(vi++))->getPackingIndex());
+          packed_tris.push_back((*(vi++))->getPackingIndex());
+          packed_tris.push_back((*vi)->getPackingIndex());
         }
         else if (fi->isQuad())
         {
           typename Face::VertexConstIterator vi = fi->verticesBegin();
-          packed_quads.push_back((*(vi++))->getIndex());
-          packed_quads.push_back((*(vi++))->getIndex());
-          packed_quads.push_back((*(vi++))->getIndex());
-          packed_quads.push_back((*vi)->getIndex());
+          packed_quads.push_back((*(vi++))->getPackingIndex());
+          packed_quads.push_back((*(vi++))->getPackingIndex());
+          packed_quads.push_back((*(vi++))->getPackingIndex());
+          packed_quads.push_back((*vi)->getPackingIndex());
         }
         else
         {
@@ -1556,8 +1580,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         array_size_t i = 0;
         for (EdgeConstIterator ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
         {
-          packed_edges[i    ] = ei->getEndpoint(0)->getIndex();
-          packed_edges[i + 1] = ei->getEndpoint(1)->getIndex();
+          packed_edges[i    ] = ei->getEndpoint(0)->getPackingIndex();
+          packed_edges[i + 1] = ei->getEndpoint(1)->getPackingIndex();
         }
       }
       else
@@ -1573,11 +1597,14 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
     typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
 
-    FaceList         faces;     ///< Set of mesh faces.
-    VertexList       vertices;  ///< Set of mesh vertices.
-    EdgeList         edges;     ///< Set of mesh edges.
+    FaceList    faces;        ///< Set of mesh faces.
+    VertexList  vertices;     ///< Set of mesh vertices.
+    EdgeList    edges;        ///< Set of mesh edges.
 
-    AxisAlignedBox3  bounds;    ///< Mesh bounding box.
+    long max_vertex_index;    ///< The largest index of a vertex in the mesh.
+    long max_face_index;      ///< The largest index of a face in the mesh.
+
+    AxisAlignedBox3  bounds;  ///< Mesh bounding box.
 
     bool buffered_rendering;  ///< Should the mesh be rendered using GPU buffers?
     bool buffered_wireframe;  ///< Can edges be drawn in GPU-buffered mode?

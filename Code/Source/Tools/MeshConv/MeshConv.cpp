@@ -55,7 +55,7 @@ splitMesh(MG::Ptr mg)
           VertexMap::const_iterator existing = vmap.find(*fvh);
           if (existing == vmap.end())
           {
-            new_vertex = m->addVertex((*fvh)->getPosition(), &(*fvh)->getNormal());
+            new_vertex = m->addVertex((*fvh)->getPosition(), -1, &(*fvh)->getNormal());
             vmap[*fvh] = new_vertex;
           }
           else

@@ -80,47 +80,80 @@ class Codec3DS : public Codec3DSBase<MeshT>
     typedef shared_ptr<Builder> BuilderPtr;
 
   public:
-    /** Read/write options for 3DS codec. */
-    class Options
+    /** %Options for deserializing meshes. */
+    class ReadOptions
     {
       private:
         bool use_transforms;
         bool ignore_texcoords;
         bool skip_empty_meshes;
         bool flatten;
+        bool store_vertex_indices;
+        bool store_face_indices;
         bool verbose;
 
         friend class Codec3DS;
 
       public:
         /** Constructor. Sets default values. */
-        Options() : use_transforms(false), ignore_texcoords(false), skip_empty_meshes(true), flatten(false), verbose(false) {}
+        ReadOptions()
+        : use_transforms(false), ignore_texcoords(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
+          store_face_indices(true), verbose(false)
+        {}
 
         /** Apply node transforms embedded in the 3DS file? */
-        Options & setUseTransforms(bool value) { use_transforms = value; return *this; }
+        ReadOptions & setUseTransforms(bool value) { use_transforms = value; return *this; }
 
         /** Ignore texture coordinates when reading from/writing to the 3DS file? */
-        Options & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+        ReadOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
 
         /** Skip meshes with no vertices or faces? */
-        Options & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
+        ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
 
         /** Flatten mesh hierarchy into a single mesh? */
-        Options & setFlatten(bool value) { flatten = value; return *this; }
+        ReadOptions & setFlatten(bool value) { flatten = value; return *this; }
+
+        /** Store vertex indices in mesh? */
+        ReadOptions & setStoreVertexIndices(bool value) { store_vertex_indices = value; return *this; }
+
+        /** Store face indices in mesh? */
+        ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
 
         /** Print debugging information? */
-        Options & setVerbose(bool value) { verbose = value; return *this; }
+        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * Options().setUseTransforms(false).setIgnoreTexCoords(false).setSkipEmptyMeshes(true).setFlatten(false).setVerbose(false).
+         * ReadOptions().setUseTransforms(false).setIgnoreTexCoords(false).setSkipEmptyMeshes(true).setFlatten(false).
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
          */
-        static Options const & defaults() { static Options const def; return def; }
+        static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
-    }; // class Options
+    }; // class ReadOptions
 
-    typedef Options ReadOptions;   ///< %Options for deserializing meshes.
-    typedef Options WriteOptions;  ///< %Options for serializing meshes.
+    /** %Options for serializing meshes. */
+    class WriteOptions
+    {
+      private:
+        bool verbose;
+
+        friend class Codec3DS;
+
+      public:
+        /** Constructor. Sets default values. */
+        WriteOptions() : verbose(false)
+        {}
+
+        /** Print debugging information? */
+        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
+
+        /**
+         * The set of default options. The default options correspond to
+         * WriteOptions().setVerbose(false).
+         */
+        static WriteOptions const & defaults() { static WriteOptions const def; return def; }
+
+    }; // class WriteOptions
 
     /** Constructor. */
     Codec3DS(ReadOptions const & read_opts_ = ReadOptions::defaults(),
@@ -264,13 +297,14 @@ class Codec3DS : public Codec3DSBase<MeshT>
         {
           Vector3 vertex(m->pointL[i].pos[0], m->pointL[i].pos[1], m->pointL[i].pos[2]);
 
+          long vindex = (read_opts.store_vertex_indices ? vertex_count : -1);
           if (!read_opts.ignore_texcoords && (long)i < (long)m->texels)
           {
             Vector2 texcoord(m->texelL[i][0], m->texelL[i][1]);
-            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex, NULL, NULL, &texcoord);
+            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex, vindex, NULL, NULL, &texcoord);
           }
           else
-            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex);
+            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex, vindex);
 
           if (callback)
             callback->vertexRead(mesh.get(), vertex_count, vref);
@@ -308,7 +342,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
           face[1] = vrefs[(array_size_t)indices[1]];
           face[2] = vrefs[(array_size_t)indices[2]];
 
-          typename Builder::FaceHandle fref = builder->addFace(face, face + 3);
+          typename Builder::FaceHandle fref = builder->addFace(face, face + 3,
+                                                               (read_opts.store_face_indices ? face_count : -1));
           if (callback)
             callback->faceRead(mesh.get(), face_count, fref);
 

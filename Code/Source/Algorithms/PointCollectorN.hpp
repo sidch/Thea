@@ -66,22 +66,6 @@ struct MeshVertexCollector
   }
 };
 
-// Add vertices of CGAL mesh to a collection
-template <typename MeshT, typename CollectionT, typename ScalarT>
-struct MeshVertexCollector< MeshT, CollectionT, ScalarT, typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type >
-{
-  void addVertices(MeshT const & mesh, CollectionT & collection)
-  {
-    for (typename MeshT::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi)
-      collection.addPoint(cgalToVector3(vi->point()));
-  }
-
-  template <typename CGALPointT> static VectorN<3, ScalarT> cgalToVector3(CGALPointT const & p)
-  {
-    return VectorN<3, ScalarT>((ScalarT)p.x(), (ScalarT)p.y(), (ScalarT)p.z());
-  }
-};
-
 // Add vertices of display mesh to a collection
 template <typename MeshT, typename CollectionT, typename ScalarT>
 struct MeshVertexCollector< MeshT, CollectionT, ScalarT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type >

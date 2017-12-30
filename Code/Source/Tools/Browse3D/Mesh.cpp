@@ -45,8 +45,8 @@
 
 namespace Browse3D {
 
-TheaArray<Mesh::Vertex *>  Mesh::index_to_vertex;
-TheaArray<Mesh::Face *>    Mesh::index_to_face;
+Mesh::IndexVertexMap Mesh::index_to_vertex;
+Mesh::IndexFaceMap Mesh::index_to_face;
 
 MeshGroup *
 Mesh::getAncestor(long generations) const

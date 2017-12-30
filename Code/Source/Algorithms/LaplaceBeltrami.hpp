@@ -255,71 +255,6 @@ class THEA_API LaplaceBeltrami
       }
     }
 
-#ifdef THEA_ENABLE_CGAL
-
-    /**
-     * Compute the discrete Laplace-Beltrami operator for a CGAL mesh using the method of [Xu 2006] and store it in the result.
-     */
-    template <typename MeshT, typename MatrixT>
-    static void computeXu(MeshT const & mesh, MatrixT & result,
-                          typename boost::enable_if< CheckTypes<Graphics::IsCGALMesh<MeshT>, MatrixT> >::type * dummy = 0)
-    {
-      // First sequentially index all vertices of the mesh
-      TheaUnorderedMap<typename MeshT::Vertex const *, long> indices;
-      long num_vertices = 0;
-      for (typename MeshT::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi)
-        indices[&(*vi)] = num_vertices++;
-
-      // Now compute the discrete Laplace-Beltrami operator
-      result.resize(num_vertices, num_vertices);
-      result.makeZero();
-
-      typename MeshT::Halfedge_around_vertex_const_circulator he_j_next, he_j_prev, he_j;
-      typename MeshT::Vertex_const_handle vj, vj_prev, vj_next;
-      typename MatrixT::Value denom, cot_a_ij, cot_b_ij, x;
-      long i, j;
-      for (typename MeshT::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi)
-      {
-        i = indices[&(*vi)];
-
-        denom = 0;
-        he_j_next = vi->vertex_begin();
-        he_j_prev = he_j_next++;
-        he_j      = he_j_next++;
-        do
-        {
-          vj      = he_j->opposite()->vertex();
-          vj_prev = he_j_prev->opposite()->vertex();
-          vj_next = he_j_next->opposite()->vertex();
-
-          cot_a_ij = (typename MatrixT::Value)cot(vi->point(), vj_prev->point(), vj->point());
-          cot_b_ij = (typename MatrixT::Value)cot(vi->point(), vj_next->point(), vj->point());
-          denom += (cot_a_ij + cot_b_ij) * (vi->point() - vj->point()).length();
-
-          j = indices[&(*vj)];
-          x = 4 * (cot_a_ij + cot_b_ij);
-          result.getMutable(i, j) += x;
-          result.getMutable(i, i) -= x;
-
-          ++he_j;
-          ++he_j_prev;
-          ++he_j_next;
-        } while (he_j_prev != vi->vertex_begin());
-
-        he_j = vi->vertex_begin();
-        do
-        {
-          j = indices[&(*he_j->opposite()->vertex())];
-          result.getMutable(i, j) /= denom;
-
-        } while (++he_j != vi->vertex_begin());
-
-        result.getMutable(i, i) /= denom;
-      }
-    }
-
-#endif
-
     /** Cotangent of angle ABC (vertex at B) for vectors in 3-space. The angle less than 180 degrees is chosen. */
     template <typename Vector3T> static double cot(Vector3T const & a, Vector3T const & b, Vector3T const & c)
     {
@@ -341,6 +276,8 @@ class THEA_API LaplaceBeltrami
     template <typename MeshT, typename MatrixT>
     static void computeBSW(MeshT const & mesh, MatrixT & result)
     {
+      // TODO
+      throw FatalError("BSW method not implemented");
     }
 
 }; // class LaplaceBeltrami

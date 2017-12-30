@@ -198,6 +198,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     DCELMesh(std::string const & name = "AnonymousMesh")
     : NamedObject(name),
       next_halfedge_index(0),
+      max_vertex_index(-1),
+      max_face_index(-1),
       buffered_rendering(false),
       buffered_wireframe(false),
       changed_buffers(BufferID::ALL),
@@ -282,7 +284,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Get an iterator pointing to the position beyond the last face. */
     FaceIterator facesEnd() { return faces.end(); }
 
-    /** Deletes all data in the mesh. */
+    /** Deletes all data in the mesh and resets automatic element indexing. */
     void clear()
     {
       for (VertexIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
@@ -299,6 +301,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       faces.clear();
 
       next_halfedge_index = 0;
+      max_vertex_index = -1;
+      max_face_index = -1;
       bounds = AxisAlignedBox3();
 
       invalidateGPUBuffers();
@@ -352,13 +356,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     bool hasVertexTexCoords() const { return HasTexCoord<Vertex>::value; }
 
     /**
-     * Add a vertex to the mesh, with an optional precomputed normal. The index of the vertex will be the value of
-     * getNumVertices() before the addition. Automatically updates the bounding box of the mesh, so you don't need to call
-     * updateBounds() after calling this function.
+     * Add a vertex to the mesh, with optional precomputed normal and index. If the index is negative, a new, unique index is
+     * generated for the vertex. Automatically updates the bounding box of the mesh, so you don't need to call updateBounds()
+     * after calling this function.
      *
      * @return A pointer to the new vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL)
+    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL)
     {
       if (vertices.empty()) bounds.set(point, point);
       else                  bounds.merge(point);
@@ -366,9 +370,15 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       Vertex * vertex = normal ? new Vertex(point, *normal) : new Vertex(point);
       vertices.insert(vertex);
 
+      if (index < 0)
+        index = (++max_vertex_index);
+      else if (index > max_vertex_index)
+        max_vertex_index = index;
+
+      vertex->setIndex(index);
+
 #ifdef THEA_DCELMESH_VERBOSE
-      vertex_indices[vertex] = vertices.size() - 1;
-      THEA_CONSOLE << "Added vertex " << vertices.size() - 1 << " at " << vertex->getPosition();
+      THEA_CONSOLE << "Added vertex " << index << " at " << vertex->getPosition();
 #endif
 
       invalidateGPUBuffers();
@@ -377,14 +387,15 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     }
 
     /**
-     * Add a face to the mesh, specified by the sequence of vertices obtained by dereferencing [vbegin, vend).
-     * VertexInputIterator must dereference to a pointer to a Vertex. Unless the mesh is already in an inconsistent state,
-     * failure to add the face will not affect the mesh.
+     * Add a face to the mesh, specified by the sequence of vertices obtained by dereferencing [vbegin, vend) and an optional
+     * index. VertexInputIterator must dereference to a pointer to a Vertex. If the index is negative, a new, unique index is
+     * generated for the face. Unless the mesh is already in an inconsistent state, failure to add the face will not affect the
+     * mesh.
      *
      * @return A pointer to the new created face, or null on error.
      */
     template <typename VertexInputIterator>
-    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend)
+    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, long index = -1)
     {
       if (vbegin == vend)
       {
@@ -409,7 +420,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
         face_vertices[num_verts] = *vi;
 
 #ifdef THEA_DCELMESH_VERBOSE
-        std::cout << ' ' << vertex_indices[*vi];
+        std::cout << ' ' << (*vi)->getIndex();
 #endif
       }
 
@@ -429,6 +440,15 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       Vector3 normal = e2.cross(e1).unit();  // counter-clockwise
 
       Face * face = addFace(num_verts, &face_vertices[0], normal);
+      if (face)
+      {
+        if (index < 0)
+          index = (++max_face_index);
+        else if (index > max_face_index)
+          max_face_index = index;
+
+        face->setIndex(index);
+      }
 
       invalidateGPUBuffers();
 
@@ -1334,17 +1354,21 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       num_quad_indices  =  (long)packed_quads.size();
     }
 
-    typedef TheaArray<Vector3>  PositionArray;  ///< Array of vertex positions.
-    typedef TheaArray<Vector3>  NormalArray;    ///< Array of normals.
-    typedef TheaArray<ColorRGBA>   ColorArray;     ///< Array of colors.
-    typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
+    typedef TheaArray<Vector3>    PositionArray;  ///< Array of vertex positions.
+    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
+    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
 
-    FaceSet          faces;
-    VertexSet        vertices;
-    HalfedgeSet      halfedges;
-    long             next_halfedge_index;
-    AxisAlignedBox3  bounds;
+    FaceSet      faces;                ///< Set of mesh faces.
+    VertexSet    vertices;             ///< Set of mesh vertices.
+    HalfedgeSet  halfedges;            ///< Set of mesh halfedges.
+    long         next_halfedge_index;  ///< Index to be assigned to the next added halfedge.
+
+    long max_vertex_index;  ///< The largest index of a vertex in the mesh.
+    long max_face_index;    ///< The largest index of a face in the mesh.
+
+    AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
     bool buffered_rendering;  ///< Should the mesh be rendered using GPU buffers?
     bool buffered_wireframe;  ///< Can edges be drawn in GPU-buffered mode?
@@ -1369,11 +1393,6 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     VAR * tris_var;              ///< GPU buffer for triangle indices.
     VAR * quads_var;             ///< GPU buffer for quad indices.
     VAR * edges_var;             ///< GPU buffer for edges.
-
-#ifdef THEA_DCELMESH_VERBOSE
-    typedef TheaUnorderedMap<Vertex *, array_size_t> VertexIndexMap;
-    VertexIndexMap vertex_indices;
-#endif
 
     mutable TheaArray<Vertex *> face_vertices;  // internal cache for vertex pointers for a face
 };

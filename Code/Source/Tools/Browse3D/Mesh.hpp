@@ -48,13 +48,14 @@
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/GraphicsAttributes.hpp"
 #include "../../Graphics/MeshGroup.hpp"
+#include "../../UnorderedMap.hpp"
 
 namespace Browse3D {
 
 class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), index(-1), parent(NULL) {}
+    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
 
     void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
     {
@@ -62,21 +63,17 @@ class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
         Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
     }
 
-    void setIndex(long i) { index = i; }
-    long getIndex() const { return index; }
-
     void setParent(Mesh * p) { parent = p; }
     Mesh * getParent() const { return parent; }
 
   private:
-    long index;
     Mesh * parent;
 };
 
 class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), index(-1), parent(NULL) {}
+    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
 
     void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
     {
@@ -84,14 +81,10 @@ class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
         Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
     }
 
-    void setIndex(long i) { index = i; }
-    long getIndex() const { return index; }
-
     void setParent(Mesh * p) { parent = p; }
     Mesh * getParent() const { return parent; }
 
   private:
-    long index;
     Mesh * parent;
 };
 
@@ -101,6 +94,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
 {
   private:
     typedef Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribute, FaceAttribute> BaseType;
+    typedef TheaUnorderedMap<long, Vertex *> IndexVertexMap;
+    typedef TheaUnorderedMap<long, Face *> IndexFaceMap;
 
   public:
     THEA_DEF_POINTER_TYPES(Mesh, shared_ptr, weak_ptr)
@@ -110,33 +105,28 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
 
-    Vertex * addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                        Vector2 const * texcoord = NULL)
     {
-      Vertex * vertex = BaseType::addVertex(point, normal, color, texcoord);
+      Vertex * vertex = BaseType::addVertex(point, index, normal, color, texcoord);
 
-      // Increment regardless of whether the vertex was successfully added or not, since we want the indices to correspond
-      // exactly to the input file
-      long next_index = nextVertexIndex(vertex);
       if (vertex)
       {
-        vertex->attr().setIndex(next_index);
+        index_to_vertex[index] = vertex;
         vertex->attr().setParent(this);
       }
 
       return vertex;
     }
 
-    template <typename VertexInputIterator> Face * addFace(VertexInputIterator vi_begin, VertexInputIterator vi_end)
+    template <typename VertexInputIterator>
+    Face * addFace(VertexInputIterator vi_begin, VertexInputIterator vi_end, long index = -1)
     {
-      Face * face = BaseType::addFace(vi_begin, vi_end);
+      Face * face = BaseType::addFace(vi_begin, vi_end, index);
 
-      // Increment regardless of whether the face was successfully added or not, since we want the indices to correspond exactly
-      // to the input file
-      long next_index = nextFaceIndex(face);
       if (face)
       {
-        face->attr().setIndex(next_index);
+        index_to_face[index] = face;
         face->attr().setParent(this);
       }
 
@@ -150,10 +140,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
 
     static Vertex * mapIndexToVertex(long index)
     {
-      if (index < 0 || index >= (long)index_to_vertex.size())
-        return NULL;
-
-      return index_to_vertex[(array_size_t)index];
+      IndexVertexMap::const_iterator existing = index_to_vertex.find(index);
+      return existing == index_to_vertex.end() ? NULL : existing->second;
     }
 
     static void resetFaceIndices()
@@ -163,10 +151,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
 
     static Face * mapIndexToFace(long index)
     {
-      if (index < 0 || index >= (long)index_to_face.size())
-        return NULL;
-
-      return index_to_face[(array_size_t)index];
+      IndexFaceMap::const_iterator existing = index_to_face.find(index);
+      return existing == index_to_face.end() ? NULL : existing->second;
     }
 
     void setParent(MeshGroup * p) { parent = p; }
@@ -180,18 +166,6 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     void invalidateFeatures() { valid_features = false; }
 
   private:
-    static long nextVertexIndex(Vertex * vertex)
-    {
-      index_to_vertex.push_back(vertex);
-      return (long)index_to_vertex.size() - 1;
-    }
-
-    static long nextFaceIndex(Face * face)
-    {
-      index_to_face.push_back(face);
-      return (long)index_to_face.size() - 1;
-    }
-
     void updateFeatures() const;
 
     MeshGroup * parent;
@@ -199,8 +173,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     mutable bool valid_features;
     mutable TheaArray<double> features;
 
-    static TheaArray<Vertex *>  index_to_vertex;  // horrible hack
-    static TheaArray<Face *>    index_to_face;  // horrible hack
+    static IndexVertexMap index_to_vertex;  // horrible hack
+    static IndexFaceMap index_to_face;  // horrible hack
 
 }; // class Mesh
 

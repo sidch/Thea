@@ -82,7 +82,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     typedef typename EdgeList::const_reverse_iterator    EdgeConstReverseIterator;    ///< Const reverse iterator over edges.
 
     /** Construct with the given normal. */
-    GeneralMeshFace(Vector3 const & normal = Vector3::zero()) : NormalBaseType(normal), marked(false) {}
+    GeneralMeshFace(Vector3 const & normal = Vector3::zero()) : NormalBaseType(normal), index(-1), marked(false) {}
 
     /** Check if the face has a given vertex. */
     bool hasVertex(Vertex const * vertex) const
@@ -303,6 +303,12 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     /** Check if the face is a quad. */
     bool isQuad() const { return vertices.size() == 4; }
 
+    /** Get the index of the face, typically in the source file (or negative if unindexed). */
+    long getIndex() const { return index; }
+
+    /** Set the index of the face, typically from the source file (or negative if unindexed). */
+    void setIndex(long index_) { index = index_; }
+
     /** Reverse the order in which vertices and edges wind around the face. The face normal is <b>not</b> modified. */
     void reverseWinding()
     {
@@ -496,6 +502,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       for ( ; ei != edges.end(); ++ei, ++dei)
         *dei = edge_map.find(*ei)->second;  // assume it always exists
 
+      dst.index = index;
       dst.marked = marked;
     }
 
@@ -509,6 +516,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
 
     VertexList vertices;
     EdgeList edges;
+    long index;
     bool marked;
 
 }; // class GeneralMeshFace

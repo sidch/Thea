@@ -90,69 +90,6 @@ class THEA_API ConnectedComponents
       return findEdgeConnectedDefault(mesh, components);
     }
 
-    /**
-     * Compute all maximal edge-connected components of a CGAL mesh. Two faces are edge-connected if they share an edge. An
-     * edge-connected path is a sequence of faces such that every consecutive pair is edge-connected. An edge-connected
-     * component is a set of faces such that every pair is connected by an edge-connected path consisting only of faces from the
-     * set.
-     *
-     * The face handle type of the mesh should be identical (or at least implicitly convertible) to FaceHandleT.
-     *
-     * @return The number of components found (== components.size())
-     *
-     * @see CGALMesh, CGAL::Polyhedron_3
-     */
-    template <typename MeshT, typename FaceHandleT>
-    static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceHandleT> > & components,
-                                  typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type * dummy = NULL)
-    {
-      // Begin with all faces as separate components
-      TheaArray<typename MeshT::Facet *> facets;
-      for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); fi++)
-        facets.push_back(&(*fi));
-
-      typedef UnionFind<typename MeshT::Facet *> FacetUnionFind;
-      FacetUnionFind uf(facets.begin(), facets.end());
-
-      // Now go over all edges, connecting the faces on either side
-      for (typename MeshT::Edge_iterator ei = mesh.edges_begin(); ei != mesh.edges_end(); ei++)
-      {
-        if (!ei->is_border_edge())
-        {
-          long handle1 = uf.getObjectID(&(*ei->facet()));
-          long handle2 = uf.getObjectID(&(*ei->opposite()->facet()));
-          uf.merge(handle1, handle2);
-        }
-      }
-
-      // Reserve space for the result
-      components.resize((array_size_t)uf.numSets());
-
-      typedef TheaUnorderedMap<long, array_size_t> ComponentIndexMap;
-      ComponentIndexMap component_indices;
-
-      // Loop over facets, adding each to the appropriate result subarray
-      array_size_t component_index;
-      for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); fi++)
-      {
-        long rep = uf.find(uf.getObjectID(&(*fi)));
-        typename ComponentIndexMap::const_iterator existing = component_indices.find(rep);
-        if (existing == component_indices.end())
-        {
-          component_index = component_indices.size();
-          component_indices[rep] = component_index;
-          components[component_index].clear();
-          components[component_index].reserve(uf.sizeOfSet(rep));
-        }
-        else
-          component_index = existing->second;
-
-        components[component_index].push_back(fi);
-      }
-
-      return (long)components.size();
-    }
-
   private:
     /**
      * Compute all maximal edge-connected components of a general mesh or DCEL mesh. Two faces are edge-connected if they share

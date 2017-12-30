@@ -190,16 +190,20 @@ meshFix(int argc, char * argv[])
   if (parse_status <= 0)
     return parse_status;
 
-  Codec3DS<Mesh>::Options opts_3ds = Codec3DS<Mesh>::Options::defaults();
-  opts_3ds.setIgnoreTexCoords(no_texcoords)
-          .setSkipEmptyMeshes(no_empty);
-  Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(opts_3ds, opts_3ds));
+  Codec3DS<Mesh>::ReadOptions read_opts_3ds = Codec3DS<Mesh>::ReadOptions::defaults();
+  read_opts_3ds.setIgnoreTexCoords(no_texcoords)
+               .setSkipEmptyMeshes(no_empty);
+  Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(read_opts_3ds, Codec3DS<Mesh>::WriteOptions::defaults()));
 
-  CodecOBJ<Mesh>::Options opts_obj = CodecOBJ<Mesh>::Options::defaults();
-  opts_obj.setIgnoreTexCoords(no_texcoords)
-          .setIgnoreNormals(no_normals)
-          .setSkipEmptyMeshes(no_empty);
-  CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(opts_obj, opts_obj));
+  CodecOBJ<Mesh>::ReadOptions read_opts_obj = CodecOBJ<Mesh>::ReadOptions::defaults();
+  read_opts_obj.setIgnoreTexCoords(no_texcoords)
+               .setIgnoreNormals(no_normals)
+               .setSkipEmptyMeshes(no_empty);
+  CodecOBJ<Mesh>::WriteOptions write_opts_obj = CodecOBJ<Mesh>::WriteOptions::defaults();
+  write_opts_obj.setIgnoreTexCoords(no_texcoords)
+                .setIgnoreNormals(no_normals)
+                .setSkipEmptyMeshes(no_empty);
+  CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(read_opts_obj, write_opts_obj));
 
   CodecOFF<Mesh>::ReadOptions opts_off = CodecOFF<Mesh>::ReadOptions::defaults();
   opts_off.setSkipEmptyMeshes(no_empty);
@@ -562,7 +566,7 @@ struct Flattener
 
     for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
-      Mesh::Vertex * new_vertex = flattened->addVertex(vi->getPosition(), &vi->getNormal());
+      Mesh::Vertex * new_vertex = flattened->addVertex(vi->getPosition(), -1, &vi->getNormal());
       if (!new_vertex)
         throw Error("Could not add copy of vertex to flattened mesh");
 

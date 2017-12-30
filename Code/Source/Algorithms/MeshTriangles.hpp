@@ -129,102 +129,6 @@ class MeshVertexTriple
 
 }; // class MeshVertexTriple
 
-namespace MeshTrianglesInternal {
-
-/** Convert a CGAL point to a Vector3. */
-template <typename CGALPointT>
-Vector3
-cgalToVector3(CGALPointT const & p)
-{
-  return Vector3((Real)p.x(), (Real)p.y(), (Real)p.z());
-}
-
-} // namespace MeshTrianglesInternal
-
-/**
- * A set of three vertices of a single face of a CGAL mesh.
- *
- * @see CGALMesh
- */
-template <typename MeshT>
-class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type>
-{
-  public:
-    typedef MeshT                               Mesh;                   ///< The mesh type.
-    typedef typename Mesh::Vertex_handle        MeshVertexHandle;       ///< A handle to a vertex of the mesh.
-    typedef typename Mesh::Vertex_const_handle  MeshVertexConstHandle;  ///< A const handle to a vertex of the mesh.
-    typedef typename Mesh::Facet_handle         MeshFaceHandle;         ///< A handle to a face of the mesh.
-    typedef typename Mesh::Facet_const_handle   MeshFaceConstHandle;    ///< A const handle to a face of the mesh.
-
-    /** Default constructor. */
-    MeshVertexTriple() {}
-
-    /** Constructs the triple from three vertices of a mesh face. */
-    MeshVertexTriple(MeshVertexHandle v0, MeshVertexHandle v1, MeshVertexHandle v2, MeshFaceHandle face_, Mesh * mesh_)
-    {
-      debugAssertM(v0 != MeshVertexHandle()
-                && v1 != MeshVertexHandle()
-                && v2 != MeshVertexHandle(), "Mesh triangle: Null vertex provided");
-
-      vertices[0] = MeshTrianglesInternal::cgalToVector3(v0->point());
-      vertices[1] = MeshTrianglesInternal::cgalToVector3(v1->point());
-      vertices[2] = MeshTrianglesInternal::cgalToVector3(v2->point());
-
-      vertex_handles[0] = v0;
-      vertex_handles[1] = v1;
-      vertex_handles[2] = v2;
-
-      face = face_;
-      mesh = mesh_;
-    }
-
-    /** Get the position of any one of the three vertices. */
-    Vector3 const & getVertex(int i) const
-    {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
-      return vertices[i];
-    }
-
-    /** Get the normal at one of the three vertices. For CGAL meshes this is just the uniform face normal. */
-    Vector3 getVertexNormal(int i) const
-    {
-      if (Mesh::Facet::Supports_facet_plane)
-        return MeshTrianglesInternal::cgalToVector3(face->plane().orthogonal_direction());
-      else
-        return (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0]).unit();
-    }
-
-    /** Get a handle to any one of the three mesh vertices. */
-    MeshVertexConstHandle getMeshVertex(int i) const
-    {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
-      return vertex_handles[i];
-    }
-
-    /** Get a handle to any one of the three mesh vertices. */
-    MeshVertexHandle getMeshVertex(int i)
-    {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
-      return vertex_handles[i];
-    }
-
-    /** Get the associated mesh face from which the vertices were obtained. */
-    MeshFaceConstHandle getMeshFace() const { return face; }
-
-    /** Get the associated mesh face from which the vertices were obtained. */
-    MeshFaceHandle getMeshFace() { return face; }
-
-    /** Get the parent mesh. */
-    Mesh * getMesh() const { return mesh; }
-
-  private:
-    Vector3 vertices[3];                 ///< Positions of the vertices of the mesh triangle.
-    MeshVertexHandle vertex_handles[3];  ///< Pointers to the vertices of the mesh triangle.
-    MeshFaceHandle face;                 ///< The face containing the triangle.
-    Mesh * mesh;                         ///< The mesh containing the triangle.
-
-}; // class MeshVertexTriple<CGALMesh>
-
 /**
  * A set of three vertices of a single face of a display mesh.
  *
@@ -481,76 +385,6 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
     addFace<MeshT>(mesh, **fi, tris);
 }
 
-// Add a face of a CGAL mesh to a set of triangles.
-template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
-{
-  if (face.is_triangle())
-  {
-    typename MeshT::Halfedge_handle he = face.halfedge();
-    typename MeshT::Vertex_handle v0 = he->vertex();
-    typename MeshT::Vertex_handle v1 = he->next()->vertex();
-    typename MeshT::Vertex_handle v2 = he->next()->next()->vertex();
-    tris.push_back(TriangleT(typename TriangleT::VertexTriple(v0, v1, v2, &face, &mesh)));
-  }
-  else if (face.is_quad())
-  {
-    typename MeshT::Vertex * v[4];
-    typename MeshT::Halfedge_handle he = face.halfedge();
-    v[0] = he->vertex();
-    v[1] = he->next()->vertex();
-    v[2] = he->next()->next()->vertex();
-    v[3] = he->next()->next()->next()->vertex();
-
-    long i0, j0, k0;
-    long i1, j1, k1;
-    int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
-                                             i0, j0, k0, i1, j1, k1);
-
-    if (num_tris > 0)
-    {
-      tris.push_back(TriangleT(typename TriangleT::VertexTriple(v[i0], v[j0], v[k0], &face, &mesh)));
-
-      if (num_tris > 1)
-        tris.push_back(TriangleT(typename TriangleT::VertexTriple(v[i1], v[j1], v[k1], &face, &mesh)));
-    }
-  }
-  else
-  {
-    TheaArray<typename MeshT::Vertex_handle> face_vertices;
-    Polygon3 poly;
-    TheaArray<long> tri_indices;
-
-    typename MeshT::Halfedge_handle he = face.halfedge();
-    long num_verts = (long)face.facet_degree();
-    for (long i = 0; i < num_verts; ++i)
-    {
-      face_vertices.push_back(he->vertex());
-      poly.addVertex(cgalToVector3(he->vertex()->point()), i);
-      he = he->next();
-    }
-
-    poly.triangulate(tri_indices);
-    for (array_size_t j = 0; j < tri_indices.size(); j += 3)
-    {
-      tris.push_back(TriangleT(typename TriangleT::VertexTriple(face_vertices[(array_size_t)tri_indices[j]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 1]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 2]],
-                                                                &face, &mesh)));
-    }
-  }
-}
-
-// Convert the faces of a CGAL mesh to a set of triangles.
-template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsCGALMesh<MeshT> >::type
-buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
-{
-  for (typename MeshT::Facet_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); ++fi)
-    addFace<MeshT>(mesh, *fi, tris);
-}
-
 // Add a face of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type
@@ -635,9 +469,9 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 } // namespace MeshTrianglesInternal
 
 /**
- * A set of triangles obtained by triangulating mesh faces. Implemented for general, DCEL, CGAL and display meshes.
+ * A set of triangles obtained by triangulating mesh faces. Implemented for general, DCEL and display meshes.
  *
- * @see GeneralMesh, DCELMesh, CGALMesh, DisplayMesh
+ * @see GeneralMesh, DCELMesh, DisplayMesh
  */
 template <typename MeshT>
 class MeshTriangles

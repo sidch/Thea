@@ -93,23 +93,24 @@ class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsDCELMesh<MeshT>
     }
 
     /** Add a vertex to the mesh and return a handle to it. Must be called within a begin() / end() block. */
-    VertexHandle addVertex(Vector3 const & pos, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    VertexHandle addVertex(Vector3 const & pos, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                            Vector2 const * texcoord = NULL)
     {
       debugAssertM(building, "IncrementalMeshBuilder: A vertex cannot be added outside a begin/end block");
 
       // DCELMesh doesn't accept colors/texcoords by default
-      VertexHandle ref = mesh->addVertex(pos, normal);
+      VertexHandle ref = mesh->addVertex(pos, index, normal);
       num_vertices++;
       return ref;
     }
 
     /** Add a face to the mesh and return a handle to it. Must be called within a begin() / end() block. */
-    template <typename VertexInputIterator> FaceHandle addFace(VertexInputIterator begin, VertexInputIterator end)
+    template <typename VertexInputIterator>
+    FaceHandle addFace(VertexInputIterator begin, VertexInputIterator end, long index = -1)
     {
       debugAssertM(building, "IncrementalMeshBuilder: A face cannot be added outside a begin/end block");
 
-      FaceHandle ref = mesh->addFace(begin, end);
+      FaceHandle ref = mesh->addFace(begin, end, index);
       num_faces++;
       return ref;
     }

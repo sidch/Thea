@@ -85,12 +85,13 @@ class /* THEA_API */ GeneralMeshVertex
 
     /** Default constructor. */
     GeneralMeshVertex()
-    : NormalBaseType(Vector3::zero()), has_precomputed_normal(false), normal_normalization_factor(0), marked(false) {}
+    : NormalBaseType(Vector3::zero()), index(-1), has_precomputed_normal(false), normal_normalization_factor(0), marked(false)
+    {}
 
     /** Sets the vertex to have a location. */
     explicit GeneralMeshVertex(Vector3 const & p)
-    : PositionBaseType(p), NormalBaseType(Vector3::zero()), has_precomputed_normal(false), normal_normalization_factor(0),
-      marked(false)
+    : PositionBaseType(p), NormalBaseType(Vector3::zero()), index(-1), has_precomputed_normal(false),
+      normal_normalization_factor(0), marked(false)
     {}
 
     /**
@@ -98,7 +99,8 @@ class /* THEA_API */ GeneralMeshVertex
      * this constructor is used.
      */
     GeneralMeshVertex(Vector3 const & p, Vector3 const & n)
-    : PositionBaseType(p), NormalBaseType(n), has_precomputed_normal(true), normal_normalization_factor(0), marked(false)
+    : PositionBaseType(p), NormalBaseType(n), index(-1), has_precomputed_normal(true), normal_normalization_factor(0),
+      marked(false)
     {}
 
     /**
@@ -193,6 +195,12 @@ class /* THEA_API */ GeneralMeshVertex
 
       return false;
     }
+
+    /** Get the index of the vertex, typically in the source file (or negative if unindexed). */
+    long getIndex() const { return index; }
+
+    /** Set the index of the vertex, typically from the source file (or negative if unindexed). */
+    void setIndex(long index_) { index = index_; }
 
     /** Check if the vertex has a precomputed normal. */
     bool hasPrecomputedNormal() const { return has_precomputed_normal; }
@@ -339,11 +347,11 @@ class /* THEA_API */ GeneralMeshVertex
     /** Check if the vertex is marked. */
     bool isMarked() const { return marked; }
 
-    /** Get the index of the vertex. */
-    uint32 getIndex() const { return index; }
+    /** Get the index of the vertex in a GPU array. */
+    uint32 getPackingIndex() const { return packing_index; }
 
-    /** Set the index of the vertex. */
-    void setIndex(uint32 index_) { index = index_; }
+    /** Set the index of the vertex in a GPU array. */
+    void setPackingIndex(uint32 packing_index_) { packing_index = packing_index_; }
 
     /** Make an exact copy of the vertex. */
     void copyTo(GeneralMeshVertex & dst,
@@ -367,17 +375,19 @@ class /* THEA_API */ GeneralMeshVertex
       for ( ; fi != faces.end(); ++fi, ++dfi)
         *dfi = face_map.find(*fi)->second;  // assume it always exists
 
+      dst.index = index;
       dst.has_precomputed_normal = has_precomputed_normal;
       dst.normal_normalization_factor = normal_normalization_factor;
-      dst.index = index;
+      dst.packing_index = packing_index;
       dst.marked = marked;
     }
 
     EdgeList edges;
     FaceList faces;
+    long index;
     bool has_precomputed_normal;
     float normal_normalization_factor;
-    uint32 index;
+    uint32 packing_index;
     bool marked;
 
 }; // class GeneralMeshVertex

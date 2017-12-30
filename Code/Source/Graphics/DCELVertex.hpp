@@ -78,11 +78,12 @@ class /* THEA_API */ DCELVertex
   public:
     /** Default constructor. */
     DCELVertex()
-    : NormalBaseType(Vector3::zero()), leaving(NULL), has_precomputed_normal(false), normal_normalization_factor(0) {}
+    : NormalBaseType(Vector3::zero()), leaving(NULL), index(-1), has_precomputed_normal(false), normal_normalization_factor(0)
+    {}
 
     /** Sets the vertex to have a location. */
     explicit DCELVertex(Vector3 const & p)
-    : PositionBaseType(p), NormalBaseType(Vector3::zero()), leaving(NULL), has_precomputed_normal(false),
+    : PositionBaseType(p), NormalBaseType(Vector3::zero()), leaving(NULL), index(-1), has_precomputed_normal(false),
       normal_normalization_factor(0)
     {}
 
@@ -91,7 +92,8 @@ class /* THEA_API */ DCELVertex
      * this constructor is used.
      */
     DCELVertex(Vector3 const & p, Vector3 const & n)
-    : PositionBaseType(p), NormalBaseType(n), leaving(NULL), has_precomputed_normal(true), normal_normalization_factor(0)
+    : PositionBaseType(p), NormalBaseType(n), leaving(NULL), index(-1), has_precomputed_normal(true),
+      normal_normalization_factor(0)
     {}
 
     /** Get the edge from this vertex to another, if it exists, else return null. */
@@ -151,6 +153,12 @@ class /* THEA_API */ DCELVertex
         return true;
     }
 
+    /** Get the index of the vertex, typically in the source file (or negative if unindexed). */
+    long getIndex() const { return index; }
+
+    /** Set the index of the vertex, typically from the source file (or negative if unindexed). */
+    void setIndex(long index_) { index = index_; }
+
   private:
     template <typename V, typename H, typename F> friend class DCELMesh;
 
@@ -181,13 +189,14 @@ class /* THEA_API */ DCELVertex
       }
     }
 
-    /** Get the packing_index of the vertex. */
+    /** Get the index of the vertex in a GPU array. */
     uint32 getPackingIndex() const { return packing_index; }
 
-    /** Unmark the vertex. */
-    void setPackingIndex(uint32 index_) { packing_index = index_; }
+    /** Set the index of the vertex in a GPU array. */
+    void setPackingIndex(uint32 packing_index_) { packing_index = packing_index_; }
 
     Halfedge * leaving;
+    long index;
     bool has_precomputed_normal;
     float normal_normalization_factor;
     uint32 packing_index;

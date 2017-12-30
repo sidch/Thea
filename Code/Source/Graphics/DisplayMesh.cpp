@@ -92,6 +92,10 @@ DisplayMesh::clear()
   quads.clear();
   edges.clear();
 
+  vertex_source_indices.clear();
+  tri_source_face_indices.clear();
+  quad_source_face_indices.clear();
+
   face_vertex_indices.clear();
   triangulated_indices.clear();
 
@@ -173,8 +177,12 @@ DisplayMesh::addTexCoords()
 }
 
 long
-DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, ColorRGBA const * color, Vector2 const * texcoord)
+DisplayMesh::addVertex(Vector3 const & point, long source_index, Vector3 const * normal, ColorRGBA const * color,
+                       Vector2 const * texcoord)
 {
+  alwaysAssertM((source_index >= 0 && vertex_source_indices.size() == vertices.size())
+             || (source_index < 0 && vertex_source_indices.empty()),
+                getNameStr() + ": Mesh must have all or no vertex source indices");
   alwaysAssertM((normal && normals.size() == vertices.size()) || (!normal && normals.empty()),
                 getNameStr() + ": Mesh must have all or no normals");
   alwaysAssertM((color && colors.size() == vertices.size()) || (!color && colors.empty()),
@@ -188,9 +196,10 @@ DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, ColorRGBA 
     bounds.merge(point);
 
   vertices.push_back(point);
-  if (normal)   normals.push_back(*normal);
-  if (color)    colors.push_back(*color);
-  if (texcoord) texcoords.push_back(*texcoord);
+  if (source_index >= 0)  vertex_source_indices.push_back(source_index);
+  if (normal)             normals.push_back(*normal);
+  if (color)              colors.push_back(*color);
+  if (texcoord)           texcoords.push_back(*texcoord);
 
   invalidateGPUBuffers();
 
@@ -198,12 +207,16 @@ DisplayMesh::addVertex(Vector3 const & point, Vector3 const * normal, ColorRGBA 
 }
 
 long
-DisplayMesh::addTriangle(long vi0, long vi1, long vi2)
+DisplayMesh::addTriangle(long vi0, long vi1, long vi2, long source_face_index)
 {
   debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0
             && vi0 < (long)vertices.size()
             && vi1 < (long)vertices.size()
             && vi2 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
+
+  alwaysAssertM((source_face_index >= 0 && tri_source_face_indices.size() == tris.size())
+             || (source_face_index < 0 && tri_source_face_indices.empty()),
+                getNameStr() + ": Mesh must have all or no triangle face source indices");
 
   long index = (long)(tris.size() / 3);
 
@@ -211,19 +224,26 @@ DisplayMesh::addTriangle(long vi0, long vi1, long vi2)
   tris.push_back((uint32)vi1);
   tris.push_back((uint32)vi2);
 
+  if (source_face_index >= 0)
+    tri_source_face_indices.push_back(source_face_index);
+
   invalidateGPUBuffers();
 
   return index;
 }
 
 long
-DisplayMesh::addQuad(long vi0, long vi1, long vi2, long vi3)
+DisplayMesh::addQuad(long vi0, long vi1, long vi2, long vi3, long source_face_index)
 {
   debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0 && vi3 >= 0
             && vi0 < (long)vertices.size()
             && vi1 < (long)vertices.size()
             && vi2 < (long)vertices.size()
             && vi3 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
+
+  alwaysAssertM((source_face_index >= 0 && quad_source_face_indices.size() == quads.size())
+             || (source_face_index < 0 && quad_source_face_indices.empty()),
+                getNameStr() + ": Mesh must have all or no quad face source indices");
 
   long index = (long)(quads.size() / 4);
 
@@ -232,13 +252,16 @@ DisplayMesh::addQuad(long vi0, long vi1, long vi2, long vi3)
   quads.push_back((uint32)vi2);
   quads.push_back((uint32)vi3);
 
+  if (source_face_index >= 0)
+    quad_source_face_indices.push_back(source_face_index);
+
   invalidateGPUBuffers();
 
   return index;
 }
 
 DisplayMesh::Face
-DisplayMesh::addFace(int num_vertices, long const * vertex_indices)
+DisplayMesh::addFace(int num_vertices, long const * face_vertex_indices_, long source_face_index)
 {
   if (num_vertices < 3)
   {
@@ -247,15 +270,19 @@ DisplayMesh::addFace(int num_vertices, long const * vertex_indices)
   }
 
   if (num_vertices == 3)
-    return Face(this, 3, true, addTriangle(vertex_indices[0], vertex_indices[1], vertex_indices[2]), 1);
+    return Face(this, 3, true,
+                addTriangle(face_vertex_indices_[0], face_vertex_indices_[1], face_vertex_indices_[2], source_face_index), 1);
 
   if (num_vertices == 4)
-    return Face(this, 4, false, addQuad(vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[3]), 1);
+    return Face(this, 4, false,
+                addQuad(face_vertex_indices_[0], face_vertex_indices_[1], face_vertex_indices_[2], face_vertex_indices_[3],
+                        source_face_index),
+                1);
 
   Polygon3 poly;
   for (int i = 0; i < num_vertices; ++i)
   {
-    long vi = vertex_indices[i];
+    long vi = face_vertex_indices_[i];
     debugAssertM(vi >= 0 && vi < (long)vertices.size(), getName() + format(": Vertex index %ld out of bounds", vi));
 
     poly.addVertex(vertices[vi], vi);
@@ -269,15 +296,25 @@ DisplayMesh::addFace(int num_vertices, long const * vertex_indices)
 //                << triangulated_indices.size() / 3.0f << " triangles, whereas " << num_vertices - 2 << " were expected";
 //
 //     for (int i = 0; i < num_vertices; ++i)
-//       THEA_CONSOLE << "v[" << i << "] = " << vertices[vertex_indices[i]];
+//       THEA_CONSOLE << "v[" << i << "] = " << vertices[face_vertex_indices_[i]];
 //
 //     throw FatalError("Triangulation error");
 //   }
 
+  if (num_tris <= 0)
+    return Face();
+
+  alwaysAssertM((source_face_index >= 0 && tri_source_face_indices.size() == tris.size())
+             || (source_face_index < 0 && tri_source_face_indices.empty()),
+                getNameStr() + ": Mesh must have all or no triangle face source indices");
+
   long starting_index = numTriangles();
 
   for (array_size_t i = 0; i < triangulated_indices.size(); ++i)
+  {
     tris.push_back((uint32)triangulated_indices[i]);
+    if (source_face_index >= 0) tri_source_face_indices.push_back(source_face_index);
+  }
 
   invalidateGPUBuffers();
 

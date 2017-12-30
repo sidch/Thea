@@ -312,6 +312,11 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     // Edge data
     IndexArray edges;  ///< Edge indices (in pairs).
 
+    // Element source indices (typically from source files)
+    TheaArray<long> vertex_source_indices;
+    TheaArray<long> tri_source_face_indices;
+    TheaArray<long> quad_source_face_indices;
+
     bool valid_bounds;  ///< Is the bounding box valid?
     AxisAlignedBox3 bounds;  ///< Bounding box.
 
@@ -401,6 +406,26 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      */
     IndexQuad getQuad(long quad_index) const;
 
+    /** Get the source index of a given vertex. This is typically the index of the vertex in the source mesh file. */
+    long getVertexSourceIndex(long i) const
+    {
+      return i >= 0 && i < (long)vertex_source_indices.size() ? vertex_source_indices[(array_size_t)i] : -1;
+    }
+
+    /**
+     * Get the index of the source face of a given triangle. This is typically the index of the face in the source mesh file.
+     */
+    long getTriangleSourceFaceIndex(long i) const
+    {
+      return i >= 0 && i < (long)tri_source_face_indices.size() ? tri_source_face_indices[(array_size_t)i] : -1;
+    }
+
+    /** Get the index of the source face of a given quad. This is typically the index of the face in the source mesh file. */
+    long getQuadSourceFaceIndex(long i) const
+    {
+      return i >= 0 && i < (long)quad_source_face_indices.size() ? quad_source_face_indices[(array_size_t)i] : -1;
+    }
+
     /** Deletes all data in the mesh. */
     virtual void clear();
 
@@ -447,52 +472,61 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     virtual void addTexCoords();
 
     /**
-     * Add a vertex to the mesh, with optional normal, color and texture coordinate attributes.
+     * Add a vertex to the mesh, with optional normal, color and texture coordinate attributes, as well as an optional source
+     * index (typically the index of the vertex in the mesh source file).
      *
-     * @return The index of the new vertex. Indices are guaranteed to be sequentially generated, starting from 0.
+     * Each of these attributes is (independently) an all or nothing choice for the mesh: it must be specified for all vertices,
+     * or no vertices. E.g. if the normal is specified, it must be specified for all existing and future vertices of the mesh.
+     * Similarly, if the source index is non-negative, it must be so for all vertices.
+     *
+     * @return The index of the new vertex in the mesh (distinct from the source index input to this function). Indices are
+     *   guaranteed to be sequentially generated, starting from 0.
      */
-    virtual long addVertex(Vector3 const & point, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
-                           Vector2 const * texcoord = NULL);
+    virtual long addVertex(Vector3 const & point, long source_index = -1, Vector3 const * normal = NULL,
+                           ColorRGBA const * color = NULL, Vector2 const * texcoord = NULL);
 
     /**
-     * Add a triangular face to the mesh, specified by three vertex indices
+     * Add a triangular face to the mesh, specified by three vertex indices and an optional source face index (typically the
+     * index of the face in the mesh source file)
      *
      * @return The index of the new triangle in the triangle list, computed as numTriangles() BEFORE the addition, or -1 on
      *   failure.
      */
-    virtual long addTriangle(long vi0, long vi1, long vi2);
+    virtual long addTriangle(long vi0, long vi1, long vi2, long source_face_index = -1);
 
     /**
-     * Add a quadrilateral face to the mesh, specified by four vertex indices
+     * Add a quadrilateral face to the mesh, specified by four vertex indices and an optional source face index (typically the
+     * index of the face in the mesh source file)
      *
      * @return The index of the new quad in the quad list, computed as numQuads() BEFORE the addition, or -1 on failure.
      */
-    virtual long addQuad(long vi0, long vi1, long vi2, long vi3);
+    virtual long addQuad(long vi0, long vi1, long vi2, long vi3, long source_face_index = -1);
 
     /**
-     * Add a polygonal face to the mesh, specified as a sequence of vertex indices. Polygons with less than 3 vertices are
-     * ignored. If the polygon has 3 vertices, it is added to the triangle list. If it has 4 vertices, it is added to the quad
-     * list. If it has more than 4 vertices, it is triangulated and added to the triangle list.
+     * Add a polygonal face to the mesh, specified as a sequence of vertex indices and an optional source face index (typically
+     * the index of the face in the mesh source file). Polygons with less than 3 vertices are ignored. If the polygon has 3
+     * vertices, it is added to the triangle list. If it has 4 vertices, it is added to the quad list. If it has more than 4
+     * vertices, it is triangulated and added to the triangle list.
      *
      * @return A reference to the newly added face, which is invalid on failure.
      */
-    virtual Face addFace(int num_vertices, long const * vertex_indices);
+    virtual Face addFace(int num_vertices, long const * face_vertex_indices_, long source_face_index = -1);
 
     /**
-     * Add a polygonal face to the mesh, specified as a sequence of vertex indices obtained by dereferencing [vbegin, vend).
-     * Polygons with less than 3 vertices are ignored. If the polygon has 3 vertices, it is added to the triangle list. If it
-     * has 4 vertices, it is added to the quad list. If it has more than 4 vertices, it is triangulated and added to the
-     * triangle list.
+     * Add a polygonal face to the mesh, specified as a sequence of vertex indices obtained by dereferencing [vbegin, vend), and
+     * an optional source face index (typically the index of the face in the mesh source file). Polygons with less than 3
+     * vertices are ignored. If the polygon has 3 vertices, it is added to the triangle list. If it has 4 vertices, it is added
+     * to the quad list. If it has more than 4 vertices, it is triangulated and added to the triangle list.
      *
      * @return A reference to the newly added face, which is invalid on failure.
      */
-    template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end)
+    template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end, long source_face_index = -1)
     {
       face_vertex_indices.clear();
       for (IndexIterator vi = vi_begin; vi != vi_end; ++vi)
         face_vertex_indices.push_back((long)*vi);
 
-      return addFace((int)face_vertex_indices.size(), &face_vertex_indices[0]);
+      return addFace((int)face_vertex_indices.size(), &face_vertex_indices[0], source_face_index);
     }
 
     /**

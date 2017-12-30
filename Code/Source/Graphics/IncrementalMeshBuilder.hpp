@@ -72,11 +72,11 @@ class IncrementalMeshBuilder
     void begin();
 
     /** Add a vertex to the mesh and return a handle to it. Must be called within a begin() / end() block. */
-    VertexHandle addVertex(Vector3 const & pos, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    VertexHandle addVertex(Vector3 const & pos, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                            Vector2 const * texcoord = NULL);
 
     /** Add a face to the mesh and return a handle to it. Must be called within a begin() / end() block. */
-    template <typename IndexIterator> FaceHandle addFace(IndexIterator begin, IndexIterator end);
+    template <typename IndexIterator> FaceHandle addFace(IndexIterator begin, IndexIterator end, long index = -1);
 
     /** Get the number of vertices added so far. */
     long numVertices() const;

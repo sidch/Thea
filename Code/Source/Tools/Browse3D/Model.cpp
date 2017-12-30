@@ -459,7 +459,7 @@ Model::pick(Ray3 const & ray)
   {
     KDTree::VertexTriple const & triple = kdtree->getElements()[(array_size_t)index].getVertices();
     picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
-    picked_sample.face_index = triple.getMeshFace()->attr().getIndex();
+    picked_sample.face_index = triple.getMeshFace()->getIndex();
 
     valid_pick = true;
 
@@ -638,7 +638,7 @@ Model::loadSamples(std::string const & path_)
       else
       {
         if (face->numVertices() < 3)
-          throw Error(format("Face %ld has %d vertices", face->attr().getIndex(), face->numVertices()));
+          throw Error(format("Face %ld has %d vertices", face->getIndex(), face->numVertices()));
 
         MeshFace::VertexConstIterator v2 = face->verticesBegin();
         MeshFace::VertexConstIterator v0 = v2; ++v2;
@@ -687,7 +687,7 @@ Model::saveSamples(std::string const & path_) const
     }
 
     if (face->numVertices() < 3)
-      throw Error(format("Face %ld has %d vertices", face->attr().getIndex(), face->numVertices()));
+      throw Error(format("Face %ld has %d vertices", face->getIndex(), face->numVertices()));
 
     MeshFace::VertexConstIterator v2 = face->verticesBegin();
     MeshFace::VertexConstIterator v0 = v2; ++v2;
@@ -981,7 +981,7 @@ Model::saveSegments(std::string const & path_) const
       if (!mesh || mesh->numFaces() <= 0)
         continue;
 
-      long face_index = mesh->facesBegin()->attr().getIndex();  // the first face
+      long face_index = mesh->facesBegin()->getIndex();  // the first face
 
       if (mj != meshes.begin())
         out << ' ';
@@ -1236,7 +1236,7 @@ class FaceLabeler
     {
       for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
-        long index = fi->attr().getIndex();
+        long index = fi->getIndex();
         if (index < 0 || index >= (long)elem_colors.size())
           throw Error("Face index out of range of face labels array");
 

@@ -109,8 +109,65 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     typedef typename BaseT::WriteCallback WriteCallback;  ///< Called when a mesh element is written.
     using BaseT::getName;
 
-    /** Read/write options for OBJ codec. */
-    class Options
+    /** %Options for deserializing meshes. */
+    class ReadOptions
+    {
+      private:
+        bool ignore_texcoords;
+        bool ignore_normals;
+        bool skip_empty_meshes;
+        bool flatten;
+        bool store_vertex_indices;
+        bool store_face_indices;
+        bool verbose;
+
+        friend class CodecOBJ;
+
+      public:
+        /* Constructor. Sets default values. */
+        ReadOptions()
+        : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
+          store_face_indices(true), verbose(false) {}
+
+        /**
+         * Ignore texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
+         * referenced by faces is treated as a distinct vertex. Note that not all mesh types can store texture coordinates by
+         * default.
+         */
+        ReadOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+
+        /**
+         * Ignore normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by
+         * faces is treated as a distinct vertex. Note that not all mesh types can store normals by default.
+         */
+        ReadOptions & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
+
+        /** Skip meshes with no vertices or faces? */
+        ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
+
+        /** Flatten mesh hierarchy into a single mesh? */
+        ReadOptions & setFlatten(bool value) { flatten = value; return *this; }
+
+        /** Store vertex indices in mesh? */
+        ReadOptions & setStoreVertexIndices(bool value) { store_vertex_indices = value; return *this; }
+
+        /** Store face indices in mesh? */
+        ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
+
+        /** Print debugging information? */
+        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
+
+        /**
+         * The set of default options. The default options correspond to
+         * ReadOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false)
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
+         */
+        static ReadOptions const & defaults() { static ReadOptions const def; return def; }
+
+    }; // class ReadOptions
+
+    /** %Options for serializing meshes. */
+    class WriteOptions
     {
       private:
         bool ignore_texcoords;
@@ -123,40 +180,37 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       public:
         /* Constructor. Sets default values. */
-        Options(): ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), verbose(false) {}
+        WriteOptions() : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), verbose(false)
+        {}
 
         /**
-         * Ignore texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
-         * referenced by faces is treated as a distinct vertex. Note that not all mesh types can store texture coordinates by
-         * default.
+         * Ignore texture coordinates when writing to the OBJ file? If false, each unique vertex/texcoord pair referenced by
+         * faces is treated as a distinct vertex. Note that not all mesh types can store texture coordinates by default.
          */
-        Options & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+        WriteOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
 
         /**
-         * Ignore normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by
-         * faces is treated as a distinct vertex. Note that not all mesh types can store normals by default.
+         * Ignore normals when writing to the OBJ file? If false, each unique vertex/normal pair referenced by faces is treated
+         * as a distinct vertex. Note that not all mesh types can store normals by default.
          */
-        Options & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
+        WriteOptions & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
 
         /** Skip meshes with no vertices or faces? */
-        Options & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
+        WriteOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
 
         /** Flatten mesh hierarchy into a single mesh? */
-        Options & setFlatten(bool value) { flatten = value; return *this; }
+        WriteOptions & setFlatten(bool value) { flatten = value; return *this; }
 
         /** Print debugging information? */
-        Options & setVerbose(bool value) { verbose = value; return *this; }
+        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * Options().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false).setVerbose(false).
+         * WriteOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false).setVerbose(false).
          */
-        static Options const & defaults() { static Options const def; return def; }
+        static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
-    }; // class Options
-
-    typedef Options ReadOptions;   ///< %Options for deserializing meshes.
-    typedef Options WriteOptions;  ///< %Options for serializing meshes.
+    }; // class WriteOptions
 
     /** Constructor. */
     CodecOBJ(ReadOptions const & read_opts_ = ReadOptions::defaults(),
@@ -363,6 +417,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               if (existing == vtn_refs.end())
               {
                 typename Builder::VertexHandle vref = builder->addVertex(vertices[vtn[0] - 1],
+                                                                         read_opts.store_vertex_indices ? (long)vtn[0] - 1 : -1,
                                                                          vtn[2] > 0 ? &normals[vtn[2] - 1] : NULL,
                                                                          NULL,  // color
                                                                          vtn[1] > 0 ? &texcoords[vtn[1] - 1] : NULL);
@@ -389,7 +444,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               typename IndexVertexMap::const_iterator existing = vrefs.find(index);
               if (existing == vrefs.end())
               {
-                typename Builder::VertexHandle vref = builder->addVertex(vertices[(array_size_t)index]);
+                typename Builder::VertexHandle vref = builder->addVertex(vertices[(array_size_t)index],
+                                                                         (read_opts.store_vertex_indices ? index : -1));
                 if (callback)
                   callback->vertexRead(mesh.get(), index, vref);
 
@@ -404,7 +460,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               field_begin = line.find_first_not_of(" \t", field_end);
           }
 
-          typename Builder::FaceHandle fref = builder->addFace(face.begin(), face.end());
+          typename Builder::FaceHandle fref = builder->addFace(face.begin(), face.end(),
+                                                               (read_opts.store_face_indices ? num_faces : -1));
           if (callback)
             callback->faceRead(mesh.get(), num_faces, fref);
 
@@ -578,21 +635,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       }
     }
 
-    /** Write out all the vertices from a CGAL mesh and map them to indices. */
-    template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL) const
-    {
-      long vertex_index = (long)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
-      for (typename Mesh::Vertex_const_iterator vi = mesh.vertices_begin(); vi != mesh.vertices_end(); ++vi, ++vertex_index)
-      {
-        writeString(format("v %f %f %f\n", vi->point().x(), vi->point().y(), vi->point().z()), output);
-        vertex_indices[&(*vi)] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index - 1, vi);
-      }
-    }
-
     /** Write out all the faces from a mesh group. Returns the number of faces written. */
     void serializeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index) const
@@ -739,42 +781,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
             callback->faceWritten(&mesh, next_index++, face);
           }
         }
-      }
-    }
-
-    /** Write out all the faces from a CGAL mesh. Returns the number of faces written. */
-    template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsCGALMesh<_MeshT> >::type * dummy = NULL) const
-    {
-      if (write_opts.skip_empty_meshes && mesh.size_of_facets() <= 0)
-        return;
-
-      if (!write_opts.flatten)
-        writeString(std::string("\ng ") + mesh.getName() + '\n', output);
-
-      for (typename Mesh::Facet_const_iterator fi = mesh.facets_begin(); fi != mesh.facets_end(); ++fi)
-      {
-        typename Mesh::Facet const & facet = *fi;
-        if (facet.facet_degree() < 3) continue;
-
-        std::ostringstream os; os << 'f';
-
-        typename Mesh::Facet::Halfedge_around_facet_const_circulator ei = facet.facet_begin();
-        do
-        {
-          typename VertexIndexMap::const_iterator ii = vertex_indices.find(&(*ei->vertex()));
-          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-          os << ' ' << ii->second;
-
-        } while (++ei != facet.facet_begin());
-
-        os << '\n';
-        writeString(os.str(), output);
-
-        if (callback) callback->faceWritten(&mesh, next_index++, fi);
       }
     }
 

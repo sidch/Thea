@@ -71,7 +71,7 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
 
   public:
     /** Default constructor. */
-    DCELFace() : halfedge(NULL), num_edges(0) {}
+    DCELFace() : halfedge(NULL), index(-1), num_edges(0) {}
 
     /** Get a canonical halfedge on the boundary of the face. */
     Halfedge const * getHalfedge() const
@@ -99,11 +99,17 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     /** Check if the face is a quad. */
     bool isQuad() const { return num_edges == 4; }
 
+    /** Get the index of the face, typically in the source file (or negative if unindexed). */
+    long getIndex() const { return index; }
+
+    /** Set the index of the face, typically from the source file (or negative if unindexed). */
+    void setIndex(long index_) { index = index_; }
+
     /** Update the face normal by recomputing it from vertex data. */
     void updateNormal()
     {
       // Assume the normal is consistent across the face
-      Vector3 e1 = halfedge->getOrigin()->getPosition()         - halfedge->getEnd()->getPosition();
+      Vector3 e1 = halfedge->getOrigin()->getPosition()      - halfedge->getEnd()->getPosition();
       Vector3 e2 = halfedge->next()->getEnd()->getPosition() - halfedge->getEnd()->getPosition();
       setNormal(e2.cross(e1).unit());  // counter-clockwise
     }
@@ -174,6 +180,7 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     template <typename _VertexAttribute, typename _HalfedgeAttribute, typename _FaceAttribute> friend class DCELMesh;
 
     Halfedge * halfedge;
+    long index;
     int num_edges;
 
 #if 0
