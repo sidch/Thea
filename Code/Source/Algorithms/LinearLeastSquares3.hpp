@@ -208,7 +208,7 @@ class LinearLeastSquares3<T, typename boost::enable_if< IsNonReferencedPointN<T,
 
 }; // class LinearLeastSquares3<Point3>
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

@@ -142,7 +142,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsNonRe
 
 }; // class CentroidN<PointN>
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

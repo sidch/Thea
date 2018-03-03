@@ -150,7 +150,7 @@ class /* THEA_API */ PointCollectorN
 
 }; // class PointCollectorN
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

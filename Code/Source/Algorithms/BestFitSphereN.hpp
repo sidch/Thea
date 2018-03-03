@@ -123,7 +123,7 @@ class /* THEA_API */ BestFitSphereN
 
 }; // class BestFitSphereN
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

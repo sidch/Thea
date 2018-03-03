@@ -50,7 +50,7 @@ namespace Algorithms {
 /** Best-fit sphere in 3 dimensions. */
 typedef BestFitSphereN<3, Real> BestFitSphere3;
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

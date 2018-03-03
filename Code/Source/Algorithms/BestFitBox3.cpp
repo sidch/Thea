@@ -270,5 +270,5 @@ BestFitBox3::update() const
   updated = true;
 }
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea

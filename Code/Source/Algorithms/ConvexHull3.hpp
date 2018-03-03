@@ -156,7 +156,7 @@ class THEA_API ConvexHull3
 
 }; // class ConvexHull3
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

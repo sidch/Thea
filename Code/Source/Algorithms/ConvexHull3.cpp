@@ -184,8 +184,8 @@ ConvexHull3::updateApprox() const
   approx_updated = true;
 }
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 // Quick-and-dirty test to see if the export-to-mesh code compiles. Comment this out for normal use.
 // #include "../Graphics/GeneralMesh.hpp"

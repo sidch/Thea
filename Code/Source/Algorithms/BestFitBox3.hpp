@@ -99,7 +99,7 @@ class THEA_API BestFitBox3
 
 }; // class BestFitBox3
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

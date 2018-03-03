@@ -245,7 +245,7 @@ class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 3
 
 }; // class PCA_N<Point3>
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

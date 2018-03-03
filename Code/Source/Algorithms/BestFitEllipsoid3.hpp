@@ -98,7 +98,7 @@ class THEA_API BestFitEllipsoid3
 
 }; // class BestFitEllipsoid3
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

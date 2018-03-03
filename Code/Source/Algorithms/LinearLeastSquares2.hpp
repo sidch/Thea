@@ -138,7 +138,7 @@ class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsNonRefe
 
 }; // class LinearLeastSquares2<Point2>
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

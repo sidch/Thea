@@ -503,7 +503,7 @@ class ICP3
 
 }; // class ICP3
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

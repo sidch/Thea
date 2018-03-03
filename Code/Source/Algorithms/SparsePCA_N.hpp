@@ -295,7 +295,7 @@ class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPoint
 
 }; // class SparsePCA_N<Point3>
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif

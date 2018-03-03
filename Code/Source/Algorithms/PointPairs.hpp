@@ -83,7 +83,7 @@ class /* THEA_API */ PointPairN : public std::pair< VectorN<N, T>, VectorN<N, T>
 
 }; // class PointPairN
 
-} // namespace Thea
 } // namespace Algorithms
+} // namespace Thea
 
 #endif
