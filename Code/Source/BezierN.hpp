@@ -64,6 +64,8 @@
 #include "Array.hpp"
 #include "Matrix.hpp"
 #include "VectorN.hpp"
+#include "Algorithms/FastCopy.hpp"
+#include "Algorithms/LinearLeastSquares.hpp"
 #include "Algorithms/PointTraitsN.hpp"
 #include <iterator>
 
@@ -85,7 +87,7 @@ class /* THEA_API */ BezierN
      * Construct an (initially zero length) Bezier curve of a given order (2 for quadratic Bezier, 3 for cubic Bezier, etc). The
      * segment will be initialized with \a order + 1 control points, all initially zero.
      */
-    BezierN(int order_ = 3) : changed(true)
+    BezierN(long order_ = 3) : changed(true)
     {
       alwaysAssertM(order_ >= 1, "BezierN: Order must be non-negative");
 
@@ -93,16 +95,19 @@ class /* THEA_API */ BezierN
     }
 
     /** Get the order of the curve. */
-    int getOrder() const { return (int)ctrl[0].size() - 1; }
+    long getOrder() const { return (long)ctrl[0].size() - 1; }
+
+    /** Get the number of control points of the curve. Necessarily equal to getOrder() + 1. */
+    long numControlPoints() const { return (long)ctrl[0].size(); }
 
     /**
      * Get a control point of the curve.
      *
      * @param index The index of the control point, in the range 0 to getOrder() (inclusive).
      */
-    VectorT const & getControlPoint(int index) const
+    VectorT const & getControlPoint(long index) const
     {
-      debugAssertM(index >= 0 && index < (int)ctrl[0].size(), "BezierN: Control point index out of range");
+      debugAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
       return ctrl[0][(array_size_t)index];
     }
 
@@ -112,9 +117,9 @@ class /* THEA_API */ BezierN
      * @param index The index of the control point to be set, in the range 0 to getOrder() (inclusive).
      * @param pos The new position of the control point.
      */
-    void setControlPoint(int index, VectorT const & pos)
+    void setControlPoint(long index, VectorT const & pos)
     {
-      debugAssertM(index >= 0 && index < (int)ctrl[0].size(), "BezierN: Control point index out of range");
+      debugAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
 
       array_size_t i = (array_size_t)index;
       ctrl[0][i] = pos;
@@ -131,40 +136,84 @@ class /* THEA_API */ BezierN
      * Get the first, second, or third derivative (specified by \a deriv_order = 1, 2 or 3) of the curve at parameter value
      * \a t, in the range [0, 1].
      */
-    VectorT getDeriv(T const & t, int deriv_order = 1) const
+    VectorT getDeriv(T const & t, long deriv_order = 1) const
     {
       return eval(t, deriv_order);
     }
 
     /**
      * Fit the Bezier curve segment to a sequence of points [begin, end), where the curve begins at the first point and
-     * ends at the last one. Currently only quadratic and cubic Beziers are supported.
+     * ends at the last one.
      *
-     * @return The non-negative fitting error on success, a negative value on error.
+     * @param begin First point in the sequence to be fitted. This will be the position of the first control point of the curve.
+     * @param end One past the last point in the sequence to be fitted. The last point will be the position of the last control
+     *   point of the curve.
+     * @param initial_params The curve parameters of the points, if known in advance. The first and last entries will be
+     *   ignored, since these are always assumed to be 0 and 1 respectively.
+     * @param reparametrize_iters If greater than zero, the parameter values of the points will be re-estimated this many times,
+     *  guided by initial values (\a initial_params) if any.
+     * @param final_params If non-null, used to return the final parameter values of the point sequence. Must be pre-allocated
+     *  to have at least as many entries as the number of points. The first and last values will always be 0 and 1,
+     *  respectively, if the function succeeds.
+     *
+     * @return The non-negative squared fitting error on success, a negative value on error.
      */
     template <typename InputIterator>
-    T fitToPoints(InputIterator begin, InputIterator end,
-                  typename boost::enable_if< Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
-                                           >::type * dummy = NULL)
+    double fitToPoints(InputIterator begin, InputIterator end,
+                       T const * initial_params = NULL,
+                       long reparametrize_iters = 0,
+                       T * final_params = NULL,
+                       typename boost::enable_if<
+                                  Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
+                                                >::type * dummy = NULL)
     {
-      typedef typename std::iterator_traits<InputIterator>::value_type PointT;
-
-      switch (getOrder())
+      // Initialize parameter values for the points
+      TheaArray<double> u;
+      if (initial_params)
       {
-        case 2  : return fitQuadratic(begin, end);
-        case 3  : return fitCubic(begin, end);
-
-        default :
-        {
-          THEA_ERROR << "BezierN: Currently only Bezier curves of order 2 or 3 can be fitted to points";
-          return -1;
-        }
+        T const * up = initial_params;
+        for (InputIterator pi = begin; pi != end; ++pi, ++up)
+          u.push_back(static_cast<double>(*up));
       }
+      else
+        chordLengthParametrize(begin, end, u);
+
+      if (u.size() < ctrl[0].size())
+      {
+        THEA_ERROR << "BezierN: Cannot fit to fewer data points than control points";
+        return false;
+      }
+
+      // Fit the curve iteratively, alternating between a linear least squares fit with known parameter values, and
+      // re-estimation of parameters via Newton-Raphson
+      while (true)
+      {
+        if (!llsqFit(begin, end, u))
+          return -1;
+
+        if (--reparametrize_iters < 0)
+          break;
+
+        refineParameters(begin, end, u);
+      }
+
+      if (final_params)
+        Algorithms::fastCopy(u.begin(), u.end(), final_params);
+
+      return 0;  // FIXME: return squared error
+    }
+
+    /** Get a textual representation of the curve. */
+    std::string toString() const
+    {
+      std::ostringstream oss;
+      oss << "[order = " << getOrder() << ", ctrl = [" << stringJoin(ctrl[0], ", ") << "]]";
+      return oss.str();
     }
 
   private:
     mutable TheaArray<VectorT>  ctrl[4];  ///< Arrays of curve control points and first, second and third-order differences.
-    mutable Matrix<T>           binom;    ///< Cached binomial coefficients.
+    mutable Matrix<double>      binom;    ///< Cached binomial coefficients.
     mutable bool                changed;  ///< Was the curve changed?
 
     /** Cache binomial coefficients for computing Bernstein polynomials. */
@@ -225,7 +274,7 @@ class /* THEA_API */ BezierN
     }
 
     /** Evaluate the curve, or one of its derivatives, at a given parameter value. */
-    VectorT eval(T const & t, int deriv_order) const
+    VectorT eval(T const & t, long deriv_order) const
     {
       alwaysAssertM(t >= -0.00001 && t <= 1.00001, "BezierN: Curve parameter out of range");
       alwaysAssertM(deriv_order >= 0 && deriv_order <= 3, "BezierN: Invalid derivative order");
@@ -235,19 +284,19 @@ class /* THEA_API */ BezierN
       T omt = 1 - t;
       VectorT result = omt * ctrl[deriv_order][0];
 
-      int order = getOrder();
+      long order = getOrder();
       T tpow = t;
-      int isup = order - deriv_order;
-      for (int i = 1; i < isup; ++i)
+      long isup = order - deriv_order;
+      for (long i = 1; i < isup; ++i)
       {
-        T c = binom(isup, i) * tpow;
+        T c = static_cast<T>(binom(isup, i) * tpow);
         result = (result + c * ctrl[deriv_order][i]) * omt;
         tpow *= t;
       }
       result = (result + tpow * ctrl[deriv_order][isup]);
 
-      int multiplier = 1;
-      for (int i = 0; i < deriv_order; ++i)
+      long multiplier = 1;
+      for (long i = 0; i < deriv_order; ++i)
         multiplier *= (order - i);
 
       result *= multiplier;
@@ -255,14 +304,133 @@ class /* THEA_API */ BezierN
       return result;
     }
 
-    template <typename InputIterator> T fitQuadratic(InputIterator begin, InputIterator end)
+    /** Estimate curve parameters for a sequence of points, by accumulating pairwise segment lengths along the sequence. */
+    template <typename InputIterator>
+    static void chordLengthParametrize(InputIterator begin, InputIterator end, TheaArray<double> & u)
     {
-      return -1;
+      using namespace Algorithms;
+      typedef typename std::iterator_traits<InputIterator>::value_type PointT;
+
+      u.clear();
+
+      if (begin == end)
+        return;
+
+      u.push_back(0.0);
+
+      VectorT last = PointTraitsN<PointT, N>::getPosition(*begin);
+      InputIterator pi = begin;
+      double sum_u = 0.0;
+      for (++pi; pi != end; ++pi)
+      {
+        VectorT curr = PointTraitsN<PointT, N>::getPosition(*pi);
+        sum_u += static_cast<double>((curr - last).fastLength());
+        u.push_back(sum_u);
+        last = curr;
+      }
+
+      double umax = u[u.size() - 1];
+      if (umax <= 0)
+        return;
+
+      for (array_size_t i = 0; i < u.size(); ++i)
+        u[i] /= umax;
     }
 
-    template <typename InputIterator> T fitCubic(InputIterator begin, InputIterator end)
+    /** Get the Bernstein basis coefficients for a given curve parameter \a t. */
+    void getBernsteinBasis(double t, TheaArray<double> & b) const
     {
-      return -1;
+      cacheBinom();
+
+      long n = getOrder();
+      b.resize((array_size_t)n + 1);
+
+      b[0] = 1.0;
+      double tpow = t;
+      for (long i = 1; i <= n; ++i, tpow *= t)
+        b[(array_size_t)i] = binom(n, i) * tpow;
+
+      double omt = 1 - t;
+      double omt_pow = omt;
+      for (long i = n - 1; i >= 0; --i, omt_pow *= omt)
+        b[(array_size_t)i] *= omt_pow;
+    }
+
+    /**
+     * Fit the curve to a sequence of points using linear least-squares. Control point positions are estimated by minimizing the
+     * sum of squared errors between the points and their corresponding curve points with known parameters \a u.
+     */
+    template <typename InputIterator> bool llsqFit(InputIterator begin, InputIterator end, TheaArray<double> const & u)
+    {
+      using namespace Algorithms;
+      typedef typename std::iterator_traits<InputIterator>::value_type PointT;
+
+      array_size_t num_ctrls = ctrl[0].size();
+      array_size_t num_unknown_ctrls = num_ctrls - 2;  // first and last points are known
+      array_size_t num_unknowns = (array_size_t)(N * num_unknown_ctrls);
+
+      LinearLeastSquares llsq((long)num_unknowns);
+      TheaArray<double> basis;
+      TheaArray<double> coeffs(num_unknowns, 0.0);
+
+      // Cache the first and last points of the sequence
+      InputIterator first = begin;
+      InputIterator last = begin;
+      for (InputIterator pi = begin; pi != end; ++pi)
+        last = pi;
+
+      VectorT first_pos  =  PointTraitsN<PointT, N>::getPosition(*first);
+      VectorT last_pos   =  PointTraitsN<PointT, N>::getPosition(*last);
+
+      // Try to make each point in the sequence match the point on the curve with the corresponding parameters
+      array_size_t i = 0;
+      for (InputIterator pi = begin; pi != end; ++pi, ++i)
+      {
+        getBernsteinBasis(u[i], basis);
+        VectorT d = PointTraitsN<PointT, N>::getPosition(*pi)
+                  - basis[0] * first_pos  // first control point of curve is fixed at starting point of sequence
+                  - basis[basis.size() - 1] * last_pos;  // last control point is also fixed to last point of sequence
+
+        // One scalar objective for each dimension
+        for (long j = 0; j < N; ++j)
+        {
+          array_size_t offset = (array_size_t)j * num_unknown_ctrls;
+          fastCopy(&basis[1], &basis[basis.size() - 1], coeffs.begin() + offset);
+
+          llsq.addObjective(&coeffs[0], d[j]);
+
+          // Reset the range
+          fill(coeffs.begin() + offset, coeffs.begin() + offset + num_unknown_ctrls, 0.0);
+        }
+      }
+
+      if (!llsq.solve(LinearLeastSquares::Constraint::UNCONSTRAINED))
+      {
+        THEA_ERROR << "BezierN: Could not solve linear least-squares curve fitting problem";
+        return false;
+      }
+
+      TheaArray<double> const & sol = llsq.getSolution();
+      alwaysAssertM(sol.size() == num_unknowns,
+                    "BezierN: Linears least-squares solution length doesn't match number of unknowns");
+
+      ctrl[0][0] = first_pos;
+      for (long i = 0; i < N; ++i)
+      {
+        array_size_t offset = (array_size_t)(i * num_unknown_ctrls);
+
+        for (array_size_t j = 1; j <= num_unknown_ctrls; ++j)
+          ctrl[0][j][i] = static_cast<T>(sol[offset + (j - 1)]);
+      }
+      ctrl[0][num_ctrls - 1] = last_pos;
+
+      changed = true;
+      return true;
+    }
+
+    template <typename InputIterator> bool refineParameters(InputIterator begin, InputIterator end, TheaArray<double> const & u)
+    {
+      return false;
     }
 
 }; // class BezierN

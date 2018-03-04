@@ -78,8 +78,8 @@ class THEA_API LinearLeastSquares
     long numDimensions() const { return ndim; }
 
     /**
-     * Add an obective term that is to be satisfied in a least-squares sense. This corresponds to a row of the matrix A, and the
-     * corresponding element of <b>b</b>. The equality dot(\a coeffs, <b>x</b>) = \a b is satisfied as best as possible.
+     * Add an objective term that is to be satisfied in a least-squares sense. This corresponds to a row of the matrix A, and
+     * the corresponding element of <b>b</b>. The equality dot(\a coeffs, <b>x</b>) = \a b is satisfied as best as possible.
      *
      * @param coeffs The coefficients of the elements of <b>x</b>.
      * @param constant The desired value of the dot product of \a coeffs and <b>x</b>.
