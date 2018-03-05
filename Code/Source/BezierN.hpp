@@ -150,20 +150,20 @@ class /* THEA_API */ BezierN
      *   point of the curve.
      * @param initial_params The curve parameters of the points, if known in advance. The first and last entries will be
      *   ignored, since these are always assumed to be 0 and 1 respectively.
-     * @param num_reparam_iters If greater than zero, the parameter values of the points will be re-estimated this many times,
-     *  guided by initial values (\a initial_params) if any.
+     * @param max_reparam_iters If greater than zero, the parameter values of the points will be re-estimated (at most) this
+     *  many times, guided by initial values (\a initial_params) if any.
      * @param num_reparam_steps_per_iter The number of successive Newton-Raphson steps in each iteration of reparametrization.
      * @param final_params If non-null, used to return the final parameter values of the point sequence. Must be pre-allocated
      *  to have at least as many entries as the number of points. The first and last values will always be 0 and 1,
      *  respectively, if the function succeeds.
      *
-     * @return The non-negative squared fitting error on success, a negative value on error.
+     * @return The non-negative squared fitting error on success, or a negative value on error.
      */
     template <typename InputIterator>
     double fitToPoints(InputIterator begin, InputIterator end,
                        T const * initial_params = NULL,
                        T * final_params = NULL,
-                       long num_reparam_iters = 0,
+                       long max_reparam_iters = 0,
                        long num_reparam_steps_per_iter = 1,  // conservative choice, following Graphics Gems
                        typename boost::enable_if<
                                   Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
@@ -183,26 +183,35 @@ class /* THEA_API */ BezierN
       if (u.size() < ctrl[0].size())
       {
         THEA_ERROR << "BezierN: Cannot fit to fewer data points than control points";
-        return false;
+        return -1;
       }
 
       // Fit the curve iteratively, alternating between a linear least squares fit with known parameter values, and
       // re-estimation of parameters via Newton-Raphson
+      double sqerr = -1;
       while (true)
       {
-        if (!llsqFit(begin, end, u))
-          return -1;
+        double e = llsqFit(begin, end, u);
+        if (e < 0)  // could not fit, revert to last solution
+          break;
 
-        if (--num_reparam_iters < 0)
+        if (sqerr >= 0 && e > sqerr)  // error increased, stop iterating
+          break;
+
+        sqerr = e;
+
+        // A bit wasteful to save it every iteration instead of outside the loop, but do it in case llsqFit fails and we have to
+        // revert to the last solution
+        if (final_params)
+          Algorithms::fastCopy(u.begin(), u.end(), final_params);
+
+        if (--max_reparam_iters < 0)
           break;
 
         refineParameters(begin, end, u, num_reparam_steps_per_iter);
       }
 
-      if (final_params)
-        Algorithms::fastCopy(u.begin(), u.end(), final_params);
-
-      return 0;  // FIXME: return squared error
+      return sqerr;
     }
 
     /** Get a textual representation of the curve. */
@@ -361,8 +370,10 @@ class /* THEA_API */ BezierN
     /**
      * Fit the curve to a sequence of points using linear least-squares. Control point positions are estimated by minimizing the
      * sum of squared errors between the points and their corresponding curve points with known parameters \a u.
+     *
+     * @return The sum of squared fitting errors, or a negative value on error.
      */
-    template <typename InputIterator> bool llsqFit(InputIterator begin, InputIterator end, TheaArray<double> const & u)
+    template <typename InputIterator> double llsqFit(InputIterator begin, InputIterator end, TheaArray<double> const & u)
     {
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;
@@ -409,7 +420,7 @@ class /* THEA_API */ BezierN
       if (!llsq.solve(LinearLeastSquares::Constraint::UNCONSTRAINED))
       {
         THEA_ERROR << "BezierN: Could not solve linear least-squares curve fitting problem";
-        return false;
+        return -1;
       }
 
       TheaArray<double> const & sol = llsq.getSolution();
@@ -427,7 +438,7 @@ class /* THEA_API */ BezierN
       ctrl[0][num_ctrls - 1] = last_pos;
 
       changed = true;
-      return true;
+      return llsq.squaredError();
     }
 
     /**

@@ -118,6 +118,12 @@ class THEA_API LinearLeastSquares
     /** Get the solution vector of the linear system. Valid only if hasSolution() returns true. */
     TheaArray<double> const & getSolution() const { return solution; }
 
+    /**
+     * Compute the squared error of the current solution, or return a negative value if no solution exists or the system is
+     * invalid.
+     */
+    double squaredError() const;
+
   private:
     long ndim;  ///< The number of dimensions of the problem domain.
     long num_objectives;  ///< The number of objectives in the system.

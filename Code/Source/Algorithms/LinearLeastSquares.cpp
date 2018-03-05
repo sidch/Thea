@@ -68,6 +68,7 @@ void
 LinearLeastSquares::clearObjectives()
 {
   a_values.clear();
+  b.clear();
   num_objectives = 0;
 }
 
@@ -147,6 +148,33 @@ LinearLeastSquares::solve(Constraint constraint, double tolerance)
   }
 
   return has_solution;
+}
+
+double
+LinearLeastSquares::squaredError() const
+{
+  if (!has_solution
+   || (long)solution.size() != ndim
+   || (long)b.size() != num_objectives
+   || (long)a_values.size() != ndim * num_objectives)
+    return -1;
+
+  if (solution.empty())
+    return 0;
+
+  // Create a new vector even though squared error can be computed in place, just in case postmulVector has optimizations
+  TheaArray<double> b_prime((array_size_t)num_objectives);
+  Matrix<double, MatrixLayout::ROW_MAJOR> a(const_cast<double *>(&a_values[0]), num_objectives, ndim);
+  a.postmulVector(&solution[0], &b_prime[0]);
+
+  double sqerr = 0;
+  for (array_size_t i = 0; i < b.size(); ++i)
+  {
+    double bb = b_prime[i] - b[i];
+    sqerr += (bb * bb);
+  }
+
+  return sqerr;
 }
 
 } // namespace Algorithms
