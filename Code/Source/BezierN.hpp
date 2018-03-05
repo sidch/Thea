@@ -62,11 +62,13 @@
 
 #include "Common.hpp"
 #include "Array.hpp"
+#include "Math.hpp"
 #include "Matrix.hpp"
 #include "VectorN.hpp"
 #include "Algorithms/FastCopy.hpp"
 #include "Algorithms/LinearLeastSquares.hpp"
 #include "Algorithms/PointTraitsN.hpp"
+#include <algorithm>
 #include <iterator>
 
 namespace Thea {
@@ -133,6 +135,73 @@ class /* THEA_API */ BezierN
     }
 
     /**
+     * Get a sequence of points roughly evenly spaced by arc length along the curve, with associated parameter values. The
+     * beginning and end of the curve are always included.
+     *
+     * @param num_points The number of evenly spaced points to be returned (must be at least 2).
+     * @param pts_begin If non-null, used to return the point sequence. Must have capacity at least \a num_points.
+     * @param pts_begin If non-null, used to return the corresponding curve parameter sequence. Must have capacity at least
+     *   \a num_points.
+     * @param num_arc_samples If non-negative, specifies the number of samples for approximating arc lengths along the curve
+     *   (must be at least 2). This value should normally be left at the default setting.
+     */
+    void getEvenlySpacedPoints(long num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
+                               long num_arc_samples = -1)
+    {
+      if (num_arc_samples < 0)
+        num_arc_samples = getOrder() * 50;
+
+      alwaysAssertM(num_points >= 2, "BezierN: At least two evenly-spaced points must be sampled");
+      alwaysAssertM(num_arc_samples >= 2, "BezierN: At least two samples must be used to approximate arc lengths");
+
+      // Generate num_points samples with uniform parameter spacing
+      TheaArray<VectorT> arc_samples((array_size_t)num_arc_samples);
+      T arc_denom = static_cast<T>(num_arc_samples - 1);
+      T t;
+      for (long i = 0; i < num_arc_samples; ++i)
+      {
+        t = i / arc_denom;
+        arc_samples[(array_size_t)i] = eval(t, 0);
+      }
+
+      // Compute the normalized arc length for each sampled point, by a piecewise linear approximation. This is a monotonically
+      // increasing sorted array with first element 0 and last element 1.
+      TheaArray<double> arclen;
+      chordLengthParametrize(arc_samples.begin(), arc_samples.end(), arclen);
+
+      // Generate a uniform distribution of normalized arc lengths, map each arc length to the corresponding interval in the
+      // generated sequence, and use linear interpolation within the interval to find the corresponding curve parameter
+      typedef TheaArray<double>::iterator DoubleIterator;
+      DoubleIterator last = arclen.begin();
+      for (array_size_t i = 0; i < (array_size_t)num_points; ++i)
+      {
+        if (i == 0)  // short-circuit for first and last points and save two binary searches
+          t = 0;
+        else if (i == (array_size_t)num_points - 1)
+          t = 1;
+        else
+        {
+          double s = i / (double)(num_points - 1);  // target arc-length
+          DoubleIterator seg_stop = std::upper_bound(last, arclen.end(), s);
+          if (seg_stop == arclen.end())  // in degenerate cases
+            t = 1;
+          else if (seg_stop != arclen.begin())
+          {
+            DoubleIterator seg_start = seg_stop - 1;
+            double f = (s - *seg_start) / (*seg_stop - *seg_start);  // denom won't be zero because of upper_bound spec
+            array_size_t index = (seg_start - arclen.begin());
+            t = Math::lerp(index / arc_denom, (index + 1) / arc_denom, f);
+          }
+
+          last = seg_stop;
+        }
+
+        if (pts_begin)     pts_begin[i]     =  eval(static_cast<T>(t), 0);
+        if (params_begin)  params_begin[i]  =  static_cast<T>(t);
+      }
+    }
+
+    /**
      * Get the first, second, or third derivative (specified by \a deriv_order = 1, 2 or 3) of the curve at parameter value
      * \a t, in the range [0, 1].
      */
@@ -163,7 +232,7 @@ class /* THEA_API */ BezierN
     double fitToPoints(InputIterator begin, InputIterator end,
                        T const * initial_params = NULL,
                        T * final_params = NULL,
-                       long max_reparam_iters = 0,
+                       long max_reparam_iters = 3,
                        long num_reparam_steps_per_iter = 1,  // conservative choice, following Graphics Gems
                        typename boost::enable_if<
                                   Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
@@ -182,7 +251,7 @@ class /* THEA_API */ BezierN
 
       if (u.size() < ctrl[0].size())
       {
-        THEA_ERROR << "BezierN: Cannot fit to fewer data points than control points";
+        THEA_ERROR << "BezierN: Cannot fit curve to fewer data points than control points";
         return -1;
       }
 
@@ -287,8 +356,8 @@ class /* THEA_API */ BezierN
     /** Evaluate the curve, or one of its derivatives, at a given parameter value. */
     VectorT eval(T const & t, long deriv_order) const
     {
-      alwaysAssertM(t >= -0.00001 && t <= 1.00001, "BezierN: Curve parameter out of range");
-      alwaysAssertM(deriv_order >= 0 && deriv_order <= 3, "BezierN: Invalid derivative order");
+      alwaysAssertM(t >= -0.00001 && t <= 1.00001, format("BezierN: Curve parameter %lf out of range", static_cast<double>(t)));
+      alwaysAssertM(deriv_order >= 0 && deriv_order <= 3, format("BezierN: Invalid derivative order %ld", deriv_order));
 
       update();
 
