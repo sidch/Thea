@@ -117,6 +117,12 @@ class /* THEA_DLL_LOCAL */ VectorNBase
       Algorithms::fastCopy(&src(0, 0), &src(0, 0) + N, &values[0]);
     }
 
+    /** Get the number of dimensions of the vector. */
+    static long size() { return N; }
+
+    /** Get the number of dimensions of the vector. */
+    static long numDimensions() { return N; }
+
     /** Convert the vector to a column matrix (not defined unless MatrixMN.hpp is included). */
     MatrixMN<N, 1, T> toColumnMatrix() const;
 

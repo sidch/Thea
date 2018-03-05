@@ -107,7 +107,7 @@ class /* THEA_API */ BezierN
      */
     VectorT const & getControlPoint(long index) const
     {
-      debugAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
+      alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
       return ctrl[0][(array_size_t)index];
     }
 
@@ -119,7 +119,7 @@ class /* THEA_API */ BezierN
      */
     void setControlPoint(long index, VectorT const & pos)
     {
-      debugAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
+      alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
 
       array_size_t i = (array_size_t)index;
       ctrl[0][i] = pos;
@@ -150,8 +150,9 @@ class /* THEA_API */ BezierN
      *   point of the curve.
      * @param initial_params The curve parameters of the points, if known in advance. The first and last entries will be
      *   ignored, since these are always assumed to be 0 and 1 respectively.
-     * @param reparametrize_iters If greater than zero, the parameter values of the points will be re-estimated this many times,
+     * @param num_reparam_iters If greater than zero, the parameter values of the points will be re-estimated this many times,
      *  guided by initial values (\a initial_params) if any.
+     * @param num_reparam_steps_per_iter The number of successive Newton-Raphson steps in each iteration of reparametrization.
      * @param final_params If non-null, used to return the final parameter values of the point sequence. Must be pre-allocated
      *  to have at least as many entries as the number of points. The first and last values will always be 0 and 1,
      *  respectively, if the function succeeds.
@@ -161,8 +162,9 @@ class /* THEA_API */ BezierN
     template <typename InputIterator>
     double fitToPoints(InputIterator begin, InputIterator end,
                        T const * initial_params = NULL,
-                       long reparametrize_iters = 0,
                        T * final_params = NULL,
+                       long num_reparam_iters = 0,
+                       long num_reparam_steps_per_iter = 1,  // conservative choice, following Graphics Gems
                        typename boost::enable_if<
                                   Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
                                                 >::type * dummy = NULL)
@@ -191,10 +193,10 @@ class /* THEA_API */ BezierN
         if (!llsqFit(begin, end, u))
           return -1;
 
-        if (--reparametrize_iters < 0)
+        if (--num_reparam_iters < 0)
           break;
 
-        refineParameters(begin, end, u);
+        refineParameters(begin, end, u, num_reparam_steps_per_iter);
       }
 
       if (final_params)
@@ -318,12 +320,12 @@ class /* THEA_API */ BezierN
 
       u.push_back(0.0);
 
-      VectorT last = PointTraitsN<PointT, N>::getPosition(*begin);
+      VectorT last = PointTraitsN<PointT, N, T>::getPosition(*begin);
       InputIterator pi = begin;
       double sum_u = 0.0;
       for (++pi; pi != end; ++pi)
       {
-        VectorT curr = PointTraitsN<PointT, N>::getPosition(*pi);
+        VectorT curr = PointTraitsN<PointT, N, T>::getPosition(*pi);
         sum_u += static_cast<double>((curr - last).fastLength());
         u.push_back(sum_u);
         last = curr;
@@ -379,15 +381,15 @@ class /* THEA_API */ BezierN
       for (InputIterator pi = begin; pi != end; ++pi)
         last = pi;
 
-      VectorT first_pos  =  PointTraitsN<PointT, N>::getPosition(*first);
-      VectorT last_pos   =  PointTraitsN<PointT, N>::getPosition(*last);
+      VectorT first_pos  =  PointTraitsN<PointT, N, T>::getPosition(*first);
+      VectorT last_pos   =  PointTraitsN<PointT, N, T>::getPosition(*last);
 
       // Try to make each point in the sequence match the point on the curve with the corresponding parameters
       array_size_t i = 0;
       for (InputIterator pi = begin; pi != end; ++pi, ++i)
       {
         getBernsteinBasis(u[i], basis);
-        VectorT d = PointTraitsN<PointT, N>::getPosition(*pi)
+        VectorT d = PointTraitsN<PointT, N, T>::getPosition(*pi)
                   - basis[0] * first_pos  // first control point of curve is fixed at starting point of sequence
                   - basis[basis.size() - 1] * last_pos;  // last control point is also fixed to last point of sequence
 
@@ -412,7 +414,7 @@ class /* THEA_API */ BezierN
 
       TheaArray<double> const & sol = llsq.getSolution();
       alwaysAssertM(sol.size() == num_unknowns,
-                    "BezierN: Linears least-squares solution length doesn't match number of unknowns");
+                    "BezierN: Linear least-squares solution length doesn't match number of unknowns");
 
       ctrl[0][0] = first_pos;
       for (long i = 0; i < N; ++i)
@@ -428,9 +430,42 @@ class /* THEA_API */ BezierN
       return true;
     }
 
-    template <typename InputIterator> bool refineParameters(InputIterator begin, InputIterator end, TheaArray<double> const & u)
+    /**
+     * Optimize each parameter value to bring the curve closer to the corresponding target point, using Newton-Raphson steps.
+     *
+     * See "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, "Graphics Gems", 1990.
+     */
+    template <typename InputIterator>
+    bool refineParameters(InputIterator begin, InputIterator end, TheaArray<double> & u, long num_newton_iters)
     {
-      return false;
+      using namespace Algorithms;
+      typedef typename std::iterator_traits<InputIterator>::value_type PointT;
+
+      array_size_t i = 0;
+      for (InputIterator pi = begin; pi != end; ++pi, ++i)
+      {
+        // Target point
+        VectorT p = PointTraitsN<PointT, N, T>::getPosition(*pi);
+
+        for (long j = 0; j < num_newton_iters; ++j)
+        {
+          // We're trying to minimize (Q(t) - P)^2, i.e. finding the root of (Q(t) - P).Q'(t) = 0. The corresponding
+          // Newton-Raphson step is t <-- t - f(t)/f'(t), where f(t) = (Q(t) - P).Q'(t). Differentiating, we get
+          // f'(t) = Q'(t).Q'(t) + (Q(t) - P).Q''(t)
+
+          double t = static_cast<T>(u[i]);
+          VectorT q   =  eval(t, 0);
+          VectorT q1  =  eval(t, 1);
+          VectorT q2  =  eval(t, 2);
+
+          double numer = static_cast<double>((q - p).dot(q1));
+          double denom = static_cast<double>(q1.dot(q1) + (q - p).dot(q2));
+          if (std::fabs(denom) >= Math::eps<double>())
+            u[i] -= numer / denom;
+        }
+      }
+
+      return true;
     }
 
 }; // class BezierN
