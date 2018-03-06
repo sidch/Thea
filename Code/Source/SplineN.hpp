@@ -60,8 +60,9 @@ namespace Thea {
 
 /**
  * A spline curve segment in N-dimensional space. The curve is assumed to be the weighted sum of a set of <i>control
- * vectors</i>, where the weights are given by (typically polynomial or rational) differentiable functions of a scalar curve
- * parameter. If the functions are polynomial, the maximum degree of these polynomials is the <i>order</i> of the curve.
+ * vectors</i>, where the weights are given by (typically polynomial or rational) differentiable <i>basis functions</i> of a
+ * scalar curve parameter. If the functions are polynomial, the maximum degree of these polynomials is the <i>order</i> of the
+ curve.
  *
  * This class contains code for fitting the curve to a sequence of points, extending the code from
  * "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, <i>%Graphics Gems</i>, Academic Press, 1990.
