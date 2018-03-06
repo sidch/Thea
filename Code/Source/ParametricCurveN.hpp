@@ -110,8 +110,8 @@ class /* THEA_API */ ParametricCurveN
      * @param num_arc_samples If non-negative, specifies the number of samples for approximating arc lengths along the curve
      *   (must be at least 2). This value should normally be left at the default setting.
      */
-    void getEvenlySpacedPoints(long num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
-                               long num_arc_samples = -1)
+    virtual void getEvenlySpacedPoints(long num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
+                                       long num_arc_samples = -1) const
     {
       alwaysAssertM(num_points >= 2, "ParametricCurveN: At least two evenly-spaced points must be sampled");
 
