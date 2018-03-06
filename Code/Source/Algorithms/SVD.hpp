@@ -216,14 +216,14 @@ class /* THEA_API */ SVDImpl
       if (m >= n)
       {
         a.copyTo(u);  // for in-place SVD
-        d.resize((array_size_t)n);
+        d.resize((size_t)n);
         status = SVDInternal::svdCore(u, m, n, &d[0], v);
       }
       else
       {
         // Use SVD(A) = {U, D, V}, SVD(A^T) = {V^T, D^T, U^T}
         a.copyTo(v);
-        d.resize((array_size_t)m);
+        d.resize((size_t)m);
 
         // Quick transpose: just wrap the matrix with a TransposedMatrix wrapper
         TransposedMatrix<typename MatrixVT::Value> vt(&v);
@@ -287,7 +287,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
       }
 
       // Invert D
-      for (array_size_t i = 0; i < d.size(); ++i)
+      for (size_t i = 0; i < d.size(); ++i)
       {
         if (std::abs(d[i]) < tolerance)
           d[i] = static_cast<Value>(0);
@@ -305,7 +305,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
         // Compute (V^T * D^{-1})^T = D^{-1} * V
         for (long r = 0; r < vrows; ++r)
           for (long c = 0; c < vcols; ++c)
-            v(r, c) *= d[(array_size_t)r];
+            v(r, c) *= d[(size_t)r];
 
         // Compute (D^{-1} * V)^T * U^T = V^T * D^{-1} * U^T, without explicitly computing either transpose
         Value val;
@@ -328,7 +328,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
         // Compute (D^{-1} * U^T)^T = U * D^{-1}
         for (long c = 0; c < ucols; ++c)
           for (long r = 0; r < urows; ++r)
-            u(r, c) *= d[(array_size_t)c];
+            u(r, c) *= d[(size_t)c];
 
         // Compute V^T * (U * D^{-1})^T = V^T * D^{-1} * U^T, without explicitly computing either transpose
         Value val;

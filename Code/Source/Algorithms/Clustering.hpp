@@ -423,7 +423,7 @@ class THEA_API Clustering
           int   * rowind = (cm.getColumnIndices().size() > 0 ? &cm.getColumnIndices()[0] : NULL);
           float * rowval = (cm.getValues().size()        > 0 ? &cm.getValues()[0]        : NULL);
 
-          labels.resize((array_size_t)weights.numRows());
+          labels.resize((size_t)weights.numRows());
 
           switch (options.method)
           {
@@ -530,9 +530,9 @@ class THEA_API Clustering
 
 #ifdef THEA_ENABLE_CLUTO
     /** Get the number of dimensions of a vector. The dummy argument is needed for template resolution. */
-    template <typename T>            static array_size_t numElems (T const & t);
-    template <long N, typename T>  static array_size_t numElems (VectorN<N, T> const & v);
-    template <typename T>            static array_size_t numElems (TheaArray<T> const & v);
+    template <typename T>            static size_t numElems (T const & t);
+    template <long N, typename T>  static size_t numElems (VectorN<N, T> const & v);
+    template <typename T>            static size_t numElems (TheaArray<T> const & v);
 
     /** Copy a vector to a float array and return a pointer to the next array position. */
     template <typename T>            static float * copyToFloatArray(T const & t, float * fp);
@@ -581,12 +581,12 @@ class THEA_API Clustering
 // Get the number of dimensions of a vector. The dummy argument is needed for template resolution.
 //=============================================================================================================================
 
-template <typename T>            array_size_t Clustering::numElems         (T const & t)             { return 1; }
-template <> inline               array_size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
-template <> inline               array_size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
-template <> inline               array_size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
-template <long N, typename T>    array_size_t Clustering::numElems         (VectorN<N, T> const & v) { return (array_size_t)N; }
-template <typename T>            array_size_t Clustering::numElems         (TheaArray<T> const & v)  { return v.size(); }
+template <typename T>            size_t Clustering::numElems         (T const & t)             { return 1; }
+template <> inline               size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
+template <> inline               size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
+template <> inline               size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
+template <long N, typename T>    size_t Clustering::numElems         (VectorN<N, T> const & v) { return (size_t)N; }
+template <typename T>            size_t Clustering::numElems         (TheaArray<T> const & v)  { return v.size(); }
 
 //=============================================================================================================================
 // Copy a vector to a float array and return a pointer to the next array position.
@@ -629,15 +629,15 @@ template <typename T>
 void
 Clustering::toClutoMatrix(TheaArray<T> const & points, ClutoMatrix & cm)
 {
-  array_size_t num_points = points.size();
-  array_size_t num_elems  = numElems(points[0]);
+  size_t num_points = points.size();
+  size_t num_elems  = numElems(points[0]);
 
   cm.resize((int)num_points, (int)num_elems);
   cm.getRowIndices().clear();
   cm.getValues().resize(num_elems * num_points);
 
   float * fp = &cm.getValues()[0];
-  for (array_size_t i = 0; i < num_points; ++i)
+  for (size_t i = 0; i < num_points; ++i)
     fp = copyToFloatArray(points[i], fp);
 }
 
@@ -645,15 +645,15 @@ template <typename T>
 void
 Clustering::toClutoMatrix(TheaArray< TheaArray<T> > const & points, ClutoMatrix & cm)
 {
-  array_size_t num_points = points.size();
-  array_size_t num_elems  = points[0].size();
+  size_t num_points = points.size();
+  size_t num_elems  = points[0].size();
 
   cm.resize((int)num_points, (int)num_elems);
   cm.getRowIndices().clear();
   cm.getValues().resize(num_elems * num_points);
 
   float * fp = &cm.getValues()[0];
-  for (array_size_t i = 0; i < num_points; ++i)
+  for (size_t i = 0; i < num_points; ++i)
   {
     if (points[i].size() != num_elems)
       throw Error("Clustering: Points do not have same dimensions");

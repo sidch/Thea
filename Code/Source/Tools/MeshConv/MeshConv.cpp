@@ -39,14 +39,14 @@ splitMesh(MG::Ptr mg)
     THEA_CONSOLE << "Splitting submesh " << (*mi)->getName() << " into " << cc.size() << " connected components";
 
     has_new = true;
-    for (array_size_t j = 0; j < cc.size(); ++j)
+    for (size_t j = 0; j < cc.size(); ++j)
     {
       Mesh::Ptr m(new Mesh(format("%s/%ld", (*mi)->getName(), (long)j)));
       VertexMap vmap;
       TheaArray<Mesh::Vertex *> new_face_vertices;
       Mesh::Vertex * new_vertex = NULL;
 
-      for (array_size_t k = 0; k < cc[j].size(); ++k)
+      for (size_t k = 0; k < cc[j].size(); ++k)
       {
         Mesh::Face const & face = *cc[j][k];
         new_face_vertices.clear();
@@ -74,7 +74,7 @@ splitMesh(MG::Ptr mg)
   if (has_new)
   {
     mg->clearMeshes();
-    for (array_size_t i = 0; i < new_meshes.size(); ++i)
+    for (size_t i = 0; i < new_meshes.size(); ++i)
       mg->addMesh(new_meshes[i]);
   }
 

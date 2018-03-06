@@ -516,7 +516,7 @@ copyImageToCL(Image & image)
   int aligned_height = alignSize(image.getHeight(), config.alignment);
   size_t buf_size = (size_t)(aligned_width * aligned_height * 4 * sizeof(float32));
 
-  TheaArray<float32> host_buffer((array_size_t)buf_size, 0);
+  TheaArray<float32> host_buffer((size_t)buf_size, 0);
   if (!flattenToFloatArray(image, &host_buffer[0]))
   {
     THEA_ERROR << "Could not flatten image to a 1D floating-point buffer";
@@ -537,7 +537,7 @@ copyImageFromCL(cl_mem buf, Image & image)
   int aligned_height = alignSize(image.getHeight(), config.alignment);
   size_t buf_size = (size_t)(aligned_width * aligned_height * 4 * sizeof(float32));
 
-  TheaArray<float32> host_buffer((array_size_t)buf_size);
+  TheaArray<float32> host_buffer((size_t)buf_size);
   cl_int ret = clEnqueueReadBuffer(CL::command_queue, buf, CL_TRUE, 0, buf_size, &host_buffer[0], 0, NULL, NULL);
   checkCL(ret, "copyImageFromCL::enqueueReadBuffer");
 

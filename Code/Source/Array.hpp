@@ -50,7 +50,12 @@
 
 namespace Thea {
 
-/** Size type for arrays. Typedef-ed just in case this is set to something other than std::size_t. */
+/**
+ * Size type for arrays. Typedef-ed just in case this is set to something other than std::size_t.
+ *
+ * @deprecated As of March 2018, Thea uses <tt>size_t</tt> throughout. This typedef is retained for compatibility with older
+ *   code.
+ */
 typedef std::size_t array_size_t;
 
 } // namespace Thea

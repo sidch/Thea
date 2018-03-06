@@ -166,7 +166,7 @@ computeOBB(TheaArray<Vector3> const & points, CoordinateFrame3 const & cframe, O
   lo = hi = cframe.pointToObjectSpace(points[0]);
 
   Vector3 p;
-  for (array_size_t i = 1; i < points.size(); ++i)
+  for (size_t i = 1; i < points.size(); ++i)
   {
     p = cframe.pointToObjectSpace(points[i]);
     lo = lo.min(p);

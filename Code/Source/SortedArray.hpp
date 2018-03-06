@@ -88,7 +88,7 @@ class SortedArray
     T const & operator[](long i) const
     {
       debugAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
-      return values[(array_size_t)i];
+      return values[(size_t)i];
     }
 
     /** Check if the array contains an element with a given value. */
@@ -129,7 +129,7 @@ class SortedArray
       {
         step = count >> 1;
         mid = first + step;
-        if (!compare(t, values[(array_size_t)mid]))
+        if (!compare(t, values[(size_t)mid]))
         {
           first = mid + 1;
           count -= (step + 1);
@@ -153,7 +153,7 @@ class SortedArray
       {
         step = count >> 1;
         mid = first + step;
-        if (compare(values[(array_size_t)mid], t))
+        if (compare(values[(size_t)mid], t))
         {
           first = mid + 1;
           count -= (step + 1);
@@ -180,7 +180,7 @@ class SortedArray
       else
       {
         long ub = upperBound(t);
-        values.insert(values.begin() + (array_size_t)ub, t);
+        values.insert(values.begin() + (size_t)ub, t);
         return ub;
       }
     }
@@ -203,7 +203,7 @@ class SortedArray
     /** Remove the element at the given position from the array. */
     void erase(long i)
     {
-      values.erase(values.begin() + (array_size_t)i);
+      values.erase(values.begin() + (size_t)i);
     }
 
     /** Remove (one occurrence of) the given value from the array, if it is present. */

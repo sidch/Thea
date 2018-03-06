@@ -150,17 +150,17 @@ loadLabels_Lab(string const & path, TheaArray<string> & labels, TheaArray<long> 
 
       if (face_index > (long)face_labels.size())
       {
-        face_labels.reserve((array_size_t)(2 * face_index));
-        face_labels.resize((array_size_t)face_index, -1);
+        face_labels.reserve((size_t)(2 * face_index));
+        face_labels.resize((size_t)face_index, -1);
       }
 
-      face_labels[(array_size_t)face_index - 1] = label_index;
+      face_labels[(size_t)face_index - 1] = label_index;
     }
   }
 
-  labels.resize((array_size_t)labmap.size());
+  labels.resize((size_t)labmap.size());
   for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
-    labels[(array_size_t)li->second] = li->first;
+    labels[(size_t)li->second] = li->first;
 
   return true;
 }
@@ -174,11 +174,11 @@ struct FaceToMeshMapper
       long face_index = fi->attr().index;
       if (face_index >= (long)mapping.size())
       {
-        mapping.reserve((array_size_t)(2 * (face_index + 1)));
-        mapping.resize((array_size_t)(face_index + 1), NULL);
+        mapping.reserve((size_t)(2 * (face_index + 1)));
+        mapping.resize((size_t)(face_index + 1), NULL);
       }
 
-      mapping[(array_size_t)face_index] = &mesh;
+      mapping[(size_t)face_index] = &mesh;
     }
 
     return false;
@@ -240,15 +240,15 @@ loadLabels_Labels(string const & path, MG const & mg, TheaArray<string> & labels
         return false;
       }
 
-      Mesh const * selected_mesh = f2m.mapping[(array_size_t)face_index];
+      Mesh const * selected_mesh = f2m.mapping[(size_t)face_index];
       for (Mesh::FaceConstIterator fi = selected_mesh->facesBegin(); fi != selected_mesh->facesEnd(); ++fi)
-        face_labels[(array_size_t)fi->attr().index] = label_index;
+        face_labels[(size_t)fi->attr().index] = label_index;
     }
   }
 
-  labels.resize((array_size_t)labmap.size());
+  labels.resize((size_t)labmap.size());
   for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
-    labels[(array_size_t)li->second] = li->first;
+    labels[(size_t)li->second] = li->first;
 
   return true;
 }
@@ -286,9 +286,9 @@ loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray
     face_labels.push_back(label_index);
   }
 
-  labels.resize((array_size_t)labmap.size());
+  labels.resize((size_t)labmap.size());
   for (LabelIndexMap::const_iterator li = labmap.begin(); li != labmap.end(); ++li)
-    labels[(array_size_t)li->second] = li->first;
+    labels[(size_t)li->second] = li->first;
 
   return true;
 }
@@ -452,7 +452,7 @@ main(int argc, char * argv[])
         alwaysAssertM(tris.size() >= positions.size(), "Triangle IDs not initialized");
 
         indices.resize(positions.size());
-        for (array_size_t i = 0; i < positions.size(); ++i)
+        for (size_t i = 0; i < positions.size(); ++i)
         {
           Mesh::Face const * face = tris[i]->getVertices().getMeshFace();
           indices[i] = face->attr().index;
@@ -467,7 +467,7 @@ main(int argc, char * argv[])
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=10644
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
     //
-    for (array_size_t i = 0; i < positions.size(); ++i)
+    for (size_t i = 0; i < positions.size(); ++i)
     {
       if (std::fabs(positions[i].x()) < 1e-35) positions[i].x() = 0;
       if (std::fabs(positions[i].y()) < 1e-35) positions[i].y() = 0;
@@ -479,7 +479,7 @@ main(int argc, char * argv[])
     }
 
     ofstream out(out_path.c_str());
-    for (array_size_t i = 0; i < positions.size(); ++i)
+    for (size_t i = 0; i < positions.size(); ++i)
     {
       out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
           << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z();
@@ -490,8 +490,8 @@ main(int argc, char * argv[])
       if (output_labels)
       {
         long label_index = (indices[i] < 0 || indices[i] >= (long)face_labels.size()
-                          ? -1 : face_labels[(array_size_t)indices[i]]);
-        out << " \"" << (label_index < 0 ? "" : labels[(array_size_t)label_index]) << '"';
+                          ? -1 : face_labels[(size_t)indices[i]]);
+        out << " \"" << (label_index < 0 ? "" : labels[(size_t)label_index]) << '"';
       }
 
       out << '\n';

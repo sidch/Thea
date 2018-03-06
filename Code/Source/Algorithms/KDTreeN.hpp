@@ -150,7 +150,7 @@ class /* THEA_API */ KDTreeN
     typedef BoundedTraitsN<T, N, ScalarT>                  BoundedTraitsT;
 
   public:
-    typedef array_size_t ElementIndex;  ///< Index of an element in the kd-tree.
+    typedef size_t ElementIndex;  ///< Index of an element in the kd-tree.
     typedef typename ProximityQueryBaseT::NeighborPair NeighborPair;  ///< A pair of neighboring elements.
     typedef typename TransformableBaseT::Transform Transform;  ///< Transform applied to the kd-tree.
 
@@ -167,7 +167,7 @@ class /* THEA_API */ KDTreeN
         {
           public:
             /** Constructor. */
-            Buffer(array_size_t capacity_ = 0) : data(NULL), capacity(capacity_), current_end(0)
+            Buffer(size_t capacity_ = 0) : data(NULL), capacity(capacity_), current_end(0)
             {
               alwaysAssertM(capacity_ > 0, "KDTreeN: Memory pool buffer capacity must be positive");
               if (capacity > 0)
@@ -194,7 +194,7 @@ class /* THEA_API */ KDTreeN
              * Allocate a block of elements and return a pointer to the first allocated element, or null if the allocation
              * exceeded buffer capacity.
              */
-            U * alloc(array_size_t num_elems)
+            U * alloc(size_t num_elems)
             {
               // THEA_CONSOLE << "KDTreeN: Allocating " << num_elems << " elements from buffer of capacity " << capacity;
 
@@ -207,11 +207,11 @@ class /* THEA_API */ KDTreeN
             }
 
             /** Deallocate a block of elements and return the number of elements successfully deallocated. */
-            array_size_t free(array_size_t num_elems)
+            size_t free(size_t num_elems)
             {
               if (num_elems > current_end)
               {
-                array_size_t num_freed = current_end;
+                size_t num_freed = current_end;
                 current_end = 0;
                 return num_freed;
               }
@@ -221,30 +221,30 @@ class /* THEA_API */ KDTreeN
             }
 
             /** Element access. */
-            U const & operator[](array_size_t i) const { return data[i]; }
+            U const & operator[](size_t i) const { return data[i]; }
 
             /** Element access. */
-            U & operator[](array_size_t i) { return data[i]; }
+            U & operator[](size_t i) { return data[i]; }
 
           private:
             U * data;
-            array_size_t capacity;
-            array_size_t current_end;
+            size_t capacity;
+            size_t current_end;
 
         }; // Buffer
 
         TheaArray<Buffer *> buffers;
-        array_size_t buffer_capacity;
+        size_t buffer_capacity;
         long current_buffer;
 
         /** Get the current buffer. */
-        Buffer & getCurrentBuffer() { return *buffers[(array_size_t)current_buffer]; }
+        Buffer & getCurrentBuffer() { return *buffers[(size_t)current_buffer]; }
 
         /** Get the next available buffer, creating it if necessary and making it the current one. */
         Buffer & getNextBuffer()
         {
           long next_buffer = current_buffer < 0 ? 0 : current_buffer + 1;
-          if ((array_size_t)next_buffer >= buffers.size())
+          if ((size_t)next_buffer >= buffers.size())
           {
             buffers.push_back(new Buffer(buffer_capacity));
 
@@ -253,7 +253,7 @@ class /* THEA_API */ KDTreeN
           }
 
           current_buffer = next_buffer;
-          return *buffers[(array_size_t)current_buffer];
+          return *buffers[(size_t)current_buffer];
         }
 
       public:
@@ -271,7 +271,7 @@ class /* THEA_API */ KDTreeN
         }
 
         /** Initialize the memory pool to hold buffers of a given capacity. Previous data in the pool is deallocated. */
-        void init(array_size_t buffer_capacity_)
+        void init(size_t buffer_capacity_)
         {
           // THEA_CONSOLE << "KDTreeN: Initializing memory pool " << this << " with buffer capacity " << buffer_capacity_
           //              << " elements";
@@ -282,7 +282,7 @@ class /* THEA_API */ KDTreeN
         }
 
         /** Get the maximum number of elements of type T that a single buffer can hold. */
-        array_size_t getBufferCapacity() const
+        size_t getBufferCapacity() const
         {
           return buffer_capacity;
         }
@@ -294,14 +294,14 @@ class /* THEA_API */ KDTreeN
 
           if (deallocate_all_memory)
           {
-            for (array_size_t i = 0; i < buffers.size(); ++i)
+            for (size_t i = 0; i < buffers.size(); ++i)
               delete buffers[i];
 
             buffers.clear();
           }
           else
           {
-            for (array_size_t i = 0; i < buffers.size(); ++i)
+            for (size_t i = 0; i < buffers.size(); ++i)
               buffers[i]->reset();
           }
 
@@ -309,7 +309,7 @@ class /* THEA_API */ KDTreeN
         }
 
         /** Allocate a block of elements from the pool and return a pointer to the first allocated element. */
-        U * alloc(array_size_t num_elems)
+        U * alloc(size_t num_elems)
         {
           alwaysAssertM(num_elems <= buffer_capacity, "KDTreeN: A single memory pool allocation cannot exceed buffer capacity");
 
@@ -326,12 +326,12 @@ class /* THEA_API */ KDTreeN
         }
 
         /** Deallocate a block of elements from the pool. */
-        void free(array_size_t num_elems)
+        void free(size_t num_elems)
         {
           long n = (long)num_elems;
           while (n > 0 && current_buffer >= 0)
           {
-            array_size_t num_freed = getCurrentBuffer().free(num_elems);
+            size_t num_freed = getCurrentBuffer().free(num_elems);
             n -= (long)num_freed;
 
             if (n > 0)
@@ -387,7 +387,7 @@ class /* THEA_API */ KDTreeN
       private:
         long depth;
         AxisAlignedBoxT bounds;
-        array_size_t num_elems;
+        size_t num_elems;
         ElementIndex * elems;
         Node * lo;
         Node * hi;
@@ -506,12 +506,12 @@ class /* THEA_API */ KDTreeN
       }
       else
       {
-        array_size_t max_new_elems = (array_size_t)std::distance(begin, end);
+        size_t max_new_elems = (size_t)std::distance(begin, end);
         bool resized = false;
         if (max_new_elems > elems.size())
         {
           if (filters.empty())
-            elems.resize((array_size_t)std::ceil(1.2 * max_new_elems));  // add a little more space to avoid future reallocs
+            elems.resize((size_t)std::ceil(1.2 * max_new_elems));  // add a little more space to avoid future reallocs
           else
             elems.clear();  // we don't know how many elements will pass the filter
 
@@ -565,10 +565,10 @@ class /* THEA_API */ KDTreeN
       // THEA_CONSOLE << "KDTreeN: max_depth = " << max_depth << ", est_depth = " << est_depth;
 
       // Each index is stored at most once at each level
-      array_size_t BUFFER_SAFETY_MARGIN = 10;
-      array_size_t index_buffer_capacity = num_elems + BUFFER_SAFETY_MARGIN;
+      size_t BUFFER_SAFETY_MARGIN = 10;
+      size_t index_buffer_capacity = num_elems + BUFFER_SAFETY_MARGIN;
       if (!save_memory)
-        index_buffer_capacity *= (array_size_t)(1 + est_depth);  // reserve space for all levels at once
+        index_buffer_capacity *= (size_t)(1 + est_depth);  // reserve space for all levels at once
 
       if (deallocate_previous_memory || index_buffer_capacity > 1.3 * index_pool.getBufferCapacity())
       {
@@ -578,7 +578,7 @@ class /* THEA_API */ KDTreeN
       }
 
       // Assume a complete, balanced binary tree upto the estimated depth to guess the number of leaf nodes
-      array_size_t node_buffer_capacity = (array_size_t)(1 << est_depth) + BUFFER_SAFETY_MARGIN;
+      size_t node_buffer_capacity = (size_t)(1 << est_depth) + BUFFER_SAFETY_MARGIN;
       if (deallocate_previous_memory || node_buffer_capacity > 1.3 * node_pool.getBufferCapacity())
       {
         // THEA_CONSOLE << "KDTreeN: Resizing node pool: old buffer capacity = " << node_pool.getBufferCapacity()
@@ -597,7 +597,7 @@ class /* THEA_API */ KDTreeN
       root->elems = index_pool.alloc(root->num_elems);
 
       AxisAlignedBoxT elem_bounds;
-      for (array_size_t i = 0; i < (array_size_t)num_elems; ++i)
+      for (size_t i = 0; i < (size_t)num_elems; ++i)
       {
         root->elems[i] = i;
 
@@ -616,7 +616,7 @@ class /* THEA_API */ KDTreeN
         //      #elements * (sum of series 1 + 1 + SPLIT_FRACTION + SPLIT_FRACTION^2 + ... + SPLIT_FRACTION^(est_depth - 1))
         //  <=  #elements * (1 + 1 / (1 - SPLIT_FRACTION))
         //
-        array_size_t est_max_path_indices = (array_size_t)(num_elems * (1 + 1 / (1 - SPLIT_FRACTION)));
+        size_t est_max_path_indices = (size_t)(num_elems * (1 + 1 / (1 - SPLIT_FRACTION)));
         // THEA_CONSOLE << "KDTreeN: Estimated maximum number of indices on a single path = " << est_max_path_indices;
 
         // Create a temporary pool for scratch storage
@@ -1127,7 +1127,7 @@ class /* THEA_API */ KDTreeN
 #endif
 
       // Split elements into lower and upper halves
-      array_size_t mid = start->num_elems / 2;
+      size_t mid = start->num_elems / 2;
       std::nth_element(start->elems, start->elems + mid, start->elems + start->num_elems, ObjectLess(coord, this));
 
       // Create child nodes
@@ -1303,7 +1303,7 @@ class /* THEA_API */ KDTreeN
       bool get_closest_points,
       typename boost::enable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
     {
-      for (array_size_t i = 0; i < leaf->num_elems; ++i)
+      for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
         Element const & elem = elems[index];
@@ -1341,7 +1341,7 @@ class /* THEA_API */ KDTreeN
       VectorT qp, tp;
       double mad;
 
-      for (array_size_t i = 0; i < leaf->num_elems; ++i)
+      for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
         Element const & elem = elems[index];
@@ -1411,7 +1411,7 @@ class /* THEA_API */ KDTreeN
       long use_as_query_index_and_swap,
       typename boost::enable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
     {
-      for (array_size_t i = 0; i < leaf->num_elems; ++i)
+      for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
         Element const & elem = elems[index];
@@ -1448,7 +1448,7 @@ class /* THEA_API */ KDTreeN
       VectorT qp, tp;
       double mad;
 
-      for (array_size_t i = 0; i < leaf->num_elems; ++i)
+      for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
         Element const & elem = elems[index];
@@ -1509,7 +1509,7 @@ class /* THEA_API */ KDTreeN
       // have not saved memory by flushing references at internal nodes), then process all these elems.
       if (start->num_elems > 0 && range.contains(tr_start_bounds))
       {
-        for (array_size_t i = 0; i < start->num_elems; ++i)
+        for (size_t i = 0; i < start->num_elems; ++i)
         {
           ElementIndex index = start->elems[i];
           Element & elem = elems[index];
@@ -1523,7 +1523,7 @@ class /* THEA_API */ KDTreeN
       }
       else if (!start->lo)  // leaf
       {
-        for (array_size_t i = 0; i < start->num_elems; ++i)
+        for (size_t i = 0; i < start->num_elems; ++i)
         {
           ElementIndex index = start->elems[i];
           Element & elem = elems[index];
@@ -1579,7 +1579,7 @@ class /* THEA_API */ KDTreeN
       {
         Real best_time = max_time;
         bool found = false;
-        for (array_size_t i = 0; i < start->num_elems; ++i)
+        for (size_t i = 0; i < start->num_elems; ++i)
         {
           ElementIndex index = start->elems[i];
           Element const & elem = elems[index];
@@ -1640,7 +1640,7 @@ class /* THEA_API */ KDTreeN
       {
         RayStructureIntersectionT best_isec(max_time);
         bool found = false;
-        for (array_size_t i = 0; i < start->num_elems; ++i)
+        for (size_t i = 0; i < start->num_elems; ++i)
         {
           ElementIndex index = start->elems[i];
           Element const & elem = elems[index];
@@ -1704,7 +1704,7 @@ class /* THEA_API */ KDTreeN
       TheaArray<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
                                                                                   : num_acceleration_samples);
       VectorT src_cp, dst_cp;
-      for (array_size_t i = 0; i < acceleration_samples.size(); ++i)
+      for (size_t i = 0; i < acceleration_samples.size(); ++i)
       {
         long elem_index = Random::common().integer(0, (int32)num_elems - 1);
         VectorT p = BoundedTraitsT::getCenter(elems[elem_index]);
@@ -1723,7 +1723,7 @@ class /* THEA_API */ KDTreeN
         acceleration_structure->setTransform(this->getTransform());
 
       sample_filters.clear();
-      for (array_size_t i = 0; i < filters.size(); ++i)
+      for (size_t i = 0; i < filters.size(); ++i)
       {
         sample_filters.push_back(SampleFilter(filters[i]));
         acceleration_structure->pushFilter(&sample_filters.back());  // careful, make sure order is not reversed!

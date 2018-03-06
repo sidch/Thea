@@ -324,7 +324,7 @@ class SampleGraph : private Noncopyable
     SurfaceSample const & getSample(long index) const
     {
       debugAssertM(index >= 0 && index < (long)samples.size(), "SampleGraph: Sample index out of bounds");
-      return samples[(array_size_t)index];
+      return samples[(size_t)index];
     }
 
     /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
@@ -333,8 +333,8 @@ class SampleGraph : private Noncopyable
       alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of samples");
       alwaysAssertM(num_samples == 0 || positions, "SampleGraph: Sample positions must be specified");
 
-      samples.resize((array_size_t)num_samples);
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      samples.resize((size_t)num_samples);
+      for (size_t i = 0; i < samples.size(); ++i)
       {
         samples[i].setIndex((long)i);
         samples[i].setPosition(positions[i]);
@@ -343,7 +343,7 @@ class SampleGraph : private Noncopyable
 
       if (normals && num_samples > 0)
       {
-        for (array_size_t i = 0; i < samples.size(); ++i)
+        for (size_t i = 0; i < samples.size(); ++i)
           samples[i].setNormal(normals[i]);
 
         has_normals = true;
@@ -365,8 +365,8 @@ class SampleGraph : private Noncopyable
       alwaysAssertM(!has_normals || dense_normals,
                     "SampleGraph: Main samples have normals, so oversampling must also have normals");
 
-      dense_samples.resize((array_size_t)num_samples);
-      for (array_size_t i = 0; i < dense_samples.size(); ++i)
+      dense_samples.resize((size_t)num_samples);
+      for (size_t i = 0; i < dense_samples.size(); ++i)
       {
         dense_samples[i].setPosition(dense_positions[i]);
         dense_samples[i].getNeighbors().setCapacity(options.max_degree);
@@ -374,7 +374,7 @@ class SampleGraph : private Noncopyable
 
       if (dense_normals && has_normals)
       {
-        for (array_size_t i = 0; i < dense_samples.size(); ++i)
+        for (size_t i = 0; i < dense_samples.size(); ++i)
           dense_samples[i].setNormal(dense_normals[i]);
       }
 
@@ -400,17 +400,17 @@ class SampleGraph : private Noncopyable
       // Aggregate samples
       TheaArray<SurfaceSample *> sample_ptrs(samples.size() + dense_samples.size());
 
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
         sample_ptrs[i] = &samples[i];
 
-      for (array_size_t i = 0; i < dense_samples.size(); ++i)
+      for (size_t i = 0; i < dense_samples.size(); ++i)
       {
         dense_samples[i].setIndex((long)(samples.size() + i));
         sample_ptrs[samples.size() + i] = &dense_samples[i];
       }
 
       // Clear any prior adjacency data
-      for (array_size_t i = 0; i < sample_ptrs.size(); ++i)
+      for (size_t i = 0; i < sample_ptrs.size(); ++i)
         sample_ptrs[i]->getNeighbors().clear();
 
       if (sample_ptrs.size() <= 1)  // nothing to do
@@ -424,12 +424,12 @@ class SampleGraph : private Noncopyable
       long num_trials = std::min(100L, (long)sample_ptrs.size());
       for (long i = 0; i < num_trials; ++i)
       {
-        array_size_t index = (array_size_t)Random::common().integer(0, (int32)sample_ptrs.size() - 1);
+        size_t index = (size_t)Random::common().integer(0, (int32)sample_ptrs.size() - 1);
         FilterSelf filter(sample_ptrs[index]);
         sample_kdtree.pushFilter(&filter);
           long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
-          avg_separation += (sample_ptrs[(array_size_t)nn_index]->getPosition()
+          avg_separation += (sample_ptrs[(size_t)nn_index]->getPosition()
                            - sample_ptrs[index]->getPosition()).squaredLength();
         sample_kdtree.popFilter();
       }
@@ -438,7 +438,7 @@ class SampleGraph : private Noncopyable
 
       // Find the neighbors of each sample
       Real sep_scale = std::sqrt((Real)options.max_degree);  // assume uniform distribution on 2D surface
-      for (array_size_t i = 0; i < sample_ptrs.size(); ++i)
+      for (size_t i = 0; i < sample_ptrs.size(); ++i)
         findSampleNeighbors(sample_ptrs[i], sample_kdtree, sep_scale * avg_separation, surface);
 
       // Extract adjacencies between original set of samples
@@ -593,7 +593,7 @@ class SampleGraph : private Noncopyable
     {
       avg_separation = 0;
       long num_edges = 0;  // double-counts, but we'll ignore that for now
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
       {
         SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
         for (int j = 0; j < nbrs.size(); ++j)

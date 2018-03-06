@@ -73,7 +73,7 @@ struct MeshVertexCollector< MeshT, CollectionT, ScalarT, typename boost::enable_
   void addVertices(MeshT const & mesh, CollectionT & collection)
   {
     typename MeshT::VertexArray const & vertices = mesh.getVertices();
-    for (array_size_t i = 0; i < vertices.size(); ++i)
+    for (size_t i = 0; i < vertices.size(); ++i)
       collection.addPoint(vertices[i]);
   }
 };

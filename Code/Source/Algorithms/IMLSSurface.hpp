@@ -70,14 +70,14 @@ class IndexedVertexTriple
 {
   private:
     TheaArray<Vector3> const * array;
-    array_size_t indices[3];
+    size_t indices[3];
 
   public:
     /** Default constructor. */
     IndexedVertexTriple() {}
 
     /** Initializing constructor. */
-    IndexedVertexTriple(TheaArray<Vector3> const * array_, array_size_t i0, array_size_t i1, array_size_t i2)
+    IndexedVertexTriple(TheaArray<Vector3> const * array_, size_t i0, size_t i1, size_t i2)
     {
       array = array_;
       indices[0] = i0;
@@ -86,7 +86,7 @@ class IndexedVertexTriple
     }
 
     /** Get the i'th index. */
-    array_size_t getIndex(int i) const { return indices[i]; }
+    size_t getIndex(int i) const { return indices[i]; }
 
     /** Get the i'th vertex. */
     Vector3 const & getVertex(int i) const { return (*array)[indices[i]]; }
@@ -416,12 +416,12 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
   typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
 
-  array_size_t base = verts.size();
-  array_size_t new_size = verts.size() + static_cast<array_size_t>(mesh.numVertices());
+  size_t base = verts.size();
+  size_t new_size = verts.size() + static_cast<size_t>(mesh.numVertices());
   verts.resize(new_size);
   phi.resize(new_size);
 
-  array_size_t i = base;
+  size_t i = base;
   for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++i)
   {
     verts[i]  =  vi->getPosition();
@@ -429,7 +429,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
     vertex_indices[&(*vi)] = i;
   }
 
-  array_size_t i0, i1, i2, i3;
+  size_t i0, i1, i2, i3;
   Polygon3 poly;
   TheaArray<long> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -464,17 +464,17 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
 #ifdef THEA_DEBUG_BUILD
       long num_tris = poly.triangulate(tri_indices);
-      debugAssertM(tri_indices.size() == static_cast<array_size_t>(3 * num_tris),
+      debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris),
                    "IMLSSurface: MeshT face triangulation error");
 #else
       poly.triangulate(tri_indices);
 #endif
 
-      for (array_size_t i = 0; i < tri_indices.size(); i += 3)
+      for (size_t i = 0; i < tri_indices.size(); i += 3)
         tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts,
-                                       static_cast<array_size_t>(tri_indices[i]),
-                                       static_cast<array_size_t>(tri_indices[i + 1]),
-                                       static_cast<array_size_t>(tri_indices[i + 2]))));
+                                       static_cast<size_t>(tri_indices[i]),
+                                       static_cast<size_t>(tri_indices[i + 1]),
+                                       static_cast<size_t>(tri_indices[i + 2]))));
     }
   }
 }
@@ -487,12 +487,12 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
   typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
 
-  array_size_t base = verts.size();
-  array_size_t new_size = verts.size() + static_cast<array_size_t>(mesh.numVertices());
+  size_t base = verts.size();
+  size_t new_size = verts.size() + static_cast<size_t>(mesh.numVertices());
   verts.resize(new_size);
   phi.resize(new_size);
 
-  array_size_t i = base;
+  size_t i = base;
   for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++i)
   {
     verts[i]  =  vi->getPosition();
@@ -500,7 +500,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
     vertex_indices[&(*vi)] = i;
   }
 
-  array_size_t i0, i1, i2, i3;
+  size_t i0, i1, i2, i3;
   Polygon3 poly;
   TheaArray<long> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -540,16 +540,16 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
 #ifdef THEA_DEBUG_BUILD
       long num_tris = poly.triangulate(tri_indices);
-      debugAssertM(tri_indices.size() == static_cast<array_size_t>(3 * num_tris), "IMLSSurface: Mesh face triangulation error");
+      debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris), "IMLSSurface: Mesh face triangulation error");
 #else
       poly.triangulate(tri_indices);
 #endif
 
-      for (array_size_t i = 0; i < tri_indices.size(); i += 3)
+      for (size_t i = 0; i < tri_indices.size(); i += 3)
         tris.push_back(IndexedTriangle(IndexedVertexTriple(&verts,
-                                       static_cast<array_size_t>(tri_indices[i]),
-                                       static_cast<array_size_t>(tri_indices[i + 1]),
-                                       static_cast<array_size_t>(tri_indices[i + 2]))));
+                                       static_cast<size_t>(tri_indices[i]),
+                                       static_cast<size_t>(tri_indices[i + 1]),
+                                       static_cast<size_t>(tri_indices[i + 2]))));
     }
   }
 }

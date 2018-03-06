@@ -184,7 +184,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
         if (encoding_size <= 0)
           return;
 
-        enc_block.resize((array_size_t)encoding_size);
+        enc_block.resize((size_t)encoding_size);
         input.readBytes((int64)encoding_size, &enc_block[0]);
 
         tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
@@ -293,7 +293,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
         // Read list of vertices
         TheaArray<typename Builder::VertexHandle> vrefs;
         typename Builder::VertexHandle vref;
-        for (array_size_t i = 0; i < (array_size_t)num_vertices; ++i)
+        for (size_t i = 0; i < (size_t)num_vertices; ++i)
         {
           Vector3 vertex(m->pointL[i].pos[0], m->pointL[i].pos[1], m->pointL[i].pos[2]);
 
@@ -338,9 +338,9 @@ class Codec3DS : public Codec3DSBase<MeshT>
             continue;
           }
 
-          face[0] = vrefs[(array_size_t)indices[0]];
-          face[1] = vrefs[(array_size_t)indices[1]];
-          face[2] = vrefs[(array_size_t)indices[2]];
+          face[0] = vrefs[(size_t)indices[0]];
+          face[1] = vrefs[(size_t)indices[1]];
+          face[2] = vrefs[(size_t)indices[2]];
 
           typename Builder::FaceHandle fref = builder->addFace(face, face + 3,
                                                                (read_opts.store_face_indices ? face_count : -1));

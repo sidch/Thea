@@ -196,7 +196,7 @@ Application::getPluginPath(std::string const & plugin_name, TheaArray<std::strin
   std::string debug_filename    =  basename + "d." + ext;
   std::string release_filename  =  basename + "." + ext;
 
-  for (array_size_t i = 0; i < search_dirs.size(); ++i)
+  for (size_t i = 0; i < search_dirs.size(); ++i)
   {
     if (search_dirs[i].empty())  // if you need to specify the current working directory, use "."
       continue;

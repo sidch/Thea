@@ -110,7 +110,7 @@ JointBoost::getClassName(long i) const
     return rout.str();
   }
   else
-    return class_names[(array_size_t)i];
+    return class_names[(size_t)i];
 }
 
 long
@@ -162,7 +162,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
   weights.resize(num_classes, (long)classes.size());
   if (!training_weights.empty())
   {
-    for (array_size_t i = 0; i < training_weights.size(); ++i)
+    for (size_t i = 0; i < training_weights.size(); ++i)
       for (long c = 0; c < num_classes; ++c)
         weights(c, (long)i) = training_weights[i];
   }
@@ -195,11 +195,11 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     SharedStump::Ptr stump(new SharedStump);
 
     // Compute the k values for the stump
-    stump->k.resize((array_size_t)num_classes, 0);
+    stump->k.resize((size_t)num_classes, 0);
     for (long c = 0; c < num_classes; ++c)
     {
       double k_numer = 0, k_denom = 0;
-      for (array_size_t i = 0; i < classes.size(); ++i)
+      for (size_t i = 0; i < classes.size(); ++i)
       {
         double w = weights(c, (long)i);
         int z = (classes[i] == c ? +1 : -1);
@@ -208,7 +208,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
         k_denom += w;
       }
 
-      stump->k[(array_size_t)c] = (k_denom != 0 ? k_numer / k_denom : 0);
+      stump->k[(size_t)c] = (k_denom != 0 ? k_numer / k_denom : 0);
     }
 
     // Optimize this stump
@@ -265,7 +265,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     training_data->getFeature(stump->f, stump_features);
 
     for (long c = 0; c < num_classes; ++c)
-      for (array_size_t i = 0; i < classes.size(); ++i)
+      for (size_t i = 0; i < classes.size(); ++i)
       {
         // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
 
@@ -318,7 +318,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
   else
   {
     int32 num_candidate_features = std::max((int32)Math::round(feature_sampling_fraction * num_features), (int32)1);
-    candidate_features.resize((array_size_t)num_candidate_features);
+    candidate_features.resize((size_t)num_candidate_features);
     Random::common().integers(0, (int32)num_features - 1, num_candidate_features, &candidate_features[0]);
   }
 
@@ -327,7 +327,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
 
   SharedStump test = stump;
   double min_err = -1;
-  for (array_size_t f = 0; f < candidate_features.size(); ++f)
+  for (size_t f = 0; f < candidate_features.size(); ++f)
   {
     test.f = candidate_features[f];
 
@@ -442,7 +442,7 @@ JointBoost::optimizeStumpGreedy(SharedStump & stump, TheaArray<double> const & s
   }
 
   double min_err = -1;
-  for (array_size_t i = 0; i < candidate_stumps.size(); ++i)
+  for (size_t i = 0; i < candidate_stumps.size(); ++i)
   {
     if (min_err < 0 || candidate_errors[i] < min_err)
     {
@@ -465,16 +465,16 @@ namespace JointBoostInternal {
 struct IndexedComparator
 {
   IndexedComparator(double const * values_) : values(values_) {}
-  bool operator()(array_size_t i, array_size_t j) const { return values[i] < values[j]; }
+  bool operator()(size_t i, size_t j) const { return values[i] < values[j]; }
 
   double const * values;
 };
 
 void
-sortIndexed(TheaArray<double> const & values, TheaArray<array_size_t> & sorted_indices)
+sortIndexed(TheaArray<double> const & values, TheaArray<size_t> & sorted_indices)
 {
   sorted_indices.resize(values.size());
-  for (array_size_t i = 0; i < sorted_indices.size(); ++i)
+  for (size_t i = 0; i < sorted_indices.size(); ++i)
     sorted_indices[i] = i;
 
   std::sort(sorted_indices.begin(), sorted_indices.end(), IndexedComparator(&values[0]));
@@ -482,13 +482,13 @@ sortIndexed(TheaArray<double> const & values, TheaArray<array_size_t> & sorted_i
 
 void
 getClassificationAccuracy(double split_value, SharingSet const & pos_classes, TheaArray<double> const & features,
-                          TheaArray<long> const & classes, TheaArray<array_size_t> const & sorted_indices,
+                          TheaArray<long> const & classes, TheaArray<size_t> const & sorted_indices,
                           TheaArray<int> & accuracy)
 {
   accuracy.resize(features.size());
-  for (array_size_t i = 0; i < features.size(); ++i)
+  for (size_t i = 0; i < features.size(); ++i)
   {
-    array_size_t index = sorted_indices[i];
+    size_t index = sorted_indices[i];
 
     long c = classes[index];
     double f = features[index];
@@ -511,7 +511,7 @@ splitQuality(Matrix<double> const & weights, TheaArray<long> const & classes, Th
   // As mentioned in getCandidateThresholds(), the absolute value of the split quality is relevant, not its sign.
 
   double quality = 0;
-  for (array_size_t i = 0; i < accuracy.size(); ++i)
+  for (size_t i = 0; i < accuracy.size(); ++i)
     quality += (accuracy[i] * weights(classes[i], (long)i));
 
   return quality;
@@ -527,12 +527,12 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
   // as well as possible. (Hence, the absolute value of splitQuality() is relevant, not its sign.)
 
   // Sort the examples by feature value
-  TheaArray<array_size_t> sorted_indices;
+  TheaArray<size_t> sorted_indices;
   sortIndexed(features, sorted_indices);
 
   // Get the minimum and maximum feature values
   double lo = features[0], hi = features[0];
-  for (array_size_t i = 1; i < features.size(); ++i)
+  for (size_t i = 1; i < features.size(); ++i)
   {
     if (features[i] < lo) lo = features[i];
     if (features[i] > hi) hi = features[i];
@@ -542,13 +542,13 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
   double tolerance = 1.0e-10 * (hi - lo);
 
   // Generate samples and adjust their position to be better cuts
-  typedef TheaUnorderedSet<array_size_t> IndexSet;
+  typedef TheaUnorderedSet<size_t> IndexSet;
   IndexSet threshold_set;
   for (long t = 0; t < max_thresholds; ++t)
   {
     // Start with a random seed
-    array_size_t index = (array_size_t)Random::common().integer(0, (int32)sorted_indices.size() - 1);
-    array_size_t mapped_index = sorted_indices[index];
+    size_t index = (size_t)Random::common().integer(0, (int32)sorted_indices.size() - 1);
+    size_t mapped_index = sorted_indices[index];
     double threshold = features[mapped_index];
 
     // Measure the classification accuracy (+/-1) per example, and the overall quality of the split
@@ -557,7 +557,7 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
     double quality = splitQuality(weights, classes, accuracy);
 
     // Iteratively try to improve it by moving one step to the right or left
-    for (array_size_t round = 0; round < sorted_indices.size(); ++round)
+    for (size_t round = 0; round < sorted_indices.size(); ++round)
     {
       // Get the quality change in each direction
       double offset_qualities[2] = { 0, 0 };
@@ -567,8 +567,8 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
         if ((offset < 0 && index == 0) || (offset > 0 && index == sorted_indices.size() - 1))
           continue;
 
-        array_size_t offset_index = (array_size_t)(index + offset);
-        array_size_t mapped_offset_index = sorted_indices[offset_index];
+        size_t offset_index = (size_t)(index + offset);
+        size_t mapped_offset_index = sorted_indices[offset_index];
 
         // THEA_CONSOLE << "index = " << index << ", mapped_offset_index = " << mapped_offset_index;
 
@@ -607,7 +607,7 @@ getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & we
           accuracy[mapped_index] = -accuracy[mapped_index];
 
         // Move to index + offset
-        index = (array_size_t)(index + 2 * best_offset - 1);
+        index = (size_t)(index + 2 * best_offset - 1);
         mapped_index = sorted_indices[index];
         quality = offset_qualities[best_offset];
 
@@ -652,7 +652,7 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
     *num_generated_thresholds = (long)thresholds.size();
 
   // THEA_CONSOLE << "JointBoost: Generated " << thresholds.size() << " candidate threshold(s) for " << stump.toString();
-  // for (array_size_t t = 0; t < thresholds.size(); ++t)
+  // for (size_t t = 0; t < thresholds.size(); ++t)
   //   THEA_CONSOLE << "JointBoost:     -- threshold[" << t << "] = " << thresholds[t];
 
   // Precalculate the error term depending on stump.k -- it does not depend on threshold selection
@@ -661,12 +661,12 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
   {
     if (!stump.n[(SharingSet::size_type)c])
     {
-      for (array_size_t i = 0; i < stump_classes.size(); ++i)
+      for (size_t i = 0; i < stump_classes.size(); ++i)
       {
         double w = weights(c, (long)i);
         int z = (stump_classes[i] == c ? +1 : -1);
 
-        err_k += w * Math::square(z - stump.k[(array_size_t)c]);  // k is precalculated outside this function
+        err_k += w * Math::square(z - stump.k[(size_t)c]);  // k is precalculated outside this function
       }
     }
   }
@@ -676,7 +676,7 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
   // Fit the stump parameters to the observed data
   long best_threshold = -1;
   double min_err = -1;
-  for (array_size_t t = 0; t < thresholds.size(); ++t)
+  for (size_t t = 0; t < thresholds.size(); ++t)
   {
     double theta = thresholds[t];
     double a_numer = 0, a_denom = 0, b_numer = 0, b_denom = 0;
@@ -684,7 +684,7 @@ JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_featur
     {
       if (stump.n[(SharingSet::size_type)c])
       {
-        for (array_size_t i = 0; i < stump_classes.size(); ++i)
+        for (size_t i = 0; i < stump_classes.size(); ++i)
         {
           double w = weights(c, (long)i);
           int z = (stump_classes[i] == c ? +1 : -1);
@@ -732,7 +732,7 @@ JointBoost::predict(double const * features, double * class_probabilities) const
   for (long c = 0; c < num_classes; ++c)
   {
     double H = 0;
-    for (array_size_t m = 0; m < stumps.size(); ++m)
+    for (size_t m = 0; m < stumps.size(); ++m)
     {
       SharedStump const & stump = *stumps[m];
       double h = stump(features[stump.f], c);
@@ -1037,8 +1037,8 @@ JointBoost::deserialize(std::istream & in)
     return false;
   }
 
-  class_names.resize((array_size_t)num_classes);
-  for (array_size_t i = 0; i < class_names.size(); )
+  class_names.resize((size_t)num_classes);
+  for (size_t i = 0; i < class_names.size(); )
   {
     if (!std::getline(in, class_names[i]))
     {
@@ -1094,7 +1094,7 @@ JointBoost::serialize(std::ostream & out) const
   }
   else
   {
-    for (array_size_t i = 0; i < class_names.size(); ++i)
+    for (size_t i = 0; i < class_names.size(); ++i)
       out << class_names[i] << std::endl;
   }
 
@@ -1113,7 +1113,7 @@ JointBoost::dumpToConsole() const
 {
   THEA_CONSOLE << "JointBoost: Classifier has " << stumps.size() << " stump(s)";
 
-  for (array_size_t m = 0; m < stumps.size(); ++m)
+  for (size_t m = 0; m < stumps.size(); ++m)
   {
     SharedStump const & stump = *stumps[m];
 
@@ -1125,7 +1125,7 @@ JointBoost::dumpToConsole() const
     THEA_CONSOLE << "JointBoost:         -- theta  =  " << stump.theta;
 
     std::ostringstream oss; oss << "[ ";
-    for (array_size_t i = 0; i < stump.k.size(); ++i)
+    for (size_t i = 0; i < stump.k.size(); ++i)
     {
       if (i > 0) oss << ", ";
       oss << stump.k[i];

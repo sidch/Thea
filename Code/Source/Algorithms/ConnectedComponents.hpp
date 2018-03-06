@@ -119,11 +119,11 @@ class THEA_API ConnectedComponents
       // Reserve space for the result
       components.resize(uf.numSets());
 
-      typedef TheaUnorderedMap<long, array_size_t> ComponentIndexMap;
+      typedef TheaUnorderedMap<long, size_t> ComponentIndexMap;
       ComponentIndexMap component_indices;
 
       // Loop over faces, adding each to the appropriate result subarray
-      array_size_t component_index;
+      size_t component_index;
       for (typename Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
       {
         FaceT * face = &(*fi);

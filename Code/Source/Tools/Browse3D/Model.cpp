@@ -457,7 +457,7 @@ Model::pick(Ray3 const & ray)
 
   if (index >= 0)
   {
-    KDTree::VertexTriple const & triple = kdtree->getElements()[(array_size_t)index].getVertices();
+    KDTree::VertexTriple const & triple = kdtree->getElements()[(size_t)index].getVertices();
     picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
     picked_sample.face_index = triple.getMeshFace()->getIndex();
 
@@ -610,7 +610,7 @@ Model::loadSamples(std::string const & path_)
     double bary[3], coords[3];
     Vector3 pos;
 
-    samples.resize((array_size_t)n);
+    samples.resize((size_t)n);
 
     for (long i = 0; i < n; ++i)
     {
@@ -649,7 +649,7 @@ Model::loadSamples(std::string const & path_)
             + bary[2] * ((*v2)->getPosition());
       }
 
-      samples[(array_size_t)i] = Sample(mesh, face_index, pos, type, label);
+      samples[(size_t)i] = Sample(mesh, face_index, pos, type, label);
     }
   }
   THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
@@ -670,7 +670,7 @@ Model::saveSamples(std::string const & path_) const
 
   Real bary[3];
 
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     Sample const & sample = samples[i];
     Mesh::Face const * face = Mesh::mapIndexToFace(sample.face_index);
@@ -772,7 +772,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
   RayStructureIntersection3 isec = rayIntersection(ray);
   if (isec.isValid())
   {
-    array_size_t index = (array_size_t)isec.getElementIndex();
+    size_t index = (size_t)isec.getElementIndex();
     KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
     Mesh * mesh = const_cast<Mesh *>(triple.getMesh());
 
@@ -809,7 +809,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
 
       scc.collectSimilarIn(*mesh_group);
 
-      for (array_size_t i = 0; i < scc.similar_meshes.size(); ++i)
+      for (size_t i = 0; i < scc.similar_meshes.size(); ++i)
       {
         if (add)
           picked_segment.addMesh(const_cast<Mesh *>(scc.similar_meshes[i]));
@@ -817,7 +817,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
           picked_segment.removeMesh(scc.similar_meshes[i]);
       }
 
-      for (array_size_t i = 0; i < scc.similar_groups.size(); ++i)
+      for (size_t i = 0; i < scc.similar_groups.size(); ++i)
       {
         if (add)
           picked_segment.addMeshGroup(const_cast<MeshGroup *>(scc.similar_groups[i]));
@@ -893,7 +893,7 @@ Model::removeSegment(long index)
 Segment *
 Model::getSegment(Mesh const * mesh, int * index)
 {
-  for (array_size_t i = 0; i < segments.size(); ++i)
+  for (size_t i = 0; i < segments.size(); ++i)
     if (segments[i].hasMesh(mesh, segment_depth_promotion))
     {
       if (index) *index = (int)i;
@@ -969,7 +969,7 @@ Model::saveSegments(std::string const & path_) const
   if (!out)
     return false;
 
-  for (array_size_t i = 0; i < segments.size(); ++i)
+  for (size_t i = 0; i < segments.size(); ++i)
   {
     Segment const & seg = segments[i];
     out << seg.getLabel() << '\n';
@@ -1133,7 +1133,7 @@ Model::loadFeatures(std::string const & path_)
       }
       else
       {
-        for (array_size_t i = 1; i < feat_vals.size(); ++i)
+        for (size_t i = 1; i < feat_vals.size(); ++i)
         {
           if (!(line_in >> f))
             throw Error("Couldn't read feature");
@@ -1154,9 +1154,9 @@ Model::loadFeatures(std::string const & path_)
       if (app().options().color_cube_features && feat_vals.size() == 3)
       {
         Real abs_max = -1;
-        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        for (size_t i = 0; i < feat_vals.size(); ++i)
         {
-          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          for (size_t j = 0; j < feat_vals[i].size(); ++j)
           {
             Real abs_feat_val = std::fabs(feat_vals[i][j]);
             if (abs_feat_val > abs_max)
@@ -1166,22 +1166,22 @@ Model::loadFeatures(std::string const & path_)
 
         if (abs_max > 0)
         {
-          for (array_size_t i = 0; i < feat_vals.size(); ++i)
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          for (size_t i = 0; i < feat_vals.size(); ++i)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp(0.5 * (feat_vals[i][j]  / abs_max + 1), (Real)0, (Real)1);
         }
       }
       else
       {
-        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        for (size_t i = 0; i < feat_vals.size(); ++i)
         {
           TheaArray<Real> sorted = feat_vals[i];
           std::sort(sorted.begin(), sorted.end());
 
-          array_size_t tenth = (int)(0.1 * sorted.size());
+          size_t tenth = (int)(0.1 * sorted.size());
           Real lo = *(sorted.begin() + tenth);
 
-          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          size_t ninetieth = (int)(0.9 * sorted.size());
           Real hi = *(sorted.begin() + ninetieth);
 
           Real range = hi - lo;
@@ -1198,13 +1198,13 @@ Model::loadFeatures(std::string const & path_)
 
           if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
           {
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
           }
           else
           {
             Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
           }
         }
@@ -1240,7 +1240,7 @@ class FaceLabeler
         if (index < 0 || index >= (long)elem_colors.size())
           throw Error("Face index out of range of face labels array");
 
-        fi->attr().setColor(elem_colors[(array_size_t)index]);
+        fi->attr().setColor(elem_colors[(size_t)index]);
       }
 
       return false;
@@ -1316,21 +1316,21 @@ getDefaultPath(std::string model_path, std::string const & query_path, TheaArray
   {
     std::string dir = (i == 0 ? query_path : FilePath::parent(model_path));
 
-    for (array_size_t j = 0; j < query_exts.size(); ++j)
+    for (size_t j = 0; j < query_exts.size(); ++j)
     {
       std::string ffn = FilePath::concat(dir, model_path + query_exts[j]);
       if (FileSystem::exists(ffn))
         return ffn;
     }
 
-    for (array_size_t j = 0; j < query_exts.size(); ++j)
+    for (size_t j = 0; j < query_exts.size(); ++j)
     {
       std::string ffn = FilePath::concat(dir, FilePath::completeBaseName(model_path) + query_exts[j]);
       if (FileSystem::exists(ffn))
         return ffn;
     }
 
-    for (array_size_t j = 0; j < query_exts.size(); ++j)
+    for (size_t j = 0; j < query_exts.size(); ++j)
     {
       std::string ffn = FilePath::concat(dir, FilePath::baseName(model_path) + query_exts[j]);
       if (FileSystem::exists(ffn))
@@ -1557,7 +1557,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         drawSphere(render_system, picked_sample.position, sample_radius);
       }
 
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
       {
         render_system.setColor(getLabelColor(samples[i].label));
 

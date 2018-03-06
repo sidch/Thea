@@ -128,7 +128,7 @@ class THEA_API Pyramid1D : public Serializable
 
       if (smooth_base_level)
       {
-        levels[0].resize((array_size_t)n, 0);
+        levels[0].resize((size_t)n, 0);
         Real * dst = &levels[0][0];
 
         for (int i = 0; i < n; ++i)
@@ -136,7 +136,7 @@ class THEA_API Pyramid1D : public Serializable
       }
       else
       {
-        levels[0].reserve((array_size_t)n);
+        levels[0].reserve((size_t)n);
         levels[0].insert(levels[0].end(), base_data, base_data + n);
       }
 

@@ -114,7 +114,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
   if (has_normals)
   {
     normals_are_normalized = true;
-    for (array_size_t i = 0; i < points.size(); ++i)
+    for (size_t i = 0; i < points.size(); ++i)
       if (!Math::fuzzyEq(points[i].n.squaredLength(), (Real)1, (Real)0.001))
       {
         normals_are_normalized = false;
@@ -168,7 +168,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
 
       if (has_graph)
       {
-        for (array_size_t i = 0; i < points.size(); ++i)
+        for (size_t i = 0; i < points.size(); ++i)
         {
           if (!std::getline(gin, line))
           {
@@ -187,9 +187,9 @@ PointCloud::load(std::string const & path, std::string const & features_path)
             break;
           }
 
-          graph[i].resize((array_size_t)num_nbrs);
+          graph[i].resize((size_t)num_nbrs);
 
-          for (array_size_t j = 0; j < graph[i].size(); ++j)
+          for (size_t j = 0; j < graph[i].size(); ++j)
           {
             if (!(line_in >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
             {
@@ -226,7 +226,7 @@ readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<
     throw Error("TXT: Could not open file '" + path + '\'');
 
   features.resize(1);
-  features[0].resize((array_size_t)num_points);
+  features[0].resize((size_t)num_points);
 
   std::string line;
   Vector3 p;
@@ -242,7 +242,7 @@ readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<
     if (!(line_in >> f))
       throw Error(format("TXT: Could not read first feature for point %ld", i) + " from '" + path + '\'');
 
-    features[0][(array_size_t)i] = (Real)f;
+    features[0][(size_t)i] = (Real)f;
 
     if (i == 0)
     {
@@ -254,12 +254,12 @@ readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<
     }
     else
     {
-      for (array_size_t j = 1; j < features.size(); ++j)
+      for (size_t j = 1; j < features.size(); ++j)
       {
         if (!(line_in >> f))
           throw Error(format("TXT: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
 
-        features[j][(array_size_t)i] = (Real)f;
+        features[j][(size_t)i] = (Real)f;
       }
     }
   }
@@ -310,9 +310,9 @@ readFeaturesARFF(std::string const & path, long num_points, TheaArray< TheaArray
     return true;
   }
 
-  features.resize((array_size_t)num_features);
-  for (array_size_t i = 0; i < features.size(); ++i)
-    features[i].resize((array_size_t)num_points);
+  features.resize((size_t)num_features);
+  for (size_t i = 0; i < features.size(); ++i)
+    features[i].resize((size_t)num_points);
 
   TheaArray<std::string> fields;
   double f;
@@ -333,13 +333,13 @@ readFeaturesARFF(std::string const & path, long num_points, TheaArray< TheaArray
       return false;
     }
 
-    for (array_size_t j = 0; j < features.size(); ++j)
+    for (size_t j = 0; j < features.size(); ++j)
     {
       std::istringstream field_in(fields[j]);
       if (!(field_in >> f))
         throw Error(format("ARFF: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
 
-      features[j][(array_size_t)i] = (Real)f;
+      features[j][(size_t)i] = (Real)f;
     }
   }
 
@@ -377,9 +377,9 @@ PointCloud::loadFeatures(std::string const & filename_)
       if (app().options().color_cube_features && features.size() == 3)
       {
         Real abs_max = -1;
-        for (array_size_t i = 0; i < features.size(); ++i)
+        for (size_t i = 0; i < features.size(); ++i)
         {
-          for (array_size_t j = 0; j < features[i].size(); ++j)
+          for (size_t j = 0; j < features[i].size(); ++j)
           {
             Real abs_feat_val = std::fabs(features[i][j]);
             if (abs_feat_val > abs_max)
@@ -389,22 +389,22 @@ PointCloud::loadFeatures(std::string const & filename_)
 
         if (abs_max > 0)
         {
-          for (array_size_t i = 0; i < features.size(); ++i)
-            for (array_size_t j = 0; j < features[i].size(); ++j)
+          for (size_t i = 0; i < features.size(); ++i)
+            for (size_t j = 0; j < features[i].size(); ++j)
               features[i][j] = Math::clamp(0.5 * (features[i][j]  / abs_max + 1), (Real)0, (Real)1);
         }
       }
       else
       {
-        for (array_size_t i = 0; i < features.size(); ++i)
+        for (size_t i = 0; i < features.size(); ++i)
         {
           TheaArray<Real> sorted = features[i];
           std::sort(sorted.begin(), sorted.end());
 
-          array_size_t tenth = (int)(0.1 * sorted.size());
+          size_t tenth = (int)(0.1 * sorted.size());
           Real lo = *(sorted.begin() + tenth);
 
-          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          size_t ninetieth = (int)(0.9 * sorted.size());
           Real hi = *(sorted.begin() + ninetieth);
 
           Real range = hi - lo;
@@ -421,13 +421,13 @@ PointCloud::loadFeatures(std::string const & filename_)
 
           if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
           {
-            for (array_size_t j = 0; j < features[i].size(); ++j)
+            for (size_t j = 0; j < features[i].size(); ++j)
               features[i][j] = Math::clamp((features[i][j] - lo) / range, (Real)0, (Real)1);
           }
           else
           {
             Real abs_max = std::max(std::fabs(lo), std::fabs(hi));
-            for (array_size_t j = 0; j < features[i].size(); ++j)
+            for (size_t j = 0; j < features[i].size(); ++j)
               features[i][j] = Math::clamp((features[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
           }
         }
@@ -523,13 +523,13 @@ PointCloud::updateBounds()
 {
   if (bounds.isNull())
   {
-    for (array_size_t i = 0; i < points.size(); ++i)
+    for (size_t i = 0; i < points.size(); ++i)
       bounds.merge(points[i].p);
   }
 }
 
 ColorRGBA
-PointCloud::getColor(array_size_t point_index) const
+PointCloud::getColor(size_t point_index) const
 {
   alwaysAssertM(point_index >= 0 && point_index < points.size(),
                 format("%s: Index %ld out of bounds", getName(), (long)point_index));
@@ -626,7 +626,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
 
     TheaArray<Vector3> vbuf(points.size());
-    for (array_size_t i = 0; i < points.size(); ++i)
+    for (size_t i = 0; i < points.size(); ++i)
       vbuf[i] = points[i].p;
 
     vertices_var->updateVectors(0, (long)vbuf.size(), &vbuf[0]);
@@ -638,7 +638,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
 
     TheaArray<ColorRGBA> cbuf(points.size());
-    for (array_size_t i = 0; i < points.size(); ++i)
+    for (size_t i = 0; i < points.size(); ++i)
       cbuf[i] = getColor(i);
 
     colors_var->updateColors(0, (long)cbuf.size(), &cbuf[0]);
@@ -670,7 +670,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
                        || app().options().fancy_colors);
       Real scale = getBounds().getExtent().length();
       Real point_radius = app().options().point_scale * Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
-      for (array_size_t i = 0; i < points.size(); ++i)
+      for (size_t i = 0; i < points.size(); ++i)
       {
         if (has_colors)
           render_system.setColor(getColor(i));
@@ -704,12 +704,12 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
 
       render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
 
-        for (array_size_t i = 0; i < graph.size(); ++i)
+        for (size_t i = 0; i < graph.size(); ++i)
         {
-          for (array_size_t j = 0; j < graph[i].size(); ++j)
+          for (size_t j = 0; j < graph[i].size(); ++j)
           {
             render_system.sendVertex(points[i].p);
-            render_system.sendVertex(points[(array_size_t)graph[i][j]].p);
+            render_system.sendVertex(points[(size_t)graph[i][j]].p);
           }
         }
 
@@ -724,7 +724,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
 
       render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
 
-        for (array_size_t i = 0; i < points.size(); ++i)
+        for (size_t i = 0; i < points.size(); ++i)
         {
           render_system.sendVertex(points[i].p);
           render_system.sendVertex(points[i].p + normal_scale * points[i].n);

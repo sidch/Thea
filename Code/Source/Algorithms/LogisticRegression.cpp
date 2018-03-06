@@ -81,7 +81,7 @@ LogisticRegression::addObservation(double const * x, double y)
   alwaysAssertM(x, "LogisticRegression: Observed vector x cannot be null");
 
   long ndims = numDimensions();
-  llsq_coeffs.resize((array_size_t)(ndims + 1));
+  llsq_coeffs.resize((size_t)(ndims + 1));
 
   llsq_coeffs[0] = 1;
   fastCopy(x, x + ndims, &llsq_coeffs[0] + 1);
@@ -97,7 +97,7 @@ LogisticRegression::addObservation(double const * x, double y)
   double llsq_constant = std::log(1.0 / y - 1.0);
 
   // std::cout << "LogisticRegression: Adding LLSQ objective [";
-  // for (array_size_t i = 0; i < llsq_coeffs.size(); ++i) std::cout << ' ' << llsq_coeffs[i];
+  // for (size_t i = 0; i < llsq_coeffs.size(); ++i) std::cout << ' ' << llsq_coeffs[i];
   // std::cout << " ] = " << llsq_constant << std::endl;
 
   llsq->addObjective(&llsq_coeffs[0], llsq_constant);

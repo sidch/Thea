@@ -187,9 +187,9 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
     : mesh(mesh_), face_index(face_index_), face_type(face_type_)
     {
       typename Mesh::VertexArray const & mv = mesh->getVertices();
-      vertices[0] = mv[(array_size_t)vi0];
-      vertices[1] = mv[(array_size_t)vi1];
-      vertices[2] = mv[(array_size_t)vi2];
+      vertices[0] = mv[(size_t)vi0];
+      vertices[1] = mv[(size_t)vi1];
+      vertices[2] = mv[(size_t)vi2];
 
       vertex_indices[0] = (long)vi0;
       vertex_indices[1] = (long)vi1;
@@ -296,11 +296,11 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     }
 
     poly.triangulate(tri_indices);
-    for (array_size_t j = 0; j < tri_indices.size(); j += 3)
+    for (size_t j = 0; j < tri_indices.size(); j += 3)
     {
-      tris.push_back(TriangleT(typename TriangleT::VertexTriple(face_vertices[(array_size_t)tri_indices[j]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 1]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 2]],
+      tris.push_back(TriangleT(typename TriangleT::VertexTriple(face_vertices[(size_t)tri_indices[j]],
+                                                                face_vertices[(size_t)tri_indices[j + 1]],
+                                                                face_vertices[(size_t)tri_indices[j + 2]],
                                                                 &face, &mesh)));
     }
   }
@@ -366,11 +366,11 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
     }
 
     poly.triangulate(tri_indices);
-    for (array_size_t j = 0; j < tri_indices.size(); j += 3)
+    for (size_t j = 0; j < tri_indices.size(); j += 3)
     {
-      tris.push_back(TriangleT(typename TriangleT::VertexTriple(face_vertices[(array_size_t)tri_indices[j]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 1]],
-                                                                face_vertices[(array_size_t)tri_indices[j + 2]],
+      tris.push_back(TriangleT(typename TriangleT::VertexTriple(face_vertices[(size_t)tri_indices[j]],
+                                                                face_vertices[(size_t)tri_indices[j + 1]],
+                                                                face_vertices[(size_t)tri_indices[j + 2]],
                                                                 &face, &mesh)));
     }
   }
@@ -395,9 +395,9 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
   if (face.hasTriangles())
   {
     typename MeshT::IndexArray const & tri_indices = mesh.getTriangleIndices();
-    array_size_t beg = 3 * (array_size_t)face.getFirstTriangle();
-    array_size_t end = beg + 3 * (array_size_t)face.numTriangles();
-    for (array_size_t i = beg; i < end; i += 3)
+    size_t beg = 3 * (size_t)face.getFirstTriangle();
+    size_t end = beg + 3 * (size_t)face.numTriangles();
+    for (size_t i = beg; i < end; i += 3)
     {
       tris.push_back(TriangleT(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (long)i / 3,
                                             VertexTriple::FaceType::TRIANGLE)));
@@ -408,31 +408,31 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
   {
     typename MeshT::VertexArray const & vertices = mesh.getVertices();
     typename MeshT::IndexArray const & quad_indices = mesh.getQuadIndices();
-    array_size_t beg = 4 * (array_size_t)face.getFirstQuad();
-    array_size_t end = beg + 4 * (array_size_t)face.numQuads();
-    for (array_size_t i = beg; i < end; i += 4)
+    size_t beg = 4 * (size_t)face.getFirstQuad();
+    size_t end = beg + 4 * (size_t)face.numQuads();
+    for (size_t i = beg; i < end; i += 4)
     {
       long i0, j0, k0;
       long i1, j1, k1;
-      int num_tris = Polygon3::triangulateQuad(vertices[(array_size_t)quad_indices[i    ]],
-                                               vertices[(array_size_t)quad_indices[i + 1]],
-                                               vertices[(array_size_t)quad_indices[i + 2]],
-                                               vertices[(array_size_t)quad_indices[i + 3]],
+      int num_tris = Polygon3::triangulateQuad(vertices[(size_t)quad_indices[i    ]],
+                                               vertices[(size_t)quad_indices[i + 1]],
+                                               vertices[(size_t)quad_indices[i + 2]],
+                                               vertices[(size_t)quad_indices[i + 3]],
                                                i0, j0, k0, i1, j1, k1);
 
       long quad = (long)i / 4;
       if (num_tris > 0)
       {
-        tris.push_back(TriangleT(VertexTriple(quad_indices[(array_size_t)(i + i0)],
-                                              quad_indices[(array_size_t)(i + j0)],
-                                              quad_indices[(array_size_t)(i + k0)],
+        tris.push_back(TriangleT(VertexTriple(quad_indices[(size_t)(i + i0)],
+                                              quad_indices[(size_t)(i + j0)],
+                                              quad_indices[(size_t)(i + k0)],
                                               &mesh, quad, VertexTriple::FaceType::QUAD)));
 
         if (num_tris > 1)
         {
-          tris.push_back(TriangleT(VertexTriple(quad_indices[(array_size_t)(i + i1)],
-                                                quad_indices[(array_size_t)(i + j1)],
-                                                quad_indices[(array_size_t)(i + k1)],
+          tris.push_back(TriangleT(VertexTriple(quad_indices[(size_t)(i + i1)],
+                                                quad_indices[(size_t)(i + j1)],
+                                                quad_indices[(size_t)(i + k1)],
                                                 &mesh, quad, VertexTriple::FaceType::QUAD)));
         }
       }
@@ -450,13 +450,13 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
   typedef typename Triangle::VertexTriple VertexTriple;
 
   typename Mesh::IndexArray const & tri_indices = mesh.getTriangleIndices();
-  for (array_size_t i = 0; i < tri_indices.size(); i += 3)
+  for (size_t i = 0; i < tri_indices.size(); i += 3)
     tris.push_back(Triangle(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (long)i / 3,
                             VertexTriple::FaceType::TRIANGLE)));
 
   // FIXME: Handle non-convex faces
   typename Mesh::IndexArray const & quad_indices = mesh.getQuadIndices();
-  for (array_size_t i = 0; i < quad_indices.size(); i += 4)
+  for (size_t i = 0; i < quad_indices.size(); i += 4)
   {
     long quad = (long)i / 4;
     tris.push_back(Triangle(VertexTriple(quad_indices[i], quad_indices[i + 1], quad_indices[i + 2], &mesh, quad,

@@ -151,7 +151,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
 
       private:
         CompressedSparseMatrix const & m;
-        array_size_t i1, i2;
+        size_t i1, i2;
         mutable Entry entry;
 
     }; // class ConstIterator
@@ -180,7 +180,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
     ConstIterator begin() const
     {
       // Find the first non-zero row/column
-      array_size_t i1 = 0;
+      size_t i1 = 0;
       while ((long)i1 + 1 < size1 && indices1[i1 + 1] <= 0)
         ++i1;
 
@@ -208,7 +208,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
     bool isValid() const
     {
       return (indices2.size() == values.size()
-           && indices1.size() == (array_size_t)size1 + 1
+           && indices1.size() == (size_t)size1 + 1
            && (long)indices1[indices1.size() - 1] == numSetElements());
     }
 
@@ -225,7 +225,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
      * Constructs a zero matrix of the specified size. If the number of columns is omitted or zero, a square matrix is created.
      */
     CompressedSparseMatrix(int size1_ = 0, int size2_ = 0)
-    : size1(size1_), size2(size2_ > 0 ? size2_ : size1_), indices1((size1_ >= 0 ? (array_size_t)size1_ + 1 : 0), 0)
+    : size1(size1_), size2(size2_ > 0 ? size2_ : size1_), indices1((size1_ >= 0 ? (size_t)size1_ + 1 : 0), 0)
     {
       alwaysAssertM(size1_ >= 0 && size2_ >= 0, "CompressedSparseMatrix: Dimensions must be non-negative");
     }
@@ -287,19 +287,19 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
       indices1.resize(size1 + 1);
       std::fill(indices1.begin(), indices1.end(), 0);
 
-      indices2.resize((array_size_t)src_entries.size());
-      values.resize((array_size_t)src_entries.size());
+      indices2.resize(src_entries.size());
+      values.resize(src_entries.size());
 
       // Now read back the values in lexicographic order
       long i, last_index1 = -1;
-      array_size_t curr_pos = 0;
+      size_t curr_pos = 0;
       for (typename EntryMap::const_iterator ei = src_entries.begin(); ei != src_entries.end(); ++ei, ++curr_pos)
       {
         i = (long)ei->first.first;
         if (i != last_index1)  // change of primary index since last iteration
         {
           for (long k = last_index1 + 1; k <= i; ++k)
-            indices1[(array_size_t)k] = static_cast<Index1D>(curr_pos);
+            indices1[(size_t)k] = static_cast<Index1D>(curr_pos);
 
           last_index1 = i;
         }
@@ -309,7 +309,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
       }
 
       // One beyond last position, stores number of non-zeros
-      indices1[(array_size_t)size1] = curr_pos;
+      indices1[(size_t)size1] = curr_pos;
     }
 
     /** Resizes the matrix to the specified dimensions. All existing data is discarded and the matrix is set to zero. */
@@ -319,7 +319,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
 
       size1 = size1_;
       size2 = size2_;
-      indices1.resize((array_size_t)size1 + 1, 0);
+      indices1.resize((size_t)size1 + 1, 0);
       indices2.clear();
       values.clear();
     }
@@ -377,7 +377,7 @@ class /* THEA_API */ CompressedRowMatrix : public CompressedSparseMatrix<T, Matr
      */
     template <typename U> void postmulVector(U const * v, U * result) const
     {
-      array_size_t curr_pos = 0;
+      size_t curr_pos = 0;
       U * rp = result;
       for (long row = 0; row < BaseT::size1; ++row, ++rp)
       {
@@ -459,7 +459,7 @@ class /* THEA_API */ CompressedColumnMatrix : public CompressedSparseMatrix<T, M
       U * r_end = result + BaseT::size2;
       for (U * rp = result; rp != r_end; ++rp) *rp = static_cast<U>(0);
 
-      array_size_t curr_pos = 0;
+      size_t curr_pos = 0;
       for (long col = 0; col < BaseT::size1; ++col)
       {
         long num_elems = (long)(BaseT::indices1[col + 1] - BaseT::indices1[col]);

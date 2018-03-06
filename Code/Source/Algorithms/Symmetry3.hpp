@@ -119,10 +119,10 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
 
       long best_dir = -1;
       double best_error = -1;
-      array_size_t first_vertex_of_round = 0;
+      size_t first_vertex_of_round = 0;
       for (long round = 0; round < num_rounds; ++round)
       {
-        for (array_size_t i = first_vertex_of_round; i < vertices.size(); ++i)
+        for (size_t i = first_vertex_of_round; i < vertices.size(); ++i)
         {
           Plane3 candidate = Plane3::fromPointAndNormal(centroid, vertices[i]);
           double err = symmetryError(begin, end, candidate, centroid, radius);
@@ -144,7 +144,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
 
           // Collect triangles incident on the best direction vertex
           TheaUnorderedSet<long> nbr_verts;
-          for (array_size_t i = 0; i < triangles.size(); i += 3)
+          for (size_t i = 0; i < triangles.size(); i += 3)
           {
             if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
             {
@@ -159,7 +159,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
           }
 
           // Collect triangles incident on the one-hop neighbor vertices
-          for (array_size_t i = 0; i < triangles.size(); i += 3)
+          for (size_t i = 0; i < triangles.size(); i += 3)
           {
             if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
               continue;  // already added

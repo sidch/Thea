@@ -409,7 +409,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
       // Read the vertex pointers into an internal array
       if (face_vertices.size() != 256) face_vertices.resize(256);  // default size, should ensure not too many resizes
-      array_size_t num_verts = 0;
+      size_t num_verts = 0;
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
         debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
@@ -719,10 +719,10 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      *
      * @return A pointer to the newly created face.
      */
-    Face * addFace(array_size_t num_verts, Vertex ** verts, Vector3 const & normal)
+    Face * addFace(size_t num_verts, Vertex ** verts, Vector3 const & normal)
     {
       // Try to locate a boundary edge that is already in the mesh
-      array_size_t origin = 0;
+      size_t origin = 0;
       Halfedge * e = findExistingEdge(num_verts, verts, origin);
 
       Face * face = NULL;
@@ -731,7 +731,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       {
         THEA_WARNING << "Adding isolated face";
         TheaArray<Vertex *> iso_verts;
-        array_size_t existing0 = 0, existing1 = 0;
+        size_t existing0 = 0, existing1 = 0;
         if (e && e->isBoundaryEdge())
         {
           existing0 = origin;
@@ -750,8 +750,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       return face;
     }
 
-    /** Utility function for addFace(array_size_t, Vertex **, Vector3 const &). */
-    Face * addFace(array_size_t num_verts, Vertex ** verts, Halfedge * first, array_size_t origin, Vector3 const & normal)
+    /** Utility function for addFace(size_t, Vertex **, Vector3 const &). */
+    Face * addFace(size_t num_verts, Vertex ** verts, Halfedge * first, size_t origin, Vector3 const & normal)
     {
       if (first)
       {
@@ -783,11 +783,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * Add a sequence of isolated vertices, optionally including one existing edge (if existing0 != existing1), and return
      * pointers to the new vertices.
      */
-    bool addIsolatedVertices(array_size_t num_verts, Vertex ** verts, array_size_t existing0, array_size_t existing1,
+    bool addIsolatedVertices(size_t num_verts, Vertex ** verts, size_t existing0, size_t existing1,
                              TheaArray<Vertex *> & iso_verts)
     {
       bool has_existing_edge = (existing0 != existing1);
-      for (array_size_t i = 0; i < num_verts; ++i)
+      for (size_t i = 0; i < num_verts; ++i)
       {
         if (has_existing_edge && (i == existing0 || i == existing1))
           iso_verts.push_back(verts[i]);
@@ -821,16 +821,16 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      *
      * @return A pointer to the newly created face.
      */
-    Face * addFace(array_size_t num_verts, Vertex ** verts, Halfedge * first, array_size_t origin, bool reverse,
+    Face * addFace(size_t num_verts, Vertex ** verts, Halfedge * first, size_t origin, bool reverse,
                    Vector3 const & normal)
     {
       // For each vertex, check that the halfedge emanating from it exists as a boundary halfedge, or can be successfully added.
       // Store either the existing edge to the next vertex, or the preceding boundary halfedge _into_ the vertex.
       TheaArray<Halfedge *> edges(num_verts);
       Halfedge * prev = first, * e;
-      array_size_t start_index = reverse ? (origin > 0 ? origin - 1 : num_verts - 1)
+      size_t start_index = reverse ? (origin > 0 ? origin - 1 : num_verts - 1)
                                          : (origin < num_verts - 1 ? origin + 1 : 0);
-      array_size_t i = start_index, next;
+      size_t i = start_index, next;
       do
       {
         // See if there is an existing edge
@@ -1064,11 +1064,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * @return A pointer to an existing half-edge, if found, else null. The index of the originating vertex of this half-edge
      *   (respective to the input array of vertices) is stored in origin_index.
      */
-    Halfedge * findExistingEdge(array_size_t num_verts, Vertex ** verts, array_size_t & origin_index)
+    Halfedge * findExistingEdge(size_t num_verts, Vertex ** verts, size_t & origin_index)
     {
       Halfedge * e  = NULL;
-      array_size_t last = num_verts - 1;
-      for (array_size_t i = 0; i < num_verts; ++i)
+      size_t last = num_verts - 1;
+      for (size_t i = 0; i < num_verts; ++i)
       {
         e = verts[last]->getEdgeTo(verts[i]);
         if (e)
@@ -1253,7 +1253,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     void packVertexPositions()
     {
       packed_vertex_positions.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = (*vi)->getPosition();
     }
@@ -1262,7 +1262,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     void packVertexNormals()
     {
       packed_vertex_normals.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = (*vi)->getNormal();
     }
@@ -1272,7 +1272,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     void packVertexColors(typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
       packed_vertex_colors.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRGBA((*vi)->attr().getColor());
     }
@@ -1289,7 +1289,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     void packVertexTexCoords(typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
     {
       packed_vertex_texcoords.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
     }
@@ -1340,7 +1340,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       if (buffered_wireframe)
       {
         packed_edges.resize(halfedges.size());  // i.e. 2 * numEdges()
-        array_size_t i = 0;
+        size_t i = 0;
         for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei, i += 2)
         {
           packed_edges[i    ] = (*ei)->getOrigin()->getPackingIndex();

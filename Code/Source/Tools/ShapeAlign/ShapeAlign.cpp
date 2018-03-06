@@ -64,7 +64,7 @@ sampleMesh(string const & mesh_path, TheaArray<DVector3> & samples)
     sampler.sampleEvenlyByArea(num_mesh_samples, pts);
 
     samples.resize(pts.size());
-    for (array_size_t i = 0; i < samples.size(); ++i)
+    for (size_t i = 0; i < samples.size(); ++i)
       samples[i] = DVector3(pts[i]);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "An error occurred")
@@ -123,7 +123,7 @@ loadPoints(string const & points_path, TheaArray<DVector3> & points)
       return sampleMesh(points_path, points);
     }
 
-    points.resize((array_size_t)nv);
+    points.resize((size_t)nv);
 
     for (long i = 0; i < nv; ++i)
       if (!(in >> points[i][0] >> points[i][1] >> points[i][2]))
@@ -221,14 +221,14 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
   {
     // Measure average distance of from_pts to from_center
     double from_avg_dist = 0;
-    for (array_size_t i = 0; i < from_pts.size(); ++i)
+    for (size_t i = 0; i < from_pts.size(); ++i)
       from_avg_dist += (from_pts[i] - from_center).length();
 
     from_avg_dist /= from_pts.size();
 
     // Measure average distance of to_pts to to_center
     double to_avg_dist = 0;
-    for (array_size_t i = 0; i < to_pts.size(); ++i)
+    for (size_t i = 0; i < to_pts.size(); ++i)
       to_avg_dist += (to_pts[i] - to_center).length();
 
     to_avg_dist /= to_pts.size();
@@ -324,7 +324,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
   else
   {
     DAffineTransform3 init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
-    for (array_size_t i = 0; i < from_pts.size(); ++i)
+    for (size_t i = 0; i < from_pts.size(); ++i)
       from_pts[i] = init_tr * from_pts[i];
 
     DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
@@ -333,7 +333,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       DVector3 offset = initial_from_position - from_center;
       init_tr = DAffineTransform3::translation(offset) * init_tr;
 
-      for (array_size_t i = 0; i < from_pts.size(); ++i)
+      for (size_t i = 0; i < from_pts.size(); ++i)
         from_pts[i] += offset;
     }
 
@@ -365,7 +365,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
                                        * DAffineTransform3(rot)
                                        * DAffineTransform3::translation(-from_center);
 
-              for (array_size_t i = 0; i < from_pts.size(); ++i)
+              for (size_t i = 0; i < from_pts.size(); ++i)
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
               DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
@@ -411,7 +411,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
                                  * DAffineTransform3(rot)
                                  * DAffineTransform3::translation(-from_center);
 
-        for (array_size_t i = 0; i < from_pts.size(); ++i)
+        for (size_t i = 0; i < from_pts.size(); ++i)
           rot_from_pts[i] = rot_tr * from_pts[i];
 
         DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
@@ -603,8 +603,8 @@ main(int argc, char * argv[])
   if (!loadShapePaths(from_path, from_shape_paths) || !loadShapePaths(to_path, to_shape_paths))
     return -1;
 
-  for (array_size_t i = 0; i < from_shape_paths.size(); ++i)
-    for (array_size_t j = 0; j < to_shape_paths.size(); ++j)
+  for (size_t i = 0; i < from_shape_paths.size(); ++i)
+    for (size_t j = 0; j < to_shape_paths.size(); ++j)
     {
       if (!(i == 0 && j == 0) && out)
         *out << '\n';

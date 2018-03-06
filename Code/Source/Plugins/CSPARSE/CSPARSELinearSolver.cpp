@@ -204,7 +204,7 @@ CSPARSELinearSolver::solve(Options const & options)
       }
 
       // Initialize the solutions vector with the constants vector. This will be overwritten by the solver.
-      solution.resize(std::max(constants.size(), (array_size_t)scm.numColumns()));
+      solution.resize(std::max(constants.size(), (size_t)scm.numColumns()));
       Algorithms::fastCopy(constants.begin(), constants.end(), solution.begin());
       if (solution.size() > constants.size())
         std::fill(solution.begin() + constants.size(), solution.end(), 0);

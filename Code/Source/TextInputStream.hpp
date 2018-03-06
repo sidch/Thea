@@ -458,7 +458,7 @@ class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
     TheaArray<char>         buffer;
 
     /** Offset of current character (the next character to consumed) in input buffer. */
-    array_size_t            currentCharOffset;
+    size_t            currentCharOffset;
 
     /**
      * Line number of next character to be consumed from the input buffer. (1 indicates first line of input.) Note that this is

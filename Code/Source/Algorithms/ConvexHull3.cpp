@@ -80,8 +80,8 @@ ConvexHull3::updateApprox() const
 
   // Convert the input points to a packed array of floats
   TheaArray<float> coords(3 * points.size());
-  array_size_t base = 0;
-  for (array_size_t i = 0; i < points.size(); ++i, base += 3)
+  size_t base = 0;
+  for (size_t i = 0; i < points.size(); ++i, base += 3)
   {
     Vector3 const & p = points[i];
     coords[base    ] = (float)p.x();
@@ -122,9 +122,9 @@ ConvexHull3::updateApprox() const
     THEA_DEBUG << "ConvexHull3: Computed convex hull with " << result.mNumOutputVertices << " vertices, " << result.mNumFaces
                << " faces, " << result.mNumIndices << " indices and error " << err;
 
-    approx_vertices.resize((array_size_t)result.mNumOutputVertices);
-    array_size_t j = 0;
-    for (array_size_t i = 0; i < approx_vertices.size(); ++i, j += 3)
+    approx_vertices.resize((size_t)result.mNumOutputVertices);
+    size_t j = 0;
+    for (size_t i = 0; i < approx_vertices.size(); ++i, j += 3)
       approx_vertices[i] = Vector3(result.mOutputVertices[j], result.mOutputVertices[j + 1], result.mOutputVertices[j + 2]);
 
     if (result.mPolygons)  // shouldn't happen since we requested triangles, but still...
@@ -133,17 +133,17 @@ ConvexHull3::updateApprox() const
 
       Polygon3 poly;
       TheaArray<long> tri_indices;
-      array_size_t num_face_vertices = 0, index;
+      size_t num_face_vertices = 0, index;
 
-      for (array_size_t i = 0; i < (array_size_t)result.mNumIndices; i += (1 + num_face_vertices))
+      for (size_t i = 0; i < (size_t)result.mNumIndices; i += (1 + num_face_vertices))
       {
-        num_face_vertices = (array_size_t)result.mIndices[i];
+        num_face_vertices = (size_t)result.mIndices[i];
 
         if (num_face_vertices == 3)  // again, shouldn't happen
         {
           for (int j = 1; j <= 3; ++j)
           {
-            index = (array_size_t)result.mIndices[i + j];
+            index = (size_t)result.mIndices[i + j];
             debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
             approx_indices.push_back(index);
           }
@@ -151,28 +151,28 @@ ConvexHull3::updateApprox() const
         else if (num_face_vertices > 3)  // triangulate
         {
           poly.clear();
-          for (array_size_t j = 1; j <= num_face_vertices; ++j)
+          for (size_t j = 1; j <= num_face_vertices; ++j)
           {
-            index = (array_size_t)result.mIndices[i + j];
+            index = (size_t)result.mIndices[i + j];
             debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
             poly.addVertex(approx_vertices[index], (long)index);
           }
 
           tri_indices.clear();
           poly.triangulate(tri_indices);
-          for (array_size_t j = 0; j < tri_indices.size(); ++j)
-            approx_indices.push_back((array_size_t)tri_indices[j]);
+          for (size_t j = 0; j < tri_indices.size(); ++j)
+            approx_indices.push_back((size_t)tri_indices[j]);
         }
       }
     }
     else
     {
-      approx_indices.resize((array_size_t)result.mNumIndices);
-      array_size_t index;
+      approx_indices.resize((size_t)result.mNumIndices);
+      size_t index;
 
-      for (array_size_t i = 0; i < approx_indices.size(); ++i)
+      for (size_t i = 0; i < approx_indices.size(); ++i)
       {
-        index = (array_size_t)result.mIndices[i];
+        index = (size_t)result.mIndices[i];
         debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
         approx_indices[i] = index;
       }

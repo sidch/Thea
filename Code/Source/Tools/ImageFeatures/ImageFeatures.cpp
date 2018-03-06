@@ -66,7 +66,7 @@ main(int argc, char * argv[])
   int height = image.getHeight();
 
   // Compute features
-  TheaArray< TheaArray<Real> > features((array_size_t)(width * height));
+  TheaArray< TheaArray<Real> > features((size_t)(width * height));
   TheaArray<string> feat_names;
 
   for (int i = 1; i < argc; ++i)
@@ -98,7 +98,7 @@ main(int argc, char * argv[])
 
       Real const * entry = &values[0];
       long entry_size = num_radial_bins * num_polar_bins;
-      for (array_size_t j = 0; j < features.size(); ++j, entry += entry_size)
+      for (size_t j = 0; j < features.size(); ++j, entry += entry_size)
         features[j].insert(features[j].end(), entry, entry + entry_size);
     }
     else if (feat == "invert")
@@ -113,7 +113,7 @@ main(int argc, char * argv[])
   }
 
   ostringstream feat_str;
-  for (array_size_t i = 0; i < feat_names.size(); ++i)
+  for (size_t i = 0; i < feat_names.size(); ++i)
   {
     if (i > 0) feat_str << ", ";
     feat_str << feat_names[i];
@@ -134,10 +134,10 @@ main(int argc, char * argv[])
   {
     for (int j = 0; j < width; ++j)
     {
-      TheaArray<Real> const & entry = features[(array_size_t)(i * width + j)];
+      TheaArray<Real> const & entry = features[(size_t)(i * width + j)];
 
       bool all_zero = true;
-      for (array_size_t k = 0; k < entry.size(); ++k)
+      for (size_t k = 0; k < entry.size(); ++k)
         if (entry[k] > 0)
         {
           all_zero = false;
@@ -149,7 +149,7 @@ main(int argc, char * argv[])
 
       out << i << ' ' << j;
 
-      for (array_size_t k = 0; k < entry.size(); ++k)
+      for (size_t k = 0; k < entry.size(); ++k)
         out << ' ' << entry[k];
 
       out << '\n';

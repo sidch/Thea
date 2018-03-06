@@ -69,7 +69,7 @@ BinaryOutputStream::writeBool8(int64 n, TheaArray<bool> const & out)
 {
   // std::vector optimizes bool in a way that prevents fast writing
   for (int64 i = 0; i < n; ++i)
-    writeBool8(out[(array_size_t)i]);
+    writeBool8(out[(size_t)i]);
 }
 
 #define THEA_BINARY_OUTPUT_STREAM_DEFINE_WRITER(fname, tname) \

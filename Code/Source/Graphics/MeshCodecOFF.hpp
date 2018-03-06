@@ -218,7 +218,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         if (encoding_size <= 0)
           return;
 
-        enc_block.resize((array_size_t)encoding_size);
+        enc_block.resize((size_t)encoding_size);
         input.readBytes((int64)encoding_size, &enc_block[0]);
 
         tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::BIG, false));
@@ -327,7 +327,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             if (index < 0 || index >= (long)vrefs.size())
               throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
 
-            face[(array_size_t)v] = vrefs[(array_size_t)index];
+            face[(size_t)v] = vrefs[(size_t)index];
 
             for (int w = 0; w < v; ++w)
               if (face[w] == face[v])  // face has repeated vertices
@@ -417,7 +417,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             if (index < 0 || index >= (long)vrefs.size())
               throw Error(getName() + format(": Vertex index %ld out of bounds in face %ld", index, f));
 
-            face[v] = vrefs[(array_size_t)index];
+            face[v] = vrefs[(size_t)index];
 
             for (int w = 0; w < v; ++w)
               if (face[w] == face[v])  // face has repeated vertices
@@ -543,7 +543,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
       long vertex_index = (long)vertex_indices.size();
 
-      for (array_size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
+      for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
         Vector3 const & v = vertices[i];
 
@@ -683,14 +683,14 @@ class CodecOFF : public CodecOFFBase<MeshT>
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
         typename Mesh::IndexArray indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
-        array_size_t degree = (type == 0 ? 3 : 4);
+        size_t degree = (type == 0 ? 3 : 4);
 
-        for (array_size_t i = 0; i < indices.size(); i += degree)
+        for (size_t i = 0; i < indices.size(); i += degree)
         {
           if (write_opts.binary)
           {
             output.writeInt32((int32)degree);
-            for (array_size_t j = 0; j < degree; ++j)
+            for (size_t j = 0; j < degree; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
@@ -704,7 +704,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           {
             std::ostringstream os; os << degree;
 
-            for (array_size_t j = 0; j < degree; ++j)
+            for (size_t j = 0; j < degree; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");

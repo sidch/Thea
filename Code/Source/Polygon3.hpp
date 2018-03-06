@@ -346,7 +346,7 @@ class THEA_API Polygon3
     Real projArea() const;
 
     /** Check if a triangle can be removed. */
-    bool snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices,
+    bool snip(size_t u, size_t v, size_t w, size_t n, TheaArray<size_t> const & indices,
               Real epsilon) const;
 
     /** Advance an iterator round the polygon with vertices [vbegin, vend). */

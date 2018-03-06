@@ -305,7 +305,7 @@ main(int argc, char * argv[])
   }
 
   ostringstream feat_str;
-  for (array_size_t i = 0; i < feat_names.size(); ++i)
+  for (size_t i = 0; i < feat_names.size(); ++i)
   {
     if (i > 0) feat_str << ", ";
     feat_str << feat_names[i];
@@ -324,7 +324,7 @@ main(int argc, char * argv[])
     }
 
     out.writeInt64((int64)features.size());
-    for (array_size_t i = 0; i < features.size(); ++i)
+    for (size_t i = 0; i < features.size(); ++i)
     {
       double f = features[i];
 
@@ -344,7 +344,7 @@ main(int argc, char * argv[])
       return -1;
     }
 
-    for (array_size_t i = 0; i < features.size(); ++i)
+    for (size_t i = 0; i < features.size(); ++i)
     {
       double f = features[i];
 
@@ -411,7 +411,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
       Vector3 centroid = CentroidN<Vector3, 3>::compute(samples.begin(), samples.end());
 
       double sum_dists = 0;
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
         sum_dists += (samples[i] - centroid).length();
 
       return (3.0 * sum_dists) / samples.size();  // 3 instead of 2 since the avg is in general smaller than the max
@@ -474,7 +474,7 @@ computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, Distanc
 
   MeshFeatures::Global::DistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
-  values.resize((array_size_t)num_bins);
+  values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0]);
   dh.compute(histogram, dist_type, (Real)max_distance, (Real)reduction_ratio);
 
@@ -490,7 +490,7 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
 {
   THEA_CONSOLE << "Computing curvature histogram";
 
-  values.resize((array_size_t)num_bins);
+  values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0], (abs_values ? 0.0 : -1.0), 1.0);
 
   MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
@@ -502,10 +502,10 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
     reduction_ratio = 5000.0 / num_samples;
 
   long num_queries = Math::clamp((long)std::ceil(reduction_ratio * num_samples), 0L, num_samples - 1);
-  TheaArray<int32> query_indices((array_size_t)num_queries);
+  TheaArray<int32> query_indices((size_t)num_queries);
   Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
-  for (array_size_t i = 0; i < query_indices.size(); ++i)
+  for (size_t i = 0; i < query_indices.size(); ++i)
   {
     long index = query_indices[i];
     Vector3 p = projcurv.getSamplePosition(index);
@@ -530,7 +530,7 @@ computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<do
 {
   THEA_CONSOLE << "Computing SDF histogram";
 
-  values.resize((array_size_t)num_bins);
+  values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0], 0.0, 1.0);
 
   MeshFeatures::Local::ShapeDiameter<Mesh> sdf(mg, (Real)mesh_scale);
@@ -544,8 +544,8 @@ computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<do
 
   for (long i = 0; i < num_samples; ++i)
   {
-    Vector3 p = positions[(array_size_t)i];
-    Vector3 n = normals[(array_size_t)i];
+    Vector3 p = positions[(size_t)i];
+    Vector3 n = normals[(size_t)i];
 
     double v0 = sdf.compute(p, n, true);
     if (v0 < 0)

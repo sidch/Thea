@@ -51,7 +51,7 @@ LinearLeastSquares::LinearLeastSquares(long ndim_)
 : ndim(ndim_), num_objectives(0), has_solution(true)
 {
   alwaysAssertM(ndim_ > 0, "LinearLeastSquares: Number of dimensions must be positive");
-  solution.resize((array_size_t)ndim_, 0);
+  solution.resize((size_t)ndim_, 0);
 }
 
 void
@@ -81,7 +81,7 @@ LinearLeastSquares::solve(Constraint constraint, double tolerance)
   if (num_objectives <= 0)
   {
     // Arbitrary solution, set everything to zero (no real need to do this, but whatever...)
-    for (array_size_t i = 0; i < solution.size(); ++i)
+    for (size_t i = 0; i < solution.size(); ++i)
       solution[i] = 0;
 
     has_solution = true;
@@ -92,13 +92,13 @@ LinearLeastSquares::solve(Constraint constraint, double tolerance)
     {
       case Constraint::NON_NEGATIVE:
       {
-        array_size_t m = (array_size_t)num_objectives;
-        array_size_t n = (array_size_t)ndim;
+        size_t m = (size_t)num_objectives;
+        size_t n = (size_t)ndim;
 
         // NNLS requires a COLUMN-MAJOR (Fortran-style) matrix. Plus the values will be overwritten, so we need a copy anyway
         TheaArray<double> nnls_a(a_values.size());
-        for (array_size_t i = 0; i < m; i++)
-          for (array_size_t j = 0; j < n; j++)
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < n; j++)
             nnls_a[i + j * m] = a_values[i * n + j];
 
         TheaArray<double>  nnls_b(b);  // the values will be overwritten, so we need to make a copy
@@ -163,12 +163,12 @@ LinearLeastSquares::squaredError() const
     return 0;
 
   // Create a new vector even though squared error can be computed in place, just in case postmulVector has optimizations
-  TheaArray<double> b_prime((array_size_t)num_objectives);
+  TheaArray<double> b_prime((size_t)num_objectives);
   Matrix<double, MatrixLayout::ROW_MAJOR> a(const_cast<double *>(&a_values[0]), num_objectives, ndim);
   a.postmulVector(&solution[0], &b_prime[0]);
 
   double sqerr = 0;
-  for (array_size_t i = 0; i < b.size(); ++i)
+  for (size_t i = 0; i < b.size(); ++i)
   {
     double bb = b_prime[i] - b[i];
     sqerr += (bb * bb);

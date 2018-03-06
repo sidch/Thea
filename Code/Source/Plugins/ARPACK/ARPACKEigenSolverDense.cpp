@@ -70,18 +70,18 @@ ARPACKEigenSolver::solveDense(int nev, bool shift_invert, double sigma, char * w
   eig->Trace();
 
   // Find eigenpairs
-  array_size_t nconv = (array_size_t)eig->FindEigenvectors();
+  size_t nconv = (size_t)eig->FindEigenvectors();
 
   eigenvalues.resize(nconv);
   eigenvectors.resize(nconv);
 
-  array_size_t n = (array_size_t)dcm.numRows();
-  for (array_size_t i = 0; i < nconv; ++i)
+  size_t n = (size_t)dcm.numRows();
+  for (size_t i = 0; i < nconv; ++i)
   {
     eigenvalues[i] = Eigenvalue(eig->EigenvalueReal((int)i), eig->EigenvalueImag((int)i));
 
     eigenvectors[i].resize(n);
-    for (array_size_t j = 0; j < n; ++j)
+    for (size_t j = 0; j < n; ++j)
       eigenvectors[i][j] = std::complex<double>(eig->EigenvectorReal((int)i, (int)j), eig->EigenvectorImag((int)i, (int)j));
   }
 

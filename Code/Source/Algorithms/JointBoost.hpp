@@ -270,7 +270,7 @@ class THEA_API JointBoost
         if (n[(SharingSet::size_type)class_index])
           return feature_value > theta ? a : b;
         else
-          return k[(array_size_t)class_index];
+          return k[(size_t)class_index];
       }
 
       /** Get a printable description of the stump. */

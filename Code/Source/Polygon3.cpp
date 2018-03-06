@@ -130,7 +130,7 @@ Polygon3::getVertex(long poly_index) const
 {
   debugAssertM(poly_index >= 0 && poly_index < numVertices(), "Polygon3: Vertex index out of bounds");
 
-  return vertices[(array_size_t)poly_index];
+  return vertices[(size_t)poly_index];
 }
 
 static bool
@@ -154,7 +154,7 @@ Polygon3_insideTriangle2(Vector2 const & A, Vector2 const & B, Vector2 const & C
 }
 
 bool
-Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, TheaArray<array_size_t> const & indices,
+Polygon3::snip(size_t u, size_t v, size_t w, size_t n, TheaArray<size_t> const & indices,
                Real epsilon) const
 {
   Vector2 const & A = proj_vertices[indices[u]];
@@ -167,7 +167,7 @@ Polygon3::snip(array_size_t u, array_size_t v, array_size_t w, array_size_t n, T
     return false;
   }
 
-  for (array_size_t p = 0; p < n; ++p)
+  for (size_t p = 0; p < n; ++p)
   {
     if ((p == u) || (p == v) || (p == w))
       continue;
@@ -223,7 +223,7 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
   {
     tri_indices.clear();
 
-    array_size_t n = vertices.size();
+    size_t n = vertices.size();
     proj_vertices.resize(n);
 
     Vector3 normal = computeNormal();
@@ -231,48 +231,48 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
     normal.createOrthonormalBasis(axis0, axis1);
 
     Vector3 v0 = vertices[0].position;  // a reference point for the plane of the polygon
-    for (array_size_t i = 0; i < n; ++i)
+    for (size_t i = 0; i < n; ++i)
     {
       Vector3 v = vertices[i].position - v0;
       proj_vertices[i] = Vector2(v.dot(axis0), v.dot(axis1));
     }
 
-    TheaArray<array_size_t> indices(n);
+    TheaArray<size_t> indices(n);
     bool flipped = false;
     if (projArea() > 0)
     {
-      for (array_size_t v = 0; v < n; ++v)
+      for (size_t v = 0; v < n; ++v)
         indices[v] = v;
     }
     else
     {
-      for (array_size_t v = 0; v < n; ++v)
+      for (size_t v = 0; v < n; ++v)
         indices[v] = (n - 1) - v;
 
       flipped = true;
     }
 
-    array_size_t nv = n;
-    array_size_t count = 2 * nv;
-    for (array_size_t v = nv - 1; nv > 2; )
+    size_t nv = n;
+    size_t count = 2 * nv;
+    for (size_t v = nv - 1; nv > 2; )
     {
       if ((count--) <= 0)
         break;
 
-      array_size_t u = v;
+      size_t u = v;
       if (nv <= u) u = 0;
 
       v = u + 1;
       if (nv <= v) v = 0;
 
-      array_size_t w = v + 1;
+      size_t w = v + 1;
       if (nv <= w) w = 0;
 
       if (snip(u, v, w, nv, indices, epsilon))
       {
-        array_size_t a = indices[u];
-        array_size_t b = indices[v];
-        array_size_t c = indices[w];
+        size_t a = indices[u];
+        size_t b = indices[v];
+        size_t c = indices[w];
         if (flipped)
         {
           tri_indices.push_back(vertices[c].index);
@@ -286,7 +286,7 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
           tri_indices.push_back(vertices[c].index);
         }
 
-        array_size_t s = v, t = v + 1;
+        size_t s = v, t = v + 1;
         for ( ; t < nv; ++s, ++t)
           indices[s] = indices[t];
 
@@ -302,9 +302,9 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
 Real
 Polygon3::projArea() const
 {
-  array_size_t n = proj_vertices.size();
+  size_t n = proj_vertices.size();
   Real a = 0;
-  for (array_size_t p = n - 1, q = 0; q < n; p = q++)
+  for (size_t p = n - 1, q = 0; q < n; p = q++)
   {
     Vector2 const & pval = proj_vertices[p];
     Vector2 const & qval = proj_vertices[q];

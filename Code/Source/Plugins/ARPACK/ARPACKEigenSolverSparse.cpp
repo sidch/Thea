@@ -73,7 +73,7 @@ ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * 
   // Repeat the isValid() checks to check if something got screwed up during the conversion
   alwaysAssertM(irow.size() == scm.getValues().size(),
                 std::string(getName()) + ": irow and nzval arrays should have same size");
-  alwaysAssertM(pcol.size() == (array_size_t)scm.numRows() + 1,
+  alwaysAssertM(pcol.size() == (size_t)scm.numRows() + 1,
                 getName() + format(": pcol array should have %ld + 1 = %ld entries, instead has %ld entries",
                 (long)scm.numRows(), (long)scm.numRows() + 1, (long)pcol.size()));
   alwaysAssertM(nnz == pcol[pcol.size() - 1],
@@ -90,18 +90,18 @@ ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * 
   eig->Trace();
 
   // Find eigenpairs
-  array_size_t nconv = (array_size_t)eig->FindEigenvectors();
+  size_t nconv = (size_t)eig->FindEigenvectors();
 
   eigenvalues.resize(nconv);
   eigenvectors.resize(nconv);
 
-  array_size_t n = (array_size_t)scm.numRows();
-  for (array_size_t i = 0; i < nconv; ++i)
+  size_t n = (size_t)scm.numRows();
+  for (size_t i = 0; i < nconv; ++i)
   {
     eigenvalues[i] = Eigenvalue(eig->EigenvalueReal((int)i), eig->EigenvalueImag((int)i));
 
     eigenvectors[i].resize(n);
-    for (array_size_t j = 0; j < n; ++j)
+    for (size_t j = 0; j < n; ++j)
       eigenvectors[i][j] = std::complex<double>(eig->EigenvectorReal((int)i, (int)j), eig->EigenvectorImag((int)i, (int)j));
   }
 

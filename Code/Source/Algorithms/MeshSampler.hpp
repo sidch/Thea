@@ -191,19 +191,19 @@ class MeshSampler
       int prev_percent = 0;
       if (count_mode == CountMode::EXACT)
       {
-        TheaArray<double> cum_areas((array_size_t)tcount);
+        TheaArray<double> cum_areas((size_t)tcount);
         cum_areas[0] = tarray[0].getArea();
-        for (array_size_t i = 1; i < cum_areas.size(); ++i)
+        for (size_t i = 1; i < cum_areas.size(); ++i)
           cum_areas[i] = cum_areas[i - 1] + tarray[i].getArea();
 
-        positions.resize((array_size_t)desired_num_samples);
+        positions.resize((size_t)desired_num_samples);
         if (face_normals) face_normals->resize(positions.size());
         if (triangles) triangles->resize(positions.size());
 
         // Sample N triangles with replacement, weighted by area
         double const * first = &cum_areas[0];
         double const * last = first + cum_areas.size();
-        for (array_size_t i = 0; i < positions.size(); ++i)
+        for (size_t i = 0; i < positions.size(); ++i)
         {
           double t = Random::common().uniform01() * total_area;
           long tri_index = std::min((long)(std::lower_bound(first, last, t) - first), tcount - 1);
@@ -376,7 +376,7 @@ class MeshSampler
 
         if (furthest_sample)
         {
-          array_size_t index = (array_size_t)furthest_sample->getIndex();
+          size_t index = (size_t)furthest_sample->getIndex();
 
           positions.push_back(orig_positions[index]);
           if (face_normals) face_normals->push_back(orig_face_normals[index]);

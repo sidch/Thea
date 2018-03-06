@@ -291,7 +291,7 @@ Pyramid3D::createPyramid(Vector3 * means)
 void
 Pyramid1D::downsample(TheaArray<Real> const & src, TheaArray<Real> & dst, Real * means) const
 {
-  array_size_t dst_size = src.size() / 2;
+  size_t dst_size = src.size() / 2;
 
   if (means)
     dst.resize(dst_size, 0);
@@ -409,7 +409,7 @@ Pyramid1D::serialize(BinaryOutputStream & output, Codec const & codec) const
     output.writeUInt32((uint32)levels[i].size());  // number of bins in this level
 
     TheaArray<Real> const & level_data = levels[i];
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.writeFloat64(level_data[j]);
   }
 }
@@ -426,11 +426,11 @@ Pyramid1D::deserialize(BinaryInputStream & input, Codec const & codec)
 
   for (int i = 0; i < num_levels; ++i)
   {
-    array_size_t level_size = (array_size_t)input.readUInt32();
+    size_t level_size = (size_t)input.readUInt32();
     levels[i].resize(level_size);
 
     TheaArray<Real> & level_data = levels[i];
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readFloat64();
   }
 }
@@ -447,7 +447,7 @@ Pyramid1D::serialize(TextOutputStream & output, Codec const & codec) const
     output.printf("%d\n", (int)levels[i].size());  // number of bins in this level
 
     TheaArray<Real> const & level_data = levels[i];
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.printf("%lf\n", level_data[j]);
 
     output.writeNewline();
@@ -466,11 +466,11 @@ Pyramid1D::deserialize(TextInputStream & input, Codec const & codec)
 
   for (int i = 0; i < num_levels; ++i)
   {
-    array_size_t level_size = (array_size_t)input.readNumber();
+    size_t level_size = (size_t)input.readNumber();
     levels[i].resize(level_size);
 
     TheaArray<Real> & level_data = levels[i];
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readNumber();
   }
 }
@@ -488,7 +488,7 @@ Pyramid2D::serialize(BinaryOutputStream & output, Codec const & codec) const
     output.writeUInt32((uint32)level.sy);
 
     TheaArray<Real> const & level_data = level.data;
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.writeFloat64(level_data[j]);
   }
 }
@@ -508,8 +508,8 @@ Pyramid2D::deserialize(BinaryInputStream & input, Codec const & codec)
   for (int i = 0; i < num_levels; ++i)
   {
     Array2D & level = levels[i];
-    level.sx = (array_size_t)input.readUInt32();
-    level.sy = (array_size_t)input.readUInt32();
+    level.sx = (size_t)input.readUInt32();
+    level.sy = (size_t)input.readUInt32();
 
     if (i == 0)
     {
@@ -520,7 +520,7 @@ Pyramid2D::deserialize(BinaryInputStream & input, Codec const & codec)
     TheaArray<Real> & level_data = level.data;
     level_data.resize(level.sx * level.sy);
 
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readFloat64();
   }
 }
@@ -539,7 +539,7 @@ Pyramid2D::serialize(TextOutputStream & output, Codec const & codec) const
     output.printf("%d\n", (int)level.sy);
 
     TheaArray<Real> const & level_data = level.data;
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.printf("%lf\n", level_data[j]);
   }
 }
@@ -571,7 +571,7 @@ Pyramid2D::deserialize(TextInputStream & input, Codec const & codec)
     TheaArray<Real> & level_data = level.data;
     level_data.resize(level.sx * level.sy);
 
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readNumber();
   }
 }
@@ -590,7 +590,7 @@ Pyramid3D::serialize(BinaryOutputStream & output, Codec const & codec) const
     output.writeUInt32((uint32)level.sz);
 
     TheaArray<Real> const & level_data = level.data;
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.writeFloat64(level_data[j]);
   }
 }
@@ -608,9 +608,9 @@ Pyramid3D::deserialize(BinaryInputStream & input, Codec const & codec)
   for (int i = 0; i < num_levels; ++i)
   {
     Array3D & level = levels[i];
-    level.sx = (array_size_t)input.readUInt32();
-    level.sy = (array_size_t)input.readUInt32();
-    level.sz = (array_size_t)input.readUInt32();
+    level.sx = (size_t)input.readUInt32();
+    level.sy = (size_t)input.readUInt32();
+    level.sz = (size_t)input.readUInt32();
 
     if (i == 0)
     {
@@ -622,7 +622,7 @@ Pyramid3D::deserialize(BinaryInputStream & input, Codec const & codec)
     TheaArray<Real> & level_data = level.data;
     level_data.resize(level.sx * level.sy * level.sz);
 
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readFloat64();
   }
 }
@@ -642,7 +642,7 @@ Pyramid3D::serialize(TextOutputStream & output, Codec const & codec) const
     output.printf("%d\n", (int)level.sz);
 
     TheaArray<Real> const & level_data = level.data;
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       output.printf("%lf\n", level_data[j]);
   }
 }
@@ -674,7 +674,7 @@ Pyramid3D::deserialize(TextInputStream & input, Codec const & codec)
     TheaArray<Real> & level_data = level.data;
     level_data.resize(level.sx * level.sy * level.sz);
 
-    for (array_size_t j = 0; j < level_data.size(); ++j)
+    for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readNumber();
   }
 }
@@ -714,7 +714,7 @@ PyramidMatch::similarity(Pyramid1D const & pyramid1, Pyramid1D const & pyramid2,
     debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
-    for(array_size_t j = 0; j < level_data1.size(); ++ j)
+    for(size_t j = 0; j < level_data1.size(); ++ j)
       level_ans += PyramidInternal::similarity(kernel, level_data1[j], level_data2[j]);
 
     ans += (level_ans * scale);
@@ -744,7 +744,7 @@ PyramidMatch::similarity(Pyramid2D const & pyramid1, Pyramid2D const & pyramid2,
     debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
-    for(array_size_t j = 0; j < level_data1.size(); ++ j)
+    for(size_t j = 0; j < level_data1.size(); ++ j)
       level_ans += PyramidInternal::similarity(kernel, level_data1[j], level_data2[j]);
 
     ans += (level_ans * scale);
@@ -774,7 +774,7 @@ PyramidMatch::similarity(Pyramid3D const & pyramid1, Pyramid3D const & pyramid2,
     debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
-    for(array_size_t j = 0; j < level_data1.size(); ++ j)
+    for(size_t j = 0; j < level_data1.size(); ++ j)
       level_ans += PyramidInternal::similarity(kernel, level_data1[j], level_data2[j]);
 
     ans += (level_ans * scale);

@@ -231,9 +231,9 @@ class ICP3
         return AffineTransformT::identity();
       }
 
-      TheaArray<VectorT> from_points((array_size_t)from_num_pts);
-      TheaArray<VectorT> to_points((array_size_t)from_num_pts);
-      for (array_size_t i = 0; i < from_points.size(); ++i)
+      TheaArray<VectorT> from_points((size_t)from_num_pts);
+      TheaArray<VectorT> to_points((size_t)from_num_pts);
+      for (size_t i = 0; i < from_points.size(); ++i)
         from_points[i] = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
 
       AffineTransformT old_tr = AffineTransformT::identity();
@@ -282,7 +282,7 @@ class ICP3
             }
           }
 
-          for (array_size_t j = 0; j < from_points.size(); ++j)  // transform original points to prevent drift
+          for (size_t j = 0; j < from_points.size(); ++j)  // transform original points to prevent drift
             from_points[j] = new_tr * PointTraitsN<FromT, 3, ScalarT>::getPosition(from[j]);
         }
         else

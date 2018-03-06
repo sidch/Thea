@@ -212,14 +212,14 @@ class THEA_API KMeans : public Serializable
       TheaArray<long> labeling_local;
       if (!labeling)
       {
-        labeling_local.resize((array_size_t)num_points, -1);
+        labeling_local.resize((size_t)num_points, -1);
         labeling = &labeling_local[0];
       }
 
       TheaArray<double> sqdist_local;
       if (!squared_distances)
       {
-        sqdist_local.resize((array_size_t)num_points);
+        sqdist_local.resize((size_t)num_points);
         squared_distances = &sqdist_local[0];
       }
 
@@ -344,7 +344,7 @@ class THEA_API KMeans : public Serializable
         addPointToCenter(points, index, 0);
 
         // Subsequent centers by k-means++
-        TheaArray<double> sqdist((array_size_t)num_points);
+        TheaArray<double> sqdist((size_t)num_points);
         double start_time = System::time();
         for (long i = 1; i < num_clusters; ++i)
         {
@@ -352,13 +352,13 @@ class THEA_API KMeans : public Serializable
 
           // Sample next center from points with probability proportional to sqdist
           double sum_sqdist = 0;
-          for (array_size_t j = 0; j < sqdist.size(); ++j)
+          for (size_t j = 0; j < sqdist.size(); ++j)
             sum_sqdist += sqdist[j];
 
           double r = Random::common().uniform(0, sum_sqdist);
           sum_sqdist = 0;
           index = num_points - 1;  // to compensate for numerical error when r is approximately = sum_sqdist
-          for (array_size_t j = 0; j < sqdist.size(); ++j)
+          for (size_t j = 0; j < sqdist.size(); ++j)
           {
             sum_sqdist += sqdist[j];
             if (sum_sqdist >= r)
@@ -383,15 +383,15 @@ class THEA_API KMeans : public Serializable
         centers.resize(num_clusters, num_features);
         centers.fill(0);
 
-        TheaArray<long> indices((array_size_t)num_points);
+        TheaArray<long> indices((size_t)num_points);
         for (long i = 0; i < num_points; ++i)
-          indices[(array_size_t)i] = i;
+          indices[(size_t)i] = i;
 
         // Select num_clusters random points as initial centers
         Random::common().randomShuffle((int32)num_points, (int32)num_clusters, &indices[0]);
 
         for (long i = 0; i < num_clusters; ++i)
-          addPointToCenter(points, indices[(array_size_t)i], i);
+          addPointToCenter(points, indices[(size_t)i], i);
       }
       else
       {
@@ -501,7 +501,7 @@ class THEA_API KMeans : public Serializable
                      double & cluster_sqdist) const
     {
       long num_features = centers.numColumns();
-      fvec.resize((array_size_t)num_features);
+      fvec.resize((size_t)num_features);
       points.getRow(point_index, &fvec[0]);
 
       mapToCluster(num_clusters, &fvec[0], cluster_index, cluster_sqdist);
@@ -545,13 +545,13 @@ class THEA_API KMeans : public Serializable
 
       centers.fill(0);
 
-      TheaArray<long> num_assigned((array_size_t)num_clusters, 0);
+      TheaArray<long> num_assigned((size_t)num_clusters, 0);
       for (long i = 0; i < num_points; ++i)
       {
         long cc_index = cluster_indices[i];
 
         addPointToCenter(points, i, cc_index);
-        num_assigned[(array_size_t)cc_index]++;
+        num_assigned[(size_t)cc_index]++;
       }
 
       // If a cluster is empty then:
@@ -565,10 +565,10 @@ class THEA_API KMeans : public Serializable
 
       for (long i = 0; i < num_clusters; ++i)
       {
-        if (num_assigned[(array_size_t)i] <= 0)
+        if (num_assigned[(size_t)i] <= 0)
         {
           long max_cluster = (long)(std::max_element(num_assigned.begin(), num_assigned.end()) - num_assigned.begin());
-          alwaysAssertM(num_assigned[(array_size_t)max_cluster] > 1, "KMeans: Maximum cluster has < 2 points");
+          alwaysAssertM(num_assigned[(size_t)max_cluster] > 1, "KMeans: Maximum cluster has < 2 points");
 
           long farthest = -1;
           for (long j = 0; j < num_points; ++j)
@@ -584,8 +584,8 @@ class THEA_API KMeans : public Serializable
           addPointToCenter(points, farthest, i);
           subtractPointFromCenter(points, farthest, max_cluster);
 
-          num_assigned[(array_size_t)i]++;
-          num_assigned[(array_size_t)max_cluster]--;
+          num_assigned[(size_t)i]++;
+          num_assigned[(size_t)max_cluster]--;
 
           reassigned = true;
         }
@@ -593,7 +593,7 @@ class THEA_API KMeans : public Serializable
 
       for (long i = 0; i < num_clusters; ++i)
       {
-        long n = num_assigned[(array_size_t)i];
+        long n = num_assigned[(size_t)i];
         if (n > 0)
         {
           for (long j = 0; j < num_features; ++j)
@@ -608,10 +608,10 @@ class THEA_API KMeans : public Serializable
     template <typename AddressableMatrixT>
     void addPointToCenter(AddressableMatrixT const & points, long point_index, long cluster_index)
     {
-      fvec.resize((array_size_t)centers.numColumns());
+      fvec.resize((size_t)centers.numColumns());
       points.getRow(point_index, &fvec[0]);
 
-      for (array_size_t i = 0; i < fvec.size(); ++i)
+      for (size_t i = 0; i < fvec.size(); ++i)
         centers(cluster_index, (long)i) += fvec[i];
     }
 
@@ -619,10 +619,10 @@ class THEA_API KMeans : public Serializable
     template <typename AddressableMatrixT>
     void subtractPointFromCenter(AddressableMatrixT const & points, long point_index, long cluster_index)
     {
-      fvec.resize((array_size_t)centers.numColumns());
+      fvec.resize((size_t)centers.numColumns());
       points.getRow(point_index, &fvec[0]);
 
-      for (array_size_t i = 0; i < fvec.size(); ++i)
+      for (size_t i = 0; i < fvec.size(); ++i)
         centers(cluster_index, (long)i) -= fvec[i];
     }
 

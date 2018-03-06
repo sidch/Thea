@@ -155,7 +155,7 @@ struct QuadTreeNode
 {
   Rect rect;
   Real weight;
-  TheaArray<array_size_t> children;
+  TheaArray<size_t> children;
 
   void getBounds(int & xmin, int & ymin, int & xmax, int & ymax) const
   {
@@ -194,7 +194,7 @@ struct QuadTree
     nodes.clear();
   }
 
-  void buildTree(array_size_t node_index)
+  void buildTree(size_t node_index)
   {
     int xmin, ymin, xmax, ymax;
     nodes[node_index].getBounds(xmin, ymin, xmax, ymax);
@@ -232,7 +232,7 @@ struct QuadTree
       }
     }
 
-    for (array_size_t i = 0; i < nodes[node_index].children.size(); ++i)
+    for (size_t i = 0; i < nodes[node_index].children.size(); ++i)
       buildTree(nodes[node_index].children[i]);
   }
 
@@ -288,7 +288,7 @@ struct QuadTree
     }
     else
     {
-      for (array_size_t i = 0; i < node->children.size(); ++i)
+      for (size_t i = 0; i < node->children.size(); ++i)
         weight += rangeWeight(&nodes[node->children[i]], range);
     }
 
@@ -324,7 +324,7 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real>
   Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
   Real ang_step = Math::twoPi() / num_polar_bins;
 
-  values.resize((array_size_t)(w * h * num_radial_bins * num_polar_bins));
+  values.resize((size_t)(w * h * num_radial_bins * num_polar_bins));
   Real * entry = &values[0];
   long entry_size = num_radial_bins * num_polar_bins;
 
@@ -399,7 +399,7 @@ const
   Real rad_init = rad_limit / (1 << (num_radial_bins - 1));
   Real ang_step = Math::twoPi() / num_polar_bins;
 
-  values.resize((array_size_t)(num_radial_bins * num_polar_bins));
+  values.resize((size_t)(num_radial_bins * num_polar_bins));
 
   static Real const SQRT_3 = std::sqrt(3.0f);
 
@@ -422,7 +422,7 @@ const
       if (r > 0)
         weight /= (SQRT_3 * (1 << (r - 1)));
 
-      values[(array_size_t)(r * num_polar_bins + p)] = weight;
+      values[(size_t)(r * num_polar_bins + p)] = weight;
 
       old_ang = ang;
     }

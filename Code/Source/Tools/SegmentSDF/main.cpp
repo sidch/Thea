@@ -113,14 +113,14 @@ segmentSDF(int argc, char * argv[])
   // Compute samples
   double total_area = 0;
   for (long i = 0; i < kdtree.numElements(); ++i)
-    total_area += kdtree.getElements()[(array_size_t)i].getArea();
+    total_area += kdtree.getElements()[(size_t)i].getArea();
 
   double density = approx_num_samples / total_area;
 
   TheaArray<Vector3> positions, normals;
   for (long i = 0; i < kdtree.numElements(); ++i)
   {
-    KDTree::Element const & elem = kdtree.getElements()[(array_size_t)i];
+    KDTree::Element const & elem = kdtree.getElements()[(size_t)i];
     double num_samples = density * elem.getArea();
     double rem = num_samples;
     for (long j = 1; j < num_samples; ++j)
@@ -142,12 +142,12 @@ segmentSDF(int argc, char * argv[])
   // Compute SDF values
   TheaArray<Real> sdf_values(positions.size());
   MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
 
   // Undo normalization
   Real scale = sdf.getNormalizationScale();
-  for (array_size_t i = 0; i < sdf_values.size(); ++i)
+  for (size_t i = 0; i < sdf_values.size(); ++i)
     sdf_values[i] *= scale;
 
   THEA_CONSOLE << "Computed SDF values";
@@ -164,7 +164,7 @@ segmentSDF(int argc, char * argv[])
 #ifndef THEA_OSX
 
   TheaArray<ClusterablePoint> clusterable_pts(positions.size());
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     clusterable_pts[i] = toClusterablePoint(positions[i], sdf_values[i]);
 
   // Set clustering options (try G1, SLINK_W, UPGMA, CUT)
@@ -189,7 +189,7 @@ segmentSDF(int argc, char * argv[])
   ofstream out(outpath.c_str());
   out << positions.size() << endl;
   out << num_clusters << endl;
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
 #ifdef DEBUG_PTS
     ColorRGB pseudo_n = getPaletteColor(labels[i]);
@@ -305,7 +305,7 @@ estimateBandwidth(TheaArray<IndexedValue> const & sorted_pts)
   // http://www1.american.edu/academic.depts/cas/econ/gaussres/utilitys/KERNEL/KONING/KNLIB.PS
 
   double sum_values = 0, sum_squares = 0;
-  for (array_size_t i = 0; i < sorted_pts.size(); ++i)
+  for (size_t i = 0; i < sorted_pts.size(); ++i)
   {
     double val = sorted_pts[i].value;
     sum_values  += val;
@@ -315,8 +315,8 @@ estimateBandwidth(TheaArray<IndexedValue> const & sorted_pts)
   double avg = sum_values / sorted_pts.size();
   double variance = (sum_squares / sorted_pts.size() - avg * avg);
 
-  array_size_t q1 = sorted_pts.size() / 4;
-  array_size_t q3 = (3 * sorted_pts.size()) / 4;
+  size_t q1 = sorted_pts.size() / 4;
+  size_t q3 = (3 * sorted_pts.size()) / 4;
   double iqr = sorted_pts[q3].value - sorted_pts[q1].value;  // inter-quartile range
 
   double bandwidth = 0.9 * min(sqrt(variance), iqr / 1.34) / pow((double)sorted_pts.size(), 1.0 / 5.0);
@@ -366,14 +366,14 @@ doMeanShift(double start, TheaArray<IndexedValue> const & sorted_pts, double ban
 }
 
 void
-doMeanShiftBlock(TheaArray<IndexedValue> const * descs, TheaArray<IndexedValue> * modes, array_size_t begin, array_size_t end,
+doMeanShiftBlock(TheaArray<IndexedValue> const * descs, TheaArray<IndexedValue> * modes, size_t begin, size_t end,
                  double bandwidth, int thread_index)
 {
   static unsigned int const NUM_ITERS = 100;
   static double       const THRESHOLD = 0.0001;
 
-  array_size_t actual_end = min(end, descs->size());
-  for (array_size_t i = begin; i < actual_end; ++i)
+  size_t actual_end = min(end, descs->size());
+  for (size_t i = begin; i < actual_end; ++i)
     (*modes)[i] = IndexedValue(doMeanShift((*descs)[i].value, *descs, bandwidth, NUM_ITERS, THRESHOLD), (*descs)[i].index);
 }
 
@@ -390,7 +390,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
 {
   // Associate descriptors with sample indices
   TheaArray<IndexedValue> descs(sdf_values.size());
-  for (array_size_t i = 0; i < sdf_values.size(); ++i)
+  for (size_t i = 0; i < sdf_values.size(); ++i)
     descs[i] = IndexedValue(sdf_values[i], (int)i);
 
   // Sort them, so we can quickly get all points in a range
@@ -402,15 +402,15 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   // Do mean shift on each point to find its nearest mode
   TheaArray<IndexedValue> modes(descs.size());
 
-  array_size_t num_threads = (array_size_t)defaultConcurrency();  // numCores()
+  size_t num_threads = (size_t)defaultConcurrency();  // numCores()
   THEA_CONSOLE << "Using " << num_threads << " threads to find initial modes via mean-shift";
 
-  array_size_t samples_per_thread = (descs.size() <= num_threads
-                                  ? 1 : (array_size_t)ceil(descs.size() / (double)num_threads));
+  size_t samples_per_thread = (descs.size() <= num_threads
+                                  ? 1 : (size_t)ceil(descs.size() / (double)num_threads));
 
   boost::thread_group threads;
   int thread_index = 0;
-  for (array_size_t begin = 0; begin < descs.size(); begin += samples_per_thread, ++thread_index)
+  for (size_t begin = 0; begin < descs.size(); begin += samples_per_thread, ++thread_index)
   {
     threads.add_thread(new boost::thread(doMeanShiftBlock, &descs, &modes, begin, begin + samples_per_thread, bandwidth,
                                          thread_index));
@@ -436,7 +436,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   long last_diff = numeric_limits<long>::max() / 4;
   for (unsigned int iter = 1; iter <= MAX_ITERS; ++iter)
   {
-    for (array_size_t i = 1; i < modes.size(); ++i)
+    for (size_t i = 1; i < modes.size(); ++i)
       if (fabs(modes[i].value - modes[i - 1].value) < merge_threshold)
       {
         uf.merge((long)i, (long)i - 1);  // indices are into modes array
@@ -500,7 +500,7 @@ computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3
 
   ConvexHull3::Options(ConvexHull3::Options::Approx(100, skin_width));
   ConvexHull3 hull;
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     hull.addPoint(*positions[i]);
 
   Mesh hull_mesh;
@@ -517,7 +517,7 @@ computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3
 
   double sum_distances = 0;
   long num_points = 0;
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     Ray3 hull_ray(*positions[i], *normals[i]);
     Real hull_isec_time = hull_kdtree.rayIntersectionTime<RayIntersectionTester>(hull_ray);
@@ -546,7 +546,7 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
 
   SampleClusterMap sample_clusters;
   {
-    for (array_size_t i = 0; i < positions.size(); ++i)
+    for (size_t i = 0; i < positions.size(); ++i)
     {
       sample_clusters[labels[i]].positions.push_back(&positions[i]);
       sample_clusters[labels[i]].normals.push_back(&normals[i]);
@@ -562,7 +562,7 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
   SampleClusterConnectivityGraph cluster_conn_graph;
   {
     double       const INTERSECTION_THRESHOLD  =  0.01 * kdtree.getBounds().getExtent().length();
-    array_size_t const NNBRS_THRESHOLD         =  10;
+    size_t const NNBRS_THRESHOLD         =  10;
 
     for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)
     {
@@ -571,8 +571,8 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
 
       for (SampleClusterMap::iterator cj = sample_clusters.begin(); cj != ci; ++cj)
       {
-        array_size_t nnbrs = 0;
-        for (array_size_t j = 0; j < cj->second.positions.size(); ++j)
+        size_t nnbrs = 0;
+        for (size_t j = 0; j < cj->second.positions.size(); ++j)
         {
           long nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j], INTERSECTION_THRESHOLD);
           if (nn_index >= 0)
@@ -697,9 +697,9 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
     if (vi->attr()->label >= 0)
       label = curr_label++;
 
-    for (array_size_t i = 0; i < vi->attr()->positions.size(); ++i)
+    for (size_t i = 0; i < vi->attr()->positions.size(); ++i)
     {
-      array_size_t index = (array_size_t)(vi->attr()->positions[i] - &positions[0]);
+      size_t index = (size_t)(vi->attr()->positions[i] - &positions[0]);
       labels[index] = label;
     }
   }

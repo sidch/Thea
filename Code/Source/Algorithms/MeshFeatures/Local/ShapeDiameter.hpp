@@ -179,8 +179,8 @@ class ShapeDiameter
       }
 
       // Use the face normal and not the smooth normal, to handle sharp edged slabs etc
-      Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(array_size_t)nn_index].getNormal()
-                                      : kdtree->getElements()[(array_size_t)nn_index].getNormal();
+      Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(size_t)nn_index].getNormal()
+                                      : kdtree->getElements()[(size_t)nn_index].getNormal();
 
       return compute(position, normal, only_hit_interior_surfaces);
     }

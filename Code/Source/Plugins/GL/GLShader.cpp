@@ -433,7 +433,7 @@ GLShader::setUniform(char const * uniform_name, long num_values, float const * v
   if (entry->second.size < 2)
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
-  entry->second.value.f_array.resize((array_size_t)num_values);
+  entry->second.value.f_array.resize((size_t)num_values);
   std::memcpy(&entry->second.value.f_array[0], values, (size_t)(num_values * sizeof(float)));
   entry->second.valueChanged();
 }
@@ -446,7 +446,7 @@ GLShader::setUniform(char const * uniform_name, long num_values, int const * val
   if (entry->second.size < 2)
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
-  entry->second.value.i_array.resize((array_size_t)num_values);
+  entry->second.value.i_array.resize((size_t)num_values);
   std::memcpy(&entry->second.value.i_array[0], values, (size_t)(num_values * sizeof(int)));
   entry->second.valueChanged();
 }
@@ -466,7 +466,7 @@ GLShader::setUniform(char const * uniform_name, long num_values, Texture * const
     if (entry->second.size < 2)                                                                                               \
       throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");                 \
                                                                                                                               \
-    entry->second.value.f_array.resize((array_size_t)(num_components * num_values));                                          \
+    entry->second.value.f_array.resize((size_t)(num_components * num_values));                                          \
                                                                                                                               \
     /* Copy elements one by one to avoid packing issues */                                                                    \
     static float * array_start = &entry->second.value.f_array[0];                                                             \

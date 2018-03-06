@@ -123,7 +123,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
                             Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
     /** Get the color of a point. */
-    ColorRGBA getColor(array_size_t point_index) const;
+    ColorRGBA getColor(size_t point_index) const;
 
     TheaArray<Point> points;
 

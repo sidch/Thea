@@ -977,7 +977,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       {
         Vertex * face_vertices[4];
         {
-          array_size_t i = 0;
+          size_t i = 0;
           for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
             face_vertices[i] = *fvi;
         }
@@ -997,10 +997,10 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       }
       else
       {
-        TheaArray<Vertex *> face_vertices((array_size_t)face->numVertices());
+        TheaArray<Vertex *> face_vertices((size_t)face->numVertices());
         Polygon3 poly;
         {
-          array_size_t i = 0;
+          size_t i = 0;
           for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
           {
             face_vertices[i] = *fvi;
@@ -1127,7 +1127,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       debugAssertM(face, getNameStr() + ": Null face cannot be initialized");
 
       // Check for errors and compute normal
-      array_size_t num_verts = 0;
+      size_t num_verts = 0;
       Vector3 v[3];
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
@@ -1491,7 +1491,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     void packVertexPositions()
     {
       packed_vertex_positions.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = vi->getPosition();
     }
@@ -1500,7 +1500,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     void packVertexNormals()
     {
       packed_vertex_normals.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = vi->getNormal();
     }
@@ -1510,7 +1510,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     void packVertexColors(typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
       packed_vertex_colors.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRGBA(vi->attr().getColor());
     }
@@ -1527,7 +1527,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     void packVertexTexCoords(typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
     {
       packed_vertex_texcoords.resize(vertices.size());
-      array_size_t i = 0;
+      size_t i = 0;
       for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = vi->attr().getTexCoord();
     }
@@ -1577,7 +1577,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       if (buffered_wireframe)
       {
         packed_edges.resize(2 * edges.size());
-        array_size_t i = 0;
+        size_t i = 0;
         for (EdgeConstIterator ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
         {
           packed_edges[i    ] = ei->getEndpoint(0)->getPackingIndex();

@@ -104,7 +104,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     static Matrix fromDiagonal(TheaArray<T> const & diagonal)
     {
       Matrix m((long)diagonal.size(), (long)diagonal.size(), static_cast<T>(0));
-      for (array_size_t i = 0; i < diagonal.size(); ++i)
+      for (size_t i = 0; i < diagonal.size(); ++i)
         m((long)i, (long)i) = diagonal[i];
 
       return m;
@@ -156,7 +156,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       fill(static_cast<T>(0));
 
-      array_size_t curr_pos = 0;
+      size_t curr_pos = 0;
       for (long row = 0; row < num_rows; ++row)
       {
         long num_elems = (long)(crm.getRowIndices()[row + 1] - crm.getRowIndices()[row]);
@@ -193,7 +193,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
 
       fill(static_cast<T>(0));
 
-      array_size_t curr_pos = 0;
+      size_t curr_pos = 0;
       for (long col = 0; col < num_cols; ++col)
       {
         long num_elems = (long)(ccm.getColumnIndices()[col + 1] - ccm.getColumnIndices()[col]);
@@ -464,7 +464,7 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       alwaysAssertM(this->isSquare(), "Matrix: Only square matrices can be inverted");
 
-      TheaArray<long> col_index((array_size_t)numRows()), row_index((array_size_t)numRows()), pivot((array_size_t)numRows());
+      TheaArray<long> col_index((size_t)numRows()), row_index((size_t)numRows()), pivot((size_t)numRows());
       Internal::invertMatrix(*this, &col_index[0], &row_index[0], &pivot[0]);
     }
 

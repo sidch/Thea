@@ -58,20 +58,20 @@ Manifold::makeOrientedManifold(TheaArray<Vector3> const & in_vertices,
   TheaArray<int> in_triangles;
   Polygon3 poly;
   TheaArray<long> tri_indices;
-  for (array_size_t i = 0; i < in_faces.size(); ++i)
+  for (size_t i = 0; i < in_faces.size(); ++i)
   {
     poly.clear();
-    for (array_size_t j = 0; j < in_faces[i].size(); ++j)
+    for (size_t j = 0; j < in_faces[i].size(); ++j)
       poly.addVertex(in_vertices[in_faces[i][j]]);
 
     poly.triangulate(tri_indices);
-    for (array_size_t j = 0; j < tri_indices.size(); ++j)
+    for (size_t j = 0; j < tri_indices.size(); ++j)
       in_triangles.push_back((int)in_faces[i][tri_indices[j]]);
   }
 
   // Convert the set of input vertices to a packed sequence of floats in groups of 3
   TheaArray<float> flat_in_vertices(3 * in_vertices.size());
-  for (array_size_t i = 0, i3 = 0; i < in_vertices.size(); ++i, i3 += 3)
+  for (size_t i = 0, i3 = 0; i < in_vertices.size(); ++i, i3 += 3)
   {
     flat_in_vertices[i3    ] = in_vertices[i].x();
     flat_in_vertices[i3 + 1] = in_vertices[i].y();
@@ -118,28 +118,28 @@ Manifold::makeOrientedManifold(TheaArray<Vector3> const & in_vertices,
     THEA_DEBUG << "    Output: " << new_num_vertices << " vertices, " << new_num_triangles << " triangles";
 #endif
 
-    out_vertices.resize((array_size_t)new_num_vertices);
+    out_vertices.resize((size_t)new_num_vertices);
     for (int i = 0, i3 = 0; i < new_num_vertices; ++i, i3 += 3)
       out_vertices[i] = Vector3(new_vertices[i3], new_vertices[i3 + 1], new_vertices[i3 + 2]);
 
-    out_faces.resize((array_size_t)new_num_triangles);
+    out_faces.resize((size_t)new_num_triangles);
     for (int i = 0, i3 = 0; i < new_num_triangles; ++i, i3 += 3)
     {
-      TheaArray<long> & face = out_faces[(array_size_t)i];
+      TheaArray<long> & face = out_faces[(size_t)i];
       face.resize(3);
       face[0] = new_triangles[i3    ];
       face[1] = new_triangles[i3 + 1];
       face[2] = new_triangles[i3 + 2];
     }
 
-    vertex_map.resize((array_size_t)new_num_vertices);
+    vertex_map.resize((size_t)new_num_vertices);
     for (int i = 0; i < new_num_vertices; ++i)
       if (vertex_lut[i] >= 0)
         vertex_map[i] = (long)vertex_lut[i];
 
-    face_map.resize((array_size_t)new_num_triangles);
+    face_map.resize((size_t)new_num_triangles);
     for (int i = 0; i < new_num_triangles; ++i)
-      face_map[(array_size_t)i] = (long)triangle_lut[i];
+      face_map[(size_t)i] = (long)triangle_lut[i];
   }
 
   // Cleanup

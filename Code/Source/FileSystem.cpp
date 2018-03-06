@@ -174,7 +174,7 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
       name = toLower(name);
 
     bool ok = false;
-    for (array_size_t i = 0; !ok && i < patterns.size(); ++i)
+    for (size_t i = 0; !ok && i < patterns.size(); ++i)
       if (patternMatch(patterns[i], name))
         ok = true;
 
@@ -201,7 +201,7 @@ FileSystem::getDirectoryContents(std::string const & dir, TheaArray<std::string>
 
     if (ignore_case)
     {
-      for (array_size_t i = 0; i < patlist.size(); ++i)
+      for (size_t i = 0; i < patlist.size(); ++i)
         patlist[i] = toLower(patlist[i]);
     }
   }

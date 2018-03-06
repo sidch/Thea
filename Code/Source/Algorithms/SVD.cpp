@@ -92,7 +92,7 @@ svdCoreT(AddressableMatrix<R> & U, long rows, long cols, S * D, AddressableMatri
   double anorm = 0.0, g = 0.0, scale = 0.0;
 
   // Temp row vector
-  TheaArray<double> rv1((array_size_t)cols);
+  TheaArray<double> rv1((size_t)cols);
 
   // Householder reduction to bidiagonal form
   for (i = 0; i < cols; ++i)

@@ -79,7 +79,7 @@ testSVD()
 
   // Print D
   cout << "\nD = [\t";
-  for (array_size_t i = 0; i < d.size(); ++i)
+  for (size_t i = 0; i < d.size(); ++i)
   {
     if (i > 0) cout << '\t';
     cout << d[i];

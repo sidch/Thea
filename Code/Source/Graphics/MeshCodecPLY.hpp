@@ -302,7 +302,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
         if (encoding_size <= 0)
           return;
 
-        enc_block.resize((array_size_t)encoding_size);
+        enc_block.resize((size_t)encoding_size);
         input.readBytes((int64)encoding_size, &enc_block[0]);
 
         tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::BIG, false));
@@ -469,7 +469,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
       std::string line;
       long num_vertices = 0, num_faces = 0;
-      for (array_size_t i = 0; i < header.elem_blocks.size(); ++i)
+      for (size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
         ElementBlock const & block = header.elem_blocks[i];
         checkBlock(block);
@@ -525,7 +525,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
                   if (index < 0 || index >= (long)vrefs.size())
                     throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
 
-                  face[(array_size_t)v] = vrefs[(array_size_t)index];
+                  face[(size_t)v] = vrefs[(size_t)index];
 
                   for (int w = 0; w < v; ++w)
                     if (face[w] == face[v])  // face has repeated vertices
@@ -592,8 +592,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
       if (num_items < 0)
         throw Error(std::string(getName()) + ": List has negative size");
 
-      items.resize((array_size_t)num_items);
-      for (array_size_t i = 0; i < items.size(); ++i)
+      items.resize((size_t)num_items);
+      for (size_t i = 0; i < items.size(); ++i)
         items[i] = readBinaryNumber<T>(in, prop.item_type);
     }
 
@@ -626,7 +626,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
       in.setEndianness(header.endianness);
 
       long num_vertices = 0, num_faces = 0;
-      for (array_size_t i = 0; i < header.elem_blocks.size(); ++i)
+      for (size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
         ElementBlock const & block = header.elem_blocks[i];
         checkBlock(block);
@@ -642,7 +642,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
               vertex[1] = readBinaryNumber<Real>(in, block.props[1].type);
               vertex[2] = readBinaryNumber<Real>(in, block.props[2].type);
 
-              for (array_size_t k = 3; k < block.props.size(); ++i)
+              for (size_t k = 3; k < block.props.size(); ++i)
                 skipBinaryProperty(in, block.props[k]);
 
               typename Builder::VertexHandle vref = builder.addVertex(vertex,
@@ -666,15 +666,15 @@ class CodecPLY : public CodecPLYBase<MeshT>
                 face.resize(face_vertices.size());
 
                 bool skip = false;
-                for (array_size_t v = 0; v < face_vertices.size() && !skip; ++v)
+                for (size_t v = 0; v < face_vertices.size() && !skip; ++v)
                 {
                   long index = face_vertices[v];
                   if (index < 0 || index >= (long)vrefs.size())
                     throw Error(getName() + format(": Vertex index %ld out of bounds in face %ld", index, num_faces));
 
-                  face[v] = vrefs[(array_size_t)index];
+                  face[v] = vrefs[(size_t)index];
 
-                  for (array_size_t w = 0; w < v; ++w)
+                  for (size_t w = 0; w < v; ++w)
                     if (face[w] == face[v])  // face has repeated vertices
                     {
                       skip = true;
@@ -829,7 +829,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
       long vertex_index = (long)vertex_indices.size();
 
-      for (array_size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
+      for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
         Vector3 const & v = vertices[i];
 
@@ -965,14 +965,14 @@ class CodecPLY : public CodecPLYBase<MeshT>
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
         typename Mesh::IndexArray indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
-        array_size_t degree = (type == 0 ? 3 : 4);
+        size_t degree = (type == 0 ? 3 : 4);
 
-        for (array_size_t i = 0; i < indices.size(); i += degree)
+        for (size_t i = 0; i < indices.size(); i += degree)
         {
           if (write_opts.binary)
           {
             output.writeInt32((int32)degree);
-            for (array_size_t j = 0; j < degree; ++j)
+            for (size_t j = 0; j < degree; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
@@ -984,7 +984,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
           {
             std::ostringstream os; os << degree;
 
-            for (array_size_t j = 0; j < degree; ++j)
+            for (size_t j = 0; j < degree; ++j)
             {
               typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");

@@ -409,7 +409,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     /** Get the source index of a given vertex. This is typically the index of the vertex in the source mesh file. */
     long getVertexSourceIndex(long i) const
     {
-      return i >= 0 && i < (long)vertex_source_indices.size() ? vertex_source_indices[(array_size_t)i] : -1;
+      return i >= 0 && i < (long)vertex_source_indices.size() ? vertex_source_indices[(size_t)i] : -1;
     }
 
     /**
@@ -417,13 +417,13 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      */
     long getTriangleSourceFaceIndex(long i) const
     {
-      return i >= 0 && i < (long)tri_source_face_indices.size() ? tri_source_face_indices[(array_size_t)i] : -1;
+      return i >= 0 && i < (long)tri_source_face_indices.size() ? tri_source_face_indices[(size_t)i] : -1;
     }
 
     /** Get the index of the source face of a given quad. This is typically the index of the face in the source mesh file. */
     long getQuadSourceFaceIndex(long i) const
     {
-      return i >= 0 && i < (long)quad_source_face_indices.size() ? quad_source_face_indices[(array_size_t)i] : -1;
+      return i >= 0 && i < (long)quad_source_face_indices.size() ? quad_source_face_indices[(size_t)i] : -1;
     }
 
     /** Deletes all data in the mesh. */
@@ -584,7 +584,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)vertices.size(),
                     getNameStr() + ": Vertex index out of bounds");
 
-      vertices[(array_size_t)vertex_index] = position;
+      vertices[(size_t)vertex_index] = position;
       invalidateBounds();
       invalidateGPUBuffers(DisplayMesh::BufferID::VERTEX);
     }
@@ -595,7 +595,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)normals.size(),
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated normal field");
 
-      normals[(array_size_t)vertex_index] = normal;
+      normals[(size_t)vertex_index] = normal;
       invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
     }
 
@@ -605,7 +605,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
       alwaysAssertM(vertex_index >= 0 && vertex_index < (long)colors.size(),
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated color field");
 
-      colors[(array_size_t)vertex_index] = color;
+      colors[(size_t)vertex_index] = color;
       invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
     }
 
@@ -616,7 +616,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
                     getNameStr()
                   + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
 
-      texcoords[(array_size_t)vertex_index] = texcoord;
+      texcoords[(size_t)vertex_index] = texcoord;
       invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);
     }
 
@@ -746,13 +746,13 @@ DisplayMeshIndexedVertex::getVertex()
 inline Vector3 const &
 DisplayMeshIndexedVertex::getPosition() const
 {
-  return mesh->vertices[(array_size_t)index];
+  return mesh->vertices[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setPosition(Vector3 const & point_)
 {
-  mesh->vertices[(array_size_t)index] = point_;
+  mesh->vertices[(size_t)index] = point_;
   mesh->invalidateBounds();
   mesh->invalidateGPUBuffers(DisplayMesh::BufferID::VERTEX);
 }
@@ -767,14 +767,14 @@ inline Vector3 const &
 DisplayMeshIndexedVertex::getNormal() const
 {
   debugAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
-  return mesh->normals[(array_size_t)index];
+  return mesh->normals[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setNormal(Vector3 const & normal_)
 {
   debugAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
-  mesh->normals[(array_size_t)index] = normal_;
+  mesh->normals[(size_t)index] = normal_;
   mesh->invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
 }
 
@@ -788,14 +788,14 @@ inline ColorRGBA const &
 DisplayMeshIndexedVertex::getColor() const
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
-  return mesh->colors[(array_size_t)index];
+  return mesh->colors[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setColor(ColorRGBA const & color_)
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
-  mesh->colors[(array_size_t)index] = color_;
+  mesh->colors[(size_t)index] = color_;
   mesh->invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
 }
 
@@ -809,14 +809,14 @@ inline Vector2 const &
 DisplayMeshIndexedVertex::getTexCoord() const
 {
   debugAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
-  return mesh->texcoords[(array_size_t)index];
+  return mesh->texcoords[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setTexCoord(Vector2 const & texcoord_)
 {
   debugAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
-  mesh->texcoords[(array_size_t)index] = texcoord_;
+  mesh->texcoords[(size_t)index] = texcoord_;
   mesh->invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);
 }
 

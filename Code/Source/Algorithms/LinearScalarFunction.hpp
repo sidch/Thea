@@ -75,7 +75,7 @@ class THEA_API LinearScalarFunction : public AnalyticD2ScalarFunction
       TheaArray<double> const & coeffs = getCoefficients();
 
       double val = 0;
-      for (array_size_t i = 0; i < coeffs.size(); ++i)
+      for (size_t i = 0; i < coeffs.size(); ++i)
         val += (p[i] * coeffs[i]);
 
       return val;
@@ -86,7 +86,7 @@ class THEA_API LinearScalarFunction : public AnalyticD2ScalarFunction
     void gradientAt(float const * p, float * result) const
     {
       TheaArray<double> const & coeffs = getCoefficients();
-      for (array_size_t i = 0; i < coeffs.size(); ++i)
+      for (size_t i = 0; i < coeffs.size(); ++i)
         result[i] = static_cast<float>(coeffs[i]);
     }
 

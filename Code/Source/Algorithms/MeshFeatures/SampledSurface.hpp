@@ -142,7 +142,7 @@ class SampledSurface
       sampler.sampleEvenlyByArea(num_samples, positions, NULL, &tris);
 
       samples.clear();
-      for (array_size_t i = 0; i < positions.size(); ++i)
+      for (size_t i = 0; i < positions.size(); ++i)
         samples.push_back(SurfaceSample(positions[i], smoothNormal(*tris[i], positions[i])));
     }
 
@@ -171,8 +171,8 @@ class SampledSurface
       alwaysAssertM(positions != NULL,  "SampledSurface: Null array of sample positions");
       alwaysAssertM(normals != NULL,    "SampledSurface: Null array of sample normals");
 
-      samples.resize((array_size_t)num_samples);
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      samples.resize((size_t)num_samples);
+      for (size_t i = 0; i < samples.size(); ++i)
         samples[i] = SurfaceSample(positions[i], normals[i]);
 
       if (scale <= 0)
@@ -244,8 +244,8 @@ class SampledSurface
       ExternalSample const * ext_samples = precomp_kdtree->getElements();
       long num_samples = precomp_kdtree->numElements();
 
-      samples.resize((array_size_t)num_samples);
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      samples.resize((size_t)num_samples);
+      for (size_t i = 0; i < samples.size(); ++i)
       {
         samples[i] = SurfaceSample(PointTraitsN<ExternalSample, 3>::getPosition(ext_samples[i]),
                                    NormalTraits<ExternalSample>::getNormal(ext_samples[i]));
@@ -272,7 +272,7 @@ class SampledSurface
       // Cache the external samples for quick access to positions and normals
       SampleGraph::SampleArray const & ext_samples = sample_graph->getSamples();
       samples.resize(ext_samples.size());
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
       {
         samples[i] = SurfaceSample(ext_samples[i].getPosition(), ext_samples[i].getNormal());
       }
@@ -288,7 +288,7 @@ class SampledSurface
     SurfaceSample const & getSample(long index) const
     {
       debugAssertM(index >= 0 && index < (long)samples.size(), "SampledSurface: Sample index out of bounds");
-      return samples[(array_size_t)index];
+      return samples[(size_t)index];
     }
 
     /** Get a non-const reference to the kd-tree on internally generated samples, or null if no such samples exist. */
@@ -336,11 +336,11 @@ class SampledSurface
       if (sample_graph)
         return sample_graph;
 
-      array_size_t n = (array_size_t)numSamples();
+      size_t n = (size_t)numSamples();
       TheaArray<Vector3> positions(n);
       TheaArray<Vector3> normals(n);
 
-      for (array_size_t i = 0; i < n; ++i)
+      for (size_t i = 0; i < n; ++i)
       {
         positions[i] = getSamplePosition((long)i);
         normals[i] = getSampleNormal((long)i);
@@ -374,14 +374,14 @@ class SampledSurface
     Vector3 getSamplePosition(long index) const
     {
       debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
-      return samples[(array_size_t)index].getPosition();
+      return samples[(size_t)index].getPosition();
     }
 
     /** Get the normal of the surface sample with index \a index. */
     Vector3 getSampleNormal(long index) const
     {
       debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
-      return samples[(array_size_t)index].getNormal();
+      return samples[(size_t)index].getNormal();
     }
 
     /** Get the normalization scale of the shape. */

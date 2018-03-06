@@ -82,7 +82,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     {
       alwaysAssertM(order_ >= 1, "BezierN: Order must be non-negative");
 
-      ctrl[0].resize((array_size_t)order_ + 1, VectorT::zero());
+      ctrl[0].resize((size_t)order_ + 1, VectorT::zero());
       this->setChanged(true);
     }
 
@@ -93,14 +93,14 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     VectorT const & getControl(long index) const
     {
       alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
-      return ctrl[0][(array_size_t)index];
+      return ctrl[0][(size_t)index];
     }
 
     void setControl(long index, VectorT const & pos)
     {
       alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
 
-      array_size_t i = (array_size_t)index;
+      size_t i = (size_t)index;
       ctrl[0][i] = pos;
 
       this->setChanged(true);
@@ -141,18 +141,18 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     {
       if (!this->isChanged()) return;
 
-      array_size_t n = ctrl[0].size();
+      size_t n = ctrl[0].size();
 
       // Compute first-order differences
       ctrl[1].resize(n - 1);
-      for (array_size_t i = 0; i < n - 1; ++i)
+      for (size_t i = 0; i < n - 1; ++i)
         ctrl[1][i] = ctrl[0][i + 1] - ctrl[0][i];
 
       // Compute second-order differences
       if (n > 2)
       {
         ctrl[2].resize(n - 2);
-        for (array_size_t i = 0; i < n - 2; ++i)
+        for (size_t i = 0; i < n - 2; ++i)
           ctrl[2][i] = ctrl[1][i + 1] - ctrl[1][i];
       }
 
@@ -160,7 +160,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       if (n > 3)
       {
         ctrl[3].resize(n - 3);
-        for (array_size_t i = 0; i < n - 3; ++i)
+        for (size_t i = 0; i < n - 3; ++i)
           ctrl[3][i] = ctrl[2][i + 1] - ctrl[2][i];
       }
 
@@ -205,17 +205,17 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       cacheBinom();
 
       long n = getOrder();
-      b.resize((array_size_t)n + 1);
+      b.resize((size_t)n + 1);
 
       b[0] = 1.0;
       double tpow = t;
       for (long i = 1; i <= n; ++i, tpow *= t)
-        b[(array_size_t)i] = binom(n, i) * tpow;
+        b[(size_t)i] = binom(n, i) * tpow;
 
       double omt = 1 - t;
       double omt_pow = omt;
       for (long i = n - 1; i >= 0; --i, omt_pow *= omt)
-        b[(array_size_t)i] *= omt_pow;
+        b[(size_t)i] *= omt_pow;
     }
 
     bool firstAndLastControlsArePositions() const { return true; }

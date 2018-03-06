@@ -120,7 +120,7 @@ BestFitEllipsoid3::update() const
     typedef CGAL::Approximate_min_ellipsoid_d<Traits>               AME;
 
     TheaArray<Point> p(points.size());
-    for (array_size_t i = 0; i < points.size(); ++i)
+    for (size_t i = 0; i < points.size(); ++i)
     {
       Vector3 const & point = points[i];
       p[i] = Point(point.x(), point.y(), point.z());
@@ -160,7 +160,7 @@ BestFitEllipsoid3::update() const
                                                                                     axis[0].z(), axis[1].z(), axis[2].z()))));
 
       Vector3 min, max;
-      for (array_size_t i = 0; i < points.size(); ++i)
+      for (size_t i = 0; i < points.size(); ++i)
       {
         Vector3 op = cframe.pointToObjectSpace(points[i]);
 

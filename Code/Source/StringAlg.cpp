@@ -125,7 +125,7 @@ parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool 
 
   if (strip_quotes)
   {
-    for (array_size_t i = 0; i < array.size(); ++i)
+    for (size_t i = 0; i < array.size(); ++i)
     {
       std::string & t = array[i];
       size_t L = t.length();

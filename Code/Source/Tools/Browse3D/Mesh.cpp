@@ -88,7 +88,7 @@ Mesh::updateFeatures() const
   if (valid_features)
     return;
 
-  static array_size_t const NUM_BINS = 64;
+  static size_t const NUM_BINS = 64;
 
   features.resize(NUM_BINS + 1);
   std::fill(features.begin(), features.end(), 0.0);
@@ -114,11 +114,11 @@ Mesh::updateFeatures() const
   }
 
   double bin_size = dmax / NUM_BINS;
-  for (array_size_t i = 0; i < all_dists.size(); ++i)
+  for (size_t i = 0; i < all_dists.size(); ++i)
   {
     int bin = Math::clamp((int)std::floor(all_dists[i] / bin_size), 0, (int)NUM_BINS - 1);
     double bin_max = (bin + 1) * bin_size;
-    features[(array_size_t)bin] += (all_dists[i] / bin_max);  // make it more discriminative by not binning 1
+    features[(size_t)bin] += (all_dists[i] / bin_max);  // make it more discriminative by not binning 1
   }
 
   features.back() = dmax;  // keep track of the overall scale of the mesh
@@ -138,7 +138,7 @@ areSimilarFeatureVectors(TheaArray<double> const & f0, long nv0, TheaArray<doubl
 
   // Compare histograms
   double diff = 0;
-  for (array_size_t i = 0; i + 1 < f0.size(); ++i)
+  for (size_t i = 0; i + 1 < f0.size(); ++i)
     diff += std::fabs(f0[i] - f1[i]);
 
   static double const HIST_THRESHOLD = 1e-2;
@@ -175,7 +175,7 @@ accumGroupFeatures(MeshGroup const & mg, TheaArray<double> & features)
 
     alwaysAssertM(mf.size() == features.size(), "Feature vectors have different sizes");
 
-    for (array_size_t j = 0; j < features.size(); ++j)
+    for (size_t j = 0; j < features.size(); ++j)
       features[j] += mf[j];
   }
 

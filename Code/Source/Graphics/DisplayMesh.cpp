@@ -110,7 +110,7 @@ DisplayMesh::getVertex(long i)
 {
   debugAssertM(i >= 0 && i < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
-  array_size_t si = (array_size_t)i;
+  size_t si = (size_t)i;
   return Vertex(this, vertices[si],
                 hasNormals()    ?  &normals[si]    :  NULL,
                 hasColors()     ?  &colors[si]     :  NULL,
@@ -122,7 +122,7 @@ DisplayMesh::getTriangle(long tri_index) const
 {
   debugAssertM(tri_index >= 0 && 3 * tri_index < (long)tris.size(), getNameStr() + ": Triangle index out of bounds");
 
-  array_size_t base_index = (array_size_t)(3 * tri_index);
+  size_t base_index = (size_t)(3 * tri_index);
   IndexTriple tri;
   tri[0] = (long)tris[base_index];
   tri[1] = (long)tris[base_index + 1];
@@ -136,7 +136,7 @@ DisplayMesh::getQuad(long quad_index) const
 {
   debugAssertM(quad_index >= 0 && 4 * quad_index < (long)quads.size(), getNameStr() + ": Quad index out of bounds");
 
-  array_size_t base_index = (array_size_t)(4 * quad_index);
+  size_t base_index = (size_t)(4 * quad_index);
   IndexQuad quad;
   quad[0] = (long)quads[base_index];
   quad[1] = (long)quads[base_index + 1];
@@ -310,7 +310,7 @@ DisplayMesh::addFace(int num_vertices, long const * face_vertex_indices_, long s
 
   long starting_index = numTriangles();
 
-  for (array_size_t i = 0; i < triangulated_indices.size(); ++i)
+  for (size_t i = 0; i < triangulated_indices.size(); ++i)
   {
     tris.push_back((uint32)triangulated_indices[i]);
     if (source_face_index >= 0) tri_source_face_indices.push_back(source_face_index);
@@ -386,13 +386,13 @@ DisplayMesh::computeAveragedVertexNormals()
   bool topo_change = (normals.size() != vertices.size());
 
   normals.resize(vertices.size());
-  for (array_size_t i = 0; i < normals.size(); ++i)
+  for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = Vector3::zero();
 
   // TODO: weight normals by face area?
   Vector3 n;
   uint32 i0, i1, i2, i3;
-  for (array_size_t i = 0; i < tris.size(); i += 3)
+  for (size_t i = 0; i < tris.size(); i += 3)
   {
     i0 = tris[i], i1 = tris[i + 1], i2 = tris[i + 2];
     Vector3 const & v0 = vertices[i0];
@@ -405,7 +405,7 @@ DisplayMesh::computeAveragedVertexNormals()
     normals[i2] += n;
   }
 
-  for (array_size_t i = 0; i < quads.size(); i += 4)
+  for (size_t i = 0; i < quads.size(); i += 4)
   {
     i0 = quads[i], i1 = quads[i + 1], i2 = quads[i + 2], i3 = quads[i + 3];
     Vector3 const & v0 = vertices[i0];
@@ -419,7 +419,7 @@ DisplayMesh::computeAveragedVertexNormals()
     normals[i3] += n;
   }
 
-  for (array_size_t i = 0; i < normals.size(); ++i)
+  for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = normals[i].unit();
 
   invalidateGPUBuffers(topo_change ? BufferID::ALL : BufferID::NORMAL);
@@ -428,7 +428,7 @@ DisplayMesh::computeAveragedVertexNormals()
 void
 DisplayMesh::flipNormals()
 {
-  for (array_size_t i = 0; i < normals.size(); ++i)
+  for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = -normals[i];
 
   invalidateGPUBuffers(BufferID::NORMAL);
@@ -447,8 +447,8 @@ DisplayMesh::updateEdges()
     EdgeSet added_edges;
     Edge edge;
 
-    for (array_size_t i = 0; i < tris.size(); i += 3)
-      for (array_size_t j = 0; j < 3; ++j)
+    for (size_t i = 0; i < tris.size(); i += 3)
+      for (size_t j = 0; j < 3; ++j)
       {
         uint32 ei0 = tris[i + j];
         uint32 ei1 = tris[j == 2 ? i : (i + j + 1)];
@@ -468,8 +468,8 @@ DisplayMesh::updateEdges()
         }
       }
 
-    for (array_size_t i = 0; i < quads.size(); i += 4)
-      for (array_size_t j = 0; j < 4; ++j)
+    for (size_t i = 0; i < quads.size(); i += 4)
+      for (size_t j = 0; j < 4; ++j)
       {
         uint32 ei0 = quads[i + j];
         uint32 ei1 = quads[j == 3 ? i : (i + j + 1)];
@@ -501,11 +501,11 @@ DisplayMesh::isolateFaces()
   ColorArray     new_colors;
   TexCoordArray  new_texcoords;
 
-  for (array_size_t i = 0; i < tris.size(); i += 3)
+  for (size_t i = 0; i < tris.size(); i += 3)
   {
-    array_size_t i0 = (array_size_t)tris[i    ];
-    array_size_t i1 = (array_size_t)tris[i + 1];
-    array_size_t i2 = (array_size_t)tris[i + 2];
+    size_t i0 = (size_t)tris[i    ];
+    size_t i1 = (size_t)tris[i + 1];
+    size_t i2 = (size_t)tris[i + 2];
 
     uint32 new_vindex = (uint32)new_vertices.size();
 
@@ -539,12 +539,12 @@ DisplayMesh::isolateFaces()
     tris[i + 2]  =  new_vindex + 2;
   }
 
-  for (array_size_t i = 0; i < quads.size(); i += 4)
+  for (size_t i = 0; i < quads.size(); i += 4)
   {
-    array_size_t i0 = (array_size_t)quads[i    ];
-    array_size_t i1 = (array_size_t)quads[i + 1];
-    array_size_t i2 = (array_size_t)quads[i + 2];
-    array_size_t i3 = (array_size_t)quads[i + 3];
+    size_t i0 = (size_t)quads[i    ];
+    size_t i1 = (size_t)quads[i + 1];
+    size_t i2 = (size_t)quads[i + 2];
+    size_t i3 = (size_t)quads[i + 3];
 
     uint32 new_vindex = (uint32)new_vertices.size();
 
@@ -597,7 +597,7 @@ DisplayMesh::updateBounds()
   if (valid_bounds) return;
 
   bounds = AxisAlignedBox3();
-  for (array_size_t i = 0; i < vertices.size(); ++i)
+  for (size_t i = 0; i < vertices.size(); ++i)
     bounds.merge(vertices[i]);
 
   valid_bounds = true;

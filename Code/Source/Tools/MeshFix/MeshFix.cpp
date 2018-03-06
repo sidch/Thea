@@ -174,7 +174,7 @@ struct WriteCallback : public MG::WriteCallback
     if (lab < 0)
       unlabeled_faces.push_back(index);
     else
-      faces_per_label[(array_size_t)lab].push_back(index);
+      faces_per_label[(size_t)lab].push_back(index);
   }
 
   LabelArray const & labels;
@@ -322,7 +322,7 @@ meshFix(int argc, char * argv[])
     }
 
     bool first = true;
-    for (array_size_t i = 0; i < labels.size(); ++i)
+    for (size_t i = 0; i < labels.size(); ++i)
     {
       if (write_callback.faces_per_label[i].empty())
         continue;
@@ -331,7 +331,7 @@ meshFix(int argc, char * argv[])
       else out << '\n';
 
       out << labels[i] << '\n';
-      for (array_size_t j = 0; j < write_callback.faces_per_label[i].size(); ++j)
+      for (size_t j = 0; j < write_callback.faces_per_label[i].size(); ++j)
       {
         if (j > 0) out << ' ';
         out << write_callback.faces_per_label[i][j] + 1;
@@ -345,7 +345,7 @@ meshFix(int argc, char * argv[])
       else out << '\n';
 
       out << "Unlabeled\n";
-      for (array_size_t j = 0; j < write_callback.unlabeled_faces.size(); ++j)
+      for (size_t j = 0; j < write_callback.unlabeled_faces.size(); ++j)
       {
         if (j > 0) out << ' ';
         out << write_callback.unlabeled_faces[j] + 1;
@@ -859,7 +859,7 @@ tJuncts(Mesh & mesh)
   long num_fixed = 0;
   for (int n = 0; n < t_juncts_iters; ++n)
   {
-    for (array_size_t i = 0; i < boundary_segs.size(); ++i)
+    for (size_t i = 0; i < boundary_segs.size(); ++i)
     {
       Mesh::Edge * edge = boundary_edges[i];
 
@@ -962,7 +962,7 @@ orient(Mesh & mesh)
     fi->attr().flag = NOT_VISITED;
 
   long num_flipped = 0;
-  for (array_size_t i = 0; i < cc.size(); ++i)
+  for (size_t i = 0; i < cc.size(); ++i)
   {
     if (cc.empty())  // shouldn't happen, but check just in case
     {
@@ -972,7 +972,7 @@ orient(Mesh & mesh)
 
     // Find vertex with max X
     Mesh::Vertex * xmax_vertex = NULL;
-    for (array_size_t j = 0; j < cc[i].size(); ++j)
+    for (size_t j = 0; j < cc[i].size(); ++j)
       for (Mesh::Face::VertexConstIterator fvi = cc[i][j]->verticesBegin(); fvi != cc[i][j]->verticesEnd(); ++fvi)
         if (!xmax_vertex || (*fvi)->getPosition().x() > xmax_vertex->getPosition().x())
           xmax_vertex = *fvi;
@@ -1327,7 +1327,7 @@ struct VisibilityOrienter
       Real best_exposure = -1;
       Vector3 best_dir = Vector3::zero();
 
-      for (array_size_t j = 0; j < face_pts.size(); ++j)
+      for (size_t j = 0; j < face_pts.size(); ++j)
       {
         Vector3 const & p = face_pts[j];
 

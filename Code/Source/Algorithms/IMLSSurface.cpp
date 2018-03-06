@@ -167,13 +167,13 @@ IMLSSurface::enforceBounds(TheaArray<IndexedTriangle> & tris)
 {
   // build enclosure
   AxisAlignedBox3 box;
-  for (array_size_t i = 0; i < verts.size(); ++i)
+  for (size_t i = 0; i < verts.size(); ++i)
     box.merge(verts[i]);
 
   box.scaleCentered(2);
 
-  array_size_t base = verts.size();
-  array_size_t new_size = verts.size() + 8;
+  size_t base = verts.size();
+  size_t new_size = verts.size() + 8;
   verts.resize(new_size);
   phi.resize(new_size);
 
@@ -209,11 +209,11 @@ void
 IMLSSurface::computeIsolevel()
 {
   double mean = 0;
-  array_size_t const num_verts = bounded ? verts.size() - 8: verts.size();
+  size_t const num_verts = bounded ? verts.size() - 8: verts.size();
 
   if (num_verts > 0)
   {
-    for (array_size_t i = 0; i < num_verts; ++i)
+    for (size_t i = 0; i < num_verts; ++i)
       mean += (*this)(verts[i]);
 
     isolevel = mean / num_verts;
@@ -227,15 +227,15 @@ IMLSSurface::computeIsolevel()
 void
 IMLSSurface::computeEnclosingPhi()
 {
-  typedef std::pair<array_size_t, double> PairID;
+  typedef std::pair<size_t, double> PairID;
   TheaArray<PairID> outside;
 
   double mean = 0;
-  array_size_t const num_verts = bounded ? verts.size() - 8: verts.size();
+  size_t const num_verts = bounded ? verts.size() - 8: verts.size();
 
   if (num_verts > 0)
   {
-    for (array_size_t i = 0; i < num_verts; ++i)
+    for (size_t i = 0; i < num_verts; ++i)
     {
       double val = (*this)(verts[i]);
       mean += val;
@@ -371,9 +371,9 @@ IMLSSurface::setSmoothness(double eps_)
   eps2 = eps * eps;
   isolevel = 0;
 
-  array_size_t const num_verts = bounded ? verts.size() - 8: verts.size();
-  for (array_size_t i = 0;         i < num_verts;  ++i) phi[i] = 0.0;
-  for (array_size_t i = num_verts; i < phi.size(); ++i) phi[i] = 1.0;
+  size_t const num_verts = bounded ? verts.size() - 8: verts.size();
+  for (size_t i = 0;         i < num_verts;  ++i) phi[i] = 0.0;
+  for (size_t i = num_verts; i < phi.size(); ++i) phi[i] = 1.0;
 
   computeUnweightedRec(kdtree.getRoot());
   computeEnclosingPhi();
@@ -535,9 +535,9 @@ IMLSSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
   // static long num_calls = 1;
   // if ((num_calls++) % 1000 == 0) THEA_CONSOLE << num_calls << " calls to EvalFunctor::evalTri";
 
-  array_size_t i0 = tri.getVertices().getIndex(0);
-  array_size_t i1 = tri.getVertices().getIndex(1);
-  array_size_t i2 = tri.getVertices().getIndex(2);
+  size_t i0 = tri.getVertices().getIndex(0);
+  size_t i1 = tri.getVertices().getIndex(1);
+  size_t i2 = tri.getVertices().getIndex(2);
 
   DoubleVector2 I = triangleQuadrature<DoubleVector2>(splitTriangleQuadrature, p, surf.verts[i0], surf.verts[i1],
                                                       surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
@@ -576,9 +576,9 @@ IMLSSurface::DerivFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tr
 {
   using namespace IMLSSurfaceInternal;
 
-  array_size_t i0 = tri.getVertices().getIndex(0);
-  array_size_t i1 = tri.getVertices().getIndex(1);
-  array_size_t i2 = tri.getVertices().getIndex(2);
+  size_t i0 = tri.getVertices().getIndex(0);
+  size_t i1 = tri.getVertices().getIndex(1);
+  size_t i2 = tri.getVertices().getIndex(2);
 
   IntegralData Id = triangleQuadrature<IntegralData>(splitTriangleQuadratureWithDeriv, p, surf.verts[i0], surf.verts[i1],
                                                      surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
@@ -659,7 +659,7 @@ traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<N
   TheaArray<TriangleKDTree::Node const *> to_examine;
   to_examine.push_back(kdtree.getRoot());
 
-  for (array_size_t i = 0; i < to_examine.size(); ++i)
+  for (size_t i = 0; i < to_examine.size(); ++i)
   {
     TriangleKDTree::Node const * current = to_examine[i];
     if (current->isLeaf())
@@ -715,7 +715,7 @@ closestLeaf(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<Node
     // Create a minheap on the leaf queue
     std::make_heap(leaf_queue.begin(), leaf_queue.end(), cmp);
 
-    array_size_t num_remaining = leaf_queue.size();
+    size_t num_remaining = leaf_queue.size();
     while (num_remaining > 0 && leaf_queue.front().value < closest_dist2)
     {
       NodeValuePair const & first = leaf_queue.front();

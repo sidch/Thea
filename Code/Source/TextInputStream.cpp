@@ -207,7 +207,7 @@ TextInputStream::readLine()
   Token t = read();
 
   // Reset the position to the start of this token
-  currentCharOffset = (array_size_t)t.bytePosition();
+  currentCharOffset = (size_t)t.bytePosition();
   stack.clear();
 
   if (currentCharOffset == buffer.size())
@@ -246,7 +246,7 @@ toUpper(TheaUnorderedSet<std::string> & set)
   TheaArray<std::string> symbols(set.begin(), set.end());
   set.clear();
 
-  for (array_size_t i = 0; i < symbols.size(); ++i)
+  for (size_t i = 0; i < symbols.size(); ++i)
   {
     set.insert(toUpper(symbols[i]));
   }
@@ -329,7 +329,7 @@ int
 TextInputStream::peekInputChar(int distance)
 {
   // Don't go off the end
-  if ((array_size_t)(currentCharOffset + distance) >= buffer.size())
+  if ((size_t)(currentCharOffset + distance) >= buffer.size())
   {
     return EOF;
   }
@@ -1343,7 +1343,7 @@ TextInputStream::TextInputStream(std::string const & path_, Settings const & opt
   std::string input = FileSystem::readWholeFile(path);
 
   size_t n = input.size();
-  buffer.resize((array_size_t)n);
+  buffer.resize((size_t)n);
   std::memcpy(&buffer[0], input.c_str(), n);
 }
 
@@ -1364,7 +1364,7 @@ TextInputStream::TextInputStream(FS fs, std::string const & str, Settings const 
 
   errorSourceName = getName();
 
-  buffer.resize((array_size_t)str.length());  // we don't bother copying trailing NUL
+  buffer.resize((size_t)str.length());  // we don't bother copying trailing NUL
   std::memcpy(&buffer[0], str.c_str(), str.length());
 }
 

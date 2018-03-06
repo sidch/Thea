@@ -124,13 +124,13 @@ class /* THEA_API */ ParametricCurveN
       alwaysAssertM(num_arc_samples >= 2, "ParametricCurveN: At least two samples must be used to approximate arc lengths");
 
       // Generate num_points samples with uniform parameter spacing
-      TheaArray<VectorT> arc_samples((array_size_t)num_arc_samples);
+      TheaArray<VectorT> arc_samples((size_t)num_arc_samples);
       T arc_scaling = (max_param - min_param) / static_cast<T>(num_arc_samples - 1);
       T t;
       for (long i = 0; i < num_arc_samples; ++i)
       {
         t = i * arc_scaling + min_param;
-        arc_samples[(array_size_t)i] = eval(t, 0);
+        arc_samples[(size_t)i] = eval(t, 0);
       }
 
       // Compute the normalized arc length for each sampled point, by a piecewise linear approximation. This is a monotonically
@@ -142,11 +142,11 @@ class /* THEA_API */ ParametricCurveN
       // generated sequence, and use linear interpolation within the interval to find the corresponding curve parameter
       typedef TheaArray<double>::iterator DoubleIterator;
       DoubleIterator last = arclen.begin();
-      for (array_size_t i = 0; i < (array_size_t)num_points; ++i)
+      for (size_t i = 0; i < (size_t)num_points; ++i)
       {
         if (i == 0)  // short-circuit for first and last points and save two binary searches
           t = min_param;
-        else if (i == (array_size_t)num_points - 1)
+        else if (i == (size_t)num_points - 1)
           t = max_param;
         else
         {
@@ -158,7 +158,7 @@ class /* THEA_API */ ParametricCurveN
           {
             DoubleIterator seg_start = seg_stop - 1;
             double f = (s - *seg_start) / (*seg_stop - *seg_start);  // denom won't be zero because of upper_bound spec
-            array_size_t index = (seg_start - arclen.begin());
+            size_t index = (seg_start - arclen.begin());
             t = static_cast<T>(index + f) * arc_scaling + min_param;
           }
 
@@ -220,7 +220,7 @@ class /* THEA_API */ ParametricCurveN
         return;
 
       double scaling = (max_param_ - min_param_) / umax;
-      for (array_size_t i = 0; i < u.size(); ++i)
+      for (size_t i = 0; i < u.size(); ++i)
         u[i] = u[i] * scaling + min_param_;
     }
 

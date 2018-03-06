@@ -121,7 +121,7 @@ Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & 
   in.pointmarkerlist = NULL;
 
   in.numberofpoints = 0;
-  for (array_size_t i = 0, j = 0; i < impl->vertices.size(); ++i)
+  for (size_t i = 0, j = 0; i < impl->vertices.size(); ++i)
   {
     Vector3 const & p = impl->vertices[i].position;
 
@@ -193,18 +193,18 @@ Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & 
   if (out.numberofpoints < 0 || out.numberoftriangles < 0)  // should never happen
     return 0;
 
-  tri_verts.resize((array_size_t)out.numberofpoints);
-  for (array_size_t i = 0, j = 0; i < tri_verts.size(); ++i, j += 2)
+  tri_verts.resize((size_t)out.numberofpoints);
+  for (size_t i = 0, j = 0; i < tri_verts.size(); ++i, j += 2)
     tri_verts[i] = Vector2((Real)out.pointlist[j], (Real)out.pointlist[j + 1]);
 
-  tri_indices.resize(3 * (array_size_t)out.numberoftriangles);
-  for (array_size_t i = 0; i < tri_indices.size(); ++i)
+  tri_indices.resize(3 * (size_t)out.numberoftriangles);
+  for (size_t i = 0; i < tri_indices.size(); ++i)
     tri_indices[i] = (long)out.trianglelist[i];
 
   if (tri_vert_is_boundary)
   {
-    tri_vert_is_boundary->resize((array_size_t)out.numberofpoints);
-    for (array_size_t i = 0; i < tri_vert_is_boundary->size(); ++i)
+    tri_vert_is_boundary->resize((size_t)out.numberofpoints);
+    for (size_t i = 0; i < tri_vert_is_boundary->size(); ++i)
       (*tri_vert_is_boundary)[i] = (out.pointmarkerlist[i] != 0);
   }
 

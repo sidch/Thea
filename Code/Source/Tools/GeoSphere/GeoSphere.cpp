@@ -40,10 +40,10 @@ main(int argc, char * argv[])
     return -1;
 
   Mesh::Ptr mesh(new Mesh);
-  for (array_size_t i = 0; i < vertices.size(); ++i)
+  for (size_t i = 0; i < vertices.size(); ++i)
     mesh->addVertex(vertices[i]);
 
-  for (array_size_t i = 0; i < triangles.size(); i += 3)
+  for (size_t i = 0; i < triangles.size(); i += 3)
     mesh->addTriangle(triangles[i], triangles[i + 1], triangles[i + 2]);
 
   MG mg;

@@ -89,61 +89,61 @@ class THEA_API Manifold
       if (num_vertices <= 0 || faces.size() <= 0)
         return false;
 
-      array_size_t nf = (array_size_t)faces.size();
-      array_size_t nv = (array_size_t)num_vertices;
+      size_t nf = faces.size();
+      size_t nv = (size_t)num_vertices;
 
       // Initialize every vertex to map to itself
       vertex_map.resize(nv);
-      for (array_size_t i = 0; i < nv; ++i)
+      for (size_t i = 0; i < nv; ++i)
         vertex_map[i] = (long)i;
 
       // Associate each vertex with its incident faces
-      TheaArray< TheaArray<array_size_t> > v2f(nv);
-      for (array_size_t i = 0; i < nf; ++i)
+      TheaArray< TheaArray<size_t> > v2f(nv);
+      for (size_t i = 0; i < nf; ++i)
         for (typename FaceT::const_iterator vi = faces[i].begin(); vi != faces[i].end(); ++vi)
         {
           debugAssertM(*vi >= 0 && (long)*vi < num_vertices,
                       format("Manifold: Vertex index %ld out of range [0, %ld)", (long)*vi, num_vertices));
-          v2f[(array_size_t)*vi].push_back(i);
+          v2f[(size_t)*vi].push_back(i);
         }
 
       // Queue the set of vertices
-      TheaStack<array_size_t> vertex_stack;
+      TheaStack<size_t> vertex_stack;
       for (long i = (long)nv - 1; i >= 0; --i)
-        vertex_stack.push((array_size_t)i);
+        vertex_stack.push((size_t)i);
 
       // Split the faces at each vertex into manifold groups
       while (!vertex_stack.empty())
       {
-        array_size_t i = vertex_stack.top();
+        size_t i = vertex_stack.top();
         vertex_stack.pop();
 
         // Set of edges (represented by their further vertices) incident at this vertex that have already been observed to be
         // shared by two faces
-        TheaSet<array_size_t> shared_edges;
+        TheaSet<size_t> shared_edges;
 
         // Group the faces into maximal edge-connected components
-        typedef UnionFind<array_size_t> UnionFind;
+        typedef UnionFind<size_t> UnionFind;
         UnionFind uf(v2f[i].begin(), v2f[i].end());
 
-        for (array_size_t j = 0; j < v2f[i].size(); ++j)
-          for (array_size_t k = j + 1; k < v2f[i].size(); ++k)
+        for (size_t j = 0; j < v2f[i].size(); ++j)
+          for (size_t k = j + 1; k < v2f[i].size(); ++k)
             if (shareEdgeAtVertex(faces[v2f[i][j]], faces[v2f[i][k]], i, shared_edges))
               uf.merge((long)j, (long)k);
 
         // Retain only the faces edge-connected to the first one, assigning the rest to a copy of the vertex
         bool created_new_vertex = false;
-        for (array_size_t j = 1; j < v2f[i].size(); ++j)
+        for (size_t j = 1; j < v2f[i].size(); ++j)
         {
           if (!uf.sameSet(0, j))
           {
-            array_size_t face = v2f[i][j];
-            array_size_t copy_index = v2f.size() - 1;
+            size_t face = v2f[i][j];
+            size_t copy_index = v2f.size() - 1;
 
             if (!created_new_vertex) // create a copy of the vertex
             {
               copy_index++;
-              v2f.push_back(TheaArray<array_size_t>());
+              v2f.push_back(TheaArray<size_t>());
               vertex_map.push_back(vertex_map[i]);
               vertex_stack.push(copy_index);
 
@@ -165,8 +165,8 @@ class THEA_API Manifold
         // If we made a copy of this vertex, we can get rid of faces reassigned to the copy
         if (created_new_vertex)
         {
-          TheaArray<array_size_t> nbd;
-          for (array_size_t j = 0; j < v2f[i].size(); ++j)
+          TheaArray<size_t> nbd;
+          for (size_t j = 0; j < v2f[i].size(); ++j)
             if (uf.sameSet(0, j))
               nbd.push_back(v2f[i][j]);
 
@@ -185,24 +185,24 @@ class THEA_API Manifold
 
   private:
     /** Get the last index of a face. */
-    template <typename FaceT> static array_size_t getLastIndex(FaceT const & face)
-    { return (array_size_t)*face.rbegin(); }
+    template <typename FaceT> static size_t getLastIndex(FaceT const & face)
+    { return (size_t)*face.rbegin(); }
 
     /**
      * Get the two neighbouring vertices of a given vertex on the boundary of a face. Throws an error if the face has repeated
      * vertices.
      */
     template <typename FaceT>
-    static bool getNeighbouringVertices(FaceT const & face, array_size_t vertex, array_size_t & nbr1, array_size_t & nbr2)
+    static bool getNeighbouringVertices(FaceT const & face, size_t vertex, size_t & nbr1, size_t & nbr2)
     {
       // Find the neighbours of the vertex in the first face
-      array_size_t last_vertex = getLastIndex(face);
-      array_size_t next_vertex;
+      size_t last_vertex = getLastIndex(face);
+      size_t next_vertex;
       bool found = false;
       for (typename FaceT::const_iterator vi = face.begin(); vi != face.end(); ++vi)
       {
-        next_vertex = (array_size_t)(vi + 1 == face.end() ? *face.begin() : *(vi + 1));
-        array_size_t this_vertex = (array_size_t)*vi;
+        next_vertex = (size_t)(vi + 1 == face.end() ? *face.begin() : *(vi + 1));
+        size_t this_vertex = (size_t)*vi;
 
         if (this_vertex == next_vertex || last_vertex == next_vertex)
           throw Error("Manifold: Face has repeated vertices");
@@ -218,8 +218,8 @@ class THEA_API Manifold
       if (!found)
         return false;
 
-      nbr1 = (array_size_t)last_vertex;
-      nbr2 = (array_size_t)next_vertex;
+      nbr1 = (size_t)last_vertex;
+      nbr2 = (size_t)next_vertex;
       return true;
     }
 
@@ -228,10 +228,10 @@ class THEA_API Manifold
      * condition holds, then all such shared edges are added to the set of shared edges.
      */
     template <typename FaceT>
-    static bool shareEdgeAtVertex(FaceT const & face1, FaceT const & face2, array_size_t vertex,
-                                  TheaSet<array_size_t> & shared_edges)
+    static bool shareEdgeAtVertex(FaceT const & face1, FaceT const & face2, size_t vertex,
+                                  TheaSet<size_t> & shared_edges)
     {
-      array_size_t u1, u2, w1, w2;
+      size_t u1, u2, w1, w2;
       if (!getNeighbouringVertices(face1, vertex, u1, u2))
         throw Error("Manifold: Vertex does not belong to first face");
 

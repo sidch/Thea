@@ -144,11 +144,11 @@ class DistanceHistogram
       if (num_queries <= 0)
         return;
 
-      TheaArray<int32> query_indices((array_size_t)num_queries);
+      TheaArray<int32> query_indices((size_t)num_queries);
       Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
       Histogram local_histogram(histogram.numBins());
-      for (array_size_t i = 0; i < query_indices.size(); ++i)
+      for (size_t i = 0; i < query_indices.size(); ++i)
       {
         Vector3 p = ldh.getSamplePosition(query_indices[i]);
         ldh.compute(p, local_histogram, dist_type, max_distance, local_reduction_ratio);

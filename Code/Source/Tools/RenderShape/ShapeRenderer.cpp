@@ -245,7 +245,7 @@ ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include p
   argv[0] = new char[prog_name.length() + 1];
   strcpy(argv[0], prog_name.c_str());
 
-  for (array_size_t i = 0; i < args.size(); ++i)
+  for (size_t i = 0; i < args.size(); ++i)
   {
     argv[i + 1] = new char[args[i].length() + 1];
     strcpy(argv[i + 1], args[i].c_str());
@@ -253,7 +253,7 @@ ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include p
 
   int status = exec((int)argv.size(), &argv[0]);
 
-  for (array_size_t i = 0; i < argv.size(); ++i)
+  for (size_t i = 0; i < argv.size(); ++i)
     delete [] argv[i];
 
   return status;
@@ -381,7 +381,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
   typedef Thea::shared_ptr<Model> ModelPtr;
   TheaArray<ModelPtr> overlay_models;
-  for (array_size_t i = 1; i < model_paths.size(); ++i)
+  for (size_t i = 1; i < model_paths.size(); ++i)
   {
     ModelPtr overlay_model(new Model);
     overlay_model->convert_to_points = (show_points & POINTS_OVERLAY);
@@ -392,7 +392,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
 
   // Do the rendering
-  for (array_size_t v = 0; v < views.size(); ++v)
+  for (size_t v = 0; v < views.size(); ++v)
   {
     try
     {
@@ -427,7 +427,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
 
           // Draw overlay models
-          for (array_size_t i = 0; i < overlay_models.size(); ++i)
+          for (size_t i = 0; i < overlay_models.size(); ++i)
           {
             Model const & overlay = *overlay_models[i];
             ColorRGBA overlay_color = getPaletteColor((long)i - 1);
@@ -1260,7 +1260,7 @@ struct FaceColorizer
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     ColorRGBA8 color;
-    for (array_size_t i = 0; i < tris.size(); i += 3)
+    for (size_t i = 0; i < tris.size(); i += 3)
     {
       FaceRef face(&mesh, (long)i / 3);
       FaceIndexMap::const_iterator existing = tri_ids.find(face);
@@ -1270,10 +1270,10 @@ struct FaceColorizer
       uint32 id = existing->second;
       if (labels)
       {
-        if ((array_size_t)id >= labels->size())
+        if ((size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = parent->getLabelColor((*labels)[(array_size_t)id]);
+          color = parent->getLabelColor((*labels)[(size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1284,7 +1284,7 @@ struct FaceColorizer
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
-    for (array_size_t i = 0; i < quads.size(); i += 4)
+    for (size_t i = 0; i < quads.size(); i += 4)
     {
       FaceRef face(&mesh, (long)i / 4);
       FaceIndexMap::const_iterator existing = quad_ids.find(face);
@@ -1294,10 +1294,10 @@ struct FaceColorizer
       uint32 id = existing->second;
       if (labels)
       {
-        if ((array_size_t)id >= labels->size())
+        if ((size_t)id >= labels->size())
           color = ColorRGBA8(255, 0, 0, 255);
         else
-          color = parent->getLabelColor((*labels)[(array_size_t)id]);
+          color = parent->getLabelColor((*labels)[(size_t)id]);
       }
       else
         color = indexToColor(id, false);
@@ -1376,9 +1376,9 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
         }
 
         if (index >= (long)labels.size())
-          labels.resize((array_size_t)(2 * (index + 1)), -1);
+          labels.resize((size_t)(2 * (index + 1)), -1);
 
-        labels[(array_size_t)index] = label_index;
+        labels[(size_t)index] = label_index;
       }
     }
   }
@@ -1404,12 +1404,12 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     }
 
     // Build mapping from face indices to their parent meshes
-    TheaArray<Mesh const *> face_meshes((array_size_t)(tri_ids->size() + quad_ids->size()), NULL);
+    TheaArray<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), NULL);
     for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
-      face_meshes[(array_size_t)fi->second] = fi->first.first;
+      face_meshes[(size_t)fi->second] = fi->first.first;
 
     for (FaceIndexMap::const_iterator fi = quad_ids->begin(); fi != quad_ids->end(); ++fi)
-      face_meshes[(array_size_t)fi->second] = fi->first.first;
+      face_meshes[(size_t)fi->second] = fi->first.first;
 
     // Build map from meshes to their labels
     typedef TheaUnorderedMap<Mesh const *, int> MeshLabelMap;
@@ -1464,7 +1464,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
 
     // Map from mesh labels to face labels
     labels.resize(face_meshes.size(), -1);
-    for (array_size_t i = 0; i < labels.size(); ++i)
+    for (size_t i = 0; i < labels.size(); ++i)
     {
       if (face_meshes[i])
       {
@@ -1518,7 +1518,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     }
 
     model.point_colors.resize(model.points.size());
-    for (array_size_t i = 0; i < model.points.size(); ++i)
+    for (size_t i = 0; i < model.points.size(); ++i)
       model.point_colors[i] = (labels[i] < 0 ? ColorRGBA(1, 0, 0, 1) : getLabelColor(labels[i]));
   }
   else
@@ -1576,7 +1576,7 @@ struct VertexColorizer
 
     Mesh::VertexArray const & vertices = mesh.getVertices();
     BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
-    for (array_size_t i = 0; i < vertices.size(); ++i)
+    for (size_t i = 0; i < vertices.size(); ++i)
     {
       nbrs.clear();
       long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
@@ -1649,7 +1649,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
       }
       else
       {
-        for (array_size_t i = 1; i < feat_vals.size(); ++i)
+        for (size_t i = 1; i < feat_vals.size(); ++i)
         {
           if (!(line_in >> f))
             throw Error("Couldn't read feature");
@@ -1667,9 +1667,9 @@ ShapeRendererImpl::loadFeatures(Model & model)
       if (feat_vals.size() == 3)
       {
         Real abs_max = -1;
-        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        for (size_t i = 0; i < feat_vals.size(); ++i)
         {
-          for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          for (size_t j = 0; j < feat_vals[i].size(); ++j)
           {
             Real abs_feat_val = fabs(feat_vals[i][j]);
             if (abs_feat_val > abs_max)
@@ -1679,22 +1679,22 @@ ShapeRendererImpl::loadFeatures(Model & model)
 
         if (abs_max > 0)
         {
-          for (array_size_t i = 0; i < feat_vals.size(); ++i)
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+          for (size_t i = 0; i < feat_vals.size(); ++i)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp(0.5 * (feat_vals[i][j]  / abs_max + 1), (Real)0, (Real)1);
         }
       }
       else
       {
-        for (array_size_t i = 0; i < feat_vals.size(); ++i)
+        for (size_t i = 0; i < feat_vals.size(); ++i)
         {
           TheaArray<Real> sorted = feat_vals[i];
           sort(sorted.begin(), sorted.end());
 
-          array_size_t tenth = (int)(0.1 * sorted.size());
+          size_t tenth = (int)(0.1 * sorted.size());
           Real lo = *(sorted.begin() + tenth);
 
-          array_size_t ninetieth = (int)(0.9 * sorted.size());
+          size_t ninetieth = (int)(0.9 * sorted.size());
           Real hi = *(sorted.begin() + ninetieth);
 
           Real range = hi - lo;
@@ -1711,13 +1711,13 @@ ShapeRendererImpl::loadFeatures(Model & model)
 
           if (sorted[0] >= 0)  // make a guess if this is a [0, 1] feature (e.g. SDF) or a [-1, 1] feature (e.g. curvature)
           {
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp((feat_vals[i][j] - lo) / range, (Real)0, (Real)1);
           }
           else
           {
             Real abs_max = max(fabs(lo), fabs(hi));
-            for (array_size_t j = 0; j < feat_vals[i].size(); ++j)
+            for (size_t j = 0; j < feat_vals[i].size(); ++j)
               feat_vals[i][j] = Math::clamp((feat_vals[i][j] + abs_max) / (2 * abs_max), (Real)0, (Real)1);
           }
         }
@@ -1735,7 +1735,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
     }
 
     model.point_colors.resize(model.points.size());
-    for (array_size_t i = 0; i < model.points.size(); ++i)
+    for (size_t i = 0; i < model.points.size(); ++i)
     {
       model.point_colors[i] = featToColor(feat_vals[0][i],
                                           (feat_vals.size() > 1 ? &feat_vals[1][i] : NULL),
@@ -1776,7 +1776,7 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     mesh.addColors();
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
-    for (array_size_t i = 0; i < tris.size(); i += 3)
+    for (size_t i = 0; i < tris.size(); i += 3)
     {
       mesh.setColor((long)tris[i    ], color);
       mesh.setColor((long)tris[i + 1], color);
@@ -1784,7 +1784,7 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
-    for (array_size_t i = 0; i < quads.size(); i += 4)
+    for (size_t i = 0; i < quads.size(); i += 4)
     {
       mesh.setColor((long)quads[i    ], color);
       mesh.setColor((long)quads[i + 1], color);
@@ -1932,7 +1932,7 @@ class FarthestPoint
     bool operator()(Mesh const & mesh)
     {
       Mesh::VertexArray const & vertices = mesh.getVertices();
-      for (array_size_t i = 0; i < vertices.size(); ++i)
+      for (size_t i = 0; i < vertices.size(); ++i)
       {
         Real sqdist = (transform * vertices[i] - center).squaredLength();
         if (sqdist > max_sqdist)
@@ -1958,7 +1958,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
 
   if (model.is_point_cloud)
   {
-    for (array_size_t i = 0; i < model.points.size(); ++i)
+    for (size_t i = 0; i < model.points.size(); ++i)
     {
       sum_x += model.points[i][0];
       sum_y += model.points[i][1];
@@ -1972,7 +1972,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
     tris.add(const_cast<MG &>(model.mesh_group));
 
     MeshTriangles<Mesh>::TriangleArray const & tri_array = tris.getTriangles();
-    for (array_size_t i = 0; i < tri_array.size(); ++i)
+    for (size_t i = 0; i < tri_array.size(); ++i)
     {
       Vector3 c = tri_array[i].getCentroid();
       Real area = tri_array[i].getArea();
@@ -1998,7 +1998,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
   Real radius = 0;
   if (model.is_point_cloud)
   {
-    for (array_size_t i = 0; i < model.points.size(); ++i)
+    for (size_t i = 0; i < model.points.size(); ++i)
     {
       Real sqdist = (transform * model.points[i] - center).squaredLength();
       if (i == 0 || sqdist > radius)
@@ -2284,7 +2284,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     render_system->setPointSize(point_size * antialiasing_level);
     render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
 
-      for (array_size_t i = 0; i < model.points.size(); ++i)
+      for (size_t i = 0; i < model.points.size(); ++i)
       {
         if (color_by_id)
           render_system->setColor(indexToColor((uint32)i, true));

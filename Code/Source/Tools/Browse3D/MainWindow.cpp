@@ -319,7 +319,7 @@ MainWindow::init()
 
     // Load overlays
     overlays.clear();
-    for (array_size_t i = 0; i < app().options().overlays.size(); ++i)
+    for (size_t i = 0; i < app().options().overlays.size(); ++i)
     {
       Model * overlay = new Model;
       loaded = overlay->load(app().options().overlays[i]);
@@ -433,7 +433,7 @@ long
 fileIndex(TheaArray<std::string> const & files, std::string const & file, TheaArray<std::string> const * patterns = NULL)
 {
   std::string fname = FilePath::objectName(file);
-  for (array_size_t i = 0; i < files.size(); ++i)
+  for (size_t i = 0; i < files.size(); ++i)
     if (fname == FilePath::objectName(files[i]))
       return (long)i;
 
@@ -561,7 +561,7 @@ MainWindow::loadNextFeatures(wxEvent & event)
 void
 MainWindow::clearOverlays()
 {
-  for (array_size_t i = 0; i < overlays.size(); ++i)
+  for (size_t i = 0; i < overlays.size(); ++i)
     delete overlays[i];
 
   overlays.clear();
@@ -587,7 +587,7 @@ MainWindow::syncSamples(wxEvent & event)
 {
   TheaArray<Model::Sample> const & samples = model->getSamples();
   wxArrayString labels;
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     THEA_CONSOLE << "Adding sample with label " << samples[i].label;
     labels.Add(samples[i].label);
@@ -661,7 +661,7 @@ MainWindow::syncSegments(wxEvent & event)
 {
   TheaArray<Segment> const & segments = model->getSegments();
   wxArrayString labels;
-  for (array_size_t i = 0; i < segments.size(); ++i)
+  for (size_t i = 0; i < segments.size(); ++i)
   {
     THEA_CONSOLE << "Adding segment with label " << segments[i].getLabel();
     labels.Add(segments[i].getLabel());

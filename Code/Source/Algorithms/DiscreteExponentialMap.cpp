@@ -79,7 +79,7 @@ class Impl
     {
       clear();
 
-      SurfaceSample * origin_sample = const_cast<SurfaceSample *>(&sample_graph.getSamples()[(array_size_t)origin_index_]);
+      SurfaceSample * origin_sample = const_cast<SurfaceSample *>(&sample_graph.getSamples()[(size_t)origin_index_]);
       origin = origin_sample->getPosition();
       u_axis = u_axis_.unit();  // renormalize to be safe
       v_axis = v_axis_.unit();

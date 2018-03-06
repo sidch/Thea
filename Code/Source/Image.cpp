@@ -310,7 +310,7 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
   /* input stream?)  */                                                                                                       \
-  TheaArray<uint8> img_block((array_size_t)size);                                                                             \
+  TheaArray<uint8> img_block((size_t)size);                                                                             \
   input.readBytes((int64)size, &img_block[0]);                                                                                \
                                                                                                                               \
   /* Decode the image */                                                                                                      \
@@ -442,7 +442,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   if (width > 0 && height > 0 && depth > 0 && bpp > 0)
   {
     int bytes_pp = bpp / 8;
-    TheaArray<uint8> row_buf((array_size_t)stream_scan_width, 0);
+    TheaArray<uint8> row_buf((size_t)stream_scan_width, 0);
     for (int i = 0; i < depth; ++i)
       for (int j = 0; j < height; ++j)
       {
@@ -558,7 +558,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
     return;
 
   int bytes_pp = bpp / 8;
-  TheaArray<uint8> row_buf((array_size_t)stream_scan_width);
+  TheaArray<uint8> row_buf((size_t)stream_scan_width);
   for (int i = 0; i < depth; ++i)
     for (int j = 0; j < height; ++j)
     {
@@ -783,7 +783,7 @@ Image::resize(Type type_, int width_, int height_, int depth_)
 
     int scan_width = ImageInternal::scanWidth(width_, type_.getBitsPerPixel(), (int)ROW_ALIGNMENT);
     int64 buf_size = scan_width * height_ * depth_;
-    data.resize((array_size_t)buf_size);
+    data.resize((size_t)buf_size);
   }
 
   type = type_;
@@ -1033,7 +1033,7 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
 
   // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
   // stream?)
-  TheaArray<uint8> img_block((array_size_t)size);
+  TheaArray<uint8> img_block((size_t)size);
   input.readBytes((int64)size, &img_block[0]);
 
   ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, &img_block[0]);

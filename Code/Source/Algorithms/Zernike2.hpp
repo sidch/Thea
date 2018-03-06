@@ -238,7 +238,7 @@ Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, doubl
 
   if (count > 0)
   {
-    for (array_size_t i = 0; i < moments.size(); ++i)
+    for (size_t i = 0; i < moments.size(); ++i)
       moments[i] /= (ScalarT)count;
   }
 

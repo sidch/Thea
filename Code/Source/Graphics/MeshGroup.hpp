@@ -542,7 +542,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       long codec_index = 0;
       while ((codec = getDefaultCodec(codec_index++)))
       {
-        for (array_size_t j = 0; j < codec->getExtensions().size(); ++j)
+        for (size_t j = 0; j < codec->getExtensions().size(); ++j)
           if (endsWith(path, '.' + codec->getExtensions()[j]))
             return codec;
       }
@@ -571,13 +571,13 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     static MeshCodec<Mesh> const * codecFromPath(std::string path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs)
     {
       path = toLower(path);
-      for (array_size_t i = 0; i < codecs.size(); ++i)
+      for (size_t i = 0; i < codecs.size(); ++i)
       {
         MeshCodec<Mesh> const * codec = codecs[i].get();
         if (!codec)
           continue;
 
-        for (array_size_t j = 0; j < codec->getExtensions().size(); ++j)
+        for (size_t j = 0; j < codec->getExtensions().size(); ++j)
           if (endsWith(path, '.' + codec->getExtensions()[j]))
             return codec;
       }

@@ -103,14 +103,14 @@ class THEA_API BagOfWords : public Serializable
     void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = NULL) const
     {
       long num_points = points.numRows();
-      TheaArray<long> labeling((array_size_t)num_points);
+      TheaArray<long> labeling((size_t)num_points);
       vocabulary.mapToClusters(points, &labeling[0]);
 
       long num_words = numWords();
       for (long i = 0; i < num_words; ++i)
         histogram[i] = 0;
 
-      for (array_size_t i = 0; i < labeling.size(); ++i)
+      for (size_t i = 0; i < labeling.size(); ++i)
       {
         if (labeling[i] >= 0)
           histogram[labeling[i]] += static_cast<U>(point_weights ? point_weights[i] : 1);

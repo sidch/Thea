@@ -253,11 +253,11 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         fix_first_and_last = false;
       }
 
-      array_size_t num_ctrls = (array_size_t)this->numControls();
-      array_size_t num_fixed = (fix_first_and_last ? 2 : 0);
-      array_size_t fixed_offset = (fix_first_and_last ? 1 : 0);
-      array_size_t num_unknown_ctrls = num_ctrls - num_fixed;
-      array_size_t num_unknowns = (array_size_t)(N * num_unknown_ctrls);
+      size_t num_ctrls = (size_t)this->numControls();
+      size_t num_fixed = (fix_first_and_last ? 2 : 0);
+      size_t fixed_offset = (fix_first_and_last ? 1 : 0);
+      size_t num_unknown_ctrls = num_ctrls - num_fixed;
+      size_t num_unknowns = (size_t)(N * num_unknown_ctrls);
 
       LinearLeastSquares llsq((long)num_unknowns);
       TheaArray<double> basis;
@@ -277,7 +277,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       }
 
       // Try to make each point in the sequence match the point on the curve with the corresponding parameters
-      array_size_t i = 0;
+      size_t i = 0;
       for (InputIterator pi = begin; pi != end; ++pi, ++i)
       {
         getBasisFunctions(u[i], basis);
@@ -291,7 +291,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         // One scalar objective for each dimension
         for (long j = 0; j < N; ++j)
         {
-          array_size_t offset = (array_size_t)j * num_unknown_ctrls;
+          size_t offset = (size_t)j * num_unknown_ctrls;
           fastCopy(&basis[0] + fixed_offset, &basis[0] + basis.size() - fixed_offset, &coeffs[0] + offset);
 
           llsq.addObjective(&coeffs[0], d[j]);
@@ -318,13 +318,13 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       TheaArray<VectorT> new_ctrls(num_unknown_ctrls);
       for (long i = 0; i < N; ++i)
       {
-        array_size_t offset = (array_size_t)(i * num_unknown_ctrls);
+        size_t offset = (size_t)(i * num_unknown_ctrls);
 
-        for (array_size_t j = 0; j < num_unknown_ctrls; ++j)
+        for (size_t j = 0; j < num_unknown_ctrls; ++j)
           new_ctrls[j][i] = static_cast<T>(sol[offset + j]);
       }
 
-      for (array_size_t i = 0; i < num_unknown_ctrls; ++i)
+      for (size_t i = 0; i < num_unknown_ctrls; ++i)
         setControl((long)(i + fixed_offset), new_ctrls[i]);
 
       if (fix_first_and_last) setControl((long)num_ctrls - 1, last_pos);
@@ -349,7 +349,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         return false;
       }
 
-      array_size_t i = 0;
+      size_t i = 0;
       for (InputIterator pi = begin; pi != end; ++pi, ++i)
       {
         // Target point

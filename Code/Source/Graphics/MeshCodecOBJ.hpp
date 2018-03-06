@@ -61,8 +61,8 @@ namespace CodecOBJInternal {
 class VTN
 {
   public:
-    array_size_t operator[](std::size_t i) const { return elems[i]; }
-    array_size_t & operator[](std::size_t i) { return elems[i]; }
+    size_t operator[](std::size_t i) const { return elems[i]; }
+    size_t & operator[](std::size_t i) { return elems[i]; }
 
     bool operator==(VTN const & rhs) const
     {
@@ -75,7 +75,7 @@ class VTN
     }
 
   private:
-    array_size_t elems[3];
+    size_t elems[3];
 };
 
 template <typename MeshT, typename Enable = void>
@@ -268,7 +268,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         if (encoding_size <= 0)
           return;
 
-        enc_block.resize((array_size_t)encoding_size);
+        enc_block.resize((size_t)encoding_size);
         input.readBytes((int64)encoding_size, &enc_block[0]);
 
         tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
@@ -444,7 +444,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               typename IndexVertexMap::const_iterator existing = vrefs.find(index);
               if (existing == vrefs.end())
               {
-                typename Builder::VertexHandle vref = builder->addVertex(vertices[(array_size_t)index],
+                typename Builder::VertexHandle vref = builder->addVertex(vertices[(size_t)index],
                                                                          (read_opts.store_vertex_indices ? index : -1));
                 if (callback)
                   callback->vertexRead(mesh.get(), index, vref);
@@ -600,7 +600,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
       long vertex_index = (long)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
 
-      for (array_size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
+      for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
         Vector3 const & v = vertices[i];
         writeString(format("v %f %f %f\n", v.x(), v.y(), v.z()), output);
@@ -614,7 +614,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         alwaysAssertM(texcoords.size() == vertices.size(),
                       std::string(getName()) + ": Mesh has unequal numbers of vertices and texture coordinates");
 
-        for (array_size_t i = 0; i < texcoords.size(); ++i)
+        for (size_t i = 0; i < texcoords.size(); ++i)
         {
           Vector2 const & t = texcoords[i];
           writeString(format("vt %f %f\n", t.x(), t.y()), output);
@@ -627,7 +627,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         alwaysAssertM(normals.size() == vertices.size(),
                       std::string(getName()) + ": Mesh has unequal numbers of vertices and normals");
 
-        for (array_size_t i = 0; i < normals.size(); ++i)
+        for (size_t i = 0; i < normals.size(); ++i)
         {
           Vector3 const & n = normals[i];
           writeString(format("vn %f %f %f\n", n.x(), n.y(), n.z()), output);
@@ -745,13 +745,13 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
         typename Mesh::IndexArray const & indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
-        array_size_t degree = (type == 0 ? 3 : 4);
+        size_t degree = (type == 0 ? 3 : 4);
 
-        for (array_size_t i = 0; i < indices.size(); i += degree)
+        for (size_t i = 0; i < indices.size(); i += degree)
         {
           std::ostringstream os; os << 'f';
 
-          for (array_size_t j = 0; j < degree; ++j)
+          for (size_t j = 0; j < degree; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
             alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");

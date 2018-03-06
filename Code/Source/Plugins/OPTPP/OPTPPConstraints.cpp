@@ -87,11 +87,11 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
       TheaArray<T>  const & val   =  srm.getValues();
 
       dst = 0;  // set all entries to zero
-      for (array_size_t r = 0; r < (array_size_t)srm.numRows(); ++r)
+      for (size_t r = 0; r < (size_t)srm.numRows(); ++r)
         for (I1 i = irow[r]; i < irow[r + 1]; ++i)
         {
-          int col = (int)icol[(array_size_t)i];
-          dst(r, col) = static_cast<NEWMAT::Real>(val[(array_size_t)i]);
+          int col = (int)icol[(size_t)i];
+          dst(r, col) = static_cast<NEWMAT::Real>(val[(size_t)i]);
         }
 
       break;
@@ -105,11 +105,11 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
       TheaArray<T>  const & val   =  scm.getValues();
 
       dst = 0;  // set all entries to zero
-      for (array_size_t c = 0; c < (array_size_t)scm.numColumns(); ++c)
+      for (size_t c = 0; c < (size_t)scm.numColumns(); ++c)
         for (I1 i = icol[c]; i < icol[c + 1]; ++i)
         {
-          int row = (int)irow[(array_size_t)i];
-          dst(row, c) = static_cast<NEWMAT::Real>(val[(array_size_t)i]);
+          int row = (int)irow[(size_t)i];
+          dst(row, c) = static_cast<NEWMAT::Real>(val[(size_t)i]);
         }
 
       break;
@@ -125,7 +125,7 @@ void
 toNEWMATColumnVector(TheaArray<T> const & src, NEWMAT::ColumnVector & dst)
 {
   dst.ReSize((int)src.size());
-  for (array_size_t i = 0; i < src.size(); ++i)
+  for (size_t i = 0; i < src.size(); ++i)
     dst((int)i) = static_cast<NEWMAT::Real>(src[i]);
 }
 

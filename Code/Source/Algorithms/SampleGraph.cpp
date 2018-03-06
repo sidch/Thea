@@ -60,12 +60,12 @@ updateNeighborPointers(SampleGraph::SampleArray & samples, SampleGraph::SampleAr
   alwaysAssertM(samples.size() == src_samples.size(),
                 "SampleGraph: Can't update sample neighbor pointers from source array of different size");
 
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     SurfaceSample::NeighborSet & nbrs = samples[i].getNeighbors();
     for (int j = 0; j < nbrs.size(); ++j)
     {
-      array_size_t index = nbrs[j].getSample() - &src_samples[0];  // take advantage of array storage (this is NOT getIndex())
+      size_t index = nbrs[j].getSample() - &src_samples[0];  // take advantage of array storage (this is NOT getIndex())
       debugAssertM(index >= 0 && index < samples.size(), "SampleGraph: Can't get array index of neighboring sample");
 
       // Again, because of array storage, this should not break the relative ordering of neighbors with equal separation, since
@@ -182,14 +182,14 @@ SampleGraph::extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs
   ShortestPaths<SamplePointerGraph> shortest_paths;
 
   TheaArray<SurfaceSample> samples_with_new_nbrs(samples.size());
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     samples_with_new_nbrs[i] = samples[i];
     DijkstraCallback callback(&samples_with_new_nbrs[i], (long)samples.size(), options.max_degree);
     shortest_paths.dijkstraWithCallback(graph, &samples[i], &callback);
   }
 
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
     samples[i].getNeighbors() = samples_with_new_nbrs[i].getNeighbors();
 }
 
@@ -259,9 +259,9 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     return false;
   }
 
-  TheaArray<SurfaceSample::Neighbor> nbrs((array_size_t)options.max_degree);
+  TheaArray<SurfaceSample::Neighbor> nbrs((size_t)options.max_degree);
   long num_nbrs, nbr_index;
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     if (!std::getline(gin, line))
     {
@@ -285,15 +285,15 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
         return false;
       }
 
-      SurfaceSample * nbr_sample = &samples[(array_size_t)nbr_index];
-      nbrs[(array_size_t)j] = SurfaceSample::Neighbor(nbr_sample, -1);
+      SurfaceSample * nbr_sample = &samples[(size_t)nbr_index];
+      nbrs[(size_t)j] = SurfaceSample::Neighbor(nbr_sample, -1);
     }
 
     // Check if precomputed separations exist, else compute separations as Euclidean distances
     Real nbr_sep;
     if (line_in >> nbr_sep)
     {
-      for (array_size_t j = 0; j < nbrs.size(); ++j)
+      for (size_t j = 0; j < nbrs.size(); ++j)
       {
         if (j > 0)
         {
@@ -310,7 +310,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     }
     else
     {
-      for (array_size_t j = 0; j < nbrs.size(); ++j)
+      for (size_t j = 0; j < nbrs.size(); ++j)
       {
         nbr_sep = (samples[i].getPosition() - nbrs[j].getSample()->getPosition()).length();
         nbrs[j].setSeparation(nbr_sep);
@@ -318,7 +318,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     }
 
     samples[i].getNeighbors().setCapacity(options.max_degree);
-    for (array_size_t j = 0; j < nbrs.size(); ++j)
+    for (size_t j = 0; j < nbrs.size(); ++j)
       samples[i].getNeighbors().insert(nbrs[j]);
   }
 
@@ -341,7 +341,7 @@ SampleGraph::save(std::string const & graph_path, std::string const & samples_pa
 
   gout << options.max_degree << '\n';
 
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
   {
     SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
     gout << nbrs.size();
@@ -368,7 +368,7 @@ SampleGraph::save(std::string const & graph_path, std::string const & samples_pa
       return false;
     }
 
-    for (array_size_t i = 0; i < samples.size(); ++i)
+    for (size_t i = 0; i < samples.size(); ++i)
     {
       Vector3 const & p = samples[i].getPosition();
       sout << p[0] << ' ' << p[1] << ' ' << p[2];

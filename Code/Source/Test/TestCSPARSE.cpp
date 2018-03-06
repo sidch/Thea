@@ -81,7 +81,7 @@ testCSPARSE(int argc, char * argv[])
     cout << "Solution:" << endl;
 
     TheaArray<double> const & sols = ls->getSolution();
-    for (array_size_t i = 0; i < sols.size(); ++i)
+    for (size_t i = 0; i < sols.size(); ++i)
     {
       printf("  x[%ld] = %g (expected %g)\n", (long)i, sols[i], expected[i]);
 

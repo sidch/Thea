@@ -237,7 +237,7 @@ main(int argc, char * argv[])
   TheaArray<Vector3> face_normals(pts.size());
   TheaArray<Vector3> smooth_normals(pts.size());
 
-  for (array_size_t i = 0; i < pts.size(); ++i)
+  for (size_t i = 0; i < pts.size(); ++i)
   {
     Vector3 cp(0);
     long elem = kdtree.closestElement<MetricL2>(pts[i], -1, NULL, &cp);
@@ -247,8 +247,8 @@ main(int argc, char * argv[])
       return -1;
     }
 
-    Vector3 cn = kdtree.getElements()[(array_size_t)elem].getNormal();
-    Vector3 csn = smoothNormal(kdtree.getElements()[(array_size_t)elem], cp);
+    Vector3 cn = kdtree.getElements()[(size_t)elem].getNormal();
+    Vector3 csn = smoothNormal(kdtree.getElements()[(size_t)elem], cp);
 
     positions[i] = cp;
     face_normals[i] = cn;
@@ -306,7 +306,7 @@ main(int argc, char * argv[])
 
       alwaysAssertM(values.size() == positions.size(), "Number of average distances doesn't match number of points");
 
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
     //=========================================================================================================================
@@ -363,7 +363,7 @@ main(int argc, char * argv[])
       alwaysAssertM(positions.empty() || values.numColumns() == num_bins,
                     "Number of distance histogram bins doesn't match input parameter");
 
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
       {
         double const * row_start = &values((long)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_bins);
@@ -375,7 +375,7 @@ main(int argc, char * argv[])
     else if (beginsWith(feat, "--pca"))
     {
       enum { PCA_DEFAULT, PCA_FULL, PCA_RATIO } pca_type = PCA_DEFAULT;
-      array_size_t num_pca_features = 3;
+      size_t num_pca_features = 3;
 
       string opts;
       if (beginsWith(feat, "--pca-full"))
@@ -423,11 +423,11 @@ main(int argc, char * argv[])
       alwaysAssertM(values.size() == num_pca_features * positions.size(),
                     "Number of PCA feature vectors doesn't match number of points");
 
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
       {
-        array_size_t base = num_pca_features * j;
+        size_t base = num_pca_features * j;
 
-        for (array_size_t k = 0; k < num_pca_features; ++k)
+        for (size_t k = 0; k < num_pca_features; ++k)
           features[j].push_back(values[base + k]);
       }
     }
@@ -457,7 +457,7 @@ main(int argc, char * argv[])
 
       alwaysAssertM(values.size() == positions.size(), "Number of projected curvatures doesn't match number of points");
 
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
     //=========================================================================================================================
@@ -471,7 +471,7 @@ main(int argc, char * argv[])
 
       alwaysAssertM(values.size() == positions.size(), "Number of SDF values doesn't match number of points");
 
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
         features[j].push_back(values[j]);
     }
     //=========================================================================================================================
@@ -506,7 +506,7 @@ main(int argc, char * argv[])
                     "Number of spin image bins doesn't match input parameter");
 
       long num_features = num_radial_bins * num_height_bins;
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
       {
         double const * row_start = &values((long)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_features);
@@ -550,7 +550,7 @@ main(int argc, char * argv[])
                     "Length of random walk descriptor != 3 * number of steps");
 
       long num_features = values.numColumns();
-      for (array_size_t j = 0; j < positions.size(); ++j)
+      for (size_t j = 0; j < positions.size(); ++j)
       {
         double const * row_start = &values((long)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_features);
@@ -568,7 +568,7 @@ main(int argc, char * argv[])
   }
 
   ostringstream feat_str;
-  for (array_size_t i = 0; i < feat_names.size(); ++i)
+  for (size_t i = 0; i < feat_names.size(); ++i)
   {
     if (i > 0) feat_str << ", ";
     feat_str << feat_names[i];
@@ -589,13 +589,13 @@ main(int argc, char * argv[])
     out.writeInt64((int64)features.size());
     out.writeInt64((int64)(features.empty() ? 0 : features[0].size()));
 
-    for (array_size_t i = 0; i < features.size(); ++i)
+    for (size_t i = 0; i < features.size(); ++i)
     {
       out.writeFloat32(pts[i][0]);
       out.writeFloat32(pts[i][1]);
       out.writeFloat32(pts[i][2]);
 
-      for (array_size_t j = 0; j < features[i].size(); ++j)
+      for (size_t j = 0; j < features[i].size(); ++j)
       {
         double f = features[i][j];
 
@@ -616,11 +616,11 @@ main(int argc, char * argv[])
       return -1;
     }
 
-    for (array_size_t i = 0; i < features.size(); ++i)
+    for (size_t i = 0; i < features.size(); ++i)
     {
       out << pts[i][0] << ' ' << pts[i][1] << ' ' << pts[i][2];
 
-      for (array_size_t j = 0; j < features[i].size(); ++j)
+      for (size_t j = 0; j < features[i].size(); ++j)
       {
         double f = features[i][j];
 
@@ -695,7 +695,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
       Vector3 centroid = CentroidN<Vector3, 3>::compute(samples.begin(), samples.end());
 
       double sum_dists = 0;
-      for (array_size_t i = 0; i < samples.size(); ++i)
+      for (size_t i = 0; i < samples.size(); ++i)
         sum_dists += (samples[i] - centroid).length();
 
       return (3.0 * sum_dists) / samples.size();  // 3 instead of 2 since the avg is in general smaller than the max
@@ -720,7 +720,7 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
   MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree, (Real)mesh_scale);
   double scaling = (normalize_by_mesh_scale ? 1 : mesh_scale);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     double v0 = sdf.compute(positions[i], normals[i], true);
     if (v0 < 0)
@@ -753,7 +753,7 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
   values.resize(positions.size());
   MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i], (Real)nbd_radius);
 
   THEA_CONSOLE << "  -- done";
@@ -770,7 +770,7 @@ computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, lon
   values.resize(positions.size());
   MeshFeatures::Local::AverageDistance<> avgd(mg, num_samples, (Real)mesh_scale);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     values[i] = avgd.compute(positions[i], dist_type, (Real)max_distance);
 
   THEA_CONSOLE << "  -- done";
@@ -794,7 +794,7 @@ computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positio
   values.resize((long)positions.size(), num_bins);
   MeshFeatures::Local::LocalDistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     Histogram histogram(num_bins, &values((long)i, 0));
     dh.compute(positions[i], histogram, dist_type, (Real)max_distance, (Real)reduction_ratio);
@@ -816,7 +816,7 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_sa
   MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
 
   Vector3 evecs[3];
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     Vector3 evals = pca.compute(positions[i], evecs, (Real)nbd_radius);
     if (normalize_by_mesh_scale)
@@ -828,8 +828,8 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_sa
 
     if (pca_full)
     {
-      for (array_size_t j = 0; j < 3; ++j)
-        for (array_size_t k = 0; k < 3; ++k)
+      for (size_t j = 0; j < 3; ++j)
+        for (size_t k = 0; k < 3; ++k)
           values.push_back(evecs[j][k]);
     }
   }
@@ -848,7 +848,7 @@ computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long 
   values.clear();
   MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     Vector3 evals = pca.compute(positions[i], NULL, (Real)nbd_radius);
     if (evals[0] > 0)
@@ -880,7 +880,7 @@ computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_
   MeshFeatures::Local::SpinImage<> spin_image(mg, num_samples, (Real)mesh_scale);
 
   Matrix<double> f;
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
   {
     spin_image.compute(positions[i], num_radial_bins, num_height_bins, f);
     int j = 0;
@@ -900,10 +900,10 @@ computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num
 {
   THEA_CONSOLE << "Computing random walks";
 
-  values.resize((long)positions.size(), 3 * (array_size_t)num_steps);
+  values.resize((long)positions.size(), 3 * (size_t)num_steps);
   MeshFeatures::Local::RandomWalks<> rw(mg, num_samples);
 
-  for (array_size_t i = 0; i < positions.size(); ++i)
+  for (size_t i = 0; i < positions.size(); ++i)
     rw.compute(positions[i], num_steps, &values((long)i, 0), num_walks);
 
   THEA_CONSOLE << "  -- done";

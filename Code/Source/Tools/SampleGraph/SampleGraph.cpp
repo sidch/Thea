@@ -172,7 +172,7 @@ main(int argc, char * argv[])
     ShortestPaths<SampleGraph> shortest_paths;
 
     distance_callback.m(0, 0) = 0;
-    for (array_size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
+    for (size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
     {
       distance_callback.current_source = (long)i;
       shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]), &distance_callback);
@@ -242,7 +242,7 @@ main(int argc, char * argv[])
       // Make sure the mesh is properly scaled
       AxisAlignedBox3 mesh_bounds = mg.getBounds();
       AxisAlignedBox3 samples_bounds;
-      for (array_size_t i = 0; i < sample_positions.size(); ++i)
+      for (size_t i = 0; i < sample_positions.size(); ++i)
         samples_bounds.merge(sample_positions[i]);
 
       Real scale_error = (mesh_bounds.getLow()  - samples_bounds.getLow()).length()
@@ -272,7 +272,7 @@ main(int argc, char * argv[])
       {
         sample_normals.resize(sample_positions.size());
 
-        for (array_size_t i = 0; i < sample_positions.size(); ++i)
+        for (size_t i = 0; i < sample_positions.size(); ++i)
         {
           long elem = kdtree.closestElement<MetricL2>(sample_positions[i]);
           if (elem < 0)
@@ -281,7 +281,7 @@ main(int argc, char * argv[])
             return -1;
           }
 
-          sample_normals[i] = kdtree.getElements()[(array_size_t)elem].getNormal();
+          sample_normals[i] = kdtree.getElements()[(size_t)elem].getNormal();
         }
 
         has_normals = true;
@@ -341,7 +341,7 @@ main(int argc, char * argv[])
 
   double sum_degrees = 0;
   SampleGraph::SampleArray const & samples = graph.getSamples();
-  for (array_size_t i = 0; i < samples.size(); ++i)
+  for (size_t i = 0; i < samples.size(); ++i)
     sum_degrees += samples[i].getNeighbors().size();
 
   THEA_CONSOLE << "Wrote sample graph of average degree " << sum_degrees / samples.size() << " to " << out_path;

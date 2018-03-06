@@ -40,7 +40,7 @@ zernike(ImageMatrix<T> const & m)
   zernike.compute(m, 0.5 * (m.numColumns() - 1), 0.5 * (m.numRows() - 1),
                   0.5 * sqrt(Math::square(m.numColumns()) + Math::square(m.numRows())), moments);
 
-  for (array_size_t i = 0; i < moments.size(); ++i)
+  for (size_t i = 0; i < moments.size(); ++i)
   {
     cout << "Moment magnitude [" << i << "] = " << mag(moments[i]) << endl;
   }
