@@ -78,7 +78,7 @@ GLTexture::toGLCubeMapFace(Texture::Face face)
 static void
 GLTexture__setDefaultUnpackingOptions(int row_alignment)
 {
-  debugAssertM(row_alignment >= 0, "GLTexture: Row alignment cannot be negative");
+  debugAssertM(row_alignment >= 1, "GLTexture: Row alignment must be positive");
 
   // GL's default values for everything except alignment
   glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
@@ -92,7 +92,7 @@ GLTexture__setDefaultUnpackingOptions(int row_alignment)
 static void
 GLTexture__setDefaultPackingOptions(int row_alignment)
 {
-  debugAssertM(row_alignment >= 0, "GLTexture: Row alignment cannot be negative");
+  debugAssertM(row_alignment >= 1, "GLTexture: Row alignment must be positive");
 
   // GL's default values for everything except alignment
   glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
