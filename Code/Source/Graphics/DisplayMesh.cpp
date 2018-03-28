@@ -214,7 +214,7 @@ DisplayMesh::addTriangle(long vi0, long vi1, long vi2, long source_face_index)
             && vi1 < (long)vertices.size()
             && vi2 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
-  alwaysAssertM((source_face_index >= 0 && tri_source_face_indices.size() == tris.size())
+  alwaysAssertM((source_face_index >= 0 && 3 * tri_source_face_indices.size() == tris.size())
              || (source_face_index < 0 && tri_source_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
@@ -241,7 +241,7 @@ DisplayMesh::addQuad(long vi0, long vi1, long vi2, long vi3, long source_face_in
             && vi2 < (long)vertices.size()
             && vi3 < (long)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
-  alwaysAssertM((source_face_index >= 0 && quad_source_face_indices.size() == quads.size())
+  alwaysAssertM((source_face_index >= 0 && 4 * quad_source_face_indices.size() == quads.size())
              || (source_face_index < 0 && quad_source_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no quad face source indices");
 
@@ -289,30 +289,24 @@ DisplayMesh::addFace(int num_vertices, long const * face_vertex_indices_, long s
   }
 
   long num_tris = poly.triangulate(triangulated_indices);
-
-//   if ((long)triangulated_indices.size() != 3 * (num_vertices - 2))
-//   {
-//     THEA_ERROR << getName() << ": Triangulation of polygonal face with " << num_vertices << " vertices yielded "
-//                << triangulated_indices.size() / 3.0f << " triangles, whereas " << num_vertices - 2 << " were expected";
-//
-//     for (int i = 0; i < num_vertices; ++i)
-//       THEA_CONSOLE << "v[" << i << "] = " << vertices[face_vertex_indices_[i]];
-//
-//     throw FatalError("Triangulation error");
-//   }
-
   if (num_tris <= 0)
     return Face();
 
-  alwaysAssertM((source_face_index >= 0 && tri_source_face_indices.size() == tris.size())
+  // debugAssertM(num_tris == 3 * (num_vertices - 2),
+  //              getName() + format(": Triangulation of polygonal face yielded %l triangles, whereas %l were expected",
+  //                                 num_tris, num_vertices - 2));
+
+  alwaysAssertM((source_face_index >= 0 && 3 * tri_source_face_indices.size() == tris.size())
              || (source_face_index < 0 && tri_source_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
   long starting_index = numTriangles();
-
-  for (size_t i = 0; i < triangulated_indices.size(); ++i)
+  size_t num_tri_verts = (size_t)(3 * num_tris);
+  for (size_t i = 0; i < num_tri_verts; i += 3)
   {
-    tris.push_back((uint32)triangulated_indices[i]);
+    tris.push_back((uint32)triangulated_indices[i    ]);
+    tris.push_back((uint32)triangulated_indices[i + 1]);
+    tris.push_back((uint32)triangulated_indices[i + 2]);
     if (source_face_index >= 0) tri_source_face_indices.push_back(source_face_index);
   }
 
