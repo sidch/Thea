@@ -83,13 +83,16 @@ class /* THEA_API */ VectorN<2, T> : public Internal::VectorNBase<2, T>
       (*this)[1] = y_;
     }
 
+    /** Get a vector of the same length but perpendicular to this one, forming a right-handed basis (u, this). */
+    VectorN getOrthogonalVector() const { return VectorN(y(), -x()); }
+
     /**
      * Get a unit vector perpendicular to this one, forming an orthonormal right-handed basis (u, this->unit()). In other words,
      * if this is the Y axis of the local frame, then the function returns the X axis.
      *
      * In 2D, the behavior of this function is identical to createOrthonormalBasis().
      */
-    VectorN getOrthogonalDirection() const { return VectorN(y(), -x()); }
+    VectorN getOrthogonalDirection() const { return getOrthogonalVector().unit(); }
 
     /**
      * Get a unit vector perpendicular to this one, forming an orthonormal right-handed basis (u, this->unit()). In other words,
