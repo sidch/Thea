@@ -212,6 +212,16 @@ class /* THEA_DLL_LOCAL */ VectorNBase
       return !(rhs > *this);
     }
 
+    /** Per-element absolute value. */
+    VectorT abs() const
+    {
+      VectorT result;
+      for (long i = 0; i < N; ++i)
+        result[i] = std::abs(values[i]);
+
+      return result;
+    }
+
     /** Negation. */
     VectorT operator-() const
     {
