@@ -67,7 +67,7 @@ namespace Thea {
  * This class contains code for fitting the curve to a sequence of points, extending the code from
  * "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, <i>%Graphics Gems</i>, Academic Press, 1990.
  */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
 {
   private:

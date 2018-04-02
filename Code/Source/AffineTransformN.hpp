@@ -196,7 +196,7 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
 } // namespace Internal
 
 /** An affine transform in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N, T>
 {
   private:

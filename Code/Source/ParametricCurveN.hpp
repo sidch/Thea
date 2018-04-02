@@ -53,7 +53,7 @@
 namespace Thea {
 
 /** A parametric curve segment in N-dimensional space. */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ ParametricCurveN
 {
   public:

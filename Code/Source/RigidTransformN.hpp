@@ -167,7 +167,7 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
  * @note While this is technically an affine transform, it restricts enough functionality to make a separate implementation
  * preferable. It can be trivially converted to an AffineTransformN using the implicit conversion operator or toAffine().
  */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ RigidTransformN : public Internal::RigidTransformNBase<N, T>
 {
   private:

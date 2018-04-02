@@ -233,7 +233,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
 } // namespace Internal
 
 /** A hyperplane ((N - 1)-flat) in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ HyperplaneN : public Internal::HyperplaneNBase<N, T>
 {
   public:

@@ -65,7 +65,7 @@ namespace Thea {
  *
  * This implementation uses code from Dave Eberly's Geometric Tools library.
  */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ BezierN : public SplineN<N, T>
 {
   private:

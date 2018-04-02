@@ -45,6 +45,7 @@
 #include "Common.hpp"
 #include "Algorithms/FastCopy.hpp"
 #include "AddressableMatrix.hpp"
+#include "Math.hpp"
 #include "MatrixInvert.hpp"
 #include "VectorN.hpp"
 #include <algorithm>
@@ -366,6 +367,17 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
       return result;
     }
 
+    /** Per-element sign (-1, 0 or 1). */
+    MatrixT sign() const
+    {
+      MatrixT result;
+      for (long i = 0; i < M; ++i)
+        for (long j = 0; j < N; ++j)
+          result.m[i][j] = Math::sign(m[i][j]);
+
+      return result;
+    }
+
     /** Get a matrix containing only zeroes. */
     static MatrixT const & zero() { static MatrixT const z(static_cast<T>(0)); return z; }
 
@@ -445,7 +457,7 @@ class /* THEA_DLL_LOCAL */ SquareMatrixN : public MatrixMNBase<N, N, T>
  * Fixed-size M x N matrices, where M (rows) and N (columns) are any <b>positive</b> (non-zero) integers and T is a field. The
  * matrices are stored internally in row-major form, so row-major access is recommended.
  */
-template <long M, long N, typename T>
+template <long M, long N, typename T = Real>
 class /* THEA_API */ MatrixMN : public Internal::MatrixMNBase<M, N, T>
 {
   private:

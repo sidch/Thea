@@ -232,7 +232,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
 } // namespace Internal
 
 /** A straight line in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T>
+template <long N, typename T = Real>
 class /* THEA_API */ LineSegmentN : public Internal::LineSegmentNBase<N, T>
 {
   private:
