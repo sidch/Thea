@@ -1,10 +1,13 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
+#include "../../Algorithms/SampleGraph.hpp"
+#include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../FileSystem.hpp"
 #include "../../FilePath.hpp"
+#include "../../UnorderedMap.hpp"
 #include <cmath>
 #include <cstdio>
 #include <fstream>
@@ -38,6 +41,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << " -id       : Write the index of the face (or if -v, the vertex)";
   THEA_CONSOLE << "             from which each sample was drawn";
   THEA_CONSOLE << " -l <file> : Load face labels from file and write sample labels";
+  THEA_CONSOLE << " -i <file> : Load a set of initial point samples for the -s option";
 
   return 0;
 }
@@ -305,6 +309,115 @@ loadLabels(string const & path, MG const & mg, TheaArray<string> & labels, TheaA
     return loadLabels_FaceLabels(path, labels, face_labels);
 }
 
+struct DijkstraCallback
+{
+  DijkstraCallback() : furthest_sample(NULL) {}
+
+  bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
+  {
+    furthest_sample = vertex;  // the callback is always called in order of increasing distance
+    return false;
+  }
+
+  SampleGraph::VertexHandle furthest_sample;
+};
+
+bool
+subsampleEvenlyBySeparation(TheaArray<Vector3> const & positions, long desired_num_samples, TheaArray<long> & selected)
+{
+  selected.clear();
+  if ((long)positions.size() < desired_num_samples)
+    return (positions.empty() && desired_num_samples == 0);
+
+  // Compute proximity graph
+  SampleGraph graph;
+  graph.setSamples((long)positions.size(), &positions[0]);
+  graph.init();
+
+  std::cout << "Selecting samples: " << std::flush;
+
+  // Repeatedly add the furthest sample from the selected set to the selected set
+  ShortestPaths<SampleGraph> shortest_paths;
+  TheaUnorderedMap<SampleGraph::VertexHandle, double> src_region;
+  int prev_percent = 0;
+  for (long i = 0; i < desired_num_samples; ++i)
+  {
+    SampleGraph::VertexHandle furthest_sample = NULL;
+    if (src_region.empty())
+    {
+      // Just pick the first sample
+      furthest_sample = const_cast<SampleGraph::VertexHandle>(&graph.getSample(0));
+    }
+    else
+    {
+      DijkstraCallback callback;
+      shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region, /* include_unreachable = */ true);
+      if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
+      {
+        THEA_WARNING << "Could not return enough uniformly separated samples";
+        break;
+      }
+
+      furthest_sample = callback.furthest_sample;
+    }
+
+    if (furthest_sample)
+    {
+      selected.push_back(furthest_sample->getIndex());
+      src_region[furthest_sample] = 0;
+    }
+    else
+      break;
+
+    int curr_percent = (int)std::floor(100 * (i / (float)desired_num_samples));
+    if (curr_percent >= prev_percent + 2)
+    {
+      for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
+      {
+        if (prev_percent % 10 == 0) std::cout << prev_percent << '%' << std::flush;
+        else                        std::cout << '.' << std::flush;
+      }
+
+      prev_percent = curr_percent;
+    }
+  }
+
+  return (long)selected.size() == desired_num_samples;
+}
+
+bool
+loadSamples(string const & path, TheaArray<Vector3> & positions, TheaArray<Vector3> & normals)
+{
+  ifstream in(path.c_str());
+  if (!in)
+  {
+    THEA_ERROR << "Couldn't open pre-sampled points file '" << path << '\'';
+    return false;
+  }
+
+  positions.clear();
+  normals.clear();
+
+  string line;
+  Vector3 p, n;
+  while (getline(in, line))
+  {
+    istringstream line_in(line);
+    if (!(line_in >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2]))
+    {
+      THEA_ERROR << "Couldn't read pre-sampled point from line '" << line << '\'';
+      return false;
+    }
+
+    positions.push_back(p);
+    normals.push_back(n);
+  }
+
+  THEA_CONSOLE << "Read " << positions.size() << " pre-sampled point(s) from '" << path << '\'';
+
+  return true;
+}
+
 int
 main(int argc, char * argv[])
 {
@@ -320,6 +433,7 @@ main(int argc, char * argv[])
   bool face_samples = false;
   bool output_ids = false;
   string labels_path;
+  string presampled_path;
 
   int curr_pos_arg = 0;
   for (int i = 1; i < argc; ++i)
@@ -366,6 +480,18 @@ main(int argc, char * argv[])
         if (!FileSystem::fileExists(labels_path))
         {
           THEA_ERROR << "Labels file '" << labels_path << "' does not exist";
+          return -1;
+        }
+      }
+      else if (arg == "-i")
+      {
+        if (i >= argc - 1)
+          return usage(argc, argv);
+
+        presampled_path = argv[++i];
+        if (!FileSystem::fileExists(presampled_path))
+        {
+          THEA_ERROR << "Pre-sampled points file '" << presampled_path << "' does not exist";
           return -1;
         }
       }
@@ -438,8 +564,29 @@ main(int argc, char * argv[])
 
       if (uniformly_separated)
       {
-        sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
-                                         MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
+        if (presampled_path.empty())
+        {
+          sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
+                                           MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
+        }
+        else
+        {
+          alwaysAssertM(!need_face_ids, "Face IDs not present for pre-sampled points");
+
+          TheaArray<Vector3> orig_pos, orig_nrm;
+          if (!loadSamples(presampled_path, orig_pos, orig_nrm))
+            return -1;
+
+          TheaArray<long> selected;
+          if (!subsampleEvenlyBySeparation(positions, num_samples, selected))
+            return -1;
+
+          for (size_t i = 0; i < selected.size(); ++i)
+          {
+            positions.push_back(orig_pos[(size_t)selected[i]]);
+            normals.push_back(orig_nrm[(size_t)selected[i]]);
+          }
+        }
       }
       else
       {
