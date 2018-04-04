@@ -382,6 +382,9 @@ subsampleEvenlyBySeparation(TheaArray<Vector3> const & positions, long desired_n
     }
   }
 
+  std::cout << "done" << std::endl;
+  THEA_CONSOLE << "Selected " << selected.size() << " sample(s) uniformly by separation";
+
   return (long)selected.size() == desired_num_samples;
 }
 
@@ -578,7 +581,7 @@ main(int argc, char * argv[])
             return -1;
 
           TheaArray<long> selected;
-          if (!subsampleEvenlyBySeparation(positions, num_samples, selected))
+          if (!subsampleEvenlyBySeparation(orig_pos, num_samples, selected))
             return -1;
 
           for (size_t i = 0; i < selected.size(); ++i)
