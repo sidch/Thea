@@ -44,9 +44,8 @@
 
 #include "../Common.hpp"
 #include "../Graphics/MeshGroup.hpp"
+#include "FurthestPointSampling.hpp"
 #include "MeshTriangles.hpp"
-#include "SampleGraph.hpp"
-#include "ShortestPaths.hpp"
 #include "../Random.hpp"
 #include "../Vector3.hpp"
 #include <algorithm>
@@ -121,7 +120,7 @@ class MeshSampler
      * @param triangles If not null, used to return the mesh triangles from which the samples were selected.
      * @param count_mode If CountMode::EXACT, exactly \a desired_num_samples samples are returned. Else, approximately
      *   \a desired_num_samples samples are returned. The latter is likely to be faster.
-     * @param verbose Prints progress messages.
+     * @param verbose If true, prints progress messages.
      *
      * @return The number of samples computed.
      */
@@ -291,7 +290,7 @@ class MeshSampler
      *   \a desired_num_samples samples are returned. The latter is likely to be faster.
      * @param oversampling_factor The ratio of the number of initially selected points to the number of finally returned points.
      *   The default, selected with a negative value, is 3.
-     * @param verbose Prints progress messages.
+     * @param verbose If true, prints progress messages.
      *
      * @return The number of samples computed.
      */
@@ -338,97 +337,25 @@ class MeshSampler
                      << " sample(s)";
       }
 
-      // Compute proximity graph
-      SampleGraph graph;
-      graph.setSamples(orig_num_samples, &orig_positions[0]);
-      graph.init();
-
-      if (verbose)
+      TheaArray<long> selected((size_t)desired_num_samples);
+      if (FurthestPointSampling::subsample(orig_num_samples, &orig_positions[0], desired_num_samples, &selected[0],
+                                           DistanceType::GEODESIC, verbose) < desired_num_samples)
       {
-        THEA_CONSOLE << "MeshSampler: Computed proximity graph";
-        std::cout << "MeshSampler: Selecting samples: " << std::flush;
+        return 0;
       }
 
-      // Repeatedly add the furthest sample from the selected set to the selected set
-      ShortestPaths<SampleGraph> shortest_paths;
-      TheaUnorderedMap<SampleGraph::VertexHandle, double> src_region;
-      int prev_percent = 0;
-      for (long i = 0; i < desired_num_samples; ++i)
+      for (size_t i = 0; i < selected.size(); ++i)
       {
-        SampleGraph::VertexHandle furthest_sample = NULL;
-        if (src_region.empty())
-        {
-          // Just pick the first sample
-          furthest_sample = const_cast<SampleGraph::VertexHandle>(&graph.getSample(0));
-        }
-        else
-        {
-          DijkstraCallback callback;
-          shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region, /* include_unreachable = */ true);
-          if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
-          {
-            THEA_WARNING << "MeshSampler: Could not return enough uniformly separated samples";
-            break;
-          }
-
-          furthest_sample = callback.furthest_sample;
-        }
-
-        if (furthest_sample)
-        {
-          size_t index = (size_t)furthest_sample->getIndex();
-
-          positions.push_back(orig_positions[index]);
-          if (face_normals) face_normals->push_back(orig_face_normals[index]);
-          if (triangles) triangles->push_back(orig_triangles[index]);
-
-          src_region[furthest_sample] = 0;
-        }
-        else
-          break;
-
-        if (verbose)
-        {
-          int curr_percent = (int)std::floor(100 * (i / (float)desired_num_samples));
-          if (curr_percent >= prev_percent + 2)
-          {
-            for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
-            {
-              if (prev_percent % 10 == 0)
-                std::cout << prev_percent << '%' << std::flush;
-              else
-                std::cout << '.' << std::flush;
-            }
-
-            prev_percent = curr_percent;
-          }
-        }
-      }
-
-      if (verbose)
-      {
-        std::cout << "done" << std::endl;
-        THEA_CONSOLE << "MeshSampler: Selected " << positions.size() << " sample(s) uniformly by separation";
+        size_t index = (size_t)selected[i];
+        positions.push_back(orig_positions[index]);
+        if (face_normals) face_normals->push_back(orig_face_normals[index]);
+        if (triangles) triangles->push_back(orig_triangles[index]);
       }
 
       return (long)positions.size();
     }
 
   private:
-    /** Called during Dijkstra search. */
-    struct DijkstraCallback
-    {
-      DijkstraCallback() : furthest_sample(NULL) {}
-
-      bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
-      {
-        furthest_sample = vertex;  // the callback is always called in order of increasing distance
-        return false;
-      }
-
-      SampleGraph::VertexHandle furthest_sample;
-    };
-
     Triangles tris;  ///< An internally computed triangulation of the mesh.
     long num_external_tris;  ///< Number of externally supplied, precomputed mesh triangles.
     Triangle const * external_tris;  ///< Array of externally supplied, precomputed mesh triangles.

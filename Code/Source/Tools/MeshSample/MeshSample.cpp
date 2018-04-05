@@ -1,8 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
-#include "../../Algorithms/SampleGraph.hpp"
-#include "../../Algorithms/ShortestPaths.hpp"
+#include "../../Algorithms/FurthestPointSampling.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../FileSystem.hpp"
@@ -35,7 +34,8 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << " -nN       : Generate N samples [=5000]";
   THEA_CONSOLE << " -s[F]     : Generate approximately uniformly separated samples";
-  THEA_CONSOLE << "             with an initial oversampling factor of F";
+  THEA_CONSOLE << "             with an initial oversampling factor of F (omit for";
+  THEA_CONSOLE << "             default). F is ignored if -i is also present";
   THEA_CONSOLE << " -v        : Generate samples at mesh vertices (ignores -n)";
   THEA_CONSOLE << " -f        : Generate samples at face centers (ignores -n)";
   THEA_CONSOLE << " -id       : Write the index of the face (or if -v, the vertex)";
@@ -309,87 +309,8 @@ loadLabels(string const & path, MG const & mg, TheaArray<string> & labels, TheaA
     return loadLabels_FaceLabels(path, labels, face_labels);
 }
 
-struct DijkstraCallback
-{
-  DijkstraCallback() : furthest_sample(NULL) {}
-
-  bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
-  {
-    furthest_sample = vertex;  // the callback is always called in order of increasing distance
-    return false;
-  }
-
-  SampleGraph::VertexHandle furthest_sample;
-};
-
 bool
-subsampleEvenlyBySeparation(TheaArray<Vector3> const & positions, long desired_num_samples, TheaArray<long> & selected)
-{
-  selected.clear();
-  if ((long)positions.size() < desired_num_samples)
-    return (positions.empty() && desired_num_samples == 0);
-
-  // Compute proximity graph
-  SampleGraph graph;
-  graph.setSamples((long)positions.size(), &positions[0]);
-  graph.init();
-
-  std::cout << "Selecting samples: " << std::flush;
-
-  // Repeatedly add the furthest sample from the selected set to the selected set
-  ShortestPaths<SampleGraph> shortest_paths;
-  TheaUnorderedMap<SampleGraph::VertexHandle, double> src_region;
-  int prev_percent = 0;
-  for (long i = 0; i < desired_num_samples; ++i)
-  {
-    SampleGraph::VertexHandle furthest_sample = NULL;
-    if (src_region.empty())
-    {
-      // Just pick the first sample
-      furthest_sample = const_cast<SampleGraph::VertexHandle>(&graph.getSample(0));
-    }
-    else
-    {
-      DijkstraCallback callback;
-      shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region, /* include_unreachable = */ true);
-      if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
-      {
-        THEA_WARNING << "Could not return enough uniformly separated samples";
-        break;
-      }
-
-      furthest_sample = callback.furthest_sample;
-    }
-
-    if (furthest_sample)
-    {
-      selected.push_back(furthest_sample->getIndex());
-      src_region[furthest_sample] = 0;
-    }
-    else
-      break;
-
-    int curr_percent = (int)std::floor(100 * (i / (float)desired_num_samples));
-    if (curr_percent >= prev_percent + 2)
-    {
-      for (prev_percent += 2; prev_percent <= curr_percent; prev_percent += 2)
-      {
-        if (prev_percent % 10 == 0) std::cout << prev_percent << '%' << std::flush;
-        else                        std::cout << '.' << std::flush;
-      }
-
-      prev_percent = curr_percent;
-    }
-  }
-
-  std::cout << "done" << std::endl;
-  THEA_CONSOLE << "Selected " << selected.size() << " sample(s) uniformly by separation";
-
-  return (long)selected.size() == desired_num_samples;
-}
-
-bool
-loadSamples(string const & path, TheaArray<Vector3> & positions, TheaArray<Vector3> & normals)
+loadSamples(string const & path, TheaArray<Vector3> & positions, TheaArray<string> & lines)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -399,21 +320,25 @@ loadSamples(string const & path, TheaArray<Vector3> & positions, TheaArray<Vecto
   }
 
   positions.clear();
-  normals.clear();
+  lines.clear();
 
   string line;
   Vector3 p, n;
   while (getline(in, line))
   {
+    line = trimWhitespace(line);
+    if (line.empty() || line[0] == '#')
+      continue;
+
     istringstream line_in(line);
-    if (!(line_in >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2]))
+    if (!(line_in >> p[0] >> p[1] >> p[2]))
     {
       THEA_ERROR << "Couldn't read pre-sampled point from line '" << line << '\'';
       return false;
     }
 
     positions.push_back(p);
-    normals.push_back(n);
+    lines.push_back(line);
   }
 
   THEA_CONSOLE << "Read " << positions.size() << " pre-sampled point(s) from '" << path << '\'';
@@ -519,136 +444,164 @@ main(int argc, char * argv[])
 
   try
   {
-    ReadCallback read_callback;
-    Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
-    CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
-                                                                                  .setIgnoreTexCoords(true)));
-    TheaArray<MeshCodec<Mesh>::Ptr> read_codecs;
-    read_codecs.push_back(codec_3ds);
-    read_codecs.push_back(codec_obj);
-
-    MG mg("MeshGroup");
-    mg.load(mesh_path, read_codecs, &read_callback);
-
-    TheaArray<string> labels;
-    TheaArray<long> face_labels;
-    bool output_labels = (!vertex_samples && !labels_path.empty());
-    if (output_labels)
+    if (!presampled_path.empty())
     {
-      if (!loadLabels(labels_path, mg, labels, face_labels))
-        return -1;
-    }
+      //=======================================================================================================================
+      // Subsampling a previously sampled set of points
+      //=======================================================================================================================
 
-    TheaArray<Vector3> positions;
-    TheaArray<Vector3> normals;
-    TheaArray<long> indices;
-
-    bool need_face_ids = (output_ids || output_labels);
-    bool do_random_sampling = true;
-
-    if (vertex_samples)
-    {
-      VertexCollector collector(&positions, &normals, &indices);
-      mg.forEachMeshUntil(&collector);
-      do_random_sampling = false;
-    }
-
-    if (face_samples)
-    {
-      FaceCenterCollector collector(&positions, &normals, &indices);
-      mg.forEachMeshUntil(&collector);
-      do_random_sampling = false;
-    }
-
-    if (do_random_sampling)
-    {
-      MeshSampler<Mesh> sampler(mg);
-      TheaArray< MeshSampler<Mesh>::Triangle const * > tris;
-
-      if (uniformly_separated)
+      if (!uniformly_separated)
       {
-        if (presampled_path.empty())
+        THEA_ERROR << "Pre-sampled points require the -s option as well";
+        return -1;
+      }
+
+      TheaArray<Vector3> orig_pos;
+      TheaArray<string> orig_lines;
+      if (!loadSamples(presampled_path, orig_pos, orig_lines))
+        return -1;
+
+      TheaArray<long> selected;
+      if (!orig_pos.empty())
+      {
+        selected.resize((size_t)num_samples);
+        if (FurthestPointSampling::subsample((long)orig_pos.size(), &orig_pos[0], num_samples, &selected[0],
+                                             DistanceType::GEODESIC, /* verbose = */ true) < num_samples)
+          return -1;
+      }
+
+      ofstream out(out_path.c_str());
+      if (!out)
+      {
+        THEA_ERROR << "Could not open output file '" << out_path << "' for writing";
+        return -1;
+      }
+
+      for (size_t i = 0; i < selected.size(); ++i)
+        out << orig_lines[(size_t)selected[i]] << '\n';
+    }
+    else
+    {
+      //=======================================================================================================================
+      // Sampling points from scratch
+      //=======================================================================================================================
+
+      ReadCallback read_callback;
+      Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
+      CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
+                                                                                    .setIgnoreTexCoords(true)));
+      TheaArray<MeshCodec<Mesh>::Ptr> read_codecs;
+      read_codecs.push_back(codec_3ds);
+      read_codecs.push_back(codec_obj);
+
+      MG mg("MeshGroup");
+      mg.load(mesh_path, read_codecs, &read_callback);
+
+      TheaArray<string> labels;
+      TheaArray<long> face_labels;
+      bool output_labels = (!vertex_samples && !labels_path.empty());
+      if (output_labels)
+      {
+        if (!loadLabels(labels_path, mg, labels, face_labels))
+          return -1;
+      }
+
+      TheaArray<Vector3> positions;
+      TheaArray<Vector3> normals;
+      TheaArray<long> indices;
+
+      bool need_face_ids = (output_ids || output_labels);
+      bool do_random_sampling = true;
+
+      if (vertex_samples)
+      {
+        VertexCollector collector(&positions, &normals, &indices);
+        mg.forEachMeshUntil(&collector);
+        do_random_sampling = false;
+      }
+
+      if (face_samples)
+      {
+        FaceCenterCollector collector(&positions, &normals, &indices);
+        mg.forEachMeshUntil(&collector);
+        do_random_sampling = false;
+      }
+
+      if (do_random_sampling)
+      {
+        MeshSampler<Mesh> sampler(mg);
+        TheaArray< MeshSampler<Mesh>::Triangle const * > tris;
+
+        if (uniformly_separated)
         {
           sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
                                            MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
         }
         else
         {
-          alwaysAssertM(!need_face_ids, "Face IDs not present for pre-sampled points");
+          sampler.sampleEvenlyByArea(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
+                                     MeshSampler<Mesh>::CountMode::EXACT, true);
+        }
 
-          TheaArray<Vector3> orig_pos, orig_nrm;
-          if (!loadSamples(presampled_path, orig_pos, orig_nrm))
-            return -1;
+        if (need_face_ids)
+        {
+          alwaysAssertM(tris.size() >= positions.size(), "Triangle IDs not initialized");
 
-          TheaArray<long> selected;
-          if (!subsampleEvenlyBySeparation(orig_pos, num_samples, selected))
-            return -1;
-
-          for (size_t i = 0; i < selected.size(); ++i)
+          indices.resize(positions.size());
+          for (size_t i = 0; i < positions.size(); ++i)
           {
-            positions.push_back(orig_pos[(size_t)selected[i]]);
-            normals.push_back(orig_nrm[(size_t)selected[i]]);
+            Mesh::Face const * face = tris[i]->getVertices().getMeshFace();
+            indices[i] = face->attr().index;
           }
         }
       }
-      else
+
+      // Sanitize outputs, sometimes this is a problem with values smaller than 32-bit float precision like 4.01752e-42 getting
+      // written to the output stream. This seems to be a GCC bug (feature?) where the optimizer is allowed to use higher
+      // precision registers for floating point numbers unless -ffloat-store is enabled
+      //
+      // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=10644
+      // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
+      //
+      for (size_t i = 0; i < positions.size(); ++i)
       {
-        sampler.sampleEvenlyByArea(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
-                                   MeshSampler<Mesh>::CountMode::EXACT, true);
+        if (std::fabs(positions[i].x()) < 1e-35) positions[i].x() = 0;
+        if (std::fabs(positions[i].y()) < 1e-35) positions[i].y() = 0;
+        if (std::fabs(positions[i].z()) < 1e-35) positions[i].z() = 0;
+
+        if (std::fabs(normals[i].x()) < 1e-35) normals[i].x() = 0;
+        if (std::fabs(normals[i].y()) < 1e-35) normals[i].y() = 0;
+        if (std::fabs(normals[i].z()) < 1e-35) normals[i].z() = 0;
       }
 
-      if (need_face_ids)
+      ofstream out(out_path.c_str());
+      if (!out)
       {
-        alwaysAssertM(tris.size() >= positions.size(), "Triangle IDs not initialized");
+        THEA_ERROR << "Could not open output file '" << out_path << "' for writing";
+        return -1;
+      }
 
-        indices.resize(positions.size());
-        for (size_t i = 0; i < positions.size(); ++i)
+      for (size_t i = 0; i < positions.size(); ++i)
+      {
+        out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
+            << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z();
+
+        if (output_ids)
+          out << ' ' << indices[i];
+
+        if (output_labels)
         {
-          Mesh::Face const * face = tris[i]->getVertices().getMeshFace();
-          indices[i] = face->attr().index;
+          long label_index = (indices[i] < 0 || indices[i] >= (long)face_labels.size()
+                            ? -1 : face_labels[(size_t)indices[i]]);
+          out << " \"" << (label_index < 0 ? "" : labels[(size_t)label_index]) << '"';
         }
+
+        out << '\n';
       }
+      out.flush();
+
+      THEA_CONSOLE << "Computed " << positions.size() << " samples from '" << mesh_path << '\'';
     }
-
-    // Sanitize outputs, sometimes this is a problem with values smaller than 32-bit float precision like 4.01752e-42 getting
-    // written to the output stream. This seems to be a GCC bug (feature?) where the optimizer is allowed to use higher
-    // precision registers for floating point numbers unless -ffloat-store is enabled
-    //
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=10644
-    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=323
-    //
-    for (size_t i = 0; i < positions.size(); ++i)
-    {
-      if (std::fabs(positions[i].x()) < 1e-35) positions[i].x() = 0;
-      if (std::fabs(positions[i].y()) < 1e-35) positions[i].y() = 0;
-      if (std::fabs(positions[i].z()) < 1e-35) positions[i].z() = 0;
-
-      if (std::fabs(normals[i].x()) < 1e-35) normals[i].x() = 0;
-      if (std::fabs(normals[i].y()) < 1e-35) normals[i].y() = 0;
-      if (std::fabs(normals[i].z()) < 1e-35) normals[i].z() = 0;
-    }
-
-    ofstream out(out_path.c_str());
-    for (size_t i = 0; i < positions.size(); ++i)
-    {
-      out << positions[i].x() << ' ' << positions[i].y() << ' ' << positions[i].z() << ' '
-          << normals[i].x() << ' ' << normals[i].y() << ' ' << normals[i].z();
-
-      if (output_ids)
-        out << ' ' << indices[i];
-
-      if (output_labels)
-      {
-        long label_index = (indices[i] < 0 || indices[i] >= (long)face_labels.size()
-                          ? -1 : face_labels[(size_t)indices[i]]);
-        out << " \"" << (label_index < 0 ? "" : labels[(size_t)label_index]) << '"';
-      }
-
-      out << '\n';
-    }
-    out.flush();
-
-    THEA_CONSOLE << "Computed " << positions.size() << " samples from '" << mesh_path << '\'';
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
