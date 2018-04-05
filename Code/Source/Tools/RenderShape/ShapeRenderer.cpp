@@ -105,6 +105,8 @@ class ShapeRendererImpl
     bool color_by_tex3d;
     string tex3d_path;
     string selected_mesh;
+    ColorRGBA selected_color;
+    bool selected_binary_mask;
     Vector4 material;
     string matcap_path;
     ColorRGBA primary_color;
@@ -124,6 +126,7 @@ class ShapeRendererImpl
     bool parseViewContinuous(string const & s, View & view, bool silent = false);
     bool parseViewFile(string const & path);
     bool parseViewUp(string const & s, Vector3 & up);
+    bool parseARGB(string const & s, uint32 & argb);
     bool parseColor(string const & s, ColorRGBA & c);
     int parseVector(string const & str, Vector4 & v);
     void resetArgs();
@@ -221,6 +224,8 @@ ShapeRendererImpl::resetArgs()
   color_by_tex3d = false;
   tex3d_path = "";
   selected_mesh = "";
+  selected_color = ColorRGBA(1, 1, 1, 1);
+  selected_binary_mask = true;
   material = Vector4(0.3f, 0.7f, 0.2f, 25);
   matcap_path = "";
   primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
@@ -528,7 +533,9 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -3 <path>             (color mesh by a 3D texture)";
   THEA_CONSOLE << "  -e                    (accentuate features)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
-  THEA_CONSOLE << "                         rest of the shape as black)";
+  THEA_CONSOLE << "                         rest of the shape as black, without any shading)";
+  THEA_CONSOLE << "  -h <name> <argb>      (highlight submesh with the given name in the given";
+  THEA_CONSOLE << "                         color, with shading)";
   THEA_CONSOLE << "  -k 'ka kd ks ksp'     (Phong material coefficients)";
   THEA_CONSOLE << "  -k <path>             (texture to be used as matcap material)";
   THEA_CONSOLE << "  -b <argb>             (background color)";
@@ -757,17 +764,26 @@ ShapeRendererImpl::parseViewUp(string const & s, Vector3 & up)
 }
 
 bool
-ShapeRendererImpl::parseColor(string const & s, ColorRGBA & c)
+ShapeRendererImpl::parseARGB(string const & s, uint32 & argb)
 {
   std::stringstream ss;
   ss << std::hex << s;
 
-  uint32 argb;
   if (!(ss >> argb))
   {
-    THEA_ERROR << "Could not parse color '" << s << '\'';
+    THEA_ERROR << "Could not parse ARGB color '" << s << '\'';
     return false;
   }
+
+  return true;
+}
+
+bool
+ShapeRendererImpl::parseColor(string const & s, ColorRGBA & c)
+{
+  uint32 argb;
+  if (!parseARGB(s, argb))
+    return false;
 
   c = ColorRGBA::fromARGB(argb);
 
@@ -996,7 +1012,22 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         {
           if (argc < 1) { THEA_ERROR << "-m: Selected mesh not specified"; return false; }
 
+          selected_binary_mask = true;
           selected_mesh = toLower(*argv);
+          selected_color = ColorRGBA(1, 1, 1, 1);
+
+          argv++; argc--; break;
+        }
+
+        case 'h':
+        {
+          if (argc < 2) { THEA_ERROR << "-h: Selected mesh or color not specified"; return false; }
+
+          selected_binary_mask = false;
+          selected_mesh = toLower(*argv);
+          argv++; argc--;
+          if (!parseColor(*argv, selected_color))
+            return false;
 
           argv++; argc--; break;
         }
@@ -1770,7 +1801,11 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     else if (!selected_mesh.empty() && toLower(mesh.getName()) == selected_mesh)
       mesh_id = 0xFFFFFF;
 
-    ColorRGBA8 color = indexToColor(mesh_id, false);
+    ColorRGBA8 color;
+    if (selected_binary_mask)
+      color = (mesh_id == 0 ? ColorRGBA8(0, 0, 0, 255) : ColorRGBA8(255, 255, 255, 255));
+    else
+      color = (mesh_id == 0 ? ColorRGBA8(primary_color) : ColorRGBA8(selected_color));
 
     mesh.isolateFaces();
     mesh.addColors();
@@ -1903,7 +1938,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       else if (!selected_mesh.empty())
       {
         colorizeMeshSelection(model.mesh_group, 0);
-        needs_normals = false;
+        needs_normals = !selected_binary_mask;
       }
 
       if (needs_normals)
@@ -2299,7 +2334,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
   else
   {
     // Initialize the shader
-    if (color_by_id || !selected_mesh.empty())
+    if (color_by_id || (selected_binary_mask && !selected_mesh.empty()))
     {
       if (!face_id_shader)
       {
