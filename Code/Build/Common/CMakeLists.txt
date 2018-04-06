@@ -124,8 +124,10 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${Boost_INCLUDE_DIRS}
                     ${FreeImage_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS}
-                    ${CLUTO_INCLUDE_DIRS})
+                    ${Lib3ds_INCLUDE_DIRS})
+IF(CLUTO_FOUND)
+  INCLUDE_DIRECTORIES(BEFORE ${CLUTO_INCLUDE_DIRS})
+ENDIF()
 
 # Source file lists
 FILE(GLOB TheaSources
@@ -145,11 +147,14 @@ FILE(GLOB TheaSources
 # Libraries to link to
 SET(TheaLibraries
     ${Boost_LIBRARIES}
-    ${CLUTO_LIBRARIES}
     ${CGAL_LIBRARIES}
     ${Lib3ds_LIBRARIES}
     ${FreeImage_LIBRARIES}
     ${PLATFORM_LIBRARIES})
+IF(CLUTO_FOUND)
+  SET(TheaLibraries ${CLUTO_LIBRARIES} ${TheaLibraries})
+ENDIF()
+
 
 # Build products
 ADD_LIBRARY(Thea STATIC ${TheaSources})

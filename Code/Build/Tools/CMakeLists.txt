@@ -50,8 +50,9 @@ SET(SourceRoot ${ProjectRoot}/Source)
 SET(Thea_FIND_ALL               FALSE)
 SET(Thea_FIND_Boost             TRUE)
 SET(Thea_FIND_Boost_COMPONENTS  filesystem program_options system thread)
-SET(Thea_FIND_Lib3ds            TRUE)
+SET(Thea_FIND_CLUTO             TRUE)
 SET(Thea_FIND_FreeImage         TRUE)
+SET(Thea_FIND_Lib3ds            TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: OpenGL
@@ -550,6 +551,8 @@ SET(TheaAllTools ${TheaAllTools} SampleGraph)
 # SegmentSDF
 #===========================================================
 
+IF(CLUTO_FOUND)
+
 # Source file lists
 FILE(GLOB SegmentSDFSources
      ${SourceRoot}/Tools/SegmentSDF/*.cpp)
@@ -579,6 +582,8 @@ IF(APPLE)
 ENDIF()
 
 SET(TheaAllTools ${TheaAllTools} SegmentSDF)
+
+ENDIF(CLUTO_FOUND)
 
 #===========================================================
 # ShapeAlign
