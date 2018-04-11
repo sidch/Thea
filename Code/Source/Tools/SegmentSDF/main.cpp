@@ -2,12 +2,7 @@
 
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
-
-#ifndef THEA_OSX
-#  define THEA_ENABLE_CLUTO
-#  include "../../Algorithms/Clustering.hpp"
-#endif
-
+#include "../../Algorithms/Clustering.hpp"
 #include "../../Algorithms/ConvexHull3.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"

@@ -36,11 +36,12 @@ ADD_SUBDIRECTORY(Plugins/ARPACK)
 ADD_SUBDIRECTORY(Plugins/CSPARSE)
 ADD_SUBDIRECTORY(Plugins/GL)
 
-IF(NOT WIN32)  # we don't have a prebuilt version of OPT++
+# Omit OPT++ from the default build until we finish this module
+IF(WITH_OPTPP)
   ADD_SUBDIRECTORY(Plugins/OPTPP)
 ENDIF()
 
-# The tests should not be built by default
+# The tests should not be built by default (some of them are also probably currently broken)
 IF(WITH_TESTS)
   ADD_SUBDIRECTORY(Test EXCLUDE_FROM_ALL)
 
@@ -48,13 +49,10 @@ IF(WITH_TESTS)
 
   # Help message about building tests
   MESSAGE(STATUS "")
-  MESSAGE(STATUS "NOTE: Test programs are not automatically built. To build them, run 'make TheaTests'.")
-ELSE()
-  MESSAGE(STATUS "")
-  MESSAGE(STATUS "NOTE: To build test programs, set the variable WITH_TESTS to true")
+  MESSAGE(STATUS "NOTE: Test programs are not automatically built. To build them, run 'make test'.")
 ENDIF()
 
 MESSAGE(STATUS "")
-MESSAGE(STATUS "NOTE: Tools are not automatically built. To build them, run 'make TheaTools'.")
+MESSAGE(STATUS "NOTE: Tools are not automatically built. To build them, run 'make tools'.")
 MESSAGE(STATUS "")
 ADD_SUBDIRECTORY(Tools EXCLUDE_FROM_ALL)

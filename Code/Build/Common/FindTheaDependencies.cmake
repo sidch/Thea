@@ -65,6 +65,8 @@ IF(Thea_FIND_CLUTO)
   FIND_PACKAGE(CLUTO)  # not a required package
   IF(CLUTO_FOUND)
     ADD_DEFINITIONS(-DTHEA_ENABLE_CLUTO)
+  ELSE()  # this is not a fatal error
+    MESSAGE(STATUS "CLUTO not found: library will be built without CLUTO clustering support")
   ENDIF()
 ENDIF()
 

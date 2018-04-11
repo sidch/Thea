@@ -623,4 +623,4 @@ SET(TheaAllTools ${TheaAllTools} ShapeAlign)
 # Target for all tools
 #===========================================================
 
-ADD_CUSTOM_TARGET(TheaTools DEPENDS ${TheaAllTools})
+ADD_CUSTOM_TARGET(tools DEPENDS ${TheaAllTools})

@@ -543,4 +543,4 @@ IF(TARGET TheaTestARPACK)
   SET(TheaTestsDependencies ${TheaTestsDependencies} TheaTestARPACK)
 ENDIF()
 
-ADD_CUSTOM_TARGET(TheaTests DEPENDS ${TheaTestsDependencies})
+ADD_CUSTOM_TARGET(test DEPENDS ${TheaTestsDependencies})
