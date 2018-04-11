@@ -61,7 +61,7 @@ make -j4
 make install    # add sudo if necessary
 make tools -j4
 ```
-The last step installs the set of bundled tools and can be omitted if you just want to use the library. However, if you do install the tools, a quick way to check if everything has installed correctly is to run
+The last step builds the set of bundled tools and can be omitted if you just want to use the library. However, if you do install the tools, a quick way to check if everything has installed correctly is to run
 ```shell
 Output/bin/Browse3D ../../Data/Models/teapot.obj
 ```
@@ -111,10 +111,10 @@ int
 main(int argc, char * argv[])
 {
   using namespace Thea;
-  
+
   Vector3 v(1, 2, 3);
   Matrix3 m = Matrix3::rotationArc(Vector3::unitX(), Vector3::unitY());
-  
+
   // Automatically adds newline and synchronization to std::cout...
   THEA_CONSOLE << "Hello world! The product is " << m * v; 
 }
