@@ -9,12 +9,12 @@ If you find a bug, please let me know promptly. Thank you!
 
 *Thea* is a library of C++ classes for computer graphics, primarily for [3D geometry processing](https://www.cse.iitb.ac.in/~cs749/spr2017). It is the core library I use for nearly all my research projects, and it is also the core library for [Adobe Fuse](https://www.adobe.com/products/fuse.html), which I originally authored. As such, it is developed for personal use and its features reflect this: please do not write to me to asking for specific features to be included. However, over time, it has become quite general-purpose. Among its features are:
 
-* Mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and lightweight ones designed only for rendering.
+* Polyon mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and lightweight ones designed only for rendering.
 * General linear algebra including fixed and dynamic size matrices and vectors. For specialized or heavily optimized applications, use something more focused like [Eigen](http://eigen.tuxfamily.org) instead.
 * 2, 3 and N-dimensional geometric primitives, including lines, line segments, rays, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
 * An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic image processing (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
-* A plugin architecture and included plugins providing easy interfaces to OpenGL, [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an OSMesa driver to automatically create a headless CPU-only context.
+* A plugin architecture and included plugins providing easy interfaces to OpenGL, [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an [OSMesa](https://www.mesa3d.org/osmesa.html) driver to automatically create a headless CPU-only context.
 * A variety of utility classes for filesystem navigation, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation, pseudo-random numbers, mathematics (including algebraic roots of polynomials upto degree 4) etc.
 * Several bundled tools for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*), etc.
 
@@ -44,7 +44,7 @@ cd TheaDepsUnix/Source
 ```shell
 sudo ./install-defaults.sh --with-wxwidgets --use-root --prefix "$prefix" -j4
 ```
-`--use-root` will try to use `apt-get` on Ubuntu/Debian, omit it if you want to build everything from scratch regardless. `--with-wxwidgets` is needed to build *Browse3D*, a bundled GUI application for viewing 3D files: it can be omitted if so desired. Replace 4 with the actual number of hardware threads on your system, typically 2, 4, or 8.
+`--use-root` will try to use `apt-get` on Ubuntu/Debian, omit it if you want to build everything from scratch regardless. `--with-wxwidgets` is needed to build *Browse3D*, a bundled GUI application for viewing 3D files: it can be omitted if so desired. Add `--with-osmesa` to install OSMesa for headless CPU-only rendering (good for remote servers). Replace 4 with the actual number of hardware threads on your system, typically 2, 4, or 8.
 
 The above step will install the necessary libraries by compiling them from source (if not `apt-get`able) and placing the result in `$prefix`. Carefully check for errors (warnings are generally ok). If there are errors, you probably need to explicitly install some third-party libraries/tools -- see the error messages -- and rerun the command. Make sure there are no errors in the output before proceeding further.
 
@@ -70,6 +70,8 @@ and see if a window pops up displaying a 3D teapot, or
 Output/bin/RenderShape ../../Data/Models/teapot.obj teapot.png 800 600
 ```
 to render the teapot to an image file.
+
+To build with OSMesa instead of the system OpenGL driver, add `-DWITH_OSMESA=true` to the CMake line above. The *RenderShape* tool will then use OSMesa.
 
 ## Documentation
 
