@@ -28,7 +28,7 @@ __*Thea* is constantly under development and many parts are incomplete. Use at y
 
 ### Installing the dependencies
 
-Thea relies on [Boost](https://www.boost.org/), [lib3ds](https://code.google.com/archive/p/lib3ds/), [FreeImage](http://freeimage.sourceforge.net/) and [ARPACK](http://www.caam.rice.edu/software/ARPACK/). A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
+*Thea* relies on [Boost](https://www.boost.org/), [lib3ds](https://code.google.com/archive/p/lib3ds/), [FreeImage](http://freeimage.sourceforge.net/) and [ARPACK](http://www.caam.rice.edu/software/ARPACK/). A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
 
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell
@@ -99,3 +99,24 @@ c++ -Wall -g2 -O2 -fno-strict-aliasing \
 ```
 
 If you're using CMake for your own code, a convenient `FindThea.cmake` module in `Thea/Code/Build/Common/CMake/Modules` (or directly from <https://github.com/sidch/CMake>) allows you to do `FIND_PACKAGE(Thea)`, including locating all the necessary dependencies.
+
+## Sample code
+
+Here is a simple "Hello World" example:
+```cpp
+#include <Thea/Matrix3.hpp>
+#include <Thea/Vector3.hpp>
+
+int
+main(int argc, char * argv[])
+{
+  using namespace Thea;
+  
+  Vector3 v(1, 2, 3);
+  Matrix3 m = Matrix3::rotationArc(Vector3::unitX(), Vector3::unitY());
+  
+  // Automatically adds newline and synchronization to std::cout...
+  THEA_CONSOLE << "Hello world! The product is " << m * v; 
+}
+```
+For real-world samples, see the applications in the `Thea/Code/Source/Tools` folder.
