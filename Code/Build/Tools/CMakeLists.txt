@@ -56,7 +56,7 @@ SET(Thea_FIND_Lib3ds            TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: OpenGL
-IF(THEA_GL_OSMESA)
+IF(WITH_OSMESA)
   FIND_PACKAGE(OSMesa)
 
   IF(OSMesa_FOUND)

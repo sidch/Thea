@@ -1,5 +1,5 @@
 # Thea
-A toolkit for visual computing.
+A toolkit for visual computing with a focus on geometry processing.
 
 Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released under the BSD license (see `Thea/Code/Documentation/LICENSE.txt`).
 
@@ -12,9 +12,10 @@ If you find a bug, please let me know promptly. Thank you!
 * Mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and lightweight ones designed only for rendering.
 * General linear algebra including fixed and dynamic size matrices and vectors. For specialized or heavily optimized applications, use something more focused like [Eigen](http://eigen.tuxfamily.org) instead.
 * 2, 3 and N-dimensional geometric primitives, including lines, line segments, rays, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
-* An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning algorithms.
+* An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic image processing (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
-* A plugin architecture and included plugins providing easy interfaces to OpenGL, [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html).
+* A plugin architecture and included plugins providing easy interfaces to OpenGL, [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an OSMesa driver to automatically create a headless CPU-only context.
+* A variety of utility classes for filesystem navigation, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation etc.
 * Several bundled tools for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*), etc.
 
 __*Thea* is constantly under development and many parts are incomplete. Use at your own risk!__ I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
@@ -45,7 +46,7 @@ sudo ./install-defaults.sh --with-wxwidgets --use-root --prefix "$prefix" -j4
 ```
 `--use-root` will try to use `apt-get` on Ubuntu/Debian, omit it if you want to build everything from scratch regardless. `--with-wxwidgets` is needed to build *Browse3D*, a bundled GUI application for viewing 3D files: it can be omitted if so desired. Replace 4 with the actual number of hardware threads on your system, typically 2, 4, or 8.
 
-The above step will install the necessary libraries by compiling them from source (if not `apt-get`able) and placing the result in $prefix. Carefully check for errors (warnings are generally ok). If there are errors, you probably need to explicitly install some third-party libraries/tools -- see the error messages -- and rerun the command. Make sure there are no errors in the output before proceeding further.
+The above step will install the necessary libraries by compiling them from source (if not `apt-get`able) and placing the result in `$prefix`. Carefully check for errors (warnings are generally ok). If there are errors, you probably need to explicitly install some third-party libraries/tools -- see the error messages -- and rerun the command. Make sure there are no errors in the output before proceeding further.
 
 
 ### Installing the Thea library, plugins and bundled tools

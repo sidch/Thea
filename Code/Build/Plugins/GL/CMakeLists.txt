@@ -62,7 +62,7 @@ SET(Thea_FIND_Boost  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: OSMesa
-IF(THEA_GL_OSMESA)
+IF(WITH_OSMESA)
   FIND_PACKAGE(OSMesa REQUIRED)
   IF(OSMesa_FOUND AND OSMesa_GLU_FOUND)
     SET(OPENGL_FOUND TRUE)
