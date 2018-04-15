@@ -102,8 +102,7 @@ INCLUDE_DIRECTORIES(BEFORE
                     ${GLUT_INCLUDE_DIR}
                     ${OPENGL_INCLUDE_DIRS}
                     ${CGAL_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS}
-                    ${CLUTO_INCLUDE_DIRS})
+                    ${Lib3ds_INCLUDE_DIRS})
 
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib)

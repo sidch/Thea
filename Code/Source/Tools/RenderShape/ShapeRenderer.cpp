@@ -1807,7 +1807,7 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     else
       color = (mesh_id == 0 ? ColorRGBA8(primary_color) : ColorRGBA8(selected_color));
 
-    mesh.isolateFaces();
+    if (selected_binary_mask) mesh.isolateFaces();
     mesh.addColors();
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
@@ -2376,7 +2376,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     }
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_id || color_by_label || color_by_features)
+    if (color_by_id || color_by_label || color_by_features || !selected_mesh.empty())
       opts.useVertexData() = true;
 
 #ifdef DRAW_EDGES

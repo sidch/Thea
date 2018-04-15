@@ -1,7 +1,8 @@
 #include "../Common.hpp"
+#include "../Algorithms/IntersectionTester.hpp"
 #include "../Algorithms/KDTreeN.hpp"
 #include "../Algorithms/MetricL2.hpp"
-#include "../Algorithms/IntersectionTester.hpp"
+#include "../Algorithms/PointTraitsN.hpp"
 #include "../Algorithms/RayIntersectionTester.hpp"
 #include "../AxisAlignedBox3.hpp"
 #include "../Ball3.hpp"
@@ -97,7 +98,7 @@ struct IsPointN<MyCustomPoint, 3>
 // A specialization of the traits class, to obtain the position of a MyCustomPoint. The kd-tree requires this traits class to
 // get the position of an arbitrary point type.
 template <>
-struct PointTraitsN<MyCustomPoint, 3>
+struct PointTraitsN<MyCustomPoint, 3, Real>
 {
   static Vector3 const & getPosition(MyCustomPoint const & np) { return np.position; }
 };

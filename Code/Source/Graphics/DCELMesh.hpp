@@ -47,6 +47,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Colors.hpp"
+#include "../Math.hpp"
 #include "../NamedObject.hpp"
 #include "../Set.hpp"
 #include "../UnorderedSet.hpp"
@@ -57,7 +58,6 @@
 #include "IncrementalDCELMeshBuilder.hpp"
 #include "DefaultMeshCodecs.hpp"
 #include "DrawableObject.hpp"
-#include <cmath>
 #include <limits>
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -68,7 +68,8 @@ namespace Thea {
 namespace Graphics {
 
 /**
- * Mesh based on a doubly-connected edge list (or halfedge data structure).
+ * Mesh based on a doubly-connected edge list (or halfedge data structure). Optionally allows GPU-buffered rendering (see
+ * important note below).
  *
  * Adapted from: DCELMesh class. Part of an example DCEL implementation.
  * - Webpage: http://www.holmes3d.net/graphics/dcel/
@@ -77,7 +78,10 @@ namespace Graphics {
  * - Usage: Use freely. Please cite the website as the source if you use it substantially unchanged. Please leave this
  *   documentation in the code.
  *
- * @todo Automatically invalidate appropriate GPU buffers on all modifications.
+ * @note When using GPU-buffered rendering, any methods of this class which change the mesh will automatically re-initialize the
+ * buffers. <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the DCELVertex, DCELEdge and DCELFace
+ * classes, then the user <i>must</i> manually indicate that the mesh needs to be resynchronized with the GPU. The
+ * invalidateGPUBuffers() function should be used for this.
  */
 template < typename VertexAttribute    =  Graphics::NullAttribute,
            typename HalfedgeAttribute  =  Graphics::NullAttribute,
@@ -382,7 +386,6 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 #endif
 
       invalidateGPUBuffers();
-
       return vertex;
     }
 
@@ -439,7 +442,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       Vector3 e2 = face_vertices[2]->getPosition() - face_vertices[1]->getPosition();
       Vector3 normal = e2.cross(e1).unit();  // counter-clockwise
 
-      Face * face = addFace(num_verts, &face_vertices[0], normal);
+      Face * face = addFace(num_verts, &face_vertices[0], normal);  // invalidates GPU buffers
       if (face)
       {
         if (index < 0)
@@ -449,8 +452,6 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
         face->setIndex(index);
       }
-
-      invalidateGPUBuffers();
 
       return face;
     }
@@ -475,8 +476,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       if (!new_vx)
         return NULL;
 
-      if (!splitEdge(edge, new_vx))  // should generally never happen
+      if (!splitEdge(edge, new_vx))  // invalidates GPU buffers
       {
+        // We should generally never get here
         removeVertex(new_vx);
         return NULL;
       }
@@ -498,8 +500,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       if (!new_vx)
         return NULL;
 
-      if (!splitEdge(edge, new_vx))  // should generally never happen
+      if (!splitEdge(edge, new_vx))  // invalidates GPU buffers
       {
+        // We should generally never get here
         removeVertex(new_vx);
         return NULL;
       }
@@ -611,6 +614,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
         t1->twin_he = t0;
       }
 
+      invalidateGPUBuffers();
       return true;
     }
 
@@ -1033,6 +1037,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       } while (i != start_index);
 
       faces.insert(face);
+
+      invalidateGPUBuffers();
       return face;
     }
 
@@ -1055,6 +1061,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
       index0 = next_halfedge_index++;
       index1 = next_halfedge_index++;
+
+      invalidateGPUBuffers(BufferID::TOPOLOGY);
     }
 
     /**
@@ -1064,7 +1072,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * @return A pointer to an existing half-edge, if found, else null. The index of the originating vertex of this half-edge
      *   (respective to the input array of vertices) is stored in origin_index.
      */
-    Halfedge * findExistingEdge(size_t num_verts, Vertex ** verts, size_t & origin_index)
+    Halfedge * findExistingEdge(size_t num_verts, Vertex ** verts, size_t & origin_index) const
     {
       Halfedge * e  = NULL;
       size_t last = num_verts - 1;
@@ -1089,14 +1097,14 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * Get the angle going counter-clockwise from \a u to \a v w.r.t. a given up direction, in the range [0, 2 pi]. Assumes \a u
      * is orthogonal to \a unit_up.
      */
-    static float ccwAngle(Vector3 const & u, Vector3 const & v, Vector3 const & unit_up)
+    static Real ccwAngle(Vector3 const & u, Vector3 const & v, Vector3 const & unit_up)
     {
       Vector3 v_proj = v - (v.dot(unit_up) * unit_up);
-      float s = u.cross(v_proj).fastLength();
-      float c = u.dot(v_proj);
-      float ang = std::atan2(s, c);
+      Real s = u.cross(v_proj).fastLength();
+      Real c = u.dot(v_proj);
+      Real ang = std::atan2(s, c);
 
-      return ang < 0 ? 2 * M_PI - ang : ang;
+      return ang < 0 ? 2 * Math::pi() - ang : ang;
     }
 
     /**
@@ -1109,7 +1117,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      *
      * @return The predecessor, if found, else null.
      */
-    Halfedge * findPrevAroundVertex(Vertex * u, Vertex * v, Vector3 const & normal)
+    Halfedge * findPrevAroundVertex(Vertex * u, Vertex * v, Vector3 const & normal) const
     {
       Halfedge * first = u->getHalfedge();
       if (!first)
@@ -1118,7 +1126,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       // Compute the new normal, which defines the plane of projection
       Vector3 new_normal = u->estimateUpdatedNormal(normal);
       Halfedge * e = first, * best = first;
-      float ang, best_ang = 100;  // anything > 2 pi
+      Real ang, best_ang = 100;  // anything > 2 pi
       Vector3 edge = v->getPosition() - u->getPosition();
       edge = (edge - (edge.dot(new_normal) * new_normal));
       do
@@ -1146,6 +1154,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     {
       vertices.erase(vertex);
       delete vertex;
+      invalidateGPUBuffers();
     }
 
     /** Delete a halfedge from the mesh. No pointers are updated, the halfedge is just deleted from storage. */
@@ -1153,6 +1162,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     {
       halfedges.erase(halfedge);
       delete halfedge;
+      invalidateGPUBuffers();
     }
 
     /** Delete a face from the mesh. No pointers are updated, the face is just deleted from storage. */
@@ -1160,6 +1170,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     {
       faces.erase(face);
       delete face;
+      invalidateGPUBuffers();
     }
 
     /** Split an edge along its length at a given vertex location. The vertex is assumed to have been newly added. */
@@ -1203,6 +1214,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       // Mark one of the new halfedges (doesn't matter which) as leaving the new vertex
       vertex->leaving = e0;
 
+      invalidateGPUBuffers();
       return true;
     }
 

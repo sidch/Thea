@@ -391,7 +391,8 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
           for (int j = 0; j < 3; ++j)
           {
             int j2 = (j + 1) % 3;
-            d2 = Internal::closestPtSegmentSegment(getVertex(i), getVertex(i2), other.getVertex(j), other.getVertex(j2),
+            d2 = Internal::closestPtSegmentSegment(getVertex(i), getVertex(i2), false,
+                                                   other.getVertex(j), other.getVertex(j2), false,
                                                    s, t, p, q);
             if (d2 < min_sqdist)
             {

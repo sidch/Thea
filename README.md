@@ -9,7 +9,7 @@ If you find a bug, please let me know promptly. Thank you!
 
 *Thea* is a library of C++ classes for computer graphics, primarily for [3D geometry processing](https://www.cse.iitb.ac.in/~cs749/spr2017). It is the core library I use for nearly all my research projects, and it is also the core library for [Adobe Fuse](https://www.adobe.com/products/fuse.html), which I originally authored. As such, it is developed for personal use and its features reflect this: please do not write to me to asking for specific features to be included. However, over time, it has become quite general-purpose. Among its features are:
 
-* Polygon mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and lightweight ones designed only for rendering.
+* Polygon mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and a lightweight one designed only for rendering.
 * General linear algebra including fixed and dynamic size matrices and vectors. For specialized or heavily optimized applications, use something more focused like [Eigen](http://eigen.tuxfamily.org) instead.
 * 2, 3 and N-dimensional geometric primitives, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
 * An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
@@ -116,7 +116,7 @@ main(int argc, char * argv[])
   Matrix3 m = Matrix3::rotationArc(Vector3::unitX(), Vector3::unitY());
 
   // Automatically adds newline and synchronization to std::cout...
-  THEA_CONSOLE << "Hello world! The product is " << m * v; 
+  THEA_CONSOLE << "Hello world! The product is " << m * v;
 }
 ```
 For real-world samples, see the applications in the `Thea/Code/Source/Tools` folder.

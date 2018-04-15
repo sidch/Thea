@@ -97,12 +97,9 @@ class /* THEA_API */ DCELVertex
     {}
 
     /** Get the edge from this vertex to another, if it exists, else return null. */
-    Halfedge const * getEdgeTo(DCELVertex const * v) const { return const_cast<DCELVertex *>(this)->getEdgeTo(v); }
-
-    /** Get the edge from this vertex to another, if it exists, else return null. */
-    Halfedge * getEdgeTo(DCELVertex const * v)
+    Halfedge const * getEdgeTo(DCELVertex const * v) const
     {
-      Halfedge * rval = NULL;
+      Halfedge const * rval = NULL;
 
       if (leaving)
       {
@@ -110,10 +107,10 @@ class /* THEA_API */ DCELVertex
           rval = leaving;
         else
         {
-          Halfedge * test = leaving->twin()->next();
+          Halfedge const * test = leaving->twin()->next();
           while (rval == NULL && test != leaving)
           {
-            Halfedge * twin = test->twin();
+            Halfedge const * twin = test->twin();
             if (twin->getOrigin() == v)
               rval = test;
             else
@@ -124,6 +121,9 @@ class /* THEA_API */ DCELVertex
 
       return rval;
     }
+
+    /** Get the edge from this vertex to another, if it exists, else return null. */
+    Halfedge * getEdgeTo(DCELVertex const * v) { return const_cast<DCELVertex const *>(this)->getEdgeTo(v); }
 
     /** Get a canonical halfedge leaving this vertex, or null if the vertex is isolated. */
     Halfedge const * getHalfedge() const { return leaving; }

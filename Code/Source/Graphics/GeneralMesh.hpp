@@ -63,10 +63,13 @@ namespace Thea {
 namespace Graphics {
 
 /**
- * A class for storing meshes with arbitrary topologies. Optionally allows GPU-buffered rendering, which requires the user to
- * manually indicate when mesh contents have changed and need to be resynchronized with the GPU.
+ * A class for storing meshes with arbitrary topologies. Optionally allows GPU-buffered rendering (see important note below).
  *
- * @todo Automatically invalidate appropriate GPU buffers on all modifications.
+ * @note When using GPU-buffered rendering, any methods of this class which change the mesh will automatically re-initialize the
+ * buffers. <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the GeneralMeshVertex,
+ * GeneralMeshEdge and GeneralMeshFace classes, then the user <i>must</i> manually indicate that the mesh needs to be
+ * resynchronized with the GPU. The invalidateGPUBuffers() function should be used for this.
+ *
  * @todo Add support for GPU-buffered texture coordinates with 1, 3 or 4 dimensions.
  * @todo Instantiate different types of GPU buffers for different types of colors/texture coordinates.
  */
@@ -212,8 +215,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       packed_quads.clear();
       packed_edges.clear();
 
-      invalidateGPUBuffers();
       has_large_polys = false;
+      invalidateGPUBuffers();
     }
 
     /**
@@ -353,8 +356,6 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       else
         vertices.push_back(Vertex(point));
 
-      invalidateGPUBuffers();
-
       Vertex * vertex = &(*vertices.rbegin());
       if (color)     setVertexColor<Vertex>(vertex, *color);
       if (texcoord)  setVertexTexCoord<Vertex>(vertex, *texcoord);
@@ -366,6 +367,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       vertex->setIndex(index);
 
+      invalidateGPUBuffers();
       return vertex;
     }
 
@@ -387,7 +389,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       Face * face = &(*faces.rbegin());
 
       // Initialize the face
-      face = initFace(face, vbegin, vend);
+      face = initFace(face, vbegin, vend);  // invalidates GPU buffers
       if (face)
       {
         if (index < 0)
@@ -417,7 +419,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     {
       for (FaceIterator fi = faces.begin(); fi != faces.end(); ++fi)
         if (&(*fi) == face)
-          return removeFace(fi);
+          return removeFace(fi);  // invalidates GPU buffers
 
       return false;
     }
@@ -437,6 +439,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       unlinkFace(fp);
       faces.erase(face);
 
+      invalidateGPUBuffers();
       return true;
     }
 
@@ -513,6 +516,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       }
 
       removeIsolatedEdges();
+      invalidateGPUBuffers();
     }
 
     /**
@@ -551,6 +555,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         old_vertex->edges.clear();
         old_vertex->faces.clear();
       }
+
+      invalidateGPUBuffers();
     }
 
     /**
@@ -675,6 +681,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       vertex_to_remove->edges.clear();
       vertex_to_remove->faces.clear();
+
+      invalidateGPUBuffers();
     }
 
     /**
@@ -764,6 +772,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         }
       }
 
+      invalidateGPUBuffers();
       return new_edge;
     }
 
@@ -784,6 +793,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         return NULL;
       }
 
+      invalidateGPUBuffers();
       return new_vx;
     }
 
@@ -833,6 +843,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       // Remove isolated edges, including those that became isolated above
       removeIsolatedEdges();
+      invalidateGPUBuffers();
     }
 
     /** Remove all empty faces (fewer than 3 edges) from the mesh. */
@@ -857,6 +868,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       }
 
       removeIsolatedEdges();  // also removes isolated vertices
+      invalidateGPUBuffers();
     }
 
     /** Remove all isolated edges (no incident faces) from the mesh. */
@@ -875,6 +887,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       }
 
       removeIsolatedVertices();  // some vertices might have become isolated because of edge removal
+      invalidateGPUBuffers(BufferID::TOPOLOGY);
     }
 
     /** Remove all isolated vertices (no incident edges or faces) from the mesh. */
@@ -887,6 +900,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         else
           ++vi;
       }
+
+      invalidateGPUBuffers();
     }
 
     /** Remove all vertices marked for deletion by other operations. */
@@ -899,6 +914,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         else
           ++vi;
       }
+
+      invalidateGPUBuffers();
     }
 
     /** Remove all edges marked for deletion by other operations. */
@@ -911,6 +928,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         else
           ++ei;
       }
+
+      invalidateGPUBuffers(BufferID::TOPOLOGY);
     }
 
     /** Remove all faces marked for deletion by other operations. */
@@ -923,6 +942,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         else
           ++fi;
       }
+
+      invalidateGPUBuffers(BufferID::TOPOLOGY);
     }
 
     /**
@@ -1012,7 +1033,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         ntris = poly.triangulate(tri_indices, epsilon);
         if (ntris >= 1)
         {
-          if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))
+          if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))  // invalidates GPU buffers
             return -1;
         }
       }
@@ -1172,7 +1193,6 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
 
       invalidateGPUBuffers();
-
       return face;
     }
 
@@ -1182,6 +1202,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
                         typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
     {
       vertex->attr().setColor(color);
+      invalidateGPUBuffers(BufferID::VERTEX_COLOR);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
@@ -1196,6 +1217,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
                            typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
     {
       vertex->attr().setTexCoord(texcoord);
+      invalidateGPUBuffers(BufferID::VERTEX_TEXCOORD);
     }
 
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
@@ -1384,6 +1406,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       old_edge->faces.clear();
 
+      invalidateGPUBuffers();
       return true;
     }
 
@@ -1418,6 +1441,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
       for (typename Face::EdgeIterator fei = face->edges.begin(); fei != face->edges.end(); ++fei)
         (*fei)->removeFace(face);
+
+      invalidateGPUBuffers();
     }
 
     /** Replace a higher-degree face with multiple triangular faces. */
@@ -1446,6 +1471,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         }
       }
 
+      invalidateGPUBuffers();
       return true;
     }
 
@@ -1591,11 +1617,11 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       num_quad_indices  =  (long)packed_quads.size();
     }
 
-    typedef TheaArray<Vector3>  PositionArray;  ///< Array of vertex positions.
-    typedef TheaArray<Vector3>  NormalArray;    ///< Array of normals.
-    typedef TheaArray<ColorRGBA>   ColorArray;     ///< Array of colors.
-    typedef TheaArray<Vector2>  TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<uint32>   IndexArray;     ///< Array of indices.
+    typedef TheaArray<Vector3>    PositionArray;  ///< Array of vertex positions.
+    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
+    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
 
     FaceList    faces;        ///< Set of mesh faces.
     VertexList  vertices;     ///< Set of mesh vertices.
@@ -1604,7 +1630,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     long max_vertex_index;    ///< The largest index of a vertex in the mesh.
     long max_face_index;      ///< The largest index of a face in the mesh.
 
-    AxisAlignedBox3  bounds;  ///< Mesh bounding box.
+    AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
     bool buffered_rendering;  ///< Should the mesh be rendered using GPU buffers?
     bool buffered_wireframe;  ///< Can edges be drawn in GPU-buffered mode?

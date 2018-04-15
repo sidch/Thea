@@ -112,13 +112,23 @@ class /* THEA_API */ IsNonReferencedBoundedN
 // Traits class to get bounding volumes of bounded objects
 //=============================================================================================================================
 
-/** Traits class for a bounded object in N-space. */
+/**
+ * Traits class for a bounded object in N-space. Default implementation assumes class T has a T::getBounds() function that
+ * returns an N-dimensional axis-aligned bounding box. Different specializations exist for specific classes.
+ */
 template <typename T, long N, typename ScalarT = Real, typename Enable = void>
 class /* THEA_API */ BoundedTraitsN
 {
   public:
-    /** Get a bounding range for an object. */
-    template <typename RangeT> static void getBounds(T const & t, RangeT & bounds) { bounds = t.getBounds(); }
+    /** Get a bounding box for an object. */
+    static void getBounds(T const & t, AxisAlignedBoxN<N, ScalarT> & bounds) { bounds = t.getBounds(); }
+
+    /** Get a bounding sphere for an object. */
+    static void getBounds(T const & t, BallN<N, ScalarT> & bounds)
+    {
+      // Can we make this tighter in general?
+      BoundedTraitsN<AxisAlignedBoxN<N, ScalarT>, N, ScalarT>::getBounds(t.getBounds(), bounds);
+    }
 
     /** Get the center of the object. */
     static VectorN<N, ScalarT> getCenter(T const & t) { return t.getBounds().getCenter(); }
