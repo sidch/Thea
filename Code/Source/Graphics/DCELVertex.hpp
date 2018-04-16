@@ -97,7 +97,10 @@ class /* THEA_API */ DCELVertex
     {}
 
     /** Get the edge from this vertex to another, if it exists, else return null. */
-    Halfedge const * getEdgeTo(DCELVertex const * v) const
+    Halfedge const * getEdgeTo(DCELVertex const * v) const  { return const_cast<DCELVertex *>(this)->getEdgeTo(v); }
+
+    /** Get the edge from this vertex to another, if it exists, else return null. */
+    Halfedge * getEdgeTo(DCELVertex const * v)
     {
       Halfedge const * rval = NULL;
 
@@ -119,11 +122,8 @@ class /* THEA_API */ DCELVertex
         }
       }
 
-      return rval;
+      return const_cast<Halfedge *>(rval);
     }
-
-    /** Get the edge from this vertex to another, if it exists, else return null. */
-    Halfedge * getEdgeTo(DCELVertex const * v) { return const_cast<DCELVertex const *>(this)->getEdgeTo(v); }
 
     /** Get a canonical halfedge leaving this vertex, or null if the vertex is isolated. */
     Halfedge const * getHalfedge() const { return leaving; }
@@ -231,10 +231,10 @@ class IsPointN<Graphics::DCELVertex<VT, HT, FT>, 3>
 
 // Map a mesh vertex to its 3D position. */
 template <typename VT, typename HT, typename FT>
-class PointTraitsN<Graphics::GeneralMeshVertex<VT, HT, FT>, 3>
+class PointTraitsN<Graphics::DCELVertex<VT, HT, FT>, 3>
 {
   public:
-    static Vector3 const & getPosition(Graphics::DCELVertex<VT, ET, FT, AT> const & t) { return t.getPosition(); }
+    static Vector3 const & getPosition(Graphics::DCELVertex<VT, HT, FT> const & t) { return t.getPosition(); }
 };
 
 } // namespace Algorithms

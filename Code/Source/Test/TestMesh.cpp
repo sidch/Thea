@@ -1,9 +1,8 @@
-// #define TEST_GENERAL_MESH
-// #define TEST_DCEL_MESH
-// #define TEST_CGAL_MESH
-// #define TEST_CONNECTED_COMPONENTS
-// #define TEST_MANIFOLD
-#define TEST_IMLS
+#define TEST_GENERAL_MESH
+#define TEST_DCEL_MESH
+#define TEST_CONNECTED_COMPONENTS
+#define TEST_MANIFOLD
+// #define TEST_IMLS
 
 #include "../Common.hpp"
 
@@ -17,18 +16,15 @@ typedef Thea::Graphics::GeneralMesh<> GM;
 typedef Thea::Graphics::DCELMesh<> DM;
 #endif
 
-#if defined(TEST_CGAL_MESH)
-#include "../Graphics/CGALMesh.hpp"
-typedef Thea::Graphics::CGALMesh<> CM;
-#endif
-
 #include "../Graphics/MeshType.hpp"
 #include "../Algorithms/ConnectedComponents.hpp"
 #include "../Algorithms/IMLSSurface.hpp"
 #include "../Algorithms/ImplicitSurfaceMesher.hpp"
 #include "../Algorithms/MeshKDTree.hpp"
+#include "../Application.hpp"
 #include "../Array.hpp"
 #include "../FilePath.hpp"
+#include "../FileSystem.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -42,15 +38,23 @@ using namespace Graphics;
 void testMesh(int argc, char * argv[]);
 void testGeneralMesh(int argc, char * argv[]);
 void testDCELMesh(int argc, char * argv[]);
-void testCGALMesh(int argc, char * argv[]);
 void testManifold(int argc, char * argv[]);
 void testIMLS(int argc, char * argv[]);
+
+string data_dir;
 
 int
 main(int argc, char * argv[])
 {
   try
   {
+#ifdef _MSC_VER
+    data_dir = FilePath::concat(FilePath::parent(FileSystem::resolve(Application::programPath())),
+                                "../../../../../Data/Models");
+#else
+    data_dir = FilePath::concat(FilePath::parent(FileSystem::resolve(Application::programPath())),
+                                "../../../../Data/Models");
+#endif
     testMesh(argc, argv);
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
@@ -65,7 +69,6 @@ testMesh(int argc, char * argv[])
 {
   testGeneralMesh(argc, argv);
   testDCELMesh(argc, argv);
-  testCGALMesh(argc, argv);
   testManifold(argc, argv);
   testIMLS(argc, argv);
 }
@@ -110,26 +113,6 @@ testDCELMesh(int argc, char * argv[])
 #endif
 }
 
-void
-testCGALMesh(int argc, char * argv[])
-{
-#ifdef TEST_CGAL_MESH
-
-  MeshGroup<CM> mg("CGAL Mesh Group");
-  CM::Ptr mesh(new CM("CGAL Mesh"));
-  mg.addMesh(mesh);
-
-  Algorithms::MeshKDTree<CM> kdtree;
-  kdtree.add(mg);
-
-#ifdef TEST_CONNECTED_COMPONENTS
-  TheaArray< TheaArray<CM::Facet_handle> > components;
-  ConnectedComponents::findEdgeConnected(*mesh, components);
-#endif
-
-#endif
-}
-
 #ifdef TEST_MANIFOLD
 bool isManifold(GM const & mesh)
 {
@@ -157,7 +140,7 @@ testManifold(int argc, char * argv[])
 {
 #ifdef TEST_MANIFOLD
 
-  string model_path = (argc < 2 ? "../../Data/Models/bunny-conformal.obj" : argv[1]);
+  string model_path = (argc < 2 ? FilePath::concat(data_dir, "teapot.obj") : argv[1]);
 
   MeshGroup<GM> input_mg(FilePath::objectName(model_path));
   input_mg.load(model_path);
@@ -199,7 +182,7 @@ testIMLS(int argc, char * argv[])
 #ifdef TEST_IMLS
   MeshGroup<GM> input_mg("IMLS Input");
   // string model_path = "../../Data/Models/m0.off";
-  string model_path = "../../Data/Models/bunny-conformal.obj";
+  string model_path = FilePath::concat(data_dir, "teapot.obj");
   input_mg.load(model_path);
   input_mg.updateBounds();
 

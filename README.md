@@ -56,7 +56,7 @@ Assuming there were no errors while installing the dependencies, execute the fol
 cd "$basedir"
 git clone --recursive https://github.com/sidch/Thea
 cd Thea/Code/Build
-cmake -DCMAKE_INSTALL_PREFIX="$prefix" .
+cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_INSTALL_PREFIX=RelWithDebInfo .
 make -j4
 make install    # add sudo if necessary
 make tools -j4
@@ -71,7 +71,7 @@ Output/bin/RenderShape ../../Data/Models/teapot.obj teapot.png 800 600
 ```
 to render the teapot to an image file.
 
-To build with OSMesa instead of the system OpenGL driver, add `-DWITH_OSMESA=true` to the CMake line above. The *RenderShape* tool will then use OSMesa.
+To build with OSMesa instead of the system OpenGL driver, add `-DWITH_OSMESA=true` to the CMake line above. The *RenderShape* tool will then use OSMesa. To run some test scripts (several probably out of date), run `make test` after building. To omit building the tests altogether, pass `-DWITH_TESTS=false` to CMake. To change the build type (by default `Release`), set `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`.
 
 ## Documentation
 

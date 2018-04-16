@@ -815,7 +815,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
           writeString(format("%f %f %f\n", vx->getPosition().x(), vx->getPosition().y(), vx->getPosition().z()), output);
 
         vertex_indices[vx] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index, &(*vi));
+        if (callback) callback->vertexWritten(&mesh, vertex_index, vx);
       }
     }
 

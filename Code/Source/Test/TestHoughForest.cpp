@@ -82,7 +82,7 @@ class ExampleSet: public HoughForest::TrainingData
     typedef TheaUnorderedMap<long, long> IDMap;
 
   public:
-    THEA_DEF_POINTER_TYPES(ExampleSet, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ExampleSet, Thea::shared_ptr, Thea::weak_ptr)
 
     /** Constructor. */
     ExampleSet(long num_classes_ = 0) : num_classes(num_classes_) {}

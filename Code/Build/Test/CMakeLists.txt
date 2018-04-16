@@ -542,4 +542,6 @@ IF(TARGET TheaTestARPACK)
   SET(TheaTestsDependencies ${TheaTestsDependencies} TheaTestARPACK)
 ENDIF()
 
-ADD_CUSTOM_TARGET(test DEPENDS ${TheaTestsDependencies})
+FOREACH(target ${TheaTestsDependencies})
+  ADD_TEST(NAME ${target} COMMAND ${target})
+ENDFOREACH()

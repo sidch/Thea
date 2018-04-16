@@ -58,8 +58,8 @@ testLB(int argc, char * argv[])
   string model_path = argv[1];
   MeshGroup<Mesh> mesh_group("Manifold");
 
-  CodecOBJ<Mesh> const codec_obj(NULL, CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
-  Codec3DS<Mesh> const codec_3ds(NULL, Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
+  CodecOBJ<Mesh> const codec_obj(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
+  Codec3DS<Mesh> const codec_3ds(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
 
   if (endsWith(toLower(model_path), "obj"))
     mesh_group.load(model_path, codec_obj);

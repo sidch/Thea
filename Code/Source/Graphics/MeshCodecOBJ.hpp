@@ -577,7 +577,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         typename Mesh::Vertex const * vx = *vi;
         writeString(format("v %f %f %f\n", vx->getPosition().x(), vx->getPosition().y(), vx->getPosition().z()), output);
         vertex_indices[vx] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index - 1, &(*vi));
+        if (callback) callback->vertexWritten(&mesh, vertex_index - 1, vx);
       }
 
       if (!write_opts.ignore_normals)

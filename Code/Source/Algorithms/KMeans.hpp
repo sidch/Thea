@@ -94,10 +94,10 @@ class THEA_API KMeans : public Serializable
         /** Constructor. Sets default options. */
         Options();
 
-        /* Maximum iterations to seek convergence (ignored if negative, default -1). */
+        /* Maximum iterations to seek convergence (default value if negative, default -1). */
         Options & setMaxIterations(long iters) { max_iterations = iters; return *this; }
 
-        /* Maximum time in seconds to seek convergence (ignored if negative, default -1). */
+        /* Maximum time in seconds to seek convergence (default value if negative, default -1). */
         Options & setMaxTime(double seconds) { max_time = seconds; return *this; }
 
         /** How to seed the initial centers (default Seeding::K_MEANS_PLUS_PLUS). */
@@ -173,6 +173,9 @@ class THEA_API KMeans : public Serializable
     bool cluster(long num_clusters, AddressableMatrixT const & points, long * labeling = NULL,
                  double * squared_distances = NULL)
     {
+      static long   const DEFAULT_MAX_ITERS = 1000;
+      static double const DEFAULT_MAX_TIME  =   60;  // seconds
+
       alwaysAssertM(num_clusters > 0, "KMeans: Number of clusters must be at least 1");
 
       long num_points = points.numRows();
@@ -225,20 +228,30 @@ class THEA_API KMeans : public Serializable
 
       mapToClusters(num_clusters, points, labeling, squared_distances);
 
+      if (options.verbose)
+      {
+        timer.tock();
+        THEA_CONSOLE << "KMeans: Made initial assignment of points to clusters in " << timer.elapsedTime() << 's';
+        timer.tick();
+      }
+
       //=======================================================================================================================
       // Iterate
       //=======================================================================================================================
+
+      long    max_iters  =  (options.max_iterations >= 0 ? options.max_iterations : DEFAULT_MAX_ITERS);
+      double  max_time   =  (options.max_time       >= 0 ? options.max_time       : DEFAULT_MAX_TIME);
 
       bool converged = false;
       long num_iterations = 0;
       double last_time = System::time();
       while (!converged)
       {
-        if (options.max_iterations >= 0 && num_iterations >= options.max_iterations)
+        if (max_iters >= 0 && num_iterations >= max_iters)
           break;
 
         double curr_time = System::time();
-        if (options.max_time >= 0 && curr_time - start_time > options.max_time)
+        if (max_time >= 0 && curr_time - start_time > max_time)
           break;
 
         // Print an update every 3 seconds or every iteration, whichever is longer
@@ -458,7 +471,7 @@ class THEA_API KMeans : public Serializable
      */
     template <typename AddressableMatrixT>
     bool mapToClusters(long num_clusters, AddressableMatrixT const & points, long * cluster_indices,
-                      double * cluster_sqdists = NULL) const
+                       double * cluster_sqdists = NULL) const
     {
       long num_points = points.numRows();
       unsigned int concurrency = boost::thread::hardware_concurrency();
@@ -472,15 +485,18 @@ class THEA_API KMeans : public Serializable
         long points_begin = 0;
         for (unsigned int i = 0; i < concurrency; ++i)
         {
-          long points_end = std::min((long)Math::round(points_begin + points_per_thread), num_points);
+          long points_end = (i + 1 == concurrency ? num_points
+                                                  : std::min((long)std::ceil(points_begin + points_per_thread), num_points));
+          if (points_begin >= points_end)  // more threads than points
+            continue;
 
           pool.add_thread(new boost::thread(ClusterMapper<AddressableMatrixT>(this,
-                                                                             num_clusters,
-                                                                             &points,
-                                                                             points_begin,
-                                                                             points_end,
-                                                                             cluster_indices,
-                                                                             cluster_sqdists)));
+                                                                              num_clusters,
+                                                                              &points,
+                                                                              points_begin,
+                                                                              points_end,
+                                                                              cluster_indices,
+                                                                              cluster_sqdists)));
           points_begin = points_end;
         }
 

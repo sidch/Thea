@@ -1348,7 +1348,7 @@ class /* THEA_API */ KDTreeN
       bool get_closest_points,
       typename boost::disable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
     {
-      VectorT qp, tp;
+      VectorT qp = VectorT::zero(), tp = VectorT::zero();  // initialize to squash uninitialized variable warning
       double mad;
 
       for (size_t i = 0; i < leaf->num_elems; ++i)

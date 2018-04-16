@@ -41,15 +41,16 @@ IF(WITH_OPTPP)
   ADD_SUBDIRECTORY(Plugins/OPTPP)
 ENDIF()
 
-# The tests should not be built by default (some of them are also probably currently broken)
+IF(NOT DEFINED WITH_TESTS)
+  SET(WITH_TESTS true)
+ENDIF()
 IF(WITH_TESTS)
-  ADD_SUBDIRECTORY(Test EXCLUDE_FROM_ALL)
-
-  SET(WITH_TESTS ${WITH_TESTS} CACHE BOOL "Build test programs?")
-
-  # Help message about building tests
   MESSAGE(STATUS "")
-  MESSAGE(STATUS "NOTE: Test programs are not automatically built. To build them, run 'make test'.")
+  MESSAGE(STATUS "NOTE: Test programs run when you execute 'make test'.")
+  MESSAGE(STATUS "NOTE: Some tests may be out-of-date with the current library.")
+  MESSAGE(STATUS "")
+  ENABLE_TESTING()
+  ADD_SUBDIRECTORY(Test)
 ENDIF()
 
 MESSAGE(STATUS "")
