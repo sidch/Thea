@@ -22,6 +22,8 @@ __*Thea* is constantly under development and many parts are incomplete. Use at y
 
 *Thea* is heavily influenced by, and borrows code from, Morgan McGuire's [G3D](https://casual-effects.com/g3d) library. It started out as an extension of G3D.
 
+The *Thea* library is not related to the independently and contemporaneously developed [Thea Render](http://www.thearender.com) photorealistic rendering engine.
+
 ## Installation
 
 *Thea* is written in standards-compliant C++98, and should compile with any recent compiler on Mac, Linux and Windows. It uses [CMake](https:///cmake.org) as a cross-platform buildsystem. However, I do not normally work on Windows, and do not currently provide build instructions for this platform. I have successfully done Windows builds in the past and there is no reason why it should not work with a bit of effort getting the dependencies installed. I will try to add full Windows instructions in the future, time permitting.
@@ -56,7 +58,7 @@ Assuming there were no errors while installing the dependencies, execute the fol
 cd "$basedir"
 git clone --recursive https://github.com/sidch/Thea
 cd Thea/Code/Build
-cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_INSTALL_PREFIX=RelWithDebInfo .
+cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make -j4
 make install    # add sudo if necessary
 make tools -j4
