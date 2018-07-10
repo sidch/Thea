@@ -1,5 +1,4 @@
-//============================================================================
-//
+//============================================================================ //
 // This file is part of the Thea project.
 //
 // This software is covered by the following BSD license, except for portions
@@ -904,7 +903,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
       // Now actually create and add the edges. In this loop we directly access private members (ha ha) of the edges to bypass
       // any consistency checks until we've finished adding the face.
-      Halfedge * new_e, * new_twin, * next_e, * last = NULL;
+      Halfedge * new_e, * new_twin, * next_e, * last = NULL; (void)last;  // Squash -Wunused-but-set-variable
       Vertex * vi, * vnext;
       long index0, index1;
       bool added_canonical_edge_to_face = false;
@@ -1019,8 +1018,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
           added_canonical_edge_to_face = true;
         }
 
-        debugAssertM(!last || last->next_he == new_e,
-                     getNameStr() + ": Next pointers on face boundary not consistent");
+        debugAssertM(!last || last->next_he == new_e, getNameStr() + ": Next pointers on face boundary not consistent");
         last = new_e;
 
 #ifdef THEA_DCELMESH_VERBOSE
