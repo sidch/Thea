@@ -201,11 +201,11 @@ App::parseOptions(std::vector<std::string> const & args)
   // hidden.add_options()("hidden-option", po::value<std::string>(&hidden_option), "");
 
   std::string app_dir(FilePath::parent(Application::programPath()));
-#ifdef _MSC_VER
-  // Visual Studio puts executables in Debug|Release subdirectory
-  std::string def_resource_dir = FilePath::concat(app_dir, "../../../../Resources");
-#else
   std::string def_resource_dir = FilePath::concat(app_dir, "../../../Resources");
+#ifdef _MSC_VER
+  // Visual Studio puts executables in Debug|Release subdirectory, so handle this possibility
+  if (!FileSystem::directoryExists(def_resource_dir))
+    def_resource_dir = FilePath::concat(app_dir, "../../../../Resources");
 #endif
 
   std::string s_model;

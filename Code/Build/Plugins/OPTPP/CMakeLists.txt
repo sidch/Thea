@@ -148,3 +148,4 @@ SET_TARGET_PROPERTIES(TheaPluginOPTPP
                           INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 INSTALL(TARGETS TheaPluginOPTPP DESTINATION lib)
+INSTALL(TARGETS TheaPluginOPTPP DESTINATION share/Thea/Build/Output/lib)  # for tools to use

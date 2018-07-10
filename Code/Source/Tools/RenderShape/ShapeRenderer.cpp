@@ -2410,38 +2410,9 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 bool
 ShapeRendererImpl::loadPlugins(int argc, char ** argv)
 {
-  string app_path = FileSystem::resolve(Application::programPath());
-  string plugin_dir = FilePath::concat(FilePath::parent(FilePath::parent(app_path)), "lib");
-
-  // Try to load the OpenGL plugin
-#ifdef THEA_DEBUG_BUILD
-
-#ifdef THEA_WINDOWS
-  string debug_plugin_path    =  FilePath::concat(plugin_dir, "TheaPluginGLd");
-  string release_plugin_path  =  FilePath::concat(plugin_dir, "TheaPluginGL");
-#else
-  string debug_plugin_path    =  FilePath::concat(plugin_dir, "libTheaPluginGLd");
-  string release_plugin_path  =  FilePath::concat(plugin_dir, "libTheaPluginGL");
-#endif
-
-#ifdef THEA_WINDOWS
-  string debug_plugin_path_ext = debug_plugin_path + ".dll";
-#elif THEA_OSX
-  string debug_plugin_path_ext = debug_plugin_path + ".dylib";
-#else
-  string debug_plugin_path_ext = debug_plugin_path + ".so";
-#endif
-
-  string plugin_path = FileSystem::exists(debug_plugin_path_ext) ? debug_plugin_path : release_plugin_path;
-#else
-
-#ifdef THEA_WINDOWS
-  string plugin_path = FilePath::concat(plugin_dir, "TheaPluginGL");
-#else
-  string plugin_path = FilePath::concat(plugin_dir, "libTheaPluginGL");
-#endif
-
-#endif
+  std::string plugin_path = Application::getPluginPath("TheaPluginGL");
+  if (plugin_path.empty())
+    throw Error("Could not locate OpenGL plugin 'TheaPluginGL'");
 
   Plugin * gl_plugin = Application::getPluginManager().load(plugin_path);
   if (!gl_plugin)

@@ -30,6 +30,12 @@ IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
 ENDIF()
 
+# https://stackoverflow.com/a/42697475
+MACRO(install_symlink filepath sympath)
+  INSTALL(CODE "EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} -E create_symlink ${filepath} ${sympath})")
+  INSTALL(CODE "MESSAGE(STATUS \"Created symlink: ${sympath} -> ${filepath}\")")
+ENDMACRO(install_symlink)
+
 # Subdirectories containing individual build targets
 ADD_SUBDIRECTORY(Common)
 ADD_SUBDIRECTORY(Plugins/ARPACK)

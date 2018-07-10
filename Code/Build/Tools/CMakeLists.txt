@@ -626,5 +626,10 @@ SET(TheaAllTools ${TheaAllTools} ShapeAlign)
 ADD_CUSTOM_TARGET(tools DEPENDS ${TheaAllTools})
 
 FOREACH(tgt ${TheaAllTools})
-  INSTALL(TARGETS ${tgt} DESTINATION bin/Thea)
+  INSTALL(TARGETS ${tgt} DESTINATION share/Thea/Build/Output/bin)
 ENDFOREACH()
+
+install_symlink(${CMAKE_INSTALL_PREFIX}/share/Thea/Build/Output/bin
+                ${CMAKE_INSTALL_PREFIX}/bin/Thea)
+
+INSTALL(DIRECTORY ${ProjectRoot}/Resources DESTINATION share/Thea)

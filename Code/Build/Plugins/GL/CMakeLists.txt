@@ -170,6 +170,7 @@ SET_TARGET_PROPERTIES(TheaPluginGL
                           INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 INSTALL(TARGETS TheaPluginGL DESTINATION lib)
+INSTALL(TARGETS TheaPluginGL DESTINATION share/Thea/Build/Output/lib)  # for tools to use
 
 ELSE(OPENGL_FOUND AND OPENGL_GLU_FOUND)
 

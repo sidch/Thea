@@ -190,6 +190,7 @@ ELSEIF(${CMAKE_MAJOR_VERSION} EQUAL 2)
 ENDIF()
 
 INSTALL(TARGETS Thea DESTINATION lib)
+
 IF(UseFilesMatching)  # CMake 2.6 and above
   INSTALL(DIRECTORY ${SourceRoot}/ DESTINATION include/Thea
           FILES_MATCHING

@@ -137,3 +137,4 @@ SET_TARGET_PROPERTIES(TheaPluginCSPARSE
                           INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 INSTALL(TARGETS TheaPluginCSPARSE DESTINATION lib)
+INSTALL(TARGETS TheaPluginCSPARSE DESTINATION share/Thea/Build/Output/lib)  # for tools to use
