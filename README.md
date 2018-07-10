@@ -61,15 +61,14 @@ cd Thea/Code/Build
 cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make -j4
 make install    # add sudo if necessary
-make tools -j4
 ```
-The last step builds the set of bundled tools and can be omitted if you just want to use the library. However, if you do install the tools, a quick way to check if everything has installed correctly is to run
+The bundled tools are installed to `$prefix/bin/Thea`: add this to your executable search path (e.g. the system PATH variable) as needed. A quick way to check if everything has installed correctly is to run
 ```shell
-Output/bin/Browse3D ../../Data/Models/teapot.obj
+$prefix/bin/Thea/Browse3D ../../Data/Models/teapot.obj
 ```
 and see if a window pops up displaying a 3D teapot, or
 ```shell
-Output/bin/RenderShape ../../Data/Models/teapot.obj teapot.png 800 600
+$prefix/bin/Thea/RenderShape ../../Data/Models/teapot.obj teapot.png 800 600
 ```
 to render the teapot to an image file.
 

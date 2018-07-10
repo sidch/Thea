@@ -53,7 +53,4 @@ IF(WITH_TESTS)
   ADD_SUBDIRECTORY(Test)
 ENDIF()
 
-MESSAGE(STATUS "")
-MESSAGE(STATUS "NOTE: Tools are not automatically built. To build them, run 'make tools'.")
-MESSAGE(STATUS "")
-ADD_SUBDIRECTORY(Tools EXCLUDE_FROM_ALL)
+ADD_SUBDIRECTORY(Tools)

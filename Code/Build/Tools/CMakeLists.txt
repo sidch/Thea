@@ -620,7 +620,11 @@ ENDIF()
 SET(TheaAllTools ${TheaAllTools} ShapeAlign)
 
 #===========================================================
-# Target for all tools
+# Target for all tools, and installation
 #===========================================================
 
 ADD_CUSTOM_TARGET(tools DEPENDS ${TheaAllTools})
+
+FOREACH(tgt ${TheaAllTools})
+  INSTALL(TARGETS ${tgt} DESTINATION bin/Thea)
+ENDFOREACH()
