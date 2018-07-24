@@ -135,7 +135,7 @@ SET(TheaAllTools )
 # Browse3D
 #===========================================================
 
-IF(wxWidgets_FOUND AND OPENGL_FOUND)
+IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   # Source file lists
   FILE(GLOB Browse3DSources
        ${SourceRoot}/Tools/Browse3D/*.cpp)
