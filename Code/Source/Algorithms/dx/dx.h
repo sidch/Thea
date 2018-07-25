@@ -4,26 +4,26 @@
 /* ALL RIGHTS RESERVED                                                 */
 /* This code licensed under the                                        */
 /*    "IBM PUBLIC LICENSE - Open Visualization Data Explorer"          */
-/***********************************************************************/
+/**************intelnt*********************************************************/
 
 
 #ifndef _LIBDX_H
 #define _LIBDX_H
 
 #ifdef _MSC_VER
-#  define intelnt 1
+#  define libdx_intelnt 1
 #elif defined(__FreeBSD__)
-#  define freebsd 1
+#  define libdx_freebsd 1
 #  define HAVE_SYS_BSD_TYPES_H
 #elif defined(__OpenBSD__)
-#  define openbsd 1
-#  define freebsd 1
+#  define libdx_openbsd 1
+#  define libdx_freebsd 1
 #  define HAVE_SYS_BSD_TYPES_H
 #elif defined(__linux__)
-#  define linux 1
+#  define libdx_linux 1
 #  define HAVE_SYS_TYPES_H
 #elif defined(__APPLE__)
-#  define macos 1
+#  define libdx_macos 1
 #  define HAVE_SYS_TYPES_H
 #endif
 
