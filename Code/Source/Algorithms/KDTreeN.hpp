@@ -366,9 +366,9 @@ class /* THEA_API */ KDTreeN
   public:
     THEA_DEF_POINTER_TYPES(KDTreeN, shared_ptr, weak_ptr)
 
-    typedef T                                    Element;              ///< Type of elements in the kd-tree.
-    typedef T                                    value_type;           ///< Type of elements in the kd-tree (STL convention).
-    typedef NodeAttributeT                       NodeAttribute;        ///< Attributes attached to nodes.
+    typedef T                                    Element;        ///< Type of elements in the kd-tree.
+    typedef T                                    value_type;     ///< Type of elements in the kd-tree (STL convention).
+    typedef NodeAttributeT                       NodeAttribute;  ///< Attributes attached to nodes.
 
     typedef typename ProximityQueryBaseT::VectorT              VectorT;                    ///< Vector in N-space.
     typedef AxisAlignedBoxN<N, ScalarT>                        AxisAlignedBoxT;            ///< Axis-aligned box in N-space.
@@ -1311,7 +1311,7 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename boost::enable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
+      typename boost::enable_if< boost::is_base_of<ProximityQueryBaseT, QueryT> >::type * dummy = NULL) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1346,7 +1346,7 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename boost::disable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
+      typename boost::disable_if< boost::is_base_of<ProximityQueryBaseT, QueryT> >::type * dummy = NULL) const
     {
       VectorT qp = VectorT::zero(), tp = VectorT::zero();  // initialize to squash uninitialized variable warning
       double mad;
@@ -1836,9 +1836,16 @@ class /* THEA_API */ KDTreeN
 template <typename T, long N, typename S, typename A>
 Real const KDTreeN<T, N, S, A>::BOUNDS_EXPANSION_FACTOR = 1.05f;
 
-// Mark the kd-tree as a bounded object. The default BoundedTraitsN implementation is good enough.
-template <typename T, long N, typename S, typename A>
-class IsBoundedN< KDTreeN<T, N, S, A>, N > { public: static bool const value = true; };
+// Mark the kd-tree and its (public) descendants as bounded objects. The default BoundedTraitsN implementation is good enough.
+template <typename T, long N>
+class IsBoundedN< T, N, typename boost::enable_if< boost::is_base_of< KDTreeN< typename T::Element, N,
+                                                                               typename T::VectorT::value_type,
+                                                                               typename T::NodeAttribute >,
+                                                                      T > >::type >
+{
+  public:
+    static bool const value = true;
+};
 
 } // namespace Algorithms
 } // namespace Thea
