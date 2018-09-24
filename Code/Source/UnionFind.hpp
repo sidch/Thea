@@ -47,7 +47,10 @@
 
 namespace Thea {
 
-/** Union-find data structure. Original code by Kartik Kukreja, https://github.com/kartikkukreja/ */
+/**
+ * Union-find data structure. Original code by Kartik Kukreja, https://github.com/kartikkukreja/ . The data structure will save
+ * a copy of each object to support getObjectID(), so T should be easily copyable (a small/POD class, or a pointer).
+ */
 template <typename T = long>
 class UnionFind
 {
@@ -65,7 +68,8 @@ class UnionFind
 
     /**
      * Create a union-find data structure for objects in the range [\a begin, \a end). The objects will be assigned sequential
-     * IDs 0, 1, 2, ..., n - 1 in the same order as the input.
+     * IDs 0, 1, 2, ..., n - 1 in the same order as the input. Note that the data structure will save a copy of each object to
+     * support getObjectID(), so T should be easily copyable (a small/POD class, or a pointer).
      */
     template <typename InputIterator> UnionFind(InputIterator begin, InputIterator end)
     : has_objects(true)

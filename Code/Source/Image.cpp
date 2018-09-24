@@ -243,12 +243,13 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
 // 2D formats
 //=============================================================================================================================
 
+// Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
 #define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
 long                                                                                                                          \
 codec::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const                               \
 {                                                                                                                             \
   fipMemoryIO mem;                                                                                                            \
-  image._getFreeImage()->saveToMemory(fip_format, mem, flags);                                                                \
+  const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags);                                        \
                                                                                                                               \
   BYTE * data;                                                                                                                \
   DWORD size_in_bytes;                                                                                                        \
