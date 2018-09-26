@@ -89,8 +89,9 @@ class UnionFind
     }
 
     /**
-     * Get the ID of an object. Note that if you used the UnionFind(long) constructor, this function will give the expected
-     * results (operating as an identity function) only if <code>T = long</code>.
+     * Get the ID of an object, or a negative value if it is not present in the data structure. Note that if you used the
+     * UnionFind(long) constructor, this function will give the expected results (operating as an identity function) only if
+     * <code>T = long</code>.
      */
     long getObjectID(T const & obj) const
     {

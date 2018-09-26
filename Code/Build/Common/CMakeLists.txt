@@ -8,6 +8,8 @@
 
 PROJECT(Thea)
 
+MESSAGE(STATUS "${CMAKE_OSX_DEPLOYMENT_TARGET}, ${CMAKE_OSX_SYSROOT}")
+
 # Set the minimum required CMake version
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
@@ -15,6 +17,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 IF(POLICY CMP0003)
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(POLICY CMP0003)
+
+# See cmake --help-policy CMP0074 for details on this one
+IF(POLICY CMP0074)
+  CMAKE_POLICY(SET CMP0074 NEW)
+ENDIF(POLICY CMP0074)
 
 # If you don't want the full compiler output, remove the following line
 SET(CMAKE_VERBOSE_MAKEFILE ON)
