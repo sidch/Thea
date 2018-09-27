@@ -52,10 +52,10 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Path to folder with installations of the dependencies
-IF(NOT THEA_INSTALLATIONS_ROOT)
-  SET(THEA_INSTALLATIONS_ROOT ${CMAKE_INSTALL_PREFIX})
+IF(NOT THEA_DEPS_ROOT)
+  SET(THEA_DEPS_ROOT ${CMAKE_INSTALL_PREFIX})
 ENDIF()
-SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
+SET(THEA_DEPS_ROOT ${THEA_DEPS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
 
 # Locate dependencies
 SET(Thea_FIND_ALL TRUE)

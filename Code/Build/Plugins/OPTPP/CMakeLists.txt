@@ -57,20 +57,20 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 SET(SourceRoot ${ProjectRoot}/Source)
 
 # Path to folder with installations of the dependencies
-IF(NOT THEA_INSTALLATIONS_ROOT)
-  SET(THEA_INSTALLATIONS_ROOT ${CMAKE_INSTALL_PREFIX})
+IF(NOT THEA_DEPS_ROOT)
+  SET(THEA_DEPS_ROOT ${CMAKE_INSTALL_PREFIX})
 ENDIF()
-SET(THEA_INSTALLATIONS_ROOT ${THEA_INSTALLATIONS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
+SET(THEA_DEPS_ROOT ${THEA_DEPS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
 
 # Locate dependencies
 SET(Thea_FIND_Boost  TRUE)
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 
 # Dependency: OPT++
-IF(EXISTS ${THEA_INSTALLATIONS_ROOT}/installed-opt++)
-  SET(OPTPP_ROOT ${THEA_INSTALLATIONS_ROOT}/installed-opt++)
+IF(EXISTS ${THEA_DEPS_ROOT}/installed-opt++)
+  SET(OPTPP_ROOT ${THEA_DEPS_ROOT}/installed-opt++)
 ELSE()
-  SET(OPTPP_ROOT ${THEA_INSTALLATIONS_ROOT})
+  SET(OPTPP_ROOT ${THEA_DEPS_ROOT})
 ENDIF()
 FIND_PACKAGE(OPTPP REQUIRED)
 # Assume our compiler is up to snuff

@@ -62,7 +62,7 @@ cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make -j4
 make install    # add sudo if necessary
 ```
-The bundled tools are installed to `$prefix/bin/Thea`: add this to your executable search path (e.g. the system `PATH` variable) as needed. A quick way to check if everything has installed correctly is to run
+By default, CMake looks for the dependencies in the `CMAKE_INSTALL_PREFIX` directory. If for some reason the dependencies are located somewhere else, e.g. in `$deps`, you can point CMake to it by adding `-DTHEA_DEPS_ROOT="$deps"`. The bundled tools are installed to `$prefix/bin/Thea`: add this to your executable search path (e.g. the system `PATH` variable) as needed. A quick way to check if everything has installed correctly is to run
 ```shell
 $prefix/bin/Thea/Browse3D ../../Data/Models/teapot.obj
 ```
