@@ -35,7 +35,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell
 cd "$basedir"
-git clone --recursive https://github.com/sidch/TheaDepsUnix
+git clone --recursive https://bitbucket.org/sidch/theadepsunix TheaDepsUnix
 cd TheaDepsUnix/Source
 ```
 **For a local install (no root perms needed to write to `$prefix`):**
