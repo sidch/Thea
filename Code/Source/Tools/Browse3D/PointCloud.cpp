@@ -557,15 +557,14 @@ PointCloud::getColor(size_t point_index) const
   }
   else if (app().options().fancy_colors)
   {
-    static Real const MIN_COLOR = 0.35;
-    static Real const MAX_COLOR = 0.80;
+    static Real const MIN_COLOR = 0.1;
+    static Real const MAX_COLOR = 1.0;
 
     Vector3 ext = getBounds().getExtent().max(Vector3(1e-20f, 1e-20f, 1e-20f));
     Vector3 v = (points[point_index].p - getBounds().getLow()) / ext;
-    v[0] = std::fabs(std::sin(10 * Math::pi() * v[0]));
-    v[1] = std::fabs(std::sin(10 * Math::pi() * v[1]));
-    v[2] = std::fabs(std::sin(10 * Math::pi() * v[2]));
-    return ColorRGB((MAX_COLOR - MIN_COLOR) * v + Vector3(MIN_COLOR, MIN_COLOR, MIN_COLOR));
+    ColorRGB c((MAX_COLOR - MIN_COLOR) * v + Vector3(MIN_COLOR, MIN_COLOR, MIN_COLOR));
+    Vector3 hsv(c.toHSV().xy(), 1);
+    return ColorRGB::fromHSV(hsv);
   }
 
   return ColorRGB::zero();
