@@ -922,7 +922,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
             }
             else
             {
-              THEA_ERROR << "Could not parse view direction '" << *argv << '\'';
+              THEA_ERROR << "Invalid or unparseable view parameters '" << *argv << '\'';
               return false;
             }
           }
