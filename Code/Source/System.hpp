@@ -117,7 +117,7 @@ class THEA_API System
     struct timeval m_start;
 #endif
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
     int32          m_OSXCPUSpeed;
     double         m_secondsPerNS;
 #endif

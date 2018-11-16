@@ -184,7 +184,7 @@ class THEA_GL_DLL_LOCAL GLCaps
     static Display * headless_display;
     static Pixmap headless_pixmap;
     static GLXPixmap headless_glx_pixmap;
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 #endif
 
     /** True when loadExtensions has already been called. */

@@ -78,7 +78,7 @@ segmentSDF(int argc, char * argv[])
     return 0;
   }
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
   THEA_WARNING << "!!! On OS X, this program will only print the guessed number of segments !!!";
   THEA_WARNING << "!!! No other output will be produced !!!";
 #endif
@@ -156,7 +156,7 @@ segmentSDF(int argc, char * argv[])
 
   THEA_CONSOLE << "Estimated " << num_clusters_hint << " modes in the SDF distribution";
 
-#ifndef THEA_OSX
+#ifndef THEA_MAC
 
   TheaArray<ClusterablePoint> clusterable_pts(positions.size());
   for (size_t i = 0; i < positions.size(); ++i)

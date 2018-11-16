@@ -58,7 +58,7 @@
 
 #  include <unistd.h>
 
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 
 #  include <mach-o/dyld.h>
 #  include <stdlib.h>
@@ -98,7 +98,7 @@ Application::programPath()
   {
     GetModuleFileNameA(NULL, path, sizeof(path));
   }
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
   {
     char unresolved_path[8192];
     uint32_t size = (uint32_t)sizeof(unresolved_path);
@@ -181,7 +181,7 @@ Application::getPluginPath(std::string const & plugin_name, TheaArray<std::strin
     if (!ext.empty()) basename = basename + "." + ext;  // e.g. we got something like libGL.3
     ext = "dll";
   }
-#elif THEA_OSX
+#elif THEA_MAC
   if (ext != "dylib")
   {
     if (!ext.empty()) basename = basename + "." + ext;

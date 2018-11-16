@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
 #  include <GLUT/glut.h>
 #else
 #  include <GL/glut.h>
@@ -181,7 +181,7 @@ testDisplayMesh(int argc, char * argv[])
   // Create a GL context via a GLUT window
   glutInit(&argc, argv);
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
   glutInitDisplayString("double rgba depth samples");
 #else
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);

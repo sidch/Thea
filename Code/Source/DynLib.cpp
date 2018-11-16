@@ -103,7 +103,7 @@ DynLib_addExtension(std::string const & name)
   // does not. So, add it to be sure.
   if (toLower(name.substr(name.length() - 4, 4)) != ".dll")
     return name + ".dll";
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
   // dlopen() does not add .dylib to the filename, like windows does for .dll
   if (toLower(name.substr(name.length() - 6, 6)) != ".dylib")
     return name + ".dylib";

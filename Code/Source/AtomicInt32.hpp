@@ -56,7 +56,7 @@
 #include "Platform.hpp"
 #include "NumericTypes.hpp"
 
-#if defined(THEA_OSX)
+#if defined(THEA_MAC)
 #  include <libkern/OSAtomic.h>
 #elif defined(THEA_WINDOWS)
 #  include <windows.h>
@@ -74,7 +74,7 @@ class THEA_API AtomicInt32
 #if defined(THEA_WINDOWS)
     typedef long ImplT;
     volatile ImplT m_value;
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
     typedef int32_t ImplT;
     ImplT m_value;
 #else
@@ -129,7 +129,7 @@ class THEA_API AtomicInt32
                     : "0"(x), "m"(m_value)   /* inputs */
                     : "memory", "cc");
       return old;
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
       int32 old = m_value;
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -153,7 +153,7 @@ class THEA_API AtomicInt32
       InterlockedIncrement(&m_value);
 #elif defined(THEA_LINUX) || defined(THEA_FREEBSD)
       add(1);
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // Note: returns the newly incremented value
@@ -180,7 +180,7 @@ class THEA_API AtomicInt32
                     : "m" (m_value)
                     : "memory", "cc");
       return nz;
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
       // Note: returns the newly decremented value
@@ -202,7 +202,7 @@ class THEA_API AtomicInt32
     {
 #if defined(THEA_WINDOWS)
       return InterlockedCompareExchange(&m_value, exchange, comperand);
-#elif defined(THEA_LINUX) || defined(THEA_FREEBSD) || defined(THEA_OSX)
+#elif defined(THEA_LINUX) || defined(THEA_FREEBSD) || defined(THEA_MAC)
       // Based on Apache Portable Runtime
       // http://koders.com/c/fid3B6631EE94542CDBAA03E822CA780CBA1B024822.aspx
       int32 ret;

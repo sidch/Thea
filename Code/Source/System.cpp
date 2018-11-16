@@ -49,7 +49,7 @@
 #  include <unistd.h>
 #endif
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
 #  include <CoreServices/CoreServices.h>
 #endif
 
@@ -123,7 +123,7 @@ System::initTime()
 
   m_realWorldGetTickTime0 = local;
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
   SInt32 cpu_speed;
   Gestalt('pclk', &cpu_speed);
 
@@ -198,7 +198,7 @@ System::getCycleCount()
   return ((uint64)timehi << 32) + (uint64)timelo;
 }
 
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 
 uint64
 System::getCycleCount()
@@ -220,7 +220,7 @@ System::beginCycleCount(uint64 & cycle_count)
 void
 System::endCycleCount(uint64 & cycle_count)
 {
-#ifdef THEA_OSX
+#ifdef THEA_MAC
   AbsoluteTime end = UpTime();
   Nanoseconds diffNS = AbsoluteDeltaToNanoseconds(end, UInt64ToUnsignedWide(cycle_count));
   cycle_count = (uint64)((double)instance().m_OSXCPUSpeed

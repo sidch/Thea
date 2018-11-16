@@ -72,7 +72,7 @@
 
 #endif
 
-#if defined(THEA_OSX) && !defined(THEA_GL_OSMESA)
+#if defined(THEA_MAC) && !defined(THEA_GL_OSMESA)
 #  include <OpenGL/OpenGL.h>  // required to pull in CGL, which OpenGL/gl.h does not
 #endif
 
@@ -194,7 +194,7 @@ glGetInteger(GLenum which)
     return glXGetCurrentContext();
   }
 
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 
   typedef CGLContextObj GLContext;
   inline THEA_GL_DLL_LOCAL GLContext glGetCurrentContext()

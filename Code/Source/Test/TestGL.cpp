@@ -10,7 +10,7 @@
 #include <cstring>
 #include <ctime>
 
-#ifdef THEA_OSX
+#ifdef THEA_MAC
 #  include <GLUT/glut.h>
 #else
 #  include <GL/glut.h>

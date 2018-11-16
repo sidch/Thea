@@ -80,6 +80,8 @@
 #elif defined(__linux__)
 #  define THEA_LINUX 1
 #elif defined(__APPLE__)
+   // Retain old OSX tag for backwards-compatibility
+#  define THEA_MAC 1
 #  define THEA_OSX 1
    // Prevent OS X fp.h header from being included; it defines pi as a constant, which creates a conflict with G3D
 #  define __FP__

@@ -50,7 +50,7 @@ GLContext GLCaps::headless_context;
   Display * GLCaps::headless_display = NULL;
   Pixmap GLCaps::headless_pixmap;
   GLXPixmap GLCaps::headless_glx_pixmap;
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 #endif
 
 int GLCaps::_numTextureCoords = 0;
@@ -315,7 +315,7 @@ GLCaps::createHeadlessContext()
 
   has_headless_context = true;
 
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 
   CGLPixelFormatAttribute attribs[] = {
     kCGLPFAColorSize,     (CGLPixelFormatAttribute)24,
@@ -378,7 +378,7 @@ GLCaps::destroyHeadlessContext()
   glXDestroyPixmap(headless_display, headless_glx_pixmap);
   XFreePixmap(headless_display, headless_pixmap);
 
-#elif defined(THEA_OSX)
+#elif defined(THEA_MAC)
 
   CGLDestroyContext(headless_context);
 
