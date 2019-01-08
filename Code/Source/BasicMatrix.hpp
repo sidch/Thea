@@ -90,6 +90,15 @@ class /* THEA_API */ BasicMatrix
     /** Check if the matrix is square or not. */
     bool isSquare() const { return numRows() == numColumns(); }
 
+    /** Check if the matrix is a vector or not (one of the dimensions is 1). */
+    bool isVector() const { return numRows() == 1 || numColumns() == 1; }
+
+    /** Check if the matrix is a row vector or not (number of rows is 1). */
+    bool isRowVector() const { return numRows() == 1; }
+
+    /** Check if the matrix is a column vector or not (number of columns is 1). */
+    bool isColumnVector() const { return numColumns() == 1; }
+
 }; // class BasicMatrix
 
 } // namespace Thea

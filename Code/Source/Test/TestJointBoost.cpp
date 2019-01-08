@@ -48,7 +48,7 @@ class ExampleSet : public JointBoost::TrainingData
   public:
     typedef boost::shared_ptr<ExampleSet> Ptr;
 
-    ExampleSet(long nfeatures) : features(0, nfeatures) {}
+    ExampleSet(long nfeatures) : features((long)0, nfeatures) {}
 
     template <typename DVecT>
     void addExample(DVecT const & example_features, long example_class)

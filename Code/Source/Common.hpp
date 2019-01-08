@@ -47,12 +47,12 @@
 #include "CommonEnums.hpp"
 #include "EnumClass.hpp"
 #include "Error.hpp"
-#include "Log.hpp"
 #include "Memory.hpp"
 #include "Noncopyable.hpp"
 #include "NumericTypes.hpp"
 #include <cassert>
 #include <cstdlib>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <typeinfo>
@@ -69,7 +69,7 @@
    {                                                                                                                          \
      if (!(test))                                                                                                             \
      {                                                                                                                        \
-       THEA_ERROR << "Debug-mode assertion failed: " << (msg);                                                                \
+       std::cerr << "!!! Debug-mode assertion failed !!!: " << (msg) << std::endl;                                            \
        throw Thea::FatalError(msg);                                                                                           \
      }                                                                                                                        \
    }
@@ -81,7 +81,7 @@
    {                                                                                                                          \
      if (!(test))                                                                                                             \
      {                                                                                                                        \
-       THEA_ERROR << "Assertion failed: " << (msg);                                                                           \
+       std::cerr << "!!! Assertion failed !!!: " << (msg) << std::endl;                                                       \
        throw Thea::FatalError(msg);                                                                                           \
      }                                                                                                                        \
    }

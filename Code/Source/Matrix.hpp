@@ -68,17 +68,21 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
   private:
     typedef AddressableMatrix<T> AddressableBaseT;
 
-    AllocT allocator;
+    AllocT allocator;  // not static because: https://bytes.com/topic/c/answers/131402-could-should-allocator-t-static-member
 
   public:
     THEA_DEF_POINTER_TYPES(Matrix, shared_ptr, weak_ptr)
 
     static MatrixLayout::Value const Layout = L;  ///< The layout of the matrix (row-major or column-major).
 
+    /** The opposite (transposed) matrix layout. */
+    static MatrixLayout::Value const TransposedLayout = (L == MatrixLayout::ROW_MAJOR ? MatrixLayout::COLUMN_MAJOR
+                                                                                      : MatrixLayout::ROW_MAJOR);
+
     /** Constructs an empty matrix. */
     Matrix() : num_rows(0), num_cols(0), values(NULL), owns_memory(true) {}
 
-    /** Constructs a matrix of a given size, filled with a given value. */
+    /** Constructs a matrix of a given size, with uninitialized values. */
     Matrix(long num_rows_, long num_cols_) : num_rows(0), num_cols(0), values(NULL), owns_memory(true)
     {
       resize(num_rows_, num_cols_);
@@ -92,6 +96,15 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     }
 
     /**
+     * Constructs a row vector or a column vector, depending on whether the matrix layout is MatrixLayout::ROW_MAJOR or
+     * MatrixLayout::COLUMN_MAJOR, with uninitialized values.
+     */
+    Matrix(long vector_size) : num_rows(0), num_cols(0), values(NULL), owns_memory(true)
+    {
+      resize(vector_size);
+    }
+
+    /**
      * Constructs this matrix as a wrapper for an existing block of storage. The matrix thus created is <b>not resizable</b>,
      * and the memory block will <b>not be freed</b> when the Matrix object is destroyed.
      */
@@ -101,14 +114,41 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
       alwaysAssertM(num_rows_ >= 0 && num_cols_ >= 0, "Matrix: Dimensions must be non-negative");
     }
 
-    /** Construct a square diagonal matrix, given the values on the diagonal. */
-    static Matrix fromDiagonal(TheaArray<T> const & diagonal)
+    /**
+     * Constructs a vector that wraps an existing block of storage. The vector thus created is <b>not resizable</b>, and the
+     * memory block will <b>not be freed</b> when the Matrix object is destroyed. A row vector or a column vector is created,
+     * depending on whether the matrix layout is MatrixLayout::ROW_MAJOR or MatrixLayout::COLUMN_MAJOR.
+     */
+    Matrix(T * existing_data, long vector_size)
+    : num_rows(Layout == Matrix::ROW_MAJOR ? 1 : vector_size),
+      num_cols(Layout == Matrix::ROW_MAJOR ? vector_size : 1),
+      values(existing_data), owns_memory(false)
     {
-      Matrix m((long)diagonal.size(), (long)diagonal.size(), static_cast<T>(0));
-      for (size_t i = 0; i < diagonal.size(); ++i)
-        m((long)i, (long)i) = diagonal[i];
+      alwaysAssertM(vector_size >= 0, "Matrix: Vector length must be non-negative");
+    }
+
+    /** Construct a square diagonal matrix, given the values on the diagonal. */
+    template <typename U> static Matrix fromDiagonal(long n, U const * diagonal)
+    {
+      Matrix m(n, n, static_cast<T>(0));
+      for (long i = 0; i < n; ++i)
+        m(i, i) = static_cast<T>(diagonal[i]);
 
       return m;
+    }
+
+    /** Construct a square diagonal matrix, given the values on the diagonal as an array object. */
+    template <typename U> static Matrix fromDiagonal(TheaArray<U> const & diagonal)
+    {
+      return fromDiagonal((long)diagonal.size(), !diagonal.empty() ? &diagonal[0] : NULL);
+    }
+
+    /** Construct a square diagonal matrix, given the values on the diagonal as a (row or column) vector. */
+    template <typename U, MatrixLayout::Value L2, typename A2>
+    static Matrix fromDiagonal(Matrix<U, L2, A2> const & diagonal)
+    {
+      alwaysAssertM(diagonal.isVector(), "Matrix: Diagonal values must be supplied as a vector");
+      return fromDiagonal(diagonal.numElements(), diagonal.data());
     }
 
     /** Copy constructor. */
@@ -216,12 +256,9 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     Matrix & operator=(Matrix const & src)
     {
       if (owns_memory)
-        resize(src.numRows(), src.numColumns());
+        resize(src.num_rows, src.num_cols);
       else
-      {
-        alwaysAssertM(num_rows == src.numRows() && num_cols == src.numColumns(),
-                      "Matrix: A wrapper matrix cannot be assigned a value of different dimensions");
-      }
+        alwaysAssertM(sameDims(src), "Matrix: A wrapper matrix cannot be assigned a value of different dimensions");
 
       Algorithms::fastCopy(src.values, src.values + this->numElements(), values);
       return *this;
@@ -260,6 +297,18 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       resize(num_rows_, num_cols_);
       fill(fill_value);
+    }
+
+    /**
+     * Resize a vector. The result is a row vector or a column vector depending on whether the matrix layout is
+     * MatrixLayout::ROW_MAJOR or MatrixLayout::COLUMN_MAJOR.
+     */
+    void resize(long vector_size)
+    {
+      if (Layout == MatrixLayout::ROW_MAJOR)
+        resize(1, vector_size);
+      else
+        resize(vector_size, 1);
     }
 
     /**
@@ -465,18 +514,30 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     {
       alwaysAssertM(this->isSquare(), "Matrix: Only square matrices can be inverted");
 
-      TheaArray<long> col_index((size_t)numRows()), row_index((size_t)numRows()), pivot((size_t)numRows());
+      TheaArray<long> col_index((size_t)num_rows), row_index((size_t)num_rows), pivot((size_t)num_rows);
       Internal::invertMatrix(*this, &col_index[0], &row_index[0], &pivot[0]);
     }
 
     /** Get the transpose of the matrix. Creates a new matrix for the result, so you might prefer transpose(Matrix &). */
     Matrix transpose() const
     {
-      Matrix t(numColumns(), numRows());
+      Matrix t(num_cols, num_rows);
 
-      for (long r = 0; r < numRows(); ++r)
-        for (long c = 0; c < numColumns(); ++c)
+      for (long r = 0; r < num_rows; ++r)
+        for (long c = 0; c < num_cols; ++c)
           t(c, r) = (*this)(r, c);
+
+      return t;
+    }
+
+    /**
+     * Get the transpose of this matrix as a matrix with the opposite layout. Requires a memory allocation (for the new matrix),
+     * but the copying is cheap since the underlying elements are stored in the same order and can be copied as a block.
+     */
+    Matrix<T, TransposedLayout, AllocT> transposeLayout() const
+    {
+      Matrix<T, TransposedLayout, AllocT> t(num_cols, num_rows);
+      Algorithms::fastCopy(values, values + this->numElements(), t.data());
 
       return t;
     }
@@ -487,20 +548,25 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
      *
      * @note The result matrix cannot be the same object as this matrix.
      */
-    template <typename U, MatrixLayout::Value ArgLayout> void transpose(Matrix<U, ArgLayout> & result) const
+    template <typename U, MatrixLayout::Value L2, typename A2> void transpose(Matrix<U, L2, A2> & result) const
     {
-      result.resize(numColumns(), numRows());
-
-      if (L == MatrixLayout::ROW_MAJOR)
+      result.resize(num_cols, num_rows);
+      if (L != L2)  // element storage order remains same
       {
-        for (long r = 0; r < numRows(); ++r)
-          for (long c = 0; c < numColumns(); ++c)
+        U * u = result.data();
+        for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
+          *u = static_cast<U>(v);
+      }
+      else if (L == MatrixLayout::ROW_MAJOR)
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
             result(c, r) = (*this)(r, c);
       }
       else
       {
-        for (long c = 0; c < numColumns(); ++c)
-          for (long r = 0; r < numRows(); ++r)
+        for (long c = 0; c < num_cols; ++c)
+          for (long r = 0; r < num_rows; ++r)
             result(c, r) = (*this)(r, c);
       }
     }
@@ -508,62 +574,94 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Get the negation of this matrix (the matrix equal to this one except with every element negated). */
     Matrix operator-() const
     {
-      Matrix neg(numRows(), numColumns());
+      Matrix neg(num_rows, num_cols);
       T * v2 = neg.values;
       for (T const * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
         *v2 = -(*v1);
     }
 
     /** Addition (per-component). */
-    Matrix operator+(Matrix const & rhs) const
+    template <MatrixLayout::Value L2, typename A2> Matrix operator+(Matrix<T, L2, A2> const & rhs) const
     {
-      alwaysAssertM(numRows() == rhs.numRows() && numColumns() == rhs.numColumns(),
-                    "Matrix: Can't add matrices of different dimensions");
+      alwaysAssertM(sameDims(rhs), "Matrix: Can't add matrices of different dimensions");
 
-      Matrix result(numRows(), numColumns());
-      T * u = result.values;
-      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
-        *u = *v1 + *v2;
+      Matrix result(num_rows, num_cols);
+      if (L == L2)
+      {
+        T * u = result.values;
+        for (T const * v1 = values, * v2 = rhs.data(), * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
+          *u = *v1 + *v2;
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            result(r, c) = (*this)(r, c) + rhs(r, c);
+      }
 
       return result;
     }
 
     /** Add-and-assign. */
-    Matrix & operator+=(Matrix const & rhs)
+    template <MatrixLayout::Value L2, typename A2> Matrix & operator+=(Matrix<T, L2, A2> const & rhs)
     {
-      alwaysAssertM(numRows() == rhs.numRows() && numColumns() == rhs.numColumns(),
-                    "Matrix: Can't add matrices of different dimensions");
+      alwaysAssertM(sameDims(rhs), "Matrix: Can't add matrices of different dimensions");
 
-      T const * v2 = rhs.values;
-      for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
-        *v1 += *v2;
+      if (L == L2)
+      {
+        T const * v2 = rhs.data();
+        for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
+          *v1 += *v2;
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            (*this)(r, c) += rhs(r, c);
+      }
 
       return *this;
     }
 
     /** Subtraction (per-component). */
-    Matrix operator-(Matrix const & rhs) const
+    template <MatrixLayout::Value L2, typename A2> Matrix operator-(Matrix<T, L2, A2> const & rhs) const
     {
-      alwaysAssertM(numRows() == rhs.numRows() && numColumns() == rhs.numColumns(),
-                    "Matrix: Can't subtract matrices of different dimensions");
+      alwaysAssertM(sameDims(rhs), "Matrix: Can't subtract matrices of different dimensions");
 
-      Matrix result(numRows(), numColumns());
-      T * u = result.values;
-      for (T const * v1 = values, * v2 = rhs.values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
-        *u = *v1 - *v2;
+      Matrix result(num_rows, num_cols);
+      if (L == L2)
+      {
+        T * u = result.values;
+        for (T const * v1 = values, * v2 = rhs.data(), * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
+          *u = *v1 - *v2;
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            result(r, c) = (*this)(r, c) - rhs(r, c);
+      }
 
       return result;
     }
 
     /** Subtract-and-assign. */
-    Matrix & operator-=(Matrix const & rhs)
+    template <MatrixLayout::Value L2, typename A2> Matrix & operator-=(Matrix<T, L2, A2> const & rhs)
     {
-      alwaysAssertM(numRows() == rhs.numRows() && numColumns() == rhs.numColumns(),
-                    "Matrix: Can't add matrices of different dimensions");
+      alwaysAssertM(sameDims(rhs), "Matrix: Can't subtract matrices of different dimensions");
 
-      T const * v2 = rhs.values;
-      for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
-        *v1 -= *v2;
+      if (L == L2)
+      {
+        T const * v2 = rhs.data();
+        for (T * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
+          *v1 -= *v2;
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            (*this)(r, c) -= rhs(r, c);
+      }
 
       return *this;
     }
@@ -571,10 +669,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Post-multiply by a scalar. */
     Matrix operator*(T const & s) const
     {
-      Matrix result(numRows(), numColumns());
+      Matrix result(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
-        *u = s * (*v);
+        *u = (*v) * s;
 
       return result;
     }
@@ -589,17 +687,19 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     }
 
     /** Multiplication. */
-    Matrix operator*(Matrix const & rhs) const
+    template <MatrixLayout::Value L2, typename A2> Matrix operator*(Matrix<T, L2, A2> const & rhs) const
     {
-      alwaysAssertM(numColumns() == rhs.numRows(), "Matrix: Matrices don't have compatible dimensions for multiplication");
+      alwaysAssertM(num_cols == rhs.numRows(), "Matrix: Matrices don't have compatible dimensions for multiplication");
 
-      Matrix result(numRows(), rhs.numColumns());
-      for (long i = 0; i < numRows(); ++i)
-        for (long k = 0; k < rhs.numColumns(); ++k)
+      long rhs_ncols = rhs.numColumns();
+      Matrix result(num_rows, rhs_ncols);
+
+      for (long i = 0; i < num_rows; ++i)
+        for (long k = 0; k < rhs_ncols; ++k)
         {
           result(i, k) = (*this)(i, 0) * rhs(0, k);
 
-          for (long j = 1; j < numColumns(); ++j)
+          for (long j = 1; j < num_cols; ++j)
             result(i, k) += (*this)(i, j) * rhs(j, k);
         }
 
@@ -609,8 +709,8 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /**
      * Multiply a vector \a v by this matrix (M), yielding the product \a result = M * \a v.
      *
-     * @param v The vector to be multiplied, must contain numColumns() elements.
-     * @param result The result vector, must be preallocated to numRows() elements.
+     * @param v The vector to be multiplied, must contain num_cols elements.
+     * @param result The result vector, must be preallocated to num_rows elements.
      */
     template <typename U> void postmulVector(U const * v, U * result) const
     {
@@ -640,8 +740,8 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /**
      * Multiply a vector \a v by this matrix (M), yielding the product \a result = \a v * M.
      *
-     * @param v The vector to be multiplied, must contain numRows() elements.
-     * @param result The result vector, must be preallocated to numColumns() elements.
+     * @param v The vector to be multiplied, must contain num_rows elements.
+     * @param result The result vector, must be preallocated to num_cols elements.
      */
     template <typename U> void premulVector(U const * v, U * result) const
     {
@@ -679,10 +779,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     /** Post-divide by a scalar. */
     Matrix operator/(T const & s) const
     {
-      Matrix result(numRows(), numColumns());
+      Matrix result(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
-        *u = s / (*v);
+        *u = (*v) / s;
 
       return result;
     }
@@ -700,23 +800,45 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     T const & max() const { return AddressableBaseT::max(); }
 
     /** Return a matrix containing the component-wise minima of this matrix and another. */
-    Matrix min(Matrix const & other) const
+    template <MatrixLayout::Value L2, typename A2> Matrix min(Matrix<T, L2, A2> const & other) const
     {
+      alwaysAssertM(sameDims(other), "Matrix: Matrices must have same dimensions");
+
       Matrix result(num_rows, num_cols);
-      for (long r = 0; r < num_rows; ++r)
-        for (long c = 0; c < num_cols; ++c)
-          result(r, c) = std::min((*this)(r, c), other(r, c));
+      if (L == L2)
+      {
+        T * u = result.values;
+        for (T const * v1 = values, * v2 = other.data(), * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
+          *u = std::min(*v1, *v2);
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            result(r, c) = std::min((*this)(r, c), other(r, c));
+      }
 
       return result;
     }
 
     /** Return a matrix containing the component-wise maxima of this matrix and another. */
-    Matrix max(Matrix const & other) const
+    template <MatrixLayout::Value L2, typename A2> Matrix max(Matrix<T, L2, A2> const & other) const
     {
+      alwaysAssertM(sameDims(other), "Matrix: Matrices must have same dimensions");
+
       Matrix result(num_rows, num_cols);
-      for (long r = 0; r < num_rows; ++r)
-        for (long c = 0; c < num_cols; ++c)
-          result(r, c) = std::max((*this)(r, c), other(r, c));
+      if (L == L2)
+      {
+        T * u = result.values;
+        for (T const * v1 = values, * v2 = other.data(), * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2, ++u)
+          *u = std::max(*v1, *v2);
+      }
+      else
+      {
+        for (long r = 0; r < num_rows; ++r)
+          for (long c = 0; c < num_cols; ++c)
+            result(r, c) = std::max((*this)(r, c), other(r, c));
+      }
 
       return result;
     }
@@ -725,9 +847,9 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     Matrix sign() const
     {
       Matrix result(num_rows, num_cols);
-      for (long r = 0; r < num_rows; ++r)
-        for (long c = 0; c < num_cols; ++c)
-          result(r, c) = Math::sign((*this)(r, c));
+      T * u = result.values;
+      for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
+        *u = Math::sign(*v);
 
       return result;
     }
@@ -736,6 +858,10 @@ class /* THEA_API */ Matrix : public AddressableMatrix<T>, public ResizableMatri
     long num_rows, num_cols;
     T * values;
     bool owns_memory;
+
+    /** Check if two matrices have the same dimensions. */
+    template <typename U, MatrixLayout::Value L2, typename A2> bool sameDims(Matrix<U, L2, A2> const & m) const
+    { return num_rows == m.numRows() && num_cols == m.numColumns(); }
 
 }; // class Matrix
 
