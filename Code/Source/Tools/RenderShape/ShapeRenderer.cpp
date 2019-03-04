@@ -37,8 +37,6 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
-// #define DRAW_EDGES
-
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
 typedef std::pair<Mesh const *, long> FaceRef;
@@ -98,6 +96,8 @@ class ShapeRendererImpl
     bool color_by_id;
     bool color_by_label;
     bool color_by_features;
+    bool show_edges;
+    ColorRGBA edge_color;
     string labels_path;
     TheaArray<int> labels;
     string features_path;
@@ -217,6 +217,8 @@ ShapeRendererImpl::resetArgs()
   color_by_id = false;
   color_by_label = false;
   color_by_features = false;
+  show_edges = false;
+  edge_color = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
   labels_path = "";
   labels.clear();
   features_path = "";
@@ -528,6 +530,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -p <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID)";
+  THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
   THEA_CONSOLE << "  -3 <path>             (color mesh by a 3D texture)";
@@ -969,6 +972,14 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
           explicit_primary_color = true;
 
+          argv++; argc--; break;
+        }
+
+        case 'j':
+        {
+          if (argc < 1) { THEA_ERROR << "-j: Edge color not specified"; return false; }
+          if (!parseColor(*argv, edge_color)) return false;
+          show_edges = true;
           argv++; argc--; break;
         }
 
@@ -1949,9 +1960,8 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
           model.mesh_group.forEachMeshUntil(averageNormals);
       }
 
-#ifdef DRAW_EDGES
-      model.mesh_group.forEachMeshUntil(enableWireframe);
-#endif
+      if (show_edges)
+        model.mesh_group.forEachMeshUntil(enableWireframe);
     }
   }
 
@@ -2379,10 +2389,13 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     if (color_by_id || color_by_label || color_by_features || !selected_mesh.empty())
       opts.useVertexData() = true;
 
-#ifdef DRAW_EDGES
-    opts.drawEdges() = true;
-    opts.edgeColor() = ColorRGB(0.5, 0.5, 1);
-#endif
+    if (show_edges)
+    {
+      opts.drawEdges() = true;
+      opts.edgeColor() = edge_color;
+    }
+    else
+      opts.drawEdges() = false;
 
     if (has_transparency && !color_by_id)
     {
