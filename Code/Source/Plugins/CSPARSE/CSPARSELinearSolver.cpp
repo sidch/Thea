@@ -148,7 +148,7 @@ CSPARSELinearSolver::solve(Options const & options)
   using namespace CSPARSELinearSolverInternal;
 
   has_solution = false;
-  solution.resize(0);
+  solution.clear();
 
   switch (coeffs.getFormat())
   {

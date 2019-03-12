@@ -358,6 +358,15 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
         resize(vector_size, 1);
     }
 
+    /** Reset the matrix to zero elements. */
+    void clear()
+    {
+      if (IsVector)
+        resize(0);
+      else
+        resize(0, 0);
+    }
+
     /**
      * Append a single (uninitialized) row to a row-major matrix. If the matrix is not row-major (or a column vector), or if the
      * matrix does not own its memory block, an assertion failure occurs.
