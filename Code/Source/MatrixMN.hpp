@@ -67,6 +67,7 @@ namespace Internal {
 template <long M, long N, typename T>
 class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
 {
+  private:
     typedef AddressableMatrix<T> BaseT;
 
   public:
@@ -74,12 +75,34 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
 
     THEA_DEF_POINTER_TYPES(MatrixT, shared_ptr, weak_ptr)
 
+  protected:
     /** Default constructor (does not initialize anything). */
     MatrixMNBase() {}
+
+    /** Copy constructor. */
+    MatrixMNBase(MatrixMNBase const & src) { *this = src; }
+
+    /** Copy from any compatible template instantiation. */
+    template <typename U> MatrixMNBase(MatrixMNBase<M, N, U> const & src) { *this = src; }
+
+    /** Copy assignment operator. */
+    MatrixMNBase & operator=(MatrixMNBase const & src)
+    {
+      Algorithms::fastCopy(&src.m[0][0], &src.m[0][0] + M * N, &m[0][0]);
+      return *this;
+    }
+
+    /** Assignment operator. */
+    template <typename U> MatrixMNBase & operator=(MatrixMNBase<M, N, U> const & src)
+    {
+      Algorithms::fastCopy(&src(0, 0), &src(0, 0) + M * N, &m[0][0]);
+      return *this;
+    }
 
     /** Initialize all components to a single value. */
     explicit MatrixMNBase(T const & fill_value) { fill(fill_value); }
 
+  public:
     long numRows() const { return M; }
     long numColumns() const { return N; }
 
@@ -404,6 +427,19 @@ class /* THEA_DLL_LOCAL */ SquareMatrixN : public MatrixMNBase<N, N, T>
     /** Default constructor (does not initialize anything). */
     SquareMatrixN() {}
 
+    /** Copy constructor. */
+    SquareMatrixN(SquareMatrixN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> SquareMatrixN(Internal::MatrixMNBase<N, N, U> const & src) :  BaseT(src) {}
+
+    /** Copy assignment operator. */
+    SquareMatrixN & operator=(SquareMatrixN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> SquareMatrixN & operator=(Internal::MatrixMNBase<N, N, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit SquareMatrixN(T const & fill_value) : BaseT(fill_value) {}
 
@@ -467,6 +503,19 @@ class /* THEA_API */ MatrixMN : public Internal::MatrixMNBase<M, N, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Copy constructor. */
+    MatrixMN(MatrixMN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> MatrixMN(Internal::MatrixMNBase<M, N, U> const & src) : BaseT(src) {}
+
+    /** Copy assignment operator. */
+    MatrixMN & operator=(MatrixMN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> MatrixMN & operator=(Internal::MatrixMNBase<M, N, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
 
@@ -485,6 +534,19 @@ class /* THEA_API */ MatrixMN<N, N, T> : public Internal::SquareMatrixN<N, T>
   public:
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
+
+    /** Copy constructor. */
+    MatrixMN(MatrixMN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> MatrixMN(Internal::MatrixMNBase<N, N, U> const & src) : BaseT(src) {}
+
+    /** Copy assignment operator. */
+    MatrixMN & operator=(MatrixMN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> MatrixMN & operator=(Internal::MatrixMNBase<N, N, U> const & src)
+    { BaseT::operator=(src); return *this; }
 
     /** Initialize all components to a single value. */
     explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
@@ -544,6 +606,19 @@ class /* THEA_API */ MatrixMN<M, 1, T> : public Internal::MatrixMNBase<M, 1, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Copy constructor. */
+    MatrixMN(MatrixMN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> MatrixMN(Internal::MatrixMNBase<M, 1, U> const & src) :  BaseT(src) {}
+
+    /** Copy assignment operator. */
+    MatrixMN & operator=(MatrixMN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> MatrixMN & operator=(Internal::MatrixMNBase<M, 1, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
 
@@ -572,6 +647,19 @@ class /* THEA_API */ MatrixMN<1, N, T> : public Internal::MatrixMNBase<1, N, T>
   public:
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
+
+    /** Copy constructor. */
+    MatrixMN(MatrixMN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> MatrixMN(Internal::MatrixMNBase<1, N, U> const & src) :  BaseT(src) {}
+
+    /** Copy assignment operator. */
+    MatrixMN & operator=(MatrixMN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> MatrixMN & operator=(Internal::MatrixMNBase<1, N, U> const & src)
+    { BaseT::operator=(src); return *this; }
 
     /** Initialize all components to a single value. */
     explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}

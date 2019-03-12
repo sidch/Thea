@@ -42,6 +42,7 @@
 #include "HoughForest.hpp"
 #include "../Math.hpp"
 #include "../Stopwatch.hpp"
+#include "../Vector.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -115,12 +116,12 @@ class Gaussian1D
 class Gaussian
 {
   private:
-    TheaArray<double> mean;
+    Vector<double> mean;
     Matrix<double> inv_cov;
 
     void resize(long ndims)
     {
-      mean.resize((size_t)ndims);
+      mean.resize(ndims);
       inv_cov.resize(ndims, ndims);
     }
 
@@ -131,11 +132,11 @@ class Gaussian
     double unnormalizedProb(double const * x) const
     {
       double xCx = 0;
-      for (size_t i = 0; i < mean.size(); ++i)
+      for (long i = 0; i < mean.size(); ++i)
       {
         double prod = 0;
-        for (size_t j = 0; j < mean.size(); ++j)
-          prod += (inv_cov((long)i, (long)j) * (mean[j] - x[j]));
+        for (long j = 0; j < mean.size(); ++j)
+          prod += (inv_cov(i, j) * (mean[j] - x[j]));
 
         xCx += (mean[i] - x[i]) * prod;
       }
@@ -146,11 +147,11 @@ class Gaussian
     double unnormalizedProbFast(double const * x) const
     {
       double xCx = 0;
-      for (size_t i = 0; i < mean.size(); ++i)
+      for (long i = 0; i < mean.size(); ++i)
       {
         double prod = 0;
-        for (size_t j = 0; j < mean.size(); ++j)
-          prod += (inv_cov((long)i, (long)j) * (mean[j] - x[j]));
+        for (long j = 0; j < mean.size(); ++j)
+          prod += (inv_cov(i, j) * (mean[j] - x[j]));
 
         xCx += (mean[i] - x[i]) * prod;
       }
@@ -160,10 +161,10 @@ class Gaussian
 
     long numDimensions() const { return (long)mean.size(); }
 
-    TheaArray<double> const & getMean() const { return mean; }
+    Vector<double> const & getMean() const { return mean; }
     Matrix<double> const & getInvCov() const { return inv_cov; }
 
-    void setMean(TheaArray<double> const & value) { mean = value; }
+    void setMean(Vector<double> const & value) { mean = value; }
     void setCov(Matrix<double> const & cov)
     {
       inv_cov = cov;
@@ -182,7 +183,7 @@ class Gaussian
     {
       out.writeInt64(numDimensions());
 
-      for (size_t i = 0; i < mean.size(); ++i)
+      for (long i = 0; i < mean.size(); ++i)
         out.writeFloat64(mean[i]);
 
       for (long i = 0; i < inv_cov.numRows(); ++i)
@@ -195,7 +196,7 @@ class Gaussian
       long ndims = (long)in.readInt64();
       resize(ndims);
 
-      for (size_t i = 0; i < mean.size(); ++i)
+      for (long i = 0; i < mean.size(); ++i)
         mean[i] = in.readFloat64();
 
       for (long i = 0; i < inv_cov.numRows(); ++i)

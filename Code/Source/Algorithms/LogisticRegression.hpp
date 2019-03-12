@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -108,7 +109,7 @@ class THEA_API LogisticRegression
      * Get the parameters of the logistic curve. The returned vector has <em>a</em> as its first element and <b>b</b> as the
      * subsequent elements. Valid only if hasSolution() returns true.
      */
-    TheaArray<double> const & getSolution() const;
+    Vector<double> const & getSolution() const;
 
   private:
     LinearLeastSquares * llsq;  ///< The helper class for solving the linearized problem.

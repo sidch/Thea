@@ -52,6 +52,7 @@
 #include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
+#include "../Vector.hpp"
 #include <complex>
 
 namespace Thea {
@@ -79,7 +80,7 @@ class THEA_API EigenSolver : private Noncopyable, public virtual NamedObject
     typedef std::complex<double>  Eigenvalue;
 
     /** An eigenvector (array of double precision complex numbers). */
-    typedef TheaArray< std::complex<double> >  Eigenvector;
+    typedef Vector< std::complex<double> >  Eigenvector;
 
     /** Destructor. */
     virtual ~EigenSolver() {}

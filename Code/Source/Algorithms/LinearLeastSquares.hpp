@@ -44,6 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -116,7 +117,7 @@ class THEA_API LinearLeastSquares
     bool hasSolution() const { return has_solution; }
 
     /** Get the solution vector of the linear system. Valid only if hasSolution() returns true. */
-    TheaArray<double> const & getSolution() const { return solution; }
+    Vector<double> const & getSolution() const { return solution; }
 
     /**
      * Compute the squared error of the current solution, or return a negative value if no solution exists or the system is
@@ -130,7 +131,7 @@ class THEA_API LinearLeastSquares
     TheaArray<double> a_values;  ///< The values, in row-major form, of the matrix A.
     TheaArray<double> b;  ///< The constants vector <b>b</b>.
     bool has_solution;  ///< Was a solution computed by the last call to solve()? */
-    TheaArray<double> solution;  ///< The solution vector <b>x</b>.
+    Vector<double> solution;  ///< The solution vector <b>x</b>.
 
 }; // class LinearLeastSquares
 

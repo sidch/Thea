@@ -44,6 +44,7 @@
 #include "../../Ray3.hpp"
 #include "../../Triangle3.hpp"
 #include "../../Algorithms/SVD.hpp"
+#include "../../Vector.hpp"
 
 namespace Browse3D {
 
@@ -418,7 +419,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
   }
 
   Matrix3 U, V;
-  TheaArray<Real> diag;
+  Vector<Real> diag;
   Algorithms::SVD::compute(corr, U, diag, V);
   Matrix3 U_T = U.transpose();
   Matrix3 rotation = V * U_T;

@@ -65,6 +65,19 @@ class /* THEA_API */ MatrixMN<4, 4, T> : public Internal::SquareMatrixN<4, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Copy constructor. */
+    MatrixMN(MatrixMN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> MatrixMN(Internal::MatrixMNBase<4, 4, U> const & src) : BaseT(src) {}
+
+    /** Copy assignment operator. */
+    MatrixMN & operator=(MatrixMN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> MatrixMN & operator=(Internal::MatrixMNBase<4, 4, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit MatrixMN(T const & fill_value) : BaseT(fill_value) {}
 

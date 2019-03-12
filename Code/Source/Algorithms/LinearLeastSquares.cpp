@@ -51,7 +51,8 @@ LinearLeastSquares::LinearLeastSquares(long ndim_)
 : ndim(ndim_), num_objectives(0), has_solution(true)
 {
   alwaysAssertM(ndim_ > 0, "LinearLeastSquares: Number of dimensions must be positive");
-  solution.resize((size_t)ndim_, 0);
+  solution.resize(ndim_);
+  solution.fill(0.0);
 }
 
 void
@@ -81,7 +82,7 @@ LinearLeastSquares::solve(Constraint constraint, double tolerance)
   if (num_objectives <= 0)
   {
     // Arbitrary solution, set everything to zero (no real need to do this, but whatever...)
-    for (size_t i = 0; i < solution.size(); ++i)
+    for (long i = 0; i < solution.size(); ++i)
       solution[i] = 0;
 
     has_solution = true;
@@ -154,12 +155,12 @@ double
 LinearLeastSquares::squaredError() const
 {
   if (!has_solution
-   || (long)solution.size() != ndim
+   || solution.size() != ndim
    || (long)b.size() != num_objectives
    || (long)a_values.size() != ndim * num_objectives)
     return -1;
 
-  if (solution.empty())
+  if (solution.isEmpty())
     return 0;
 
   // Create a new vector even though squared error can be computed in place, just in case postmulVector has optimizations

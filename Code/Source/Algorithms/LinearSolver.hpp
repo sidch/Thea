@@ -52,6 +52,7 @@
 #include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
+#include "../Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -92,8 +93,7 @@ class THEA_API LinearSolver : private Noncopyable, public virtual NamedObject
     template <typename RealInputIterator>
     void setConstants(RealInputIterator begin, RealInputIterator end)
     {
-      constants.clear();
-      constants.insert(constants.end(), begin, end);
+      constants.set(begin, end);
     }
 
     /**
@@ -110,16 +110,16 @@ class THEA_API LinearSolver : private Noncopyable, public virtual NamedObject
     bool hasSolution() const { return has_solution; }
 
     /** Get the solution vector of the linear system. Valid only if hasSolution() returns true. */
-    TheaArray<double> const & getSolution() const { return solution; }
+    Vector<double> const & getSolution() const { return solution; }
 
   protected:
     /** Get the preferred storage format for a matrix in the given input format. */
     virtual MatrixFormat getPreferredFormat(MatrixFormat input_format) { return input_format; }
 
     MatrixWrapper<double>  coeffs;        ///< Cached coefficient matrix.
-    TheaArray<double>      constants;     ///< Cached constant vector.
+    Vector<double>         constants;     ///< Cached constant vector.
     bool                   has_solution;  ///< Was the system successfully solved by the last call to solve()?
-    TheaArray<double>      solution;      ///< Solution of the linear system.
+    Vector<double>         solution;      ///< Solution of the linear system.
 
 }; // class LinearSolver
 

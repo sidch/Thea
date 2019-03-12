@@ -394,7 +394,7 @@ class ICP3
       }
 
       MatrixT u, v;
-      TheaArray<ScalarT> d(3);
+      Vector<ScalarT> d(3);
       if (!SVD::compute(cov, u, d, v))
         return AffineTransformT::identity();
 

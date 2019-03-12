@@ -47,6 +47,7 @@
 #include "../MatrixFormat.hpp"
 #include "../MatrixUtil.hpp"
 #include "../MatrixWrapper.hpp"
+#include "../Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -119,12 +120,12 @@ class LinearConstraint
     CompareOp getCompareOp() const { return compare; }
 
     /** Get the constant vector. */
-    TheaArray<double> const & getConstants() const { return constants; }
+    Vector<double> const & getConstants() const { return constants; }
 
   private:
     MatrixWrapper<double> coeffs;  ///< Coefficient matrix.
     CompareOp compare;             ///< Comparison operator.
-    TheaArray<double> constants;   ///< Constant vector.
+    Vector<double> constants;      ///< Constant vector.
 
 }; // class LinearConstraint
 

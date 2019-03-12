@@ -93,6 +93,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
 
     THEA_DEF_POINTER_TYPES(VectorT, shared_ptr, weak_ptr)
 
+  protected:
     /** Default constructor (does not initialize anything). */
     VectorNBase() {}
 
@@ -100,9 +101,24 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     explicit VectorNBase(T const & fill_value) { fill(fill_value); }
 
     /** Copy constructor. */
-    template <typename U> VectorNBase(VectorNBase<N, U> const & src)
+    VectorNBase(VectorNBase const & src) { *this = src; }
+
+    /** Copy from any compatible template instantiation. */
+    template <typename U> VectorNBase(VectorNBase<N, U> const & src) { *this = src; }
+
+  public:
+    /** Copy assignment operator. */
+    VectorNBase & operator=(VectorNBase const & src)
     {
       Algorithms::fastCopy(&src[0], &src[0] + N, &values[0]);
+      return *this;
+    }
+
+    /** Assign from any compatible template instantiation. */
+    template <typename U> VectorNBase & operator=(VectorNBase<N, U> const & src)
+    {
+      Algorithms::fastCopy(&src[0], &src[0] + N, &values[0]);
+      return *this;
     }
 
     /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
@@ -151,13 +167,13 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     /** Get a reverse iterator pointing to the beginning of the reversed vector. */
     ReverseIterator rbegin() { return ReverseIterator(end()); }
 
-    /** Get a const iterator pointing to the beginning of the vector. */
+    /** Get a const reverse iterator pointing to the beginning of the reversed vector. */
     ConstReverseIterator rbegin() const { return ConstReverseIterator(end()); }
 
-    /** Get an iterator pointing to the end of the vector. */
+    /** Get a reverse iterator pointing to the end of the reversed vector. */
     ReverseIterator rend() { return ReverseIterator(begin()); }
 
-    /** Get a const iterator pointing to the end of the vector. */
+    /** Get a const reverse iterator pointing to the end of the reversed vector. */
     ConstReverseIterator rend() const { return ConstReverseIterator(begin()); }
 
     /** Access an element of the vector immutably. */
@@ -575,11 +591,21 @@ class /* THEA_API */ VectorN : public Internal::VectorNBase<N, T>
     /** Default constructor (does not initialize anything). */
     VectorN() {}
 
+    /** Copy constructor. */
+    VectorN(VectorN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> VectorN(Internal::VectorNBase<N, U> const & src) : BaseT(src) {}
+
+    /** Copy assignment operator. */
+    VectorN & operator=(VectorN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> VectorN & operator=(Internal::VectorNBase<N, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit VectorN(T const & fill_value) : BaseT(fill_value) {}
-
-    /** Copy constructor. */
-    template <typename U> VectorN(VectorN<N, U> const & src) : BaseT(src) {}
 
     /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
     template <typename U> explicit VectorN(MatrixMN<N, 1, U> const & src) : BaseT(src) {}

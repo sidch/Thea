@@ -3,6 +3,7 @@
 #include "../Algorithms/LogisticRegression.hpp"
 #include "../Array.hpp"
 #include "../Matrix.hpp"
+#include "../Vector.hpp"
 #include <iostream>
 
 using namespace std;
@@ -47,7 +48,7 @@ testSVD()
   //====================================================================
 
   Matrix<float> a(5, 4, 0.0f), u, v;
-  TheaArray<float> d;
+  Vector<float> d;
 
   a(0, 0) = 1;
   a(1, 3) = 4;
@@ -78,13 +79,8 @@ testSVD()
   printMatrix(u);
 
   // Print D
-  cout << "\nD = [\t";
-  for (size_t i = 0; i < d.size(); ++i)
-  {
-    if (i > 0) cout << '\t';
-    cout << d[i];
-  }
-  cout << " \t]" << endl;
+  cout << "\nD =" << endl;
+  printMatrix(d);
 
   // Print V
   cout << "\nV =" << endl;

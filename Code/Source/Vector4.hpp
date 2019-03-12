@@ -59,11 +59,21 @@ class /* THEA_API */ VectorN<4, T> : public Internal::VectorNBase<4, T>
     /** Default constructor (does not initialize anything). */
     VectorN() {}
 
+    /** Copy constructor. */
+    VectorN(VectorN const & src) : BaseT(src) {}
+
+    /** Copy from any compatible base type. */
+    template <typename U> VectorN(Internal::VectorNBase<4, U> const & src) : BaseT(src) {}
+
+    /** Copy assignment operator. */
+    VectorN & operator=(VectorN const & src) { BaseT::operator=(src); return *this; }
+
+    /** Assign from any compatible base type. */
+    template <typename U> VectorN & operator=(Internal::VectorNBase<4, U> const & src)
+    { BaseT::operator=(src); return *this; }
+
     /** Initialize all components to a single value. */
     explicit VectorN(T const & fill_value) : BaseT(fill_value) {}
-
-    /** Copy constructor. */
-    template <typename U> VectorN(VectorN<4, U> const & src) : BaseT(src) {}
 
     /** Initialize from a column matrix (not defined unless MatrixMN.hpp is included). */
     template <typename U> explicit VectorN(MatrixMN<4, 1, U> const & src) : BaseT(src) {}

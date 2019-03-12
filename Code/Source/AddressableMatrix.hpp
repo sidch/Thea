@@ -60,11 +60,11 @@ class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
     typedef std::pair<IndexPair, T> Entry;    ///< An entry in the matrix, mapping a (row, column) pair to a value.
 
     /** Generic read-only iterator for an addressable matrix. */
-    class ConstIterator
+    class EntryIterator
     {
       public:
         /** Constructor. */
-        ConstIterator(AddressableMatrix const & m_, long r = 0, long c = 0)
+        EntryIterator(AddressableMatrix const & m_, long r = 0, long c = 0)
         : m(m_), nrows(m_.numRows()), ncols(m_.numColumns()), entry(IndexPair(r, c), 0)
         {}
 
@@ -88,7 +88,7 @@ class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
         }
 
         /** Pre-increment. */
-        ConstIterator & operator++()
+        EntryIterator & operator++()
         {
           if (++entry.first.second >= ncols)
           {
@@ -100,21 +100,21 @@ class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
         }
 
         /** Post-increment. */
-        ConstIterator operator++(int)
+        EntryIterator operator++(int)
         {
-          ConstIterator old = *this;
+          EntryIterator old = *this;
           this->operator++();
           return old;
         }
 
         /** Test for equality. */
-        bool operator==(ConstIterator const & rhs) const
+        bool operator==(EntryIterator const & rhs) const
         {
           return !(*this != rhs);
         }
 
         /** Test for inequality. */
-        bool operator!=(ConstIterator const & rhs) const
+        bool operator!=(EntryIterator const & rhs) const
         {
           debugAssertM(&m == &rhs.m, "Matrix: Comparing iterators from different matrices for equality");
           return (entry.first != rhs.entry.first);
@@ -125,13 +125,13 @@ class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
         long nrows, ncols;
         mutable Entry entry;
 
-    }; // class ConstIterator
+    }; // class EntryIterator
 
     /** Get an iterator pointing to the beginning of the matrix. */
-    ConstIterator begin() const { return ConstIterator(*this, 0, 0); }
+    EntryIterator entriesBegin() const { return EntryIterator(*this, 0, 0); }
 
     /** Get an iterator pointing to the end of the matrix. */
-    ConstIterator end() const { return ConstIterator(*this, (this->numColumns() > 0 ? this->numRows() : 0), 0); }
+    EntryIterator entriesEnd() const { return EntryIterator(*this, (this->numColumns() > 0 ? this->numRows() : 0), 0); }
 
     /**
      * Get element. Most derived classes define operator() to access an element quicker, without the virtual function overhead.
@@ -162,42 +162,6 @@ class /* THEA_API */ AddressableMatrix : public virtual IteratableMatrix<T>
       for (long r = 0; r < nr; ++r)
         for (long c = 0; c < nc; ++c)
           set(r, c, value);
-    }
-
-    /** Get the minimum element (according to signed comparison) in the matrix. */
-    virtual T const & min() const
-    {
-      long nr = this->numRows(), nc = this->numColumns();
-      T const * m = NULL;
-
-      for (long r = 0; r < nr; ++r)
-        for (long c = 0; c < nc; ++c)
-        {
-          T const & e = get(r, c);
-          if (!m || e < *m)
-            m = &e;
-        }
-
-      debugAssertM(m, "AddressableMatrix: No minimum element found");
-      return *m;
-    }
-
-    /** Get the maximum element (according to signed comparison) in the matrix. */
-    virtual T const & max() const
-    {
-      long nr = this->numRows(), nc = this->numColumns();
-      T const * m = NULL;
-
-      for (long r = 0; r < nr; ++r)
-        for (long c = 0; c < nc; ++c)
-        {
-          T const & e = get(r, c);
-          if (!m || e > *m)
-            m = &e;
-        }
-
-      debugAssertM(m, "AddressableMatrix: No maximum element found");
-      return *m;
     }
 
     /** Get a row of the matrix. \a values must be preallocated with numColumns() elements. */

@@ -121,7 +121,7 @@ LogisticRegression::hasSolution() const
   return llsq->hasSolution();
 }
 
-TheaArray<double> const &
+Vector<double> const &
 LogisticRegression::getSolution() const
 {
   return llsq->getSolution();

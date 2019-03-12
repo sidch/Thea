@@ -47,6 +47,7 @@
 #include "../Map.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
+#include "../Vector.hpp"
 #include "LinearConstraint.hpp"
 #include "NonlinearConstraint.hpp"
 
@@ -99,14 +100,14 @@ class THEA_API NumericalOptimizer : private Noncopyable, public virtual NamedObj
     bool hasSolution() const { return has_solution; }
 
     /** Get the solution vector of the optimization problem. Valid only if hasSolution() returns true. */
-    TheaArray<double> const & getSolution() const { return solution; }
+    Vector<double> const & getSolution() const { return solution; }
 
   protected:
     TheaArray<LinearConstraint::ConstPtr>     linear_constraints;     ///< Set of linear constraints.
     TheaArray<NonlinearConstraint::ConstPtr>  nonlinear_constraints;  ///< Set of nonlinear constraints.
     bool                                      has_solution;           /**< Was a local minimum found by the last call to
                                                                            minimize()? */
-    TheaArray<double>                         solution;               ///< Solution of the optimization problem.
+    Vector<double>                            solution;               ///< Solution of the optimization problem.
 
   private:
     int constraint_ndims;  ///< Number of dimensions of current set of constraints.

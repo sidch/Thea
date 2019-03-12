@@ -45,6 +45,7 @@
 #include "AnalyticD2ScalarFunction.hpp"
 #include "Array.hpp"
 #include "FastCopy.hpp"
+#include "Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -62,7 +63,7 @@ class THEA_API LinearScalarFunction : public AnalyticD2ScalarFunction
      * Get the coefficients of the function mapping R^n to R. The function is computed by valueAt() as the inner product of the
      * point <b>p</b> with the coefficient vector <b>coeffs</b>.
      */
-    virtual TheaArray<double> const & getCoefficients() const = 0;
+    virtual Vector<double> const & getCoefficients() const = 0;
 
     /**
      * {@inheritDoc}
@@ -72,28 +73,23 @@ class THEA_API LinearScalarFunction : public AnalyticD2ScalarFunction
      */
     double valueAt(double const * p) const
     {
-      TheaArray<double> const & coeffs = getCoefficients();
-
-      double val = 0;
-      for (size_t i = 0; i < coeffs.size(); ++i)
-        val += (p[i] * coeffs[i]);
-
-      return val;
+      Vector<double> const & coeffs = getCoefficients();
+      return coeffs.dot(Vector<double>(const_cast<double *>(p), coeffs.size()));
     }
 
     // Gradient of a linear function is the coefficient vector
 
     void gradientAt(float const * p, float * result) const
     {
-      TheaArray<double> const & coeffs = getCoefficients();
-      for (size_t i = 0; i < coeffs.size(); ++i)
+      Vector<double> const & coeffs = getCoefficients();
+      for (long i = 0; i < coeffs.size(); ++i)
         result[i] = static_cast<float>(coeffs[i]);
     }
 
     void gradientAt(double const * p, double * result) const
     {
-      TheaArray<double> const & coeffs = getCoefficients();
-      if (!coeffs.empty()) fastCopy(&coeffs[0], &coeffs[0] + coeffs.size(), result);
+      Vector<double> const & coeffs = getCoefficients();
+      if (!coeffs.isEmpty()) fastCopy(&coeffs[0], &coeffs[0] + coeffs.size(), result);
     }
 
     // Hessian of a linear function is identically zero everywhere

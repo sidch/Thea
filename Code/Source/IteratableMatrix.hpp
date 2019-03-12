@@ -57,14 +57,14 @@ namespace Thea {
  *  typedef std::pair<IndexPair, T> Entry;  ///< An entry in the matrix, mapping a (row, column) pair to a value.
  *
  *  // Read-only iterator
- *  typedef <type> ConstIterator;
+ *  typedef <type> EntryIterator;
  *
  *  // Access the beginning and end of the matrix
- *  ConstIterator begin() const;
- *  ConstIterator end() const;
+ *  EntryIterator entriesBegin() const;
+ *  EntryIterator entriesEnd() const;
  * \endcode
  *
- * <tt>ConstIterator</tt> should dereference to Entry.
+ * <tt>EntryIterator</tt> should dereference to Entry.
  */
 template <typename T>
 class /* THEA_API */ IteratableMatrix : public virtual BasicMatrix<T>

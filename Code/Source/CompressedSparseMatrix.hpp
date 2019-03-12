@@ -86,11 +86,11 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
     typedef std::pair<IndexPair, T> Entry;        ///< An entry in the matrix, mapping a (row, column) pair to a value.
 
     /** Read-only iterator for a compressed sparse matrix. */
-    class ConstIterator
+    class EntryIterator
     {
       public:
         /** Constructor. */
-        ConstIterator(CompressedSparseMatrix const & m_,
+        EntryIterator(CompressedSparseMatrix const & m_,
                       long i1_ = 0,  // index of current element in indices1
                       long i2_ = 0)  // index of current element in indices2/values
         : m(m_), i1(i1_), i2(i2_)
@@ -119,7 +119,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
         }
 
         /** Pre-increment. */
-        ConstIterator & operator++()
+        EntryIterator & operator++()
         {
           ++i2;
           while ((long)i1 + 1 < m.size1 && m.indices1[i1 + 1] <= (Index1D)i2)
@@ -129,21 +129,21 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
         }
 
         /** Post-increment. */
-        ConstIterator operator++(int)
+        EntryIterator operator++(int)
         {
-          ConstIterator old = *this;
+          EntryIterator old = *this;
           this->operator++();
           return old;
         }
 
         /** Test for equality. */
-        bool operator==(ConstIterator const & rhs) const
+        bool operator==(EntryIterator const & rhs) const
         {
           return !(*this != rhs);
         }
 
         /** Test for inequality. */
-        bool operator!=(ConstIterator const & rhs) const
+        bool operator!=(EntryIterator const & rhs) const
         {
           debugAssertM(&m == &rhs.m, "CompressedSparseMatrix: Comparing iterators from different matrices for equality");
           return (i1 != rhs.i1 || i2 != rhs.i2);
@@ -154,7 +154,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
         size_t i1, i2;
         mutable Entry entry;
 
-    }; // class ConstIterator
+    }; // class EntryIterator
 
     // Since this class can't be directly instantiated (protected constructors), we might as well make these public, to avoid
     // access issues for some templated constructors
@@ -177,18 +177,18 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
     }
 
     /** Get an iterator pointing to the beginning of the matrix. */
-    ConstIterator begin() const
+    EntryIterator entriesBegin() const
     {
       // Find the first non-zero row/column
       size_t i1 = 0;
       while ((long)i1 + 1 < size1 && indices1[i1 + 1] <= 0)
         ++i1;
 
-      return ConstIterator(*this, i1, 0);
+      return EntryIterator(*this, i1, 0);
     }
 
     /** Get an iterator pointing to the end of the matrix. */
-    ConstIterator end() const { return ConstIterator(*this, (size1 > 0 ? size1 - 1 : 0), indices2.size()); }
+    EntryIterator entriesEnd() const { return EntryIterator(*this, (size1 > 0 ? size1 - 1 : 0), indices2.size()); }
 
     /** Get the layout of the matrix (row or column major) */
     static MatrixLayout getLayout() { return L; }
@@ -273,7 +273,7 @@ class /* THEA_API */ CompressedSparseMatrix : public virtual IteratableMatrix<T>
       typedef TheaMap<typename MatrixT::IndexPair, typename MatrixT::Value> EntryMap;
       EntryMap src_entries;
 
-      for (typename MatrixT::ConstIterator si = src.begin(); si != src.end(); ++si)
+      for (typename MatrixT::EntryIterator si = src.entriesBegin(); si != src.entriesEnd(); ++si)
       {
         if (si->second != 0)
         {

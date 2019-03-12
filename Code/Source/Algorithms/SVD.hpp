@@ -48,6 +48,7 @@
 #include "../Matrix.hpp"
 #include "../ResizableMatrix.hpp"
 #include "../TransposedMatrix.hpp"
+#include "../Vector.hpp"
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <algorithm>
@@ -84,7 +85,7 @@ class THEA_API SVD
      * @see SVDImpl
      */
     template <typename InputMatrixT, typename MatrixUT, typename T, typename MatrixVT>
-    static bool compute(InputMatrixT const & a, MatrixUT & u, TheaArray<T> & d, MatrixVT & v);
+    static bool compute(InputMatrixT const & a, MatrixUT & u, Vector<T> & d, MatrixVT & v);
 
     /**
      * Compute the Moore-Penrose pseudo-inverse of a (possibly rectangular) matrix A. If (A.transpose() * A) exists, the
@@ -205,7 +206,7 @@ class /* THEA_API */ SVDImpl
      *
      * @note The matrices \a a, \a u, \a d and \a v should all point to strictly different objects!
      */
-    static bool compute(InputMatrixT const & a, MatrixUT & u, TheaArray<T> & d, MatrixVT & v)
+    static bool compute(InputMatrixT const & a, MatrixUT & u, Vector<T> & d, MatrixVT & v)
     {
       // Check dimensions
       long m = a.numRows(), n = a.numColumns();
@@ -216,14 +217,14 @@ class /* THEA_API */ SVDImpl
       if (m >= n)
       {
         a.copyTo(u);  // for in-place SVD
-        d.resize((size_t)n);
+        d.resize(n);
         status = SVDInternal::svdCore(u, m, n, &d[0], v);
       }
       else
       {
         // Use SVD(A) = {U, D, V}, SVD(A^T) = {V^T, D^T, U^T}
         a.copyTo(v);
-        d.resize((size_t)m);
+        d.resize(m);
 
         // Quick transpose: just wrap the matrix with a TransposedMatrix wrapper
         TransposedMatrix<typename MatrixVT::Value> vt(&v);
@@ -276,7 +277,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
     {
       typedef typename OutputMatrixT::Value Value;
       Matrix<Value> u, v;
-      TheaArray<Value> d;
+      Vector<Value> d;
       if (!SVD::compute(a, u, d, v))
         return false;
 
@@ -287,7 +288,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
       }
 
       // Invert D
-      for (size_t i = 0; i < d.size(); ++i)
+      for (long i = 0; i < d.size(); ++i)
       {
         if (std::abs(d[i]) < tolerance)
           d[i] = static_cast<Value>(0);
@@ -305,7 +306,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
         // Compute (V^T * D^{-1})^T = D^{-1} * V
         for (long r = 0; r < vrows; ++r)
           for (long c = 0; c < vcols; ++c)
-            v(r, c) *= d[(size_t)r];
+            v(r, c) *= d[r];
 
         // Compute (D^{-1} * V)^T * U^T = V^T * D^{-1} * U^T, without explicitly computing either transpose
         Value val;
@@ -328,7 +329,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
         // Compute (D^{-1} * U^T)^T = U * D^{-1}
         for (long c = 0; c < ucols; ++c)
           for (long r = 0; r < urows; ++r)
-            u(r, c) *= d[(size_t)c];
+            u(r, c) *= d[c];
 
         // Compute V^T * (U * D^{-1})^T = V^T * D^{-1} * U^T, without explicitly computing either transpose
         Value val;
@@ -351,7 +352,7 @@ class /* THEA_API */ SVDPseudoInverseImpl< InputMatrixT, OutputMatrixT,
 
 template <typename InputMatrixT, typename MatrixUT, typename T, typename MatrixVT>
 bool
-SVD::compute(InputMatrixT const & a, MatrixUT & u, TheaArray<T> & d, MatrixVT & v)
+SVD::compute(InputMatrixT const & a, MatrixUT & u, Vector<T> & d, MatrixVT & v)
 {
   return SVDImpl<InputMatrixT, MatrixUT, T, MatrixVT>::compute(a, u, d, v);
 }

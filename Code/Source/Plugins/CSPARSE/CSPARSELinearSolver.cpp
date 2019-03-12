@@ -148,7 +148,7 @@ CSPARSELinearSolver::solve(Options const & options)
   using namespace CSPARSELinearSolverInternal;
 
   has_solution = false;
-  solution.clear();
+  solution.resize(0);
 
   switch (coeffs.getFormat())
   {
@@ -204,7 +204,7 @@ CSPARSELinearSolver::solve(Options const & options)
       }
 
       // Initialize the solutions vector with the constants vector. This will be overwritten by the solver.
-      solution.resize(std::max(constants.size(), (size_t)scm.numColumns()));
+      solution.resize(std::max(constants.size(), scm.numColumns()));
       Algorithms::fastCopy(constants.begin(), constants.end(), solution.begin());
       if (solution.size() > constants.size())
         std::fill(solution.begin() + constants.size(), solution.end(), 0);
