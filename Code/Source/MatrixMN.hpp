@@ -304,23 +304,23 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     }
 
     /** Multiply by a scalar. */
-    MatrixT operator*(T const & t) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator*(S const & s) const
     {
       MatrixT result;
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          result.m[i][j] = m[i][j] * t;
+          result.m[i][j] = static_cast<T>(m[i][j] * s);
 
       return result;
     }
 
     /** Divide by a scalar. */
-    MatrixT operator/(T const & t) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator/(S const & s) const
     {
       MatrixT result;
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          result.m[i][j] = m[i][j] / t;
+          result.m[i][j] = static_cast<T>(m[i][j] / s);
 
       return result;
     }
@@ -346,21 +346,21 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     }
 
     /** Multiply in-place by a scalar. */
-    MatrixT & operator*=(T const & t)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type & operator*=(S const & s)
     {
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          m[i][j] *= t;
+          m[i][j] = static_cast<T>(m[i][j] * s);
 
       return *static_cast<MatrixT *>(this);
     }
 
     /** Divide in-place by a scalar. */
-    MatrixT & operator/=(T const & t)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type & operator/=(S const & s)
     {
       for (long i = 0; i < M; ++i)
         for (long j = 0; j < N; ++j)
-          m[i][j] /= t;
+          m[i][j] = static_cast<T>(m[i][j] / s);
 
       return *static_cast<MatrixT *>(this);
     }
@@ -724,11 +724,11 @@ operator*(Thea::VectorN<M, T> const & v, Thea::MatrixMN<M, N, T> const & m)
 }
 
 /** Pre-multiply by a scalar. */
-template <long M, long N, typename T>
-Thea::MatrixMN<M, N, T>
-operator*(T const & t, Thea::MatrixMN<M, N, T> const & m)
+template <typename S, long M, long N, typename T>
+typename boost::enable_if< IsCompatibleScalar<S, T>, Thea::MatrixMN<M, N, T> >::type
+operator*(S const & s, Thea::MatrixMN<M, N, T> const & m)
 {
-  return m * t;
+  return m * s;
 }
 
 } // namespace Thea

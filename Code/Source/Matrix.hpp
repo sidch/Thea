@@ -51,7 +51,6 @@
 #include "ResizableMatrix.hpp"
 #include <boost/type_traits/conditional.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_scalar.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <algorithm>
 #include <memory>
@@ -764,21 +763,21 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     }
 
     /** Post-multiply by a scalar. */
-    MatrixT operator*(T const & s) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator*(S const & s) const
     {
       MatrixT result(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
-        *u = (*v) * s;
+        *u = static_cast<T>((*v) * s);
 
       return result;
     }
 
     /** Post-multiply by a scalar and assign. */
-    MatrixT & operator*=(T const & s)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type & operator*=(S const & s)
     {
       for (T * v = values, * e = values + this->numElements(); v != e; ++v)
-        (*v) *= s;
+        *v = static_cast<T>((*v) * s);
 
       return *static_cast<MatrixT *>(this);
     }
@@ -875,21 +874,21 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     template <typename U> void MultMv(U const * v, U * w) const { postmulVector(v, w); }
 
     /** Post-divide by a scalar. */
-    MatrixT operator/(T const & s) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator/(S const & s) const
     {
       MatrixT result(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
-        *u = (*v) / s;
+        *u = static_cast<T>((*v) / s);
 
       return result;
     }
 
     /** Post-divide by a scalar and assign. */
-    MatrixT & operator/=(T const & s)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type & operator/=(S const & s)
     {
       for (T * v = values, * e = values + this->numElements(); v != e; ++v)
-        (*v) /= s;
+        *v = static_cast<T>((*v) / s);
 
       return *static_cast<MatrixT *>(this);
     }
@@ -917,9 +916,9 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
 } // namespace Internal
 
 /** Pre-multiply by a scalar. */
-template <typename T, MatrixLayout::Value L, bool V, typename A>
-typename Internal::MatrixBase<T, L, V, A>::MatrixT
-operator*(T const & s, Internal::MatrixBase<T, L, V, A> const & m)
+template <typename S, typename T, MatrixLayout::Value L, bool V, typename A>
+typename boost::enable_if< IsCompatibleScalar<S, T>, typename Internal::MatrixBase<T, L, V, A>::MatrixT >::type
+operator*(S const & s, Internal::MatrixBase<T, L, V, A> const & m)
 {
   return m * s;
 }

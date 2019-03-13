@@ -45,8 +45,6 @@
 #include "Common.hpp"
 #include "Algorithms/FastCopy.hpp"
 #include "Math.hpp"
-#include <boost/type_traits/is_arithmetic.hpp>
-#include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <algorithm>
 #include <iterator>
@@ -65,13 +63,6 @@ template <long M, long N, typename T> class MatrixMN;
  * @note The members of this namespace are <b>INTERNAL</b>! Don't use them directly.
  */
 namespace Internal {
-
-// Check that a given type is a valid scalar.
-template <typename S, typename T> struct ScalarCheck
-{
-  static bool const value = boost::is_arithmetic<S>::value || boost::is_same<S, T>::value;
-
-}; // struct ScalarCheck
 
 /**
  * <b>[Internal]</b> Base class for fixed-size N-dimensional vectors, where N is any <b>positive</b> (non-zero) integer and T is
@@ -279,7 +270,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     }
 
     /** Multiply by a scalar. */
-    template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type operator*(S const & s) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, VectorT >::type operator*(S const & s) const
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
@@ -299,7 +290,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     }
 
     /** Divide by a scalar. */
-    template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type operator/(S const & s) const
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, VectorT >::type operator/(S const & s) const
     {
       VectorT result;
       for (long i = 0; i < N; ++i)
@@ -336,7 +327,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     }
 
     /** Multiply in-place by a scalar. */
-    template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type & operator*=(S const & s)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, VectorT >::type & operator*=(S const & s)
     {
       for (long i = 0; i < N; ++i)
         values[i] = static_cast<T>(values[i] * s);
@@ -354,7 +345,7 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     }
 
     /** Divide in-place by a scalar. */
-    template <typename S> typename boost::enable_if< ScalarCheck<S, T>, VectorT >::type & operator/=(S const & s)
+    template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, VectorT >::type & operator/=(S const & s)
     {
       for (long i = 0; i < N; ++i)
         values[i] = static_cast<T>(values[i] / s);
@@ -617,7 +608,7 @@ class /* THEA_API */ VectorN : public Internal::VectorNBase<N, T>
 
 /** Pre-multiply an N-dimensional vector by a scalar. */
 template <typename S, long N, typename T>
-typename boost::enable_if< Internal::ScalarCheck<S, T>, VectorN<N, T> >::type
+typename boost::enable_if< IsCompatibleScalar<S, T>, VectorN<N, T> >::type
 operator*(S const & s, VectorN<N, T> const & v)
 {
   return v * s;

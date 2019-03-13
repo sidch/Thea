@@ -44,6 +44,8 @@
 
 #include "Platform.hpp"
 #include <boost/cstdint.hpp>
+#include <boost/type_traits/is_arithmetic.hpp>
+#include <boost/type_traits/is_same.hpp>
 #include <cstddef>
 
 namespace Thea {
@@ -63,6 +65,17 @@ using    std::                 size_t;
 typedef  float                 Real;
 typedef  float                 float32;  // assume IEEE 754
 typedef  double                float64;  // assume IEEE 754
+
+/**
+ * Check that <code>S</code> is a scalar type that can participate in arithmetic operations with field type <code>T</code>
+ * without explicit casting.
+ */
+template <typename S, typename T>
+struct IsCompatibleScalar
+{
+  static bool const value = boost::is_arithmetic<S>::value || boost::is_same<S, T>::value;
+
+}; // struct IsCompatibleScalar
 
 } // namespace Thea
 
