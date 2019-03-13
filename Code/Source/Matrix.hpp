@@ -670,7 +670,7 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     /** Get the negation of this matrix (the matrix equal to this one except with every element negated). */
     MatrixT operator-() const
     {
-      MatrixT neg(num_rows, num_cols);
+      MatrixT neg; neg.resize(num_rows, num_cols);
       T * v2 = neg.values;
       for (T const * v1 = values, * e1 = values + this->numElements(); v1 != e1; ++v1, ++v2)
         *v2 = -(*v1);
@@ -681,7 +681,7 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     {
       alwaysAssertM(sameDims(rhs), "MatrixBase: Can't add matrices of different dimensions");
 
-      MatrixT result(num_rows, num_cols);
+      MatrixT result; result.resize(num_rows, num_cols);
       if (L == L2)
       {
         T * u = result.values;
@@ -724,7 +724,7 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     {
       alwaysAssertM(sameDims(rhs), "MatrixBase: Can't subtract matrices of different dimensions");
 
-      MatrixT result(num_rows, num_cols);
+      MatrixT result; result.resize(num_rows, num_cols);
       if (L == L2)
       {
         T * u = result.values;
@@ -765,7 +765,7 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     /** Post-multiply by a scalar. */
     template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator*(S const & s) const
     {
-      MatrixT result(num_rows, num_cols);
+      MatrixT result; result.resize(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
         *u = static_cast<T>((*v) * s);
@@ -789,7 +789,8 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
       alwaysAssertM(num_cols == rhs.numRows(), "MatrixBase: Matrices don't have compatible dimensions for multiplication");
 
       long rhs_ncols = rhs.numColumns();
-      typename MultResultT<L, IsVector, L2, V2>::type result(num_rows, rhs_ncols);
+      typename MultResultT<L, IsVector, L2, V2>::type result;
+      result.resize(num_rows, rhs_ncols);  // do this in a separate step to ensure the correct constructor is called above
 
       for (long i = 0; i < num_rows; ++i)
         for (long k = 0; k < rhs_ncols; ++k)
@@ -876,7 +877,7 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
     /** Post-divide by a scalar. */
     template <typename S> typename boost::enable_if< IsCompatibleScalar<S, T>, MatrixT >::type operator/(S const & s) const
     {
-      MatrixT result(num_rows, num_cols);
+      MatrixT result; result.resize(num_rows, num_cols);
       T * u = result.values;
       for (T const * v = values, * e = values + this->numElements(); v != e; ++v, ++u)
         *u = static_cast<T>((*v) / s);
