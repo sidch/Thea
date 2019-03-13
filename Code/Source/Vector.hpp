@@ -116,6 +116,8 @@ class /* THEA_API */ Vector : public Internal::MatrixBase<T, L, true, AllocT>
       U const * q = rhs.data();
       for (T const * p = this->data(); p != pend; ++p, ++q)
         result += static_cast<T>((*p) * (*q));
+
+      return result;
     }
 
 }; // class Vector
