@@ -16,9 +16,6 @@ IF(POLICY CMP0003)
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(POLICY CMP0003)
 
-# If you don't want the full compiler output, remove the following line
-SET(CMAKE_VERBOSE_MAKEFILE ON)
-
 # Avoid having to repeat condition after ELSE and ENDIF statements
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
