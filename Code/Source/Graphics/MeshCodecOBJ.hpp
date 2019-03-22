@@ -323,21 +323,27 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         {
           std::istringstream vstr(line); vstr.get();
 
-          if (!read_opts.ignore_texcoords && line[1] == 't')  // texcoord
+          if (line[1] == 't')
           {
-            vstr.get();
-            if (!(vstr >> x >> y))
-              throw Error(std::string(getName()) + ": Could not read texture coordinate on line '" + line + '\'');
+            if (!read_opts.ignore_texcoords)  // texcoord
+            {
+              vstr.get();
+              if (!(vstr >> x >> y))
+                throw Error(std::string(getName()) + ": Could not read texture coordinate on line '" + line + '\'');
 
-            texcoords.push_back(Vector2((Real)x, (Real)y));
+              texcoords.push_back(Vector2((Real)x, (Real)y));
+            }
           }
-          else if (!read_opts.ignore_normals && line[1] == 'n')  // normal
+          else if (line[1] == 'n')
           {
-            vstr.get();
-            if (!(vstr >> x >> y >> z))
-              throw Error(std::string(getName()) + ": Could not read normal on line '" + line + '\'');
+            if (!read_opts.ignore_normals)  // normal
+            {
+              vstr.get();
+              if (!(vstr >> x >> y >> z))
+                throw Error(std::string(getName()) + ": Could not read normal on line '" + line + '\'');
 
-            normals.push_back(Vector3((Real)x, (Real)y, (Real)z));
+              normals.push_back(Vector3((Real)x, (Real)y, (Real)z));
+            }
           }
           else if (line[1] == ' ' || line[1] == '\t')  // vertex
           {
@@ -404,13 +410,15 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               }
 
               if (vtn[0] < 1 || vtn[0] > vertices.size())
-                throw Error(getName() + format(": Vertex index %ld out of bounds", vtn[0]));
+                throw Error(getName() + format(": Vertex index %ld out of bounds (max %ld)", vtn[0], (long)vertices.size()));
 
-              if (vtn[1] > texcoords.size())
-                throw Error(getName() + format(": Texture coordinate index %ld out of bounds", vtn[1]));
+              if (!read_opts.ignore_texcoords && vtn[1] > texcoords.size())
+                throw Error(getName() + format(": Texture coordinate index %ld out of bounds (max %ld)",
+                                               vtn[1], (long)texcoords.size()));
 
-              if (vtn[2] > normals.size())
-                throw Error(getName() + format(": Normal index %ld out of bounds", vtn[2]));
+              if (!read_opts.ignore_normals && vtn[2] > normals.size())
+                throw Error(getName() + format(": Normal index %ld out of bounds (max %ld)", vtn[2], (long)normals.size()));
+
 
               // Add the vertex referenced by the triple to the mesh builder if it has not already been added
               typename VTNVertexMap::const_iterator existing = vtn_refs.find(vtn);

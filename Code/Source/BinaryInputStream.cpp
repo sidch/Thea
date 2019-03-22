@@ -374,9 +374,14 @@ BinaryInputStream::~BinaryInputStream()
 void
 BinaryInputStream::readBytes(int64 n, void * bytes)
 {
-  prepareToRead(n);
-  std::memcpy(bytes, m_buffer + m_pos, n);
-  m_pos += n;
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (long)n));
+
+  if (n > 0)
+  {
+    prepareToRead(n);
+    std::memcpy(bytes, m_buffer + m_pos, n);
+    m_pos += n;
+  }
 }
 
 uint64
@@ -422,6 +427,11 @@ BinaryInputStream::readUInt64()
 std::string
 BinaryInputStream::readString(int64 n)
 {
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative-length string (%ld)", (long)n));
+
+  if (n == 0)
+    return std::string();
+
   prepareToRead(n);
 
   char * s = (char *)std::malloc(n + 1);
@@ -446,27 +456,16 @@ std::string
 BinaryInputStream::readNullTerminatedString()
 {
   int64 n = 0;
-
-  if ((m_pos + m_alreadyRead + n) < (m_length - 1))
+  while ((m_pos + m_alreadyRead + n) < m_length)  // check if we we can read byte n
   {
-    prepareToRead(1);
-  }
+    prepareToRead(n + 1);
+    if (m_buffer[m_pos + n] == '\0')
+      return readString(n + 1);  // consume the null as well
 
-  if ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
-       (m_buffer[m_pos + n] != '\0') )
-  {
     ++n;
-
-    while ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
-            (m_buffer[m_pos + n] != '\0') )
-    {
-      ++n;
-      prepareToRead(n);
-    }
   }
 
-  // Consume NULL
-  ++n;
+  // Reached EOF and couldn't read byte n (0-indexed), so extract previous n bytes
   return readString(n);
 }
 
@@ -474,25 +473,17 @@ std::string
 BinaryInputStream::readLine()
 {
   int64 n = 0;
-
-  if ((m_pos + m_alreadyRead + n) < (m_length - 1))
+  while ((m_pos + m_alreadyRead + n) < m_length)  // check if we we can read byte n
   {
-    prepareToRead(1);
-  }
+    prepareToRead(n + 1);
+    if (isNewline(m_buffer[m_pos + n]))
+      break;
 
-  if ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
-       ! isNewline(m_buffer[m_pos + n]))
-  {
     ++n;
-
-    while ( ((m_pos + m_alreadyRead + n) < (m_length - 1)) &&
-            ! isNewline(m_buffer[m_pos + n]))
-    {
-      ++n;
-      prepareToRead(n);
-    }
   }
 
+  // Read everything upto but not including the newline character. n is the correct length regardless of whether we reached a
+  // newline or EOF.
   std::string const s = readString(n);
 
   // Consume the newline
@@ -500,7 +491,7 @@ BinaryInputStream::readLine()
   {
     char firstNLChar = readInt8();
 
-    // Consume the 2nd newline character, if it exists
+    // Consume the 2nd newline character (must be different from the first), if it exists
     if (hasMore())
     {
       prepareToRead(1);
