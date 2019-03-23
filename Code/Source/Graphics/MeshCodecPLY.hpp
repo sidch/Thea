@@ -186,13 +186,16 @@ class CodecPLY : public CodecPLYBase<MeshT>
         bool skip_empty_meshes;
         bool store_vertex_indices;
         bool store_face_indices;
+        bool strict;
         bool verbose;
 
         friend class CodecPLY;
 
       public:
         /** Constructor. Sets default values. */
-        ReadOptions() : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), verbose(false) {}
+        ReadOptions()
+        : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), strict(false), verbose(false)
+        {}
 
         /** Skip meshes with no faces? */
         ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
@@ -202,6 +205,9 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
         /** Store face indices in mesh? */
         ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
+
+        /** Treat warnings as errors */
+        ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
         /** Print debugging information? */
         ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
@@ -520,18 +526,41 @@ class CodecPLY : public CodecPLYBase<MeshT>
                 for (long v = 0; v < num_face_vertices && !skip; ++v)
                 {
                   if (!(vstr >> index))
-                    throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+                  {
+                    if (read_opts.strict)
+                      throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+                    else
+                    {
+                      THEA_WARNING << getName() << ": Skipping face, could not read vertex index on line '" << line << '\'';
+                      skip = true; break;
+                    }
+                  }
 
                   if (index < 0 || index >= (long)vrefs.size())
-                    throw Error(getName() + format(": Vertex index %ld out of bounds on line '%s'", index, line.c_str()));
+                  {
+                    if (read_opts.strict)
+                      throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) on line '%s'",
+                                                     index, (long)vrefs.size(), line.c_str()));
+                    else
+                    {
+                      THEA_WARNING << getName() << ": Vertex index " << index << " out of bounds (#vertices = "
+                                   << vrefs.size() << ") on line '" << line << '\'';
+                      skip = true; break;
+                    }
+                  }
 
                   face[(size_t)v] = vrefs[(size_t)index];
 
                   for (int w = 0; w < v; ++w)
                     if (face[w] == face[v])  // face has repeated vertices
                     {
-                      skip = true;
-                      break;
+                      if (read_opts.strict)
+                        throw Error(std::string(getName()) + ": Face has repeated vertices on line '" + line + '\'');
+                      else
+                      {
+                        THEA_WARNING << getName() << ": Skipping face with repeated vertices on line '" << line << '\'';
+                        skip = true; break;
+                      }
                     }
                 }
 
@@ -543,10 +572,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
                     callback->faceRead(mesh.get(), num_faces, fref);
 
                   num_faces++;
-                }
-                else if (read_opts.verbose)
-                {
-                  THEA_WARNING << getName() << ": Skipping face with repeated vertices";
                 }
               }
 
@@ -670,15 +695,30 @@ class CodecPLY : public CodecPLYBase<MeshT>
                 {
                   long index = face_vertices[v];
                   if (index < 0 || index >= (long)vrefs.size())
-                    throw Error(getName() + format(": Vertex index %ld out of bounds in face %ld", index, num_faces));
+                  {
+                    if (read_opts.strict)
+                      throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) in face %ld",
+                                                     index, (long)vrefs.size(), num_faces));
+                    else
+                    {
+                      THEA_WARNING << getName() << ": Skipping face, vertex index " << index << " out of bounds (#vertices = "
+                                                << vrefs.size() << ')';
+                      skip = true; break;
+                    }
+                  }
 
                   face[v] = vrefs[(size_t)index];
 
                   for (size_t w = 0; w < v; ++w)
                     if (face[w] == face[v])  // face has repeated vertices
                     {
-                      skip = true;
-                      break;
+                      if (read_opts.strict)
+                        throw Error(getName() + format(": Face %ld has repeated vertices", num_faces));
+                      else
+                      {
+                        THEA_WARNING << getName() << ": Skipping face with repeated vertices";
+                        skip = true; break;
+                      }
                     }
                 }
 
@@ -690,10 +730,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
                     callback->faceRead(mesh.get(), num_faces, fref);
 
                   num_faces++;
-                }
-                else if (read_opts.verbose)
-                {
-                  THEA_WARNING << getName() << ": Skipping face with repeated vertices";
                 }
               }
 

@@ -61,21 +61,21 @@ namespace CodecOBJInternal {
 class VTN
 {
   public:
-    size_t operator[](std::size_t i) const { return elems[i]; }
-    size_t & operator[](std::size_t i) { return elems[i]; }
+    long operator[](size_t i) const { return elems[i]; }
+    long & operator[](size_t i) { return elems[i]; }
 
     bool operator==(VTN const & rhs) const
     {
       return elems[0] == rhs.elems[0] && elems[1] == rhs.elems[1] && elems[2] == rhs.elems[2];
     }
 
-    friend std::size_t hash_value(VTN const & vtn)
+    friend size_t hash_value(VTN const & vtn)
     {
       return boost::hash_range(vtn.elems, vtn.elems + 3);
     }
 
   private:
-    size_t elems[3];
+    long elems[3];
 };
 
 template <typename MeshT, typename Enable = void>
@@ -119,6 +119,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         bool flatten;
         bool store_vertex_indices;
         bool store_face_indices;
+        bool strict;
         bool verbose;
 
         friend class CodecOBJ;
@@ -127,7 +128,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         /* Constructor. Sets default values. */
         ReadOptions()
         : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
-          store_face_indices(true), verbose(false) {}
+          store_face_indices(true), strict(false), verbose(false) {}
 
         /**
          * Ignore texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
@@ -153,6 +154,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
         /** Store face indices in mesh? */
         ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
+
+        /** Treat warnings as errors */
+        ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
         /** Print debugging information? */
         ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
@@ -306,7 +310,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       {
         std::string line = trimWhitespace(in->readLine());
         bool done = false;
-        while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'g' || line[0] == 'o'))
+        while (line.empty() || !(line[0] == 'v' || line[0] == 'f' || line[0] == 'p' || line[0] == 'g' || line[0] == 'o'))
         {
           if (in->hasMore())
             line = trimWhitespace(in->readLine());
@@ -353,7 +357,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
             vertices.push_back(Vector3((Real)x, (Real)y, (Real)z));
           }
         }
-        else if (line[0] == 'f' && line.length() >= 2 && (line[1] == ' ' || line[1] == '\t'))  // face
+        else if ((line[0] == 'f' || line[0] == 'p') && line.length() >= 2 && (line[1] == ' ' || line[1] == '\t'))  // face
         {
           // If no mesh+builder have been created yet, create them
           if (!builder)
@@ -365,7 +369,8 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           }
 
           face.clear();
-          size_t field_begin = line.find_first_not_of("f \t"), field_end = 0;
+          size_t field_begin = line.find_first_not_of("fp \t"), field_end = 0;
+          bool bad_face = false;
           while (field_end != std::string::npos)
           {
             field_end = line.find_first_of(" \t", field_begin);
@@ -379,10 +384,11 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               // OBJ stores a vertex reference as VertexIndex[/[TexCoordIndex][/NormalIndex]]
               VTN vtn; vtn[0] = 0, vtn[1] = 0; vtn[2] = 0;
 
+              bool bad_index = false;
               if (!(fstr >> vtn[0]))
-                throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
+                bad_index = true;
 
-              if (fstr.get() == '/')
+              if (!bad_index && fstr.get() == '/')
               {
                 if (fstr.peek() == '/')
                 {
@@ -390,47 +396,72 @@ class CodecOBJ : public CodecOBJBase<MeshT>
                   {
                     fstr.get();
                     if (!(fstr >> vtn[2]))
-                      throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
+                      bad_index = true;
                   }
                 }
                 else
                 {
                   if (!(fstr >> vtn[1]))
-                    throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
+                    bad_index = true;
 
-                  if (read_opts.ignore_texcoords)  // reset field
-                    vtn[1] = 0;
-
-                  if (!read_opts.ignore_normals && fstr.get() == '/')
+                  if (!bad_index)
                   {
-                    if (!(fstr >> vtn[2]))
-                      throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
+                    if (read_opts.ignore_texcoords)  // reset field
+                      vtn[1] = 0;
+
+                    if (!read_opts.ignore_normals && fstr.get() == '/')
+                    {
+                      if (!(fstr >> vtn[2]))
+                        bad_index = true;
+                    }
                   }
                 }
               }
 
-              if (vtn[0] < 1 || vtn[0] > vertices.size())
-                throw Error(getName() + format(": Vertex index %ld out of bounds (max %ld)", vtn[0], (long)vertices.size()));
+              if (bad_index)
+              {
+                THEA_WARNING << getName() << ": Could not read index";
+                bad_face = true; break;
+              }
 
-              if (!read_opts.ignore_texcoords && vtn[1] > texcoords.size())
-                throw Error(getName() + format(": Texture coordinate index %ld out of bounds (max %ld)",
-                                               vtn[1], (long)texcoords.size()));
+              if (std::abs(vtn[0]) < 1 || std::abs(vtn[0]) > (long)vertices.size())
+              {
+                THEA_WARNING << getName() << ": Vertex index " << vtn[0] << " out of bounds (#vertices = "
+                             << vertices.size() << ')';
+                bad_face = true; break;
+              }
 
-              if (!read_opts.ignore_normals && vtn[2] > normals.size())
-                throw Error(getName() + format(": Normal index %ld out of bounds (max %ld)", vtn[2], (long)normals.size()));
+              if (!read_opts.ignore_texcoords && std::abs(vtn[1]) > (long)texcoords.size())
+              {
+                THEA_WARNING << getName() << ": Texture coordinate index " << vtn[1] << " out of bounds (#texcoords = "
+                             << texcoords.size() << ')';
+                vtn[1] = 0;
+              }
 
+              if (!read_opts.ignore_normals && std::abs(vtn[2]) > (long)normals.size())
+              {
+                THEA_WARNING << getName() << ": Normal index " << vtn[2] << " out of bounds (#normals = "
+                             << normals.size() << ')';
+                vtn[2] = 0;
+              }
+
+              // Negative indices indicate counting from the last element. We'll subtract one eventually, so -1 should currently
+              // map to vertices.size().
+              if (vtn[0] < 0) vtn[0] = (long)vertices.size()  + 1 + vtn[0];
+              if (vtn[1] < 0) vtn[1] = (long)texcoords.size() + 1 + vtn[1];
+              if (vtn[2] < 0) vtn[2] = (long)normals.size()   + 1 + vtn[2];
 
               // Add the vertex referenced by the triple to the mesh builder if it has not already been added
               typename VTNVertexMap::const_iterator existing = vtn_refs.find(vtn);
               if (existing == vtn_refs.end())
               {
-                typename Builder::VertexHandle vref = builder->addVertex(vertices[vtn[0] - 1],
-                                                                         read_opts.store_vertex_indices ? (long)vtn[0] - 1 : -1,
-                                                                         vtn[2] > 0 ? &normals[vtn[2] - 1] : NULL,
+                typename Builder::VertexHandle vref = builder->addVertex(vertices[(size_t)vtn[0] - 1],
+                                                                         read_opts.store_vertex_indices ? vtn[0] - 1 : -1,
+                                                                         vtn[2] > 0 ? &normals[(size_t)vtn[2] - 1] : NULL,
                                                                          NULL,  // color
-                                                                         vtn[1] > 0 ? &texcoords[vtn[1] - 1] : NULL);
+                                                                         vtn[1] > 0 ? &texcoords[(size_t)vtn[1] - 1] : NULL);
                 if (callback)
-                  callback->vertexRead(mesh.get(), (long)vtn[0] - 1, vref);
+                  callback->vertexRead(mesh.get(), vtn[0] - 1, vref);
 
                 vtn_refs[vtn] = vref;
                 face.push_back(vref);
@@ -441,12 +472,20 @@ class CodecOBJ : public CodecOBJBase<MeshT>
             else
             {
               if (!(fstr >> index))
-                throw Error(std::string(getName()) + ": Could not read index on line '" + line + '\'');
+              {
+                THEA_WARNING << getName() << ": Could not read index";
+                bad_face = true; break;
+              }
 
-              --index;  // OBJ indices start from 1
+              if (std::abs(index) < 1 || std::abs(index) > (long)vertices.size())
+              {
+                THEA_WARNING << getName() << ": Vertex index " << index << " out of bounds (#vertices = "
+                             << vertices.size() << ')';
+                bad_face = true; break;
+              }
 
-              if (index < 0 || index >= (long)vertices.size())
-                throw Error(getName() + format(": Vertex index %ld out of bounds", index));
+              // OBJ indices start from 1. Negative indices indicate counting from the last element.
+              index = (index < 0 ? (long)vertices.size() + index : index - 1);
 
               // Add the referenced vertex to the mesh builder if it has not already been added
               typename IndexVertexMap::const_iterator existing = vrefs.find(index);
@@ -468,12 +507,22 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               field_begin = line.find_first_not_of(" \t", field_end);
           }
 
-          typename Builder::FaceHandle fref = builder->addFace(face.begin(), face.end(),
-                                                               (read_opts.store_face_indices ? num_faces : -1));
-          if (callback)
-            callback->faceRead(mesh.get(), num_faces, fref);
+          if (!bad_face)
+          {
+            typename Builder::FaceHandle fref = builder->addFace(face.begin(), face.end(),
+                                                                 (read_opts.store_face_indices ? num_faces : -1));
+            if (callback)
+              callback->faceRead(mesh.get(), num_faces, fref);
 
-          num_faces++;
+            num_faces++;
+          }
+          else
+          {
+            if (read_opts.strict)
+              throw Error(std::string(getName()) + ": Malformed face: '" + line + '\'');
+            else
+              THEA_WARNING << getName() << ": Skipping malformed face: '" << line << '\'';
+          }
         }
         else if (!read_opts.flatten
               && ((line[0] == 'g' || line[0] == 'o') && (line.length() < 2 || line[1] == ' ' || line[1] == '\t')))  // group

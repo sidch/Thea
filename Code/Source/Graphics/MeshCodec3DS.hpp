@@ -90,6 +90,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
         bool flatten;
         bool store_vertex_indices;
         bool store_face_indices;
+        bool strict;
         bool verbose;
 
         friend class Codec3DS;
@@ -98,7 +99,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
         /** Constructor. Sets default values. */
         ReadOptions()
         : use_transforms(false), ignore_texcoords(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
-          store_face_indices(true), verbose(false)
+          store_face_indices(true), strict(false), verbose(false)
         {}
 
         /** Apply node transforms embedded in the 3DS file? */
@@ -118,6 +119,9 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
         /** Store face indices in mesh? */
         ReadOptions & setStoreFaceIndices(bool value) { store_face_indices = value; return *this; }
+
+        /** Treat warnings as errors */
+        ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
         /** Print debugging information? */
         ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
@@ -322,20 +326,34 @@ class Codec3DS : public Codec3DSBase<MeshT>
           indices[1] = (long)m->faceL[i].points[1];
           indices[2] = (long)m->faceL[i].points[2];
 
-          debugAssertM(indices[0] >= 0 && indices[0] < num_vertices
-                    && indices[1] >= 0 && indices[1] < num_vertices
-                    && indices[2] >= 0 && indices[2] < num_vertices, std::string(getName()) + ": Vertex index out of bounds");
+          if (indices[0] < 0 || indices[0] >= num_vertices
+           || indices[1] < 0 || indices[1] >= num_vertices
+           || indices[2] < 0 || indices[2] >= num_vertices)
+          {
+            if (read_opts.strict)
+              throw Error(getName() + format(": Vertex index out of bounds in face %ld: (%ld, %ld, %ld)",
+                                             i, indices[0], indices[1], indices[2]));
+            else
+            {
+              THEA_WARNING << getName() << ": Skipping face " << i << ", vertex index out of bounds: ("
+                                        << indices[0] << ", " << indices[1] << ", " << indices[2] << ')';
+              face_count++;  // increment in any case to keep face indexing correct
+              continue;
+            }
+          }
 
           if (indices[0] == indices[1] || indices[1] == indices[2] || indices[2] == indices[0])
           {
-            if (read_opts.verbose)
+            if (read_opts.strict)
+              throw Error(getName() + format(": Repeated vertices in face %ld: (%ld, %ld, %ld)",
+                                             i, indices[0], indices[1], indices[2]));
+            else
             {
-              THEA_WARNING << getName() << ": Skipping malformed face " << i << " == " << indices[0] << ' ' << indices[1]
-                           << ' ' << indices[2];
+              THEA_WARNING << getName() << ": Skipping face " << i << " with repeated vertices: ("
+                                        << indices[0] << ", " << indices[1] << ", " << indices[2] << ')';
+              face_count++;  // increment in any case to keep face indexing correct
+              continue;
             }
-
-            face_count++;  // increment in any case to keep face indexing correct
-            continue;
           }
 
           face[0] = vrefs[(size_t)indices[0]];
