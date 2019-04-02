@@ -1029,6 +1029,15 @@ class /* THEA_API */ Matrix : public Internal::MatrixBase<T, L, false, AllocT>
 
 }; // class Matrix
 
+/** Convenience typedef for a resizable row-major matrix of reals. */
+typedef Matrix<Real, MatrixLayout::ROW_MAJOR> MatrixX;
+
+/** Convenience typedef for a resizable row-major matrix of single-precision floats. */
+typedef Matrix<float, MatrixLayout::ROW_MAJOR> MatrixXf;
+
+/** Convenience typedef for a resizable row-major matrix of double-precision floats. */
+typedef Matrix<double, MatrixLayout::ROW_MAJOR> MatrixXd;
+
 } // namespace Thea
 
 #endif

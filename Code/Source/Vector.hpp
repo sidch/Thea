@@ -122,6 +122,24 @@ class /* THEA_API */ Vector : public Internal::MatrixBase<T, L, true, AllocT>
 
 }; // class Vector
 
+/** Convenience typedef for a resizable column vector of reals. */
+typedef Vector<Real, MatrixLayout::COLUMN_MAJOR> VectorX;
+
+/** Convenience typedef for a resizable column vector of single-precision floats. */
+typedef Vector<float, MatrixLayout::COLUMN_MAJOR> VectorXf;
+
+/** Convenience typedef for a resizable column vector of double-precision floats. */
+typedef Vector<double, MatrixLayout::COLUMN_MAJOR> VectorXd;
+
+/** Convenience typedef for a resizable row vector of reals. */
+typedef Vector<Real, MatrixLayout::ROW_MAJOR> RowVectorX;
+
+/** Convenience typedef for a resizable row vector of single-precision floats. */
+typedef Vector<float, MatrixLayout::ROW_MAJOR> RowVectorXf;
+
+/** Convenience typedef for a resizable row vector of double-precision floats. */
+typedef Vector<double, MatrixLayout::ROW_MAJOR> RowVectorXd;
+
 } // namespace Thea
 
 #endif
