@@ -51,6 +51,10 @@
 #include <limits>
 #include <sstream>
 
+#ifdef THEA_ENABLE_EIGEN3
+#  include <Eigen/Dense>
+#endif
+
 namespace Thea {
 
 // Forward declarations
@@ -90,6 +94,13 @@ class /* THEA_DLL_LOCAL */ VectorNBase
 
     /** Initialize all components to a single value. */
     explicit VectorNBase(T const & fill_value) { fill(fill_value); }
+
+    /** Construct from an array containing N densely packed values. */
+    template <typename S>
+    explicit VectorNBase(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL)
+    {
+      Algorithms::fastCopy(arr, arr + N, &values[0]);
+    }
 
     /** Copy constructor. */
     VectorNBase(VectorNBase const & src) { *this = src; }
@@ -561,6 +572,69 @@ class /* THEA_DLL_LOCAL */ VectorNBase
     /** Get a vector containing only zeroes. */
     static VectorT const & zero() { static VectorT const z(0); return z; }
 
+#ifdef THEA_ENABLE_EIGEN3
+
+    /** Corresponding 1D Eigen matrix type (column vector). */
+    typedef Eigen::Matrix<
+                /* _Scalar  = */   T,
+                /* _Rows    = */   (int)N,
+                /* _Cols    = */   1,
+                /* _Options = */   Eigen::ColMajor
+            > EigenMatrix;
+
+    /**
+     * Get a 1D Eigen matrix wrapping the underlying array. Operations on the Eigen wrapper modify the elements of the source
+     * object.
+     */
+    Eigen::Map<EigenMatrix> asEigen()
+    {
+      return Eigen::Map<EigenMatrix>(&values[0], (Eigen::Index)N, 1);
+    }
+
+    /**
+     * Get a 1D Eigen matrix immutably wrapping the underlying array. Operations on the Eigen wrapper access the elements of the
+     * source object, but can't modify them.
+     */
+    Eigen::Map<EigenMatrix const> asEigen() const
+    {
+      return Eigen::Map<EigenMatrix const>(&values[0], (Eigen::Index)N, 1);
+    }
+
+    /**
+     * Get a copy of the vector as a 1D Eigen matrix. The deep copy can be avoided, if the context allows, by creating a thin
+     * wrapper via asEigen().
+     */
+    EigenMatrix toEigen() const
+    {
+      return EigenMatrix(&values[0]);
+    }
+
+    /**
+     * Create a vector as a copy of a 1D Eigen matrix. Since this class holds a stack-allocated array, the deep copy is
+     * unavoidable (without a separate map class).
+     *
+     * FIXME: When N = 1, there is a conflict with the other version of this function.
+     */
+    template <typename _Scalar, int _Options, int _MaxRows, int _MaxCols>
+    static VectorT fromEigen(Eigen::Matrix<_Scalar, (int)N, (int)1, _Options, _MaxRows, _MaxCols> const & src)
+    {
+      return VectorT(&src[0]);
+    }
+
+    /**
+     * Create a vector as a copy of a 1D Eigen matrix. Since this class holds a stack-allocated array, the deep copy is
+     * unavoidable (without a separate map class).
+     *
+     * FIXME: When N = 1, there is a conflict with the other version of this function.
+     */
+    template <typename _Scalar, int _Options, int _MaxRows, int _MaxCols>
+    static VectorT fromEigen(Eigen::Matrix<_Scalar, (int)1, (int)N, _Options, _MaxRows, _MaxCols> const & src)
+    {
+      return VectorT(&src[0]);
+    }
+
+#endif // THEA_ENABLE_EIGEN3
+
   private:
     T values[N];  ///< Vector values.
 
@@ -581,6 +655,10 @@ class /* THEA_API */ VectorN : public Internal::VectorNBase<N, T>
   public:
     /** Default constructor (does not initialize anything). */
     VectorN() {}
+
+    /** Construct from an array containing N densely packed values. */
+    template <typename S>
+    explicit VectorN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
 
     /** Copy constructor. */
     VectorN(VectorN const & src) : BaseT(src) {}

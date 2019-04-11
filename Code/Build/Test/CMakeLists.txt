@@ -8,58 +8,10 @@
 
 PROJECT(TheaTests)
 
-# Set the minimum required CMake version
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
-# See cmake --help-policy CMP0003 for details on this one
-IF(POLICY CMP0003)
-  CMAKE_POLICY(SET CMP0003 NEW)
-ENDIF(POLICY CMP0003)
-
-# See cmake --help-policy CMP0074 for details on this one
-IF(POLICY CMP0074)
-  CMAKE_POLICY(SET CMP0074 NEW)
-ENDIF(POLICY CMP0074)
-
-# If you don't want the full compiler output, remove the following line
-SET(CMAKE_VERBOSE_MAKEFILE ON)
-
-# Avoid having to repeat condition after ELSE and ENDIF statements
-SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
-
-# Postfix for debug builds
-SET(CMAKE_DEBUG_POSTFIX "d")
-
-# Project root path
-GET_FILENAME_COMPONENT(ProjectRoot ../.. ABSOLUTE)
-
-# Path for build products
-SET(OutputRoot ${ProjectRoot}/Build/Output)
-
-# Path to put executables in
-SET(EXECUTABLE_OUTPUT_PATH ${OutputRoot}/bin)
-
-# Path to put libraries in
-SET(LIBRARY_OUTPUT_PATH ${OutputRoot}/lib)
-
-# Path for customized CMake modules
-IF(NOT CMAKE_MODULE_PATH)
-  SET(CMAKE_MODULE_PATH ${ProjectRoot}/Build/Common/CMake/Modules)
-ENDIF()
-GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
-
-# Path to root folder for source code
-SET(SourceRoot ${ProjectRoot}/Source)
-
-# Path to folder with installations of the dependencies
-IF(NOT THEA_DEPS_ROOT)
-  SET(THEA_DEPS_ROOT ${CMAKE_INSTALL_PREFIX})
-ENDIF()
-SET(THEA_DEPS_ROOT ${THEA_DEPS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
-
-# Locate dependencies
+# Setup build
+GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
-INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
+INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 # Dependency: OpenGL
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -74,27 +26,6 @@ IF(NOT GLUT_FOUND)
 ENDIF()
 MESSAGE(STATUS "Found GLUT: headers at ${GLUT_INCLUDE_DIR}, libraries at ${GLUT_LIBRARIES}")
 
-# Definitions, compiler switches etc.
-IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-
-  STRING(REPLACE ";" " " EXTRA_DEBUG_CFLAGS "${CGAL_DEBUG_CFLAGS}")
-  STRING(REPLACE ";" " " EXTRA_RELEASE_CFLAGS "${CGAL_RELEASE_CFLAGS}")
-
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-strict-aliasing")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_DEBUG_CFLAGS} -g2")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -O2")
-  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -g2 -O2")
-
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fno-strict-aliasing")
-  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${EXTRA_DEBUG_CFLAGS} -g2")
-  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -O2")
-  SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -g2 -O2")
-
-ELSEIF(MSVC)
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-  ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
-ENDIF()
-
 IF(APPLE)
   ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
 ENDIF()
@@ -107,11 +38,8 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
-                    ${Boost_INCLUDE_DIRS}
                     ${GLUT_INCLUDE_DIR}
-                    ${OPENGL_INCLUDE_DIRS}
-                    ${CGAL_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS})
+                    ${OPENGL_INCLUDE_DIRS})
 
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib)
@@ -130,13 +58,14 @@ SET(TheaTestARPACKSources
 SET(TheaTestARPACKLibraries
       Thea
       TheaPluginARPACK
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestARPACK ${TheaTestARPACKSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestARPACK ${TheaTestARPACKLibraries})
+SET_TARGET_PROPERTIES(TheaTestARPACK PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -157,13 +86,14 @@ SET(TheaTestBagOfWordsSources
 # Libraries to link to
 SET(TheaTestBagOfWordsLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestBagOfWords ${TheaTestBagOfWordsSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestBagOfWords ${TheaTestBagOfWordsLibraries})
+SET_TARGET_PROPERTIES(TheaTestBagOfWords PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -183,13 +113,14 @@ SET(TheaTestCSPARSESources
 SET(TheaTestCSPARSELibraries
       Thea
       TheaPluginCSPARSE
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestCSPARSE ${TheaTestCSPARSESources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestCSPARSE ${TheaTestCSPARSELibraries})
+SET_TARGET_PROPERTIES(TheaTestCSPARSE PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -211,13 +142,14 @@ SET(TheaTestDisplayMeshLibraries
       TheaPluginGL
       ${GLUT_LIBRARIES}
       ${OPENGL_LIBRARIES}
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestDisplayMesh ${TheaTestDisplayMeshSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestDisplayMesh ${TheaTestDisplayMeshLibraries})
+SET_TARGET_PROPERTIES(TheaTestDisplayMesh PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -239,13 +171,14 @@ SET(TheaTestGLLibraries
       TheaPluginGL
       ${GLUT_LIBRARIES}
       ${OPENGL_LIBRARIES}
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestGL ${TheaTestGLSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestGL ${TheaTestGLLibraries})
+SET_TARGET_PROPERTIES(TheaTestGL PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -264,13 +197,14 @@ SET(TheaTestHoughForestSources
 # Libraries to link to
 SET(TheaTestHoughForestLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestHoughForest ${TheaTestHoughForestSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestHoughForest ${TheaTestHoughForestLibraries})
+SET_TARGET_PROPERTIES(TheaTestHoughForest PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -289,13 +223,14 @@ SET(TheaTestJointBoostSources
 # Libraries to link to
 SET(TheaTestJointBoostLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestJointBoost ${TheaTestJointBoostSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestJointBoost ${TheaTestJointBoostLibraries})
+SET_TARGET_PROPERTIES(TheaTestJointBoost PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -314,13 +249,14 @@ SET(TheaTestKDTree3Sources
 # Libraries to link to
 SET(TheaTestKDTree3Libraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestKDTree3 ${TheaTestKDTree3Sources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestKDTree3 ${TheaTestKDTree3Libraries})
+SET_TARGET_PROPERTIES(TheaTestKDTree3 PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -339,13 +275,14 @@ SET(TheaTestLaplaceBeltramiSources
 # Libraries to link to
 SET(TheaTestLaplaceBeltramiLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestLaplaceBeltrami ${TheaTestLaplaceBeltramiSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestLaplaceBeltrami ${TheaTestLaplaceBeltramiLibraries})
+SET_TARGET_PROPERTIES(TheaTestLaplaceBeltrami PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -364,13 +301,14 @@ SET(TheaTestMathSources
 # Libraries to link to
 SET(TheaTestMathLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestMath ${TheaTestMathSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestMath ${TheaTestMathLibraries})
+SET_TARGET_PROPERTIES(TheaTestMath PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -389,13 +327,14 @@ SET(TheaTestMetricsSources
 # Libraries to link to
 SET(TheaTestMetricsLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestMetrics ${TheaTestMetricsSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestMetrics ${TheaTestMetricsLibraries})
+SET_TARGET_PROPERTIES(TheaTestMetrics PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -414,13 +353,14 @@ SET(TheaTestMeshSources
 # Libraries to link to
 SET(TheaTestMeshLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestMesh ${TheaTestMeshSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestMesh ${TheaTestMeshLibraries})
+SET_TARGET_PROPERTIES(TheaTestMesh PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -439,13 +379,14 @@ SET(TheaTestOPTPPSources
 # Libraries to link to
 SET(TheaTestOPTPPLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestOPTPP ${TheaTestOPTPPSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestOPTPP ${TheaTestOPTPPLibraries})
+SET_TARGET_PROPERTIES(TheaTestOPTPP PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -464,13 +405,14 @@ SET(TheaTestPCASources
 # Libraries to link to
 SET(TheaTestPCALibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestPCA ${TheaTestPCASources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestPCA ${TheaTestPCALibraries})
+SET_TARGET_PROPERTIES(TheaTestPCA PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -489,13 +431,14 @@ SET(TheaTestPyramidMatchSources
 # Libraries to link to
 SET(TheaTestPyramidMatchLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestPyramidMatch ${TheaTestPyramidMatchSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestPyramidMatch ${TheaTestPyramidMatchLibraries})
+SET_TARGET_PROPERTIES(TheaTestPyramidMatch PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -514,13 +457,14 @@ SET(TheaTestZernikeSources
 # Libraries to link to
 SET(TheaTestZernikeLibraries
       Thea
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(TheaTestZernike ${TheaTestZernikeSources})
 
 # Additional libraries to be linked
 TARGET_LINK_LIBRARIES(TheaTestZernike ${TheaTestZernikeLibraries})
+SET_TARGET_PROPERTIES(TheaTestZernike PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)

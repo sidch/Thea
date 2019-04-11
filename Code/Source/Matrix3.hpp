@@ -65,6 +65,10 @@ class /* THEA_API */ MatrixMN<3, 3, T> : public Internal::SquareMatrixN<3, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Construct from an array containing the 3 * 3 values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
+
     /** Copy constructor. */
     MatrixMN(MatrixMN const & src) : BaseT(src) {}
 

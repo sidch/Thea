@@ -8,57 +8,11 @@
 
 PROJECT(TheaTools)
 
-# Set the minimum required CMake version
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-
-# See cmake --help-policy CMP0003 for details on this one
-IF(POLICY CMP0003)
-  CMAKE_POLICY(SET CMP0003 NEW)
-ENDIF(POLICY CMP0003)
-
-# See cmake --help-policy CMP0074 for details on this one
-IF(POLICY CMP0074)
-  CMAKE_POLICY(SET CMP0074 NEW)
-ENDIF(POLICY CMP0074)
-
-# If you don't want the full compiler output, remove the following line
-SET(CMAKE_VERBOSE_MAKEFILE ON)
-
-# Avoid having to repeat condition after ELSE and ENDIF statements
-SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
-
-# Postfix for debug builds
-SET(CMAKE_DEBUG_POSTFIX "d")
-
-# Project root path
-GET_FILENAME_COMPONENT(ProjectRoot ../.. ABSOLUTE)
-
-# Path for build products
-SET(OutputRoot ${ProjectRoot}/Build/Output)
-
-# Path to put executables in
-SET(EXECUTABLE_OUTPUT_PATH ${OutputRoot}/bin)
-
-# Path to put libraries in
-SET(LIBRARY_OUTPUT_PATH ${OutputRoot}/lib)
-
-# Path for customized CMake modules
-IF(NOT CMAKE_MODULE_PATH)
-  SET(CMAKE_MODULE_PATH ${ProjectRoot}/Build/Common/CMake/Modules)
-ENDIF()
-GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
-
-# Path to root folder for source code
-SET(SourceRoot ${ProjectRoot}/Source)
-
-# Locate Thea dependencies
-SET(Thea_FIND_ALL               FALSE)
-SET(Thea_FIND_Boost             TRUE)
+# Setup build
+GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../.. ABSOLUTE)
+SET(Thea_FIND_ALL TRUE)
 SET(Thea_FIND_Boost_COMPONENTS  filesystem program_options system thread)
-SET(Thea_FIND_CLUTO             TRUE)
-SET(Thea_FIND_FreeImage         TRUE)
-SET(Thea_FIND_Lib3ds            TRUE)
-INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
+INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 # Dependency: OpenGL
 IF(WITH_OSMESA)
@@ -75,10 +29,10 @@ IF(WITH_OSMESA)
   # Replace GL libraries with OSMesa ones, if available
   IF(OSMesa_FOUND)
     SET(OPENGL_INCLUDE_DIRS ${OSMesa_INCLUDE_DIRS} ${OSMesa_GLU_INCLUDE_DIRS})
-    SET(OPENGL_CFLAGS ${OSMesa_CFLAGS} ${OSMesa_GLU_CFLAGS})
+    SET(OPENGL_CFLAGS "${OSMesa_CFLAGS} ${OSMesa_GLU_CFLAGS}")
     SET(OPENGL_LIBRARIES ${OSMesa_GLU_LIBRARIES} ${OSMesa_LIBRARIES})
     SET(OPENGL_LIBRARY_DIRS ${OSMesa_LIBRARY_DIRS} ${OSMesa_GLU_LIBRARY_DIRS})
-    SET(OPENGL_LDFLAGS ${OSMesa_LDFLAGS} ${OSMesa_GLU_LDFLAGS})
+    SET(OPENGL_LDFLAGS "${OSMesa_LDFLAGS} ${OSMesa_GLU_LDFLAGS}")
   ENDIF()
 
   ADD_DEFINITIONS(-DTHEA_GL_OSMESA=1)
@@ -95,24 +49,6 @@ ENDIF()
 # Dependency: OpenCL
 FIND_PACKAGE(OpenCL)
 
-# Definitions, compiler switches etc.
-IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-strict-aliasing")
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_DEBUG_CFLAGS} -g2")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -O2")
-  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -g2 -O2")
-
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fno-strict-aliasing")
-  SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${EXTRA_DEBUG_CFLAGS} -g2")
-  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -O2")
-  SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${EXTRA_RELEASE_CFLAGS} -DNDEBUG -g2 -O2")
-
-ELSEIF(MSVC)
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
-  ADD_DEFINITIONS(-D_SCL_SECURE_NO_WARNINGS)
-ENDIF()
-
 IF(APPLE)
   ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
 ENDIF()
@@ -125,9 +61,7 @@ ENDIF()
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
-                    ${OPENGL_INCLUDE_DIRS}
-                    ${Boost_INCLUDE_DIRS}
-                    ${Lib3ds_INCLUDE_DIRS})
+                    ${OPENGL_INCLUDE_DIRS})
 
 IF(OPENCL_FOUND)
   INCLUDE_DIRECTORIES(BEFORE ${OPENCL_INCLUDE_DIRS})
@@ -153,10 +87,8 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   SET(Browse3DLibraries
       Thea
       ${wxWidgets_LIBRARIES}
-      ${Lib3ds_LIBRARIES}
       ${OPENGL_LIBRARIES}
-      ${Boost_LIBRARIES}
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
   # Build products
   ADD_EXECUTABLE(Browse3D ${Browse3DSources})
@@ -165,9 +97,7 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   TARGET_LINK_LIBRARIES(Browse3D ${Browse3DLibraries})
 
   # Linker flags
-  IF(Thea_LDFLAGS)
-    SET_TARGET_PROPERTIES(Browse3D PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-  ENDIF()
+  SET_TARGET_PROPERTIES(Browse3D PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
   # Fix library install names on OS X
   IF(APPLE)
@@ -190,9 +120,7 @@ FILE(GLOB GeoSphereSources
 # Libraries to link to
 SET(GeoSphereLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(GeoSphere ${GeoSphereSources})
@@ -201,9 +129,7 @@ ADD_EXECUTABLE(GeoSphere ${GeoSphereSources})
 TARGET_LINK_LIBRARIES(GeoSphere ${GeoSphereLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(GeoSphere PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(GeoSphere PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -226,7 +152,7 @@ IF(OPENCL_FOUND)
   SET(GIPLibraries
       Thea
       ${OPENCL_LIBRARIES}
-      ${PLATFORM_LIBRARIES})
+      ${Thea_DEPS_LIBRARIES})
 
   # Build products
   ADD_EXECUTABLE(gip ${GIPSources})
@@ -235,9 +161,7 @@ IF(OPENCL_FOUND)
   TARGET_LINK_LIBRARIES(gip ${GIPLibraries})
 
   # Linker flags
-  IF(Thea_LDFLAGS)
-    SET_TARGET_PROPERTIES(gip PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-  ENDIF()
+  SET_TARGET_PROPERTIES(gip PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
   # Fix library install names on OS X
   IF(APPLE)
@@ -260,9 +184,7 @@ FILE(GLOB ImageFeaturesSources
 # Libraries to link to
 SET(ImageFeaturesLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(ImageFeatures ${ImageFeaturesSources})
@@ -271,9 +193,7 @@ ADD_EXECUTABLE(ImageFeatures ${ImageFeaturesSources})
 TARGET_LINK_LIBRARIES(ImageFeatures ${ImageFeaturesLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(ImageFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(ImageFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -294,9 +214,7 @@ FILE(GLOB MeshConvSources
 # Libraries to link to
 SET(MeshConvLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshConv ${MeshConvSources})
@@ -305,9 +223,7 @@ ADD_EXECUTABLE(MeshConv ${MeshConvSources})
 TARGET_LINK_LIBRARIES(MeshConv ${MeshConvLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshConv PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(MeshConv PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -328,9 +244,7 @@ FILE(GLOB MeshGlobalFeaturesSources
 # Libraries to link to
 SET(MeshGlobalFeaturesLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
@@ -339,9 +253,7 @@ ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
 TARGET_LINK_LIBRARIES(MeshGlobalFeatures ${MeshGlobalFeaturesLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -362,9 +274,7 @@ FILE(GLOB MeshLocalFeaturesSources
 # Libraries to link to
 SET(MeshLocalFeaturesLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshLocalFeatures ${MeshLocalFeaturesSources})
@@ -373,9 +283,7 @@ ADD_EXECUTABLE(MeshLocalFeatures ${MeshLocalFeaturesSources})
 TARGET_LINK_LIBRARIES(MeshLocalFeatures ${MeshLocalFeaturesLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshLocalFeatures PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(MeshLocalFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -396,9 +304,7 @@ FILE(GLOB MeshFixSources
 # Libraries to link to
 SET(MeshFixLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshFix ${MeshFixSources})
@@ -407,9 +313,7 @@ ADD_EXECUTABLE(MeshFix ${MeshFixSources})
 TARGET_LINK_LIBRARIES(MeshFix ${MeshFixLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshFix PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(MeshFix PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -430,9 +334,7 @@ FILE(GLOB MeshSampleSources
 # Libraries to link to
 SET(MeshSampleLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(MeshSample ${MeshSampleSources})
@@ -441,9 +343,7 @@ ADD_EXECUTABLE(MeshSample ${MeshSampleSources})
 TARGET_LINK_LIBRARIES(MeshSample ${MeshSampleLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(MeshSample PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(MeshSample PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -464,9 +364,7 @@ FILE(GLOB RegisterSources
 # Libraries to link to
 SET(RegisterLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(Register ${RegisterSources})
@@ -475,9 +373,7 @@ ADD_EXECUTABLE(Register ${RegisterSources})
 TARGET_LINK_LIBRARIES(Register ${RegisterLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(Register PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(Register PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -498,10 +394,8 @@ FILE(GLOB RenderShapeSources
 # Libraries to link to
 SET(RenderShapeLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
@@ -510,9 +404,7 @@ ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
 TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -533,9 +425,7 @@ FILE(GLOB SampleGraphSources
 # Libraries to link to
 SET(SampleGraphLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(SampleGraph ${SampleGraphSources})
@@ -544,9 +434,7 @@ ADD_EXECUTABLE(SampleGraph ${SampleGraphSources})
 TARGET_LINK_LIBRARIES(SampleGraph ${SampleGraphLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(SampleGraph PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(SampleGraph PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -569,9 +457,7 @@ FILE(GLOB SegmentSDFSources
 # Libraries to link to
 SET(SegmentSDFLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
@@ -580,9 +466,7 @@ ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
 TARGET_LINK_LIBRARIES(SegmentSDF ${SegmentSDFLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(SegmentSDF PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(SegmentSDF PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -605,9 +489,7 @@ FILE(GLOB ShapeAlignSources
 # Libraries to link to
 SET(ShapeAlignLibraries
     Thea
-    ${Lib3ds_LIBRARIES}
-    ${Boost_LIBRARIES}
-    ${PLATFORM_LIBRARIES})
+    ${Thea_DEPS_LIBRARIES})
 
 # Build products
 ADD_EXECUTABLE(ShapeAlign ${ShapeAlignSources})
@@ -616,9 +498,7 @@ ADD_EXECUTABLE(ShapeAlign ${ShapeAlignSources})
 TARGET_LINK_LIBRARIES(ShapeAlign ${ShapeAlignLibraries})
 
 # Linker flags
-IF(Thea_LDFLAGS)
-  SET_TARGET_PROPERTIES(ShapeAlign PROPERTIES LINK_FLAGS ${Thea_LDFLAGS})
-ENDIF()
+SET_TARGET_PROPERTIES(ShapeAlign PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -641,4 +521,4 @@ ENDFOREACH()
 install_symlink(${CMAKE_INSTALL_PREFIX}/share/Thea/Build/Output/bin
                 ${CMAKE_INSTALL_PREFIX}/bin/Thea)
 
-INSTALL(DIRECTORY ${ProjectRoot}/Resources DESTINATION share/Thea)
+INSTALL(DIRECTORY ${Thea_PROJECT_ROOT}/Resources DESTINATION share/Thea)

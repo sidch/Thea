@@ -55,6 +55,10 @@
 #include <algorithm>
 #include <memory>
 
+#ifdef THEA_ENABLE_EIGEN3
+#  include <Eigen/Dense>
+#endif
+
 namespace Thea {
 
 // Forward declarations
@@ -893,6 +897,36 @@ class /* THEA_DLL_LOCAL */ MatrixBase : public AddressableMatrix<T>, public Resi
 
       return *static_cast<MatrixT *>(this);
     }
+
+#ifdef THEA_ENABLE_EIGEN3
+
+    /** Corresponding Eigen matrix type. */
+    typedef Eigen::Matrix<
+                /* _Scalar  = */   T,
+                /* _Rows    = */   IsVector ? (L == MatrixLayout::ROW_MAJOR ? 1 : Eigen::Dynamic) : Eigen::Dynamic,
+                /* _Cols    = */   IsVector ? (L == MatrixLayout::ROW_MAJOR ? Eigen::Dynamic : 1) : Eigen::Dynamic,
+                /* _Options = */   L == MatrixLayout::ROW_MAJOR ? Eigen::RowMajor : Eigen::ColMajor
+            > EigenMatrix;
+
+    /**
+     * Get an Eigen matrix wrapping the underlying array. Operations on the Eigen wrapper modify the elements of the source
+     * object.
+     */
+    Eigen::Map<EigenMatrix> asEigen()
+    {
+      return Eigen::Map<EigenMatrix>(values, (Eigen::Index)num_rows, (Eigen::Index)num_cols);
+    }
+
+    /**
+     * Get an Eigen matrix immutably wrapping the underlying array. Operations on the Eigen wrapper access the elements of the
+     * source object, but can't modify them.
+     */
+    Eigen::Map<EigenMatrix const> asEigen() const
+    {
+      return Eigen::Map<EigenMatrix const>(values, (Eigen::Index)num_rows, (Eigen::Index)num_cols);
+    }
+
+#endif // THEA_ENABLE_EIGEN3
 
   protected:
     AllocT allocator;  // not static because: https://bytes.com/topic/c/answers/131402-could-should-allocator-t-static-member

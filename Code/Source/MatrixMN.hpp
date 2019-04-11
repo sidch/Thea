@@ -51,6 +51,10 @@
 #include <algorithm>
 #include <cmath>
 
+#ifdef THEA_ENABLE_EIGEN3
+#  include <Eigen/Dense>
+#endif
+
 namespace Thea {
 
 // Forward declaration
@@ -79,10 +83,17 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     /** Default constructor (does not initialize anything). */
     MatrixMNBase() {}
 
+    /** Construct from an array containing the M * N values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMNBase(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL)
+    {
+      Algorithms::fastCopy(arr, arr + M * N, &m[0][0]);
+    }
+
     /** Copy constructor. */
     MatrixMNBase(MatrixMNBase const & src) { *this = src; }
 
-    /** Copy from any compatible template instantiation. */
+    /** Copy construct from any compatible template instantiation. */
     template <typename U> MatrixMNBase(MatrixMNBase<M, N, U> const & src) { *this = src; }
 
     /** Copy assignment operator. */
@@ -404,6 +415,65 @@ class /* THEA_DLL_LOCAL */ MatrixMNBase : public AddressableMatrix<T>
     /** Get a matrix containing only zeroes. */
     static MatrixT const & zero() { static MatrixT const z(static_cast<T>(0)); return z; }
 
+#ifdef THEA_ENABLE_EIGEN3
+
+    /** Corresponding Eigen matrix type. */
+    typedef Eigen::Matrix<
+                /* _Scalar  = */   T,
+                /* _Rows    = */   (int)M,
+                /* _Cols    = */   (int)N,
+                /* _Options = */   Eigen::RowMajor
+            > EigenMatrix;
+
+    /**
+     * Get an Eigen matrix wrapping the underlying array. Operations on the Eigen wrapper modify the elements of the source
+     * object.
+     */
+    Eigen::Map<EigenMatrix> asEigen()
+    {
+      return Eigen::Map<EigenMatrix>(&m[0][0], (Eigen::Index)M, (Eigen::Index)N);
+    }
+
+    /**
+     * Get an Eigen matrix immutably wrapping the underlying array. Operations on the Eigen wrapper access the elements of the
+     * source object, but can't modify them.
+     */
+    Eigen::Map<EigenMatrix const> asEigen() const
+    {
+      return Eigen::Map<EigenMatrix const>(&m[0][0], (Eigen::Index)M, (Eigen::Index)N);
+    }
+
+    /**
+     * Get a copy of the matrix as an Eigen matrix. The deep copy can be avoided, if the context allows, by creating a thin
+     * wrapper via asEigen().
+     */
+    EigenMatrix toEigen() const
+    {
+      return EigenMatrix(&m[0][0]);
+    }
+
+    /**
+     * Create a matrix as a copy of an Eigen matrix. Since this class holds a stack-allocated array, the deep copy is
+     * unavoidable (without a separate map class).
+     */
+    template <typename _Scalar, int _Options, int _MaxRows, int _MaxCols>
+    static MatrixT fromEigen(Eigen::Matrix<_Scalar, (int)M, (int)N, _Options, _MaxRows, _MaxCols> const & src)
+    {
+      MatrixT result;
+      if (_Options & Eigen::RowMajor)
+        Algorithms::fastCopy(&src(0, 0), &src(0, 0) + M * N, &result.m[0][0]);
+      else
+      {
+        for (int i = 0; i < M; ++i)
+          for (int j = 0; j < N; ++j)
+            result.m[i][j] = static_cast<T>(src(i, j));
+      }
+
+      return result;
+    }
+
+#endif // THEA_ENABLE_EIGEN3
+
   private:
     T m[M][N];  ///< Wrapped 2D array.
 
@@ -426,6 +496,11 @@ class /* THEA_DLL_LOCAL */ SquareMatrixN : public MatrixMNBase<N, N, T>
 
     /** Default constructor (does not initialize anything). */
     SquareMatrixN() {}
+
+    /** Construct from an array containing the N * N values densely packed in row-major format. */
+    template <typename S>
+    explicit SquareMatrixN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL)
+    : BaseT(arr) {}
 
     /** Copy constructor. */
     SquareMatrixN(SquareMatrixN const & src) : BaseT(src) {}
@@ -503,6 +578,10 @@ class /* THEA_API */ MatrixMN : public Internal::MatrixMNBase<M, N, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Construct from an array containing the M * N values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
+
     /** Copy constructor. */
     MatrixMN(MatrixMN const & src) : BaseT(src) {}
 
@@ -534,6 +613,10 @@ class /* THEA_API */ MatrixMN<N, N, T> : public Internal::SquareMatrixN<N, T>
   public:
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
+
+    /** Construct from an array containing the N * N values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
 
     /** Copy constructor. */
     MatrixMN(MatrixMN const & src) : BaseT(src) {}
@@ -606,6 +689,10 @@ class /* THEA_API */ MatrixMN<M, 1, T> : public Internal::MatrixMNBase<M, 1, T>
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
 
+    /** Construct from an array containing the M * 1 values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
+
     /** Copy constructor. */
     MatrixMN(MatrixMN const & src) : BaseT(src) {}
 
@@ -647,6 +734,10 @@ class /* THEA_API */ MatrixMN<1, N, T> : public Internal::MatrixMNBase<1, N, T>
   public:
     /** Default constructor (does not initialize anything). */
     MatrixMN() {}
+
+    /** Construct from an array containing the 1 * N values densely packed in row-major format. */
+    template <typename S>
+    explicit MatrixMN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
 
     /** Copy constructor. */
     MatrixMN(MatrixMN const & src) : BaseT(src) {}

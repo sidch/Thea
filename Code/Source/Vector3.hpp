@@ -58,6 +58,10 @@ class /* THEA_API */ VectorN<3, T> : public Internal::VectorNBase<3, T>
     /** Default constructor (does not initialize anything). */
     VectorN() {}
 
+    /** Construct from an array containing 3 densely packed values. */
+    template <typename S>
+    explicit VectorN(S const * arr, typename boost::enable_if< IsCompatibleScalar<S, T> >::type * dummy = NULL) : BaseT(arr) {}
+
     /** Copy constructor. */
     VectorN(VectorN const & src) : BaseT(src) {}
 
