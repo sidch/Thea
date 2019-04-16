@@ -43,7 +43,6 @@
 #include "FurthestPointSampling.hpp"
 #include "SampleGraph.hpp"
 #include "ShortestPaths.hpp"
-#include "../Vector3.hpp"
 #include "../UnorderedMap.hpp"
 #include <algorithm>
 #include <cmath>

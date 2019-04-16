@@ -43,7 +43,7 @@
 #define __Thea_Algorithms_PointPairs_hpp__
 
 #include "../Common.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include <utility>
 
 namespace Thea {
@@ -69,17 +69,17 @@ typedef std::pair<Vector4, Vector4> PointPair4;
 
 /** A pair of points in n-dimensional space. */
 template <size_t N, typename T>
-class /* THEA_API */ PointPairN : public std::pair< VectorN<N, T>, VectorN<N, T> >
+class /* THEA_API */ PointPairN : public std::pair< Vector<N, T>, Vector<N, T> >
 {
   private:
-    typedef std::pair< VectorN<N, T>, VectorN<N, T> > BaseType;
+    typedef std::pair< Vector<N, T>, Vector<N, T> > BaseType;
 
   public:
     /** Default constructor. */
     PointPairN() : BaseType() {}
 
     /** Initializing constructor. */
-    PointPairN(VectorN<N, T> const & a, VectorN<N, T> const & b) : BaseType(a, b) {}
+    PointPairN(Vector<N, T> const & a, Vector<N, T> const & b) : BaseType(a, b) {}
 
 }; // class PointPairN
 

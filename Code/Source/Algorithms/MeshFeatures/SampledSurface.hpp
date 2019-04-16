@@ -50,7 +50,7 @@
 #include "../PointCollectorN.hpp"
 #include "../PointTraitsN.hpp"
 #include "../SampleGraph.hpp"
-#include "../../Vector3.hpp"
+#include "../../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -102,7 +102,7 @@ template <typename T> struct NormalTraits { static Vector3 getNormal(T const & t
 template <typename T> struct NormalTraits<T *> { static Vector3 getNormal(T const * t) { return t->getNormal(); } };
 
 // Get the normal at a sample point represented as a Vector3.
-template <> struct NormalTraits<Vector3> { static Vector3 getNormal(Vector3 const & t) { return Vector3::zero(); } };
+template <> struct NormalTraits<Vector3> { static Vector3 getNormal(Vector3 const & t) { return Vector3::Zero(); } };
 
 /** A representation of a point-sampled surface, used for computing features. */
 template <typename ExternalSampleKDTreeT>

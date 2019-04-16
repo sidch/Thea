@@ -46,7 +46,7 @@
 #include "../SampledSurface.hpp"
 #include "../../PointTraitsN.hpp"
 #include "../../../Math.hpp"
-#include "../../../Matrix.hpp"
+#include "../../../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -135,7 +135,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      * @param spin_image Used to return the computed spin image, with rows corresponding to radial divisions and columns to
      *   height divisions.
      */
-    void compute(Vector3 const & position, int num_radial_bins, int num_height_bins, Matrix<double> & spin_image) const
+    void compute(Vector3 const & position, int num_radial_bins, int num_height_bins, MatrixX<double> & spin_image) const
     {
       long nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
                                                 : this->getInternalKDTree()->template closestElement<MetricL2>(position);
@@ -143,7 +143,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
       {
         THEA_WARNING << "SpinImage: Query point cannot be mapped to mesh, spin image set to zero";
         spin_image.resize(num_radial_bins, num_height_bins);
-        spin_image.makeZero();
+        spin_image.setZero();
         return;
       }
 
@@ -161,7 +161,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      *   height divisions.
      */
     void compute(Vector3 const & position, Vector3 const & normal, int num_radial_bins, int num_height_bins,
-                 Matrix<double> & spin_image) const
+                 MatrixX<double> & spin_image) const
     {
       alwaysAssertM(num_radial_bins > 0, "SpinImage: Number of radial bins must be positive");
       alwaysAssertM(num_height_bins > 0, "SpinImage: Number of height bins must be positive");
@@ -172,15 +172,15 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
       Real max_height = 0.75f * this->getNormalizationScale();  // height limits: [-max_height, max_height]
 
       spin_image.resize(num_radial_bins, num_height_bins);
-      spin_image.makeZero();
+      spin_image.setZero();
 
-      Vector3 axis = normal.unit();
+      Vector3 axis = normal.normalized();
       long n = this->numSamples();
       for (long i = 0; i < n; ++i)
       {
         Vector3 offset = this->getSamplePosition(i) - position;
         Real height = offset.dot(axis);
-        Real radius = (offset - height * axis).length();
+        Real radius = (offset - height * axis).norm();
 
         int radial_bin = (int)Math::clamp((int)std::floor(num_radial_bins * (radius / max_radius)), 0, num_radial_bins - 1);
         int height_bin = (int)Math::clamp((int)std::floor(num_height_bins * (0.5f * (height / max_height + 1))),

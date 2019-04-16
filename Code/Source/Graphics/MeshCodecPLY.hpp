@@ -59,7 +59,7 @@ struct VertexIndexMap
 };
 
 template <typename MeshT>
-struct VertexIndexMap<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type>
+struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
   typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
@@ -93,21 +93,22 @@ class CodecPLY : public CodecPLYBase<MeshT>
     {
       enum Value
       {
-        // Right-two hex digits: number of bits in type
-        // Third digit from right: signed (0) or unsigned (1)
-        // Fourth digit from right: int (0) or float (1)
-        INVALID     =   0x0000,
+        // Relies on encodings in NumericType:
+        //   - Right-two hex digits: number of bits in type
+        //   - Third digit from right: signed (0) or unsigned (1)
+        //   - Fourth digit from right: int (0) or float (1)
+        INVALID     =   (int)NumericType::INVALID,
         LIST        =   0xFFFF,
 
         // New names
-        INT8        =   0x0008,
-        INT16       =   0x0010,
-        INT32       =   0x0020,
-        UINT8       =   0x0108,
-        UINT16      =   0x0110,
-        UINT32      =   0x0120,
-        FLOAT32     =   0x1020,
-        FLOAT64     =   0x1040,
+        INT8        =   (int)NumericType::INT8,
+        INT16       =   (int)NumericType::INT16,
+        INT32       =   (int)NumericType::INT32,
+        UINT8       =   (int)NumericType::UINT8,
+        UINT16      =   (int)NumericType::UINT16,
+        UINT32      =   (int)NumericType::UINT32,
+        FLOAT32     =   (int)NumericType::FLOAT32,
+        FLOAT64     =   (int)NumericType::FLOAT64,
       };
 
       THEA_ENUM_CLASS_BODY(PropertyType)
@@ -811,7 +812,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -834,7 +835,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -859,7 +860,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -902,7 +903,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -943,7 +944,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -994,7 +995,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
 

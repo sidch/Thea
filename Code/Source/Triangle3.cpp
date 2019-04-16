@@ -764,14 +764,14 @@ int tri_tri_intersect_with_isectline(Real const V0[3], Real const V1[3], Real co
 }
 
 Vector3 closestPointOnLineSegment(
-  const Vector3 & v0,
-  const Vector3 & v1,
-  const Vector3 & edgeDirection,
-  const float     edgeLength,
-  const Vector3 & point)
+  Eigen::MatrixBase<Vector3> const & v0,
+  Eigen::MatrixBase<Vector3> const & v1,
+  Eigen::MatrixBase<Vector3> const & edgeDirection,
+  float const                        edgeLength,
+  Eigen::MatrixBase<Vector3> const & point)
 {
   // Vector towards the point
-  const Vector3 & c = point - v0;
+  Vector3 c = point - v0;
   // Projected onto the edge itself
   float t = edgeDirection.dot(c);
 
@@ -793,11 +793,11 @@ Vector3 closestPointOnLineSegment(
 }
 
 Vector3 closestPointOnTrianglePerimeter(
-  const Vector3   v[3],
-  const Vector3   edgeDirection[3],
-  const float     edgeLength[3],
-  const Vector3 & point,
-  int           & edgeIndex)
+  Eigen::MatrixBase<Vector3> const     v[3],
+  Eigen::MatrixBase<Vector3> const     edgeDirection[3],
+  float const                          edgeLength[3],
+  Eigen::MatrixBase<Vector3> const  &  point,
+  int                               &  edgeIndex)
 {
   // Closest point on segment from v[i] to v[i + 1]
   Vector3 r[3];
@@ -809,7 +809,7 @@ Vector3 closestPointOnTrianglePerimeter(
   for (int i = 0; i < 3; ++i)
   {
     r[i] = closestPointOnLineSegment(v[i], v[next[i]], edgeDirection[i], edgeLength[i], point);
-    d[i] = (r[i] - point).squaredLength();
+    d[i] = (r[i] - point).squaredNorm();
   }
 
   if (d[0] < d[1])
@@ -844,10 +844,10 @@ Vector3 closestPointOnTrianglePerimeter(
 
 Vector3
 closestPointOnTrianglePerimeter(
-  const Vector3   &   v0,
-  const Vector3   &   v1,
-  const Vector3   &   v2,
-  const Vector3   &   point)
+  Eigen::MatrixBase<Vector3> const & v0,
+  Eigen::MatrixBase<Vector3> const & v1,
+  Eigen::MatrixBase<Vector3> const & v2,
+  Eigen::MatrixBase<Vector3> const & point)
 {
   Vector3 v[3] = {v0, v1, v2};
   Vector3 edgeDirection[3] = {(v1 - v0), (v2 - v1), (v0 - v2)};
@@ -855,7 +855,7 @@ closestPointOnTrianglePerimeter(
 
   for (int i = 0; i < 3; ++i)
   {
-    edgeLength[i] = edgeDirection[i].length();
+    edgeLength[i] = edgeDirection[i].norm();
     edgeDirection[i] /= edgeLength[i];
   }
 
@@ -865,11 +865,11 @@ closestPointOnTrianglePerimeter(
 
 bool
 isPointInsideTriangle(
-  Vector3 const &  v0,
-  Vector3 const &  v1,
-  Vector3 const &  v2,
-  int              primary_axis,
-  Vector3 const &  p)
+  Eigen::MatrixBase<Vector3> const &  v0,
+  Eigen::MatrixBase<Vector3> const &  v1,
+  Eigen::MatrixBase<Vector3> const &  v2,
+  int                                 primary_axis,
+  Eigen::MatrixBase<Vector3> const &  p)
 {
   // Check that the point is within the triangle using a Barycentric coordinate test on a two dimensional plane.
   int i, j;
@@ -913,7 +913,8 @@ isPointInsideTriangle(
 }
 
 Real
-rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02)
+rayTriangleIntersectionTime(Ray3 const & ray, Eigen::MatrixBase<Vector3> const & v0,
+                            Eigen::MatrixBase<Vector3> const & edge01, Eigen::MatrixBase<Vector3> const & edge02)
 {
   // The code is taken from Dave Eberly's Wild Magic library, v5.3, released under the Boost license:
   // http://www.boost.org/LICENSE_1_0.txt .

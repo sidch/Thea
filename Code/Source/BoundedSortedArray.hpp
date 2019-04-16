@@ -52,8 +52,8 @@ namespace Thea {
  * A sorted array of bounded maximum size, ordered in ascending order according to a comparator. If the array is full and a new
  * element is added, the last element is dropped.
  *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>boost::has_trivial_assign</tt> is true for T.
+ * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that <tt>std::is_trivially_copyable</tt>
+ * is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. This space is allocated on
  * the heap: if the capacity is known at compile-time, BoundedSortedArrayN, which can use stack storage, is usually preferred.

@@ -62,7 +62,7 @@ namespace Graphics {
 class THEA_API Camera : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Camera, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Camera, std::shared_ptr, std::weak_ptr)
 
     /** Type of projection used by the camera (enum class). */
     struct THEA_API ProjectionType
@@ -236,17 +236,17 @@ class THEA_API Camera : public Serializable
      */
     Vector3 project(Vector3 const & world_space_point) const
     {
-      return getProjectionTransform() * (frame.pointToObjectSpace(world_space_point));
+      return Math::hmul(getProjectionTransform(), frame.pointToObjectSpace(world_space_point));
     }
 
     /**
-     * Project a point in homogenous coordinates from world space to projection space.
+     * Project a point in homogeneous coordinates from world space to projection space.
      *
      * @see unproject(), computePickRay()
      */
     Vector4 project(Vector4 const & world_space_point) const
     {
-      return getProjectionTransform() * (frame.inverse().toHomMatrix() * world_space_point);
+      return getProjectionTransform() * (frame.inverse().homogeneous() * world_space_point);
     }
 
     /**
@@ -257,18 +257,18 @@ class THEA_API Camera : public Serializable
      */
     Vector3 unproject(Vector3 const & projection_space_point) const
     {
-      return frame.pointToWorldSpace(getInverseProjectionTransform() * projection_space_point);
+      return frame.pointToWorldSpace(Math::hmul(getInverseProjectionTransform(), projection_space_point));
     }
 
     /**
-     * Unproject a point in homogenous coordinates from projection space to world space. If you only know the 2D screen
+     * Unproject a point in homogeneous coordinates from projection space to world space. If you only know the 2D screen
      * coordinates of the point and not its projected depth, use computePickRay().
      *
      * @see project(), computePickRay()
      */
     Vector4 unproject(Vector4 const & projection_space_point) const
     {
-      return frame.toHomMatrix() * (getInverseProjectionTransform() * projection_space_point);
+      return frame.homogeneous() * (getInverseProjectionTransform() * projection_space_point);
     }
 
     /** Check if the view is orthographic or not. */

@@ -46,15 +46,15 @@
 #include "Math.hpp"
 #include "LineN.hpp"
 #include "LineSegmentN.hpp"
+#include "MatVec.hpp"
 #include "RayIntersectableN.hpp"
 #include "RayN.hpp"
-#include "VectorN.hpp"
 #include <bitset>
 
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class AxisAlignedBoxN;
+template <int N, typename T> class AxisAlignedBoxN;
 
 namespace Internal {
 
@@ -64,21 +64,21 @@ namespace Internal {
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 {
   public:
     typedef AxisAlignedBoxN<N, T>  AxisAlignedBoxT;  ///< N-dimensional axis-aligned box.
-    typedef VectorN<N, T>          VectorT;          ///< N-dimensional vector.
+    typedef Vector<N, T>           VectorT;          ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(AxisAlignedBoxT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AxisAlignedBoxT, std::shared_ptr, std::weak_ptr)
 
     /**
      * Default constructor, creates a null box.
      *
      * @see isNull()
      */
-    AxisAlignedBoxNBase() : lo(VectorT::zero()), hi(VectorT::zero()), is_null(true) {}
+    AxisAlignedBoxNBase() : lo(VectorT::Zero()), hi(VectorT::Zero()), is_null(true) {}
 
     /** Constructor. Sets the box to be a single point. */
     AxisAlignedBoxNBase(VectorT const & v) : lo(v), hi(v), is_null(false) {}
@@ -105,7 +105,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
      */
     void setNull()
     {
-      lo = hi = VectorT::zero();
+      lo = hi = VectorT::Zero();
       is_null = true;
     }
 
@@ -184,8 +184,8 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       }
       else
       {
-        lo = lo.min(p);
-        hi = hi.max(p);
+        lo = lo.cwiseMin(p);
+        hi = hi.cwiseMax(p);
       }
     }
 
@@ -205,8 +205,8 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
         }
         else
         {
-          lo = lo.min(aab.lo);
-          hi = hi.max(aab.hi);
+          lo = lo.cwiseMin(aab.lo);
+          hi = hi.cwiseMax(aab.hi);
         }
       }
     }
@@ -342,15 +342,15 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     {
       if (is_null || other.is_null) return 0;
 
-      VectorT vmax = hi.min(other.hi);
-      VectorT vmin = lo.max(other.lo);
+      VectorT vmax = hi.cwiseMin(other.hi);
+      VectorT vmin = lo.cwiseMax(other.lo);
 
       // Each coord of vmax is greater than the corresponding coord of vmin iff the ranges intersect
 
       VectorT vdiff = vmin - vmax;         // any axes with overlap have negative values here
-      vdiff = vdiff.max(VectorT::zero());  // overlap axes have zero separation
+      vdiff = vdiff.cwiseMax(VectorT::Zero());  // overlap axes have zero separation
 
-      return vdiff.squaredLength();
+      return vdiff.squaredNorm();
     }
 
     /** Get the closest distance between this box and another one. Returns zero if either box is null. */
@@ -361,16 +361,16 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     {
       if (is_null) return 0;
 
-      VectorT vmax = point.min(hi);
-      VectorT vmin = point.max(lo);
+      VectorT vmax = point.cwiseMin(hi);
+      VectorT vmin = point.cwiseMax(lo);
 
-      return (vmin - vmax).squaredLength();
+      return (vmin - vmax).squaredNorm();
     }
 
     /** Get the point in this box closest to a given point. */
     VectorT closestPoint(VectorT const & p) const
     {
-      return p.min(hi).max(lo);
+      return p.cwiseMin(hi).cwiseMax(lo);
     }
 
     /** Get the closest distance to a point. Returns zero if the box is null. */
@@ -384,8 +384,8 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     {
       if (is_null) return 0;
 
-      VectorT vdiff = (hi - point).max(point - lo);
-      return vdiff.squaredLength();
+      VectorT vdiff = (hi - point).cwiseMax(point - lo);
+      return vdiff.squaredNorm();
     }
 
     /** Get the distance between this box and an infinite line. */
@@ -418,7 +418,12 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     /** Get a string representing the box as "[low, high]", or "[null]" if the box is null. */
     std::string toString() const
     {
-      return is_null ? std::string("[null]"): std::string("[") + lo.toString() + ", " + hi.toString() + ']';
+      if (is_null)
+        return "[null]";
+
+      std::ostringstream oss;
+      oss << "[" << Thea::toString(lo) << ", " << Thea::toString(hi) << "]";
+      return oss.str();
     }
 
     bool rayIntersects(RayN<N, T> const & ray, T max_time = -1) const
@@ -441,7 +446,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
         return RayIntersectionN<N, T>(-1);
       else if (max_time >= 0)
       {
-        T ray_sqlen = ray.getDirection().squaredLength();
+        T ray_sqlen = ray.getDirection().squaredNorm();
         T origin_sqdist = squaredDistance(ray.getOrigin());  // fast operation
         if (origin_sqdist > max_time * max_time * ray_sqlen)
           return RayIntersectionN<N, T>(-1);
@@ -499,7 +504,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       }
 
       // Choose the normal to be the plane normal facing into the ray
-      VectorT normal = VectorT::zero();
+      VectorT normal = VectorT::Zero();
       normal[which_plane] = (dir[which_plane] > 0) ? -1 : 1;
 
       return RayIntersectionN<N, T>(max_t[which_plane], &normal);
@@ -514,7 +519,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 } // namespace Internal
 
 /** An axis-aligned box in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ AxisAlignedBoxN : public Internal::AxisAlignedBoxNBase<N, T>
 {
   private:

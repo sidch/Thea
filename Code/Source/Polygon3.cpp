@@ -227,8 +227,9 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
     proj_vertices.resize(n);
 
     Vector3 normal = computeNormal();
-    Vector3 axis0, axis1;
-    normal.createOrthonormalBasis(axis0, axis1);
+    Matrix3 basis = Math::orthonormalBasis(normal);
+    Vector3 axis0 = basis.col(0);
+    Vector3 axis1 = basis.col(1);
 
     Vector3 v0 = vertices[0].position;  // a reference point for the plane of the polygon
     for (size_t i = 0; i < n; ++i)

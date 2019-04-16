@@ -43,13 +43,11 @@
 #define __Thea_Algorithms_LaplaceBeltrami_hpp__
 
 #include "../Common.hpp"
-#include "../AddressableMatrix.hpp"
+#include "../AbstractAddressableMatrix.hpp"
 #include "../Math.hpp"
-#include "../ResizableMatrix.hpp"
 #include "../UnorderedMap.hpp"
 #include "../Graphics/MeshType.hpp"
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -108,8 +106,7 @@ class THEA_API LaplaceBeltrami
     struct CheckTypes
     {
       static bool const value = MeshTypeCheckT::value
-                             && boost::is_base_of< AddressableMatrix<typename MatrixT::Value>, MatrixT >::value
-                             && boost::is_base_of< ResizableMatrix<typename MatrixT::Value>, MatrixT >::value;
+                             && std::is_base_of< AbstractAddressableMatrix<typename MatrixT::Value>, MatrixT >::value;
     };
 
     //==========================================================================================================================
@@ -122,7 +119,8 @@ class THEA_API LaplaceBeltrami
      */
     template <typename MeshT, typename MatrixT>
     static void computeXu(MeshT const & mesh, MatrixT & result,
-                          typename boost::enable_if< CheckTypes<Graphics::IsGeneralMesh<MeshT>, MatrixT> >::type * dummy = 0)
+                          typename std::enable_if< CheckTypes<Graphics::IsGeneralMesh<MeshT>,
+                                                              MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
       TheaUnorderedMap<typename MeshT::Vertex const *, long> indices;
@@ -131,8 +129,10 @@ class THEA_API LaplaceBeltrami
         indices[&(*vi)] = num_vertices++;
 
       // Now compute the discrete Laplace-Beltrami operator
-      result.resize(num_vertices, num_vertices);
-      result.makeZero();
+      if (!result.resize(num_vertices, num_vertices))
+        throw Error("LaplaceBeltrami: Could not resize matrix");
+
+      result.setZero();
 
       typename MeshT::Edge const * first_edge, * ej_next, * ej_prev, * ej;
       typename MeshT::Vertex const * vx, * vj, * vj_prev, * vj_next;
@@ -159,12 +159,12 @@ class THEA_API LaplaceBeltrami
 
             cot_a_ij = (typename MatrixT::Value)cot(vx->getPosition(), vj_prev->getPosition(), vj->getPosition());
             cot_b_ij = (typename MatrixT::Value)cot(vx->getPosition(), vj_next->getPosition(), vj->getPosition());
-            denom += (cot_a_ij + cot_b_ij) * (vx->getPosition() - vj->getPosition()).length();
+            denom += (cot_a_ij + cot_b_ij) * (vx->getPosition() - vj->getPosition()).norm();
 
             j = indices[vj];
             x = 4 * (cot_a_ij + cot_b_ij);
-            result.getMutable(i, j) += x;
-            result.getMutable(i, i) -= x;
+            result.at(i, j) += x;
+            result.at(i, i) -= x;
 
             ej_prev = ej;
             ej      = ej_next;
@@ -180,10 +180,10 @@ class THEA_API LaplaceBeltrami
             for (typename MeshT::Vertex::EdgeConstIterator ei = vi->edgesBegin(); ei != vi->edgesEnd(); ++ei)
             {
               j = indices[(*ei)->getOtherEndpoint(&(*vi))];
-              result.getMutable(i, j) /= denom;
+              result.at(i, j) /= denom;
             }
 
-            result.getMutable(i, i) /= denom;
+            result.at(i, i) /= denom;
           }
         }
       }
@@ -194,7 +194,8 @@ class THEA_API LaplaceBeltrami
      */
     template <typename MeshT, typename MatrixT>
     static void computeXu(MeshT const & mesh, MatrixT & result,
-                          typename boost::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>, MatrixT> >::type * dummy = 0)
+                          typename std::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>,
+                                                              MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
       TheaUnorderedMap<typename MeshT::Vertex const *, long> indices;
@@ -203,8 +204,10 @@ class THEA_API LaplaceBeltrami
         indices[&(*vi)] = num_vertices++;
 
       // Now compute the discrete Laplace-Beltrami operator
-      result.resize(num_vertices, num_vertices);
-      result.makeZero();
+      if (!result.resize(num_vertices, num_vertices))
+        throw Error("LaplaceBeltrami: Could not resize matrix");
+
+      result.setZero();
 
       typename MeshT::Halfedge const * he_j_next, * he_j_prev, * he_j;
       typename MeshT::Vertex const * vj, * vj_prev, * vj_next;
@@ -228,12 +231,12 @@ class THEA_API LaplaceBeltrami
 
             cot_a_ij = (typename MatrixT::Value)cot(vi->getPosition(), vj_prev->getPosition(), vj->getPosition());
             cot_b_ij = (typename MatrixT::Value)cot(vi->getPosition(), vj_next->getPosition(), vj->getPosition());
-            denom += (cot_a_ij + cot_b_ij) * (vi->getPosition() - vj->getPosition()).length();
+            denom += (cot_a_ij + cot_b_ij) * (vi->getPosition() - vj->getPosition()).norm();
 
             j = indices[vj];
             x = 4 * (cot_a_ij + cot_b_ij);
-            result.getMutable(i, j) += x;
-            result.getMutable(i, i) -= x;
+            result.at(i, j) += x;
+            result.at(i, i) -= x;
 
             he_j_prev = he_j;
             he_j      = he_j_next;
@@ -245,12 +248,12 @@ class THEA_API LaplaceBeltrami
           do
           {
             j = indices[he_j->getEnd()];
-            result.getMutable(i, j) /= denom;
+            result.at(i, j) /= denom;
             he_j = he_j->nextAroundOrigin();
 
           } while (he_j != vi->getHalfedge());
 
-          result.getMutable(i, i) /= denom;
+          result.at(i, i) /= denom;
         }
       }
     }
@@ -258,10 +261,10 @@ class THEA_API LaplaceBeltrami
     /** Cotangent of angle ABC (vertex at B) for vectors in 3-space. The angle less than 180 degrees is chosen. */
     template <typename Vector3T> static double cot(Vector3T const & a, Vector3T const & b, Vector3T const & c)
     {
-      Vector3T u = (a - b).unit();
-      Vector3T v = (c - b).unit();
+      Vector3T u = (a - b).normalized();
+      Vector3T v = (c - b).normalized();
       double cos_b = (double)v.dot(u);
-      double sin_b = (double)v.cross(u).length();
+      double sin_b = (double)v.cross(u).norm();
       return (sin_b < 1e-10) ? 1e+10 : (cos_b / sin_b);
     }
 

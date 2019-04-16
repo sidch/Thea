@@ -49,7 +49,7 @@
 #include "IncrementalDisplayMeshBuilder.hpp"
 #include "DefaultMeshCodecs.hpp"
 #include "DrawableObject.hpp"
-#include <boost/array.hpp>
+#include <array>
 
 namespace Thea {
 namespace Graphics {
@@ -274,7 +274,7 @@ class THEA_API DisplayMeshFace
 class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(DisplayMesh, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(DisplayMesh, std::shared_ptr, std::weak_ptr)
 
     /** Mesh type tag. */
     struct DISPLAY_MESH_TAG {};
@@ -289,8 +289,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     typedef DisplayMeshIndexedVertex IndexedVertex;  ///< A reference to a vertex's properties via its index.
     typedef DisplayMeshFace Face;  ///< A convenience wrapper for accessing a face's properties.
 
-    typedef boost::array<long, 3> IndexTriple;  ///< Vertex indices of a single triangle.
-    typedef boost::array<long, 4> IndexQuad;  ///< Vertex indices of a single quad.
+    typedef std::array<long, 3> IndexTriple;  ///< Vertex indices of a single triangle.
+    typedef std::array<long, 4> IndexQuad;    ///< Vertex indices of a single quad.
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
     typedef long  VertexHandle;       ///< Handle to a mesh vertex.

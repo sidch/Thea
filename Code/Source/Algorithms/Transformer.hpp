@@ -43,13 +43,15 @@
 #define __Thea_Algorithms_Transformer_hpp__
 
 #include "../Common.hpp"
+#include "../Concept.hpp"
 #include "../RigidTransformN.hpp"
 #include "../AxisAlignedBoxN.hpp"
 #include "../BoxN.hpp"
 #include "../BallN.hpp"
+#include "../MatVec.hpp"
 #include "../Triangle3.hpp"
 #include "PointTraitsN.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -63,7 +65,7 @@ namespace Algorithms {
  *
  * @see Transformer
  */
-template <typename ObjT, typename TransT, long N, typename ScalarT, typename Enable = void>
+template <typename ObjT, typename TransT, int N, typename ScalarT, typename Enable = void>
 struct /* THEA_API */ TransformerImpl
 {
   typedef ObjT Result;
@@ -82,7 +84,7 @@ class THEA_API Transformer
 {
   public:
     /** Apply a transformation to an object. */
-    template <long N, typename ScalarT, typename ObjT, typename TransT>
+    template <int N, typename ScalarT, typename ObjT, typename TransT>
     static typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result transform(ObjT const & obj, TransT const & tr)
     {
       return TransformerImpl<ObjT, TransT, N, ScalarT>::transform(obj, tr);
@@ -94,7 +96,7 @@ class THEA_API Transformer
 // Support for pointer types
 //=============================================================================================================================
 
-template <typename ObjT, typename TransT, long N, typename ScalarT>
+template <typename ObjT, typename TransT, int N, typename ScalarT>
 struct /* THEA_API */ TransformerImpl<ObjT *, TransT *, N, ScalarT>
 {
   typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
@@ -105,7 +107,7 @@ struct /* THEA_API */ TransformerImpl<ObjT *, TransT *, N, ScalarT>
   }
 };
 
-template <typename ObjT, typename TransT, long N, typename ScalarT>
+template <typename ObjT, typename TransT, int N, typename ScalarT>
 struct /* THEA_API */ TransformerImpl<ObjT, TransT *, N, ScalarT>
 {
   typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
@@ -116,7 +118,7 @@ struct /* THEA_API */ TransformerImpl<ObjT, TransT *, N, ScalarT>
   }
 };
 
-template <typename ObjT, typename TransT, long N, typename ScalarT>
+template <typename ObjT, typename TransT, int N, typename ScalarT>
 struct /* THEA_API */ TransformerImpl<ObjT *, TransT, N, ScalarT>
 {
   typedef typename TransformerImpl<ObjT, TransT, N, ScalarT>::Result Result;
@@ -131,14 +133,43 @@ struct /* THEA_API */ TransformerImpl<ObjT *, TransT, N, ScalarT>
 // Specializations
 //=============================================================================================================================
 
-template <typename ObjT, typename TransT, long N, typename ScalarT>
-struct TransformerImpl<ObjT, TransT, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<ObjT, N> >::type>
+namespace TransformerInternal {
+
+template <typename T, int N, typename Enable = void>
+struct IsHomMatrix
 {
-  typedef VectorN<N, ScalarT> Result;
+  static bool const value = false;
+};
+
+template <typename T, int N>
+struct IsHomMatrix< T, N, typename std::enable_if< T::RowsAtCompileTime == N + 1 && T::ColsAtCompileTime == N + 1 >::type >
+{
+  static bool const value = true;
+};
+
+} // namespace TransformerInternal
+
+template <typename ObjT, typename TransT, int N, typename ScalarT>
+struct TransformerImpl<ObjT, TransT, N, ScalarT,
+                       typename std::enable_if< IsNonReferencedPointN<ObjT, N>::value
+                                             && !TransformerInternal::IsHomMatrix<TransT, N>::value >::type>
+{
+  typedef Vector<N, ScalarT> Result;
   static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, N, ScalarT>::getPosition(obj); }
 };
 
-template <long N, typename ScalarT>
+// Homogeneous multiplication
+template <typename ObjT, typename TransT, int N, typename ScalarT>
+struct TransformerImpl<ObjT, TransT, N, ScalarT,
+                       typename std::enable_if< IsNonReferencedPointN<ObjT, N>::value
+                                             && TransformerInternal::IsHomMatrix<TransT, N>::value >::type>
+{
+  typedef Vector<N, ScalarT> Result;
+  static Result transform(ObjT const & obj, TransT const & tr)
+  { return Math::hmul(tr, PointTraitsN<ObjT, N, ScalarT>::getPosition(obj)); }
+};
+
+template <int N, typename ScalarT>
 struct TransformerImpl< AxisAlignedBoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
 {
   typedef BoxN<N, ScalarT> Result;
@@ -148,7 +179,7 @@ struct TransformerImpl< AxisAlignedBoxN<N, ScalarT>, RigidTransformN<N, ScalarT>
   }
 };
 
-template <long N, typename ScalarT>
+template <int N, typename ScalarT>
 struct TransformerImpl< BoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
 {
   typedef BoxN<N, ScalarT> Result;
@@ -158,7 +189,7 @@ struct TransformerImpl< BoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, Scalar
   }
 };
 
-template <long N, typename ScalarT>
+template <int N, typename ScalarT>
 struct TransformerImpl< BallN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, ScalarT >
 {
   typedef BallN<N, ScalarT> Result;

@@ -45,7 +45,7 @@
 #include "Common.hpp"
 #include "Array.hpp"
 #include "Math.hpp"
-#include "VectorN.hpp"
+#include "MatVec.hpp"
 #include "Algorithms/PointTraitsN.hpp"
 #include <algorithm>
 #include <iterator>
@@ -53,11 +53,11 @@
 namespace Thea {
 
 /** A parametric curve segment in N-dimensional space. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ ParametricCurveN
 {
   public:
-    typedef VectorN<N, T> VectorT;  ///< N-dimensional vector type.
+    typedef Vector<N, T> VectorT;  ///< N-dimensional vector type.
 
     /** Constructor, sets parameter limits. */
     ParametricCurveN(T const & min_param_ = 0, T const & max_param_ = 1)
@@ -210,7 +210,7 @@ class /* THEA_API */ ParametricCurveN
       for (++pi; pi != end; ++pi)
       {
         VectorT curr = PointTraitsN<PointT, N, T>::getPosition(*pi);
-        sum_u += static_cast<double>((curr - last).fastLength());
+        sum_u += static_cast<double>((curr - last).norm());
         u.push_back(sum_u);
         last = curr;
       }
@@ -230,11 +230,10 @@ class /* THEA_API */ ParametricCurveN
 
 }; // class ParametricCurveN
 
-template <long N, typename T>
+template <int N, typename T>
 ParametricCurveN<N, T>::~ParametricCurveN()
 {
   // Pure virtual destructor should have a body
-  //
   // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
 }
 

@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2019, Siddhartha Chaudhuri
 //
 // All rights reserved.
 //
@@ -39,24 +39,39 @@
 //
 //============================================================================
 
-#ifndef __Thea_ResizableMatrix_hpp__
-#define __Thea_ResizableMatrix_hpp__
+#ifndef __Thea_AbstractDenseMatrix_hpp__
+#define __Thea_AbstractDenseMatrix_hpp__
 
-#include "BasicMatrix.hpp"
+#include "AbstractAddressableMatrix.hpp"
 
 namespace Thea {
 
-/** Interface for a 2D matrix whose dimensions can be changed at runtime. */
+/**
+ * Abstract base interface for a 2D dense matrix, assumed to be packed with no gaps or padding in a contiguous memory block.
+ * Useful for passing matrices across shared library boundaries.
+ */
 template <typename T>
-class /* THEA_API */ ResizableMatrix : public virtual BasicMatrix<T>
+class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(ResizableMatrix, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AbstractDenseMatrix, std::shared_ptr, std::weak_ptr)
 
-    /** Resize the matrix to the specified dimensions. All existing data will be discarded. */
-    virtual void resize(long num_rows, long num_cols) = 0;
+    /** Is the matrix stored in row-major format? */
+    virtual bool isRowMajor() const = 0;
 
-}; // class ResizableMatrix
+    /** Is the matrix stored in column-major format? */
+    virtual bool isColumnMajor() const = 0;
+
+    /** Get a pointer to the beginning of the matrix's data block. */
+    virtual T const * data() const = 0;
+
+    /** Get a pointer to the beginning of the matrix's data block. */
+    virtual T * data() = 0;
+
+    /** Set all elements of the matrix to a given value. */
+    virtual void fill(T const & value) = 0;
+
+}; // class AbstractDenseMatrix
 
 } // namespace Thea
 

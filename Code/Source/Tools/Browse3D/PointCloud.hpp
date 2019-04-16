@@ -65,14 +65,14 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     struct Point
     {
       Point() {}
-      Point(Vector3 const & p_, Vector3 const & n_ = Vector3::zero()) : p(p_), n(n_) {}
+      Point(Vector3 const & p_, Vector3 const & n_ = Vector3::Zero()) : p(p_), n(n_) {}
 
       Vector3 p;
       Vector3 n;
     };
 
   public:
-    THEA_DEF_POINTER_TYPES(PointCloud, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(PointCloud, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. */
     PointCloud(std::string const & path = "", std::string const & features_path = "");

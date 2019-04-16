@@ -45,14 +45,13 @@
 #include "Common.hpp"
 #include "Array.hpp"
 #include "Math.hpp"
-#include "MatrixMN.hpp"
+#include "MatVec.hpp"
 #include "RayIntersectableN.hpp"
-#include "VectorN.hpp"
 
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class HyperplaneN;
+template <int N, typename T> class HyperplaneN;
 
 namespace Internal {
 
@@ -62,23 +61,23 @@ namespace Internal {
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
 {
   public:
     typedef HyperplaneN<N, T>  HyperplaneT;  ///< N-dimensional hyperplane.
-    typedef VectorN<N, T>      VectorT;      ///< N-dimensional vector.
+    typedef Vector<N, T>       VectorT;      ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(HyperplaneT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(HyperplaneT, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. */
-    HyperplaneNBase() : normal(VectorT::zero()), dist(0) {}
+    HyperplaneNBase() : normal(VectorT::Zero()), dist(0) {}
 
     /** Construct a hyperplane from a point on it, and the direction vector of the hyperplane (need not be a unit vector). */
     static HyperplaneT fromPointAndNormal(VectorT const & point_, VectorT const & normal_)
     {
       HyperplaneT hyperplane;
-      hyperplane.normal  =  normal_.unit();
+      hyperplane.normal  =  normal_.normalized();
       hyperplane.dist    =  hyperplane.normal.dot(point_);
 
       return hyperplane;
@@ -91,13 +90,13 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
                     format("HyperplaneN: Too few points specified (provided %ld points, hyperplane requires %ld points)",
                            (long)points.size(), N));
 
-      MatrixMN<N, N, T> a;
+      Matrix<N, N, T> a;
       for (long i = 0; i < N; ++i)
         a.setRow(i, points[i]);
 
       try
       {
-        a.invert();
+        a = a.inverse();
       }
       catch (...)
       {
@@ -105,7 +104,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
       }
 
       HyperplaneT hyperplane;
-      hyperplane.normal  =  (a * VectorT(-1)).unit();
+      hyperplane.normal  =  -(a * VectorT::Ones()).normalized();
       hyperplane.dist    =  hyperplane.normal.dot(points[0]);
       return hyperplane;
     }
@@ -119,9 +118,9 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     /**
      * Get the coefficients {a_i} of the hyperplane equation a_0 * x_0 + a_1 * x_1 + ... + a_{N - 1} * x_{N - 1} + a_N * 1 = 0.
      */
-    VectorN<N + 1, T> getEquation() const
+    Vector<N + 1, T> getEquation() const
     {
-      VectorN<N + 1, T> coeffs;
+      Vector<N + 1, T> coeffs;
 
       for (long i = 0; i < N; ++i)
         coeffs[i] = normal[i];
@@ -220,7 +219,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[N: " << normal.toString() << ", D: " << dist << ']';
+      oss << "[N: " << Thea::toString(normal) << ", D: " << dist << ']';
       return oss.str();
     }
 
@@ -233,7 +232,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
 } // namespace Internal
 
 /** A hyperplane ((N - 1)-flat) in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ HyperplaneN : public Internal::HyperplaneNBase<N, T>
 {
   public:
@@ -243,7 +242,7 @@ class /* THEA_API */ HyperplaneN : public Internal::HyperplaneNBase<N, T>
 }; // class HyperplaneN
 
 /** Pipe a textual representation of a hyperplane to a <code>std::ostream</code>. */
-template <long N, typename T>
+template <int N, typename T>
 std::ostream &
 operator<<(std::ostream & os, HyperplaneN<N, T> const & plane)
 {

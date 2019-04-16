@@ -53,8 +53,8 @@ namespace Thea {
  * full: in this case the last element is dropped to make space. This class is useful for very fast allocation of space for a
  * few elements, where the exact number of elements is not known but is guaranteed to have an upper limit.
  *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>boost::has_trivial_assign</tt> is true for T.
+ * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that <tt>std::is_trivially_copyable</tt>
+ * is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. The capacity N should be
  * <b>positive</b> (non-zero).

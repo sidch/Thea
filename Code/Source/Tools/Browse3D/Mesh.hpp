@@ -98,7 +98,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     typedef TheaUnorderedMap<long, Face *> IndexFaceMap;
 
   public:
-    THEA_DEF_POINTER_TYPES(Mesh, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Mesh, std::shared_ptr, std::weak_ptr)
 
     Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name), parent(NULL), valid_features(false) {}
 

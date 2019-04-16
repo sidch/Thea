@@ -47,6 +47,7 @@
 #include "CommonEnums.hpp"
 #include "EnumClass.hpp"
 #include "Error.hpp"
+#include "Hash.hpp"
 #include "Memory.hpp"
 #include "Noncopyable.hpp"
 #include "NumericTypes.hpp"
@@ -95,20 +96,21 @@
 /** Root namespace for the %Thea library. */
 namespace Thea {
 
-/**
- * Require an expression to evaluate to true at compile-time. Example usage:
- *
- * \code
- *   THEA_STATIC_ASSERT(sizeof(int) == 2)
- * \endcode
- *
- * From Ralf Holly, http://www.drdobbs.com/compile-time-assertions/184401873
- */
-#define THEA_STATIC_ASSERT(e) \
-do \
-{ \
-  enum { assert_static__ = 1/((int)(e)) }; \
-} while (0)
+// No longer required, we have static_assert since switching to C++11.
+// /**
+//  * Require an expression to evaluate to true at compile-time. Example usage:
+//  *
+//  * \code
+//  *   THEA_STATIC_ASSERT(sizeof(int) == 2)
+//  * \endcode
+//  *
+//  * From Ralf Holly, http://www.drdobbs.com/compile-time-assertions/184401873
+//  */
+// #define THEA_STATIC_ASSERT(e) \
+// do \
+// { \
+//   enum { assert_static__ = 1/((int)(e)) }; \
+// } while (0)
 
 /** Get the class of an object. */
 template <typename T>

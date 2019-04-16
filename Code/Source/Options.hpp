@@ -48,24 +48,75 @@
 
 namespace Thea {
 
-/** A set of options, specified as key-value pairs. */
-class THEA_API Options : private TheaMap<std::string, boost::any>
+/** Abstract interface for key-value options, suitable for passing across DLL boundaries. */
+class THEA_API AbstractOptions
 {
   public:
+    /** Destructor. */
+    virtual ~AbstractOptions() {}
+
     /** Check if an option has been set. */
-    bool hasOption(std::string const & option_name) const { return find(option_name) != end(); }
+    virtual bool hasOption(char const * option_name) const = 0;
+
+    /** Set the value of an integer option. */
+    virtual void setInteger(char const * option_name, long value) = 0;
+
+    /** Set the value of a floating-point option. */
+    virtual void setFloat(char const * option_name, double value) = 0;
+
+    /** Set the value of a string option. */
+    virtual void setString(char const * option_name, char const * value) = 0;
+
+    /**
+     * Get the value of an integer option. If the option has not been set, the default value specified by the last parameter is
+     * returned.
+     */
+    virtual long getInteger(char const * option_name, long default_value) const = 0;
+
+    /**
+     * Get the value of a floating-point option. If the option has not been set, the default value specified by the last
+     * parameter is returned.
+     */
+    virtual double getFloat(char const * option_name, double default_value) const = 0;
+
+    /**
+     * Get the value of a string option. If the option has not been set, the default value specified by the last parameter is
+     * returned.
+     */
+    virtual char const * getString(char const * option_name, char const * default_value) const = 0;
+
+}; // class AbstractOptions
+
+/**
+ * A set of options, specified as key-value pairs. Supports a much more general set of value types than the simpler abstract
+ * interface it implements.
+ */
+class THEA_API Options : public AbstractOptions, private TheaMap<std::string, boost::any>
+{
+  public:
+    /** Destructor. */
+    ~Options() {}
+
+    // Functions from abstract interface
+    bool hasOption(char const * option_name) const { return find(option_name) != end(); }
+    void setInteger(char const * option_name, long value) { set<long>(option_name, value); }
+    void setFloat(char const * option_name, double value) { set<double>(option_name, value); }
+    void setString(char const * option_name, char const * value) { set<std::string>(option_name, std::string(value)); }
+    long getInteger(char const * option_name, long default_value) const { return get<long>(option_name, default_value); }
+    double getFloat(char const * option_name, double default_value) const { return get<double>(option_name, default_value); }
+    char const * getString(char const * option_name, char const * default_value) const;
 
     /** Set the value of an option. */
-    template <typename T> void set(std::string const & option_name, T const & value) { (*this)[option_name] = value; }
+    template <typename T> void set(char const * option_name, T const & value) { (*this)[option_name] = value; }
 
-    /** Set the value of an option from a C-style string. It should be read back as a <code>std::string</code>. */
-    void set(std::string const & option_name, char const * value) { (*this)[option_name] = std::string(value); }
+    /** Set the value of an option from a C-style string. It is stored and can be read back as a <code>std::string</code>. */
+    void set(char const * option_name, char const * value) { (*this)[option_name] = std::string(value); }
 
     /**
      * Get the value of an option. If the option has not been set, the default value specified by the last parameter is
      * returned.
      */
-    template <typename T> T get(std::string const & option_name, T const & default_value) const
+    template <typename T> T get(char const * option_name, T const & default_value) const
     {
       const_iterator existing = find(option_name);
       if (existing != end())
@@ -75,6 +126,32 @@ class THEA_API Options : private TheaMap<std::string, boost::any>
     }
 
 }; // class Options
+
+/**
+ * Specialization of get() for C-style strings. In this particular case, a pointer to the C array underlying the held
+ * <code>std::string</code> is returned (which may be invalidated by further operations on this Options object). If the
+ * option has not been set, the default value specified by the last parameter is returned.
+ */
+template <>
+inline char const *
+Options::get<char const *>(char const * option_name, char const * const & default_value) const
+{
+  const_iterator existing = find(option_name);
+  if (existing != end())
+  {
+    // any_cast with reference type returns handle to held value
+    return boost::any_cast<std::string const &>(existing->second).c_str();
+  }
+  else
+    return default_value;
+}
+
+// Has to be placed after the specialization of get<char const *>() above.
+inline char const *
+Options::getString(char const * option_name, char const * default_value) const
+{
+  return get<char const *>(option_name, default_value);
+}
 
 } // namespace Thea
 

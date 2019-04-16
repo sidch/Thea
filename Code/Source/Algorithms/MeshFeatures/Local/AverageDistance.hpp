@@ -208,7 +208,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 
       template <typename SampleT> bool operator()(long index, SampleT const & t)
       {
-        Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).length();
+        Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).norm();
         sum_distances += d;
         num_points++;
 

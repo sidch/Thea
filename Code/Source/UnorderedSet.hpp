@@ -43,18 +43,15 @@
 #define __Thea_UnorderedSet_hpp__
 
 #include "Platform.hpp"
-#include <boost/unordered_set.hpp>
+#include <unordered_set>
 
 namespace Thea {
 
-/** Hashtable-based set of objects, guaranteed to be a drop-in replacement for std::tr1::unordered_set. */
-#define TheaUnorderedSet boost::unordered_set
+/** Hashtable-based set of objects. */
+#define TheaUnorderedSet std::unordered_set
 
-/**
- * Hashtable-based set of objects, allowing multiple copies of the same object and guaranteed to be a drop-in replacement for
- * std::tr1::unordered_multiset.
- */
-#define TheaUnorderedMultiSet boost::unordered_multiset
+/** Hashtable-based set of objects, allowing multiple copies of the same. */
+#define TheaUnorderedMultiSet std::unordered_multiset
 
 } // namespace Thea
 

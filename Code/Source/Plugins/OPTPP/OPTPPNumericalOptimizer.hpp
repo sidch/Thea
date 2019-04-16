@@ -87,7 +87,7 @@ class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizerFactory : public NumericalOpti
     /** Destructor. */
     ~OPTPPNumericalOptimizerFactory();
 
-    NumericalOptimizer * createNumericalOptimizer(std::string const & name);
+    NumericalOptimizer * createNumericalOptimizer(char const * name);
     void destroyNumericalOptimizer(NumericalOptimizer * optimizer);
 
     /** Destroy all numerical optimizers created with this factory. */

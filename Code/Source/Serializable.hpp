@@ -93,7 +93,7 @@ class THEA_API Codec_UNKNOWN : public Codec
 class THEA_API Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Serializable, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Serializable, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~Serializable() {};
@@ -145,7 +145,7 @@ class THEA_API Serializable
 class THEA_API SerializableFactory
 {
   public:
-    THEA_DEF_POINTER_TYPES(SerializableFactory, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(SerializableFactory, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~SerializableFactory() {}

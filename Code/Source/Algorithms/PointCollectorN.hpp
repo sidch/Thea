@@ -43,12 +43,12 @@
 #define __Thea_Algorithms_PointCollectorN_hpp__
 
 #include "../Common.hpp"
+#include "PointTraitsN.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
-#include "PointTraitsN.hpp"
-#include "../VectorN.hpp"
-#include <boost/utility/enable_if.hpp>
+#include "../MatVec.hpp"
 #include <iterator>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -68,7 +68,8 @@ struct MeshVertexCollector
 
 // Add vertices of display mesh to a collection
 template <typename MeshT, typename CollectionT, typename ScalarT>
-struct MeshVertexCollector< MeshT, CollectionT, ScalarT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type >
+struct MeshVertexCollector< MeshT, CollectionT, ScalarT,
+                            typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type >
 {
   void addVertices(MeshT const & mesh, CollectionT & collection)
   {
@@ -81,16 +82,16 @@ struct MeshVertexCollector< MeshT, CollectionT, ScalarT, typename boost::enable_
 } // namespace PointCollectorNInternal
 
 /**
- * Add points from different objects to a collection. The function <tt>CollectionT::addPoint(VectorN<N, ScalarT> const &)</tt>
+ * Add points from different objects to a collection. The function <tt>CollectionT::addPoint(Vector<N, ScalarT> const &)</tt>
  * (or equivalent) must exist.
  */
-template <typename CollectionT, long N, typename ScalarT = Real>
+template <typename CollectionT, int N, typename ScalarT = Real>
 class /* THEA_API */ PointCollectorN
 {
   public:
-    THEA_DEF_POINTER_TYPES(PointCollectorN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(PointCollectorN, std::shared_ptr, std::weak_ptr)
 
-    typedef VectorN<N, ScalarT> Point;  ///< The point type.
+    typedef Vector<N, ScalarT> Point;  ///< The point type.
     typedef CollectionT Collection;  ///< The collection type.
 
     /** Default constructor. Call setCollection() subsequently. */

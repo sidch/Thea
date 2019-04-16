@@ -63,7 +63,7 @@ template <typename T>
 class LineBoxDistance3
 {
   public:
-    typedef VectorN<3, T> VectorT;
+    typedef Vector<3, T> VectorT;
 
     struct Result
     {
@@ -128,8 +128,8 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
      */
     template <typename TransformT> AxisAlignedBoxN transformAndBound(TransformT const & tr) const
     {
-      Vector3 const & lo_ = this->getLow();
-      Vector3 const & hi_ = this->getHigh();
+      VectorT const & lo_ = this->getLow();
+      VectorT const & hi_ = this->getHigh();
 
       // We sequentially compute the corners in the following order:
       // 0, 6, 5, 1, 2, 4, 7, 3
@@ -137,7 +137,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
       // merge the resulting point.
 
       // min min min
-      Vector3 current_corner = lo_;
+      VectorT current_corner = lo_;
       AxisAlignedBoxN result = AxisAlignedBoxN(tr * current_corner);
 
       // min min max
@@ -235,7 +235,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
 
       // FIXME: Does DoQuery actually need a unit length direction vector?
       T seg_len = seg.length();
-      VectorT seg_dir = (seg_len >= Math::eps<T>() ? seg.getDirection() / seg_len : VectorT::unitX());
+      VectorT seg_dir = (seg_len >= Math::eps<T>() ? seg.getDirection() / seg_len : VectorT::UnitX());
       VectorT direction = seg_dir;  // can be overwritten by DoQuery
 
       typename Internal::LineBoxDistance3<T>::Result result;
@@ -251,8 +251,8 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
         VectorT e1 = seg.getEndpoint(1);
         VectorT c0 = this->closestPoint(e0);
         VectorT c1 = this->closestPoint(e1);
-        Real sqdist0 = (c0 - e0).squaredLength();
-        Real sqdist1 = (c1 - e1).squaredLength();
+        Real sqdist0 = (c0 - e0).squaredNorm();
+        Real sqdist1 = (c1 - e1).squaredNorm();
         if (sqdist0 < sqdist1)
         {
           if (this_pt) *this_pt = c0;
@@ -277,7 +277,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
       // Translate the line and box so that the box has center at the origin.
       VectorT boxCenter = this->getCenter(), boxExtent = 0.5f * this->getExtent();
       VectorT point = ray.getOrigin() - boxCenter;
-      VectorT ray_dir = ray.getDirection().unit();  // FIXME: Does DoQuery actually need a unit length direction vector?
+      VectorT ray_dir = ray.getDirection().normalized();  // FIXME: Does DoQuery actually need a unit length direction vector?
       VectorT direction = ray_dir;  // can be overwritten by DoQuery
 
       typename Internal::LineBoxDistance3<T>::Result result;
@@ -291,7 +291,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
       else
       {
         VectorT c = this->closestPoint(ray.getOrigin());
-        result.sqrDistance = (c - ray.getOrigin()).squaredLength();
+        result.sqrDistance = (c - ray.getOrigin()).squaredNorm();
 
         if (this_pt) *this_pt = c;
         if (ray_pt)  *ray_pt  = ray.getOrigin();

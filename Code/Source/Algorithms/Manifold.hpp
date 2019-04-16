@@ -44,10 +44,10 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../MatVec.hpp"
 #include "../Set.hpp"
 #include "../Stack.hpp"
 #include "../UnionFind.hpp"
-#include "../Vector3.hpp"
 #include <utility>
 
 namespace Thea {

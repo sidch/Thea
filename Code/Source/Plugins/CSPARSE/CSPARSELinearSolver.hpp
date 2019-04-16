@@ -43,6 +43,8 @@
 #define __Thea_Algorithms_CSPARSELinearSolver_hpp__
 
 #include "CSPARSECommon.hpp"
+#include "../../MatVec.hpp"
+#include "../../NamedObject.hpp"
 #include "../../Set.hpp"
 #include "../../Algorithms/LinearSolver.hpp"
 
@@ -54,7 +56,7 @@ namespace Algorithms {
  *
  * @see http://www.cise.ufl.edu/research/sparse/CSparse/
  */
-class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver
+class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver, public virtual NamedObject
 {
   private:
     typedef LinearSolver BaseType;
@@ -62,6 +64,9 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver
   public:
     /** Constructor. */
     CSPARSELinearSolver(std::string const & name_);
+
+    /** Destructor. */
+    ~CSPARSELinearSolver();
 
     /**
      * {@inheritDoc}
@@ -81,10 +86,16 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver
      *   - <i>Type:</i> <code>double</code>
      *   - <i>Default</i>: 1e-20
      */
-    bool solve(Options const & options = Options());
+    bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL);
+
+    long dims() const { return (long)solution.size(); }
+    bool hasSolution() const { return has_solution; }
+    double const * getSolution() const { return solution.data(); }
+    bool getSquaredError(double & err) const { return false; }
 
   protected:
-    MatrixFormat getPreferredFormat(MatrixFormat input_format);
+    bool has_solution;
+    VectorX<double> solution;  ///< Solution vector (exact or approximate) x of Ax = b.
 
 }; // class CSPARSELinearSolver
 
@@ -95,7 +106,7 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolverFactory : public LinearSolverFac
     /** Destructor. */
     ~CSPARSELinearSolverFactory();
 
-    LinearSolver * createLinearSolver(std::string const & name);
+    LinearSolver * createLinearSolver(char const * name);
     void destroyLinearSolver(LinearSolver * linear_solver);
 
     /** Destroy all linear solvers created with this factory. */

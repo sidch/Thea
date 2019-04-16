@@ -44,13 +44,13 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
-#include "../Vector.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
 // Forward declarations
-class LinearLeastSquares;
+class StdLinearSolver;
 
 /**
  * Solve logistic regression problems. The goal is to fit the logistic curve
@@ -62,16 +62,19 @@ class LinearLeastSquares;
 class THEA_API LogisticRegression
 {
   public:
-    THEA_DEF_POINTER_TYPES(LogisticRegression, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(LogisticRegression, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. Sets the number of dimensions of the problem domain (i.e. of the vector <b>x</b>). */
-    LogisticRegression(long ndim_);
+    LogisticRegression(long ndims_);
 
     /** Destructor. */
     ~LogisticRegression();
 
     /** Get the number of dimensions of the problem domain. */
-    long numDimensions() const;
+    long dims() const { return ndims; }
+
+    /** Get the number of observations. */
+    long numObservations() const { return (long)llsq_consts.size(); }
 
     /**
      * Add a data point to constrain the curve. This corresponds to a pair of observed values of <b>x</b> and <em>y</em>.
@@ -90,9 +93,6 @@ class THEA_API LogisticRegression
      */
     void clearObservations();
 
-    /** Get the number of observations. */
-    long numObservations() const;
-
     /**
      * Fit the logistic curve to the observed data.
      *
@@ -103,17 +103,20 @@ class THEA_API LogisticRegression
     bool solve(double tolerance = -1);
 
     /** Was the curve successfully fitted by the last call to solve()? */
-    bool hasSolution() const;
+    bool hasSolution() const { return has_solution; }
 
     /**
      * Get the parameters of the logistic curve. The returned vector has <em>a</em> as its first element and <b>b</b> as the
      * subsequent elements. Valid only if hasSolution() returns true.
      */
-    Vector<double> const & getSolution() const;
+    VectorXd const & getSolution() const { return solution; }
 
   private:
-    LinearLeastSquares * llsq;  ///< The helper class for solving the linearized problem.
-    TheaArray<double> llsq_coeffs;  ///< Scratch space for passing linearized values.
+    long ndims;                     ///< The number of dimensions of the problem, i.e. the size of the solution vector x.
+    TheaArray<double> llsq_coeffs;  ///< Scratch space for passing coefficients. Has (dims() + 1) * llsq_consts.size() entries.
+    TheaArray<double> llsq_consts;  ///< Scratch space for passing constants.
+    bool has_solution;              ///< Was the logistic regression problem successfully solved by solve()?
+    VectorX<double> solution;       ///< The solution vector of the logistic regression problem.
 
 }; // class LogisticRegression
 

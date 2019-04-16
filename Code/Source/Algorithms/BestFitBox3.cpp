@@ -121,25 +121,17 @@ planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 &
   Matrix3 rot;
   if (n.y() < -0.999)
   {
-    rot = Matrix3(1,  0,  0,
-                  0, -1,  0,
-                  0,  0, -1);
+    rot << 1,  0,  0,
+           0, -1,  0,
+           0,  0, -1;
   }
   else
   {
-    Quat quat = rotationArc(Vector3::unitY(), n);
+    Quat quat = rotationArc(Vector3::UnitY(), n);
     rot = quat.toRotationMatrix();
   }
 
   cframe = CoordinateFrame3::_fromAffine(AffineTransform3(rot, centroid));
-}
-
-Matrix3
-basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
-{
-  return Matrix3(u.x(), v.x(), w.x(),
-                 u.y(), v.y(), w.y(),
-                 u.z(), v.z(), w.z());
 }
 
 struct OBB
@@ -169,8 +161,8 @@ computeOBB(TheaArray<Vector3> const & points, CoordinateFrame3 const & cframe, O
   for (size_t i = 1; i < points.size(); ++i)
   {
     p = cframe.pointToObjectSpace(points[i]);
-    lo = lo.min(p);
-    hi = hi.max(p);
+    lo = lo.cwiseMin(p);
+    hi = hi.cwiseMax(p);
   }
 
   Vector3 e = hi - lo;
@@ -203,9 +195,7 @@ computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result, bool has_up,
   if (has_up)
   {
     centroid = CentroidN<Vector3, 3>::compute(points.begin(), points.end());
-    Vector3 u, v;
-    up.createOrthonormalBasis(u, v);
-    cframe = CoordinateFrame3::_fromAffine(AffineTransform3(basisMatrix(u, v, up), centroid));
+    cframe = CoordinateFrame3::_fromAffine(AffineTransform3(Math::orthonormalBasis(up), centroid));
   }
   else
   {
@@ -217,7 +207,7 @@ computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result, bool has_up,
   OBB best_obb;
   computeOBB(points, cframe, best_obb, true);
 
-  Matrix3 rot = Matrix3::rotationAxisAngle((has_up ? up : Vector3::unitY()), Math::degreesToRadians(10));
+  Matrix3 rot = Math::rotationAxisAngle((has_up ? up : Vector3::UnitY()), Math::degreesToRadians(10));
   for (int a = 10;  a < 180; a += 10)
   {
     cframe._setRotation(cframe.getRotation() * rot);

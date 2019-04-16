@@ -78,12 +78,12 @@ class /* THEA_API */ DCELVertex
   public:
     /** Default constructor. */
     DCELVertex()
-    : NormalBaseType(Vector3::zero()), leaving(NULL), index(-1), has_precomputed_normal(false), normal_normalization_factor(0)
+    : NormalBaseType(Vector3::Zero()), leaving(NULL), index(-1), has_precomputed_normal(false), normal_normalization_factor(0)
     {}
 
     /** Sets the vertex to have a location. */
     explicit DCELVertex(Vector3 const & p)
-    : PositionBaseType(p), NormalBaseType(Vector3::zero()), leaving(NULL), index(-1), has_precomputed_normal(false),
+    : PositionBaseType(p), NormalBaseType(Vector3::Zero()), leaving(NULL), index(-1), has_precomputed_normal(false),
       normal_normalization_factor(0)
     {}
 
@@ -172,8 +172,11 @@ class /* THEA_API */ DCELVertex
       if (!has_precomputed_normal)
       {
         Vector3 sum_normals = normal_normalization_factor * getNormal() + n;
-        normal_normalization_factor = sum_normals.length();
-        setNormal(normal_normalization_factor < 1e-20 ? Vector3::zero() : sum_normals / normal_normalization_factor);
+        normal_normalization_factor = sum_normals.norm();
+        if (normal_normalization_factor < 1e-20)
+          setNormal(Vector3::Zero());
+        else
+          setNormal(sum_normals / normal_normalization_factor);
       }
     }
 
@@ -185,7 +188,7 @@ class /* THEA_API */ DCELVertex
       else
       {
         Vector3 sum_normals = normal_normalization_factor * getNormal() + new_normal;
-        return sum_normals.unit();
+        return sum_normals.normalized();
       }
     }
 

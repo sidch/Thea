@@ -46,12 +46,11 @@
 #include "KDTreeN.hpp"
 #include "MetricL2.hpp"
 #include "PointTraitsN.hpp"
-#include "SVD.hpp"
 #include "../AffineTransformN.hpp"
 #include "../Math.hpp"
-#include "../MatrixMN.hpp"
+#include "../MatVec.hpp"
 #include "../HyperplaneN.hpp"
-#include "../VectorN.hpp"
+#include <Eigen/SVD>
 
 namespace Thea {
 namespace Algorithms {
@@ -61,8 +60,8 @@ template <typename ScalarT = Real>
 class ICP3
 {
   private:
-    typedef VectorN<3, ScalarT>      VectorT;  ///< 3D vector.
-    typedef MatrixMN<3, 3, ScalarT>  MatrixT;  ///< 3x3 matrix.
+    typedef Vector<3, ScalarT>       VectorT;  ///< 3D vector.
+    typedef Matrix<3, 3, ScalarT>    MatrixT;  ///< 3x3 matrix.
     typedef HyperplaneN<3, ScalarT>  PlaneT;   ///< Plane in 3-space.
 
     /** The default weight per point. */
@@ -93,7 +92,7 @@ class ICP3
     }
 
     /** Set the up vector. Subsequent alignments will only rotate around the up vector. */
-    void setUpVector(VectorT const & up_) { up = up_.unit(); has_up = true; }
+    void setUpVector(VectorT const & up_) { up = up_.normalized(); has_up = true; }
 
     /** Check if the up vector has been set. */
     bool hasUpVector() const { return has_up; }
@@ -329,8 +328,8 @@ class ICP3
       bool use_symmetry = from_sym_plane && to_sym_plane;
 
       // Find centroids of the two sets
-      VectorT p_mean = VectorT::zero();
-      VectorT q_mean = VectorT::zero();
+      VectorT p_mean = VectorT::Zero();
+      VectorT q_mean = VectorT::Zero();
       ScalarT sum_weights = 0;
       for (long i = 0; i < num_pts; ++i)
       {
@@ -361,10 +360,10 @@ class ICP3
       q_mean /= sum_weights;
 
       // Find covariance matrix
-      MatrixT cov(0);
+      MatrixT cov; cov.setZero();
       for (long i = 0; i < num_pts; ++i)
       {
-        VectorT p = PointTraitsN<FromT, 3>::getPosition(from[i]);
+        VectorT p = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
         VectorT q = to[i];
         if (use_symmetry)
         {
@@ -388,25 +387,18 @@ class ICP3
           dq *= weight;
         }
 
-        cov(0, 0) += dp[0] * dq[0];  cov(0, 1) += dp[0] * dq[1];  cov(0, 2) += dp[0] * dq[2];
-        cov(1, 0) += dp[1] * dq[0];  cov(1, 1) += dp[1] * dq[1];  cov(1, 2) += dp[1] * dq[2];
-        cov(2, 0) += dp[2] * dq[0];  cov(2, 1) += dp[2] * dq[1];  cov(2, 2) += dp[2] * dq[2];
+        cov += (dp * dq.transpose());  // outer product
       }
 
-      MatrixT u, v;
-      Vector<ScalarT> d(3);
-      if (!SVD::compute(cov, u, d, v))
-        return AffineTransformT::identity();
+      Eigen::JacobiSVD<MatrixT> svd(cov);
+      MatrixT rot = svd.matrixU() * svd.matrixV().transpose();
 
-      MatrixT rot = (u * v).transpose();
       if (use_symmetry && rot.determinant() < 0)  // matching two planar projections can cause flips in the symmetry plane
       {
         // Generate the transformation that flips in the (origin-centered) target symmetry plane
         VectorT n = to_sym_plane->getNormal();
-        MatrixT nn(n[0] * n[0], n[0] * n[1], n[0] * n[2],
-                   n[1] * n[0], n[1] * n[1], n[1] * n[2],
-                   n[2] * n[0], n[2] * n[1], n[2] * n[2]);
-        MatrixT flip = MatrixT::identity() - static_cast<ScalarT>(2) * nn;
+        MatrixT nn = n * n.transpose();  // outer product
+        MatrixT flip = MatrixT::Identity() - static_cast<ScalarT>(2) * nn;
         rot = flip * rot;
       }
 
@@ -447,8 +439,8 @@ class ICP3
       if (num_pts <= 0)
         return 0;
 
-      VectorT p_mean = VectorT::zero();
-      VectorT q_mean = VectorT::zero();
+      VectorT p_mean = VectorT::Zero();
+      VectorT q_mean = VectorT::Zero();
 
       ScalarT sum_weights = 0;
       for (long i = 0; i < num_pts; ++i)
@@ -474,7 +466,7 @@ class ICP3
       p_mean /= sum_weights;
       q_mean /= sum_weights;
 
-      ScalarT err = (tr * p_mean - q_mean).squaredLength();
+      ScalarT err = (tr * p_mean - q_mean).squaredNorm();
 
       for (long i = 0; i < num_pts; ++i)
       {
@@ -486,10 +478,10 @@ class ICP3
         if (from_weight_func)
         {
           ScalarT weight = (ScalarT)from_weight_func->getRotationWeight(from[i]);
-          err += weight * weight * (tr.getLinear() * dp - dq).squaredLength();
+          err += weight * weight * (tr.getLinear() * dp - dq).squaredNorm();
         }
         else
-          err += (tr.getLinear() * dp - dq).squaredLength();
+          err += (tr.getLinear() * dp - dq).squaredNorm();
       }
 
       return err;

@@ -59,7 +59,7 @@ template <typename MeshT>
 class MeshCodec : public Codec
 {
   public:
-    THEA_DEF_POINTER_TYPES(MeshCodec, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(MeshCodec, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT Mesh;  ///< The mesh type.
     typedef typename MeshGroup<MeshT>::ReadCallback ReadCallback;    ///< Called when a mesh element is read.

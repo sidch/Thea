@@ -58,10 +58,10 @@ template <typename MeshT>
 class MeshGroup : public virtual NamedObject, public DrawableObject, public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(MeshGroup, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(MeshGroup, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT Mesh;  ///< The type of mesh in the group.
-    typedef shared_ptr<Mesh> MeshPtr;  ///< A shared pointer to a mesh.
+    typedef std::shared_ptr<Mesh> MeshPtr;  ///< A shared pointer to a mesh.
 
     /** Interface for callback functions that are called when a vertex or face is deserialized. */
     class ReadCallback
@@ -559,7 +559,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       static CodecOFF<Mesh> const codec_OFF;
       static CodecPLY<Mesh> const codec_PLY;
       static MeshCodec<Mesh> const * codecs[] = { &codec_3DS, &codec_OBJ, &codec_OFF, &codec_PLY };
-      static long NUM_CODECS = (long)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
+      static int NUM_CODECS = (long)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
 
       if (index >= 0 && index < NUM_CODECS)
         return codecs[index];

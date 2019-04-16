@@ -43,83 +43,57 @@
 #define __Thea_Algorithms_LinearSolver_hpp__
 
 #include "../Common.hpp"
-#include "../Array.hpp"
-#include "../CompressedSparseMatrix.hpp"
+#include "../AbstractMatrix.hpp"
 #include "../Map.hpp"
-#include "../Matrix.hpp"
-#include "../MatrixFormat.hpp"
-#include "../MatrixUtil.hpp"
-#include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
-#include "../Vector.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
 /**
- * Interface for solvers of systems of linear equations. The matrices must currently be real. The matrix should be a (row-major
- * or column-major) Matrix, CompressedRowMatrix, or CompressedColumnMatrix. Several other matrix types may be converted to these
- * types by the relevant constructors.
+ * Interface for solvers of systems of linear equations. The matrices must currently be real.
  *
  * If the matrix is square and of full rank, the solver should compute the unique solution. Else, if the matrix is rectangular,
  * it should try to return an approximate solution (typically one that minimizes the squared error). In the latter case, classes
  * implementing the LinearSolver interface may be considered alternatives to the default linear least-squares solvers provided
- * by LinearLeastSquares.
+ * by StdLinearSolver.
  *
  * To create an instance of a LinearSolver, one typically loads the plugin for the relevant implementation and calls
  * LinearSolverFactory::createLinearSolver().
- *
- * @note A derived class typically needs to implement only the solve() function, and optionally getPreferredFormat(). To solve
- * the system <b>Ax = b</b>, the solve() function reads the coefficient matrix <b>A</b> from #coeffs and the constant vector
- * <b>b</b> from #constants. If the system is successfully solved, #has_solution is set to true and the %solution placed in
- * #solution. Else, #has_solution is set to false.
- *
- * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
-class THEA_API LinearSolver : private Noncopyable, public virtual NamedObject
+class THEA_API LinearSolver : public virtual AbstractNamedObject
 {
   public:
     /** Destructor. */
     virtual ~LinearSolver() {}
 
-    /** Set the coefficient matrix (<b>A</b> in <b>Ax = b</b>) of the linear system */
-    template <typename MatrixT> void setCoefficients(MatrixT const & coeffs_)
-    {
-      coeffs.setMatrix(coeffs_, getPreferredFormat(MatrixUtil::getFormat(coeffs_)));
-    }
-
-    /** Set the constant vector (<b>b</b> in <b>Ax = b</b>) of the linear system. */
-    template <typename RealInputIterator>
-    void setConstants(RealInputIterator begin, RealInputIterator end)
-    {
-      constants.set(begin, end);
-    }
-
     /**
      * Solve the system of linear equations. A set of options may be specified to control the solution process.
      *
+     * @param a The coefficient matrix A in the system Ax = b.
+     * @param b The constant vector b in the system Ax = b.
      * @param options Backend-specific options. See the documentation of each derived class wrapping a particular backend.
      *
-     * @return True if the system was successfully solved, else false. (The same value is returned by successive calls to
+     * @return True if the system was successfully solved, else false. (The same value is returned by subsequent calls to
      *   hasSolution().)
      */
-    virtual bool solve(Options const & options = Options()) = 0;
+    virtual bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL) = 0;
+
+    /** Get the size of the solution, which is also the number of columns of the coefficient matrix A. */
+    virtual long dims() const = 0;
 
     /** Was the linear system successfully solved by the last call to solve()? */
-    bool hasSolution() const { return has_solution; }
+    virtual bool hasSolution() const = 0;
 
-    /** Get the solution vector of the linear system. Valid only if hasSolution() returns true. */
-    Vector<double> const & getSolution() const { return solution; }
+    /** Get the solution vector x of the linear system Ax = b. Valid only if hasSolution() returns true. */
+    virtual double const * getSolution() const = 0;
 
-  protected:
-    /** Get the preferred storage format for a matrix in the given input format. */
-    virtual MatrixFormat getPreferredFormat(MatrixFormat input_format) { return input_format; }
-
-    MatrixWrapper<double>  coeffs;        ///< Cached coefficient matrix.
-    Vector<double>         constants;     ///< Cached constant vector.
-    bool                   has_solution;  ///< Was the system successfully solved by the last call to solve()?
-    Vector<double>         solution;      ///< Solution of the linear system.
+    /**
+     * If the squared error || Ax - b ||^2 was computed during the solution process, put it in \a err and return true. Else
+     * return false.
+     */
+    virtual bool getSquaredError(double & err) const = 0;
 
 }; // class LinearSolver
 
@@ -131,7 +105,7 @@ class THEA_API LinearSolverFactory
     virtual ~LinearSolverFactory() {}
 
     /** Create a linear solver with the given name. The linear solver must be destroyed using destroyLinearSolver(). */
-    virtual LinearSolver * createLinearSolver(std::string const & name) = 0;
+    virtual LinearSolver * createLinearSolver(char const * name) = 0;
 
     /** Destroy a linear solver created with createLinearSolver(). */
     virtual void destroyLinearSolver(LinearSolver * linear_solver) = 0;

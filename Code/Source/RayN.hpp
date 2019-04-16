@@ -44,18 +44,18 @@
 
 #include "Common.hpp"
 #include "CoordinateFrameN.hpp"
-#include "VectorN.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
 /** A ray in N-dimensional space, having an originating point and a direction vector (not necessarily unit length). */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RayN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RayN, std::shared_ptr, std::weak_ptr)
 
-    typedef VectorN<N, T> VectorT;  ///< N-dimensional vector.
+    typedef Vector<N, T> VectorT;  ///< N-dimensional vector.
 
     /** Default constructor. Does not initialize anything. */
     RayN() {}
@@ -79,7 +79,7 @@ class /* THEA_API */ RayN
     void setDirection(VectorT const & direction_) { direction = direction_; }
 
     /** Make the direction vector unit length. */
-    void normalizeDirection() { direction.unitize(); }
+    void normalizeDirection() { direction.normalize(); }
 
     /** Transform the ray out of a local frame to world space. */
     RayN toWorldSpace(CoordinateFrameN<N, T> const & frame) const
@@ -101,10 +101,10 @@ class /* THEA_API */ RayN
     VectorT getPoint(T const & t) const { return origin + t * direction; }
 
     /** Get the distance of a point from the ray. */
-    T distance(VectorT const & p) const { return (closestPoint(p) - p).length(); }
+    T distance(VectorT const & p) const { return (closestPoint(p) - p).norm(); }
 
     /** Get the square of the distance of a point from the ray. */
-    T squaredDistance(VectorT const & p) const { return (closestPoint(p) - p).squaredLength(); }
+    T squaredDistance(VectorT const & p) const { return (closestPoint(p) - p).squaredNorm(); }
 
     /** Get the the point on the ray closest to a given point. */
     VectorT closestPoint(VectorT const & p) const
@@ -114,7 +114,7 @@ class /* THEA_API */ RayN
         return origin;
       else
       {
-        T dir_sqlen = direction.squaredLength();
+        T dir_sqlen = direction.squaredNorm();
         if (Math::fuzzyEq(dir_sqlen, static_cast<T>(0)))
           return origin;
 
@@ -127,7 +127,7 @@ class /* THEA_API */ RayN
     /** Get a textual representation of the ray. */
     std::string toString() const
     {
-      return std::string("[origin: ") + origin.toString() + ", direction: " + direction.toString() + ']';
+      return "[origin: " + Thea::toString(origin) + ", direction: " + Thea::toString(direction) + ']';
     }
 
 		private:

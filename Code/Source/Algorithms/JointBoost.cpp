@@ -499,7 +499,7 @@ getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Th
 }
 
 double
-splitQuality(Matrix<double> const & weights, TheaArray<long> const & classes, TheaArray<int> const & accuracy)
+splitQuality(MatrixX<double> const & weights, TheaArray<long> const & classes, TheaArray<int> const & accuracy)
 {
   // We'll define the split quality as
   //
@@ -518,7 +518,7 @@ splitQuality(Matrix<double> const & weights, TheaArray<long> const & classes, Th
 }
 
 void
-getCandidateThresholds(SharingSet const & pos_classes, Matrix<double> const & weights, TheaArray<double> const & features,
+getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & weights, TheaArray<double> const & features,
                        TheaArray<long> const & classes, long max_thresholds, TheaArray<double> & thresholds)
 {
   // A good threshold separates the positive classes from the negative classes. In other words, we want either many positive
@@ -771,12 +771,12 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
   if (new_stump)
     stumps.push_back(new_stump);
 
-  Matrix<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
+  MatrixX<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
   TheaArray<double> feat;
   for (long i = 0; i < num_features; ++i)
   {
     validation_data_.getFeature(i, feat);
-    validation_features.setColumn(i, &feat[0]);
+    validation_features.col(i) = Eigen::Map<VectorXd>(&feat[0], (long)feat.size());
   }
 
   TheaArray<long> validation_classes;
@@ -785,13 +785,13 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
   validation_data_.getClasses(validation_classes);
   validation_data_.getWeights(validation_weights);
 
-  alwaysAssertM((long)validation_classes.size() == validation_features.numRows(),
+  alwaysAssertM((long)validation_classes.size() == validation_features.rows(),
                 "JointBoost: Ground truth classes for validation data do not match number of examples");
 
   double err = 0;
-  for (long i = 0; i < validation_features.numRows(); ++i)
+  for (long i = 0; i < validation_features.rows(); ++i)
   {
-    long predicted = predict(&validation_features.getMutable(i, 0));
+    long predicted = predict(validation_features.row(i).data());
     if (predicted != validation_classes[i])
       err += (validation_weights.empty() ? 1.0 : validation_weights[i]);
   }

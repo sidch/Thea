@@ -43,7 +43,7 @@
 #define __Thea_Algorithms_AnalyticD2ScalarFunction_hpp__
 
 #include "../AddressableMatrix.hpp"
-#include "../CompressedSparseMatrix.hpp"
+#include "../AbstractMatrix.hpp"
 #include "AnalyticD1ScalarFunction.hpp"
 
 namespace Thea {
@@ -56,44 +56,16 @@ namespace Algorithms {
 class THEA_API AnalyticD2ScalarFunction : public AnalyticD1ScalarFunction
 {
   public:
-    THEA_DEF_POINTER_TYPES(AnalyticD2ScalarFunction, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AnalyticD2ScalarFunction, std::shared_ptr, std::weak_ptr)
 
     /** Does the function have a sparse Hessian matrix? */
-    virtual bool hasSparseHessian() const { return false; }
+    virtual bool hasSparseHessian() const = 0;
 
     /** Compute the Hessian of the function at a given point. */
-    virtual void hessianAt(float const * p, AddressableMatrix<float> & result) const = 0;
+    virtual void hessianAt(float const * p, AbstractMatrix<float> & result) const = 0;
 
     /** Compute the Hessian of the function at a given point. */
-    virtual void hessianAt(double const * p, AddressableMatrix<double> & result) const = 0;
-
-    /**
-     * Compute the Hessian of the function at a given point, as a sparse row matrix. This function needs to be specialized only
-     * if hasSparseHessian() returns true.
-     */
-    virtual void hessianAt(float const * p, CompressedRowMatrix<float> & result) const
-    { throw Error("AnalyticD2ScalarFunction: Computation of Hessian as sparse row matrix not implemented"); }
-
-    /**
-     * Compute the Hessian of the function at a given point, as a sparse row matrix. This function needs to be specialized only
-     * if hasSparseHessian() returns true.
-     */
-    virtual void hessianAt(double const * p, CompressedRowMatrix<double> & result) const
-    { throw Error("AnalyticD2ScalarFunction: Computation of Hessian as sparse row matrix not implemented"); }
-
-    /**
-     * Compute the Hessian of the function at a given point, as a sparse column matrix. This function needs to be specialized
-     * only if hasSparseHessian() returns true.
-     */
-    virtual void hessianAt(float const * p, CompressedColumnMatrix<float> & result) const
-    { throw Error("AnalyticD2ScalarFunction: Computation of Hessian as sparse column matrix not implemented"); }
-
-    /**
-     * Compute the Hessian of the function at a given point, as a sparse column matrix. This function needs to be specialized
-     * only if hasSparseHessian() returns true.
-     */
-    virtual void hessianAt(double const * p, CompressedColumnMatrix<double> & result) const
-    { throw Error("AnalyticD2ScalarFunction: Computation of Hessian as sparse column matrix not implemented"); }
+    virtual void hessianAt(double const * p, AbstractMatrix<double> & result) const = 0;
 
 }; // class AnalyticD2ScalarFunction
 

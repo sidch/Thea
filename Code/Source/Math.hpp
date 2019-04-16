@@ -44,7 +44,6 @@
 
 #include "Common.hpp"
 #include "Random.hpp"
-#include <boost/math/special_functions/fpclassify.hpp>
 #include <cmath>
 #include <limits>
 
@@ -194,13 +193,13 @@ padPeriodic(int i, int period)
 }
 
 /** Check if a number is finite (neither infinity nor NaN). */
-template <class T> bool isFinite(T const & t) { return boost::math::isfinite(t); }
+template <class T> bool isFinite(T const & t) { return std::isfinite(t); }
 
 /** Check if a number represents (positive or negative) infinity. */
-template <class T> bool isInfinite(T const & t) { return boost::math::isinf(t); }
+template <class T> bool isInfinite(T const & t) { return std::isinf(t); }
 
 /** Check if a number represents NaN ("not a number", for instance the result of 0/0). */
-template <class T> bool isNaN(T const & t) { return boost::math::isnan(t); }
+template <class T> bool isNaN(T const & t) { return std::isnan(t); }
 
 /** Representation of infinity. Don't compare against this value directly. */
 template <class T> T inf() { return std::numeric_limits<T>::infinity(); }

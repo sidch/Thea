@@ -57,8 +57,7 @@
 
 #include "Common.hpp"
 #include "Math.hpp"
-#include "Matrix3.hpp"
-#include "Vector3.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -72,7 +71,7 @@ namespace Thea {
  * a rotation by A about axis v has the form [sin(A/2)*v, cos(A/2)]. For a unit quaternion, q.conj() == q.inverse() is a
  * rotation by -A about v. -q is the same rotation as q (negate both the axis and angle).
  *
- * A non-unit quaterion q represents the same rotation as q.unitize() (Dam98 pg 28).
+ * A non-unit quaterion q represents the same rotation as q.normalize() (Dam98 pg 28).
  *
  * Although quaternion-vector operations (eg. Quat + Vector3) are well defined, they are not supported by this class because
  * they typically are bugs when they appear in code.
@@ -294,16 +293,16 @@ class THEA_API Quat
       return (*this) * other.inverse();
     }
 
-    /** Get the square of the length of the quaternion. */
-    Real squaredLength() const { return dot(*this); }
+    /** Get the square of the magnitude of the quaternion. */
+    Real squaredNorm() const { return dot(*this); }
 
-    /** Get the length of the quaternion. */
-    Real length() const { return std::sqrt(squaredLength()); }
+    /** Get the magnitude of the quaternion. */
+    Real norm() const { return std::sqrt(squaredNorm()); }
 
     /** Check if the length is nearly 1. */
     bool isUnit(Real tolerance = 1e-5) const
     {
-      return std::abs(squaredLength() - 1.0f) < tolerance;
+      return std::abs(squaredNorm() - 1.0f) < tolerance;
     }
 
     /** Logarithm of the quaternion. */
@@ -330,10 +329,10 @@ class THEA_API Quat
       else
       {
         // Partly imaginary.
-        Real imag_len = v.length();
+        Real imag_len = v.norm();
         Real theta = std::atan2(imag_len, s);
         Real t = theta / imag_len;
-        return Quat(v * t, std::log(length()));
+        return Quat(v * t, std::log(norm()));
       }
     }
 
@@ -345,7 +344,7 @@ class THEA_API Quat
     {
       alwaysAssertM(s == 0, "Quat: exp only defined for vector quaternions");
 
-      Real imag_len = v.length();
+      Real imag_len = v.norm();
       Vector3 u = v / imag_len;
       return Quat(std::sin(imag_len) * u, std::cos(imag_len));
     }
@@ -364,15 +363,15 @@ class THEA_API Quat
     }
 
     /** Scale the quaternion to unit length. */
-    void unitize()
+    void normalize()
     {
-      *this = unit();
+      *this = normalized();
     }
 
     /** Get a unit quaternion by dividing by the length. */
-    Quat unit() const
+    Quat normalized() const
     {
-      Real len = length();
+      Real len = norm();
       if (std::abs(len) < 32 * std::numeric_limits<Real>::min())
         return zero();
       else

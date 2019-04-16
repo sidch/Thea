@@ -524,7 +524,7 @@ class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
     void parseQuotedString(char delimiter, Token & t);
 
   public:
-    THEA_DEF_POINTER_TYPES(TextInputStream, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(TextInputStream, std::shared_ptr, std::weak_ptr)
 
     /** Thrown when a token cannot be read. */
     class THEA_API TokenException : public ParseError

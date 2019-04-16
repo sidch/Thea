@@ -10,7 +10,7 @@ If you find a bug, please let me know promptly. Thank you!
 *Thea* is a library of C++ classes for computer graphics, primarily for [3D geometry processing](https://www.cse.iitb.ac.in/~cs749/spr2017). It is the core library I use for nearly all my research projects, and it is also the core library for [Adobe Fuse](https://www.adobe.com/products/fuse.html), which I originally authored. As such, it is developed for personal use and its features reflect this: please do not write to me to asking for specific features to be included. However, over time, it has become quite general-purpose. Among its features are:
 
 * Polygon mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and a lightweight one designed only for rendering.
-* General linear algebra including fixed and dynamic size matrices and vectors. For specialized or heavily optimized applications, use something more focused like [Eigen](http://eigen.tuxfamily.org) instead.
+* General linear algebra via [Eigen](http://eigen.tuxfamily.org), geometric transformations (e.g. rigid transforms), shared-library-safe pure virtual wrappers for matrices, and easy-to-use interfaces to various solver packages (NNLS, CSPARSE, ARPACK).
 * 2, 3 and N-dimensional geometric primitives, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
 * An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete exponential maps, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic image processing (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
@@ -30,7 +30,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Installing the dependencies
 
-*Thea* relies on [Boost](https://www.boost.org/), [lib3ds](https://code.google.com/archive/p/lib3ds/), [FreeImage](http://freeimage.sourceforge.net/) and [ARPACK](http://www.caam.rice.edu/software/ARPACK/). A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
+*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
 
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell
@@ -105,19 +105,17 @@ If you're using CMake for your own code, a convenient `FindThea.cmake` module in
 
 Here is a simple "Hello World" example:
 ```cpp
-#include <Thea/Matrix3.hpp>
-#include <Thea/Vector3.hpp>
+#include <Thea/MatVec.hpp>
 
-int
-main(int argc, char * argv[])
+int main(int argc, char * argv[])
 {
   using namespace Thea;
 
-  Vector3 v(1, 2, 3);
-  Matrix3 m = Matrix3::rotationArc(Vector3::unitX(), Vector3::unitY());
+  Vector3 v(1.0, 2.0, 3.0);
+  Matrix3 m = Math::rotationArc(Vector3(1, 0, 0), Vector3(0, 1, 0));
 
   // Automatically adds newline and synchronization to std::cout...
-  THEA_CONSOLE << "Hello world! The product is " << m * v;
+  THEA_CONSOLE << "Hello world! The product is " << toString(m * v);
 }
 ```
 For real-world samples, see the applications in the `Thea/Code/Source/Tools` folder.

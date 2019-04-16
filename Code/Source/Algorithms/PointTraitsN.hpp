@@ -43,10 +43,8 @@
 #define __Thea_Algorithms_PointTraitsN_hpp__
 
 #include "../Common.hpp"
-#include "../VectorN.hpp"
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_pointer.hpp>
+#include "../MatVec.hpp"
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -61,7 +59,7 @@ namespace Algorithms {
  *
  * @see TraitsN
  */
-template <typename T, long N, typename Enable = void>
+template <typename T, int N, typename Enable = void>
 class /* THEA_API */ IsPointN
 {
   public:
@@ -69,34 +67,34 @@ class /* THEA_API */ IsPointN
 };
 
 // Partial specialization for const and pointer types
-template <typename T, long N> class IsPointN<T const, N>  { public: static bool const value = IsPointN<T, N>::value; };
-template <typename T, long N> class IsPointN<T *, N>      { public: static bool const value = IsPointN<T, N>::value; };
+template <typename T, int N> class IsPointN<T const, N>  { public: static bool const value = IsPointN<T, N>::value; };
+template <typename T, int N> class IsPointN<T *, N>      { public: static bool const value = IsPointN<T, N>::value; };
 
-// Specialization for VectorN
-template <long N, typename ScalarT>
-class /* THEA_API */ IsPointN< VectorN<N, ScalarT>, N >
+// Specialization for Vector
+template <int N, typename ScalarT>
+class /* THEA_API */ IsPointN< Vector<N, ScalarT>, N >
 {
   public:
     static bool const value = true;
 };
 
 /** Same as IsPointN (no need to specialize it separately), except false for const or pointer types. */
-template <typename T, long N>
+template <typename T, int N>
 class /* THEA_API */ IsRawPointN
 {
   public:
     static bool const value = IsPointN<T, N>::value
-                           && !boost::is_const<T>::value
-                           && !boost::is_pointer<T>::value;
+                           && !std::is_const<T>::value
+                           && !std::is_pointer<T>::value;
 };
 
 /** Same as IsPointN (no need to specialize it separately), except false for pointer types. */
-template <typename T, long N>
+template <typename T, int N>
 class /* THEA_API */ IsNonReferencedPointN
 {
   public:
     static bool const value = IsPointN<T, N>::value
-                           && !boost::is_pointer<T>::value;
+                           && !std::is_pointer<T>::value;
 };
 
 //=============================================================================================================================
@@ -108,11 +106,11 @@ class /* THEA_API */ IsNonReferencedPointN
  *
  * @see IsPointN
  */
-template <typename PointT, long N, typename ScalarT = Real>
+template <typename PointT, int N, typename ScalarT = Real>
 class /* THEA_API */ PointTraitsN
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;  ///< A vector in N-space.
+    typedef Vector<N, ScalarT> VectorT;  ///< A vector in N-space.
 
     /** Get the position of the "point". The default implementation is for Vector and types implicitly convertible to it. */
     static VectorT getPosition(PointT const & p) { return p; }
@@ -120,22 +118,22 @@ class /* THEA_API */ PointTraitsN
 }; // class PointTraitsN
 
 // Partial specialization of PointTraitsN for const types
-template <typename PointT, long N, typename ScalarT>
+template <typename PointT, int N, typename ScalarT>
 class /* THEA_API */ PointTraitsN<PointT const, N, ScalarT>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     static VectorT getPosition(PointT const & p) { return PointTraitsN<PointT, N, ScalarT>::getPosition(p); }
 
 }; // class PointTraitsN<PointT const, N, ScalarT>
 
 // Partial specialization of PointTraitsN for pointer types
-template <typename PointT, long N, typename ScalarT>
+template <typename PointT, int N, typename ScalarT>
 class /* THEA_API */ PointTraitsN<PointT *, N, ScalarT>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     static VectorT getPosition(PointT * p) { return PointTraitsN<PointT, N, ScalarT>::getPosition(*p); }
 

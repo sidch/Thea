@@ -50,9 +50,8 @@
 #ifndef THEA_NO_ZERNIKE
 
 #include "../Common.hpp"
-#include "../AddressableMatrix.hpp"
-#include "../Array.hpp"
-#include "../VectorN.hpp"
+#include "../AbstractAddressableMatrix.hpp"
+#include "../MatVec.hpp"
 #include <boost/multi_array.hpp>
 #include <complex>
 
@@ -69,6 +68,9 @@ namespace Algorithms {
 class THEA_API Zernike2
 {
   public:
+    /** The matrix type storing N-dimensional moments. Each column is a moment. */
+    template <int N, typename ScalarT> using MomentMatrix = Matrix< N, Eigen::Dynamic, std::complex<ScalarT> >;
+
     /** %Options for generating Zernike moments. */
     struct THEA_API Options
     {
@@ -93,30 +95,10 @@ class THEA_API Zernike2
     long numMoments() const { return opts.angular_steps * opts.radial_steps; }
 
     /**
-     * Compute Zernike moments of a 2D distribution, represented as a matrix of single-dimensional density values.
-     *
-     * @param distrib The distribution represented as an addressable matrix of single-dimensional density values.
-     * @param center_x The x-coordinate (column) of the center of the non-zero region of the distribution, in matrix
-     *   coordinates.
-     * @param center_y The y-coordinate (row) of the center of the non-zero region of the distribution, in matrix coordinates.
-     * @param radius The radius of the non-zero region of the distribution, measured from the center, in matrix coordinates. All
-     *   zero elements can be ignored when specifying this number.
-     * @param moments Used to return the Zernike moments, specified in "angle-major, radius-minor" order.
-     *
-     * @return The number of pixels that have non-zero values and were used to compute the moments.
-     */
-    template <typename AddressableMatrixT, typename ScalarT>
-    long compute(AddressableMatrixT const & distrib, double center_x, double center_y, double radius,
-                 TheaArray< std::complex<ScalarT> > & moments) const
-    {
-      return computeImpl<ScalarT>(distrib, center_x, center_y, radius, moments);
-    }
-
-    /**
-     * Compute Zernike moments of a 2D distribution, represented as a matrix of multidimensional density values (such as vectors
-     * or colors). The density values should allow array addressing (<code>operator[](long i)</code>) and should have a
-     * constructor that takes 0 as the (only) argument and constructs the zero density. The template parameter N, inferred from
-     * the last argument, must be the same as the number of dimensions of the input.
+     * Compute Zernike moments of a 2D distribution, represented as a matrix of single- or multi-dimensional density values
+     * (such as reals, vectors or colors). If the density values have more than one dimension, they should allow array
+     * addressing (<code>operator[](long i)</code>). The template parameter N, inferred from the last argument, must be the same
+     * as the number of dimensions of the input.
      *
      * @param distrib The distribution represented as an addressable matrix of density values.
      * @param center_x The x-coordinate (column) of the center of the non-zero region of the distribution, in matrix
@@ -124,44 +106,50 @@ class THEA_API Zernike2
      * @param center_y The y-coordinate (row) of the center of the non-zero region of the distribution, in matrix coordinates.
      * @param radius The radius of the non-zero region of the distribution, measured from the center, in matrix coordinates. All
      *   zero elements can be ignored when specifying this number.
-     * @param moments Used to return the Zernike moments, specified in "angle-major, radius-minor" order.
+     * @param moments Used to return the Zernike moments, specified in "angle-major, radius-minor" order. Each moment is a
+     *   column of the matrix.
      *
      * @return The number of pixels that have non-zero values and were used to compute the moments.
      */
-    template <typename AddressableMatrixT, long N, typename ScalarT>
-    long compute(AddressableMatrixT const & distrib, double center_x, double center_y, double radius,
-                 TheaArray< VectorN< N, std::complex<ScalarT> > > & moments) const
-    {
-      return computeImpl<ScalarT>(distrib, center_x, center_y, radius, moments);
-    }
+    template <int N, typename T, typename ScalarT>
+    long compute(AbstractAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
+                 MomentMatrix<N, ScalarT> & moments) const;
 
   private:
-    /** Helper function that actually computes the moments. */
-    template <typename ScalarT, typename AddressableMatrixT, typename U>
-    long computeImpl(AddressableMatrixT const & distrib, double center_x, double center_y, double radius,
-                     TheaArray<U> & moments) const;
-
     /** Generate lookup table for moments. */
     void generateBasisLUT() const;
 
-    /** Add a single-dimensional scaled increment. */
-    template <typename U, typename ScalarT>
-    static void accum(U const & u, std::complex<double> const & x, std::complex<ScalarT> & acc)
+    /**
+     * Check if an input element (type T) is zero. This is the generic implementation for multi-channel inputs. The
+     * single-channel case is separately specialized.
+    */
+    template <int N> struct IsZero
     {
-      acc.real(acc.real() + static_cast<ScalarT>(x.real() * u));
-      acc.imag(acc.imag() - static_cast<ScalarT>(x.imag() * u));
-    }
-
-    /** Add a multidimensional scaled increment. */
-    template <typename U, long N, typename ScalarT>
-    static void accum(U const & u, std::complex<double> const & x, VectorN< N, std::complex<ScalarT> > & acc)
-    {
-      for (long i = 0; i < N; ++i)
+      template <typename T> static bool check(T const & t)
       {
-        acc[i].real(acc[i].real() + static_cast<ScalarT>(x.real() * u[i]));
-        acc[i].imag(acc[i].imag() - static_cast<ScalarT>(x.imag() * u[i]));
+        for (long i = 0; i < N; ++i)
+          if (t[i] != 0) return false;
+
+        return true;
       }
-    }
+    };
+
+    /**
+     * Add a scaled increment to a moment. This is the generic implementation for multi-channel inputs. The single-channel case
+     * is separately specialized.
+     */
+    template <int N, typename ScalarT> struct Accum
+    {
+      template <typename T>
+      static void add(T const & t, std::complex<double> const & x, typename MomentMatrix<N, ScalarT>::ColXpr acc)
+      {
+        for (long i = 0; i < acc.size(); ++i)
+        {
+          acc[i].real(acc[i].real() + static_cast<ScalarT>(x.real() * t[i]));
+          acc[i].imag(acc[i].imag() - static_cast<ScalarT>(x.imag() * t[i]));
+        }
+      }
+    };
 
     typedef boost::multi_array< std::complex<double>, 4 > LUT;  ///< Lookup table class.
 
@@ -171,23 +159,41 @@ class THEA_API Zernike2
 
 }; // class Zernike2
 
-template <typename ScalarT, typename AddressableMatrixT, typename U>
+// Specializations for single-channel input.
+template <>
+struct Zernike2::IsZero<1>
+{
+  template <typename T> static bool check(T const & t)
+  {
+    return t != 0;
+  }
+};
+
+template <typename ScalarT>
+struct Zernike2::Accum<1, ScalarT>
+{
+  template <typename T>
+  static void add(T const & t, std::complex<double> const & x, typename MomentMatrix<1, ScalarT>::ColXpr & acc)
+  {
+    acc[0].real(acc[0].real() + static_cast<ScalarT>(x.real() * t));
+    acc[0].imag(acc[0].imag() - static_cast<ScalarT>(x.imag() * t));
+  }
+};
+
+template <int N, typename T, typename ScalarT>
 long
-Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, double center_y, double radius,
-                      TheaArray<U> & moments) const
+Zernike2::compute(AbstractAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
+                  Zernike2::MomentMatrix<N, ScalarT> & moments) const
 {
   alwaysAssertM(radius > 0, "Zernike2: Radius must be greater than zero");
 
-  static typename AddressableMatrixT::Value const IN_ZERO(0);
-  static U const OUT_ZERO(std::complex<ScalarT>(0, 0));
-
   this->generateBasisLUT();
 
-  moments.resize(numMoments());
-  std::fill(moments.begin(), moments.end(), OUT_ZERO);
+  moments.resize(Eigen::NoChange, numMoments());
+  moments.setZero();
 
-  int ncols = distrib.numColumns();
-  int nrows = distrib.numRows();
+  int ncols = distrib.cols();
+  int nrows = distrib.rows();
 
   // Don't go outside the specified radius
   int min_x = std::max(0,         (int)std::ceil (center_x - radius));
@@ -206,8 +212,8 @@ Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, doubl
   {
     for (int x = min_x; x <= max_x; ++x)
     {
-      typename AddressableMatrixT::Value const & density = distrib.get(y, x);
-      if (density != IN_ZERO)
+      T const & density = distrib.at(y, x);
+      if (!IsZero<N>::check(density))
       {
         dx = x - center_x;
         dy = y - center_y;
@@ -227,7 +233,7 @@ Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, doubl
             x2 = lut[p][r][ix][iy + 1] + (lut[p][r][ix + 1][iy + 1] - lut[p][r][ix][iy + 1]) * dx;
             x3 = x1 + (x2 - x1) * dy;
 
-            accum(density, x3, moments[p * opts.radial_steps + r]);
+            Accum<N, ScalarT>::add(density, x3, moments.col(p * opts.radial_steps + r));
           }
         }
 
@@ -237,10 +243,7 @@ Zernike2::computeImpl(AddressableMatrixT const & distrib, double center_x, doubl
   }
 
   if (count > 0)
-  {
-    for (size_t i = 0; i < moments.size(); ++i)
-      moments[i] /= (ScalarT)count;
-  }
+    moments /= (ScalarT)count;
 
   return count;
 }

@@ -96,7 +96,7 @@ App::optsToString() const
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
       << "\n  flat = " << opts.flat
-      << "\n  material = " << opts.material.toString()
+      << "\n  material = " << toString(opts.material)
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
       << "\n  point-scale = " << opts.point_scale
@@ -145,9 +145,9 @@ parseModel(std::string const & str, std::string & path, AffineTransform3 & trans
       return false;
     }
 
-    transform = AffineTransform3(Matrix3(m[0][0], m[0][1], m[0][2],
-                                         m[1][0], m[1][1], m[1][2],
-                                         m[2][0], m[2][1], m[2][2]),
+    transform = AffineTransform3((Matrix3() << m[0][0], m[0][1], m[0][2],
+                                               m[1][0], m[1][1], m[1][2],
+                                               m[2][0], m[2][1], m[2][2]).finished(),
                                  Vector3(m[0][3], m[1][3], m[2][3]));
   }
   else

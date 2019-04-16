@@ -102,10 +102,10 @@ Camera::updateCachedProjectionTransform() const
   if (proj_changed)
   {
     cached_proj_transform = (projection_type == ProjectionType::ORTHOGRAPHIC)
-        ? Matrix4::orthogonalProjection(left, right, bottom, top, near_dist, far_dist,
-                                        proj_y_dir == ProjectedYDirection::UP ? true : false)
-        : Matrix4::perspectiveProjection(left, right, bottom, top, near_dist, far_dist,
-                                         proj_y_dir == ProjectedYDirection::UP ? true : false);
+        ? Math::orthogonalProjection(left, right, bottom, top, near_dist, far_dist,
+                                     proj_y_dir == ProjectedYDirection::UP ? true : false)
+        : Math::perspectiveProjection(left, right, bottom, top, near_dist, far_dist,
+                                      proj_y_dir == ProjectedYDirection::UP ? true : false);
 
     cached_inv_proj_transform = cached_proj_transform.inverse();
 
@@ -117,7 +117,7 @@ Ray3
 Camera::computePickRay(Vector2 const & screen_pos) const
 {
   Vector2 p = 0.5f * (screen_pos + Vector2(1, 1));
-  Ray3 view_ray(Vector3::zero(), Vector3(left + p.x() * (right - left), bottom + p.y() * (top - bottom), -near_dist).unit());
+  Ray3 view_ray(Vector3::Zero(), Vector3(left + p.x() * (right - left), bottom + p.y() * (top - bottom), -near_dist).normalized());
   return view_ray.toWorldSpace(frame);
 }
 
@@ -125,7 +125,7 @@ std::string
 Camera::toString() const
 {
   std::ostringstream oss;
-  oss << "Frame = [R: "  << frame.getRotation().toString() << ", T: " << frame.getTranslation().toString() << ']'
+  oss << "Frame = " << frame.toString()
       << ", ProjectionType = " << ((projection_type == ProjectionType::ORTHOGRAPHIC) ? "Orthographic" : "Perspective")
       << ", Left = "   << left   << ", Right = " << right
       << ", Bottom = " << bottom << ", Top = "   << top

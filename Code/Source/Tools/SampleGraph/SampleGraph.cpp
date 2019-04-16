@@ -8,9 +8,7 @@
 #include "../../AffineTransform3.hpp"
 #include "../../Array.hpp"
 #include "../../FilePath.hpp"
-#include "../../Matrix.hpp"
-#include "../../Vector3.hpp"
-#include <boost/algorithm/string/trim.hpp>
+#include "../../MatVec.hpp"
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -65,7 +63,7 @@ struct DistanceCallback
     return false;
   }
 
-  Matrix<double> m;
+  MatrixX<double> m;
   long current_source;
 };
 
@@ -179,9 +177,9 @@ main(int argc, char * argv[])
     }
 
     ofstream d_out(FilePath::changeExtension(out_path, "dist").c_str());
-    for (long r = 0; r < distance_callback.m.numRows(); ++r)
+    for (long r = 0; r < distance_callback.m.rows(); ++r)
     {
-      for (long c = 0; c < distance_callback.m.numColumns(); ++c)
+      for (long c = 0; c < distance_callback.m.cols(); ++c)
       {
         if (c > 0) d_out << ' ';
         d_out << distance_callback.m(r, c);
@@ -245,14 +243,14 @@ main(int argc, char * argv[])
       for (size_t i = 0; i < sample_positions.size(); ++i)
         samples_bounds.merge(sample_positions[i]);
 
-      Real scale_error = (mesh_bounds.getLow()  - samples_bounds.getLow()).length()
-                       + (mesh_bounds.getHigh() - samples_bounds.getHigh()).length();
-      if (scale_error > 0.01 * mesh_bounds.getExtent().length())
+      Real scale_error = (mesh_bounds.getLow()  - samples_bounds.getLow()).norm()
+                       + (mesh_bounds.getHigh() - samples_bounds.getHigh()).norm();
+      if (scale_error > 0.01 * mesh_bounds.getExtent().norm())
       {
-        // Rescale the mesh
-        Real scale = (samples_bounds.getExtent() / mesh_bounds.getExtent()).max();  // samples give a smaller bound than the
-                                                                                    // true bound, so take the axis in which
-                                                                                    // the approximation is best
+        // Rescale the mesh.
+        Real scale = (samples_bounds.getExtent().cwiseQuotient(mesh_bounds.getExtent())).maxCoeff();  // samples give a smaller
+                                                                                     // bound than the  true bound, so take the
+                                                                                     // axis in which the approximation is best
 
         AffineTransform3 tr = AffineTransform3::translation(samples_bounds.getCenter())
                             * AffineTransform3::scaling(scale)
@@ -373,7 +371,7 @@ loadSamples(string const & samples_path, TheaArray<Vector3> & positions, TheaArr
     {
       line_num++;
 
-      boost::trim(line);
+      line = trimWhitespace(line);
       if (line.empty())
         continue;
 

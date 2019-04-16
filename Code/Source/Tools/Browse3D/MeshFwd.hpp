@@ -71,10 +71,10 @@ typedef Graphics::GeneralMeshVertex<VertexAttribute, Graphics::NullAttribute, Fa
 typedef Graphics::GeneralMeshFace<VertexAttribute, Graphics::NullAttribute, FaceAttribute, std::allocator> MeshFace;
 
 typedef Graphics::MeshGroup<Mesh> MeshGroup;            ///< A hierarchical group of meshes.
-typedef shared_ptr<Mesh> MeshPtr;                       ///< A shared pointer to a mesh.
-typedef shared_ptr<Mesh const> MeshConstPtr;            ///< A shared pointer to an immutable mesh.
-typedef shared_ptr<MeshGroup> MeshGroupPtr;             ///< A shared pointer to a group of meshes.
-typedef shared_ptr<MeshGroup const> MeshGroupConstPtr;  ///< A shared pointer to an immutable group of meshes.
+typedef std::shared_ptr<Mesh> MeshPtr;                       ///< A shared pointer to a mesh.
+typedef std::shared_ptr<Mesh const> MeshConstPtr;            ///< A shared pointer to an immutable mesh.
+typedef std::shared_ptr<MeshGroup> MeshGroupPtr;             ///< A shared pointer to a group of meshes.
+typedef std::shared_ptr<MeshGroup const> MeshGroupConstPtr;  ///< A shared pointer to an immutable group of meshes.
 
 } // namespace Browse3D
 

@@ -45,22 +45,26 @@
 #include "Common.hpp"
 #include "LineN.hpp"
 #include "Math.hpp"
+#include "MatVec.hpp"
 #include "RayN.hpp"
-#include "VectorN.hpp"
 
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class LineSegmentN;
-template <long N, typename T> class AxisAlignedBoxN;
+template <int N, typename T> class LineSegmentN;
+template <int N, typename T> class AxisAlignedBoxN;
 
 namespace Internal {
 
 // Get the closest pair of points between two line segments, and the square of the distance between them. Adapted from Christer
 // Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
-template <long N, typename T> T closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, bool is_line1,
-                                                        VectorN<N, T> const & p2, VectorN<N, T> const & q2, bool is_line2,
-                                                        T & s, T & t, VectorN<N, T> & c1, VectorN<N, T> & c2);
+template <int N, typename T> T closestPtSegmentSegment(Eigen::MatrixBase< Vector<N, T> > const & p1,
+                                                        Eigen::MatrixBase< Vector<N, T> > const & q1, bool is_line1,
+                                                        Eigen::MatrixBase< Vector<N, T> > const & p2,
+                                                        Eigen::MatrixBase< Vector<N, T> > const & q2, bool is_line2,
+                                                        T & s, T & t,
+                                                        Eigen::MatrixBase< Vector<N, T> > & c1,
+                                                        Eigen::MatrixBase< Vector<N, T> > & c2);
 
 /**
  * <b>[Internal]</b> Base class for straight line segments in N-dimensional space, where N is any <b>positive</b> (non-zero)
@@ -68,14 +72,14 @@ template <long N, typename T> T closestPtSegmentSegment(VectorN<N, T> const & p1
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ LineSegmentNBase
 {
   public:
     typedef LineSegmentN<N, T>  LineSegmentT;  ///< N-dimensional straight line.
-    typedef VectorN<N, T>       VectorT;       ///< N-dimensional vector.
+    typedef Vector<N, T>        VectorT;       ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(LineSegmentT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(LineSegmentT, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor, does not initialize the segment. */
     LineSegmentNBase() {}
@@ -95,10 +99,10 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     VectorT getPoint(Real t) const { return point + t * direction; }
 
     /** Get the length of the line segment. */
-    T length() const { return direction.length(); }
+    T length() const { return direction.norm(); }
 
     /** Get the square of the length of the line segment. */
-    T squaredLength() const { return direction.squaredLength(); }
+    T squaredLength() const { return direction.squaredNorm(); }
 
     /** Get the distance of the line from a given point. */
     T distance(VectorT const & p) const
@@ -109,7 +113,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     /** Get the square of the distance of the line from a given point. */
     T squaredDistance(VectorT const & p) const
     {
-      return (p - closestPoint(p)).squaredLength();
+      return (p - closestPoint(p)).squaredNorm();
     }
 
     /** Get the point on the line closest to a given point. */
@@ -117,7 +121,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       // Taken from G3D::LineSegment
 
-      T d2 = direction.squaredLength();
+      T d2 = direction.squaredNorm();
       if (Math::fuzzyEq(d2, static_cast<T>(0)))
         return point;
 
@@ -128,8 +132,8 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
       T t = direction.dot(v);
 
       // Avoid some square roots. Derivation:
-      //    t / direction.length() <= direction.length()
-      //    t <= direction.squaredLength()
+      //    t / direction.norm() <= direction.norm()
+      //    t <= direction.squaredNorm()
 
       if (t >= 0 && t <= d2)
       {
@@ -141,10 +145,10 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
         // The point does not fall within the segment; see which end is closer.
 
         // Distance from 0, squared
-        T d0_squared = v.squaredLength();
+        T d0_squared = v.squaredNorm();
 
         // Distance from 1, squared
-        T d1_squared = (v - direction).squaredLength();
+        T d1_squared = (v - direction).squaredNorm();
 
         if (d0_squared < d1_squared)  // point 0 is closer
           return point;
@@ -164,13 +168,13 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment(point, point + direction, false, other.point, other.point + other.direction, false,
-                                        s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, other.point,
+                                              (other.point + other.direction).eval(), false, s, t, c1, c2);
 
       if (this_pt)  *this_pt  = c1;
       if (other_pt) *other_pt = c2;
 
-      return (c1 - c2).squaredLength();
+      return (c1 - c2).squaredNorm();
     }
 
     /** Get the distance of this segment from an infinite line. */
@@ -184,13 +188,13 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment(point, point + direction, false, line.getPoint(), line.getPoint() + line.getDirection(),
-                                        true, s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, line.getPoint(),
+                                              (line.getPoint() + line.getDirection()).eval(), true, s, t, c1, c2);
 
       if (this_pt) *this_pt = c1;
       if (line_pt) *line_pt = c2;
 
-      return (c1 - c2).squaredLength();
+      return (c1 - c2).squaredNorm();
     }
 
     /** Get the distance of this segment from a ray. */
@@ -204,15 +208,15 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment(point, point + direction, false, ray.getOrigin(), ray.getOrigin() + ray.getDirection(),
-                                        true, s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, ray.getOrigin(),
+                                              (ray.getOrigin() + ray.getDirection()).eval(), true, s, t, c1, c2);
       if (t < 0)
         c2 = ray.getOrigin();
 
       if (this_pt) *this_pt = c1;
       if (ray_pt)  *ray_pt  = c2;
 
-      return (c1 - c2).squaredLength();
+      return (c1 - c2).squaredNorm();
     }
 
     /** Get a bounding box for the line segment. */
@@ -232,7 +236,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
 } // namespace Internal
 
 /** A straight line in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ LineSegmentN : public Internal::LineSegmentNBase<N, T>
 {
   private:
@@ -251,19 +255,21 @@ class /* THEA_API */ LineSegmentN : public Internal::LineSegmentNBase<N, T>
 
 namespace Internal {
 
-template <long N, typename T>
+template <int N, typename T>
 T
-closestPtSegmentSegment(VectorN<N, T> const & p1, VectorN<N, T> const & q1, bool is_line1,
-                        VectorN<N, T> const & p2, VectorN<N, T> const & q2, bool is_line2,
-                        T & s, T & t, VectorN<N, T> & c1, VectorN<N, T> & c2)
+closestPtSegmentSegment(Eigen::MatrixBase< Vector<N, T> > const & p1, Eigen::MatrixBase< Vector<N, T> > const & q1,
+                        bool is_line1,
+                        Eigen::MatrixBase< Vector<N, T> > const & p2, Eigen::MatrixBase< Vector<N, T> > const & q2,
+                        bool is_line2,
+                        T & s, T & t, Eigen::MatrixBase< Vector<N, T> > & c1, Eigen::MatrixBase< Vector<N, T> > & c2)
 {
-  typedef VectorN<N, T> VectorT;
+  typedef Vector<N, T> VectorT;
 
   VectorT d1 = q1 - p1;  // Direction vector of segment S1
   VectorT d2 = q2 - p2;  // Direction vector of segment S2
   VectorT r = p1 - p2;
-  T a = d1.squaredLength();  // Squared length of segment S1, always nonnegative
-  T e = d2.squaredLength();  // Squared length of segment S2, always nonnegative
+  T a = d1.squaredNorm();  // Squared length of segment S1, always nonnegative
+  T e = d2.squaredNorm();  // Squared length of segment S2, always nonnegative
   T f = d2.dot(r);
 
   // Check if either or both segments degenerate into points

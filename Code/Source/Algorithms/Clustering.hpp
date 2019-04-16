@@ -46,7 +46,7 @@
 #include "../Array.hpp"
 #include "../CompressedSparseMatrix.hpp"
 #include "../Math.hpp"
-#include "../Matrix.hpp"
+#include "../MatVec.hpp"
 #include "Metrics.hpp"
 
 #ifdef THEA_ENABLE_CLUTO
@@ -67,7 +67,7 @@ class THEA_API Clustering
 #endif
 
   public:
-    THEA_DEF_POINTER_TYPES(Clustering, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Clustering, std::shared_ptr, std::weak_ptr)
 
     /** Flat clustering methods (enum class). */
     struct THEA_API FlatMethod
@@ -249,7 +249,7 @@ class THEA_API Clustering
 
     /**
      * Compute a flat clustering for a set of points. The class <code>T</code> should be a basic numeric type
-     * (int/float/double...), Vector2, Vector3, Vector4 or VectorN.
+     * (int/float/double...), Vector2, Vector3, Vector4 or Vector.
      *
      * @param points Input points.
      * @param labels %Clustering results, each entry is the label of the cluster containing the point.
@@ -294,8 +294,8 @@ class THEA_API Clustering
             // Analysis", UMN CS 01-040, 2001, for choice of criterion function in each case
             case FlatMethod::CLUTO_CLUSTER_DIRECT:
             {
-              CLUTO_VP_ClusterDirect((int)cm.numRows(),                    // nrows
-                                     (int)cm.numColumns(),                 // ncols
+              CLUTO_VP_ClusterDirect((int)cm.rows(),                    // nrows
+                                     (int)cm.cols(),                 // ncols
                                      NULL,                                 // rowptr
                                      NULL,                                 // rowind
                                      &cm.getValues()[0],                   // rowval
@@ -317,8 +317,8 @@ class THEA_API Clustering
 
             case FlatMethod::CLUTO_CLUSTER_RB:
             {
-              CLUTO_VP_ClusterRB((int)cm.numRows(),                    // nrows
-                                 (int)cm.numColumns(),                 // ncols
+              CLUTO_VP_ClusterRB((int)cm.rows(),                    // nrows
+                                 (int)cm.cols(),                 // ncols
                                  NULL,                                 // rowptr
                                  NULL,                                 // rowind
                                  &cm.getValues()[0],                   // rowval
@@ -343,8 +343,8 @@ class THEA_API Clustering
             default:  // FlatMethod::CLUTO_GRAPH_CLUSTER_RB
             {
               float cut_value;
-              num_clusters_found = CLUTO_VP_GraphClusterRB((int)cm.numRows(),                    // nrows
-                                                           (int)cm.numColumns(),                 // ncols
+              num_clusters_found = CLUTO_VP_GraphClusterRB((int)cm.rows(),                    // nrows
+                                                           (int)cm.cols(),                 // ncols
                                                            NULL,                                 // rowptr
                                                            NULL,                                 // rowind
                                                            &cm.getValues()[0],                   // rowval
@@ -406,7 +406,7 @@ class THEA_API Clustering
         case FlatMethod::CLUTO_CLUSTER_RB:
         case FlatMethod::CLUTO_GRAPH_CLUSTER_RB:
         {
-          alwaysAssertM(weights.numRows() == weights.numColumns(), "Clustering: Adjacency matrix must be square");
+          alwaysAssertM(weights.rows() == weights.cols(), "Clustering: Adjacency matrix must be square");
 
           int simfun = 0, grmodel = 0, nnbrs = 0, crfun = 0, cstype = 0;
           toClutoOptions(options, simfun, grmodel, nnbrs, crfun, cstype);
@@ -423,7 +423,7 @@ class THEA_API Clustering
           int   * rowind = (cm.getColumnIndices().size() > 0 ? &cm.getColumnIndices()[0] : NULL);
           float * rowval = (cm.getValues().size()        > 0 ? &cm.getValues()[0]        : NULL);
 
-          labels.resize((size_t)weights.numRows());
+          labels.resize((size_t)weights.rows());
 
           switch (options.method)
           {
@@ -431,7 +431,7 @@ class THEA_API Clustering
             // Analysis", UMN CS 01-040, 2001, for choice of criterion function in each case
             case FlatMethod::CLUTO_CLUSTER_DIRECT:
             {
-              CLUTO_SP_ClusterDirect((int)weights.numRows(),               // nrows
+              CLUTO_SP_ClusterDirect((int)weights.rows(),               // nrows
                                      rowptr,                               // rowptr
                                      rowind,                               // rowind
                                      rowval,                               // rowval
@@ -449,7 +449,7 @@ class THEA_API Clustering
 
             case FlatMethod::CLUTO_CLUSTER_RB:
             {
-              CLUTO_SP_ClusterRB((int)weights.numRows(),               // nrows
+              CLUTO_SP_ClusterRB((int)weights.rows(),               // nrows
                                  rowptr,                               // rowptr
                                  rowind,                               // rowind
                                  rowval,                               // rowval
@@ -470,7 +470,7 @@ class THEA_API Clustering
             default:  // FlatMethod::CLUTO_GRAPH_CLUSTER_RB
             {
               float cut_value;
-              num_clusters_found = CLUTO_SP_GraphClusterRB((int)weights.numRows(),               // nrows
+              num_clusters_found = CLUTO_SP_GraphClusterRB((int)weights.rows(),               // nrows
                                                            rowptr,                               // rowptr
                                                            rowind,                               // rowind
                                                            rowval,                               // rowval
@@ -531,12 +531,12 @@ class THEA_API Clustering
 #ifdef THEA_ENABLE_CLUTO
     /** Get the number of dimensions of a vector. The dummy argument is needed for template resolution. */
     template <typename T>            static size_t numElems (T const & t);
-    template <long N, typename T>  static size_t numElems (VectorN<N, T> const & v);
+    template <int N, typename T>  static size_t numElems (Vector<N, T> const & v);
     template <typename T>            static size_t numElems (TheaArray<T> const & v);
 
     /** Copy a vector to a float array and return a pointer to the next array position. */
     template <typename T>            static float * copyToFloatArray(T const & t, float * fp);
-    template <long N, typename T>  static float * copyToFloatArray(VectorN<N, T> const & v, float * fp);
+    template <int N, typename T>  static float * copyToFloatArray(Vector<N, T> const & v, float * fp);
     template <typename T>            static float * copyToFloatArray(TheaArray<T> const & v, float * fp);
 
     /** Convert an array of points to a CLUTO matrix. */
@@ -548,10 +548,10 @@ class THEA_API Clustering
     template <typename T> static void toClutoMatrix(TheaArray< TheaArray<T> > const & points, ClutoMatrix & cm);
 
     /** Convert a dense matrix row-major to a CLUTO dense matrix. */
-    template <typename T> static void toClutoMatrix(Matrix<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMatrix & cm);
+    template <typename T> static void toClutoMatrix(MatrixX<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMatrix & cm);
 
     /** Convert a dense column-major matrix to a CLUTO dense matrix. */
-    template <typename T> static void toClutoMatrix(Matrix<T, MatrixLayout::COLUMN_MAJOR> const & m, ClutoMatrix & cm);
+    template <typename T> static void toClutoMatrix(MatrixX<T, MatrixLayout::COLUMN_MAJOR> const & m, ClutoMatrix & cm);
 
     /** Convert a sparse matrix to a CLUTO matrix. */
     template <typename MatrixT> static void toClutoMatrix(MatrixT const & m, ClutoMatrix & cm);
@@ -585,7 +585,7 @@ template <typename T>            size_t Clustering::numElems         (T const & 
 template <> inline               size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
 template <> inline               size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
 template <> inline               size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
-template <long N, typename T>    size_t Clustering::numElems         (VectorN<N, T> const & v) { return (size_t)N; }
+template <int N, typename T>    size_t Clustering::numElems         (Vector<N, T> const & v) { return (size_t)N; }
 template <typename T>            size_t Clustering::numElems         (TheaArray<T> const & v)  { return v.size(); }
 
 //=============================================================================================================================
@@ -601,9 +601,9 @@ template <> inline float * Clustering::copyToFloatArray<Vector3>(Vector3 const &
 template <> inline float * Clustering::copyToFloatArray<Vector4>(Vector4 const & t, float * fp)
 { fp[0] = t[0]; fp[1] = t[1]; fp[2] = t[2]; fp[3] = t[3]; return fp + 4; }
 
-template <long N, typename T>
+template <int N, typename T>
 float *
-Clustering::copyToFloatArray(VectorN<N, T> const & v, float * fp)
+Clustering::copyToFloatArray(Vector<N, T> const & v, float * fp)
 {
   for (size_t i = 0; i < N; ++i)
     fp[i] = static_cast<float>(v[i]);
@@ -668,7 +668,7 @@ Clustering::toClutoMatrix(TheaArray< TheaArray<T> > const & points, ClutoMatrix 
 
 template <typename T>
 void
-Clustering::toClutoMatrix(Matrix<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMatrix & cm)
+Clustering::toClutoMatrix(MatrixX<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMatrix & cm)
 {
   cm.getRowIndices().clear();
   cm.getColumnIndices().clear();
@@ -677,18 +677,18 @@ Clustering::toClutoMatrix(Matrix<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMat
 
 template <typename T>
 void
-Clustering::toClutoMatrix(Matrix<T, MatrixLayout::COLUMN_MAJOR> const & m, ClutoMatrix & cm)
+Clustering::toClutoMatrix(MatrixX<T, MatrixLayout::COLUMN_MAJOR> const & m, ClutoMatrix & cm)
 {
   cm.getRowIndices().clear();
   cm.getColumnIndices().clear();
 
   if (!m.isEmpty())
   {
-    cm.getValues().resize(m.numRows() * m.numColumns());
+    cm.getValues().resize(m.rows() * m.cols());
 
     TheaArray<float>::iterator cp = cm.getValues().begin();
-    for (int i = 0; i < m.numRows(); ++i)
-      for (int j = 0; j < m.numColumns(); ++j, ++cp)
+    for (int i = 0; i < m.rows(); ++i)
+      for (int j = 0; j < m.cols(); ++j, ++cp)
         *cp = m(j, i);
   }
   else

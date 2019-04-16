@@ -45,8 +45,8 @@
 #include "Common.hpp"
 #include "AxisAlignedBoxN.hpp"
 #include "Math.hpp"
+#include "MatVec.hpp"
 #include "RayIntersectableN.hpp"
-#include "VectorN.hpp"
 #include <sstream>
 
 namespace Thea {
@@ -56,13 +56,13 @@ namespace Thea {
  *
  * @note A (N - 1)-sphere is the (N - 1)-dimensional surface of a N-dimensional ball.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ BallN : public RayIntersectableN<N, T>
 {
   public:
-    typedef VectorN<N, T> VectorT;
+    typedef Vector<N, T> VectorT;
 
-    THEA_DEF_POINTER_TYPES(BallN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BallN, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Does not initialize anything. */
     BallN() {}
@@ -94,7 +94,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Check if the ball intersects another ball. */
     bool intersects(BallN const & other) const
     {
-      return (center - other.center).length() < radius + other.radius;
+      return (center - other.center).norm() < radius + other.radius;
     }
 
     /** Check if the ball intersects an axis-aligned box. */
@@ -104,12 +104,12 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     }
 
     /** Check if the ball contains a point. */
-    bool contains(VectorT const & p) const { return (p - center).squaredLength() <= radius * radius; }
+    bool contains(VectorT const & p) const { return (p - center).squaredNorm() <= radius * radius; }
 
     /** Check if the ball contains another ball. */
     bool contains(BallN const & other) const
     {
-      return radius >= other.radius && (center - other.center).length() < radius - other.radius;
+      return radius >= other.radius && (center - other.center).norm() < radius - other.radius;
     }
 
     /** Check if the ball contains an axis-aligned box. */
@@ -126,13 +126,13 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Get the distance of the ball from a point. */
     T distance(VectorT const & p) const
     {
-      return std::max((p - center).length() - radius, static_cast<T>(0));
+      return std::max((p - center).norm() - radius, static_cast<T>(0));
     }
 
     /** Get the distance of the ball from a point. */
     T distance(BallN const & other) const
     {
-      return std::max((other.center - center).length() - radius - other.radius, static_cast<T>(0));
+      return std::max((other.center - center).norm() - radius - other.radius, static_cast<T>(0));
     }
 
     /** Get the distance of the ball from an axis-aligned box. */
@@ -165,7 +165,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[center: " << center.toString() << ", radius: " << radius << ']';
+      oss << "[center: " << Thea::toString(center) << ", radius: " << radius << ']';
       return oss.str();
     }
 
@@ -176,11 +176,11 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
 
       VectorT co = ray.getOrigin() - center;
 
-      T c = co.squaredLength() - radius * radius;
+      T c = co.squaredNorm() - radius * radius;
       if (c <= 0)  // origin is inside ball
         return true;
 
-      T a = ray.getDirection().squaredLength();
+      T a = ray.getDirection().squaredNorm();
       T b = 2 * co.dot(ray.getDirection());
 
       // Solve quadratic a * t^2 + b * t + c = 0
@@ -200,14 +200,14 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     {
       VectorT co = ray.getOrigin() - center;
 
-      T c = co.squaredLength() - radius * radius;
+      T c = co.squaredNorm() - radius * radius;
       if (c <= 0)  // origin is inside ball
         return 0;
 
       // We could do an early test to see if the distance from the ray origin to the ball is less than
-      // max_time * ray.getDirection().length(), but it would involve a square root so might as well solve the quadratic.
+      // max_time * ray.getDirection().norm(), but it would involve a square root so might as well solve the quadratic.
 
-      T a = ray.getDirection().squaredLength();
+      T a = ray.getDirection().squaredNorm();
       T b = 2 * co.dot(ray.getDirection());
 
       // Solve quadratic a * t^2 + b * t + c = 0

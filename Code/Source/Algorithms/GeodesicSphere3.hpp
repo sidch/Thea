@@ -43,7 +43,7 @@
 #define __Thea_Algorithms_GeodesicSphere3_hpp__
 
 #include "../Common.hpp"
-#include "../Vector3.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {

@@ -70,13 +70,13 @@ Polygon2::~Polygon2()
 void
 Polygon2::addVertex(Vector2 const & p)
 {
-  impl->addVertex(Vector3(p, 0));
+  impl->addVertex(Vector3(p[0], p[1], 0));
 }
 
 void
 Polygon2::addVertex(Vector2 const & p, long index)
 {
-  impl->addVertex(Vector3(p, 0), index);
+  impl->addVertex(Vector3(p[0], p[1], 0), index);
 }
 
 long
@@ -89,7 +89,7 @@ Polygon2::IndexedVertex
 Polygon2::getVertex(long poly_index) const
 {
   Polygon3::IndexedVertex const & vx3 = impl->getVertex(poly_index);
-  return IndexedVertex(vx3.position.xy(), vx3.index);
+  return IndexedVertex(vx3.position.head<2>(), vx3.index);
 }
 
 void
@@ -126,7 +126,7 @@ Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & 
     Vector3 const & p = impl->vertices[i].position;
 
     // Explicitly remove successive duplicate vertices from input, Triangle seems to not like them very much
-    if (i <= 0 || (p - impl->vertices[i - 1].position).squaredLength() > 1.0e-10f)
+    if (i <= 0 || (p - impl->vertices[i - 1].position).squaredNorm() > 1.0e-10f)
     {
       in.pointlist[j++] = p.x();
       in.pointlist[j++] = p.y();

@@ -53,9 +53,9 @@ namespace Thea {
 namespace Algorithms {
 
 BestFitEllipsoid3::BestFitEllipsoid3(Real eps_)
-: eps(eps_), center(Vector3::zero()), updated(true)
+: eps(eps_), center(Vector3::Zero()), updated(true)
 {
-  axis[0] = axis[1] = axis[2] = Vector3::zero();
+  axis[0] = axis[1] = axis[2] = Vector3::Zero();
 }
 
 void
@@ -103,11 +103,11 @@ BestFitEllipsoid3::update() const
     return;
 
   if (points.empty())
-    center = axis[0] = axis[1] = axis[2] = Vector3::zero();
+    center = axis[0] = axis[1] = axis[2] = Vector3::Zero();
   else if (points.size() == 1)
   {
     center = points[0];
-    axis[0] = axis[1] = axis[2] = Vector3::zero();
+    axis[0] = axis[1] = axis[2] = Vector3::Zero();
   }
   else
   {
@@ -130,7 +130,7 @@ BestFitEllipsoid3::update() const
     AME ame(eps, p.begin(), p.end(), traits);
 
     if (!ame.is_full_dimensional())
-      axis[0] = axis[1] = axis[2] = Vector3::zero();  // FIXME
+      axis[0] = axis[1] = axis[2] = Vector3::Zero();  // FIXME
     else
     {
       int coord = 0;
@@ -155,10 +155,8 @@ BestFitEllipsoid3::update() const
       }
 
       // Compute oriented bounding box before we scale the unit axes by the dimensions of the ellipsoid
-      CoordinateFrame3 cframe(RigidTransform3::_fromAffine(AffineTransform3(Matrix3(axis[0].x(), axis[1].x(), axis[2].x(),
-                                                                                    axis[0].y(), axis[1].y(), axis[2].y(),
-                                                                                    axis[0].z(), axis[1].z(), axis[2].z()))));
-
+      CoordinateFrame3 cframe(RigidTransform3::_fromAffine(
+                                  AffineTransform3((Matrix3() << axis[0], axis[1], axis[2]).finished())));
       Vector3 min, max;
       for (size_t i = 0; i < points.size(); ++i)
       {
@@ -168,8 +166,8 @@ BestFitEllipsoid3::update() const
           min = max = op;
         else
         {
-          min = op.min(min);
-          max = op.max(max);
+          min = op.cwiseMin(min);
+          max = op.cwiseMax(max);
         }
       }
 

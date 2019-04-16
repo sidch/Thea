@@ -75,7 +75,7 @@
 #include "Array.hpp"
 #include "AxisAlignedBox3.hpp"
 #include "Math.hpp"
-#include "Vector3.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -120,7 +120,7 @@ class PointTraitsN<Polygon3Internal::IndexedVertex, 3>
 class THEA_API Polygon3
 {
   public:
-    THEA_DEF_POINTER_TYPES(Polygon3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Polygon3, std::shared_ptr, std::weak_ptr)
 
     typedef Polygon3Internal::IndexedVertex IndexedVertex;  ///< A vertex plus an index.
 
@@ -173,7 +173,7 @@ class THEA_API Polygon3
       static Real const EPSILON = 1e-10f;
 
       Vector3 normal = computeNormal(vbegin, vend);
-      if (normal.squaredLength() < EPSILON)
+      if (normal.squaredNorm() < EPSILON)
         return 0;
 
       VertexInputIterator v0 = vbegin;
@@ -183,7 +183,7 @@ class THEA_API Polygon3
         return 0;
 
       Vector3 p0 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v0);
-      Vector3 c = Vector3::zero();
+      Vector3 c = Vector3::Zero();
       for (VertexInputIterator vi = vbegin; vi != vend; ++vi)
       {
         Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
@@ -215,7 +215,7 @@ class THEA_API Polygon3
       VertexInputIterator v2 = incrementIterator(v1, vbegin, vend);
 
       if (v1 == v0 || v2 == v0)  // too few vertices
-        return Vector3::zero();
+        return Vector3::Zero();
 
       Vector3 p0 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v0);
       Vector3 p1 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v1);
@@ -224,15 +224,15 @@ class THEA_API Polygon3
       {
         Vector3 p2 = Algorithms::PointTraitsN<VertexT, 3>::getPosition(*v2);
         Vector3 normal = (p2 - p1).cross(p0 - p1);
-        if (normal.squaredLength() >= EPSILON)
-          return normal.unit();
+        if (normal.squaredNorm() >= EPSILON)
+          return normal.normalized();
 
         p0 = p1;
         p1 = p2;
         v2 = incrementIterator(v2, vbegin, vend);
       }
 
-      return Vector3::zero();  // degenerate or too small
+      return Vector3::Zero();  // degenerate or too small
     }
 
     /** Get the bounding box of the polygon. */
@@ -262,8 +262,8 @@ class THEA_API Polygon3
      *   tolerance, since Visual Studio (and other compilers?) has some problems with template resolution of default arguments.
      */
     template <typename T>
-    static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
-                               VectorN<3, T> const & p2, VectorN<3, T> const & p3,
+    static int triangulateQuad(Vector<3, T> const & p0, Vector<3, T> const & p1,
+                               Vector<3, T> const & p2, Vector<3, T> const & p3,
                                long & i0, long & j0, long & k0,
                                long & i1, long & j1, long & k1)
     {
@@ -294,13 +294,13 @@ class THEA_API Polygon3
      * @note Might break in very very degenerate cases (not fully tested).
      */
     template <typename T>
-    static int triangulateQuad(VectorN<3, T> const & p0, VectorN<3, T> const & p1,
-                               VectorN<3, T> const & p2, VectorN<3, T> const & p3,
+    static int triangulateQuad(Vector<3, T> const & p0, Vector<3, T> const & p1,
+                               Vector<3, T> const & p2, Vector<3, T> const & p3,
                                long & i0, long & j0, long & k0,
                                long & i1, long & j1, long & k1,
                                T const & epsilon)
     {
-      typedef VectorN<3, T> VectorT;
+      typedef Vector<3, T> VectorT;
 
       // We have two diagonals to split along. Try one and if it produces a triangle outside the polygon, pick the other one
 
@@ -325,9 +325,9 @@ class THEA_API Polygon3
 
       // Check for degenerate triangles
       T e2 = (epsilon < 0 ? Math::eps<T>() * Math::eps<T>() : epsilon * epsilon);
-      if (n0.squaredLength() < e2)
+      if (n0.squaredNorm() < e2)
       {
-        if (n1.squaredLength() < e2)
+        if (n1.squaredNorm() < e2)
           return 0;
         else
         {
@@ -335,7 +335,7 @@ class THEA_API Polygon3
           return 1;
         }
       }
-      else if (n1.squaredLength() < e2)
+      else if (n1.squaredNorm() < e2)
         return 1;
       else
         return 2;

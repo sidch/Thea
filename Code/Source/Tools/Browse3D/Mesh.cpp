@@ -104,7 +104,7 @@ Mesh::updateFeatures() const
 
   TheaArray<Real> all_dists;
   for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
-    all_dists.push_back((vi->getPosition() - centroid).length());
+    all_dists.push_back((vi->getPosition() - centroid).norm());
 
   Real dmax = *std::max_element(all_dists.begin(), all_dists.end());
   if (dmax <= 1e-20)

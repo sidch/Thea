@@ -161,7 +161,7 @@ DisplayMesh::addNormals()
 {
   if (normals.size() < vertices.size())
   {
-    normals.resize(vertices.size(), Vector3::zero());
+    normals.resize(vertices.size(), Vector3::Zero());
     invalidateGPUBuffers();
   }
 }
@@ -171,7 +171,7 @@ DisplayMesh::addTexCoords()
 {
   if (texcoords.size() < vertices.size())
   {
-    texcoords.resize(vertices.size(), Vector2::zero());
+    texcoords.resize(vertices.size(), Vector2::Zero());
     invalidateGPUBuffers();
   }
 }
@@ -381,7 +381,7 @@ DisplayMesh::computeAveragedVertexNormals()
 
   normals.resize(vertices.size());
   for (size_t i = 0; i < normals.size(); ++i)
-    normals[i] = Vector3::zero();
+    normals[i] = Vector3::Zero();
 
   // TODO: weight normals by face area?
   Vector3 n;
@@ -393,7 +393,7 @@ DisplayMesh::computeAveragedVertexNormals()
     Vector3 const & v1 = vertices[i1];
     Vector3 const & v2 = vertices[i2];
 
-    n = (v2 - v1).cross(v0 - v1).unit();
+    n = (v2 - v1).cross(v0 - v1).normalized();
     normals[i0] += n;
     normals[i1] += n;
     normals[i2] += n;
@@ -406,7 +406,7 @@ DisplayMesh::computeAveragedVertexNormals()
     Vector3 const & v1 = vertices[i1];
     Vector3 const & v2 = vertices[i2];
 
-    n = (v2 - v1).cross(v0 - v1).unit();
+    n = (v2 - v1).cross(v0 - v1).normalized();
     normals[i0] += n;
     normals[i1] += n;
     normals[i2] += n;
@@ -414,7 +414,7 @@ DisplayMesh::computeAveragedVertexNormals()
   }
 
   for (size_t i = 0; i < normals.size(); ++i)
-    normals[i] = normals[i].unit();
+    normals[i] = normals[i].normalized();
 
   invalidateGPUBuffers(topo_change ? BufferID::ALL : BufferID::NORMAL);
 }

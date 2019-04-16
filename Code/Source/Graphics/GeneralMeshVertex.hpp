@@ -85,12 +85,12 @@ class /* THEA_API */ GeneralMeshVertex
 
     /** Default constructor. */
     GeneralMeshVertex()
-    : NormalBaseType(Vector3::zero()), index(-1), has_precomputed_normal(false), normal_normalization_factor(0), marked(false)
+    : NormalBaseType(Vector3::Zero()), index(-1), has_precomputed_normal(false), normal_normalization_factor(0), marked(false)
     {}
 
     /** Sets the vertex to have a location. */
     explicit GeneralMeshVertex(Vector3 const & p)
-    : PositionBaseType(p), NormalBaseType(Vector3::zero()), index(-1), has_precomputed_normal(false),
+    : PositionBaseType(p), NormalBaseType(Vector3::Zero()), index(-1), has_precomputed_normal(false),
       normal_normalization_factor(0), marked(false)
     {}
 
@@ -213,16 +213,19 @@ class /* THEA_API */ GeneralMeshVertex
     {
       if (!faces.empty())
       {
-        Vector3 sum_normals = Vector3::zero();
+        Vector3 sum_normals = Vector3::Zero();
         for (FaceConstIterator fi = faces.begin(); fi != faces.end(); ++fi)
           sum_normals += (*fi)->getNormal();  // weight by face area?
 
-        normal_normalization_factor = sum_normals.length();
-        setNormal(normal_normalization_factor < 1e-20f ? Vector3::zero() : sum_normals / normal_normalization_factor);
+        normal_normalization_factor = sum_normals.norm();
+        if (normal_normalization_factor < 1e-20f)
+          setNormal(Vector3::Zero());
+        else
+          setNormal(sum_normals / normal_normalization_factor);
       }
       else
       {
-        setNormal(Vector3::zero());
+        setNormal(Vector3::Zero());
         normal_normalization_factor = 0;
       }
 
@@ -300,8 +303,11 @@ class /* THEA_API */ GeneralMeshVertex
       if (!has_precomputed_normal)
       {
         Vector3 sum_normals = normal_normalization_factor * getNormal() + n;
-        normal_normalization_factor = sum_normals.length();
-        setNormal(normal_normalization_factor < 1e-20f ? Vector3::zero() : sum_normals / normal_normalization_factor);
+        normal_normalization_factor = sum_normals.norm();
+        if (normal_normalization_factor < 1e-20f)
+          setNormal(Vector3::Zero());
+        else
+          setNormal(sum_normals / normal_normalization_factor);
       }
     }
 
@@ -315,8 +321,11 @@ class /* THEA_API */ GeneralMeshVertex
       if (!has_precomputed_normal)
       {
         Vector3 sum_normals = normal_normalization_factor * getNormal() - n;
-        normal_normalization_factor = sum_normals.length();
-        setNormal(normal_normalization_factor < 1e-20f ? Vector3::zero() : sum_normals / normal_normalization_factor);
+        normal_normalization_factor = sum_normals.norm();
+        if (normal_normalization_factor < 1e-20f)
+          setNormal(Vector3::Zero());
+        else
+          setNormal(sum_normals / normal_normalization_factor);
       }
     }
 
@@ -328,7 +337,7 @@ class /* THEA_API */ GeneralMeshVertex
       else
       {
         Vector3 sum_normals = normal_normalization_factor * getNormal() + new_normal;
-        return sum_normals.unit();
+        return sum_normals.normalized();
       }
     }
 

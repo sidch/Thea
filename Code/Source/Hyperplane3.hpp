@@ -62,7 +62,7 @@ class /* THEA_API */ HyperplaneN<3, T> : public Internal::HyperplaneNBase<3, T>
     {
       HyperplaneN hyperplane;
 
-      hyperplane.normal = (point2 - point1).cross(point3 - point1).unit();
+      hyperplane.normal = (point2 - point1).cross(point3 - point1).normalized();
       hyperplane.dist = hyperplane.normal.dot(point1);
       return hyperplane;
     }
@@ -73,10 +73,10 @@ class /* THEA_API */ HyperplaneN<3, T> : public Internal::HyperplaneNBase<3, T>
       HyperplaneN hyperplane;
 
       hyperplane.normal = VectorT(a, b, c);
-      T sqlen = hyperplane.normal.squaredLength();
+      T sqlen = hyperplane.normal.squaredNorm();
       if (Math::fuzzyEq(sqlen, static_cast<T>(0)))
       {
-        hyperplane.normal = VectorT::zero();
+        hyperplane.normal = VectorT::Zero();
         hyperplane.dist = 0;
       }
       else

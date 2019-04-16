@@ -73,7 +73,7 @@ Quat::Quat(Matrix3 const & rot)
   v[k] = -(rot(i, k) + rot(k, i));
 
   // We now have the correct result with the wrong magnitude, so normalize it:
-  Real len = std::sqrt(v.squaredLength() + s * s);
+  Real len = std::sqrt(v.squaredNorm() + s * s);
   if (len > Math::eps<Real>())
   {
     v /= len;
@@ -100,7 +100,7 @@ Quat::toRotationMatrix(Matrix3 & rot) const
   // Implementation from Watt and Watt, pg 362
   // See also http://www.flipcode.com/documents/matrfaq.html#Q54
 
-  Quat q = unit();
+  Quat q = normalized();
 
   Real xx = 2 * q.x() * q.x();
   Real xy = 2 * q.x() * q.y();
@@ -114,9 +114,9 @@ Quat::toRotationMatrix(Matrix3 & rot) const
   Real zz = 2 * q.z() * q.z();
   Real zw = 2 * q.z() * q.w();
 
-  rot = Matrix3(1 - yy - zz,      xy - zw,      xz + yw,
-                    xy + zw,  1 - xx - zz,      yz - xw,
-                    xz - yw,      yz + xw,  1 - xx - yy);
+  rot << 1 - yy - zz,      xy - zw,      xz + yw,
+             xy + zw,  1 - xx - zz,      yz - xw,
+             xz - yw,      yz + xw,  1 - xx - yy;
 }
 
 Quat
@@ -124,7 +124,7 @@ Quat::fromAxisAngleRotation(Vector3 const & axis, Real angle)
 {
   Quat q;
   q.real() = std::cos(angle / 2.0f);
-  q.imag() = axis.unit() * std::sin(angle / 2.0f);
+  q.imag() = axis.normalized() * std::sin(angle / 2.0f);
 
   return q;
 }
@@ -177,8 +177,8 @@ Quat::slerp(Quat const & target, Real alpha, Real threshold) const
   Quat const & quat0 = *this;
   Quat quat1 = target;
 
-  debugAssertM(Math::fuzzyEq(quat0.squaredLength(), (Real)1), "Quat: slerp requires unit quaternions");
-  debugAssertM(Math::fuzzyEq(quat1.squaredLength(), (Real)1), "Quat: slerp requires unit quaternions");
+  debugAssertM(Math::fuzzyEq(quat0.squaredNorm(), (Real)1), "Quat: slerp requires unit quaternions");
+  debugAssertM(Math::fuzzyEq(quat1.squaredNorm(), (Real)1), "Quat: slerp requires unit quaternions");
 
   // Angle between quaternion rotations
   Real cosphi = quat0.dot(quat1);
@@ -211,7 +211,7 @@ Quat
 Quat::nlerp(Quat const & target, Real alpha) const
 {
   Quat result = (*this) * (1 - alpha) + target * alpha;
-  return result.unit();
+  return result.normalized();
 }
 
 Quat

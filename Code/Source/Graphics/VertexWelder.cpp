@@ -115,7 +115,7 @@ class VertexWelderImpl
             Long3 key(base_key.x + dx, base_key.y + dy, base_key.z + dz);
             IteratorRange nbrs = vertex_map.equal_range(key);
             for (VertexMap::const_iterator ni = nbrs.first; ni != nbrs.second; ++ni)
-              if ((ni->second.position - position).squaredLength() <= squared_weld_radius)
+              if ((ni->second.position - position).squaredNorm() <= squared_weld_radius)
                 return ni->second.vertex;
           }
 

@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API Histogram
 {
   public:
-    THEA_DEF_POINTER_TYPES(Histogram, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Histogram, std::shared_ptr, std::weak_ptr)
 
     /**
      * Constructor to wrap a pre-allocated array of bins.

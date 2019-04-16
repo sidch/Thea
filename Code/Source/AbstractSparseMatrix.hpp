@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2019, Siddhartha Chaudhuri
 //
 // All rights reserved.
 //
@@ -39,41 +39,48 @@
 //
 //============================================================================
 
-#ifndef __Thea_TransposedMatrix_hpp__
-#define __Thea_TransposedMatrix_hpp__
+#ifndef __Thea_AbstractSparseMatrix_hpp__
+#define __Thea_AbstractSparseMatrix_hpp__
 
-#include "AddressableMatrix.hpp"
+#include "AbstractMatrix.hpp"
 
 namespace Thea {
 
-/**
- * A matrix class that acts as the transpose of another matrix, without actually copying data. An object of this class holds a
- * pointer to another addressable matrix. Element (r, c) of this matrix corresponds to element (c, r) of the wrapped matrix. The
- * wrapped matrix must persist until this matrix is destroyed.
- */
+// Forward declarations
+template <typename T> class AbstractCompressedSparseMatrix;
+
+/** Abstract base interface for a 2D sparse matrix. Useful for passing matrices across shared library boundaries. */
 template <typename T>
-class /* THEA_API */ TransposedMatrix : public AddressableMatrix<T>
+class /* THEA_API */ AbstractSparseMatrix : public virtual AbstractMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(TransposedMatrix, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AbstractSparseMatrix, std::shared_ptr, std::weak_ptr)
 
-    /** Constructor. Stores the passed pointer to a matrix, which should remain valid until this object is destroyed. */
-    TransposedMatrix(AddressableMatrix<T> * m_) : m(m_)
-    {
-      alwaysAssertM(m_, "TransposedMatrix: The wrapped matrix must exist");
-    }
+    /**
+     * Get the number of entries actually stored in the matrix. These are often called "non-zeros", though they may actually
+     * have the numeric value 0.
+     */
+    virtual long numStoredElements() const = 0;
 
-    long numRows() const { return m->numColumns(); }
-    long numColumns() const { return m->numRows(); }
+    /**
+     * If the matrix is stored in compressed column or row format, get a pointer to a derived interface supporting access
+     * specific to that format. Else, return null.
+     *
+     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
+     *   it and only use <code>static_cast</code> is dangerous.
+     */
+    virtual AbstractCompressedSparseMatrix<T> const * asCompressed() const = 0;
 
-    T const & get(long row, long col) const { return m->get(col, row); }
-    T & getMutable(long row, long col) { return m->getMutable(col, row); }
-    void set(long row, long col, T const & value) { m->set(col, row, value); }
+    /**
+     * If the matrix is stored in compressed column or row format, get a pointer to a derived interface supporting access
+     * specific to that format. Else, return null.
+     *
+     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
+     *   it and only use <code>static_cast</code> is dangerous.
+     */
+    virtual AbstractCompressedSparseMatrix<T> * asCompressed() = 0;
 
-  private:
-    AddressableMatrix<T> * m;
-
-}; // class TransposedMatrix
+}; // class AbstractSparseMatrix
 
 } // namespace Thea
 

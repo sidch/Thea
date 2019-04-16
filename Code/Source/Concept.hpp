@@ -101,7 +101,7 @@ class check_name                                                                
 #endif
 
 /** Utility function that directly tests the value of concept_name::value using THEA_STATIC_ASSERT. */
-#define THEA_CONCEPT_CHECK(concept_name) THEA_STATIC_ASSERT(concept_name::value)
+#define THEA_CONCEPT_CHECK(concept_name) static_assert(concept_name::value, "Assertion failed")
 
 } // namespace Thea
 

@@ -81,8 +81,8 @@ class Impl
 
       SurfaceSample * origin_sample = const_cast<SurfaceSample *>(&sample_graph.getSamples()[(size_t)origin_index_]);
       origin = origin_sample->getPosition();
-      u_axis = u_axis_.unit();  // renormalize to be safe
-      v_axis = v_axis_.unit();
+      u_axis = u_axis_.normalized();  // renormalize to be safe
+      v_axis = v_axis_.normalized();
       tangent_plane = Plane3::fromPointAndNormal(origin, u_axis.cross(v_axis));
       radius = radius_;
       blend_bandwidth_squared = (options.getBlendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
@@ -101,7 +101,7 @@ class Impl
       else
       {
         has_parameters = false;
-        return Vector2::zero();
+        return Vector2::Zero();
       }
     }
 
@@ -155,7 +155,7 @@ class Impl
               ParamData const & pred_nbr_data = existing_nbr->second;
 
               Vector3 offset = pred_nbr.getSample()->getPosition() - p;
-              Real weight = kernelFastGaussianSqDistUnscaled(offset.squaredLength(), blend_bandwidth_squared);
+              Real weight = kernelFastGaussianSqDistUnscaled(offset.squaredNorm(), blend_bandwidth_squared);
 
               sum_p += weight * (pred_nbr_data.uv_transform * p);
               sum_weights += weight;
@@ -208,12 +208,12 @@ class Impl
           Vector3 edge = pos_in_pred_frame - pred->proj_p;
           Vector3 prev_edge = pred->proj_p - pred_pred->proj_p;
 
-          Vector3 right = prev_edge.cross(tangent_plane.getNormal()).fastUnit();
+          Vector3 right = prev_edge.cross(tangent_plane.getNormal()).normalized();
           Vector3 v = edge - (edge.dot(right) * right);
-          if (v.squaredLength() > 1.0e-10f)  // TODO: Is this a generally applicable epsilon?
+          if (v.squaredNorm() > 1.0e-10f)  // TODO: Is this a generally applicable epsilon?
           {
             AffineTransform3 pred_inc = AffineTransform3::translation(pred->proj_p)
-                                      * AffineTransform3::rotationArc(v.fastUnit(), prev_edge.fastUnit(), false)
+                                      * AffineTransform3::rotationArc(v.normalized(), prev_edge.normalized(), false)
                                       * AffineTransform3::translation(-pred->proj_p);
             curr.proj_p = pred_inc * pos_in_pred_frame;
             curr.uv_transform = pred_inc * pred->uv_transform;
@@ -229,10 +229,10 @@ class Impl
           Vector3 edge = pos_in_pred_frame - pred->proj_p;
           Vector3 tp = tangent_plane.closestPoint(pos_in_pred_frame);
           Vector3 v = tp - pred->proj_p;
-          if (v.squaredLength() > 1.0e-10f)  // TODO: Is this a generally applicable epsilon?
+          if (v.squaredNorm() > 1.0e-10f)  // TODO: Is this a generally applicable epsilon?
           {
             AffineTransform3 pred_inc = AffineTransform3::translation(pred->proj_p)
-                                      * AffineTransform3::rotationArc(edge.fastUnit(), v.fastUnit(), false)
+                                      * AffineTransform3::rotationArc(edge.normalized(), v.normalized(), false)
                                       * AffineTransform3::translation(-pred->proj_p);
             curr.proj_p = pred_inc * pos_in_pred_frame;
             curr.uv_transform = pred_inc * pred->uv_transform;

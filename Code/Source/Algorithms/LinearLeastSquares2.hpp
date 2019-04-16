@@ -45,11 +45,11 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Line2.hpp"
-#include "../MatrixMN.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
+#include <Eigen/Eigenvalues>
 
 namespace Thea {
 namespace Algorithms {
@@ -91,20 +91,17 @@ class /* THEA_API */ LinearLeastSquares2<T *>
 
 // Fitting lines to sets of objects that map to single points in 2-space.
 template <typename T>
-class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsNonReferencedPointN<T, 2> >::type>
+class /* THEA_API */ LinearLeastSquares2<T, typename std::enable_if< IsNonReferencedPointN<T, 2>::value >::type>
 {
   public:
     template <typename InputIterator>
     static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL)
     {
-      typedef VectorN<2, double> DVec2;
-      typedef MatrixMN<2, 2, double> DMat2;
-
-      DVec2 center = CentroidN<T, 2>::compute(begin, end);
-      DMat2 m = DMat2::zero();
+      Vector2d center = CentroidN<T, 2>::compute(begin, end);
+      Matrix2d m = Matrix2d::Zero();
       for (InputIterator iter = begin; iter != end; ++iter)
       {
-        DVec2 diff = DVec2(PointTraitsN<T, 2>::getPosition(*iter)) - center;
+        Vector2d diff = Vector2d(PointTraitsN<T, 2>::getPosition(*iter)) - center;
 
         m(0, 0) += (diff.y() * diff.y());
         m(0, 1) -= (diff.x() * diff.y());
@@ -113,27 +110,14 @@ class /* THEA_API */ LinearLeastSquares2<T, typename boost::enable_if< IsNonRefe
 
       m(1, 0) = m(0, 1);
 
-      double eigenvalues[2];
-      DVec2 eigenvectors[2];
+      Eigen::SelfAdjointEigenSolver eigensolver;
+      if (eigensolver.computeDirect(m) != Eigen::Success)
+        throw Error("LinearLeastSquares2: Could not eigensolve covariance matrix");
 
-      int num_eigen = m.eigenSolve((double *)eigenvalues, (DVec2 *)eigenvectors);
-      if (num_eigen == 2)
-      {
-        if (eigenvalues[1] < eigenvalues[0])
-        {
-          std::swap(eigenvalues[0], eigenvalues[1]);
-          std::swap(eigenvectors[0], eigenvectors[1]);
-        }
-      }
-      else if (num_eigen <= 0)
-      {
-        throw Error("LinearLeastSquares2: Could not eigensolve matrix");
-      }
-
-      line = Line2::fromPointAndDirection(Vector2(center), Vector2(eigenvectors[0]));
-
+      // Eigenvalues are non-negative (covariance matrix is non-negative definite) and in increasing order
+      line = Line2::fromPointAndDirection(Vector2(center), Vector2(eigensolver.eigenvectors().col(0)));
       if (centroid) *centroid = center;
-      return eigenvalues[0];
+      return eigensolver.eigenvalues()[0];
     }
 
 }; // class LinearLeastSquares2<Point2>

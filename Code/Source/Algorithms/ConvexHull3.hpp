@@ -45,7 +45,7 @@
 #include "../Common.hpp"
 #include "../Graphics/IncrementalMeshBuilder.hpp"
 #include "../Array.hpp"
-#include "../Vector3.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -56,7 +56,7 @@ class THEA_API ConvexHull3
   private:
 
   public:
-    THEA_DEF_POINTER_TYPES(ConvexHull3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ConvexHull3, std::shared_ptr, std::weak_ptr)
 
     /** %Options for computing convex hulls. */
     struct THEA_API Options

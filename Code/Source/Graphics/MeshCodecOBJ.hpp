@@ -48,10 +48,9 @@
 #include "MeshGroup.hpp"
 #include "MeshCodec.hpp"
 #include "MeshType.hpp"
-#include <boost/array.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <functional>
 #include <sstream>
+#include <type_traits>
 #include <utility>
 
 namespace Thea {
@@ -69,10 +68,7 @@ class VTN
       return elems[0] == rhs.elems[0] && elems[1] == rhs.elems[1] && elems[2] == rhs.elems[2];
     }
 
-    friend size_t hash_value(VTN const & vtn)
-    {
-      return boost::hash_range(vtn.elems, vtn.elems + 3);
-    }
+    size_t hash() const { return boost::hash_range(elems, elems + 3); }
 
   private:
     long elems[3];
@@ -85,12 +81,25 @@ struct VertexIndexMap
 };
 
 template <typename MeshT>
-struct VertexIndexMap<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type>
+struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
   typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
 
 } // namespace CodecOBJInternal
+
+} // namespace Thea
+
+namespace std {
+
+template <> struct hash<Thea::CodecOBJInternal::VTN>
+{
+  size_t operator()(Thea::CodecOBJInternal::VTN const & v) const { return v.hash(); }
+};
+
+} // namespace std
+
+namespace Thea {
 
 /** %Codec for reading and writing OBJ files. */
 template <typename MeshT, typename BuilderT>
@@ -301,7 +310,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       int anon_index = 0;
 
       MeshPtr mesh;
-      shared_ptr<Builder> bp;
+      std::shared_ptr<Builder> bp;
       Builder * builder = NULL;
 
       long num_faces = 0;
@@ -363,7 +372,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           if (!builder)
           {
             mesh = MeshPtr(new Mesh(group_name));
-            bp = shared_ptr<Builder>(new Builder(mesh));
+            bp = std::shared_ptr<Builder>(new Builder(mesh));
             builder = bp.get();
             builder->begin();
           }
@@ -552,7 +561,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           mesh = MeshPtr(new Mesh(group_name));
           vrefs.clear();  // start a new set of vertex handles for the new mesh
           vtn_refs.clear();
-          bp = shared_ptr<Builder>(new Builder(mesh));  // old builder gets destroyed here
+          bp = std::shared_ptr<Builder>(new Builder(mesh));  // old builder gets destroyed here
           builder = bp.get();
           builder->begin();
         }
@@ -605,7 +614,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -626,7 +635,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -651,7 +660,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -711,7 +720,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -747,7 +756,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -789,7 +798,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;

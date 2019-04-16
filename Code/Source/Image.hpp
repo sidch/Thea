@@ -58,7 +58,7 @@ namespace Thea {
 class THEA_API Image : public AbstractImage, public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Image, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Image, std::shared_ptr, std::weak_ptr)
 
     /** Construct an empty image with no initial data. */
     Image();
@@ -91,11 +91,11 @@ class THEA_API Image : public AbstractImage, public Serializable
 
     bool isValid() const;
     void clear();
-    void resize(Type type, int width_, int height_, int depth_ = 1);
+    void resize(int type, int width_, int height_, int depth_ = 1);
     int getWidth() const { return width; }
     int getHeight() const { return height; }
     int getDepth() const { return depth; }
-    Type getType() const { return type; }
+    int getType() const { return (int)type; }
 
     /**
      * Get the number of channels per pixel. For example: 1 for luminance, 3 for RGB, 4 for RGBA. A complex number corresponds

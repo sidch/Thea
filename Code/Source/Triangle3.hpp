@@ -129,20 +129,21 @@ THEA_API int tri_tri_intersect_with_isectline(Real const V0[3],Real const V1[3],
                                               Real isectpt1[3],Real isectpt2[3]);
 
 // Check if a point is inside a triangle.
-THEA_API bool isPointInsideTriangle(Vector3 const &  v0,
-                                    Vector3 const &  v1,
-                                    Vector3 const &  v2,
-                                    int              primary_axis,
-                                    Vector3 const &  p);
+THEA_API bool isPointInsideTriangle(Eigen::MatrixBase<Vector3> const &  v0,
+                                    Eigen::MatrixBase<Vector3> const &  v1,
+                                    Eigen::MatrixBase<Vector3> const &  v2,
+                                    int                                 primary_axis,
+                                    Eigen::MatrixBase<Vector3> const &  p);
 
 // Closest point on the perimeter of a triangle.
-THEA_API Vector3 closestPointOnTrianglePerimeter(const Vector3   &   v0,
-                                                 const Vector3   &   v1,
-                                                 const Vector3   &   v2,
-                                                 const Vector3   &   point);
+THEA_API Vector3 closestPointOnTrianglePerimeter(Eigen::MatrixBase<Vector3> const & v0,
+                                                 Eigen::MatrixBase<Vector3> const & v1,
+                                                 Eigen::MatrixBase<Vector3> const & v2,
+                                                 Eigen::MatrixBase<Vector3> const & point);
 
 // Intersection time of a ray with a triangle. Returns a negative value if the ray does not intersect the triangle.
-THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02);
+THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Eigen::MatrixBase<Vector3> const & v0,
+                                          Eigen::MatrixBase<Vector3> const & edge01, Eigen::MatrixBase<Vector3> const & edge02);
 
 } // namespace Triangle3Internal
 
@@ -190,7 +191,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       Vector3 v0 = getVertex(0), v1 = getVertex(1), v2 = getVertex(2);
 
       plane = Plane3::fromThreePoints(v0, v1, v2);
-      primary_axis = (int)plane.getNormal().maxAbsAxis();
+      primary_axis = (int)Math::maxAbsAxis(plane.getNormal());
 
       centroid = (v0 + v1 + v2) / 3;
       edge01   = v1 - v0;
@@ -249,7 +250,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     Vector3 barycentricCoordinates(Vector3 const & p) const
     {
       if (area <= 0)
-        return Vector3::zero();
+        return Vector3::Zero();
 
       Vector3 const & n = getNormal();
       Vector3 p0 = getVertex(0) - p;
@@ -266,7 +267,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     AxisAlignedBox3 getBounds() const
     {
       Vector3 v0 = getVertex(0), v1 = getVertex(1), v2 = getVertex(2);
-      return AxisAlignedBox3(v0.min(v1.min(v2)), v0.max(v1.max(v2)));
+      return AxisAlignedBox3(v0.cwiseMin(v1.cwiseMin(v2)), v0.cwiseMax(v1.cwiseMax(v2)));
     }
 
     /** Check if the triangle intersects (that is, contains) a point. */
@@ -336,7 +337,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /** Get the squared distance of the triangle from a point. */
     Real squaredDistance(Vector3 const & p) const
     {
-      return (closestPoint(p) - p).squaredLength();
+      return (closestPoint(p) - p).squaredNorm();
     }
 
     /** Get the point on this triangle closest to a given point. */
@@ -391,9 +392,9 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
           for (int j = 0; j < 3; ++j)
           {
             int j2 = (j + 1) % 3;
-            d2 = Internal::closestPtSegmentSegment(getVertex(i), getVertex(i2), false,
-                                                   other.getVertex(j), other.getVertex(j2), false,
-                                                   s, t, p, q);
+            d2 = Internal::closestPtSegmentSegment<3, Real>(getVertex(i), getVertex(i2), false,
+                                                            other.getVertex(j), other.getVertex(j2), false,
+                                                            s, t, p, q);
             if (d2 < min_sqdist)
             {
               min_sqdist = d2;
@@ -410,7 +411,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
           p = getPlane().closestPoint(q);
           if (contains(p))
           {
-            d2 = (p - q).squaredLength();
+            d2 = (p - q).squaredNorm();
             if (d2 < min_sqdist)
             {
               min_sqdist = d2;
@@ -427,7 +428,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
           q = other.getPlane().closestPoint(p);
           if (other.contains(q))
           {
-            d2 = (p - q).squaredLength();
+            d2 = (p - q).squaredNorm();
             if (d2 < min_sqdist)
             {
               min_sqdist = d2;
@@ -463,7 +464,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       Vector3 c2;
 
       Vector3 diff = c1 - ball.getCenter();
-      Real d2 = diff.squaredLength();
+      Real d2 = diff.squaredNorm();
       Real r2 = ball.getRadius() * ball.getRadius();
       if (d2 < r2)  // point inside ball
       {
@@ -477,7 +478,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
         else
         {
           c2 = ball.getCenter() + std::sqrt(r2 / d2) * diff;
-          d2 = (c1 - c2).squaredLength();
+          d2 = (c1 - c2).squaredNorm();
         }
       }
 
@@ -652,7 +653,7 @@ class THEA_API Triangle3<TriangleLocalVertexTriple3> : public Triangle3Base<Tria
     typedef Triangle3Base<TriangleLocalVertexTriple3> BaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(Triangle3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Triangle3, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Does not initialize anything. */
     Triangle3() {}
@@ -669,7 +670,9 @@ class THEA_API Triangle3<TriangleLocalVertexTriple3> : public Triangle3Base<Tria
     /** Transform the triangle by a 4x4 matrix and return the result. */
     Triangle3 transform(Matrix4 const & m) const
     {
-      return Triangle3(m * BaseT::getVertex(0), m * BaseT::getVertex(1), m * BaseT::getVertex(2));
+      return Triangle3(Math::hmul(m, BaseT::getVertex(0)),
+                       Math::hmul(m, BaseT::getVertex(1)),
+                       Math::hmul(m, BaseT::getVertex(2)));
     }
 
     /** Initialize the triangle from its vertices. */
@@ -704,7 +707,7 @@ class /* THEA_API */ Triangle3 : public Triangle3Base<VertexTripleT>
     typedef Triangle3Base<VertexTripleT> BaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(Triangle3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Triangle3, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Does not initialize anything. */
     Triangle3() {}

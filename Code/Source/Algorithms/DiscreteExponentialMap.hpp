@@ -44,9 +44,9 @@
 
 #include "../Common.hpp"
 #include "../CoordinateFrame3.hpp"
+#include "../MatVec.hpp"
 #include "../Noncopyable.hpp"
 #include "../UnorderedMap.hpp"
-#include "../Vector3.hpp"
 
 namespace Thea {
 namespace Algorithms {

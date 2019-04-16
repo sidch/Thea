@@ -41,8 +41,8 @@
 
 #include "HoughForest.hpp"
 #include "../Math.hpp"
+#include "../MatVec.hpp"
 #include "../Stopwatch.hpp"
-#include "../Vector.hpp"
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -116,8 +116,8 @@ class Gaussian1D
 class Gaussian
 {
   private:
-    Vector<double> mean;
-    Matrix<double> inv_cov;
+    VectorX<double> mean;
+    MatrixX<double> inv_cov;
 
     void resize(long ndims)
     {
@@ -159,35 +159,26 @@ class Gaussian
       return Math::fastMinusExp(0.5 * xCx);
     }
 
-    long numDimensions() const { return (long)mean.size(); }
+    long dims() const { return (long)mean.size(); }
 
-    Vector<double> const & getMean() const { return mean; }
-    Matrix<double> const & getInvCov() const { return inv_cov; }
+    VectorX<double> const & getMean() const { return mean; }
+    MatrixX<double> const & getInvCov() const { return inv_cov; }
 
-    void setMean(Vector<double> const & value) { mean = value; }
-    void setCov(Matrix<double> const & cov)
+    void setMean(VectorX<double> const & value) { mean = value; }
+    void setCov(MatrixX<double> const & cov)
     {
-      inv_cov = cov;
-
-      try
-      {
-        inv_cov.invert();
-      }
-      catch (...)
-      {
-        inv_cov.fill(1e+20);  // a near-zero matrix has an inverse with very large values
-      }
+      inv_cov = cov.inverse();  // FIXME: Add invertibility check via methods of Eigen::FullPivLU
     }
 
     void serialize(BinaryOutputStream & out) const
     {
-      out.writeInt64(numDimensions());
+      out.writeInt64(dims());
 
       for (long i = 0; i < mean.size(); ++i)
         out.writeFloat64(mean[i]);
 
-      for (long i = 0; i < inv_cov.numRows(); ++i)
-        for (long j = 0; j < inv_cov.numColumns(); ++j)
+      for (long i = 0; i < inv_cov.rows(); ++i)
+        for (long j = 0; j < inv_cov.cols(); ++j)
           out.writeFloat64(inv_cov(i, j));
     }
 
@@ -199,8 +190,8 @@ class Gaussian
       for (long i = 0; i < mean.size(); ++i)
         mean[i] = in.readFloat64();
 
-      for (long i = 0; i < inv_cov.numRows(); ++i)
-        for (long j = 0; j < inv_cov.numColumns(); ++j)
+      for (long i = 0; i < inv_cov.rows(); ++i)
+        for (long j = 0; j < inv_cov.cols(); ++j)
           inv_cov(i, j) = in.readFloat64();
     }
 
@@ -813,10 +804,10 @@ class HoughTree
         training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
         // Now measure the vote variance per class
-        Matrix<double> sum_votes(num_classes, max_vote_params, 0.0);       // to measure "square of mean"
-        TheaArray<double> sum_vote_sqlen((size_t)num_classes, 0.0);  // to measure "mean of squares"
-        TheaArray<long> class_freq((size_t)num_classes, 0);          // only count elements that have valid Hough votes
-                                                                           // for their own classes
+        MatrixX<double> sum_votes(num_classes, max_vote_params); sum_votes.setZero();  // to measure "square of mean"
+        TheaArray<double> sum_vote_sqlen((size_t)num_classes, 0.0);                    // to measure "mean of squares"
+        TheaArray<long> class_freq((size_t)num_classes, 0);                            // only count elements that have valid
+                                                                                       // Hough votes for their own classes
         TheaArray<double> vote((size_t)max_vote_params);
         for (size_t i = 0; i < elems.size(); ++i)
         {
@@ -989,7 +980,7 @@ class HoughTree
       TheaArray<long> classes(elems.size());
       training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
-      Matrix<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (long)elems.size());
+      MatrixX<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (long)elems.size());
       for (long i = 0; i < num_features; ++i)
         training_data.getFeatures(i, (long)elems.size(), &elems[0], &all_features(i, 0));
 
@@ -1340,7 +1331,7 @@ HoughForest::singleSelfVoteByLookup(long index, double weight, VoteCallback & ca
   long nv = num_vote_params[(size_t)c];
   callback(Vote(c,
                 nv,
-                all_self_votes.data() + index * all_self_votes.numColumns(),
+                all_self_votes.data() + index * all_self_votes.cols(),
                 weight,
                 index,
                 num_features,
@@ -1361,11 +1352,11 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
   // Cache features, one example per row
   {
     all_features.resize(num_examples, num_features);
-    TheaArray<double> features(num_examples);
+    VectorXd features(num_examples);
     for (long i = 0; i < num_features; ++i)
     {
       training_data.getFeatures(i, &features[0]);  // gets feature i for all training examples
-      all_features.setColumn(i, &features[0]);
+      all_features.col(i) = features;
     }
   }
 
@@ -1374,7 +1365,7 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
     all_self_votes.resize(num_examples, max_vote_params);
     for (long i = 0; i < num_examples; ++i)
     {
-      double * row_start = all_self_votes.data() + i * all_self_votes.numColumns();
+      double * row_start = all_self_votes.data() + i * all_self_votes.cols();
       training_data.getSelfVote(i, row_start);
     }
   }
@@ -1485,16 +1476,16 @@ HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
   for (size_t i = 0; i < all_classes.size(); ++i)
     output.writeInt64(all_classes[i]);
 
-  output.writeInt64(all_features.numRows());
-  output.writeInt64(all_features.numColumns());
-  for (long i = 0; i < all_features.numRows(); ++i)
-    for (long j = 0; j < all_features.numColumns(); ++j)
+  output.writeInt64(all_features.rows());
+  output.writeInt64(all_features.cols());
+  for (long i = 0; i < all_features.rows(); ++i)
+    for (long j = 0; j < all_features.cols(); ++j)
       output.writeFloat64(all_features(i, j));
 
-  output.writeInt64(all_self_votes.numRows());
-  output.writeInt64(all_self_votes.numColumns());
-  for (long i = 0; i < all_self_votes.numRows(); ++i)
-    for (long j = 0; j < all_self_votes.numColumns(); ++j)
+  output.writeInt64(all_self_votes.rows());
+  output.writeInt64(all_self_votes.cols());
+  for (long i = 0; i < all_self_votes.rows(); ++i)
+    for (long j = 0; j < all_self_votes.cols(); ++j)
       output.writeFloat64(all_self_votes(i, j));
 }
 

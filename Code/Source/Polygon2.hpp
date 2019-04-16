@@ -43,7 +43,7 @@
 
 #include "Common.hpp"
 #include "Array.hpp"
-#include "Vector2.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -53,7 +53,7 @@ class Polygon3;
 class THEA_API Polygon2
 {
   public:
-    THEA_DEF_POINTER_TYPES(Polygon2, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Polygon2, std::shared_ptr, std::weak_ptr)
 
     /** %Options controlling interior triangulation. */
     struct THEA_API TriangulationOptions

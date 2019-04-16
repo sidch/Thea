@@ -240,7 +240,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
         if (acceptance_probability < 1 && Random::common().uniform01() > acceptance_probability)
           return false;
 
-        Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).length();
+        Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).norm();
         histogram.insert(d);
 
         return false;

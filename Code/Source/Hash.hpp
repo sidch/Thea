@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2014, Siddhartha Chaudhuri/Princeton University
+// Copyright (C) 2019, Siddhartha Chaudhuri
 //
 // All rights reserved.
 //
@@ -39,44 +39,24 @@
 //
 //============================================================================
 
-#ifndef __Thea_IteratableMatrix_hpp__
-#define __Thea_IteratableMatrix_hpp__
+#ifndef __Thea_Hash_hpp__
+#define __Thea_Hash_hpp__
 
-#include "BasicMatrix.hpp"
+#include <boost/functional/hash.hpp>
+#include <utility>
 
-namespace Thea {
+namespace std {
 
-/**
- * Base class for a 2D matrix with an iterator that visits (at least) all the non-zero entries in the matrix. The iterator
- * is assumed to be read-only, and <b>cannot</b> in general be used to change the visited elements. Any class that inherits this
- * should have the following members.
- *
- * \code
- *  // Supporting types
- *  typedef std::pair<integer-type, integer-type> IndexPair;  ///< A (row, column) index pair.
- *  typedef std::pair<IndexPair, T> Entry;  ///< An entry in the matrix, mapping a (row, column) pair to a value.
- *
- *  // Read-only iterator
- *  typedef <type> EntryIterator;
- *
- *  // Access the beginning and end of the matrix
- *  EntryIterator entriesBegin() const;
- *  EntryIterator entriesEnd() const;
- * \endcode
- *
- * <tt>EntryIterator</tt> should dereference to Entry.
- */
-template <typename T>
-class /* THEA_API */ IteratableMatrix : public virtual BasicMatrix<T>
+// Specialize std::hash for std::pair types. For some inexplicable reason this is not present in the standard library.
+template <typename U, typename V>
+struct hash< pair<U, V> >
 {
-  private:
-    typedef BasicMatrix<T> BaseType;
+  size_t operator()(pair<U, V> const & p) const
+  {
+    return boost::hash_value(p);
+  }
+};
 
-  public:
-    THEA_DEF_POINTER_TYPES(IteratableMatrix, shared_ptr, weak_ptr)
-
-}; // class IteratableMatrix
-
-} // namespace Thea
+} // namespace std
 
 #endif

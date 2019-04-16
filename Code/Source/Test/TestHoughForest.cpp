@@ -1,9 +1,8 @@
 #include "../Common.hpp"
 #include "../Algorithms/HoughForest.hpp"
 #include "../Math.hpp"
-#include "../Matrix.hpp"
+#include "../MatVec.hpp"
 #include "../UnorderedMap.hpp"
-#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>
 
@@ -82,7 +81,7 @@ class ExampleSet: public HoughForest::TrainingData
     typedef TheaUnorderedMap<long, long> IDMap;
 
   public:
-    THEA_DEF_POINTER_TYPES(ExampleSet, Thea::shared_ptr, Thea::weak_ptr)
+    THEA_DEF_POINTER_TYPES(ExampleSet, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. */
     ExampleSet(long num_classes_ = 0) : num_classes(num_classes_) {}
@@ -98,9 +97,9 @@ class ExampleSet: public HoughForest::TrainingData
     {
       alwaysAssertM(example_index >= 0 && example_index < (long)classes.size(), "Example index out of bounds");
 
-      features.setColumn(example_index, example_features);
+      features.col(example_index) = Eigen::Map<VectorXd const>(example_features, features.rows());
       classes[(size_t)example_index] = example_class;
-      votes.setColumn(example_index, example_self_vote);
+      votes.col(example_index) = Eigen::Map<VectorXd const>(example_self_vote, features.rows());
     }
 
     /** Convert an input class ID (read from file) to a Hough class ID in the range [0, num_classes - 1]. */
@@ -154,7 +153,7 @@ class ExampleSet: public HoughForest::TrainingData
         std::string line;
         while (std::getline(in, line))
         {
-          boost::trim(line);
+          line = trimWhitespace(line);
           if (!line.empty())
           {
             num_examples++;
@@ -224,16 +223,16 @@ class ExampleSet: public HoughForest::TrainingData
     long numClasses() const { return (long)input_class_to_hough_class.size(); }
 
     /** Get the number of features. */
-    long numFeatures() const { return features.numRows(); }
+    long numFeatures() const { return features.rows(); }
 
     /** Get the number of vote parameters for a given class. */
-    long numVoteParameters(long class_index) const { return votes.numRows(); }
+    long numVoteParameters(long class_index) const { return votes.rows(); }
 
     /** Get the value of a particular feature for all examples. */
     void getFeatures(long feature_index, double * values) const
     {
       double const * row_start = &features(feature_index, 0);
-      std::memcpy(values, row_start, (size_t)features.numColumns() * sizeof(double));
+      std::memcpy(values, row_start, (size_t)features.cols() * sizeof(double));
     }
 
     /** Get the value of a particular feature for a selected set of examples. */
@@ -247,7 +246,7 @@ class ExampleSet: public HoughForest::TrainingData
     /** Get the feature vector of a single example. */
     void getExampleFeatures(long example_index, double * values) const
     {
-      for (long i = 0; i < features.numRows(); ++i)
+      for (long i = 0; i < features.rows(); ++i)
         values[i] = features(i, example_index);
     }
 
@@ -274,7 +273,7 @@ class ExampleSet: public HoughForest::TrainingData
     void getSelfVote(long example_index, double * params) const
     {
       double const * col_start = &votes(0, example_index);
-      std::memcpy(params, col_start, (size_t)votes.numRows() * sizeof(double));
+      std::memcpy(params, col_start, (size_t)votes.rows() * sizeof(double));
     }
 
   private:
@@ -288,8 +287,8 @@ class ExampleSet: public HoughForest::TrainingData
     }
 
     long num_classes;
-    Matrix<double, MatrixLayout::ROW_MAJOR> features;
-    Matrix<double, MatrixLayout::COLUMN_MAJOR> votes;
+    MatrixX<double, MatrixLayout::ROW_MAJOR> features;
+    MatrixX<double, MatrixLayout::COLUMN_MAJOR> votes;
     TheaArray<long> classes;
     IDMap input_class_to_hough_class;
     IDMap hough_class_to_input_class;

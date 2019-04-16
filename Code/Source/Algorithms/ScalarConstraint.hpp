@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
 //
 // All rights reserved.
 //
@@ -39,26 +39,36 @@
 //
 //============================================================================
 
-#ifdef THEA_ENABLE_UBLAS
+#ifndef __Thea_Algorithms_ScalarConstraint_hpp__
+#define __Thea_Algorithms_ScalarConstraint_hpp__
 
-#ifndef __Thea_uBLAS_hpp__
-#define __Thea_uBLAS_hpp__
+#include "../Common.hpp"
+#include "ScalarFunction.hpp"
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/matrix_sparse.hpp>
+namespace Thea {
+namespace Algorithms {
 
-namespace boost {
-namespace numeric {
-namespace ublas {
+/**
+ * Interface for an optimization constraint of the form <code>f(x) op y</code>, where <code>x</code> is a vector, <code>y</code>
+ * is a scalar, <code>f</code> is a function, and <code>op</code> is a comparison operator.
+ */
+class ScalarConstraint
+{
+  public:
+    THEA_DEF_POINTER_TYPES(ScalarConstraint, std::shared_ptr, std::weak_ptr)
 
-// Additional functions
+    /** Get the function. */
+    virtual ScalarFunction const & getFunction() const = 0;
 
-} // namespace ublas
-} // namespace numeric
-} // namespace boost
+    /** Get the comparison operator. */
+    virtual CompareOp getCompareOp() const = 0;
 
-using namespace boost::numeric;
+    /** Get the right-hand side. */
+    virtual double getRHS() const = 0;
 
-#endif
+}; // class ScalarConstraint
+
+} // namespace Algorithms
+} // namespace Thea
 
 #endif

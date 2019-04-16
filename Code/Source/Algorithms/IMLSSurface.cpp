@@ -61,9 +61,6 @@ long   const IMLSSurface::DEFAULT_MAX_TRIS_PER_LEAF  =  3;
 
 namespace IMLSSurfaceInternal {
 
-DoubleVector3 toDoubleVector3(Vector3 const & v) { return DoubleVector3((double)v.x(), (double)v.y(), (double)v.z()); }
-Vector3 toVector3(DoubleVector3 const & v) { return Vector3((Real)v.x(), (Real)v.y(), (Real)v.z()); }
-
 // A kd-tree node and an associated scalar value.
 struct NodeValuePair
 {
@@ -108,7 +105,7 @@ double lineIntegral(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, d
 // The derivative of the line integral with respect to \a x.
 //
 // @param eps2 epsilon^2.
-DoubleVector3 lineIntegralDeriv(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, double v0, double v1, double eps2_);
+Vector3d lineIntegralDeriv(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, double v0, double v1, double eps2_);
 
 
 // Area integral of the squared weight function times a linearly interpolated value. Call triangleQuadrature() to first
@@ -119,7 +116,7 @@ DoubleVector3 lineIntegralDeriv(Vector3 const & x, Vector3 const & p0, Vector3 c
 // @param pp Second closest vertex.
 // @param pm Furthest vertex.
 // @param eps2 epsilon^2.
-DoubleVector2 splitTriangleQuadrature(Vector3 const & x, Vector3 const & pm, Vector3 const & p1, Vector3 const & p2, double vm,
+Vector2d splitTriangleQuadrature(Vector3 const & x, Vector3 const & pm, Vector3 const & p1, Vector3 const & p2, double vm,
                                       double v1, double v2, double eps2_);
 
 // Area integral of the squared weight function times a linearly interpolated value. Also computes vector term used in the
@@ -283,8 +280,8 @@ IMLSSurface::computeCentroidsRec(TriangleKDTree::Node const * start)
   if (start->isLeaf())
   {
     my_attrib.area      =  0;
-    my_attrib.centroid  =  DoubleVector3::zero();
-    my_attrib.normal    =  DoubleVector3::zero();
+    my_attrib.centroid  =  Vector3d::Zero();
+    my_attrib.normal    =  Vector3d::Zero();
 
     for (TriangleKDTree::Node::ElementIndexConstIterator ei = start->elementIndicesBegin(); ei != start->elementIndicesEnd();
          ++ei)
@@ -292,12 +289,12 @@ IMLSSurface::computeCentroidsRec(TriangleKDTree::Node const * start)
       IndexedTriangle const & tri = kdtree.getElements()[*ei];
 
       my_attrib.area      +=  tri.getArea();
-      my_attrib.centroid  +=  toDoubleVector3(tri.getArea() * tri.getCentroid());
-      my_attrib.normal    +=  toDoubleVector3(tri.getNormal());
+      my_attrib.centroid  +=  tri.getArea() * tri.getCentroid().cast<double>();
+      my_attrib.normal    +=  tri.getNormal().cast<double>();
     }
 
     if (my_attrib.area > 0) my_attrib.centroid /= my_attrib.area;
-    my_attrib.normal_len = my_attrib.normal.length();
+    my_attrib.normal_len = my_attrib.normal.norm();
   }
   else
   {
@@ -314,10 +311,10 @@ IMLSSurface::computeCentroidsRec(TriangleKDTree::Node const * start)
     if (my_attrib.area > 0)
       my_attrib.centroid = (lo_attrib.area * lo_attrib.centroid + hi_attrib.area * hi_attrib.centroid) / my_attrib.area;
     else
-      my_attrib.centroid = DoubleVector3::zero();
+      my_attrib.centroid = Vector3d::Zero();
 
     my_attrib.normal      =  lo_attrib.normal + hi_attrib.normal;
-    my_attrib.normal_len  =  my_attrib.normal.length();
+    my_attrib.normal_len  =  my_attrib.normal.norm();
   }
 }
 
@@ -511,7 +508,7 @@ IMLSSurface::operator()(Vector3 const & p) const
 }
 
 double
-IMLSSurface::deriv(Vector3 const & p, DoubleVector3 & dp) const
+IMLSSurface::deriv(Vector3 const & p, Vector3d & dp) const
 {
   DerivFunctor dfunc(*this);
 
@@ -539,7 +536,7 @@ IMLSSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
   size_t i1 = tri.getVertices().getIndex(1);
   size_t i2 = tri.getVertices().getIndex(2);
 
-  DoubleVector2 I = triangleQuadrature<DoubleVector2>(splitTriangleQuadrature, p, surf.verts[i0], surf.verts[i1],
+  Vector2d I = triangleQuadrature<Vector2d>(splitTriangleQuadrature, p, surf.verts[i0], surf.verts[i1],
                                                       surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
                                                       surf.phi[i2], surf.eps2);
 
@@ -558,8 +555,8 @@ IMLSSurface::EvalFunctor::evalNode(Vector3 const & p, TriangleKDTree::Node const
   // if ((num_calls++) % 1000 == 0) THEA_CONSOLE << num_calls << " calls to EvalFunctor::evalNode";
 
   NodeAttribute const & attrib = node.attr();
-  DoubleVector3 v(toDoubleVector3(p) - attrib.centroid);
-  double w2 = surf.weight2(v.squaredLength());
+  Vector3d v = p.cast<double>() - attrib.centroid;
+  double w2 = surf.weight2(v.squaredNorm());
 
   sum      +=  w2 * attrib.area;
   sum_phi  +=  w2 * (attrib.unweighted + attrib.normal.dot(v));
@@ -591,7 +588,7 @@ IMLSSurface::DerivFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tr
   sums.I       +=  Id.I;
   sums.I_phi   +=  Id.I_phi + plane_dist * Id.I;
   sums.dI      +=  Id.dI;
-  sums.dI_phi  +=  Id.dI_phi + (Id.I * toDoubleVector3(tri.getNormal()) + plane_dist * Id.dI);
+  sums.dI_phi  +=  Id.dI_phi + (Id.I * tri.getNormal().cast<double>() + plane_dist * Id.dI);
 }
 
 void
@@ -600,9 +597,9 @@ IMLSSurface::DerivFunctor::evalNode(Vector3 const & p, TriangleKDTree::Node cons
   using namespace IMLSSurfaceInternal;
 
   NodeAttribute const & attrib = node.attr();
-  DoubleVector3 v(toDoubleVector3(p) - attrib.centroid);
-  double w = surf.weight(v.squaredLength());
-  DoubleVector3 dw(-4 * w * v);
+  Vector3d v(p.cast<double>() - attrib.centroid);
+  double w = surf.weight(v.squaredNorm());
+  Vector3d dw(-4 * w * v);
   w   *=  w;
   dw  *=  w;
 
@@ -620,15 +617,15 @@ IMLSSurface::DerivFunctor::acceptableError(double err) const
 }
 
 double
-IMLSSurface::deriv2(Vector3 const & p, DoubleVector3 & dp, DoubleMatrix3 & ddp) const
+IMLSSurface::deriv2(Vector3 const & p, Vector3d & dp, Matrix3d & ddp) const
 {
   Real e = 1.0e-5f * mesh_size;
   double val = deriv(p, dp);
 
-  DoubleVector3 dpx, dpy, dpz;
-  deriv(p * Vector3(1 + e, 1,     1    ), dpx);
-  deriv(p * Vector3(1,     1 + e, 1    ), dpy);
-  deriv(p * Vector3(1,     1,     1 + e), dpz);
+  Vector3d dpx, dpy, dpz;
+  deriv(p.cwiseProduct(Vector3(1 + e, 1,     1    )), dpx);
+  deriv(p.cwiseProduct(Vector3(1,     1 + e, 1    )), dpy);
+  deriv(p.cwiseProduct(Vector3(1,     1,     1 + e)), dpz);
 
   dpx -= dp;
   dpx /= e;
@@ -863,11 +860,11 @@ lineIntegral(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, double v
 {
   using namespace IMLSSurfaceInternal;
 
-  DoubleVector3 ab = toDoubleVector3(p1 - p0);
-  DoubleVector3 xa = toDoubleVector3(p0 - x);
-  double denom = 1 / ab.squaredLength();
+  Vector3d ab = (p1 - p0).cast<double>();
+  Vector3d xa = (p0 - x).cast<double>();
+  double denom = 1 / ab.squaredNorm();
   double k1 = ab.dot(xa) * denom;
-  double k2 = (xa.squaredLength() + eps2_) * denom - k1 * k1;
+  double k2 = (xa.squaredNorm() + eps2_) * denom - k1 * k1;
   double I1, Ix;
 
   lineIntegrals(k1, k2, I1, Ix);
@@ -875,14 +872,14 @@ lineIntegral(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, double v
   return (v0 * I1 + (v1 - v0) * Ix) * std::sqrt(denom) * denom;
 }
 
-DoubleVector3
+Vector3d
 lineIntegralDeriv(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, double v0, double v1, double eps2_)
 {
-  DoubleVector3 ab = toDoubleVector3(p1 - p0);
-  DoubleVector3 xa = toDoubleVector3(p0 - x);
-  double denom = 1 / ab.squaredLength();
+  Vector3d ab = (p1 - p0).cast<double>();
+  Vector3d xa = (p0 - x).cast<double>();
+  double denom = 1 / ab.squaredNorm();
   double k1 = ab.dot(xa) * denom;
-  double k2 = (xa.squaredLength() + eps2_) * denom - k1 * k1;
+  double k2 = (xa.squaredNorm() + eps2_) * denom - k1 * k1;
   double I1, Ix, dI1, dIx, dIx2;
 
   lineIntegrals(k1, k2, I1, Ix, dI1, dIx, dIx2);
@@ -892,36 +889,36 @@ lineIntegralDeriv(Vector3 const & x, Vector3 const & p0, Vector3 const & p1, dou
         + ab * (v0 * dIx + (v1 - v0) * dIx2)) * denom;
 }
 
-DoubleVector2
+Vector2d
 splitTriangleQuadrature(Vector3 const & x, Vector3 const & pm, Vector3 const & p1, Vector3 const & p2, double vm, double v1,
                         double v2, double eps2_)
 {
   Vector3 pp(p1), pn(p2);
   double vp(v1), vn(v2);
-  if ((pp - x).squaredLength() > (pn - x).squaredLength())
+  if ((pp - x).squaredNorm() > (pn - x).squaredNorm())
   {
     // Swap so that pp is closest to x
     pp = p2; pn = p1;
     vp = v2; vn = v1;
   }
 
-  DoubleVector3 d1 = toDoubleVector3(pp - pm);
-  DoubleVector3 d2 = toDoubleVector3(pn - pm);
-  DoubleVector3 d3 = toDoubleVector3(pm - x);
+  Vector3d d1 = (pp - pm).cast<double>();
+  Vector3d d2 = (pn - pm).cast<double>();
+  Vector3d d3 = (pm - x).cast<double>();
 
   static double const T1_EPSILON = 1.0e-100;
-  double t1 = d1.squaredLength();
-  if (std::fabs(t1) < T1_EPSILON) return DoubleVector2::zero();  // early exit if t1 is 0
+  double t1 = d1.squaredNorm();
+  if (std::fabs(t1) < T1_EPSILON) return Vector2d::Zero();  // early exit if t1 is 0
 
   double t2 = d1.dot(d2);
   double t3 = d1.dot(d3);
-  double t4 = d2.squaredLength();
+  double t4 = d2.squaredNorm();
   double t5 = d2.dot(d3) * 2;
-  double t6 = d3.squaredLength() + eps2_;
+  double t6 = d3.squaredNorm() + eps2_;
 
   // Compute height (divided by 2 * sqrt(t1)); early exit if triangle flat
   double height = t4 / t1 - t2 * t2 / (t1 * t1);
-  if (height <= 0) return DoubleVector2::zero();
+  if (height <= 0) return Vector2d::Zero();
   height = std::sqrt(height) / 2.0;
 
   double vt1 = vn - vm;
@@ -974,7 +971,7 @@ splitTriangleQuadrature(Vector3 const & x, Vector3 const & pm, Vector3 const & p
   sum1 *= height;
   sum2 *= height;
 
-  DoubleVector2 result;
+  Vector2d result;
   result[0] = sum1;
   result[1] = sum2;
   return result;
@@ -986,26 +983,26 @@ splitTriangleQuadratureWithDeriv(Vector3 const & x, Vector3 const & pm, Vector3 
 {
   Vector3 pp(p1), pn(p2);
   double vp(v1), vn(v2);
-  if ((pp - x).squaredLength() > (pn - x).squaredLength())
+  if ((pp - x).squaredNorm() > (pn - x).squaredNorm())
   {
     // Swap so that pp is closest to x
     pp = p2; pn = p1;
     vp = v2; vn = v1;
   }
 
-  DoubleVector3 d1 = toDoubleVector3(pp - pm);
-  DoubleVector3 d2 = toDoubleVector3(pn - pm);
-  DoubleVector3 d3 = toDoubleVector3(pm - x);
+  Vector3d d1 = (pp - pm).cast<double>();
+  Vector3d d2 = (pn - pm).cast<double>();
+  Vector3d d3 = (pm - x).cast<double>();
 
   static double const T1_EPSILON = 1.0e-100;
-  double t1 = d1.squaredLength();
+  double t1 = d1.squaredNorm();
   if (std::fabs(t1) < T1_EPSILON) return IntegralData();  // early exit if t1 is 0
 
   double t2 = d1.dot(d2);
   double t3 = d1.dot(d3);
-  double t4 = d2.squaredLength();
+  double t4 = d2.squaredNorm();
   double t5 = d2.dot(d3) * 2;
-  double t6 = d3.squaredLength() + eps2_;
+  double t6 = d3.squaredNorm() + eps2_;
 
   // Compute height (divided by 2 * sqrt(t1)); early exit if triangle flat
   double height = t4 / t1 - t2 * t2 / (t1 * t1);
@@ -1039,7 +1036,7 @@ splitTriangleQuadratureWithDeriv(Vector3 const & x, Vector3 const & pm, Vector3 
     last_i_data.I      =  I1;
     last_i_data.I_phi  =  (phi_c * I1 + phi_x * Ix);
 
-    DoubleVector3 d_c(d3 + u * d2), d_x(d1 * u_1);
+    Vector3d d_c(d3 + u * d2), d_x(d1 * u_1);
     last_i_data.dI      =  (d_c * dI1 + d_x * dIx) * denom;
     last_i_data.dI_phi  =  (d_c * (phi_c * dI1 + phi_x * dIx) + d_x * (phi_c * dIx + phi_x * dIx2) ) * denom;
 
@@ -1131,19 +1128,19 @@ char
 triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Vector3 const & c, Vector3 const & n,
                      double & sqdist, double & u, double & v)
 {
-  double denom = 1.0 / n.squaredLength();
+  double denom = 1.0 / n.squaredNorm();
 
-  DoubleVector3 ap = toDoubleVector3(p - a);
-  DoubleVector3 bp = toDoubleVector3(p - b);
-  DoubleVector3 cp = toDoubleVector3(p - c);
+  Vector3d ap = (p - a).cast<double>();
+  Vector3d bp = (p - b).cast<double>();
+  Vector3d cp = (p - c).cast<double>();
 
-  DoubleVector3 t = toDoubleVector3(n.cross(p - a));
+  Vector3d t = n.cross(p - a).cast<double>();
   v = bp.dot(t) * denom;
   u = -cp.dot(t) * denom;
 
-  DoubleVector3 ab = toDoubleVector3(b - a);
-  DoubleVector3 bc = toDoubleVector3(c - b);
-  DoubleVector3 ca = toDoubleVector3(a - c);
+  Vector3d ab = (b - a).cast<double>();
+  Vector3d bc = (c - b).cast<double>();
+  Vector3d ca = (a - c).cast<double>();
 
   double const eps = std::numeric_limits<double>::epsilon();
   char state = 0;
@@ -1158,7 +1155,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
     else
     {
       u = 0; v = p_v;
-      sqdist = ((1 - v) * ap + v * cp).squaredLength();
+      sqdist = ((1 - v) * ap + v * cp).squaredNorm();
       return 5;
     }
   }
@@ -1173,7 +1170,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
     else
     {
       u = p_u; v = 0;
-      sqdist = ((1 - u) * ap + u * bp).squaredLength();
+      sqdist = ((1 - u) * ap + u * bp).squaredNorm();
       return 3;
     }
   }
@@ -1191,7 +1188,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
     else
     {
       u = p_u; v = p_v;
-      sqdist = (u * bp + v * cp).squaredLength();
+      sqdist = (u * bp + v * cp).squaredNorm();
       return 6;
     }
   }
@@ -1200,21 +1197,21 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
   {
     case 1:
       u = 0; v = 0;
-      sqdist = ap.squaredLength();
+      sqdist = ap.squaredNorm();
       return 1;
 
     case 2:
       u = 1; v = 0;
-      sqdist = bp.squaredLength();
+      sqdist = bp.squaredNorm();
       return 2;
 
     case 4:
       u = 0; v = 1;
-      sqdist = cp.squaredLength();
+      sqdist = cp.squaredNorm();
       return 4;
 
     default:
-      sqdist = ap.dot(toDoubleVector3(n));
+      sqdist = ap.dot(n.cast<double>());
       sqdist = sqdist * sqdist * denom;
       return 7;
   }
@@ -1229,21 +1226,21 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //
 // //: find the zero crossing point by bisection between positive point \a pp and negative point \a pn
 // //  Stops searching when $||pp-pn|| < xeps$ or $|f(pm)| < feps$
-// DoubleVector3 bisect(IMLSSurface const & f,
-//                      DoubleVector3 pp,
-//                      DoubleVector3 pn,
+// Vector3d bisect(IMLSSurface const & f,
+//                      Vector3d pp,
+//                      Vector3d pn,
 //                      double feps, double xeps)
 // {
 //   assert(f(pp) > 0.0);
 //   assert(f(pn) < 0.0);
-//   DoubleVector3 pm = centre(pp, pn);
+//   Vector3d pm = centre(pp, pn);
 //   const unsigned num_itr =
-//       static_cast<unsigned>(std::ceil(std::log((pp-pn).length()
+//       static_cast<unsigned>(std::ceil(std::log((pp-pn).norm()
 //                                               / xeps)
 //                                      / 0.301029995663981)); // log_2
-//   DoubleVector3 dp;
+//   Vector3d dp;
 //   double val = f.deriv(pm, dp);
-//   val /= dp.length();
+//   val /= dp.norm();
 //   for (unsigned int i = 0; i<num_itr; ++i) {
 //     if (std::abs(val) < feps)
 //       return pm;
@@ -1253,7 +1250,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //       pn = pm;
 //     pm = centre(pp, pn);
 //     val = f.deriv(pm, dp);
-//     val /= dp.length();
+//     val /= dp.norm();
 //   }
 //   return pm;
 // }
@@ -1262,19 +1259,19 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 // //: Move the point \a p along the gradient direction until reaching a zero crossing of \a f (within \a eps).
 // //  Return true if successful
 // bool snap_to_surface(IMLSSurface const & f,
-//                      DoubleVector3 & p,
+//                      Vector3d & p,
 //                      double step, double eps)
 // {
-//   DoubleVector3 p1(p);
-//   DoubleVector3 dp;
+//   Vector3d p1(p);
+//   Vector3d dp;
 //   double val1 = f.deriv(p1, dp);
-//   double dl = dp.length();
+//   double dl = dp.norm();
 //   val1 /= dl;
 //   if (std::abs(val1) < eps)
 //     return true;
 //
-//   DoubleVector3 p2 = p1 - (step*val1/dl)*dp;
-//   dl = dp.length();
+//   Vector3d p2 = p1 - (step*val1/dl)*dp;
+//   dl = dp.norm();
 //   double val2 = f.deriv(p2, dp);
 //   val2 /= dl;
 //   unsigned int i = 0;
@@ -1283,7 +1280,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //     val1 = val2;
 //     p2 -= (step*val2/dl)*dp;
 //     val2 = f.deriv(p2, dp);
-//     dl = dp.length();
+//     dl = dp.norm();
 //     val2 /= dl;
 //     if (std::abs(val2) < eps) {
 //       p = p2;
@@ -1304,30 +1301,30 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //
 //
 // namespace{
-// double func(DoubleVector3 const & n,
+// double func(Vector3d const & n,
 //             double v,
-//             DoubleVector3 const & dp)
+//             Vector3d const & dp)
 // {
 //   v *= v;
-//   v /= dp.squaredLength();
-//   double tmp = n.dot(dp)/dp.length() - 1.0;
+//   v /= dp.squaredNorm();
+//   double tmp = n.dot(dp)/dp.norm() - 1.0;
 //   return v + tmp*tmp;
 // }
 //
-// DoubleVector3 dfunc(DoubleVector3 const & n,
+// Vector3d dfunc(Vector3d const & n,
 //                     double v,
-//                     DoubleVector3 const & dp,
+//                     Vector3d const & dp,
 //                     vnl_double_3x3 const & ddp)
 // {
 //   vnl_double_3 nn(n.x(), n.y(), n.z());
 //   vnl_double_3 ndp(dp.x(), dp.y(), dp.z());
-//   double sqr_len = dp.squaredLength();
+//   double sqr_len = dp.squaredNorm();
 //   double len = std::sqrt(sqr_len);
 //   double n_dot_dp = nn.dot(ndp);
 //   vnl_double_3 df = (2*v/sqr_len)*ndp;
 //   df += ddp.transpose() * ( ((-2*v*v/(sqr_len*sqr_len))*ndp) +
 //                             (2/len*(n_dot_dp/len - 1)*(nn - (n_dot_dp/sqr_len)*ndp)) );
-//   return DoubleVector3(df[0], df[1], df[2]);
+//   return Vector3d(df[0], df[1], df[2]);
 // }
 // // end of namespace
 // }
@@ -1335,24 +1332,24 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 // //: Move the point \a p to minimize $(f^2 + (n*f' - 1)^2)/f'*f'$ a zero crossing of \a f (within \a eps).
 // //  Return true if successful
 // bool snap_to_surfaceWith_normal(IMLSSurface const & f,
-//                                 DoubleVector3 & p,
-//                                 DoubleVector3 n,
+//                                 Vector3d & p,
+//                                 Vector3d n,
 //                                 double step, double eps)
 // {
-//   DoubleVector3 p1(p);
+//   Vector3d p1(p);
 //   normalize(n);
-//   DoubleVector3 dp;
+//   Vector3d dp;
 //   vnl_double_3x3 ddp;
 //   double val = f.deriv2(p1, dp, ddp);
 //   double f1 = func(n, val, dp);
 //   if (f1 < eps)
 //     return true;
 //
-//   DoubleVector3 df = dfunc(n, val, dp, ddp);
-//   double dl = df.squaredLength();
+//   Vector3d df = dfunc(n, val, dp, ddp);
+//   double dl = df.squaredNorm();
 //   unsigned int i;
 //   for (i = 0; i<1000; ++i) {
-//     DoubleVector3 p2 = p1 - (step*f1/dl)*df;
+//     Vector3d p2 = p1 - (step*f1/dl)*df;
 //     val = f.deriv2(p2, dp, ddp);
 //     double f2 = func(n, val, dp);
 //     //std::cout << i<<" f: "<<f2<<" step: "<< step<<std::endl;
@@ -1367,7 +1364,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //     f1 = f2;
 //     p1 = p2;
 //     df = dfunc(n, val, dp, ddp);
-//     dl = df.squaredLength();
+//     dl = df.squaredNorm();
 //     step *= 2;
 //   }
 //   if (i > = 100)
@@ -1381,22 +1378,22 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 // //: Move the point \a p along direction \a dir until reaching a zero crossing of \a f (within \a eps).
 // //  Return true if successful
 // bool snap_to_surface(IMLSSurface const & f,
-//                      DoubleVector3 dir,
-//                      DoubleVector3 & p,
+//                      Vector3d dir,
+//                      Vector3d & p,
 //                      double step, double eps)
 // {
-//   DoubleVector3 p1(p);
+//   Vector3d p1(p);
 //   normalize(dir);
-//   DoubleVector3 dp;
+//   Vector3d dp;
 //   double val1 = f.deriv(p1, dp);
 //   dp = dir * dp.dot(dir);
-//   double dl = dp.length();
+//   double dl = dp.norm();
 //   val1 /= dl;
 //   if (std::abs(val1) < eps)
 //     return true;
 //
-//   DoubleVector3 p2 = p1 - (step*val1/dl)*dp;
-//   dl = dp.length();
+//   Vector3d p2 = p1 - (step*val1/dl)*dp;
+//   dl = dp.norm();
 //   double val2 = f.deriv(p2, dp);
 //   val2 /= dl;
 //   unsigned int i = 0;
@@ -1406,7 +1403,7 @@ triangleClosestPoint(Vector3 const & p, Vector3 const & a, Vector3 const & b, Ve
 //     p2 -= (step*val2/dl)*dp;
 //     val2 = f.deriv(p2, dp);
 //     dp = dir * dp.dot(dir);
-//     dl = dp.length();
+//     dl = dp.norm();
 //     val2 /= dl;
 //     if (std::abs(val2) < eps) {
 //       p = p2;

@@ -49,7 +49,7 @@
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class RigidTransformN;
+template <int N, typename T> class RigidTransformN;
 
 namespace Internal {
 
@@ -61,16 +61,16 @@ namespace Internal {
  * @note While this is technically an affine transform, it restricts enough functionality to make a separate implementation
  * preferable. It can be trivially converted to an AffineTransformN using the implicit conversion operator or toAffine().
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ RigidTransformNBase
 {
   public:
-    typedef RigidTransformN<N, T>   RigidTransformT;  ///< N-dimensional rigid transform type.
+    typedef RigidTransformN<N, T>   RigidTransformT;   ///< N-dimensional rigid transform type.
     typedef AffineTransformN<N, T>  AffineTransformT;  ///< N-dimensional affine transform type.
-    typedef VectorN<N, T>           VectorT;  ///< N-dimensional vector.
-    typedef MatrixMN<N, N, T>       MatrixT;  ///< NxN matrix.
+    typedef Vector<N, T>            VectorT;           ///< N-dimensional vector.
+    typedef Matrix<N, N, T>         MatrixT;           ///< NxN matrix.
 
-    THEA_DEF_POINTER_TYPES(RigidTransformT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RigidTransformT, std::shared_ptr, std::weak_ptr)
 
   public:
     /** Default constructor. Constructs the identity transform. */
@@ -106,10 +106,10 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
     void setTranslation(VectorT const & translation_) { aff.setTranslation(translation_); }
 
     /** Convert to an N x (N + 1) transformation matrix. */
-    MatrixMN<N, N + 1, T> toMatrix() const { return aff.toMatrix(); }
+    Matrix<N, N + 1, T> toMatrix() const { return aff.toMatrix(); }
 
-    /** Convert to an (N + 1) x (N + 1) transformation matrix in homogenous coordinates (last row is identity). */
-    MatrixMN<N + 1, N + 1, T> toHomMatrix() const { return aff.toHomMatrix(); }
+    /** Convert to an (N + 1) x (N + 1) transformation matrix in homogeneous coordinates (last row is identity). */
+    Matrix<N + 1, N + 1, T> homogeneous() const { return aff.homogeneous(); }
 
     /**
      * Convert to a general affine transform. This <i>may</i> be more efficient than the conversion operator since it explicitly
@@ -143,7 +143,7 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[R: " << getRotation() << ", T: " << getTranslation() << ']';
+      oss << "[R: " << Thea::toString(getRotation()) << ", T: " << Thea::toString(getTranslation()) << ']';
       return oss.str();
     }
 
@@ -167,7 +167,7 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
  * @note While this is technically an affine transform, it restricts enough functionality to make a separate implementation
  * preferable. It can be trivially converted to an AffineTransformN using the implicit conversion operator or toAffine().
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RigidTransformN : public Internal::RigidTransformNBase<N, T>
 {
   private:
@@ -184,7 +184,7 @@ class /* THEA_API */ RigidTransformN : public Internal::RigidTransformNBase<N, T
 }; // class RigidTransformN
 
 /** Pipe a textual representation of a rigid transform to a <code>std::ostream</code>. */
-template <long N, typename T>
+template <int N, typename T>
 std::ostream &
 operator<<(std::ostream & os, RigidTransformN<N, T> const & tr)
 {

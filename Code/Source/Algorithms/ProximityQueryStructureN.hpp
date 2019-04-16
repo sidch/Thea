@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../AxisAlignedBoxN.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include <cmath>
 #include <sstream>
 #include <utility>
@@ -56,13 +56,13 @@ namespace Algorithms {
  * Interface for a structure that supports proximity queries in N-space. None of the functions are virtual, this just defines a
  * concept subclasses must implement.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ ProximityQueryStructureN
 {
   public:
-    THEA_DEF_POINTER_TYPES(ProximityQueryStructureN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ProximityQueryStructureN, std::shared_ptr, std::weak_ptr)
 
-    typedef VectorN<N, T> VectorT;  ///< N-dimensional vector.
+    typedef Vector<N, T> VectorT;  ///< N-dimensional vector.
 
     /**
      * A return value of a k-nearest-neighbors query, specified by a monotone approximation to (for L2, square of) the distance
@@ -81,7 +81,7 @@ class /* THEA_API */ ProximityQueryStructureN
          */
         NeighborPair(long query_index_, long target_index_ = -1, double mon_approx_dist_ = 0)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_),
-          query_point(VectorT::zero()), target_point(VectorT::zero())
+          query_point(VectorT::Zero()), target_point(VectorT::Zero())
         {}
 
         /**

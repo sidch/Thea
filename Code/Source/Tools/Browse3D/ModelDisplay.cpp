@@ -193,7 +193,7 @@ ModelDisplay::updateCameraFrameFromModel()
   if (!model) return;
 
   camera_look_at = model->getTransformedBounds().getCenter();
-  Real model_scale = model->getTransformedBounds().getExtent().fastLength();
+  Real model_scale = model->getTransformedBounds().getExtent().norm();
   Real camera_separation = model_scale > 1.0e-3f ? 2 * model_scale : 1.0e-3f;
 
   // Maintain current orientation
@@ -223,7 +223,7 @@ ModelDisplay::updateCameraProjection()
     hh = HALF_WIDTH;
   }
 
-  Real camera_separation = (camera_look_at - camera.getPosition()).length();
+  Real camera_separation = (camera_look_at - camera.getPosition()).norm();
   Real near_dist = 0.01 * camera_separation;
   Real far_dist  = 1000 * camera_separation;
 
@@ -450,18 +450,18 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 
   Matrix3 rot = camera.getFrame().getRotation();
 
-  Vector2 x_axis = rot.getRow(0).xy();
-  Vector2 y_axis = rot.getRow(1).xy();
-  Vector2 z_axis = rot.getRow(2).xy();
+  Vector2 x_axis = rot.row(0).head<2>();
+  Vector2 y_axis = rot.row(1).head<2>();
+  Vector2 z_axis = rot.row(2).head<2>();
 
   Vector2 aspect_ratio_compensation = width() < height() ? Vector2(1.0, width() / (Real)height())
                                                          : Vector2(height() / (Real)width(), 1.0);
 
   static Real const ARROW_LENGTH = 0.1f;
   Vector2 arrow_origin = Vector2(-1, -1) + (2.0f * ARROW_LENGTH) * aspect_ratio_compensation;
-  Vector2 x_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation * x_axis;
-  Vector2 y_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation * y_axis;
-  Vector2 z_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation * z_axis;
+  Vector2 x_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation.cwiseProduct(x_axis);
+  Vector2 y_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation.cwiseProduct(y_axis);
+  Vector2 z_arrow_tip = arrow_origin + ARROW_LENGTH * aspect_ratio_compensation.cwiseProduct(z_axis);
 
   rs.pushColorFlags();
   rs.pushDepthFlags();
@@ -721,8 +721,8 @@ ModelDisplay::getModelDistance() const
 
   if (!model) return 0.0;
 
-  return model ? (model->getTransformedBounds().getCenter() - camera.getPosition()).length()
-               : (camera_look_at - camera.getPosition()).length();
+  return model ? (model->getTransformedBounds().getCenter() - camera.getPosition()).norm()
+               : (camera_look_at - camera.getPosition()).norm();
 }
 
 void
@@ -733,7 +733,7 @@ ModelDisplay::panView(wxMouseEvent & event)
   if (!model) return;
 
   Vector3 trn = dragToTranslation(last_cursor, event.GetPosition(), width(), height(), camera, getModelDistance());
-  incrementViewTransform(AffineTransform3(Matrix3::identity(), trn));
+  incrementViewTransform(AffineTransform3(Matrix3::Identity(), trn));
 }
 
 void
@@ -762,7 +762,7 @@ ModelDisplay::rollView(wxMouseEvent & event)
   Real c = u.dot(v);
   Real angle = Math::fastArcTan2(s, c);
 
-  Matrix3 rot = Matrix3::rotationAxisAngle(camera.getLookDirection(), angle);
+  Matrix3 rot = Math::rotationAxisAngle(camera.getLookDirection(), angle);
   Vector3 trn = camera_look_at - rot * camera_look_at;
   incrementViewTransform(AffineTransform3(rot, trn));
 }
@@ -774,7 +774,7 @@ zoomTransform(Real zoom, Real camera_separation, Vector3 const & look_dir)
 {
   static Real const MIN_ZOOM = 0.25;
   Vector3 trn = (1.0f / std::max(zoom, MIN_ZOOM) - 1) * camera_separation * look_dir;
-  return AffineTransform3(Matrix3::identity(), trn);
+  return AffineTransform3(Matrix3::Identity(), trn);
 }
 
 } // namespace ModelDisplayInternal
@@ -793,11 +793,11 @@ ModelDisplay::zoomView(wxMouseEvent & event)
   // Zoom in at mouse position, zoom out at screen center
   Vector3 dir;
   if (zoom > 1)
-    dir = computePickRay(view_drag_start).getDirection().unit();
+    dir = computePickRay(view_drag_start).getDirection().normalized();
   else
     dir = camera.getLookDirection();
 
-  Real camera_separation = (camera_look_at - camera.getPosition()).length();
+  Real camera_separation = (camera_look_at - camera.getPosition()).norm();
   incrementViewTransform(zoomTransform(zoom, camera_separation, dir));
 }
 
@@ -817,11 +817,11 @@ ModelDisplay::zoomViewWheel(wxMouseEvent & event)
   // Zoom in at mouse position, zoom out at screen center
   Vector3 dir;
   if (zoom > 1)
-    dir = computePickRay(event.GetPosition()).getDirection().unit();
+    dir = computePickRay(event.GetPosition()).getDirection().normalized();
   else
     dir = camera.getLookDirection();
 
-  Real camera_separation = (camera_look_at - camera.getPosition()).length();
+  Real camera_separation = (camera_look_at - camera.getPosition()).norm();
   incrementViewTransform(zoomTransform(zoom, camera_separation, dir));
 }
 

@@ -44,23 +44,21 @@
 
 #include "../Common.hpp"
 #include "../Math.hpp"
-#include "../Matrix2.hpp"
-#include "../Matrix3.hpp"
-#include "../MatrixMN.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
 #include "CentroidN.hpp"
+#include <Eigen/Eigenvalues>
 
 namespace Thea {
 namespace Algorithms {
 
 /** Principal component analysis of N-D data. */
-template <typename T, long N, typename ScalarT = Real, typename Enable = void>
+template <typename T, int N, typename ScalarT = Real, typename Enable = void>
 class /* THEA_API */ PCA_N
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;  ///< N-D vector used to represent points and directions.
+    typedef Vector<N, ScalarT> VectorT;  ///< N-D vector used to represent points and directions.
 
     /**
      * Compute the PCA axes of a set of N-D objects. InputIterator must dereference to type T.
@@ -78,11 +76,11 @@ class /* THEA_API */ PCA_N
 }; // class PCA_N
 
 // Principal component analysis of N-D data passed as pointers
-template <typename T, long N, typename ScalarT>
+template <typename T, int N, typename ScalarT>
 class /* THEA_API */ PCA_N<T *, N, ScalarT>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[N], VectorT eigenvectors[N],
@@ -96,16 +94,16 @@ class /* THEA_API */ PCA_N<T *, N, ScalarT>
 
 // Principal component analysis of objects that map to single points in 2-space.
 template <typename T, typename ScalarT>
-class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 2> >::type>
+class PCA_N<T, 2, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 2>::value >::type>
 {
   public:
-    typedef VectorN<2, ScalarT> VectorT;
+    typedef Vector<2, ScalarT> VectorT;
 
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[2], VectorT eigenvectors[2],
                                                           VectorT * centroid = NULL)
     {
-      typedef MatrixMN<2, 2, ScalarT> MatrixT;
+      typedef Matrix<2, 2, ScalarT> MatrixT;
 
       // Compute centroid
       VectorT ctr = CentroidN<T, 2>::compute(begin, end);
@@ -125,7 +123,7 @@ class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 2
       if (n < 2)
       {
         eigenvalues[0]  = eigenvalues[1]  = 0;
-        eigenvectors[0] = eigenvectors[1] = VectorT::zero();
+        eigenvectors[0] = eigenvectors[1] = VectorT::Zero();
         return;
       }
 
@@ -145,8 +143,8 @@ class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 2
 
       if (cov(1, 0) > Math::eps<ScalarT>())
       {
-        eigenvectors[0] = VectorT(eigenvalues[0] - cov(1, 1), cov(1, 0)).unit();
-        eigenvectors[1] = VectorT(eigenvalues[2] - cov(1, 1), cov(1, 0)).unit();
+        eigenvectors[0] = VectorT(eigenvalues[0] - cov(1, 1), cov(1, 0)).normalized();
+        eigenvectors[1] = VectorT(eigenvalues[2] - cov(1, 1), cov(1, 0)).normalized();
       }
       else
       {
@@ -162,22 +160,22 @@ class PCA_N<T, 2, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 2
 
 // Principal component analysis of objects that map to single points in 3-space.
 template <typename T, typename ScalarT>
-class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
+class PCA_N<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>::value >::type>
 {
   public:
-    typedef VectorN<3, ScalarT> VectorT;
+    typedef Vector<3, ScalarT> VectorT;
 
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[3], VectorT eigenvectors[3],
                                                           VectorT * centroid = NULL)
     {
-      typedef MatrixMN<3, 3, ScalarT> MatrixT;
+      typedef Matrix<3, 3, ScalarT> MatrixT;
 
       // Compute centroid
       VectorT ctr = CentroidN<T, 3, ScalarT>::compute(begin, end);
 
       // Construct covariance matrix
-      MatrixT cov = MatrixT::zero();
+      MatrixT cov = MatrixT::Zero();
       long n = 0;
       for (InputIterator i = begin; i != end; ++i, ++n)
       {
@@ -191,53 +189,22 @@ class PCA_N<T, 3, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, 3
       if (n < 2)
       {
         eigenvalues[0]  = eigenvalues[1]  = eigenvalues[2]  = 0;
-        eigenvectors[0] = eigenvectors[1] = eigenvectors[2] = VectorT::zero();
+        eigenvectors[0] = eigenvectors[1] = eigenvectors[2] = VectorT::Zero();
         return;
       }
 
       cov /= (n - 1);
 
       // Find eigenvalues of covariance matrix
-      ScalarT eval[3];
-      VectorT evec[3];
-      cov.eigenSolveSymmetric(eval, evec);
+      Eigen::SelfAdjointEigenSolver<MatrixT> eigensolver;
+      if (eigensolver.computeDirect(cov).info() != Eigen::Success)
+        throw Error("PCA3: Could not eigensolve covariance matrix");
 
-      // Sort from largest to smallest eigenvalue
-      int i0, i1, i2;
-      if (eval[0] > eval[1])
+      for (int i = 0; i < 3; ++i)
       {
-        if (eval[0] > eval[2])  // 0, 1, 2 or 0, 2, 1
-        {
-          i0 = 0;
-          i1 = (eval[1] > eval[2] ? 1 : 2);
-          i2 = (i1 == 1 ? 2 : 1);
-        }
-        else  // 2, 0, 1
-        {
-          i0 = 2;
-          i1 = 0;
-          i2 = 1;
-        }
+        eigenvalues[i]  = eigensolver.eigenvalues()[i];
+        eigenvectors[i] = eigensolver.eigenvectors().col(i).normalized();
       }
-      else
-      {
-        if (eval[2] > eval[0])  // 2, 1, 0 or 1, 2, 0
-        {
-          i0 = (eval[2] > eval[1] ? 2 : 1);
-          i1 = (i0 == 1 ? 2 : 1);
-          i2 = 0;
-        }
-        else  // 1, 0, 2
-        {
-          i0 = 1;
-          i1 = 0;
-          i2 = 2;
-        }
-      }
-
-      eigenvalues[0] = eval[i0]; eigenvectors[0] = evec[i0].unit();
-      eigenvalues[1] = eval[i1]; eigenvectors[1] = evec[i1].unit();
-      eigenvalues[2] = eval[i2]; eigenvectors[2] = evec[i2].unit();
 
       if (centroid)
         *centroid = ctr;

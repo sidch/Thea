@@ -146,7 +146,7 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, Abstra
   if (dimension == Dimension::DIM_CUBE_MAP)
     throw Error(std::string(getName()) + ": This constructor cannot be used to create a cube map");
 
-  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
+  Format const * bytes_format = TextureFormat::fromImageType(AbstractImage::Type(image.getType()));
   setInternalFormat(bytes_format, desired_format);
 
   glGenTextures(1, &gl_id);
@@ -166,7 +166,7 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, Abstra
   if (images[0]->getDepth() != 1)
     throw Error(std::string(getName()) + ": Cube-mapped textures cannot be 3D");
 
-  AbstractImage::Type type = images[0]->getType();
+  AbstractImage::Type type = AbstractImage::Type(images[0]->getType());
   width  = images[0]->getWidth();
   height = images[0]->getHeight();
   depth  = images[0]->getDepth();
@@ -425,7 +425,7 @@ GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * 
     glBindTexture(gl_target, gl_id);
     THEA_CHECK_GL_OK
 
-    Format const * bytes_format = TextureFormat::fromImageType(image.getType());
+    Format const * bytes_format = TextureFormat::fromImageType(AbstractImage::Type(image.getType()));
     width  = image.getWidth();
     height = image.getHeight();
     depth  = image.getDepth();
@@ -455,7 +455,7 @@ GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int
              && dst_x + src_width <= width && dst_y + src_height <= height && dst_z + src_depth <= depth,
                 std::string(getName()) + ": All or part of subimage lies outside texture boundaries");
 
-  Format const * bytes_format = TextureFormat::fromImageType(image.getType());
+  Format const * bytes_format = TextureFormat::fromImageType(AbstractImage::Type(image.getType()));
 
   { GLScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GLClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -513,7 +513,7 @@ GLTexture::getImage(AbstractImage & image, Face face) const
     if (depth > 1) throw Error(std::string(getName()) + ": 3D images are not currently supported");
     image.resize(image.getType(), width, height);
 
-    Format const * bytes_format = TextureFormat::fromImageType(image.getType(), format->isDepth());
+    Format const * bytes_format = TextureFormat::fromImageType(AbstractImage::Type(image.getType()), format->isDepth());
     GLTexture__setDefaultPackingOptions(image.getRowAlignment());
 
     if (gl_target == GL_TEXTURE_CUBE_MAP_ARB)

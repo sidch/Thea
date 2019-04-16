@@ -43,13 +43,10 @@
 #define __Thea_Algorithms_NumericalOptimizer_hpp__
 
 #include "../Common.hpp"
-#include "../Array.hpp"
 #include "../Map.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
-#include "../Vector.hpp"
-#include "LinearConstraint.hpp"
-#include "NonlinearConstraint.hpp"
+#include "ScalarConstraint.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -62,26 +59,21 @@ class ScalarFunction;
  *
  * To create an instance of a NumericalOptimizer, one typically loads the plugin for the relevant implementation and calls
  * NumericalOptimizerFactory::createNumericalOptimizer().
- *
- * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
-class THEA_API NumericalOptimizer : private Noncopyable, public virtual NamedObject
+class THEA_API NumericalOptimizer : public virtual AbstractNamedObject
 {
   public:
-    /** Default constructor. */
-    NumericalOptimizer();
-
     /** Destructor. */
     virtual ~NumericalOptimizer() {}
 
-    /** Add a linear constraint to the optimization. */
-    void addConstraint(LinearConstraint::ConstPtr constraint);
+    /** Get the dimensionality of the problem. */
+    virtual long dims() const = 0;
 
-    /** Add a nonlinear constraint to the optimization. */
-    void addConstraint(NonlinearConstraint::ConstPtr constraint);
+    /** Add a linear constraint to the optimization. */
+    virtual void addConstraint(ScalarConstraint::ConstPtr constraint);
 
     /** Clear all constraints. */
-    void clearConstraints();
+    virtual void clearConstraints() = 0;
 
     /**
      * Minimize an objective function. A set of options may be specified to control the optimization process.
@@ -93,24 +85,14 @@ class THEA_API NumericalOptimizer : private Noncopyable, public virtual NamedObj
      * @return True if a local minimum was successfully found, else false. (The same value is returned by successive calls to
      *   hasSolution().)
      */
-    virtual bool minimize(ScalarFunction const & objective, double const * hint = NULL, Options const & options = Options())
-                 = 0;
+    virtual bool minimize(ScalarFunction const & objective, double const * hint = NULL,
+                          AbstractOptions const * options = NULL) = 0;
 
     /** Was a local minimum found by the last call to minimize()? */
-    bool hasSolution() const { return has_solution; }
+    virtual bool hasSolution() const = 0;
 
     /** Get the solution vector of the optimization problem. Valid only if hasSolution() returns true. */
-    Vector<double> const & getSolution() const { return solution; }
-
-  protected:
-    TheaArray<LinearConstraint::ConstPtr>     linear_constraints;     ///< Set of linear constraints.
-    TheaArray<NonlinearConstraint::ConstPtr>  nonlinear_constraints;  ///< Set of nonlinear constraints.
-    bool                                      has_solution;           /**< Was a local minimum found by the last call to
-                                                                           minimize()? */
-    Vector<double>                            solution;               ///< Solution of the optimization problem.
-
-  private:
-    int constraint_ndims;  ///< Number of dimensions of current set of constraints.
+    virtual double const * getSolution() const = 0;
 
 }; // class NumericalOptimizer
 
@@ -125,7 +107,7 @@ class THEA_API NumericalOptimizerFactory
      * Create a numerical optimizer with the given name. The numerical optimizer must be destroyed using
      * destroyNumericalOptimizer().
      */
-    virtual NumericalOptimizer * createNumericalOptimizer(std::string const & name) = 0;
+    virtual NumericalOptimizer * createNumericalOptimizer(char const * name) = 0;
 
     /** Destroy a numerical optimizer created with createNumericalOptimizer(). */
     virtual void destroyNumericalOptimizer(NumericalOptimizer * optimizer) = 0;

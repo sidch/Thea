@@ -7,8 +7,7 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../AffineTransformN.hpp"
 #include "../../FilePath.hpp"
-#include "../../MatrixMN.hpp"
-#include "../../VectorN.hpp"
+#include "../../MatVec.hpp"
 #include <cstdio>
 #include <fstream>
 #include <iomanip>
@@ -18,19 +17,17 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
-typedef VectorN<3, double> DVector3;
-typedef MatrixMN<3, 3, double> DMatrix3;
-typedef AffineTransformN<3, double> DAffineTransform3;
+typedef AffineTransformN<3, double> AffineTransform3d;
 
 long num_mesh_samples = 5000;
 bool normalize_scales = false;
 bool do_initial_placement = false;
-DVector3 initial_from_position(0, 0, 0);
+Vector3d initial_from_position(0, 0, 0);
 bool prealign_centroids = false;
 bool rotate_axis_aligned = false;
 bool rotate_arbitrary = false;
 bool has_up_vector = false;
-DVector3 up_vector;
+Vector3d up_vector;
 
 int
 usage(int argc, char * argv[])
@@ -49,7 +46,7 @@ usage(int argc, char * argv[])
 }
 
 bool
-sampleMesh(string const & mesh_path, TheaArray<DVector3> & samples)
+sampleMesh(string const & mesh_path, TheaArray<Vector3d> & samples)
 {
   typedef DisplayMesh Mesh;
   typedef MeshGroup<Mesh> MG;
@@ -65,7 +62,7 @@ sampleMesh(string const & mesh_path, TheaArray<DVector3> & samples)
 
     samples.resize(pts.size());
     for (size_t i = 0; i < samples.size(); ++i)
-      samples[i] = DVector3(pts[i]);
+      samples[i] = pts[i].cast<double>();
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "An error occurred")
 
@@ -75,7 +72,7 @@ sampleMesh(string const & mesh_path, TheaArray<DVector3> & samples)
 }
 
 bool
-loadPoints(string const & points_path, TheaArray<DVector3> & points)
+loadPoints(string const & points_path, TheaArray<Vector3d> & points)
 {
   string path_lc = toLower(points_path);
   if (endsWith(path_lc, ".obj")
@@ -151,7 +148,7 @@ loadPoints(string const & points_path, TheaArray<DVector3> & points)
       return false;
     }
 
-    DVector3 p;
+    Vector3d p;
     string field;
     while (getline(in, line))
     {
@@ -181,7 +178,7 @@ loadPoints(string const & points_path, TheaArray<DVector3> & points)
   }
   else
   {
-    DVector3 p;
+    Vector3d p;
     string line;
     while (getline(in, line))
     {
@@ -205,16 +202,16 @@ loadPoints(string const & points_path, TheaArray<DVector3> & points)
   return true;
 }
 
-DAffineTransform3
-normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & to_pts, double & from_scale, double & to_scale)
+AffineTransform3d
+normalization(TheaArray<Vector3d> const & from_pts, TheaArray<Vector3d> const & to_pts, double & from_scale, double & to_scale)
 {
   from_scale = to_scale = 1.0;
 
   if (from_pts.empty() || to_pts.empty())
-    return DAffineTransform3::identity();
+    return AffineTransform3d::identity();
 
-  DVector3 from_center  =  CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
-  DVector3 to_center    =  CentroidN<DVector3, 3, double>::compute(to_pts.begin(), to_pts.end());
+  Vector3d from_center  =  CentroidN<Vector3d, 3, double>::compute(from_pts.begin(), from_pts.end());
+  Vector3d to_center    =  CentroidN<Vector3d, 3, double>::compute(to_pts.begin(), to_pts.end());
 
   double rescaling = 1.0;
   if (normalize_scales)
@@ -222,14 +219,14 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
     // Measure average distance of from_pts to from_center
     double from_avg_dist = 0;
     for (size_t i = 0; i < from_pts.size(); ++i)
-      from_avg_dist += (from_pts[i] - from_center).length();
+      from_avg_dist += (from_pts[i] - from_center).norm();
 
     from_avg_dist /= from_pts.size();
 
     // Measure average distance of to_pts to to_center
     double to_avg_dist = 0;
     for (size_t i = 0; i < to_pts.size(); ++i)
-      to_avg_dist += (to_pts[i] - to_center).length();
+      to_avg_dist += (to_pts[i] - to_center).norm();
 
     to_avg_dist /= to_pts.size();
 
@@ -244,20 +241,20 @@ normalization(TheaArray<DVector3> const & from_pts, TheaArray<DVector3> const & 
 
   if (normalize_scales)
   {
-    DAffineTransform3 tr = DAffineTransform3::scaling(rescaling)
-                         * DAffineTransform3::translation(-from_center);
+    AffineTransform3d tr = AffineTransform3d::scaling(rescaling)
+                         * AffineTransform3d::translation(-from_center);
 
     if (prealign_centroids)
-      return DAffineTransform3::translation(to_center) * tr;
+      return AffineTransform3d::translation(to_center) * tr;
     else
-      return DAffineTransform3::translation(from_center) * tr;  // scale in place
+      return AffineTransform3d::translation(from_center) * tr;  // scale in place
   }
   else
   {
     if (prealign_centroids)
-      return DAffineTransform3::translation(to_center - from_center);
+      return AffineTransform3d::translation(to_center - from_center);
     else
-      return DAffineTransform3::identity();
+      return AffineTransform3d::identity();
   }
 }
 
@@ -302,15 +299,15 @@ loadShapePaths(string const & path, TheaArray<string> & shape_paths)
 int
 alignShapes(string const & from_path, string const & to_path, std::ostream * out)
 {
-  TheaArray<DVector3> from_pts;
+  TheaArray<Vector3d> from_pts;
   if (!loadPoints(from_path, from_pts))
     return -1;
 
-  TheaArray<DVector3> to_pts;
+  TheaArray<Vector3d> to_pts;
   if (!loadPoints(to_path, to_pts))
     return -1;
 
-  DAffineTransform3 tr = DAffineTransform3::identity();
+  AffineTransform3d tr = AffineTransform3d::identity();
   double from_scale = 1.0, to_scale = 1.0;
   double error = 0;
   if (from_pts.empty())
@@ -323,21 +320,21 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
   }
   else
   {
-    DAffineTransform3 init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
+    AffineTransform3d init_tr = normalization(from_pts, to_pts, from_scale, to_scale);
     for (size_t i = 0; i < from_pts.size(); ++i)
       from_pts[i] = init_tr * from_pts[i];
 
-    DVector3 from_center = CentroidN<DVector3, 3, double>::compute(from_pts.begin(), from_pts.end());
+    Vector3d from_center = CentroidN<Vector3d, 3, double>::compute(from_pts.begin(), from_pts.end());
     if (do_initial_placement)
     {
-      DVector3 offset = initial_from_position - from_center;
-      init_tr = DAffineTransform3::translation(offset) * init_tr;
+      Vector3d offset = initial_from_position - from_center;
+      init_tr = AffineTransform3d::translation(offset) * init_tr;
 
       for (size_t i = 0; i < from_pts.size(); ++i)
         from_pts[i] += offset;
     }
 
-    KDTreeN<DVector3, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
+    KDTreeN<Vector3d, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
 
     if (rotate_axis_aligned)
     {
@@ -345,7 +342,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      TheaArray<DVector3> rot_from_pts(from_pts.size());
+      TheaArray<Vector3d> rot_from_pts(from_pts.size());
       double rot_error;
       bool first = true;
 
@@ -354,21 +351,19 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
           for (int v = 1; v < 2; ++v)
             for (int sv = -1; sv <= 1; sv += 2)
             {
-              DVector3 du(0, 0, 0); du[u] = su;
-              DVector3 dv(0, 0, 0); dv[(u + v) % 3] = sv;
-              DVector3 dw = du.cross(dv);
-              DMatrix3 rot(du[0], dv[0], dw[0],
-                           du[1], dv[1], dw[1],
-                           du[2], dv[2], dw[2]);
+              Vector3d du(0, 0, 0); du[u] = su;
+              Vector3d dv(0, 0, 0); dv[(u + v) % 3] = sv;
+              Vector3d dw = du.cross(dv);
+              Matrix3d rot; rot << du, dv, dw;
 
-              DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
-                                       * DAffineTransform3(rot)
-                                       * DAffineTransform3::translation(-from_center);
+              AffineTransform3d rot_tr = AffineTransform3d::translation(from_center)
+                                       * AffineTransform3d(rot)
+                                       * AffineTransform3d::translation(-from_center);
 
               for (size_t i = 0; i < from_pts.size(); ++i)
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
-              DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              AffineTransform3d icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
               rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
               if (first || rot_error < error)
               {
@@ -376,10 +371,10 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
                 tr = icp_tr * rot_tr;
                 first = false;
 
-                THEA_CONSOLE << "-- rotation " << rot.toString() << " reduced error to " << error;
+                THEA_CONSOLE << "-- rotation " << toString(rot) << " reduced error to " << error;
               }
               else
-                THEA_CONSOLE << "-- rotation " << rot.toString() << ", no reduction in error";
+                THEA_CONSOLE << "-- rotation " << toString(rot) << ", no reduction in error";
             }
 
       alwaysAssertM(!first, "No alignment found after trying axis-aligned rotations");
@@ -398,7 +393,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      TheaArray<DVector3> rot_from_pts(from_pts.size());
+      TheaArray<Vector3d> rot_from_pts(from_pts.size());
       double rot_error;
       bool first = true;
 
@@ -406,15 +401,15 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       for (int i = 0; i < NUM_ROTATIONS; ++i)
       {
         double angle = i * (Math::twoPi() / NUM_ROTATIONS);
-        DMatrix3 rot = DMatrix3::rotationAxisAngle(up_vector, angle);
-        DAffineTransform3 rot_tr = DAffineTransform3::translation(from_center)
-                                 * DAffineTransform3(rot)
-                                 * DAffineTransform3::translation(-from_center);
+        Matrix3d rot = Math::rotationAxisAngle(up_vector, angle);
+        AffineTransform3d rot_tr = AffineTransform3d::translation(from_center)
+                                 * AffineTransform3d(rot)
+                                 * AffineTransform3d::translation(-from_center);
 
         for (size_t i = 0; i < from_pts.size(); ++i)
           rot_from_pts[i] = rot_tr * from_pts[i];
 
-        DAffineTransform3 icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+        AffineTransform3d icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
         rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
         if (first || rot_error < error)
         {
@@ -450,8 +445,8 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
 
   if (out)
   {
-    DMatrix3 const & lin = tr.getLinear();
-    DVector3 const & trn = tr.getTranslation();
+    Matrix3d const & lin = tr.getLinear();
+    Vector3d const & trn = tr.getTranslation();
 
     *out << from_path << '\n'
          << to_path << '\n'
@@ -542,7 +537,7 @@ main(int argc, char * argv[])
           }
         }
 
-        THEA_CONSOLE << "Up vector is " << up_vector;
+        THEA_CONSOLE << "Up vector is " << toString(up_vector);
       }
       else if (arg == "-c")
       {

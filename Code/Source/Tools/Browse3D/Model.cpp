@@ -446,7 +446,7 @@ Model::pick(Ray3 const & ray)
     KDTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, true);
     if (cp.isValid())
     {
-      t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().fastUnit());
+      t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().normalized());
       if (t >= 0)
       {
         index = cp.getTargetIndex();
@@ -544,7 +544,7 @@ Model::addPickedSample(std::string const & label, bool snap_to_vertex)
       Real min_sqdist = -1;
       for (MeshFace::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
       {
-        Real sqdist = ((*fvi)->getPosition() - sample.position).squaredLength();
+        Real sqdist = ((*fvi)->getPosition() - sample.position).squaredNorm();
         if (!nnv || sqdist < min_sqdist)
         {
           min_sqdist = sqdist;
@@ -1035,7 +1035,7 @@ struct VertexFeatureVisitor
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;
-    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().length(), (Real)1.0e-8);
+    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
     BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
@@ -1488,7 +1488,7 @@ struct DrawFaceNormals
         c /= fi->numVertices();
 
         render_system->sendVertex(c);
-        render_system->sendVertex(c + normal_scale * fi->getNormal());
+        render_system->sendVertex((c + normal_scale * fi->getNormal()).eval());
       }
 
     render_system->endPrimitive();
@@ -1511,7 +1511,7 @@ struct DrawVertexNormals
       for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       {
         render_system->sendVertex(vi->getPosition());
-        render_system->sendVertex(vi->getPosition() + normal_scale * vi->getNormal());
+        render_system->sendVertex((vi->getPosition() + normal_scale * vi->getNormal()).eval());
       }
 
     render_system->endPrimitive();
@@ -1538,7 +1538,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
   if (hasTransform())
   {
     render_system.setMatrixMode(Graphics::RenderSystem::MatrixMode::MODELVIEW); render_system.pushMatrix();
-    render_system.multMatrix(getTransform().toHomMatrix());
+    render_system.multMatrix(getTransform().homogeneous());
   }
 
   render_system.pushShader();
@@ -1550,7 +1550,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
 
     if (app().getMainWindow()->pickPoints())
     {
-      Real sample_radius = 0.005f * getBounds().getExtent().length();
+      Real sample_radius = 0.005f * getBounds().getExtent().norm();
       if (valid_pick)
       {
         render_system.setColor(ColorRGB::red());
@@ -1606,7 +1606,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
           render_system.setShader(NULL);
           render_system.setColor(ColorRGB(0, 1, 0));
 
-          Real normal_scale = 0.025f * getBounds().getExtent().length();
+          Real normal_scale = 0.025f * getBounds().getExtent().norm();
 
           if (smooth_shading)
           {

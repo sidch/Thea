@@ -110,7 +110,7 @@ struct PointTraitsN<MyCustomPoint, 3, Real>
 // array returned by kdtree.getElements()) and a reference to the point itself (as cached by the kd-tree).
 bool printPoint(long index, MyCustomPoint & np)
 {
-  cout << "  Found point '" << np.name << "' at position " << np.position.toString() << endl;
+  cout << "  Found point '" << np.name << "' at position " << np.position.transpose() << endl;
   return false;  // the range query stops when this function returns true -- here we don't want that to happen
 }
 
@@ -192,7 +192,7 @@ testPointKDTree()
   double dist = 0;  // this will contain the distance to the returned point
   long nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist);
   if (nn_index >= 0)
-    cout << "\nThe point nearest the query " << query.toString() << " is " << kdtree.getElements()[nn_index].name
+    cout << "\nThe point nearest the query " << query.transpose() << " is " << kdtree.getElements()[nn_index].name
          << " at distance " << dist << endl;
   else
     cout << "\nNo nearest neighbor found" << endl;
@@ -206,7 +206,7 @@ testPointKDTree()
   long num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound);
   if (num_nbrs > 0)
   {
-    cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.toString() << ':' << endl;
+    cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.transpose() << ':' << endl;
     for (long i = 0; i < nbrs.size(); ++i)
     {
       cout << "  " << kdtree.getElements()[nbrs[i].getTargetIndex()].name << " at distance "
@@ -321,9 +321,9 @@ testTriangleKDTree()
   Vector3 closest_point;  // this will contain the closest point on the nearest triangle
   long nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist, &closest_point);
   if (nn_index >= 0)
-    cout << "\nThe triangle nearest the query " << query.toString() << " is "
+    cout << "\nThe triangle nearest the query " << query.transpose() << " is "
          << kdtree.getElements()[nn_index].getVertices().name
-         << " at distance " << dist << ", with closest point" << closest_point.toString() << endl;
+         << " at distance " << dist << ", with closest point" << closest_point.transpose() << endl;
   else
     cout << "\nNo nearest neighbor of the query point found" << endl;
 
@@ -360,7 +360,7 @@ testTriangleKDTree()
          << new_kdtree.getElements()[nn_pair.getQueryIndex()].getVertices().name << " and "
          << kdtree.getElements()[nn_pair.getTargetIndex()].getVertices().name
          << " at separation " << nn_pair.getDistance<MetricL2>()
-         << ", with closest points " << nn_pair.getQueryPoint().toString() << " and " << nn_pair.getTargetPoint().toString()
+         << ", with closest points " << nn_pair.getQueryPoint().transpose() << " and " << nn_pair.getTargetPoint().transpose()
          << " respectively" << endl;
   else
     cout << "\nNo nearest neighbors found between the two kd-trees" << endl;
@@ -372,7 +372,7 @@ testTriangleKDTree()
 
   // Generate a random ray from the origin into the positive quadrant (the ray's direction vector need not be a unit vector,
   // but here we'll use one)
-  Ray3 ray(Vector3::zero(), Vector3(rand() / (Real)RAND_MAX, rand() / (Real)RAND_MAX, rand() / (Real)RAND_MAX).unit());
+  Ray3 ray(Vector3::Zero(), Vector3(rand() / (Real)RAND_MAX, rand() / (Real)RAND_MAX, rand() / (Real)RAND_MAX).normalized());
 
   // For now we won't limit the maximum hit time of the ray
   Real max_time = -1;
@@ -389,7 +389,7 @@ testTriangleKDTree()
   Real hit_time = kdtree.rayIntersectionTime<RayIntersectionTester>(ray, max_time);
   if (hit_time >= 0)
     cout << "Ray intersects a triangle in the kd-tree after time " << hit_time
-         << " (at point " << ray.getPoint(hit_time).toString() << ')' << endl;
+         << " (at point " << ray.getPoint(hit_time).transpose() << ')' << endl;
   else
     cout << "Ray does not intersect any triangle in the kd-tree" << endl;
 
@@ -400,8 +400,8 @@ testTriangleKDTree()
     cout << "Ray intersects a triangle in the kd-tree:\n"
          << "    hit time = " << isec.getTime() << '\n'
          << "    intersected triangle = " << kdtree.getElements()[isec.getElementIndex()].getVertices().name << '\n'
-         << "    intersection point = " << ray.getPoint(isec.getTime()).toString() << '\n'
-         << "    normal at intersection point = " << isec.getNormal().toString() << endl;
+         << "    intersection point = " << ray.getPoint(isec.getTime()).transpose() << '\n'
+         << "    normal at intersection point = " << isec.getNormal().transpose() << endl;
   }
   else
     cout << "Ray does not intersect any triangle in the kd-tree" << endl;

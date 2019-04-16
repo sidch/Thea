@@ -45,7 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../IOStream.hpp"
-#include "../Matrix.hpp"
+#include "../MatVec.hpp"
 #include <boost/dynamic_bitset.hpp>
 #include <iostream>
 
@@ -69,13 +69,13 @@ typedef boost::dynamic_bitset<> SharingSet;
 class THEA_API JointBoost
 {
   public:
-    THEA_DEF_POINTER_TYPES(JointBoost, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(JointBoost, std::shared_ptr, std::weak_ptr)
 
     /** Interface for accessing training data. */
     class THEA_API TrainingData
     {
       public:
-        THEA_DEF_POINTER_TYPES(TrainingData, shared_ptr, weak_ptr)
+        THEA_DEF_POINTER_TYPES(TrainingData, std::shared_ptr, std::weak_ptr)
 
         /** Destructor. */
         virtual ~TrainingData() {}
@@ -255,7 +255,7 @@ class THEA_API JointBoost
     /** Decision stump (weak learner). */
     struct SharedStump
     {
-      THEA_DEF_POINTER_TYPES(SharedStump, shared_ptr, weak_ptr)
+      THEA_DEF_POINTER_TYPES(SharedStump, std::shared_ptr, std::weak_ptr)
 
       long f;               ///< The index of the feature for this stump.
       SharingSet n;         ///< Indices of positive classes for this stump.
@@ -323,7 +323,7 @@ class THEA_API JointBoost
     double max_thresholds_fraction;  /**< Cached number of candidate thresholds, expressed as a fraction of the number of
                                           features, valid only during training. */
 
-    Matrix<double> weights;  ///< Weights indexed by (class index, object_index).
+    MatrixX<double> weights;  ///< Weights indexed by (class index, object_index).
     TheaArray<SharedStump::Ptr> stumps;  ///< Current set of selected decision stumps.
 
 }; // class JointBoost

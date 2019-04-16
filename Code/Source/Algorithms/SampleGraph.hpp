@@ -51,9 +51,9 @@
 #include "RayIntersectionTester.hpp"
 #include "RayQueryStructureN.hpp"
 #include "../BoundedSortedArray.hpp"
+#include "../MatVec.hpp"
 #include "../Noncopyable.hpp"
-#include "../Vector3.hpp"
-#include <boost/type_traits/has_trivial_assign.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -98,11 +98,11 @@ class NeighboringSample
 } // namespace Algorithms
 } // namespace Thea
 
-namespace boost {
+namespace std {
 
-template <> struct has_trivial_assign<Thea::Algorithms::SampleGraphInternal::NeighboringSample> : public boost::true_type {};
+template <> struct is_trivially_copyable<Thea::Algorithms::SampleGraphInternal::NeighboringSample> : public std::true_type {};
 
-} // namespace boost
+} // namespace std
 
 namespace Thea {
 namespace Algorithms {
@@ -430,7 +430,7 @@ class SampleGraph : private Noncopyable
           long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
           avg_separation += (sample_ptrs[(size_t)nn_index]->getPosition()
-                           - sample_ptrs[index]->getPosition()).squaredLength();
+                           - sample_ptrs[index]->getPosition()).squaredNorm();
         sample_kdtree.popFilter();
       }
 
@@ -535,7 +535,7 @@ class SampleGraph : private Noncopyable
 
           // Compute the separation of the samples
           Vector3 diff = nbr->getPosition() - sample->getPosition();
-          Real sqsep = diff.squaredLength();
+          Real sqsep = diff.squaredNorm();
           sep = Math::fastSqrt(sqsep);
 
           // Reachability test: lift points off the surface by an amount proportional to their separation, and see if the line
@@ -543,7 +543,7 @@ class SampleGraph : private Noncopyable
           if (surface && has_normals)
           {
             static Real const LIFT_FACTOR = 5;
-            Vector3 lift_dir = (sample->getNormal() + nbr->getNormal()).fastUnit();
+            Vector3 lift_dir = (sample->getNormal() + nbr->getNormal()).normalized();
             typename RayQueryStructureT::RayT ray(sample->getPosition() + LIFT_FACTOR * sep * lift_dir, diff);
             if (surface->template rayIntersects<RayIntersectionTester>(ray, 1))
               return false;

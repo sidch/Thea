@@ -44,7 +44,7 @@
 
 #include "Common.hpp"
 #include "../../AffineTransform3.hpp"
-#include "../../Vector4.hpp"
+#include "../../MatVec.hpp"
 #include <wx/app.h>
 #include <vector>
 

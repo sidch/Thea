@@ -111,14 +111,14 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
       // Assume the normal is consistent across the face
       Vector3 e1 = halfedge->getOrigin()->getPosition()      - halfedge->getEnd()->getPosition();
       Vector3 e2 = halfedge->next()->getEnd()->getPosition() - halfedge->getEnd()->getPosition();
-      setNormal(e2.cross(e1).unit());  // counter-clockwise
+      setNormal(e2.cross(e1).normalized());  // counter-clockwise
     }
 
     /** Compute the centroid of the face. */
     Vector3 centroid() const
     {
       if (!halfedge)
-        return Vector3::zero();
+        return Vector3::Zero();
 
       Vector3 c = halfedge->getOrigin()->getPosition();
       long nv = 1;

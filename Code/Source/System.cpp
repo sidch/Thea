@@ -40,7 +40,7 @@
 //============================================================================
 
 #include "System.hpp"
-#include <boost/thread/thread.hpp>
+#include <thread>
 
 #ifdef THEA_WINDOWS
 #  include <windows.h>
@@ -58,7 +58,7 @@ namespace Thea {
 long
 System::concurrency()
 {
-  long cc = (long)boost::thread::hardware_concurrency();
+  long cc = (long)std::thread::hardware_concurrency();
   if (cc <= 0)
     return 1;  // operate in single-threaded mode as fallback
   else

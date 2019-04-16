@@ -54,7 +54,7 @@ namespace Thea {
 class THEA_API AbstractImage
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractImage, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AbstractImage, std::shared_ptr, std::weak_ptr)
 
     /**
      * Indices for the color channels in a single pixel. E.g. for a 24-bit RGB bitmap (8 bits per channel), the individual
@@ -168,8 +168,11 @@ class THEA_API AbstractImage
      */
     virtual void clear() = 0;
 
-    /** Resize the image, changing its type and dimensions. All previous image data is discarded. */
-    virtual void resize(Type type, int width, int height, int depth = 1) = 0;
+    /**
+     * Resize the image, changing its type and dimensions. All previous image data is discarded. \type should be one of the Type
+     * values.
+     */
+    virtual void resize(int type, int width, int height, int depth = 1) = 0;
 
     /** Get the width of the image in pixels. */
     virtual int getWidth() const = 0;
@@ -181,7 +184,7 @@ class THEA_API AbstractImage
     virtual int getDepth() const { return 1; }
 
     /** Get the type of the image pixels. */
-    virtual Type getType() const = 0;
+    virtual int getType() const = 0;
 
     /** Get a pointer to the image data. */
     virtual void const * getData() const = 0;

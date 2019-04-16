@@ -47,8 +47,8 @@
 #include "../../FileSystem.hpp"
 #include "../../Image.hpp"
 #include <wx/gdicmn.h>
-#include <boost/functional/hash.hpp>
 #include <cmath>
+#include <functional>
 #include <limits>
 
 namespace Browse3D {
@@ -90,12 +90,12 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
           offset_dir = (c_lng * prev_s_lat) * u + (s_lng * prev_s_lat) * v + prev_c_lat * w;
           offset = radius * offset_dir;
           render_system.sendNormal(offset_dir);
-          render_system.sendVertex(center + offset);
+          render_system.sendVertex((center + offset).eval());
 
           offset_dir = (c_lng * s_lat) * u + (s_lng * s_lat) * v + c_lat * w;
           offset = radius * offset_dir;
           render_system.sendNormal(offset_dir);
-          render_system.sendVertex(center + offset);
+          render_system.sendVertex(Vector3(center + offset));
         }
 
       render_system.endPrimitive();
@@ -105,7 +105,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
       render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLE_FAN);
 
         render_system.sendNormal(w);
-        render_system.sendVertex(center + radius * w);
+        render_system.sendVertex(Vector3(center + radius * w));
 
         for (int j = 0; j <= num_longitude_steps; ++j)
         {
@@ -116,7 +116,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
           offset_dir = (c_lng * s_lat) * u + (s_lng * s_lat) * v + c_lat * w;
           offset = radius * offset_dir;
           render_system.sendNormal(offset_dir);
-          render_system.sendVertex(center + offset);
+          render_system.sendVertex(Vector3(center + offset));
         }
 
       render_system.endPrimitive();
@@ -132,9 +132,9 @@ drawSphere(Graphics::RenderSystem & render_system, Vector3 const & center, Real 
 {
   int num_latitude_steps = (int)std::ceil(num_steps / 4.0);
 
-  drawHemisphere(render_system, center, Vector3::unitX(), Vector3::unitY(),  Vector3::unitZ(), radius, num_steps,
+  drawHemisphere(render_system, center, Vector3::UnitX(), Vector3::UnitY(),  Vector3::UnitZ(), radius, num_steps,
                  num_latitude_steps);
-  drawHemisphere(render_system, center,  Vector3::unitX(), Vector3::unitY(), -Vector3::unitZ(), radius, num_steps,
+  drawHemisphere(render_system, center,  Vector3::UnitX(), Vector3::UnitY(), -Vector3::UnitZ(), radius, num_steps,
                  num_latitude_steps);
 }
 
@@ -158,8 +158,8 @@ drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center
       Vector3 offset_dir = s * u + c * v;
       Vector3 offset = radius * offset_dir;
       render_system.sendNormal(offset_dir);
-      render_system.sendVertex(base_center + offset);
-      render_system.sendVertex(top_center + offset);
+      render_system.sendVertex((base_center + offset).eval());
+      render_system.sendVertex((top_center + offset).eval());
     }
 
   render_system.endPrimitive();
@@ -169,9 +169,10 @@ void
 drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Real radius,
             int num_steps)
 {
-  Vector3 w = (top_center - base_center).fastUnit();
-  Vector3 u, v;
-  w.createOrthonormalBasis(u, v);
+  Vector3 w = (top_center - base_center).normalized();
+  Matrix3 basis = Math::orthonormalBasis(w);
+  Vector3 u = basis.col(0);
+  Vector3 v = basis.col(1);
 
   // Sides
   drawCylinder(render_system, base_center, top_center, u, v, radius, num_steps);
@@ -222,13 +223,13 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
         if (alternate_colors)
           render_system.setColor(j & 0x01 ? color2 : color1);
 
-        render_system.sendNormal(n.x() * u + n.y() * v + n.z() * w);
-        render_system.sendVertex(center + p.x() * u + p.y() * v + p.z() * w);
+        render_system.sendNormal((n.x() * u + n.y() * v + n.z() * w).eval());
+        render_system.sendVertex((center + p.x() * u + p.y() * v + p.z() * w).eval());
 
         p += Vector3(c_maj * width * c_min_offset, s_maj * width * c_min_offset, width * s_min_offset);
         n += Vector3(c_maj * c_min_offset, s_maj * c_min_offset, s_min_offset);
-        render_system.sendNormal(n.x() * u + n.y() * v + n.z() * w);
-        render_system.sendVertex(center + p.x() * u + p.y() * v + p.z() * w);
+        render_system.sendNormal((n.x() * u + n.y() * v + n.z() * w).eval());
+        render_system.sendVertex((center + p.x() * u + p.y() * v + p.z() * w).eval());
       }
     }
 
@@ -267,15 +268,15 @@ dragToRotation(wxPoint const & start, wxPoint const & end, int width, int height
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
 
   wxPoint diff = end - start;
-  if (diff.x == 0 && diff.y == 0) return Matrix3::identity();
+  if (diff.x == 0 && diff.y == 0) return Matrix3::Identity();
 
   Vector3 axis = (Real)diff.y * camera.getRightDirection() + (Real)diff.x * camera.getUpDirection();
 
   static Real const ROT_SPEED = 5;
   int size = width < height ? width : height;
-  Real angle = ROT_SPEED * Vector2(diff.x, -diff.y).length() / size;
+  Real angle = ROT_SPEED * Vector2(diff.x, -diff.y).norm() / size;
 
-  return Matrix3::rotationAxisAngle(axis, angle);
+  return Math::rotationAxisAngle(axis, angle);
 }
 
 Matrix3
@@ -284,19 +285,19 @@ dragToRotationAroundAxis(wxPoint const & start, Vector3 const & start_pick, wxPo
 {
   // Remember pixel coordinates increase top to bottom, so diff.y() is downwards in camera space
 
-  Vector3 axis_dir = axis.fastUnit();
+  Vector3 axis_dir = axis.normalized();
   Vector3 offset = start_pick - center;
   Vector3 perp_offset = offset - offset.dot(axis_dir) * axis_dir;
-  Vector3 tangent = axis.cross(perp_offset).fastUnit();
-  Vector2 proj_tangent = (camera.getWorldToCameraTransform().getRotation() * tangent).xy().fastUnit();
+  Vector3 tangent = axis.cross(perp_offset).normalized();
+  Vector2 proj_tangent = (camera.getWorldToCameraTransform().getRotation() * tangent).head<2>().normalized();
 
   wxPoint diff = end - start;
-  if (diff.x == 0 && diff.y == 0) return Matrix3::identity();
+  if (diff.x == 0 && diff.y == 0) return Matrix3::Identity();
 
   static Real const ROT_SPEED = 0.02f;
   Real angle = ROT_SPEED * (diff.x * proj_tangent.x() - diff.y * proj_tangent.y());
 
-  return Matrix3::rotationAxisAngle(axis, angle);
+  return Math::rotationAxisAngle(axis, angle);
 }
 
 Matrix3
@@ -314,10 +315,10 @@ dragToJoystickRotation(wxPoint const & start, wxPoint const & end, Vector3 const
     Real t = ball.rayIntersectionTime(rays[i]);
     Vector3 p = (t >= 0 ? rays[i].getPoint(t) : rays[i].closestPoint(center));
 
-    dirs[i] = (p - center).fastUnit();
+    dirs[i] = (p - center).normalized();
   }
 
-  return Matrix3::rotationArc(dirs[0], dirs[1], false);
+  return Math::rotationArc(dirs[0], dirs[1], false);
 }
 
 Real
@@ -389,7 +390,7 @@ getPaletteColor(long i)
 ColorRGB
 getLabelColor(std::string const & label)
 {
-  boost::hash<std::string> hasher;
+  std::hash<std::string> hasher;
   Random rnd((uint32)hasher(label));
 
   return ColorRGB(rnd.uniform01(), rnd.uniform01(), rnd.uniform01());

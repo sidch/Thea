@@ -44,7 +44,7 @@
 #include "../../HyperplaneN.hpp"
 #include "../../Image.hpp"
 #include "../../Math.hpp"
-#include "../../Vector2.hpp"
+#include "../../MatVec.hpp"
 #include <algorithm>
 
 namespace Thea {
@@ -89,7 +89,7 @@ struct Sector
   bool contains(Vector2 const & p) const
   {
     Vector2 delta = p - center;
-    Real sqdist = delta.squaredLength();
+    Real sqdist = delta.squaredNorm();
     if (sqdist < min_radius * min_radius || sqdist > max_radius * max_radius)
       return false;
 

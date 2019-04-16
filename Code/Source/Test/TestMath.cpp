@@ -1,9 +1,8 @@
-#include "../Algorithms/SVD.hpp"
-#include "../Algorithms/LinearLeastSquares.hpp"
+#include "../Algorithms/StdLinearSolver.hpp"
 #include "../Algorithms/LogisticRegression.hpp"
 #include "../Array.hpp"
-#include "../Matrix.hpp"
-#include "../Vector.hpp"
+#include "../MatrixWrapper.hpp"
+#include "../MatVec.hpp"
 #include <iostream>
 
 using namespace std;
@@ -27,13 +26,13 @@ main(int argc, char * argv[])
 }
 
 void
-printMatrix(Matrix<float> const & m)
+printMatrix(MatrixX<float> const & m)
 {
-  for (long r = 0; r < m.numRows(); ++r)
+  for (long r = 0; r < m.rows(); ++r)
   {
     cout << " [";
 
-    for (long c = 0; c < m.numColumns(); ++c)
+    for (long c = 0; c < m.cols(); ++c)
       cout << '\t' << m(r, c);
 
     cout << "\t]" << endl;
@@ -47,9 +46,7 @@ testSVD()
   // SVD
   //====================================================================
 
-  Matrix<float> a(5, 4, 0.0f), u, v;
-  Vector<float> d;
-
+  MatrixXf a(5, 4); a.setZero();
   a(0, 0) = 1;
   a(1, 3) = 4;
   a(2, 2) = 3;
@@ -57,18 +54,16 @@ testSVD()
 
   // Make sure things work with more columns than rows
   a = a.transpose();
-
-  if (!SVD::compute(a, u, d, v))
-  {
-    THEA_ERROR << "Could not compute SVD";
-    return false;
-  }
+  Eigen::JacobiSVD<MatrixXf> svd(a);
+  MatrixXf u = svd.matrixU();
+  MatrixXf v = svd.matrixV();
+  VectorXf d = svd.singularValues();
 
   cout.precision(3);
 
-  cout << "U: " << u.numRows() << " x " << u.numColumns() << endl;
+  cout << "U: " << u.rows() << " x " << u.cols() << endl;
   cout << "D: " << d.size() << " elements" << endl;
-  cout << "V: " << v.numRows() << " x " << v.numColumns() << endl;
+  cout << "V: " << v.rows() << " x " << v.cols() << endl;
 
   // Print A
   cout << "\nA =" << endl;
@@ -87,12 +82,11 @@ testSVD()
   printMatrix(v);
 
   // Print U * D * V
-  cout << "\nU * D * V =" << endl;
-  printMatrix(u * Matrix<float>::fromDiagonal(d) * v);
+  cout << "\nU * D * V^T =" << endl;
+  printMatrix(u * MatrixXf(d.asDiagonal()) * v.transpose());
 
   // Compute the pseudo-inverse of A via SVD
-  Matrix<float> svd_inv;
-  SVD::pseudoInverse(a, svd_inv);
+  MatrixXf svd_inv = v.transpose() * d.asDiagonal().inverse() * u;
   cout << "\nSVD pseudo-inverse =" << endl;
   printMatrix(svd_inv);
 
@@ -105,15 +99,15 @@ testSVD()
   //====================================================================
 
   // First, unconstrained (expected result [-3.5, 1.4])
-  LinearLeastSquares lsq(2);
-  double coeffs[2] = { -1, 0 };
-  coeffs[1] = 1; lsq.addObjective(coeffs,  6);
-  coeffs[1] = 2; lsq.addObjective(coeffs,  5);
-  coeffs[1] = 3; lsq.addObjective(coeffs,  7);
-  coeffs[1] = 4; lsq.addObjective(coeffs, 10);
+  StdLinearSolver lsq;
+  MatrixXd coeffs; coeffs << -1, 1,
+                             -1, 2,
+                             -1, 3,
+                             -1, 4;
+  VectorXd consts; consts << 6, 5, 7, 10;
 
   cout << endl;
-  if (lsq.solve())
+  if (lsq.solve(MatrixWrapper<MatrixXd>(&coeffs), consts.data()))
     cout << "Unconstrained linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
          << endl;
   else
@@ -121,7 +115,8 @@ testSVD()
 
   // Next, non-negative solution only (expected result [0, 2.57] (CHECK!))
   cout << endl;
-  if (lsq.solve(LinearLeastSquares::Constraint::NON_NEGATIVE))
+  StdLinearSolver lsq_nneg(StdLinearSolver::Method::DEFAULT, StdLinearSolver::Constraint::NON_NEGATIVE);
+  if (lsq.solve(MatrixWrapper<MatrixXd>(&coeffs), consts.data()))
     cout << "Non-negative linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
          << endl;
   else

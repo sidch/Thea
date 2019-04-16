@@ -43,14 +43,13 @@
 #define __Thea_AffineTransformN_hpp__
 
 #include "Common.hpp"
-#include "MatrixMN.hpp"
-#include "VectorN.hpp"
+#include "MatVec.hpp"
 #include <sstream>
 
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class AffineTransformN;
+template <int N, typename T> class AffineTransformN;
 
 namespace Internal {
 
@@ -60,15 +59,15 @@ namespace Internal {
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ AffineTransformNBase
 {
   public:
     typedef AffineTransformN<N, T>  AffineTransformT;  ///< N-dimensional affine transform type.
-    typedef VectorN<N, T>           VectorT;           ///< N-dimensional vector.
-    typedef MatrixMN<N, N, T>       MatrixT;           ///< NxN matrix.
+    typedef Vector<N, T>            VectorT;           ///< N-dimensional vector.
+    typedef Matrix<N, N, T>         MatrixT;           ///< NxN matrix.
 
-    THEA_DEF_POINTER_TYPES(AffineTransformT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(AffineTransformT, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Does not initialize anything. */
     AffineTransformNBase() {}
@@ -79,19 +78,19 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Construct a scaling transform. */
     static AffineTransformT scaling(VectorT const & s)
     {
-      return AffineTransformT(MatrixT::fromDiagonal(s), VectorT::zero());
+      return AffineTransformT(MatrixT(s.asDiagonal()), VectorT::Zero());
     }
 
     /** Construct a uniform scaling transform. */
     static AffineTransformT scaling(T const & s)
     {
-      return scaling(VectorT(s));
+      return scaling(VectorT::Constant(s));
     }
 
     /** Construct a translation. */
     static AffineTransformT translation(VectorT const & v)
     {
-      return AffineTransformT(MatrixT::identity(), v);
+      return AffineTransformT(MatrixT::Identity(), v);
     }
 
     /** Get linear transform component. */
@@ -113,9 +112,9 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     void setTranslation(VectorT const & translation_) { trans = translation_; }
 
     /** Convert to an (N + 1) x (N + 1) transformation matrix in homogeneous coordinates (last row is identity). */
-    MatrixMN<N + 1, N + 1, T> toHomMatrix() const
+    Matrix<N + 1, N + 1, T> homogeneous() const
     {
-      MatrixMN<N + 1, N + 1, T> m = MatrixMN<N + 1, N + 1, T>::identity();
+      Matrix<N + 1, N + 1, T> m = Matrix<N + 1, N + 1, T>::Identity();
       for (long i = 0; i < N; ++i)
       {
         for (long j = 0; j < N; ++j)
@@ -128,9 +127,9 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     }
 
     /** Convert to an N x (N + 1) transformation matrix. */
-    MatrixMN<N, N + 1, T> toMatrix() const
+    Matrix<N, N + 1, T> toMatrix() const
     {
-      MatrixMN<N, N + 1, T> m;
+      Matrix<N, N + 1, T> m;
       for (long i = 0; i < N; ++i)
       {
         for (long j = 0; j < N; ++j)
@@ -176,14 +175,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[L: " << linear << ", T: " << trans << ']';
+      oss << "[L: " << Thea::toString(linear) << ", T: " << Thea::toString(trans) << ']';
       return oss.str();
     }
 
     /** Get the identity transform. */
     static AffineTransformT const & identity()
     {
-      static AffineTransformT const idty(MatrixT::identity(), VectorT::zero());
+      static AffineTransformT const idty(MatrixT::Identity(), VectorT::Zero());
       return idty;
     }
 
@@ -196,7 +195,7 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
 } // namespace Internal
 
 /** An affine transform in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N, T>
 {
   private:
@@ -210,7 +209,7 @@ class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N,
     AffineTransformN() {}
 
     /** Construct from a linear transform, followed by a translation. */
-    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::zero()) : BaseT(linear_, translation_) {}
+    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
 
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
@@ -218,7 +217,7 @@ class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N,
 }; // class AffineTransformN
 
 /** Pipe a textual representation of an affine transform to a <code>std::ostream</code>. */
-template <long N, typename T>
+template <int N, typename T>
 std::ostream &
 operator<<(std::ostream & os, AffineTransformN<N, T> const & tr)
 {

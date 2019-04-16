@@ -32,11 +32,11 @@ main(int argc, char * argv[])
 void
 testMetrics(int argc, char * argv[])
 {
-  cout << MetricL2::distance<2, Real>(Vector2::zero(), Vector2(1, 1)) << endl;
-  cout << MetricL2::distance<3, Real>(Vector3::zero(), Vector3(1, 1, 1)) << endl;
-  cout << MetricL2::distance<4, Real>(Vector4::zero(), Vector4(1, 1, 1, 1)) << endl;
+  cout << MetricL2::distance<2, Real>(Vector2::Zero().eval(), Vector2(1, 1)) << endl;
+  cout << MetricL2::distance<3, Real>(Vector3::Zero().eval(), Vector3(1, 1, 1)) << endl;
+  cout << MetricL2::distance<4, Real>(Vector4::Zero().eval(), Vector4(1, 1, 1, 1)) << endl;
 
-  AxisAlignedBox3 aabb(Vector3::zero(), Vector3(1, 1, 1));
+  AxisAlignedBox3 aabb(Vector3::Zero().eval(), Vector3(1, 1, 1));
   Vector3 p(2, 2, 2);
 
   cout << MetricL2::distance<3, Real>(aabb, p) << endl;
@@ -55,10 +55,10 @@ testMetrics(int argc, char * argv[])
   cout << MetricL2::distance<3, Real>(tri, ball) << endl;
   cout << MetricL2::distance<3, Real>(ball, tri) << endl;
 
-  Matrix4 m1 = Matrix4(Matrix3::rotationEulerAnglesXYZ(Math::degreesToRadians(30),
+  Matrix4 m1 = RigidTransform3::rotationEulerAnglesXYZ(Math::degreesToRadians(30),
                                                        Math::degreesToRadians(30),
-                                                       Math::degreesToRadians(30)), Vector3::zero());
-  Matrix4 m2 = Matrix4::homTranslation(Vector3(1, 1, 1));
+                                                       Math::degreesToRadians(30)).homogeneous();
+  Matrix4 m2 = RigidTransform3::translation(Vector3(1, 1, 1)).homogeneous();
   RigidTransform3 rt = RigidTransform3::translation(Vector3(5, 5, 5))
                      * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), Math::degreesToRadians(45));
   cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     makeTransformedObject(&p, &m2)) << endl;
@@ -71,9 +71,9 @@ testMetrics(int argc, char * argv[])
   cout << MetricL2::distance<3, Real>(makeTransformedObject(&tri, &m1),   makeTransformedObject(&tri, &m2)) << endl;
 
 #if 0
-  cout << MetricL2::distance<VectorN<10, ot>, VectorN<10, T> >
-  cout << MetricL2::distance< AxisAlignedBoxN<N, T>, VectorN<N, T> >
-  cout << MetricL2::distance< VectorN<N, T>, AxisAlignedBoxN<N, T> >
+  cout << MetricL2::distance<Vector<10, ot>, Vector<10, T> >
+  cout << MetricL2::distance< AxisAlignedBoxN<N, T>, Vector<N, T> >
+  cout << MetricL2::distance< Vector<N, T>, AxisAlignedBoxN<N, T> >
   cout << MetricL2::distance< AxisAlignedBoxN<N, T>, AxisAlignedBoxN<N, T> >
   cout << MetricL2::distance< Triangle3<VertexTripleType>, Vector3 >
   cout << MetricL2::distance< Vector3, Triangle3<VertexTripleType> >

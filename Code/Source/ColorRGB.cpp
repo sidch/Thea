@@ -210,7 +210,7 @@ ColorRGB::fromARGB(uint32 x)
 
 ColorRGB ColorRGB::random()
 {
-  return ColorRGB(Random::common().uniform01(), Random::common().uniform01(), Random::common().uniform01()).unit();
+  return ColorRGB(Random::common().uniform01(), Random::common().uniform01(), Random::common().uniform01()).normalized();
 }
 
 ColorRGB
@@ -248,7 +248,7 @@ ColorRGB::toHSV() const
             && (c[1] <= 1.0f && c[1] >= 0.0f)
             && (c[2] <= 1.0f && c[2] >= 0.0f), "ColorRGB: R, G, B must be in [0, 1]");
 
-  Vector3 hsv = Vector3::zero();
+  Vector3 hsv = Vector3::Zero();
   hsv[2] = std::max(std::max(c[0], c[1]), c[2]);
 
   if (Math::fuzzyEq(hsv[2], (Real)0))

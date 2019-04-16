@@ -43,84 +43,74 @@
 #define __Thea_Algorithms_EigenSolver_hpp__
 
 #include "../Common.hpp"
-#include "../Array.hpp"
-#include "../CompressedSparseMatrix.hpp"
+#include "../AbstractMatrix.hpp"
 #include "../Map.hpp"
-#include "../Matrix.hpp"
-#include "../MatrixFormat.hpp"
-#include "../MatrixUtil.hpp"
-#include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Options.hpp"
-#include "../Vector.hpp"
-#include <complex>
 
 namespace Thea {
 namespace Algorithms {
 
 /**
- * Eigenvalue solver interface. The operator matrix must currently be real, though complex eigenvalues/eigenvectors can be
- * returned. The matrix should be a (row-major or column-major) Matrix, CompressedRowMatrix, or CompressedColumnMatrix. Several
- * other matrix types may be converted to these types by the relevant constructors.
+ * Eigenvalue solver interface. The operator matrix must currently be real (and double-precision), though complex
+ * eigenvalues/eigenvectors can be returned.
  *
  * To create an instance of an EigenSolver, one typically loads the plugin for the relevant implementation and calls
  * EigenSolverFactory::createEigenSolver().
- *
- * @note A derived class typically needs to implement only the solve() function, and optionally getPreferredFormat(). To find
- * the %eigenvalues and %eigenvectors of the operator matrix <b>A</b>, the solve() function reads the operator matrix <b>A</b>
- * from #matrix. The computed %eigenvalues, %eigenvectors and relative errors are placed in #eigenvalues, #eigenvectors and
- * #relative_errors respectively.
- *
- * FIXME: This classes currently passes STL classes across DLL boundaries. It should be an abstract base class.
  */
-class THEA_API EigenSolver : private Noncopyable, public virtual NamedObject
+class THEA_API EigenSolver : public virtual AbstractNamedObject
 {
   public:
-    /** A complex double-precision eigenvalue. */
-    typedef std::complex<double>  Eigenvalue;
-
-    /** An eigenvector (array of double precision complex numbers). */
-    typedef Vector< std::complex<double> >  Eigenvector;
-
     /** Destructor. */
     virtual ~EigenSolver() {}
 
-    /** Set the operator matrix for the eigenproblem. */
-    template <typename MatrixT> void setMatrix(MatrixT const & src)
-    {
-      alwaysAssertM(MatrixUtil::isSquare(src), "EigenSolver: Operator matrix is not square");
-      matrix.setMatrix(src, getPreferredFormat(MatrixUtil::getFormat(src)));
-    }
-
     /**
-     * Solve the eigenproblem, optionally requesting a particular number of eigenpairs. A set of options may be specified to
-     * control the solution process.
+     * Find the eigenvalues (and optionally eigenvectors) of a matrix, optionally requesting a particular number of eigenpairs.
+     * A set of additional options may be specified to control the solution process.
      *
+     * @param m The operator matrix for the eigenproblem. Must be square.
+     * @param compute_eigenvectors If false, only the eigenvalues will be computed, not the eigenvectors. getEigenvalue() will
+     *   fail on subsequent calls.
      * @param num_requested_eigenpairs The number of eigenpairs to look for, which need <b>not</b> be the number
      *   returned. A negative value implies that there is no upper bound on the number of eigenpairs.
      * @param options Backend-specific options. See the documentation of each derived class wrapping a particular backend.
      *
-     * @return The number of eigenpairs found.
+     * @return The number of eigenpairs found, or a negative number on error.
      */
-    virtual long solve(int num_requested_eigenpairs = -1, Options const & options = Options()) = 0;
+    virtual long solve(AbstractMatrix<double> const & m, bool compute_eigenvectors = true, long num_requested_eigenpairs = -1,
+                       AbstractOptions const * options = NULL) = 0;
 
-    /** Get the set of eigenvalues computed by the last call to solve(). */
-    TheaArray<Eigenvalue> const & getEigenvalues() const { return eigenvalues; }
+    /** Get the size of each eigenvector, which is also the number of rows (or columns) of the input operator matrix. */
+    virtual long dims() const = 0;
 
-    /** Get the set of eigenvectors computed by the last call to solve(). */
-    TheaArray<Eigenvector> const & getEigenvectors() const { return eigenvectors; }
+    /** Get the number of eigenpairs computed by the last call to solve(). */
+    virtual long numEigenpairs() const = 0;
 
-    /** Get the set of relative errors of the eigenpairs computed by the last call to solve(). */
-    TheaArray<double> const & getRelativeErrors() const { return relative_errors; }
+    /**
+     * Get the \a i'th eigenvalue computed by the last call to solve(), as a complex number with real and imaginary parts.
+     *
+     * @return True on success, false on error.
+     */
+    virtual bool getEigenvalue(long i, double & re, double & im) const = 0;
 
-  protected:
-    /** Get the preferred storage format for a matrix in the given input format. */
-    virtual MatrixFormat getPreferredFormat(MatrixFormat input_format) { return input_format; }
+    /**
+     * Get the \a i'th eigenvector computed by the last call to solve(), if available. The vector is returned as two arrays of
+     * floating-point numbers, one for the real parts of the coordinates and one for the imaginary parts of the coordinates.
+     * Each array has dims() entries.
+     *
+     * @return True on success, false on error.
+     */
+    virtual bool getEigenvector(long i, double const * & re, double const * & im) const = 0;
 
-    MatrixWrapper<double>   matrix;           ///< Operator matrix.
-    TheaArray<Eigenvalue>   eigenvalues;      ///< Set of eigenvalues.
-    TheaArray<Eigenvector>  eigenvectors;     ///< Set of eigenvectors.
-    TheaArray<double>       relative_errors;  ///< Relative error for each eigenvalue.
+    /** Check if the solver has stored the relative error of each eigenpair. */
+    virtual bool hasRelativeErrors() const = 0;
+
+    /**
+     * Get the relative error of the \a i'th eigenpair computed by the last call to solve(), if available.
+     *
+     * @return True on success, false on error.
+     */
+    virtual bool getRelativeError(long i, double & error) const = 0;
 
 }; // class EigenSolver
 
@@ -132,7 +122,7 @@ class THEA_API EigenSolverFactory
     virtual ~EigenSolverFactory() {}
 
     /** Create a eigensolver with the given name. The eigensolver must be destroyed using destroyEigenSolver(). */
-    virtual EigenSolver * createEigenSolver(std::string const & name) = 0;
+    virtual EigenSolver * createEigenSolver(char const * name) = 0;
 
     /** Destroy a eigensolver created with createEigenSolver(). */
     virtual void destroyEigenSolver(EigenSolver * eigen_solver) = 0;

@@ -44,21 +44,21 @@
 
 #include "Common.hpp"
 #include "AxisAlignedBoxN.hpp"
+#include "MatVec.hpp"
 #include "RayIntersectableN.hpp"
-#include "VectorN.hpp"
 
 namespace Thea {
 
 /** An arbitrarily oriented box, implemented as an axis-aligned box in a coordinate frame. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
 {
   public:
-    typedef VectorN<N, T>           VectorT;           ///< N-dimensional vector.
+    typedef Vector<N, T>            VectorT;           ///< N-dimensional vector.
     typedef AxisAlignedBoxN<N, T>   AxisAlignedBoxT;   ///< N-dimensional axis-aligned box.
     typedef CoordinateFrameN<N, T>  CoordinateFrameT;  ///< N-dimensional coordinate frame.
 
-    THEA_DEF_POINTER_TYPES(BoxN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BoxN, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Creates a null box. */
     BoxN() {}

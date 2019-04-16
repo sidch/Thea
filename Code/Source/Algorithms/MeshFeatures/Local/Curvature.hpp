@@ -164,14 +164,14 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
     struct ProjectedCurvatureFunctor
     {
       ProjectedCurvatureFunctor(Vector3 const & p, Vector3 const & n)
-      : position(p), normal(n), num_offsets(0), sum_offsets(Vector3::zero())
+      : position(p), normal(n), num_offsets(0), sum_offsets(Vector3::Zero())
       {}
 
       template <typename SampleT> bool operator()(long index, SampleT & t)
       {
         if (NormalTraits<SampleT>::getNormal(t).dot(normal) > -1.0e-05f)  // ignore points on hidden side
         {
-          Vector3 offset = (PointTraitsN<SampleT, 3>::getPosition(t) - position).fastUnit();
+          Vector3 offset = (PointTraitsN<SampleT, 3>::getPosition(t) - position).normalized();
           sum_offsets += offset;
           num_offsets++;
         }

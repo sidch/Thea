@@ -53,7 +53,7 @@
 #include "Common.hpp"
 #include "ParametricCurveN.hpp"
 #include "Algorithms/FastCopy.hpp"
-#include "Algorithms/LinearLeastSquares.hpp"
+#include "Algorithms/StdLinearSolver.hpp"
 #include "Algorithms/PointTraitsN.hpp"
 
 namespace Thea {
@@ -67,7 +67,7 @@ namespace Thea {
  * This class contains code for fitting the curve to a sequence of points, extending the code from
  * "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, <i>%Graphics Gems</i>, Academic Press, 1990.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
 {
   private:
@@ -126,9 +126,9 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
                        long max_reparam_iters = -1,
                        long num_reparam_steps_per_iter = -1,
 
-                       typename boost::enable_if<
-                                  Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>
-                                                >::type * dummy = NULL)
+                       typename std::enable_if<
+                                  Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>::value
+                                              >::type * dummy = NULL)
     {
       if (max_reparam_iters < 0) max_reparam_iters = (initial_params ? 0 : 3);
       if (num_reparam_steps_per_iter < 0) num_reparam_steps_per_iter = 1;  // conservative choice, following Graphics Gems
@@ -259,7 +259,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       size_t num_unknown_ctrls = num_ctrls - num_fixed;
       size_t num_unknowns = (size_t)(N * num_unknown_ctrls);
 
-      LinearLeastSquares llsq((long)num_unknowns);
+      StdLinearSolver llsq((long)num_unknowns);
       TheaArray<double> basis;
       TheaArray<double> coeffs(num_unknowns, 0.0);
 
@@ -302,7 +302,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       }
 
       // Solve the least-squares linear system
-      if (!llsq.solve(LinearLeastSquares::Constraint::UNCONSTRAINED))
+      if (!llsq.solve(StdLinearSolver::Constraint::UNCONSTRAINED))
       {
         THEA_ERROR << "SplineN: Could not solve linear least-squares curve fitting problem";
         return -1;

@@ -40,35 +40,22 @@
 //============================================================================
 
 #include "LogisticRegression.hpp"
-#include "FastCopy.hpp"
-#include "LinearLeastSquares.hpp"
+#include "StdLinearSolver.hpp"
 #include "../Math.hpp"
+#include "../MatrixWrapper.hpp"
 #include <limits>
 
 namespace Thea {
 namespace Algorithms {
 
-LogisticRegression::LogisticRegression(long ndim_)
-: llsq(new LinearLeastSquares(ndim_ + 1))
+LogisticRegression::LogisticRegression(long ndims_)
+: ndims(ndims_)
 {
-  alwaysAssertM(ndim_ >= 1, "LogisticRegression: Number of dimensions must be at least 1");
+  alwaysAssertM(ndims_ >= 1, "LogisticRegression: Number of dimensions must be at least 1");
 }
 
 LogisticRegression::~LogisticRegression()
 {
-  delete llsq;
-}
-
-long
-LogisticRegression::numDimensions() const
-{
-  return llsq->numDimensions() - 1;
-}
-
-long
-LogisticRegression::numObservations() const
-{
-  return llsq->numObjectives();
 }
 
 void
@@ -80,11 +67,8 @@ LogisticRegression::addObservation(double const * x, double y)
 
   alwaysAssertM(x, "LogisticRegression: Observed vector x cannot be null");
 
-  long ndims = numDimensions();
-  llsq_coeffs.resize((size_t)(ndims + 1));
-
-  llsq_coeffs[0] = 1;
-  fastCopy(x, x + ndims, &llsq_coeffs[0] + 1);
+  llsq_coeffs.push_back(1);
+  llsq_coeffs.insert(llsq_coeffs.end(), x, x + ndims);
 
   //     c   =   log(1 / y - 1)
   // =>  y   =   1 / (1 + exp(c))
@@ -94,37 +78,45 @@ LogisticRegression::addObservation(double const * x, double y)
   // std::cout << "MIN_Y = " << MIN_Y << ", MAX_Y = " << MAX_Y << std::endl;
 
   y = Math::clamp(y, MIN_Y, MAX_Y);
-  double llsq_constant = std::log(1.0 / y - 1.0);
+  llsq_consts.push_back(std::log(1.0 / y - 1.0));
 
   // std::cout << "LogisticRegression: Adding LLSQ objective [";
-  // for (size_t i = 0; i < llsq_coeffs.size(); ++i) std::cout << ' ' << llsq_coeffs[i];
-  // std::cout << " ] = " << llsq_constant << std::endl;
-
-  llsq->addObjective(&llsq_coeffs[0], llsq_constant);
+  // for (size_t i = llsq_coeffs.size() - (size_t)ndims - 1; i < llsq_coeffs.size(); ++i) std::cout << ' ' << llsq_coeffs[i];
+  // std::cout << " ] = " << llsq_consts.back() << std::endl;
 }
 
 void
 LogisticRegression::clearObservations()
 {
-  llsq->clearObjectives();
+  llsq_coeffs.clear();
+  llsq_consts.clear();
 }
 
 bool
 LogisticRegression::solve(double tolerance)
 {
-  return llsq->solve(LinearLeastSquares::Constraint::UNCONSTRAINED, tolerance);
-}
+  if (numObservations() <= 0)
+  {
+    THEA_WARNING << "LogisticRegression: Solving empty problem";
+    has_solution = true;
+    solution.resize(0);
+  }
+  else
+  {
+    StdLinearSolver llsq(StdLinearSolver::Method::DEFAULT, StdLinearSolver::Constraint::UNCONSTRAINED);
+    llsq.setTolerance(tolerance);
 
-bool
-LogisticRegression::hasSolution() const
-{
-  return llsq->hasSolution();
-}
+    typedef Eigen::Map< MatrixX<double, MatrixLayout::ROW_MAJOR> > M;
+    M a(&llsq_coeffs[0], numObservations(), ndims);
+    has_solution = llsq.solve(MatrixWrapper<M>(&a), &llsq_consts[0]);
 
-Vector<double> const &
-LogisticRegression::getSolution() const
-{
-  return llsq->getSolution();
+    if (has_solution)
+      solution = Eigen::Map<VectorXd>(const_cast<double *>(llsq.getSolution()), ndims);
+    else
+      solution.resize(0);
+  }
+
+  return has_solution;
 }
 
 } // namespace Algorithms

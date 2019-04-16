@@ -45,8 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Colors.hpp"
-#include "../MatrixMN.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include "../NamedObject.hpp"
 #include "Texture.hpp"
 

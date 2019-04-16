@@ -2,7 +2,7 @@
 #define TEST_DCEL_MESH
 #define TEST_CONNECTED_COMPONENTS
 #define TEST_MANIFOLD
-// #define TEST_IMLS
+#define TEST_IMLS
 
 #include "../Common.hpp"
 
@@ -162,7 +162,7 @@ class BoundaryValuesFunctor
     bool operator()(GM const & mesh)
     {
       for (GM::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-        cout << "imls" << vi->getPosition().toString() << " = " << imls(vi->getPosition()) << endl;
+        cout << "imls" << vi->getPosition().transpose() << " = " << imls(vi->getPosition()) << endl;
 
       return false;
     }
@@ -279,7 +279,7 @@ testIMLS(int argc, char * argv[])
   // Get a vertex on the mesh
   Vector3 p = (*input_mg.meshesBegin())->verticesBegin()->getPosition();
 
-  // mesh_opts.bloomenthal.cell_size = input_mg.getBounds().getExtent().max() / 15.0;
+  // mesh_opts.bloomenthal.cell_size = input_mg.getBounds().getExtent().cwiseMax() / 15.0;
   // mesh_opts.bloomenthal.max_search_steps = 10;
 
   cout << "Cell size = " << mesh_opts.bloomenthal.cell_size

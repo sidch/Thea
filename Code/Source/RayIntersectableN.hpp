@@ -51,11 +51,11 @@ namespace Thea {
  * A description of the intersection point of a ray with an object. Specifies the hit time and the normal at the intersection
  * point.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RayIntersectionN
 {
   public:
-    typedef VectorN<N, T> VectorT;  ///< N-dimensional vector.
+    typedef Vector<N, T> VectorT;  ///< N-dimensional vector.
 
   private:
     T time;
@@ -65,7 +65,7 @@ class /* THEA_API */ RayIntersectionN
   public:
     /** Constructor. */
     RayIntersectionN(T time_ = -1, VectorT const * normal_ = NULL)
-    : time(time_), has_normal(normal_ != NULL), normal(normal_ ? *normal_ : VectorT::zero())
+    : time(time_), has_normal(normal_ != NULL), normal(normal_ ? *normal_ : VectorT::Zero())
     {}
 
     /** Check if the intersection is valid. */
@@ -89,11 +89,11 @@ class /* THEA_API */ RayIntersectionN
 }; // class RayIntersectionN
 
 /** Interface for an object that supports ray intersection queries in N-space. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RayIntersectableN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayIntersectableN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RayIntersectableN, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~RayIntersectableN() {}

@@ -50,59 +50,104 @@ ARPACKEigenSolver::ARPACKEigenSolver(std::string const & name_)
 : NamedObject(name_)
 {}
 
-long
-ARPACKEigenSolver::solve(int num_requested_eigenpairs, Options const & options)
-{
-  if (num_requested_eigenpairs < 0)
-    num_requested_eigenpairs = matrix.numRows();
+ARPACKEigenSolver::~ARPACKEigenSolver()
+{}
 
-  std::string which_s = options.get<std::string>("which", "LM");
+long
+ARPACKEigenSolver::solve(AbstractMatrix<double> const & m, bool compute_eigenvectors, long num_requested_eigenpairs,
+                         AbstractOptions const * options)
+{
+  if (!Math::isSquare(m))
+  {
+    THEA_ERROR << getName() << ": Operator matrix must be square";
+    return -1;
+  }
+
+  eigenvalues [0].clear(); eigenvalues [1].clear();
+  eigenvectors[0].clear(); eigenvectors[1].clear();
+
+  ndims = m.rows();
+  if (ndims <= 0)
+  {
+    THEA_WARNING << getName() << ": Operator matrix has zero dimensions";
+    return 0;
+  }
+
+  if (num_requested_eigenpairs < 0)
+    num_requested_eigenpairs = ndims;
+
+  char const * DEFAULT_WHICH = "LM";
+  int const DEFAULT_NCV = 0;
+  int const DEFAULT_TOL = std::max(1e-7, 5e-9 * ndims);
+  int const DEFAULT_MAXIT = 100;
+  int const DEFAULT_SIGMA = 0;
+
+  std::string which_s = options ? options->getString("which", DEFAULT_WHICH) : DEFAULT_WHICH;
   char which[3];
-  std::strncpy(which, which_s.c_str(), 2);
+  std::strncpy(which, which_s.c_str(), 2);  // make a copy since ARPACK++ doesn't const-protect this string
   which[2] = 0;
 
-  int ncv     =  (int)options.get<long>  ("ncv",   0);
-  double tol  =       options.get<double>("tol",   std::max(1e-7, 5e-9 * matrix.numRows()));
-  int maxit   =  (int)options.get<long>  ("maxit", 100);
+  int ncv     =  options ? (int)options->getInteger("ncv",   DEFAULT_NCV  ) : DEFAULT_NCV;
+  double tol  =  options ?      options->getFloat  ("tol",   DEFAULT_TOL  ) : DEFAULT_TOL;
+  int maxit   =  options ? (int)options->getInteger("maxit", DEFAULT_MAXIT) : DEFAULT_MAXIT;
 
   double sigma = 0;
-  bool shift_invert = options.hasOption("sigma");
+  bool shift_invert = options && options->hasOption("sigma");
   if (shift_invert)
-    sigma = options.get<double>("sigma", 0);
+    sigma = options->getFloat("sigma", DEFAULT_SIGMA);
 
-  THEA_DEBUG << "nev = " << num_requested_eigenpairs << ", which = " << which << ", ncv = " << ncv << ", tol = " << tol
-             << ", maxit = " << maxit;
+  THEA_DEBUG << getName() << ": nev = " << num_requested_eigenpairs << ", which = " << which << ", ncv = " << ncv
+             << ", tol = " << tol << ", maxit = " << maxit;
 
-  eigenvalues.clear();
-  eigenvectors.clear();
-
-  switch (matrix.getFormat())
+  if (m.asSparse() && m.asSparse()->asCompressed())
+    return solveSparse(*m.asSparse()->asCompressed(), num_requested_eigenpairs, shift_invert, sigma, which, ncv, tol, maxit);
+  else if (m.asAddressable() && m.asAddressable()->asDense())
+    return solveDense(*m.asAddressable()->asDense(), num_requested_eigenpairs, shift_invert, sigma, which, ncv, tol, maxit);
+  else
   {
-    case MatrixFormat::DENSE_ROW_MAJOR:
-    case MatrixFormat::DENSE_COLUMN_MAJOR:
-      return solveDense(num_requested_eigenpairs, shift_invert, sigma, which, ncv, tol, maxit);
-
-    case MatrixFormat::SPARSE_ROW_MAJOR:
-    case MatrixFormat::SPARSE_COLUMN_MAJOR:
-      return solveSparse(num_requested_eigenpairs, shift_invert, sigma, which, ncv, tol, maxit);
-
-    default:
-      throw Error(std::string(getName()) + ": Unknown format of cached matrix");
+    THEA_ERROR << getName() << ": Unsupported matrix format";
+    return -1;
   }
 }
 
-MatrixFormat
-ARPACKEigenSolver::getPreferredFormat(MatrixFormat input_format)
+bool
+ARPACKEigenSolver::getEigenvalue(long i, double & re, double & im) const
 {
-  switch (input_format)
+  if (i < 0 || i >= (long)eigenvalues[0].size())
   {
-    case MatrixFormat::SPARSE_ROW_MAJOR:
-    case MatrixFormat::SPARSE_COLUMN_MAJOR:
-      return MatrixFormat::SPARSE_COLUMN_MAJOR;
-
-    default:
-      return MatrixFormat::DENSE_COLUMN_MAJOR;
+    THEA_ERROR << getName() << ": Index of eigenvalue out of range";
+    return false;
   }
+
+  re = eigenvalues[0][(size_t)i];
+  im = eigenvalues[1][(size_t)i];
+
+  return true;
+}
+
+bool
+ARPACKEigenSolver::getEigenvector(long i, double const * & re, double const * & im) const
+{
+  if (i < 0 || i >= (long)eigenvalues[0].size())
+  {
+    THEA_ERROR << getName() << ": Index of eigenvector out of range";
+    return false;
+  }
+
+  if (i >= (long)eigenvectors[0].size())  // eigenvectors were not computed
+    return false;
+
+  re = eigenvectors[0][(size_t)i].data();
+  im = eigenvectors[1][(size_t)i].data();
+
+  return true;
+}
+
+bool
+ARPACKEigenSolver::getRelativeError(long i, double & error) const
+{
+  THEA_ERROR << getName() << ": Relative errors not available";
+  return false;
 }
 
 ARPACKEigenSolverFactory::~ARPACKEigenSolverFactory()
@@ -111,7 +156,7 @@ ARPACKEigenSolverFactory::~ARPACKEigenSolverFactory()
 }
 
 EigenSolver *
-ARPACKEigenSolverFactory::createEigenSolver(std::string const & name)
+ARPACKEigenSolverFactory::createEigenSolver(char const * name)
 {
   ARPACKEigenSolver * es = new ARPACKEigenSolver(name);
   eigen_solvers.insert(es);

@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
-#include "../Matrix.hpp"
+#include "../MatVec.hpp"
 #include "../Serializable.hpp"
 
 namespace Thea {
@@ -75,13 +75,13 @@ class HoughTree;
 class THEA_API HoughForest : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(HoughForest, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(HoughForest, std::shared_ptr, std::weak_ptr)
 
     /** Interface for accessing training data. */
     class TrainingData
     {
       public:
-        THEA_DEF_POINTER_TYPES(TrainingData, shared_ptr, weak_ptr)
+        THEA_DEF_POINTER_TYPES(TrainingData, std::shared_ptr, std::weak_ptr)
 
         /** Destructor. */
         virtual ~TrainingData() {}
@@ -386,8 +386,8 @@ class THEA_API HoughForest : public Serializable
     friend class HoughForestInternal::HoughTree;
 
     typedef HoughForestInternal::HoughTree Tree;  ///< Hough tree class.
-    typedef shared_ptr<Tree> TreePtr;  ///< Shared pointer to a Hough tree.
-    typedef Matrix<double, MatrixLayout::ROW_MAJOR> RowMajMatrix;  ///< Row-major matrix of double-precision values.
+    typedef std::shared_ptr<Tree> TreePtr;  ///< Shared pointer to a Hough tree.
+    typedef MatrixX<double, MatrixLayout::ROW_MAJOR> RowMajMatrix;  ///< Row-major matrix of double-precision values.
 
     /** Automatically choose suitable values for unspecified options. */
     void autoSelectUnspecifiedOptions(Options & options_, TrainingData const * training_data_) const;

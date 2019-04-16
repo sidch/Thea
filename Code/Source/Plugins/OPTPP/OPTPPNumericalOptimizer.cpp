@@ -68,7 +68,7 @@ OPTPPNumericalOptimizerFactory::~OPTPPNumericalOptimizerFactory()
 }
 
 NumericalOptimizer *
-OPTPPNumericalOptimizerFactory::createNumericalOptimizer(std::string const & name)
+OPTPPNumericalOptimizerFactory::createNumericalOptimizer(char const * name)
 {
   OPTPPNumericalOptimizer * ls = new OPTPPNumericalOptimizer(name);
   optimizers.insert(ls);

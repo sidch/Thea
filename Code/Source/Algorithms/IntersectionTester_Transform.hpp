@@ -49,7 +49,7 @@ namespace Thea {
 namespace Algorithms {
 
 // Default specializations
-template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, long N, typename T>
+template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, int N, typename T>
 struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
@@ -77,7 +77,7 @@ struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, Transform
   }
 };
 
-template <typename ObjectA, typename TransformA, typename B, long N, typename T>
+template <typename ObjectA, typename TransformA, typename B, int N, typename T>
 struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, B, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
@@ -91,7 +91,7 @@ struct IntersectionTesterImpl< TransformedObject<ObjectA, TransformA>, B, N, T >
   }
 };
 
-template <typename A, typename ObjectB, typename TransformB, long N, typename T>
+template <typename A, typename ObjectB, typename TransformB, int N, typename T>
 struct IntersectionTesterImpl< A, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectB, TransformB> TB;

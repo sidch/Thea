@@ -74,8 +74,8 @@ class /* THEA_API */ CoordinateFrameN<2, T> : public Internal::CoordinateFrameNB
     /** Initialize from a viewing position (\a eye) and a look-at position (\a center). */
     void set(VectorT const & eye, VectorT const & center)
     {
-      VectorT f = (center - eye).unit();
-      this->_setRotation(MatrixT(f[0], -f[1], f[1], f[0]));
+      VectorT f = (center - eye).normalized();
+      this->_setRotation((MatrixT() << f[0], -f[1], f[1], f[0]).finished());
       this->setTranslation(eye);
     }
 

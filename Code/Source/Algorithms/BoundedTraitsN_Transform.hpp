@@ -47,14 +47,14 @@
 namespace Thea {
 namespace Algorithms {
 
-template <typename ObjectT, typename TransformT, long N>
+template <typename ObjectT, typename TransformT, int N>
 class IsBoundedN< TransformedObject<ObjectT, TransformT>, N >
 {
   public:
     static bool const value = IsBoundedN<ObjectT, N>::value;
 };
 
-template <typename ObjectT, typename TransformT, long N, typename ScalarT>
+template <typename ObjectT, typename TransformT, int N, typename ScalarT>
 class /* THEA_API */ BoundedTraitsN< TransformedObject<ObjectT, TransformT>, N, ScalarT >
 {
   public:
@@ -66,7 +66,7 @@ class /* THEA_API */ BoundedTraitsN< TransformedObject<ObjectT, TransformT>, N, 
       bounds = bounds.transformAndBound(t.getTransform());
     }
 
-    static VectorN<N, ScalarT> getCenter(TO const & t)
+    static Vector<N, ScalarT> getCenter(TO const & t)
     {
       AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);

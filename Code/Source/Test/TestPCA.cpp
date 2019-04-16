@@ -3,7 +3,7 @@
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../Common.hpp"
 #include "../Math.hpp"
-#include "../Vector3.hpp"
+#include "../MatVec.hpp"
 #include <iostream>
 
 using namespace std;
@@ -32,7 +32,7 @@ testPCA()
                       rand() / (Real)RAND_MAX,
                       rand() / (Real)RAND_MAX);
 
-    cout << "  " << data[i].toString() << endl;
+    cout << "  " << data[i] << endl;
   }
 
   //==========================================================================================================================
@@ -45,13 +45,13 @@ testPCA()
 
   cout << "\nPrincipal axes = " << endl;
   for (long i = 0; i < 3; ++i)
-    cout << "  " << axes[i].toString() << " (variance = " << vars[i] << ')' << endl;
-  cout << "Centroid = " << centroid.toString() << endl;
+    cout << "  " << axes[i] << " (variance = " << vars[i] << ')' << endl;
+  cout << "Centroid = " << centroid << endl;
 
   for (long i = 0; i < 3; ++i)
   {
     long j = (i + 1) % 3;
-    cout << i << " x " << j << " = " << axes[i].cross(axes[j]).toString() << endl;
+    cout << i << " x " << j << " = " << toString(axes[i].cross(axes[j])) << endl;
   }
 
   //==========================================================================================================================
@@ -62,13 +62,13 @@ testPCA()
 
   cout << "\nSparse principal axes = " << endl;
   for (long i = 0; i < 3; ++i)
-    cout << "  " << axes[i].toString() << " (variance = " << vars[i] << ')' << endl;
-  cout << "Centroid = " << centroid.toString() << endl;
+    cout << "  " << axes[i] << " (variance = " << vars[i] << ')' << endl;
+  cout << "Centroid = " << centroid << endl;
 
   for (long i = 0; i < 3; ++i)
   {
     long j = (i + 1) % 3;
-    cout << i << " x " << j << " = " << axes[i].cross(axes[j]).toString() << endl;
+    cout << i << " x " << j << " = " << toString(axes[i].cross(axes[j])) << endl;
   }
 
   return true;

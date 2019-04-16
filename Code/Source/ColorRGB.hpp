@@ -63,7 +63,7 @@
 #include "Common.hpp"
 #include "ColorL.hpp"
 #include "Math.hpp"
-#include "Vector3.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -146,6 +146,20 @@ class THEA_API ColorRGB
 
     /** A reference to the blue channel. */
     Real & b() { return c[2]; }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> Real const & operator[](IntegerT channel) const
+    {
+      debugAssertM(channel >= 0 && channel <= 2, "ColorRGB: Channel must be 0, 1 or 2");
+      return c[channel];
+    }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> Real & operator[](IntegerT channel)
+    {
+      debugAssertM(channel >= 0 && channel <= 2, "ColorRGB: Channel must be 0, 1 or 2");
+      return c[channel];
+    }
 
     /** Set all channels simultaneously. */
     void set(Real r_, Real g_, Real b_)
@@ -252,21 +266,21 @@ class THEA_API ColorRGB
     }
 
     /** Get the square of the magnitude of the color. */
-    Real squaredLength() const { return c[0] * c[0] + c[1] * c[1] + c[2] * c[2]; }
+    Real squaredNorm() const { return c[0] * c[0] + c[1] * c[1] + c[2] * c[2]; }
 
     /** Get the magnitude of the color. */
-    Real length() const { return std::sqrt(squaredLength()); }
+    Real norm() const { return std::sqrt(squaredNorm()); }
 
     /** Scale the color to unit magnitude. */
-    void unitize()
+    void normalize()
     {
-      *this = unit();
+      *this = normalized();
     }
 
     /** Get a unit magnitude color by dividing by the magnitude. */
-    ColorRGB unit() const
+    ColorRGB normalized() const
     {
-      Real len = length();
+      Real len = norm();
       if (std::abs(len) < 32 * std::numeric_limits<Real>::min())
         return ColorRGB(0, 0, 0);
       else
@@ -276,13 +290,13 @@ class THEA_API ColorRGB
     /** Check if two colors are approximately equal. */
     bool fuzzyEq(ColorRGB const & other) const
     {
-      return Math::fuzzyEq((*this - other).squaredLength(), (Real)0);
+      return Math::fuzzyEq((*this - other).squaredNorm(), (Real)0);
     }
 
     /** Check if two colors are not approximately equal. */
     bool fuzzyNe(ColorRGB const & other) const
     {
-      return Math::fuzzyNe((*this - other).squaredLength(), (Real)0);
+      return Math::fuzzyNe((*this - other).squaredNorm(), (Real)0);
     }
 
     /** Raise the components to powers specified as another color. */

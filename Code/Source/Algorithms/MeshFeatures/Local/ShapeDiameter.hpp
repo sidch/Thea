@@ -50,8 +50,7 @@
 #include "../../PointCollectorN.hpp"
 #include "../../RayIntersectionTester.hpp"
 #include "../../../Math.hpp"
-#include "../../../Matrix3.hpp"
-#include "../../../Vector3.hpp"
+#include "../../../MatVec.hpp"
 #include <algorithm>
 
 namespace Thea {
@@ -143,7 +142,7 @@ class ShapeDiameter
       alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
 
       if (scale <= 0)
-        scale = precomp_kdtree->getBounds().getExtent().length();
+        scale = precomp_kdtree->getBounds().getExtent().norm();
     }
 
     /** Destructor. */
@@ -197,13 +196,8 @@ class ShapeDiameter
      */
     double compute(Vector3 const & position, Vector3 const & normal, bool only_hit_interior_surfaces = true) const
     {
-      Vector3 in = -normal.unit();
-      Vector3 u, v;
-      in.createOrthonormalBasis(u, v);
-      Matrix3 rot(u[0], v[0], in[0],
-                  u[1], v[1], in[1],
-                  u[2], v[2], in[2]);
-
+      Vector3 in = -normal.normalized();
+      Matrix3 rot = Math::orthonormalBasis(in);
       Vector3 offset = 0.001f * scale * in;
 
       static int const NUM_RAYS = 30;

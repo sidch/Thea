@@ -312,7 +312,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     {
       for (size_t j = 0; j < nbrs.size(); ++j)
       {
-        nbr_sep = (samples[i].getPosition() - nbrs[j].getSample()->getPosition()).length();
+        nbr_sep = (samples[i].getPosition() - nbrs[j].getSample()->getPosition()).norm();
         nbrs[j].setSeparation(nbr_sep);
       }
     }

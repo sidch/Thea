@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Colors.hpp"
-#include "../Vector3.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -58,7 +58,7 @@ class IncrementalMeshBuilder
     typedef int FaceHandle;  // dummy
 
   public:
-    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT Mesh;  ///< Type of mesh being built.
 

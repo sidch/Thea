@@ -45,7 +45,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Math.hpp"
-#include "../Matrix.hpp"
+#include "../MatVec.hpp"
 #include "../Serializable.hpp"
 
 namespace Thea {
@@ -66,7 +66,7 @@ void smoothIncrement3D(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, in
 class THEA_API Pyramid1D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid1D, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Pyramid1D, std::shared_ptr, std::weak_ptr)
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
     template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, NULL, false); }
@@ -160,7 +160,7 @@ class THEA_API Pyramid1D : public Serializable
 class THEA_API Pyramid2D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid2D, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Pyramid2D, std::shared_ptr, std::weak_ptr)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. The input array is assumed to
@@ -170,14 +170,14 @@ class THEA_API Pyramid2D : public Serializable
     { construct(base_data, nx_, ny_, NULL, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
-    template <typename T> Pyramid2D(Matrix<T, MatrixLayout::ROW_MAJOR> const & base_data)
-    { construct(base_data.data(), base_data.numColumns(), base_data.numRows(), NULL, false); }
+    template <typename T> Pyramid2D(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data)
+    { construct(base_data.data(), base_data.cols(), base_data.rows(), NULL, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
-    template <typename T, MatrixLayout::Value Layout> Pyramid2D(Matrix<T, Layout> const & base_data)
+    template <typename T, MatrixLayout::Value Layout> Pyramid2D(MatrixX<T, Layout> const & base_data)
     {
-      Matrix<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
-      construct(base_data_copy.data(), base_data.numColumns(), base_data.numRows(), NULL, false);
+      MatrixX<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
+      construct(base_data_copy.data(), base_data.cols(), base_data.rows(), NULL, false);
     }
 
     /**
@@ -194,21 +194,21 @@ class THEA_API Pyramid2D : public Serializable
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling with gaussian smoothing. */
     template <typename T, MatrixLayout::Value MeansLayout>
-    Pyramid2D(Matrix<T, MatrixLayout::ROW_MAJOR> const & base_data, Matrix<Vector2, MeansLayout> const & means,
+    Pyramid2D(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
               bool smooth_base_level = false)
     {
-      Matrix<Vector2, MatrixLayout::ROW_MAJOR> means_copy(means);
-      construct(base_data.data(), base_data.numColumns(), base_data.numRows(), means_copy.data(), smooth_base_level);
+      MatrixX<Vector2, MatrixLayout::ROW_MAJOR> means_copy(means);
+      construct(base_data.data(), base_data.cols(), base_data.rows(), means_copy.data(), smooth_base_level);
     }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling with gaussian smoothing. */
     template <typename T, MatrixLayout::Value BaseLayout, MatrixLayout::Value MeansLayout>
-    Pyramid2D(Matrix<T, BaseLayout> const & base_data, Matrix<Vector2, MeansLayout> const & means,
+    Pyramid2D(MatrixX<T, BaseLayout> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
               bool smooth_base_level = false)
     {
-      Matrix<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
-      Matrix<Vector2, MatrixLayout::ROW_MAJOR> means_copy(means);
-      construct(base_data_copy.data(), base_data.numColumns(), base_data.numRows(), means_copy.data(), smooth_base_level);
+      MatrixX<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
+      MatrixX<Vector2, MatrixLayout::ROW_MAJOR> means_copy(means);
+      construct(base_data_copy.data(), base_data.cols(), base_data.rows(), means_copy.data(), smooth_base_level);
     }
 
     /** Load the pyramid from a binary input stream. */
@@ -299,7 +299,7 @@ class THEA_API Pyramid2D : public Serializable
 class THEA_API Pyramid3D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid3D, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Pyramid3D, std::shared_ptr, std::weak_ptr)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 3D array by recursive downsampling. The input array is assumed to

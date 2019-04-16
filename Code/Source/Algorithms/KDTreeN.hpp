@@ -55,12 +55,11 @@
 #include "ProximityQueryStructureN.hpp"
 #include "RangeQueryStructure.hpp"
 #include "RayQueryStructureN.hpp"
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/is_base_of.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <functional>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -68,17 +67,17 @@ namespace Algorithms {
 namespace KDTreeNInternal {
 
 /** A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries. */
-template <long N, typename ScalarT>
+template <int N, typename ScalarT>
 struct ElementSample
 {
-  VectorN<N, ScalarT> position;
+  Vector<N, ScalarT> position;
   void const * element;  // this cannot be pointer-to-T, else we get recursive instantiation overflow
 
   /** Default constructor. */
   ElementSample() {}
 
   /** Initialize a sample at point \a p drawn from an element \a e. */
-  ElementSample(VectorN<N, ScalarT> const & p, void const * e) : position(p), element(e) {}
+  ElementSample(Vector<N, ScalarT> const & p, void const * e) : position(p), element(e) {}
 
 }; // struct ElementSample
 
@@ -86,7 +85,7 @@ struct ElementSample
  * A filter that passes or rejects a sample point, depending on whether a base filter passes or rejects the point's parent
  * element.
  */
-template <typename T, long N, typename ScalarT>
+template <typename T, int N, typename ScalarT>
 class SampleFilter : public Filter< ElementSample<N, ScalarT> >
 {
   public:
@@ -106,18 +105,18 @@ class SampleFilter : public Filter< ElementSample<N, ScalarT> >
 
 } // namespace KDTreeNInternal
 
-template <long N, typename ScalarT>
+template <int N, typename ScalarT>
 class IsPointN< KDTreeNInternal::ElementSample<N, ScalarT>, N >
 {
   public:
     static bool const value = true;
 };
 
-template <long N, typename ScalarT>
+template <int N, typename ScalarT>
 class PointTraitsN< KDTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
     static VectorT getPosition(KDTreeNInternal::ElementSample<N, ScalarT> const & sample) { return sample.position; }
 };
 
@@ -132,7 +131,7 @@ class PointTraitsN< KDTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
  * transformable via Transformer::transform().
  */
 template < typename T,
-           long N,
+           int N,
            typename ScalarT = Real,
            typename NodeAttributeT = NullAttribute >
 class /* THEA_API */ KDTreeN
@@ -364,7 +363,7 @@ class /* THEA_API */ KDTreeN
     };
 
   public:
-    THEA_DEF_POINTER_TYPES(KDTreeN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(KDTreeN, std::shared_ptr, std::weak_ptr)
 
     typedef T                                    Element;        ///< Type of elements in the kd-tree.
     typedef T                                    value_type;     ///< Type of elements in the kd-tree (STL convention).
@@ -866,7 +865,7 @@ class /* THEA_API */ KDTreeN
       double accel_bound = accelerationBound<MetricT>(query, dist_bound);
       if (accel_bound >= 0)
       {
-        double fudge = 0.001 * getBoundsWorldSpace(*root).getExtent().fastLength();
+        double fudge = 0.001 * getBoundsWorldSpace(*root).getExtent().norm();
         mon_approx_dist_bound = MetricT::computeMonotoneApprox(accel_bound + fudge);
       }
 
@@ -1101,7 +1100,7 @@ class /* THEA_API */ KDTreeN
       // Find a splitting plane
 #define THEA_KDTREEN_SPLIT_LONGEST
 #ifdef THEA_KDTREEN_SPLIT_LONGEST
-      long coord = start->bounds.getExtent().maxAxis();  // split longest dimension
+      long coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension
 #else
       long coord = (long)(start->depth % N);  // cycle between dimensions
 #endif
@@ -1224,7 +1223,7 @@ class /* THEA_API */ KDTreeN
     /** Get the bounding box for an object, if it is bounded. */
     template <typename U>
     static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename boost::enable_if< IsBoundedN<U, N> >::type * dummy = NULL)
+                                typename std::enable_if< IsBoundedN<U, N>::value >::type * dummy = NULL)
     {
       BoundedTraitsN<U, N, ScalarT>::getBounds(u, bounds);
     }
@@ -1232,7 +1231,7 @@ class /* THEA_API */ KDTreeN
     /** Returns a null bounding box for unbounded objects. */
     template <typename U>
     static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename boost::disable_if< IsBoundedN<U, N> >::type * dummy = NULL)
+                                typename std::enable_if< !IsBoundedN<U, N>::value >::type * dummy = NULL)
     {
       bounds.setNull();
     }
@@ -1243,7 +1242,7 @@ class /* THEA_API */ KDTreeN
      */
     template <typename MetricT, typename QueryT>
     double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename boost::enable_if< IsBoundedN<QueryT, N> >::type * dummy = NULL) const
+                                   typename std::enable_if< IsBoundedN<QueryT, N>::value >::type * dummy = NULL) const
     {
       if (node && !query_bounds.isNull())
         return MetricT::template monotoneApproxDistance<N, ScalarT>(query_bounds, getBoundsWorldSpace(*node));
@@ -1257,7 +1256,7 @@ class /* THEA_API */ KDTreeN
      */
     template <typename MetricT, typename QueryT>
     double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename boost::disable_if< IsBoundedN<QueryT, N> >::type * dummy = NULL) const
+                                   typename std::enable_if< !IsBoundedN<QueryT, N>::value >::type * dummy = NULL) const
     {
       // Assume the following specialization exists
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
@@ -1311,7 +1310,7 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename boost::enable_if< boost::is_base_of<ProximityQueryBaseT, QueryT> >::type * dummy = NULL) const
+      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1346,9 +1345,9 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename boost::disable_if< boost::is_base_of<ProximityQueryBaseT, QueryT> >::type * dummy = NULL) const
+      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
-      VectorT qp = VectorT::zero(), tp = VectorT::zero();  // initialize to squash uninitialized variable warning
+      VectorT qp = VectorT::Zero(), tp = VectorT::Zero();  // initialize to squash uninitialized variable warning
       double mad;
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
@@ -1421,7 +1420,7 @@ class /* THEA_API */ KDTreeN
       double dist_bound,
       bool get_closest_points,
       long use_as_query_index_and_swap,
-      typename boost::enable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
+      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1452,7 +1451,7 @@ class /* THEA_API */ KDTreeN
       double dist_bound,
       bool get_closest_points,
       long use_as_query_index_and_swap,
-      typename boost::disable_if<boost::is_base_of<ProximityQueryBaseT, QueryT>, void>::type * dummy = NULL) const
+      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
 
@@ -1571,7 +1570,7 @@ class /* THEA_API */ KDTreeN
     /** Transform a normal to world space. */
     VectorT normalToWorldSpace(VectorT const & n) const
     {
-      return (transform_inverse_transpose * n).fastUnit();  // the slower unit(), perhaps?
+      return (transform_inverse_transpose * n).normalized();
     }
 
     /**
@@ -1815,7 +1814,7 @@ class /* THEA_API */ KDTreeN
     long max_depth;
     long max_elems_in_leaf;
 
-    MatrixMN<3, 3, ScalarT> transform_inverse_transpose;
+    Matrix<3, 3, ScalarT> transform_inverse_transpose;
 
     FilterStack filters;
 
@@ -1833,15 +1832,15 @@ class /* THEA_API */ KDTreeN
 }; // class KDTreeN
 
 // Static variables
-template <typename T, long N, typename S, typename A>
+template <typename T, int N, typename S, typename A>
 Real const KDTreeN<T, N, S, A>::BOUNDS_EXPANSION_FACTOR = 1.05f;
 
 // Mark the kd-tree and its (public) descendants as bounded objects. The default BoundedTraitsN implementation is good enough.
-template <typename T, long N>
-class IsBoundedN< T, N, typename boost::enable_if< boost::is_base_of< KDTreeN< typename T::Element, N,
-                                                                               typename T::VectorT::value_type,
-                                                                               typename T::NodeAttribute >,
-                                                                      T > >::type >
+template <typename T, int N>
+class IsBoundedN< T, N, typename std::enable_if< std::is_base_of< KDTreeN< typename T::Element, N,
+                                                                           typename T::VectorT::value_type,
+                                                                           typename T::NodeAttribute >,
+                                                                  T >::value >::type >
 {
   public:
     static bool const value = true;

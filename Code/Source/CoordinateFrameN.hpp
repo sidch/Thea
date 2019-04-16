@@ -48,7 +48,7 @@
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class CoordinateFrameN;
+template <int N, typename T> class CoordinateFrameN;
 
 namespace Internal {
 
@@ -57,7 +57,7 @@ namespace Internal {
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
 {
   public:
@@ -67,7 +67,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     typedef typename RigidTransformT::VectorT  VectorT;
     typedef typename RigidTransformT::MatrixT  MatrixT;
 
-    THEA_DEF_POINTER_TYPES(CoordinateFrameT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(CoordinateFrameT, std::shared_ptr, std::weak_ptr)
 
     /** Default constructor. Constructs the identity frame. */
     CoordinateFrameNBase() {}
@@ -85,7 +85,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     }
 
     /** Get an axis of the frame. */
-    VectorT getAxis(long i) const { return this->getRotation().getColumn(i); }
+    VectorT getAxis(long i) const { return this->getRotation().col(i); }
 
     /** Get the inverse transform. */
     CoordinateFrameT inverse() const
@@ -114,7 +114,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a point from world space to the local space of the coordinate frame. */
     VectorT pointToObjectSpace(VectorT const & p) const
     {
-      return (p - this->getTranslation()) * this->getRotation();
+      return (p - this->getTranslation()).transpose() * this->getRotation();
     }
 
     /** Transform a direction vector from the local space of the coordinate frame to world space. */
@@ -126,7 +126,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a direction vector from world space to the local space of the coordinate frame. */
     VectorT vectorToObjectSpace(VectorT const & v) const
     {
-      return v * this->getRotation();
+      return v.transpose() * this->getRotation();
     }
 
     /** Transform a normal from the local space of the coordinate frame to world space. */
@@ -138,7 +138,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a normal from world space to the local space of the coordinate frame. */
     VectorT normalToObjectSpace(VectorT const & n) const
     {
-      return n * this->getRotation();
+      return n.transpose() * this->getRotation();
     }
 
     /** Get the identity frame (same as the world frame). */
@@ -158,7 +158,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
 } // namespace Internal
 
 /** A coordinate frame in N-space, defined by N orthonormal vectors. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ CoordinateFrameN : public Internal::CoordinateFrameNBase<N, T>
 {
   private:
@@ -178,7 +178,7 @@ class /* THEA_API */ CoordinateFrameN : public Internal::CoordinateFrameNBase<N,
 }; // class CoordinateFrameN
 
 /** Pipe a textual representation of a coordinate frame to a <code>std::ostream</code>. */
-template <long N, typename T>
+template <int N, typename T>
 std::ostream &
 operator<<(std::ostream & os, CoordinateFrameN<N, T> const & cf)
 {

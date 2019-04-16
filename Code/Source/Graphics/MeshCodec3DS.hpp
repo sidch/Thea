@@ -77,7 +77,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
     using BaseT::_getName;
 
   private:
-    typedef shared_ptr<Builder> BuilderPtr;
+    typedef std::shared_ptr<Builder> BuilderPtr;
 
   public:
     /** %Options for deserializing meshes. */
@@ -239,13 +239,13 @@ class Codec3DS : public Codec3DSBase<MeshT>
         Builder flat_builder(mesh);
         flat_builder.begin();
 
-          convert3DSSubtree(file3ds->meshes, file3ds->nodes, NULL, Matrix4::identity(), &flat_builder, callback);
+          convert3DSSubtree(file3ds->meshes, file3ds->nodes, NULL, Matrix4::Identity(), &flat_builder, callback);
 
         flat_builder.end();
         mesh_group.addMesh(mesh);
       }
       else
-        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::identity(), NULL, callback);
+        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::Identity(), NULL, callback);
 
       THEA_CONSOLE << getName() << ": Read a total of " << vertex_count << " vertices and " << face_count
                    << " faces (including malformed faces which may have been dropped from the final mesh)";
@@ -287,12 +287,15 @@ class Codec3DS : public Codec3DSBase<MeshT>
           builder->begin();
         }
 
-        Matrix4 transform = read_opts.use_transforms
-                          ? accum_transform * Matrix4(m->matrix[0][0], m->matrix[1][0], m->matrix[2][0], m->matrix[3][0],
-                                                      m->matrix[0][1], m->matrix[1][1], m->matrix[2][1], m->matrix[3][1],
-                                                      m->matrix[0][2], m->matrix[1][2], m->matrix[2][2], m->matrix[3][2],
-                                                      m->matrix[0][3], m->matrix[1][3], m->matrix[2][3], m->matrix[3][3])
-                          : Matrix4::identity();
+        Matrix4 transform;
+        if (read_opts.use_transforms)
+          transform = accum_transform
+                    * (Matrix4() << m->matrix[0][0], m->matrix[1][0], m->matrix[2][0], m->matrix[3][0],
+                                    m->matrix[0][1], m->matrix[1][1], m->matrix[2][1], m->matrix[3][1],
+                                    m->matrix[0][2], m->matrix[1][2], m->matrix[2][2], m->matrix[3][2],
+                                    m->matrix[0][3], m->matrix[1][3], m->matrix[2][3], m->matrix[3][3]).finished();
+        else
+          transform = Matrix4::Identity();
 
         // Read list of vertices
         TheaArray<typename Builder::VertexHandle> vrefs;
@@ -305,10 +308,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
           if (!read_opts.ignore_texcoords && (long)i < (long)m->texels)
           {
             Vector2 texcoord(m->texelL[i][0], m->texelL[i][1]);
-            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex, vindex, NULL, NULL, &texcoord);
+            vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex)
+                                                               : vertex, vindex, NULL, NULL, &texcoord);
           }
           else
-            vref = builder->addVertex(read_opts.use_transforms ? transform * vertex : vertex, vindex);
+            vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex) : vertex, vindex);
 
           if (callback)
             callback->vertexRead(mesh.get(), vertex_count, vref);
@@ -381,12 +385,15 @@ class Codec3DS : public Codec3DSBase<MeshT>
       {
         if (n->type == LIB3DS_OBJECT_NODE)
         {
-          Matrix4 transform = read_opts.use_transforms
-                            ? accum_transform * Matrix4(n->matrix[0][0], n->matrix[1][0], n->matrix[2][0], n->matrix[3][0],
-                                                        n->matrix[0][1], n->matrix[1][1], n->matrix[2][1], n->matrix[3][1],
-                                                        n->matrix[0][2], n->matrix[1][2], n->matrix[2][2], n->matrix[3][2],
-                                                        n->matrix[0][3], n->matrix[1][3], n->matrix[2][3], n->matrix[3][3])
-                            : Matrix4::identity();
+          Matrix4 transform;
+          if (read_opts.use_transforms)
+            transform = accum_transform
+                      * (Matrix4() << n->matrix[0][0], n->matrix[1][0], n->matrix[2][0], n->matrix[3][0],
+                                      n->matrix[0][1], n->matrix[1][1], n->matrix[2][1], n->matrix[3][1],
+                                      n->matrix[0][2], n->matrix[1][2], n->matrix[2][2], n->matrix[3][2],
+                                      n->matrix[0][3], n->matrix[1][3], n->matrix[2][3], n->matrix[3][3]).finished();
+          else
+            transform = Matrix4::Identity();
 
           if (flat_builder)
             convert3DSSubtree(n->user.mesh, n->childs, NULL, transform, flat_builder, callback);

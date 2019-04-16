@@ -4,24 +4,20 @@ using namespace Thea;
 
 #define MESH_TYPE GENERAL
 // #define MESH_TYPE DCEL
-// #define MESH_TYPE CGAL
 
 #if MESH_TYPE == GENERAL
 #  include "../Graphics/GeneralMesh.hpp"
    typedef Graphics::GeneralMesh<> Mesh;
 
-#elif MESH_TYPE == DCEL
+#else // MESH_TYPE == DCEL
 #  include "../Graphics/DCELMesh.hpp"
    typedef Graphics::DCELMesh<> Mesh;
-
-#else
-#  include "../Graphics/CGALMesh.hpp"
-   typedef Graphics::CGALMesh<> Mesh;
 #endif
 
 #include "../Algorithms/LaplaceBeltrami.hpp"
 #include "../Graphics/MeshGroup.hpp"
-#include "../MappedMatrix.hpp"
+#include "../MatrixWrapper.hpp"
+#include "../MatVec.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -72,15 +68,8 @@ testLB(int argc, char * argv[])
     throw Error("Mesh group is empty");
 
   Mesh::Ptr mesh = *mesh_group.meshesBegin();
-
-  typedef MappedMatrix<Real> Mat;
-  Mat lb;
-  LaplaceBeltrami::compute(*mesh, LaplaceBeltrami::Method::XU_2006, lb);
-
-  cout << "[\n";
-
-  for (Mat::ConstIterator mi = lb.begin(); mi != lb.end(); ++mi)
-    cout << "    (" << mi->first.first << ", " << mi->first.second << ") = " << mi->second << '\n';
-
-  cout << ']' << endl;
+  MatrixX<> lb;  // TODO: use a sparse mapped matrix
+  MatrixWrapper< MatrixX<> > wrapper(&lb);
+  LaplaceBeltrami::compute(*mesh, LaplaceBeltrami::Method::XU_2006, wrapper);
+  cout << lb;
 }

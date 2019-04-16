@@ -41,41 +41,34 @@
 
 #include "Math.hpp"
 #include "../../Array.hpp"
+#include "../../MatVec.hpp"
 #include "../../Ray3.hpp"
 #include "../../Triangle3.hpp"
-#include "../../Algorithms/SVD.hpp"
-#include "../../Vector.hpp"
+#include <Eigen/SVD>
 
 namespace Browse3D {
 
 Matrix3
-basisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
-{
-  return Matrix3(u.x(), v.x(), w.x(),
-                 u.y(), v.y(), w.y(),
-                 u.z(), v.z(), w.z());
-}
-
-Matrix3
 orthonormalBasisMatrix(Vector3 const & u, Vector3 const & v, Vector3 const & w)
 {
-  Vector3 w2 = w.fastUnit();
-  Vector3 u2 = v.cross(w2).fastUnit();
+  Vector3 w2 = w.normalized();
+  Vector3 u2 = v.cross(w2).normalized();
   Vector3 v2 = w2.cross(u2);
 
-  return basisMatrix(u2, v2, w2);
+  Matrix3 ret; ret << u2, v2, w2;
+  return ret;
 }
 
 Matrix3
 orthonormalBasisMatrix(Matrix3 const & m)
 {
-  return orthonormalBasisMatrix(m.getColumn(0), m.getColumn(1), m.getColumn(2));
+  return orthonormalBasisMatrix(m.col(0), m.col(1), m.col(2));
 }
 
 Real
 estimateScalingFactor(Matrix3 const & m)
 {
-  return (m.getColumn(0).fastLength() + m.getColumn(1).fastLength() + m.getColumn(2).fastLength()) / 3.0f;
+  return (m.col(0).norm() + m.col(1).norm() + m.col(2).norm()) / 3.0f;
 }
 
 Vector3
@@ -155,8 +148,8 @@ closestPtSegmentSegment(VecType const & p1, VecType const & q1, VecType const & 
   VecType d1 = q1 - p1; /* Direction vector of segment S1 */ \
   VecType d2 = q2 - p2; /* Direction vector of segment S2 */ \
   VecType r = p1 - p2; \
-  Real a = d1.squaredLength(); /* Squared length of segment S1, always nonnegative */ \
-  Real e = d2.squaredLength(); /* Squared length of segment S2, always nonnegative */ \
+  Real a = d1.squaredNorm(); /* Squared length of segment S1, always nonnegative */ \
+  Real e = d2.squaredNorm(); /* Squared length of segment S2, always nonnegative */ \
   Real f = d2.dot(r); \
  \
   /* Check if either or both segments degenerate into points */ \
@@ -219,7 +212,7 @@ closestPtSegmentSegment(VecType const & p1, VecType const & q1, VecType const & 
  \
   c1 = p1 + s * d1; \
   c2 = p2 + t * d2; \
-  return (c1 - c2).squaredLength(); \
+  return (c1 - c2).squaredNorm(); \
 }
 
 CLOSEST_PT_SEGMENT_SEGMENT(Vector2)
@@ -235,8 +228,8 @@ closestPtSegmentLine(VecType const & p1, VecType const & q1, VecType const & p2,
   VecType d1 = q1 - p1; /* Direction vector of segment S1 */ \
   VecType d2 = q2 - p2; /* Direction vector of line L2 */ \
   VecType r = p1 - p2; \
-  Real a = d1.squaredLength(); /* Squared length of segment S1, always nonnegative */ \
-  Real e = d2.squaredLength(); /* Squared length of segment supporting L2, always nonnegative and assumed to be non-zero */ \
+  Real a = d1.squaredNorm(); /* Squared length of segment S1, always nonnegative */ \
+  Real e = d2.squaredNorm(); /* Squared length of segment supporting L2, always nonnegative and assumed to be non-zero */ \
   Real f = d2.dot(r); \
  \
   if (a <= EPSILON) \
@@ -266,7 +259,7 @@ closestPtSegmentLine(VecType const & p1, VecType const & q1, VecType const & p2,
  \
   c1 = p1 + s * d1; \
   c2 = p2 + t * d2; \
-  return (c1 - c2).squaredLength(); \
+  return (c1 - c2).squaredNorm(); \
 }
 
 CLOSEST_PT_SEGMENT_LINE(Vector2)
@@ -322,7 +315,7 @@ closestPtRayTriangle(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge0
   c1 = ray.getOrigin();
   c2 = tri.closestPoint(c1);
 
-  return (c1 - c2).squaredLength();
+  return (c1 - c2).squaredNorm();
 }
 
 RigidTransform3
@@ -345,36 +338,36 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
     Vector3 src_axis = src[1].getTranslation() - src[0].getTranslation();
     Vector3 dst_axis = dst[1].getTranslation() - dst[0].getTranslation();
 
-    if (src_axis.squaredLength() > MIN_SQLEN && dst_axis.squaredLength() > MIN_SQLEN)
+    if (src_axis.squaredNorm() > MIN_SQLEN && dst_axis.squaredNorm() > MIN_SQLEN)
     {
-      Matrix3 rot = Matrix3::rotationArc(src_axis, dst_axis);
+      Matrix3 rot = Math::rotationArc(src_axis, dst_axis);
 
       // Now rotate around the mapped segment to align the z axes of the frames...
-      Vector3 src_dir = rot * (src[0].getRotation().getColumn(2) + src[1].getRotation().getColumn(2));
-      Vector3 dst_dir = dst[0].getRotation().getColumn(2) + dst[1].getRotation().getColumn(2);
+      Vector3 src_dir = rot * (src[0].getRotation().col(2) + src[1].getRotation().col(2));
+      Vector3 dst_dir = dst[0].getRotation().col(2) + dst[1].getRotation().col(2);
 
       // Transform src_dir and dst_dir to be perpendicular to dst_axis
-      dst_axis = dst_axis.fastUnit();
+      dst_axis = dst_axis.normalized();
       src_dir = src_dir - src_dir.dot(dst_axis) * dst_axis;
       dst_dir = dst_dir - dst_dir.dot(dst_axis) * dst_axis;
 
-      if (src_dir.squaredLength() > MIN_SQLEN && dst_dir.squaredLength() > MIN_SQLEN)
+      if (src_dir.squaredNorm() > MIN_SQLEN && dst_dir.squaredNorm() > MIN_SQLEN)
       {
-        src_dir = src_dir.fastUnit();
-        dst_dir = dst_dir.fastUnit();
+        src_dir = src_dir.normalized();
+        dst_dir = dst_dir.normalized();
 
         Vector3 src_perp = dst_axis.cross(src_dir);
         Vector3 dst_perp = dst_axis.cross(dst_dir);
 
-        Matrix3 src_basis = basisMatrix(src_dir, src_perp, dst_axis);
-        Matrix3 dst_basis = basisMatrix(dst_dir, dst_perp, dst_axis);
+        Matrix3 src_basis; src_basis << src_dir, src_perp, dst_axis;
+        Matrix3 dst_basis; dst_basis << dst_dir, dst_perp, dst_axis;
         Matrix3 extra_rot = dst_basis * src_basis.transpose();  // inverse == tranpose for rotation matrices
 
         rot = extra_rot * rot;
       }
 
       CoordinateFrame3 cf(RigidTransform3::_fromAffine(AffineTransform3(rot, dst_mean - rot * src_mean)));
-      // THEA_CONSOLE.nospace() << "R = " << cf.getRotation().toString() << ", T = " << cf.getTranslation().toString();
+      // THEA_CONSOLE.nospace() << "R = " << toString(cf.getRotation()) << ", T = " << toString(cf.getTranslation());
 
       return RigidTransform3(cf);
     }
@@ -385,16 +378,16 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
   // ICP algorithm of Arun et al. 1987.
 
   size_t num_frames = src.size();
-  Vector3 src_mean = Vector3::zero(), dst_mean = Vector3::zero();
+  Vector3 src_mean = Vector3::Zero(), dst_mean = Vector3::Zero();
   for (size_t i = 0; i < num_frames; ++i)
   {
     CoordinateFrame3 const & src_frame = src[i];
     CoordinateFrame3 const & dst_frame = dst[i];
 
-    // THEA_CONSOLE.nospace() << "src[" << i << "] = R: " << src_frame.getRotation().toString() << ", T: "
-    //                    << src_frame.getTranslation().toString();
-    // THEA_CONSOLE.nospace() << "dst[" << i << "] = R: " << dst_frame.getRotation().toString() << ", T: "
-    //                    << dst_frame.getTranslation().toString();
+    // THEA_CONSOLE.nospace() << "src[" << i << "] = R: " << toString(src_frame.getRotation()) << ", T: "
+    //                    << toString(src_frame.getTranslation());
+    // THEA_CONSOLE.nospace() << "dst[" << i << "] = R: " << toString(dst_frame.getRotation()) << ", T: "
+    //                    << toString(dst_frame.getTranslation());
 
     src_mean += src_frame.getTranslation();
     dst_mean += dst_frame.getTranslation();
@@ -403,7 +396,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
   src_mean /= num_frames;
   dst_mean /= num_frames;
 
-  Matrix3 corr = Matrix3::zero();
+  Matrix3 corr = Matrix3::Zero();
   Vector3 src_pt, dst_pt;
   for (size_t i = 0; i < num_frames; ++i)
   {
@@ -418,11 +411,11 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
         corr(r, c) += src_pt[r] * dst_pt[c];
   }
 
-  Matrix3 U, V;
-  Vector<Real> diag;
-  Algorithms::SVD::compute(corr, U, diag, V);
-  Matrix3 U_T = U.transpose();
+  Eigen::JacobiSVD<Matrix3> svd(corr);
+  Matrix3 U_T = svd.matrixU().transpose();
+  Matrix3 V = svd.matrixV();
   Matrix3 rotation = V * U_T;
+
   if (rotation.determinant() < 0)
   {
     // FIXME: One of the columns (which?) of V should be negated. See Eggert et al. '97, "Estimating 3D rigid transformations: a
@@ -450,7 +443,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
 
         src_pt = src_frame.getTranslation() - src_mean;
         dst_pt = dst_frame.getTranslation() - dst_mean;
-        sqerr += (candidate_rot * src_pt - dst_pt).squaredLength();
+        sqerr += (candidate_rot * src_pt - dst_pt).squaredNorm();
       }
 
       if (min_sqerr < 0 || sqerr < min_sqerr)
@@ -464,7 +457,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
   Vector3 translation = dst_mean - rotation * src_mean;
 
   CoordinateFrame3 cf(RigidTransform3::_fromAffine(AffineTransform3(rotation, translation)));
-  // THEA_CONSOLE.nospace() << "R = " << rotation.toString() << ", T = " << translation.toString();
+  // THEA_CONSOLE.nospace() << "R = " << toString(rotation) << ", T = " << toString(translation);
 
   return RigidTransform3(cf);
 }
@@ -513,11 +506,14 @@ void
 getBarycentricCoordinates3(Vector3 const & q, Vector3 const & v0, Vector3 const & v1, Vector3 const & v2,
                            Real & bc0, Real & bc1, Real & bc2)
 {
-  switch ((v1 - v0).cross(v2 - v0).maxAbsAxis())
+  switch (Math::maxAbsAxis((v1 - v0).cross(v2 - v0)))
   {
-    case 0:           getBarycentricCoordinates2(q.yz(), v0.yz(), v1.yz(), v2.yz(), bc0, bc1, bc2); break;
-    case 1:           getBarycentricCoordinates2(q.xz(), v0.xz(), v1.xz(), v2.xz(), bc0, bc1, bc2); break;
-    default /* 2 */:  getBarycentricCoordinates2(q.xy(), v0.xy(), v1.xy(), v2.xy(), bc0, bc1, bc2);
+    case 0:           getBarycentricCoordinates2(q.tail<2>(), v0.tail<2>(), v1.tail<2>(), v2.tail<2>(), bc0, bc1, bc2); break;
+    case 1:           getBarycentricCoordinates2(Vector2( q[0],  q[2]),
+                                                 Vector2(v0[0], v0[2]),
+                                                 Vector2(v1[0], v1[2]),
+                                                 Vector2(v2[0], v2[2]), bc0, bc1, bc2); break;
+    default /* 2 */:  getBarycentricCoordinates2(q.head<2>(), v0.head<2>(), v1.head<2>(), v2.head<2>(), bc0, bc1, bc2);
   }
 }
 
@@ -555,8 +551,8 @@ quadRandomPoint(Vector3 const & v0, Vector3 const & v1, Vector3 const & v2, Vect
   Vector3 edge21 = v1 - v2;
   Vector3 edge23 = v3 - v2;
 
-  Real tri0_double_area = edge01.cross(edge03).fastLength();
-  Real tri1_double_area = edge21.cross(edge23).fastLength();
+  Real tri0_double_area = edge01.cross(edge03).norm();
+  Real tri1_double_area = edge21.cross(edge23).norm();
 
   float tri = Random::common().uniform(0, tri0_double_area + tri1_double_area);
   if (tri <= tri0_double_area)
@@ -571,9 +567,9 @@ raySphereIntersectionTime(Ray3 const & ray, Vector3 const & center, Real radius)
   Vector3 pmc = ray.getOrigin() - center;
 
   double s[3];
-  s[2] = ray.getDirection().squaredLength();
+  s[2] = ray.getDirection().squaredNorm();
   s[1] = 2 * pmc.dot(ray.getDirection());
-  s[0] = pmc.squaredLength() - radius * radius;
+  s[0] = pmc.squaredNorm() - radius * radius;
 
   double roots[2];
   int num_roots = Math::solveQuadratic(s[0], s[1], s[2], roots);
@@ -597,9 +593,9 @@ rayTorusIntersectionTime(Ray3 const & ray, Real torus_radius, Real torus_width)
   double r2pw2 = torus_radius * torus_radius + torus_width * torus_width;
   double r2mw2 = r2pw2 - 2 * torus_width * torus_width;
 
-  Vector3 p2 = ray.getOrigin() * ray.getOrigin();
-  Vector3 pu = ray.getOrigin() * ray.getDirection();
-  Vector3 u2 = ray.getDirection() * ray.getDirection();
+  Vector3 p2 = ray.getOrigin().cwiseProduct(ray.getOrigin());
+  Vector3 pu = ray.getOrigin().cwiseProduct(ray.getDirection());
+  Vector3 u2 = ray.getDirection().cwiseProduct(ray.getDirection());
 
   double s[5];
   s[4] = u2[0] * (u2[0] + 2 * u2[1]) + u2[1] * (u2[1] + 2 * u2[2]) + u2[2] * (u2[2] + 2 * u2[0]);

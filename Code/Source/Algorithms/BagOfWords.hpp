@@ -44,7 +44,9 @@
 
 #include "../Common.hpp"
 #include "KMeans.hpp"
+#include "../AbstractAddressableMatrix.hpp"
 #include "../Serializable.hpp"
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -53,7 +55,7 @@ namespace Algorithms {
 class THEA_API BagOfWords : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(BagOfWords, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BagOfWords, std::shared_ptr, std::weak_ptr)
 
     /** Options for building the model. */
     typedef KMeans::Options Options;
@@ -83,7 +85,10 @@ class THEA_API BagOfWords : public Serializable
      *
      * @return True if the training converged, else false.
      */
-    template <typename AddressableMatrixT> bool train(long num_words, AddressableMatrixT const & training_points)
+    template <typename AddressableMatrixT>
+    bool train(long num_words, AddressableMatrixT const & training_points,
+               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+                                                         AddressableMatrixT >::value >::type * dummy = NULL)
     {
       return vocabulary.cluster(num_words, training_points);
     }
@@ -100,9 +105,12 @@ class THEA_API BagOfWords : public Serializable
      * @param point_weights [Optional] The contribution of each point to the histogram (1 if null).
      */
     template <typename AddressableMatrixT, typename U>
-    void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = NULL) const
+    void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = NULL,
+                                typename std::enable_if<
+                                    std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+                                                     AddressableMatrixT >::value >::type * dummy = NULL) const
     {
-      long num_points = points.numRows();
+      long num_points = points.rows();
       TheaArray<long> labeling((size_t)num_points);
       vocabulary.mapToClusters(points, &labeling[0]);
 

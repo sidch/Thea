@@ -63,7 +63,7 @@ class MeshKDTree : public Algorithms::KDTreeN< Triangle3< MeshVertexTriple<MeshT
     typedef MeshTriangles<MeshT> Triangles;
 
   public:
-    THEA_DEF_POINTER_TYPES(MeshKDTree, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(MeshKDTree, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT Mesh;                                       ///< The mesh type.
     typedef Graphics::MeshGroup<Mesh> MeshGroup;              ///< A group of meshes.

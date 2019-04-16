@@ -60,7 +60,7 @@ namespace Browse3D {
 
 class ModelDisplay;
 class PointCloud;
-typedef shared_ptr<PointCloud> PointCloudPtr;
+typedef std::shared_ptr<PointCloud> PointCloudPtr;
 
 } // namespace Browse3D
 

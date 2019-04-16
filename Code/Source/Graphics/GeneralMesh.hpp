@@ -57,7 +57,7 @@
 #include "DefaultMeshCodecs.hpp"
 #include "DrawableObject.hpp"
 #include "EdgeWelder.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Graphics {
@@ -80,7 +80,7 @@ template < typename VertexAttributeT               =  Graphics::NullAttribute,
 class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(GeneralMesh, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(GeneralMesh, std::shared_ptr, std::weak_ptr)
 
     /** Mesh type tag. */
     struct GENERAL_MESH_TAG {};
@@ -779,8 +779,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Split an edge by creating a new vertex along its length at a given position. */
     Vertex * splitEdge(Edge * edge, Vector3 const & p)
     {
-      Real s = (p - edge->getEndpoint(1)->getPosition()).length();
-      Real t = (p - edge->getEndpoint(0)->getPosition()).length();
+      Real s = (p - edge->getEndpoint(1)->getPosition()).norm();
+      Real t = (p - edge->getEndpoint(0)->getPosition()).norm();
       Real sum = s + t;
       s /= sum;
       t /= sum;
@@ -1199,7 +1199,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Set vertex color. */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
+                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
     {
       vertex->attr().setColor(color);
       invalidateGPUBuffers(BufferID::VERTEX_COLOR);
@@ -1208,13 +1208,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename boost::disable_if< HasColor<VertexT> >::type * dummy = NULL)
+                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
     {}
 
     /** Set vertex texture coordinates. */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       vertex->attr().setTexCoord(texcoord);
       invalidateGPUBuffers(BufferID::VERTEX_TEXCOORD);
@@ -1223,7 +1223,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename boost::disable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {}
 
     /**
@@ -1375,8 +1375,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         swap_endpts = true;
       else
       {
-        Real err0 = (old_v[0]->getPosition() - new_v[0]->getPosition()).squaredLength();
-        Real err1 = (old_v[0]->getPosition() - new_v[1]->getPosition()).squaredLength();
+        Real err0 = (old_v[0]->getPosition() - new_v[0]->getPosition()).squaredNorm();
+        Real err1 = (old_v[0]->getPosition() - new_v[1]->getPosition()).squaredNorm();
         swap_endpts = (err1 < err0);
       }
 
@@ -1533,7 +1533,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
@@ -1543,14 +1543,14 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename boost::disable_if< HasColor<VertexT> >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_colors.clear();
     }
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
@@ -1560,7 +1560,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename boost::disable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_texcoords.clear();
     }

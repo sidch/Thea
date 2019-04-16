@@ -1,5 +1,6 @@
 #include "../Algorithms/BagOfWords.hpp"
-#include "../Matrix.hpp"
+#include "../MatrixWrapper.hpp"
+#include "../MatVec.hpp"
 #include "../Random.hpp"
 #include "../EnumClass.hpp"
 
@@ -27,21 +28,21 @@ testBagOfWords()
 
   Random rng(0x01234567);
 
-  Matrix<double> training_points(NUM_TRAINING_POINTS, NUM_POINT_FEATURES);
+  MatrixXd training_points(NUM_TRAINING_POINTS, NUM_POINT_FEATURES);
   for (long i = 0; i < NUM_TRAINING_POINTS; ++i)
     for (long j = 0; j < NUM_POINT_FEATURES; ++j)
       training_points(i, j) = rng.uniform01();
 
   BagOfWords bow;
-  bow.train(NUM_WORDS, training_points);
+  bow.train(NUM_WORDS, MatrixWrapper<MatrixXd>(&training_points));
 
-  Matrix<double> test_points(NUM_TEST_POINTS, NUM_POINT_FEATURES);
+  MatrixXd test_points(NUM_TEST_POINTS, NUM_POINT_FEATURES);
   for (long i = 0; i < NUM_TEST_POINTS; ++i)
     for (long j = 0; j < NUM_POINT_FEATURES; ++j)
       test_points(i, j) = rng.uniform01();
 
   double histogram[NUM_WORDS];
-  bow.computeWordFrequencies(test_points, &histogram[0]);
+  bow.computeWordFrequencies(MatrixWrapper<MatrixXd>(&test_points), &histogram[0]);
 
   THEA_CONSOLE << "Word frequencies = [";
 

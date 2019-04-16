@@ -119,6 +119,20 @@ class THEA_API ColorRGB8
     /** A reference to the blue channel. */
     uint8 & b() { return c[2]; }
 
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
+    {
+      debugAssertM(channel >= 0 && channel <= 2, "ColorRGB8: Channel must be 0, 1 or 2");
+      return c[channel];
+    }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 & operator[](IntegerT channel)
+    {
+      debugAssertM(channel >= 0 && channel <= 2, "ColorRGB8: Channel must be 0, 1 or 2");
+      return c[channel];
+    }
+
     /** Set all channels simultaneously. */
     void set(uint8 r_, uint8 g_, uint8 b_)
     {

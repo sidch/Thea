@@ -552,7 +552,7 @@ parseArgs(int argc, char * argv[])
 double
 scaledTolerance(Mesh const & mesh, double relative_tolerance)
 {
-  return relative_tolerance * mesh.getBounds().getExtent().length();
+  return relative_tolerance * mesh.getBounds().getExtent().norm();
 }
 
 struct Flattener
@@ -646,11 +646,18 @@ operator==(FaceSeq const & lhs, FaceSeq const & rhs)
       && std::equal(lhs.seq.begin(), lhs.seq.end(), rhs.seq.begin());
 }
 
-std::size_t
-hash_value(FaceSeq const & f)
+namespace std {
+
+template <>
+struct hash<FaceSeq>
 {
-  return boost::hash_range(f.seq.begin(), f.seq.end());
-}
+  std::size_t operator()(FaceSeq const & f) const
+  {
+    return boost::hash_range(f.seq.begin(), f.seq.end());
+  }
+};
+
+} // namespace std
 
 typedef TheaUnorderedSet<FaceSeq> FaceSet;
 
@@ -874,9 +881,9 @@ tJuncts(Mesh & mesh)
       Mesh::Vertex * vx = kdtree.getElements()[(size_t)index];
       Vector3 cp = boundary_segs[i].closestPoint(vx->getPosition());
 
-      if ((cp - edge->getEndpoint(0)->getPosition()).squaredLength() > sqtol
-       && (cp - edge->getEndpoint(1)->getPosition()).squaredLength() > sqtol
-       && (cp - vx->getPosition()).squaredLength() < sqtol)
+      if ((cp - edge->getEndpoint(0)->getPosition()).squaredNorm() > sqtol
+       && (cp - edge->getEndpoint(1)->getPosition()).squaredNorm() > sqtol
+       && (cp - vx->getPosition()).squaredNorm() < sqtol)
       {
         Mesh::Edge * new_edge = mesh.splitEdge(edge, vx);
         if (!new_edge)
@@ -1079,7 +1086,7 @@ struct SDFOrienter
       if (fi->numVertices() < 3)
         continue;
 
-      Vector3 centroid = Vector3::zero();
+      Vector3 centroid = Vector3::Zero();
       for (Mesh::Face::VertexConstIterator fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
         centroid += (*fvi)->getPosition();
 
@@ -1224,36 +1231,36 @@ struct VisibilityOrienter
     kdtree.init();
 
     mesh_center = mg.getBounds().getCenter();
-    camera_distance = 2 * mg.getBounds().getExtent().length();
+    camera_distance = 2 * mg.getBounds().getExtent().norm();
   }
 
   bool operator()(Mesh & mesh)
   {
     static Real PHI = (Real)((1.0 + std::sqrt(5.0)) / 2.0);
     static Vector3 const CAMERAS_LO[] = {
-      Vector3( 1,  1,  1).unit(),
-      Vector3( 1,  1, -1).unit(),
-      Vector3( 1, -1,  1).unit(),
-      Vector3( 1, -1, -1).unit(),
-      Vector3(-1,  1,  1).unit(),
-      Vector3(-1,  1, -1).unit(),
-      Vector3(-1, -1,  1).unit(),
-      Vector3(-1, -1, -1).unit(),
+      Vector3( 1,  1,  1).normalized(),
+      Vector3( 1,  1, -1).normalized(),
+      Vector3( 1, -1,  1).normalized(),
+      Vector3( 1, -1, -1).normalized(),
+      Vector3(-1,  1,  1).normalized(),
+      Vector3(-1,  1, -1).normalized(),
+      Vector3(-1, -1,  1).normalized(),
+      Vector3(-1, -1, -1).normalized(),
 
-      Vector3(0,  1 / PHI,  PHI).unit(),
-      Vector3(0,  1 / PHI, -PHI).unit(),
-      Vector3(0, -1 / PHI,  PHI).unit(),
-      Vector3(0, -1 / PHI, -PHI).unit(),
+      Vector3(0,  1 / PHI,  PHI).normalized(),
+      Vector3(0,  1 / PHI, -PHI).normalized(),
+      Vector3(0, -1 / PHI,  PHI).normalized(),
+      Vector3(0, -1 / PHI, -PHI).normalized(),
 
-      Vector3( PHI, 0,  1 / PHI).unit(),
-      Vector3( PHI, 0, -1 / PHI).unit(),
-      Vector3(-PHI, 0,  1 / PHI).unit(),
-      Vector3(-PHI, 0, -1 / PHI).unit(),
+      Vector3( PHI, 0,  1 / PHI).normalized(),
+      Vector3( PHI, 0, -1 / PHI).normalized(),
+      Vector3(-PHI, 0,  1 / PHI).normalized(),
+      Vector3(-PHI, 0, -1 / PHI).normalized(),
 
-      Vector3( 1 / PHI,  PHI, 0).unit(),
-      Vector3(-1 / PHI,  PHI, 0).unit(),
-      Vector3( 1 / PHI, -PHI, 0).unit(),
-      Vector3(-1 / PHI, -PHI, 0).unit(),
+      Vector3( 1 / PHI,  PHI, 0).normalized(),
+      Vector3(-1 / PHI,  PHI, 0).normalized(),
+      Vector3( 1 / PHI, -PHI, 0).normalized(),
+      Vector3(-1 / PHI, -PHI, 0).normalized(),
     };
 
     static Vector3 const CAMERAS_HI[] = {
@@ -1325,7 +1332,7 @@ struct VisibilityOrienter
 
       int best_camera = -1;
       Real best_exposure = -1;
-      Vector3 best_dir = Vector3::zero();
+      Vector3 best_dir = Vector3::Zero();
 
       for (size_t j = 0; j < face_pts.size(); ++j)
       {
@@ -1358,7 +1365,7 @@ struct VisibilityOrienter
               num_open++;
           }
 
-          Vector3 dir = ray.getDirection().unit();
+          Vector3 dir = ray.getDirection().normalized();
           Real exposure = num_open / (Real)NUM_JITTERED + fabs(fi->getNormal().dot(dir));
           if (best_camera < 0 || exposure > best_exposure)
           {
@@ -1398,7 +1405,7 @@ triangulate(Mesh & mesh)
   long before_num_faces = mesh.numFaces();
 
   Real tol = (triangulate_tolerance < 0 ? 1.0e-6f : (Real)triangulate_tolerance);
-  Real epsilon = max(tol * mesh.getBounds().getExtent().length(), tol);
+  Real epsilon = max(tol * mesh.getBounds().getExtent().norm(), tol);
   long num_triangulated_faces = mesh.triangulate(epsilon);
   if (num_triangulated_faces < 0)
     return true;  // error, stop recursion through mesh group

@@ -43,18 +43,15 @@
 #define __Thea_UnorderedMap_hpp__
 
 #include "Platform.hpp"
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 namespace Thea {
 
-/** Hashtable-based map from keys to values, guaranteed to be a drop-in replacement for std::tr1::unordered_map. */
-#define TheaUnorderedMap boost::unordered_map
+/** Hashtable-based map from keys to values. */
+#define TheaUnorderedMap std::unordered_map
 
-/**
- * Hashtable-based map from keys to values, allowing multiple values that share the same key and guaranteed to be a drop-in
- * replacement for std::tr1::unordered_multimap.
- */
-#define TheaUnorderedMultiMap boost::unordered_multimap
+/** Hashtable-based map from keys to values, allowing multiple values that share the same key. */
+#define TheaUnorderedMultiMap std::unordered_multimap
 
 } // namespace Thea
 

@@ -106,7 +106,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
     if (line_in >> n[0] >> n[1] >> n[2])
       has_normals = true;
     else
-      n = Vector3::zero();
+      n = Vector3::Zero();
 
     points.push_back(Point(p, n));
   }
@@ -115,7 +115,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
   {
     normals_are_normalized = true;
     for (size_t i = 0; i < points.size(); ++i)
-      if (!Math::fuzzyEq(points[i].n.squaredLength(), (Real)1, (Real)0.001))
+      if (!Math::fuzzyEq(points[i].n.squaredNorm(), (Real)1, (Real)0.001))
       {
         normals_are_normalized = false;
         break;
@@ -551,7 +551,7 @@ PointCloud::getColor(size_t point_index) const
   {
     Vector3 n = points[point_index].n;
     if (!normals_are_normalized)
-      n.unitize();
+      n.normalize();
 
     return ColorRGB(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1));
   }
@@ -560,10 +560,10 @@ PointCloud::getColor(size_t point_index) const
     static Real const MIN_COLOR = 0.1;
     static Real const MAX_COLOR = 1.0;
 
-    Vector3 ext = getBounds().getExtent().max(Vector3(1e-20f, 1e-20f, 1e-20f));
-    Vector3 v = (points[point_index].p - getBounds().getLow()) / ext;
+    Vector3 ext = getBounds().getExtent().cwiseMax(Vector3(1e-20f, 1e-20f, 1e-20f));
+    Vector3 v = (points[point_index].p - getBounds().getLow()).cwiseQuotient(ext);
     ColorRGB c((MAX_COLOR - MIN_COLOR) * v + Vector3(MIN_COLOR, MIN_COLOR, MIN_COLOR));
-    Vector3 hsv(c.toHSV().xy(), 1);
+    Vector3 hsv; hsv << c.toHSV().head<2>(), 1;
     return ColorRGB::fromHSV(hsv);
   }
 
@@ -667,7 +667,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
       bool has_colors = (!features.empty()
                        || has_normals
                        || app().options().fancy_colors);
-      Real scale = getBounds().getExtent().length();
+      Real scale = getBounds().getExtent().norm();
       Real point_radius = app().options().point_scale * Math::clamp(10.0f / points.size(), 0.002f, 0.005f) * scale;
       for (size_t i = 0; i < points.size(); ++i)
       {
@@ -719,14 +719,14 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
       render_system.setShader(NULL);
       render_system.setColor(ColorRGB(0, 0, 1));
 
-      Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().length() : 1);
+      Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().norm() : 1);
 
       render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
 
         for (size_t i = 0; i < points.size(); ++i)
         {
           render_system.sendVertex(points[i].p);
-          render_system.sendVertex(points[i].p + normal_scale * points[i].n);
+          render_system.sendVertex((points[i].p + normal_scale * points[i].n).eval());
         }
 
       render_system.endPrimitive();

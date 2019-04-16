@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Math.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
 
@@ -52,11 +52,11 @@ namespace Thea {
 namespace Algorithms {
 
 /** Finding the centroid of N-dimensional data. */
-template <typename T, long N, typename ScalarT = Real, typename Enable = void>
+template <typename T, int N, typename ScalarT = Real, typename Enable = void>
 class /* THEA_API */ CentroidN
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;  ///< N-D vector used to represent points.
+    typedef Vector<N, ScalarT> VectorT;  ///< N-D vector used to represent points.
 
     /**
      * Unweighted centroid of a set of N-D objects. InputIterator must dereference to type T.
@@ -85,11 +85,11 @@ class /* THEA_API */ CentroidN
 }; // class CentroidN
 
 // Centroid of objects passed as pointers.
-template <typename T, long N, typename ScalarT>
+template <typename T, int N, typename ScalarT>
 class /* THEA_API */ CentroidN<T *, N, ScalarT>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static VectorT compute(InputIterator begin, InputIterator end)
     {
@@ -108,27 +108,30 @@ class /* THEA_API */ CentroidN<T *, N, ScalarT>
 }; // class CentroidN<T *>
 
 // Centroid of objects that map to single points in N-space.
-template <typename T, long N, typename ScalarT>
-class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, N> >::type>
+template <typename T, int N, typename ScalarT>
+class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, N>::value >::type>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static VectorT compute(InputIterator begin, InputIterator end)
     {
-      VectorT sum_points = VectorT::zero();
+      VectorT sum_points = VectorT::Zero();
       long num_points = 0;
       for (InputIterator i = begin; i != end; ++i, ++num_points)
         sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*i);
 
-      return num_points > 0 ? sum_points / num_points : VectorT::zero();
+      if (num_points > 0)
+        return sum_points / num_points;
+      else
+        return VectorT::Zero();
     }
 
     template <typename ObjectInputIterator, typename WeightInputIterator>
     static VectorT compute(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
                            WeightInputIterator weights_begin)
     {
-      VectorT sum_points = VectorT::zero();
+      VectorT sum_points = VectorT::Zero();
       double sum_weights = 0;
       WeightInputIterator wi = weights_begin;
       for (ObjectInputIterator pi = objects_begin; pi != objects_end; ++pi, ++wi)
@@ -137,7 +140,10 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename boost::enable_if< IsNonRe
         sum_weights += static_cast<double>(*wi);
       }
 
-      return Math::fuzzyEq(sum_weights, 0.0) ? VectorT::zero() : sum_points / sum_weights;
+      if (Math::fuzzyEq(sum_weights, 0.0))
+        return VectorT::Zero();
+      else
+        return sum_points / sum_weights;
     }
 
 }; // class CentroidN<PointN>

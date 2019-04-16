@@ -47,35 +47,20 @@
 namespace Thea {
 namespace Algorithms {
 
-/**
- * Interface for a function that maps each point in R^n to a real number.
- *
- * <b>IMPORTANT:</b> Always inherit virtually from this class, i.e. use:
- *
- * \code
- * class MyFunc : public virtual ScalarFunction
- * {
- *   ...
- * };
- * \endcode
- *
- * This also means that the a derived class in an inheritance hierarchy involving ScalarFunction must explicitly call the
- * ScalarFunction constructor.
- */
+// Forward declarations
+class AnalyticD1ScalarFunction;
+
+/** Interface for a function that maps each point in R^n to a real number. */
 class THEA_API ScalarFunction
 {
   public:
-    THEA_DEF_POINTER_TYPES(ScalarFunction, shared_ptr, weak_ptr)
-
-    /** Constructor. */
-    ScalarFunction(int ndims_) : ndims(ndims_)
-    { alwaysAssertM(ndims > 0, "ScalarFunction: Number of dimensions must be positive"); }
+    THEA_DEF_POINTER_TYPES(ScalarFunction, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~ScalarFunction() {}
 
     /** Get the number of dimensions of the function domain. */
-    int numDimensions() const { return ndims; }
+    virtual int dims() const;
 
     /** Compute the value of the function at a given point. */
     virtual double valueAt(float const * p) const = 0;
@@ -83,8 +68,8 @@ class THEA_API ScalarFunction
     /** Compute the value of the function at a given point. */
     virtual double valueAt(double const * p) const = 0;
 
-  private:
-    int ndims;  ///< Number of dimensions of domain.
+    /** If the function has an analytic first derivative, cast this object to the corresponding type. */
+    virtual AnalyticD1ScalarFunction const * asAnalyticD1() const = 0;
 
 }; // class ScalarFunction
 

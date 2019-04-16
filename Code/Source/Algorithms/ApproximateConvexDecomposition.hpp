@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
-#include "../Vector3.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API ApproximateConvexPointDecomposition
 {
   public:
-    THEA_DEF_POINTER_TYPES(ApproximateConvexPointDecomposition, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ApproximateConvexPointDecomposition, std::shared_ptr, std::weak_ptr)
 
     /** Add a point to the cloud to be decomposed. */
     void addPoint(Vector3 const & p) { points.push_back(p); }

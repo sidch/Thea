@@ -66,6 +66,8 @@ namespace Graphics {
  * If no rendering context is available when a rendersystem is constructed, the new rendersystem will be set up for offscreen
  * rendering if possible. In this case, you must explicitly create and attach a framebuffer to the rendersystem before you can
  * call any drawing functions.
+ *
+ * FIXME: This class still passes some non-POD/non-pure-virtual objects (e.g. Camera, Matrix4) across shared library boundaries.
  */
 class THEA_API RenderSystem : public AbstractNamedObject
 {
@@ -280,7 +282,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
       setMatrix(camera.getProjectionTransform());
 
       setMatrixMode(MatrixMode::MODELVIEW);
-      setMatrix(camera.getWorldToCameraTransform().toHomMatrix());
+      setMatrix(camera.getWorldToCameraTransform().homogeneous());
     }
 
     /** Set the matrix of the current matrix mode to the identity transformation. */
@@ -414,7 +416,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
 
     /** Send a 3-component texture coordinate to the rendersystem. */
     virtual void sendTexCoord(int texunit, double x, double y, double z)
-    { sendTexCoord(texunit, Vector3((float)x, (float)y, (float)z)); }
+    { sendTexCoord(texunit, Vector3((Real)x, (Real)y, (Real)z)); }
 
     /** Finish drawing the primitive started by beginPrimitive(). */
     virtual void endPrimitive() = 0;

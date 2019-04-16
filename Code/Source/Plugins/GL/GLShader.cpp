@@ -352,9 +352,9 @@ static void toFloats(ColorL const & c, float * f) { *f = c.value(); }
 static void toFloats(ColorRGB const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); }
 static void toFloats(ColorRGBA const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); f[3] = c.a(); }
 
-static void toFloats(Matrix2 const & m, float * f) { m.getElementsRowMajor(f); }
-static void toFloats(Matrix3 const & m, float * f) { m.getElementsRowMajor(f); }
-static void toFloats(Matrix4 const & m, float * f) { m.getElementsRowMajor(f); }
+static void toFloats(Matrix2 const & m, float * f) { Math::getElementsRowMajor(m, f); }
+static void toFloats(Matrix3 const & m, float * f) { Math::getElementsRowMajor(m, f); }
+static void toFloats(Matrix4 const & m, float * f) { Math::getElementsRowMajor(m, f); }
 
 } // namespace GLShaderInternal
 

@@ -88,7 +88,7 @@ template < typename VertexAttribute    =  Graphics::NullAttribute,
 class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(DCELMesh, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(DCELMesh, std::shared_ptr, std::weak_ptr)
 
     /** Mesh type tag. */
     struct DCEL_MESH_TAG {};
@@ -439,7 +439,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       // Compute the face normal, assume it is consistent across the face
       Vector3 e1 = face_vertices[0]->getPosition() - face_vertices[1]->getPosition();
       Vector3 e2 = face_vertices[2]->getPosition() - face_vertices[1]->getPosition();
-      Vector3 normal = e2.cross(e1).unit();  // counter-clockwise
+      Vector3 normal = e2.cross(e1).normalized();  // counter-clockwise
 
       Face * face = addFace(num_verts, &face_vertices[0], normal);  // invalidates GPU buffers
       if (face)
@@ -470,7 +470,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       }
 
       Vector3 p = (1 - frac) * edge->getOrigin()->getPosition() + frac * edge->getEnd()->getPosition();
-      Vector3 n = ((1 - frac) * edge->getOrigin()->getNormal() + frac * edge->getEnd()->getNormal()).unit();
+      Vector3 n = ((1 - frac) * edge->getOrigin()->getNormal() + frac * edge->getEnd()->getNormal()).normalized();
       Vertex * new_vx = addVertex(p, &n);
       if (!new_vx)
         return NULL;
@@ -492,9 +492,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      */
     Vertex * splitEdge(Halfedge * edge, Vector3 const & pos)
     {
-      Real s = (pos - edge->getOrigin()->getPosition()).length();
-      Real t = (pos - edge->getEnd()->getPosition()).length();
-      Vector3 n = (t * edge->getOrigin()->getNormal() + s * edge->getEnd()->getNormal()).unit();
+      Real s = (pos - edge->getOrigin()->getPosition()).norm();
+      Real t = (pos - edge->getEnd()->getPosition()).norm();
+      Vector3 n = (t * edge->getOrigin()->getNormal() + s * edge->getEnd()->getNormal()).normalized();
       Vertex * new_vx = addVertex(pos, &n);
       if (!new_vx)
         return NULL;
@@ -692,7 +692,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Set vertex color. */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
+                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
     {
       vertex->attr().setColor(color);
     }
@@ -700,13 +700,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename boost::disable_if< HasColor<VertexT> >::type * dummy = NULL)
+                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
     {}
 
     /** Set vertex texture coordinates. */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       vertex->attr().setTexCoord(texcoord);
     }
@@ -714,7 +714,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename boost::disable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {}
 
     /**
@@ -1098,7 +1098,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     static Real ccwAngle(Vector3 const & u, Vector3 const & v, Vector3 const & unit_up)
     {
       Vector3 v_proj = v - (v.dot(unit_up) * unit_up);
-      Real s = u.cross(v_proj).fastLength();
+      Real s = u.cross(v_proj).norm();
       Real c = u.dot(v_proj);
       Real ang = std::atan2(s, c);
 
@@ -1279,7 +1279,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename boost::enable_if< HasColor<VertexT> >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
@@ -1289,14 +1289,14 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename boost::disable_if< HasColor<VertexT> >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_colors.clear();
     }
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename boost::enable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
@@ -1306,7 +1306,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename boost::disable_if< HasTexCoord<VertexT> >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
     {
       packed_vertex_texcoords.clear();
     }

@@ -44,7 +44,7 @@
 
 #include "IncrementalMeshBuilder.hpp"
 #include "MeshType.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Graphics {
@@ -55,10 +55,10 @@ namespace Graphics {
  * @see DisplayMesh
  */
 template <typename MeshT>
-class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsDisplayMesh<MeshT> >::type>
+class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsDisplayMesh<MeshT>::value >::type>
 {
   public:
-    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT                         Mesh;          ///< Type of mesh being built.
     typedef typename MeshT::VertexHandle  VertexHandle;  ///< Handle to a mesh vertex.
@@ -74,7 +74,7 @@ class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsDisplayMesh<Mes
      * Construct from a shared mesh pointer. The builder takes shared ownership of the mesh so it survives till the builder is
      * finished.
      */
-    IncrementalMeshBuilder(shared_ptr<Mesh> mesh_)
+    IncrementalMeshBuilder(std::shared_ptr<Mesh> mesh_)
     : mp(mesh_), mesh(mesh_.get()), num_vertices(0), num_faces(0), building(false)
     {
       alwaysAssertM(mesh, "IncrementalMeshBuilder: Mesh pointer cannot be null");
@@ -132,7 +132,7 @@ class IncrementalMeshBuilder<MeshT, typename boost::enable_if< IsDisplayMesh<Mes
     }
 
   private:
-    shared_ptr<Mesh> mp;  // used for shared ownership
+    std::shared_ptr<Mesh> mp;  // used for shared ownership
     Mesh * mesh;
     long num_vertices, num_faces;
     bool building;

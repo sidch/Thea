@@ -51,7 +51,7 @@ template <typename TransformT>
 class /* THEA_API */ Transformable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Transformable, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Transformable, std::shared_ptr, std::weak_ptr)
 
     typedef TransformT Transform;  ///< The type of transformation.
 
@@ -88,7 +88,12 @@ class /* THEA_API */ Transformable
 
 }; // Transformable
 
-template <typename TransformT> inline Transformable<TransformT>::~Transformable() {}
+template <typename TransformT>
+Transformable<TransformT>::~Transformable()
+{
+  // Pure virtual destructor should have a body
+  // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
+}
 
 } // namespace Thea
 

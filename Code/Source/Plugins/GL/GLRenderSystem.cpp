@@ -632,17 +632,17 @@ GLRenderSystem::getMatrix(MatrixMode mode) const
 
   THEA_CHECK_GL_OK
 
-  return Matrix4(f[0], f[4], f[ 8], f[12],
-                 f[1], f[5], f[ 9], f[13],
-                 f[2], f[6], f[10], f[14],
-                 f[3], f[7], f[11], f[15]);
+  return (Matrix4() << f[0], f[4], f[ 8], f[12],
+                       f[1], f[5], f[ 9], f[13],
+                       f[2], f[6], f[10], f[14],
+                       f[3], f[7], f[11], f[15]).finished();
 }
 
 void
 GLRenderSystem::setMatrix(Matrix4 const & m)
 {
   GLfloat f[16];
-  m.getElementsColumnMajor(f);
+  Math::getElementsColumnMajor(m, f);
   glLoadMatrixf(f);
 }
 
@@ -656,7 +656,7 @@ void
 GLRenderSystem::multMatrix(Matrix4 const & m)
 {
   GLfloat f[16];
-  m.getElementsColumnMajor(f);
+  Math::getElementsColumnMajor(m, f);
   glMultMatrixf(f);
 }
 

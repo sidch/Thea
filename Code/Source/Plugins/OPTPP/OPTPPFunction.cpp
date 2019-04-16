@@ -54,8 +54,8 @@ class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public AddressableMatrix<NEWMAT:
   public:
     OPTPPSymMatWrapper(NEWMAT::SymmetricMatrix * m_) : m(m_) {}
 
-    long numRows() const { return m->Nrows(); }
-    long numColumns() const { return m->Ncols(); }
+    long rows() const { return m->Nrows(); }
+    long cols() const { return m->Ncols(); }
 
     NEWMAT::Real const & get(long row, long col) const
     {
@@ -136,11 +136,11 @@ toOPTPPFunction(ScalarFunction const & f, double const * init_pt)
   // Ignore init_pt for now, since I can't figure out how to bind it to the init function.
 
   if (dynamic_cast<AnalyticD2ScalarFunction const *>(&f))
-    return new OPTPP::NLF2(f.numDimensions(), nlf2, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
+    return new OPTPP::NLF2(f.dims(), nlf2, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
   else if (dynamic_cast<AnalyticD1ScalarFunction const *>(&f))
-    return new OPTPP::NLF1(f.numDimensions(), nlf1, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
+    return new OPTPP::NLF1(f.dims(), nlf1, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
   else
-    return new OPTPP::NLF0(f.numDimensions(), nlf0, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
+    return new OPTPP::NLF0(f.dims(), nlf0, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
 }
 
 } // namespace Algorithms

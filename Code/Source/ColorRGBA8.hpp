@@ -125,6 +125,20 @@ class THEA_API ColorRGBA8
     /** Get the red, green and blue channels as a ColorRGB8. */
     ColorRGB8 rgb() const { return ColorRGB8(c[0], c[1], c[2]); }
 
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
+    {
+      debugAssertM(channel >= 0 && channel <= 3, "ColorRGBA8: Channel must be 0, 1, 2 or 3");
+      return c[channel];
+    }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 & operator[](IntegerT channel)
+    {
+      debugAssertM(channel >= 0 && channel <= 3, "ColorRGBA8: Channel must be 0, 1, 2 or 3");
+      return c[channel];
+    }
+
     /** Set all channels simultaneously. */
     void set(uint8 r_, uint8 g_, uint8 b_, uint8 a_)
     {

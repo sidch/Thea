@@ -43,6 +43,10 @@
 #define __Thea_Algorithms_ARPACKEigenSolver_hpp__
 
 #include "ARPACKCommon.hpp"
+#include "../../AbstractCompressedSparseMatrix.hpp"
+#include "../../AbstractDenseMatrix.hpp"
+#include "../../MatVec.hpp"
+#include "../../NamedObject.hpp"
 #include "../../Set.hpp"
 #include "../../Algorithms/EigenSolver.hpp"
 
@@ -50,7 +54,7 @@ namespace Thea {
 namespace Algorithms {
 
 /** ARPACK-based eigensystem solver. */
-class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver
+class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver, public virtual NamedObject
 {
   private:
     typedef EigenSolver BaseType;
@@ -59,38 +63,51 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver
     /** Constructor. */
     ARPACKEigenSolver(std::string const & name_);
 
+    /** Destructor. */
+    ~ARPACKEigenSolver();
+
     /**
      * {@inheritDoc}
      *
      * Valid options for the ARPACK backend, where n is the size of the operator matrix, are:
      * - <b>which</b>: Part of eigenvalue spectrum to be returned
-     *   - <i>Type:</i> <code>std::string</code> in {"LM", "SM", "LR", "SR", "LI", "SI"}
+     *   - <i>Type:</i> string in {"LM", "SM", "LR", "SR", "LI", "SI"}
      *   - <i>Default</i>: "LM"
      * - <b>ncv</b>: Number of Arnoldi vectors generated at each iteration (must be between \a num_requested_eigenpairs + 1 and
      *   n - 1)
-     *   - <i>Type:</i> <code>int</code>
+     *   - <i>Type:</i> integer
      *   - <i>Default</i>: min{2 * \a num_requested_eigenpairs + 1, n - 1}
      * - <b>maxit</b>: Maximum number of Arnoldi update iterations allowed
-     *   - <i>Type:</i> <code>int</code>
+     *   - <i>Type:</i> integer
      *   - <i>Default</i>: 100 * \a num_requested_eigenpairs
      * - <b>tol</b>: Stopping criterion, satisfied for a computed eigenvalue x if |x - x'| <= \a tol * |x|, where x' is the
      *   actual eigenvalue closest to x
-     *   - <i>Type:</i> <code>double</code>
+     *   - <i>Type:</i> floating-point
      *   - <i>Default</i>: machine precision
      */
-    long solve(int num_requested_eigenpairs = -1, Options const & options = Options());
+    long solve(AbstractMatrix<double> const & m, bool compute_eigenvectors = true, long num_requested_eigenpairs = -1,
+               AbstractOptions const * options = NULL);
 
-  protected:
-    MatrixFormat getPreferredFormat(MatrixFormat input_format);
+    long dims() const { return ndims; }
+    long numEigenpairs() const { return (long)eigenvalues[0].size(); }
+    bool getEigenvalue(long i, double & re, double & im) const;
+    bool getEigenvector(long i, double const * & re, double const * & im) const;
+    bool hasRelativeErrors() const { return false; }
+    bool getRelativeError(long i, double & error) const;
 
   private:
     /** Solve a dense system */
-    long solveDense(int nev, bool shift_invert, double sigma, char * which, int ncv, double tol, int maxit, double * resid = 0,
-                    bool AutoShift = true);
+    long solveDense(AbstractDenseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which, int ncv,
+                    double tol, int maxit, double * resid = 0, bool auto_shift = true);
 
     /** Solve a sparse system */
-    long solveSparse(int nev, bool shift_invert, double sigma, char * which, int ncv, double tol, int maxit, double * resid = 0,
-                     bool AutoShift = true);
+    long solveSparse(AbstractCompressedSparseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which,
+                     int ncv, double tol, int maxit, double * resid = 0, bool auto_shift = true);
+
+    long ndims;  /**< The dimensionality of the problem, i.e. the length of each eigenvector or equivalently the size of the
+                      input matrix. */
+    TheaArray<double> eigenvalues[2];  ///< Real and imaginary parts of eigenvalues.
+    TheaArray< VectorX<double> > eigenvectors[2];  ///< Real and imaginary parts of eigenvectors, if computed (else empty).
 
 }; // class ARPACKEigenSolver
 
@@ -101,7 +118,7 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolverFactory : public EigenSolverFactory
     /** Destructor. */
     ~ARPACKEigenSolverFactory();
 
-    EigenSolver * createEigenSolver(std::string const & name);
+    EigenSolver * createEigenSolver(char const * name);
     void destroyEigenSolver(EigenSolver * eigen_solver);
 
     /** Destroy all eigensolvers created with this factory. */

@@ -44,14 +44,13 @@
 
 #include "TransformedObject.hpp"
 #include "Transformer.hpp"
-#include <boost/type_traits/is_pointer.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
 
 // Default to hard-transforming each shape, in the absence of anything smarter
-template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, long N, typename T>
+template <typename ObjectA, typename TransformA, typename ObjectB, typename TransformB, int N, typename T>
 struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<ObjectB, TransformB>, N, T >
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
@@ -97,7 +96,7 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<O
     }
   }
 
-  static T closestPoints(TA const & a, TB const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(TA const & a, TB const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   {
     if (a.hasTransform())
     {
@@ -119,10 +118,10 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, TransformedObject<O
   }
 };
 
-template <typename ObjectA, typename TransformA, typename B, long N, typename T>
+template <typename ObjectA, typename TransformA, typename B, int N, typename T>
 struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T,
-                     typename boost::enable_if_c< !boost::is_pointer<B>::value
-                                               && !MetricL2Internal::TransformedObjectCheck<B>::value >::type>
+                     typename std::enable_if< !std::is_pointer<B>::value
+                                           && !MetricL2Internal::TransformedObjectCheck<B>::value >::type>
 {
   typedef TransformedObject<ObjectA, TransformA> TA;
 
@@ -142,7 +141,7 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T,
       return MetricL2::monotoneApproxDistance<N, T>(a.getObject(), b);
   }
 
-  static T closestPoints(TA const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(TA const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   {
     if (a.hasTransform())
       return MetricL2::closestPoints<N, T>(Transformer::transform<N, T>(a.getObject(), a.getTransform()), b, cpa, cpb);
@@ -151,10 +150,10 @@ struct MetricL2Impl< TransformedObject<ObjectA, TransformA>, B, N, T,
   }
 };
 
-template <typename A, typename ObjectB, typename TransformB, long N, typename T>
+template <typename A, typename ObjectB, typename TransformB, int N, typename T>
 struct MetricL2Impl< A, TransformedObject<ObjectB, TransformB>, N, T,
-                     typename boost::enable_if_c< !boost::is_pointer<A>::value
-                                               && !MetricL2Internal::TransformedObjectCheck<A>::value >::type>
+                     typename std::enable_if< !std::is_pointer<A>::value
+                                           && !MetricL2Internal::TransformedObjectCheck<A>::value >::type>
 {
   typedef TransformedObject<ObjectB, TransformB> TB;
 
@@ -174,7 +173,7 @@ struct MetricL2Impl< A, TransformedObject<ObjectB, TransformB>, N, T,
       return MetricL2::monotoneApproxDistance<N, T>(a, b.getObject());
   }
 
-  static T closestPoints(A const & a, TB const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(A const & a, TB const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   {
     if (b.hasTransform())
       return MetricL2::closestPoints<N, T>(a, Transformer::transform<N, T>(b.getObject(), b.getTransform()), cpa, cpb);

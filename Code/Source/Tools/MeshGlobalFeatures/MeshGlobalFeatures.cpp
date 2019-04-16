@@ -9,7 +9,7 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
 #include "../../IOStream.hpp"
-#include "../../Vector3.hpp"
+#include "../../MatVec.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
@@ -396,7 +396,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
     case MeshScaleType::BBOX:
     {
       mg.updateBounds();
-      return mg.getBounds().getExtent().length();
+      return mg.getBounds().getExtent().norm();
     }
 
     case MeshScaleType::AVG_DIST:
@@ -412,7 +412,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 
       double sum_dists = 0;
       for (size_t i = 0; i < samples.size(); ++i)
-        sum_dists += (samples[i] - centroid).length();
+        sum_dists += (samples[i] - centroid).norm();
 
       return (3.0 * sum_dists) / samples.size();  // 3 instead of 2 since the avg is in general smaller than the max
     }

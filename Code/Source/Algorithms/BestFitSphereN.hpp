@@ -51,23 +51,23 @@ namespace Thea {
 namespace Algorithms {
 
 /** Approximate best-fit sphere. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ BestFitSphereN
 {
   private:
-    typedef VectorN<N, double> PointT;  ///< The N-dimensional vector type used to internally represent points.
+    typedef Vector<N, double> PointT;  ///< The N-dimensional vector type used to internally represent points.
 
   public:
-    THEA_DEF_POINTER_TYPES(BestFitSphereN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BestFitSphereN, std::shared_ptr, std::weak_ptr)
 
-    typedef BallN   <N, T> BallT;    ///< An N-dimensional ball.
-    typedef VectorN <N, T> VectorT;  ///< An N-dimensional vector.
+    typedef BallN <N, T> BallT;    ///< An N-dimensional ball.
+    typedef Vector<N, T> VectorT;  ///< An N-dimensional vector.
 
     /** Default constructor. */
-    BestFitSphereN() : ball(VectorT::zero(), 0), updated(true) {}
+    BestFitSphereN() : ball(VectorT::Zero(), 0), updated(true) {}
 
     /** Add a point to the set. */
-    void addPoint(VectorT const & point) { points.push_back(point); updated = false; }
+    void addPoint(VectorT const & point) { points.push_back(point.template cast<double>()); updated = false; }
 
     /** Remove all data and (lazily) set the sphere to null. */
     void clear() { points.clear(); updated = false; }
@@ -93,11 +93,11 @@ class /* THEA_API */ BestFitSphereN
 
       if (points.empty())
       {
-        ball = BallT(VectorT::zero(), 0);
+        ball = BallT(VectorT::Zero(), 0);
       }
       else if (points.size() == 1)
       {
-        ball = BallT(points[0], 0);
+        ball = BallT(points[0].template cast<T>(), 0);
       }
       else
       {

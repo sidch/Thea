@@ -47,7 +47,7 @@
 #include "../Array.hpp"
 #include "../UnionFind.hpp"
 #include "../UnorderedMap.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -68,7 +68,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceT>
     static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceT *> > & components,
-                                  typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy = NULL)
+                                  typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
     }
@@ -85,7 +85,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceT>
     static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceT *> > & components,
-                                  typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL)
+                                  typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
     }
@@ -148,7 +148,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceUnionFind>
     static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
-                                   typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy = NULL)
+                                   typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
@@ -169,7 +169,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceUnionFind>
     static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
-                                   typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL)
+                                   typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
@@ -186,7 +186,7 @@ class THEA_API ConnectedComponents
     /** Collect all the faces of a GeneralMesh. */
     template <typename MeshT, typename FaceT>
     static void collectFaces(MeshT & mesh, TheaArray<FaceT *> & faces,
-                             typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy = NULL)
+                             typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       faces.clear();
       for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
@@ -196,7 +196,7 @@ class THEA_API ConnectedComponents
     /** Collect all the faces of a DCELMesh. */
     template <typename MeshT, typename FaceT>
     static void collectFaces(MeshT & mesh, TheaArray<FaceT *> & faces,
-                             typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL)
+                             typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
         faces.push_back(*fi);

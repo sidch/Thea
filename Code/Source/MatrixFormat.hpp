@@ -43,23 +43,21 @@
 #define __Thea_MatrixFormat_hpp__
 
 #include "Common.hpp"
+#include <Eigen/Core>
 
 namespace Thea {
 
-/** %Matrix format (enum class). */
-struct THEA_API MatrixFormat
+/** %Matrix layouts (enum class). */
+struct THEA_API MatrixLayout
 {
   /** Supported values. */
   enum Value
   {
-    UNKNOWN,              ///< Unknown matrix format.
-    DENSE_ROW_MAJOR,      ///< Dense row-major format.
-    DENSE_COLUMN_MAJOR,   ///< Dense column-major format.
-    SPARSE_ROW_MAJOR,     ///< Sparse row-major format.
-    SPARSE_COLUMN_MAJOR,  ///< Sparse column-major format.
+    ROW_MAJOR     =  (int)Eigen::RowMajor,  ///< Row-major layout.
+    COLUMN_MAJOR  =  (int)Eigen::ColMajor,  ///< Column-major layout.
   };
 
-  THEA_ENUM_CLASS_BODY(MatrixFormat)
+  THEA_ENUM_CLASS_BODY(MatrixLayout)
 };
 
 } // namespace Thea

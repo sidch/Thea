@@ -59,7 +59,7 @@ struct VertexIndexMap
 };
 
 template <typename MeshT>
-struct VertexIndexMap<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type>
+struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
   typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
@@ -527,7 +527,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -550,7 +550,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       long vertex_index = (long)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -575,7 +575,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -618,7 +618,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsGeneralMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -661,7 +661,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDCELMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -714,7 +714,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, long & next_index,
-                        typename boost::enable_if< Graphics::IsDisplayMesh<_MeshT> >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
 

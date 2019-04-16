@@ -8,14 +8,14 @@
 #include "../../AffineTransform3.hpp"
 #include "../../BoundedArrayN.hpp"
 #include "../../BoundedSortedArrayN.hpp"
+#include "../../MatVec.hpp"
 #include "../../UnorderedMap.hpp"
 #include "../../UnionFind.hpp"
-#include "../../Vector3.hpp"
-#include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <string>
 
@@ -36,7 +36,7 @@ IndexLabelMap LABELS;
 struct Sample
 {
   Sample() : active(true) {}
-  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::zero(), int32 label_ = -1, bool active_ = true)
+  Sample(Vector3 const & p_, Vector3 const & n_ = Vector3::Zero(), int32 label_ = -1, bool active_ = true)
   : p(p_), n(n_), label(label_), active(active_) {}
 
   Vector3 p;
@@ -57,7 +57,7 @@ class Offset
     Vector3 const & d() const { return dir; }
     bool isValid() const { return valid; }
     void set(Vector3 const & d_) { dir = d_; valid = true; }
-    void unset() { valid = false; dir = Vector3::zero(); }
+    void unset() { valid = false; dir = Vector3::Zero(); }
 };
 
 namespace Thea {
@@ -141,7 +141,7 @@ readQuotedString(istream & in)
 int32
 labelHash(string const & label)
 {
-  boost::hash<string> hasher;
+  std::hash<string> hasher;
   return max((int32)(hasher(label) & 0x7FFFFFFF), (int32)1);
 }
 
@@ -292,7 +292,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
       if (nbrs[i].isEmpty())
         continue;
 
-      Real sq_bandwidth = 4 * (samples[nbrs[i].last()].p - samples[i].p).squaredLength();
+      Real sq_bandwidth = 4 * (samples[nbrs[i].last()].p - samples[i].p).squaredNorm();
 
 // #define SPHERE_PRIOR
 #ifdef SPHERE_PRIOR
@@ -300,7 +300,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
       Vector3 sum_dirs(0, 0, 0);
       Real sum_lengths = 0;
       Real length = 0;
-      if (offsets[i].isValid() && (length = offsets[i].d().length()) > 0)
+      if (offsets[i].isValid() && (length = offsets[i].d().norm()) > 0)
       {
         sum_dirs = offsets[i].d() / length;
         sum_lengths = length;
@@ -313,10 +313,10 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
         if (!offset.isValid())
           continue;
 
-        Real sqdist = (samples[nbrs[i][j]].p - samples[i].p).squaredLength();
+        Real sqdist = (samples[nbrs[i][j]].p - samples[i].p).squaredNorm();
         Real weight = kernelEpanechnikovSqDist(sqdist, sq_bandwidth);
 
-        length = offset.d().length();
+        length = offset.d().norm();
         if (length > 0)
         {
           sum_dirs += ((weight / length) * offset.d());
@@ -335,7 +335,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
         sum_weights += weight;
       }
 
-      smoothed_offsets[i] = fabs(sum_lengths / sum_weights) * sum_dirs.unit();
+      smoothed_offsets[i].set(fabs(sum_lengths / sum_weights) * sum_dirs.normalized());
 
 #else // plane prior
 
@@ -347,14 +347,17 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
         if (!offset.isValid())
           continue;
 
-        Real sqdist = (samples[nbrs[i][j]].p - samples[i].p).squaredLength();
+        Real sqdist = (samples[nbrs[i][j]].p - samples[i].p).squaredNorm();
         Real weight = kernelEpanechnikovSqDist(sqdist, sq_bandwidth);
 
         sum_offsets += (weight * offset.d());
         sum_weights += weight;
       }
 
-      smoothed_offsets[i] = (sum_weights > 0 ? sum_offsets / sum_weights : Vector3::zero());
+      if (sum_weights > 0)
+        smoothed_offsets[i].set(sum_offsets / sum_weights);
+      else
+        smoothed_offsets[i].set(Vector3::Zero());
 
 #endif
     }
@@ -370,7 +373,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
 Vector3
 computeCentroid(SampleArray const & samples, int32 selected_label = -1, bool only_active = false)
 {
-  Vector3 sum_c = Vector3::zero();
+  Vector3 sum_c = Vector3::Zero();
   double sum_weights = 0;
   for (size_t i = 0; i < samples.size(); ++i)
   {
@@ -381,7 +384,7 @@ computeCentroid(SampleArray const & samples, int32 selected_label = -1, bool onl
     sum_weights += 1.0;
   }
 
-  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::zero());
+  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::Zero());
 }
 
 Vector3
@@ -394,7 +397,7 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
       selected_samples.push_back(i);
 
   if (selected_samples.empty())
-    return Vector3::zero();
+    return Vector3::Zero();
 
   UnionFind<size_t> uf(selected_samples.begin(), selected_samples.end());
   for (size_t i = 0; i < selected_samples.size(); ++i)
@@ -405,7 +408,7 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
       uf.merge(src_id, uf.getObjectID(nbrs[index][j]));
   }
 
-  Vector3 sum_c = Vector3::zero();
+  Vector3 sum_c = Vector3::Zero();
   double sum_weights = 0;
   for (size_t i = 0; i < selected_samples.size(); ++i)
   {
@@ -415,7 +418,7 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
     sum_weights += weight;
   }
 
-  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::zero());
+  return (sum_weights > 0 ? sum_c / sum_weights : Vector3::Zero());
 }
 
 #endif // CONNECTED_COMPONENTS
@@ -436,8 +439,8 @@ initTransform(int32 selected_label,
     AxisAlignedBox3 selected_bounds2 = computeBounds(samples2, selected_label);
 
     tr = AffineTransform3::translation(selected_bounds2.getCenter());
-    if (selected_bounds1.getExtent().squaredLength() > 1e-20 && selected_bounds2.getExtent().squaredLength() > 1e-20)
-      tr = tr * AffineTransform3::scaling(selected_bounds2.getExtent() / selected_bounds1.getExtent());
+    if (selected_bounds1.getExtent().squaredNorm() > 1e-20 && selected_bounds2.getExtent().squaredNorm() > 1e-20)
+      tr = tr * AffineTransform3::scaling(selected_bounds2.getExtent().cwiseQuotient(selected_bounds1.getExtent()));
     tr = tr * AffineTransform3::translation(-selected_bounds1.getCenter());
   }
 #ifdef CONNECTED_COMPONENTS
@@ -1090,7 +1093,7 @@ main(int argc, char * argv[])
     {
       Vector3 p = samples1[i].p;
       Vector3 p_def = p + offsets1[i].d();
-      Vector3 n = (p_def - center2) / half_ext2;
+      Vector3 n = (p_def - center2).cwiseQuotient(half_ext2);
       out_colored_pts1 << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
                        << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
     }
@@ -1104,7 +1107,7 @@ main(int argc, char * argv[])
     for (size_t i = 0; i < samples2.size(); ++i)
     {
       Vector3 const & p = samples2[i].p;
-      Vector3 n = (p - center2) / half_ext2;
+      Vector3 n = (p - center2).cwiseQuotient(half_ext2);
       out_colored_pts2 << p[0] << ' ' << p[1] << ' ' << p[2] << ' '
                        << n[0] << ' ' << n[1] << ' ' << n[2] << '\n';
     }
@@ -1137,7 +1140,7 @@ main(int argc, char * argv[])
 
       if (nn_index < 0)
       {
-        // THEA_WARNING << "No corresponding target point found for source point " << p1.toString();
+        // THEA_WARNING << "No corresponding target point found for source point " << toString(p1);
         continue;
       }
 

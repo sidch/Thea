@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API BestFitEllipsoid3
 {
   public:
-    THEA_DEF_POINTER_TYPES(BestFitEllipsoid3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BestFitEllipsoid3, std::shared_ptr, std::weak_ptr)
 
     /**
      * Constructor. The optional argument (which may be ignored by the implementation) controls the approximation ratio
@@ -73,7 +73,7 @@ class THEA_API BestFitEllipsoid3
     /**
      * Get the axes of the ellipsoid. The lengths of the axes represent the shape of the ellipsoid. The axes will always be
      * returned in decreasing order of length, i.e. |axis0| >= |axis1| >= |axis2|. Also,
-     * (axis0.cross(axis1)).unit() == axis2.unit().
+     * (axis0.cross(axis1)).normalized() == axis2.normalized().
      */
     void getAxes(Vector3 & axis0, Vector3 & axis1, Vector3 & axis2) const;
 

@@ -64,7 +64,7 @@
 #include "ColorL.hpp"
 #include "ColorRGB.hpp"
 #include "Math.hpp"
-#include "Vector4.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -131,6 +131,20 @@ class THEA_API ColorRGBA
 
     /** Get the red, green and blue channels as a ColorRGB. */
     ColorRGB rgb() const { return ColorRGB(c[0], c[1], c[2]); }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> Real const & operator[](IntegerT channel) const
+    {
+      debugAssertM(channel >= 0 && channel <= 3, "ColorRGBA: Channel must be 0, 1, 2 or 3");
+      return c[channel];
+    }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> Real & operator[](IntegerT channel)
+    {
+      debugAssertM(channel >= 0 && channel <= 3, "ColorRGBA: Channel must be 0, 1, 2 or 3");
+      return c[channel];
+    }
 
     /** Set all channels simultaneously. */
     void set(Real r_, Real g_, Real b_, Real a_)
@@ -246,13 +260,13 @@ class THEA_API ColorRGBA
     /** Check if two colors are approximately equal. */
     bool fuzzyEq(ColorRGBA const & other) const
     {
-      return Math::fuzzyEq((*this - other).squaredLength(), (Real)0);
+      return Math::fuzzyEq((*this - other).squaredNorm(), (Real)0);
     }
 
     /** Check if two colors are not approximately equal. */
     bool fuzzyNe(ColorRGBA const & other) const
     {
-      return Math::fuzzyNe((*this - other).squaredLength(), (Real)0);
+      return Math::fuzzyNe((*this - other).squaredNorm(), (Real)0);
     }
 
     /** Swap the red and blue channels. */
@@ -269,7 +283,7 @@ class THEA_API ColorRGBA
 
   private:
     /** Get the square of the magnitude of the color. */
-    Real squaredLength() const { return c[0] * c[0] + c[1] * c[1] + c[2] * c[2] + c[3] * c[3]; }
+    Real squaredNorm() const { return c[0] * c[0] + c[1] * c[1] + c[2] * c[2] + c[3] * c[3]; }
 
 }; // class ColorRGBA
 

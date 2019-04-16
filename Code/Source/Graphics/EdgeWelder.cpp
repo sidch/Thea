@@ -134,8 +134,8 @@ class EdgeWelderImpl
                   IteratorRange nbrs = edge_map.equal_range(key);
                   for (EdgeMap::const_iterator ni = nbrs.first; ni != nbrs.second; ++ni)
                   {
-                    if ((ni->second.e0 - e0).squaredLength() <= squared_weld_radius
-                     && (ni->second.e1 - e1).squaredLength() <= squared_weld_radius)
+                    if ((ni->second.e0 - e0).squaredNorm() <= squared_weld_radius
+                     && (ni->second.e1 - e1).squaredNorm() <= squared_weld_radius)
                       return ni->second.edge;
                   }
                 }

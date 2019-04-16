@@ -2,6 +2,10 @@
 #include "../Application.hpp"
 #include "../Array.hpp"
 #include "../FilePath.hpp"
+#include "../MatVec.hpp"
+#include "../Options.hpp"
+#include "../SparseMatrixWrapper.hpp"
+#include "../SparseMatVec.hpp"
 #include "../Plugin.hpp"
 #include "../Algorithms/LinearSolver.hpp"
 #include <cmath>
@@ -58,19 +62,19 @@ testCSPARSE(int argc, char * argv[])
   // Create a linear solver
   LinearSolver * ls = factory->createLinearSolver("My CSPARSE linear solver");
 
-  Matrix<double> A(3, 3);
+  MatrixXd A(3, 3);
   A(0, 0) =   1; A(0, 1) =   3; A(0, 2) =  -2;
   A(1, 0) =   3; A(1, 1) =   5; A(1, 2) =   6;
   A(2, 0) =   2; A(2, 1) =   4; A(2, 2) =   3;
   double b[3] = { 5, 7, 8 };
 
-  typedef CompressedColumnMatrix<double, int, int> CSC;
-  ls->setCoefficients(CSC(A));
-  ls->setConstants(b, b + 3);
+  typedef SparseColumnMatrix<double> CSC;
+  CSC A_sparse = A.sparseView();
+  A_sparse.makeCompressed();
 
   Options opts;
   opts.set("method", "LU");
-  ls->solve(opts);
+  ls->solve(SparseMatrixWrapper<CSC>(&A_sparse), b, &opts);
 
   static double const EPSILON = 0.0001;
   double expected[3] = {-15, 8, 2};
@@ -80,8 +84,8 @@ testCSPARSE(int argc, char * argv[])
   {
     cout << "Solution:" << endl;
 
-    Vector<double> const & sols = ls->getSolution();
-    for (long i = 0; i < sols.size(); ++i)
+    double const * sols = ls->getSolution();
+    for (long i = 0; i < ls->dims(); ++i)
     {
       printf("  x[%ld] = %g (expected %g)\n", (long)i, sols[i], expected[i]);
 

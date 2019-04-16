@@ -42,10 +42,11 @@
 #ifndef __Thea_ImageMatrix_hpp__
 #define __Thea_ImageMatrix_hpp__
 
-#include "AddressableMatrix.hpp"
+#include "AbstractAddressableMatrix.hpp"
 #include "Image.hpp"
-#include "ResizableMatrix.hpp"
+#include <algorithm>
 #include <climits>
+#include <cstring>
 
 namespace Thea {
 
@@ -55,10 +56,13 @@ namespace Thea {
  * when custom types are involved.
  */
 template <typename T>
-class /* THEA_API */ ImageMatrix : public AddressableMatrix<T>, public ResizableMatrix<T>
+class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(ImageMatrix, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(ImageMatrix, std::shared_ptr, std::weak_ptr)
+
+    using typename AbstractAddressableMatrix<T>::Value;       // == T
+    using typename AbstractAddressableMatrix<T>::value_type;  // == T
 
     /** Constructor. The image pointer must remain valid until the matrix is destroyed. */
     ImageMatrix(Image * image_) : image(image_)
@@ -70,34 +74,54 @@ class /* THEA_API */ ImageMatrix : public AddressableMatrix<T>, public Resizable
                     "ImageMatrix: The number of bytes per pixel does not match the size of the matrix data type");
     }
 
-    long numRows() const { return image->getHeight(); }
-    long numColumns() const { return image->getWidth(); }
+    /** Destructor. */
+    ~ImageMatrix() {}
 
-    void resize(long num_rows, long num_cols) { image->resize(image->getType(), (int)num_cols, (int)num_rows); }
-
-    // This is needed to avoid a Visual Studio warning about inheriting via dominance
-    void makeZero() { AddressableMatrix<T>::makeZero(); }
-
-    /** Element access. Use this whenever possible to avoid the virtual function overhead of get(). */
-    T const & operator()(long row, long col) const { return ((T const *)image->getScanLine(row))[col]; }
-
-    /** Element access. Use this whenever possible to avoid the virtual function overhead of get() or set(). */
-    T & operator()(long row, long col) { return ((T *)image->getScanLine(row))[col]; }
-
-    T const & get(long row, long col) const { return (*this)(row, col); }
-    T & getMutable(long row, long col) { return (*this)(row, col); }
-    void set(long row, long col, T const & value) { (*this)(row, col) = value; }
-
-    void fill(T const & value)
+    long rows() const { return image->getHeight(); }
+    long cols() const { return image->getWidth(); }
+    bool isResizable() const { return true; }
+    bool resize(long num_rows, long num_cols) { image->resize(image->getType(), (int)num_cols, (int)num_rows); return true; }
+    void setZero()
     {
-      long nr = numRows(), nc = numColumns();
-
-      for (long r = 0; r < nr; ++r)
-      {
-        T * scanline = static_cast<T *>(image->getScanLine(r));
-        std::fill(scanline, scanline + nc, value);
-      }
+      // Assume all image channels are zero when they are bitwise zero. Scan width is in bytes.
+      std::memset(image->getData(), 0, image->getScanWidth() * image->getHeight());
     }
+
+    Value const & at(long row, long col) const { return ((Value const *)image->getScanLine(row))[col]; }
+    Value & at(long row, long col) { return ((Value *)image->getScanLine(row))[col]; }
+
+    // TODO: These could perhaps be made faster by avoiding at()
+    void getRow(long row, Value * values) const
+    {
+      for (long c = 0, ncols = cols(); c < ncols; ++c)
+        values[c] = at(row, c);
+    }
+
+    void setRow(long row, Value const * values)
+    {
+      for (long c = 0, ncols = cols(); c < ncols; ++c)
+        at(row, c) = values[c];
+    }
+
+    void getColumn(long col, Value * values) const
+    {
+      for (long r = 0, nrows = rows(); r < nrows; ++r)
+        values[r] = at(r, col);
+    }
+
+    void setColumn(long col, Value const * values)
+    {
+      for (long r = 0, nrows = rows(); r < nrows; ++r)
+        at(r, col) = values[r];
+    }
+
+    // Type-casting functions
+    AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
+    AbstractAddressableMatrix<Value> * asAddressable() { return this; }
+    AbstractSparseMatrix<Value> const * asSparse() const { return NULL; }
+    AbstractSparseMatrix<Value> * asSparse() { return NULL; }
+    AbstractDenseMatrix<Value> const * asDense() const { return NULL; }
+    AbstractDenseMatrix<Value> * asDense() { return NULL; }
 
   private:
     Image * image;  ///< The wrapped image

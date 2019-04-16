@@ -43,64 +43,9 @@
 #define __Thea_Memory_hpp__
 
 #include "Platform.hpp"
-#include <boost/shared_ptr.hpp>
-#include <boost/shared_array.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/functional/hash.hpp>
-#include <boost/version.hpp>
+#include <memory>
 
 namespace Thea {
-
-/**
- * Smart pointer types. These <b><em>MUST</em> be thread-safe</b> -- we assume thread-safety throughout.
- */
-using boost::shared_ptr;
-using boost::shared_array;
-using boost::weak_ptr;
-using boost::static_pointer_cast;
-using boost::const_pointer_cast;
-using boost::dynamic_pointer_cast;
-using boost::enable_shared_from_this;
-using boost::swap;
-
-/**
- * Generic constructors similar to those of shared_ptr. Saves typing when you subclass shared_ptr. E.g. if you create a subclass
- * CPtr from shared_ptr<%C> to add extra functions specific to class C, use
- * <code>THEA_DEF_SHARED_PTR_CONSTRUCTORS(CPtr, shared_ptr<%C>)</code> in the class declaration to generate the standard
- * constructors.
- */
-#define THEA_DEF_SHARED_PTR_CONSTRUCTORS(type, base_type) \
-    type() : base_type() {} \
-    template<class Y> explicit type(Y * p) : base_type(p) {} \
-    template<class Y, class D> type(Y * p, D d) : base_type(p, d) {} \
-    template<class Y, class D, class A> type(Y * p, D d, A a) \
-    : base_type(p, d, a) {} \
-    template<class Y> type(shared_ptr<Y> const & r) : base_type(r) {} \
-    template<class Y> explicit type(weak_ptr<Y> const & r) \
-    : base_type(r) {} \
-    template<class Y> explicit type(std::auto_ptr<Y> & r) : base_type(r) {}
-
-/**
- * Generic constructors similar to those of shared_array. Saves typing when you subclass shared_array.
- *
- * @see THEA_DEF_SHARED_PTR_CONSTRUCTORS
- */
-#define THEA_DEF_SHARED_ARRAY_CONSTRUCTORS(type, base_type, obj_type) \
-    explicit type(obj_type * p = 0) : base_type(p) {} \
-    template<class D> type(obj_type * p, D d) : base_type(p, d) {} \
-    type(type const & r) : base_type(r) {}
-
-/**
- * Generic constructors similar to those of weak_ptr. Saves typing when you subclass weak_ptr.
- *
- * @see THEA_DEF_SHARED_PTR_CONSTRUCTORS
- */
-#define THEA_DEF_WEAK_PTR_CONSTRUCTORS(type, base_type) \
-    type() {} \
-    template<class Y> type(shared_ptr<Y> const & r) : base_type(r) {} \
-    type(type const & r) : base_type(r) {} \
-    template<class Y> type(weak_ptr<Y> const & r) : base_type(r) {}
 
 /**
  * Define smart pointer types for a class.
@@ -117,10 +62,10 @@ using boost::swap;
 #ifdef THEA_EXTERN_TEMPLATES
 #  define THEA_DECL_EXTERN_SMART_POINTERS(class_name)                                                                         \
      namespace boost {                                                                                                        \
-       extern template class shared_ptr<class_name>;                                                                          \
-       extern template class shared_ptr<class_name const>;                                                                    \
-       extern template class weak_ptr<class_name>;                                                                            \
-       extern template class weak_ptr<class_name const>;                                                                      \
+       extern template class std::shared_ptr<class_name>;                                                                          \
+       extern template class std::shared_ptr<class_name const>;                                                                    \
+       extern template class std::weak_ptr<class_name>;                                                                            \
+       extern template class std::weak_ptr<class_name const>;                                                                      \
      }
 #else
 #  define THEA_DECL_EXTERN_SMART_POINTERS(class_name)  /* blank */
@@ -132,38 +77,15 @@ using boost::swap;
 #ifdef THEA_EXTERN_TEMPLATES
 #  define THEA_INSTANTIATE_SMART_POINTERS(class_name)                                                                         \
      namespace boost {                                                                                                        \
-       template class shared_ptr<class_name>;                                                                                 \
-       template class shared_ptr<class_name const>;                                                                           \
-       template class weak_ptr<class_name>;                                                                                   \
-       template class weak_ptr<class_name const>;                                                                             \
+       template class std::shared_ptr<class_name>;                                                                                 \
+       template class std::shared_ptr<class_name const>;                                                                           \
+       template class std::weak_ptr<class_name>;                                                                                   \
+       template class std::weak_ptr<class_name const>;                                                                             \
      }
 #else
 #  define THEA_INSTANTIATE_SMART_POINTERS(class_name)  /* blank */
 #endif // THEA_EXTERN_TEMPLATES
 
 } // namespace Thea
-
-// Boost 1.47.0 first defined hash_value for shared pointers
-#if BOOST_VERSION < 104700
-
-namespace boost {
-
-template <class T>
-std::size_t
-hash_value(shared_ptr<T> const & ptr)
-{
-  return hash_value(ptr.get());
-}
-
-template <class T>
-std::size_t
-hash_value(shared_array<T> const & arr)
-{
-  return hash_value(arr.get());
-}
-
-} // namespace boost
-
-#endif
 
 #endif

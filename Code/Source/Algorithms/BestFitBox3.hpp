@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API BestFitBox3
 {
   public:
-    THEA_DEF_POINTER_TYPES(BestFitBox3, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BestFitBox3, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. */
     BestFitBox3();
@@ -65,7 +65,7 @@ class THEA_API BestFitBox3
     void clear();
 
     /** Set the up vector. The computed box will only consider orientations with the given up vector. */
-    void setUpVector(Vector3 const & up_) { up = up_.unit(); has_up = true; }
+    void setUpVector(Vector3 const & up_) { up = up_.normalized(); has_up = true; }
 
     /** Check if the up vector has been set. */
     bool hasUpVector() const { return has_up; }

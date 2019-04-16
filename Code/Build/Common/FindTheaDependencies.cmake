@@ -30,10 +30,10 @@ SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 
 IF(Thea_FIND_ALL)
   SET(Thea_FIND_Boost      TRUE)
+  SET(Thea_FIND_Eigen3     TRUE)
   SET(Thea_FIND_FreeImage  TRUE)
   SET(Thea_FIND_Lib3ds     TRUE)
   SET(Thea_FIND_CLUTO      TRUE)
-  SET(Thea_FIND_Eigen3     TRUE)
   SET(Thea_FIND_CGAL       TRUE)
 ENDIF()
 
@@ -48,10 +48,6 @@ SET(Thea_DEPS_LDFLAGS        )
 # Optional libraries are enabled by default
 IF(NOT DEFINED WITH_CLUTO)
   SET(WITH_CLUTO TRUE)
-ENDIF()
-
-IF(NOT DEFINED WITH_EIGEN3)
-  SET(WITH_EIGEN3 TRUE)
 ENDIF()
 
 IF(NOT DEFINED WITH_CGAL)
@@ -76,6 +72,18 @@ IF(Thea_FIND_Boost)
 
   SET(Thea_DEPS_LIBRARIES ${Thea_DEPS_LIBRARIES} ${Boost_LIBRARIES})
   SET(Thea_DEPS_INCLUDE_DIRS ${Thea_DEPS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+ENDIF()
+
+# Dependency: Eigen3
+IF(Thea_FIND_Eigen3)
+  IF(EXISTS ${THEA_DEPS_ROOT}/installed-eigen3)
+    SET(EIGEN3_ROOT ${THEA_DEPS_ROOT}/installed-eigen3)
+  ELSE()
+    SET(EIGEN3_ROOT ${THEA_DEPS_ROOT})
+  ENDIF()
+  FIND_PACKAGE(Eigen3 REQUIRED)
+  SET(Thea_DEPS_INCLUDE_DIRS ${Thea_DEPS_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+  SET(Thea_DEPS_CFLAGS "${Thea_DEPS_CFLAGS}")
 ENDIF()
 
 # Dependency: FreeImage
@@ -123,22 +131,6 @@ IF(WITH_CLUTO AND Thea_FIND_CLUTO)
   ENDIF()
 ENDIF()
 
-# Dependency: Eigen3 (optional)
-IF(WITH_EIGEN3 AND Thea_FIND_Eigen3)
-  IF(EXISTS ${THEA_DEPS_ROOT}/installed-eigen3)
-    SET(EIGEN3_ROOT ${THEA_DEPS_ROOT}/installed-eigen3)
-  ELSE()
-    SET(EIGEN3_ROOT ${THEA_DEPS_ROOT})
-  ENDIF()
-  FIND_PACKAGE(Eigen3)  # not a required package
-  IF(EIGEN3_FOUND)
-    SET(Thea_DEPS_INCLUDE_DIRS ${Thea_DEPS_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-    SET(Thea_DEPS_CFLAGS "${Thea_DEPS_CFLAGS} -DTHEA_ENABLE_EIGEN3")
-  ELSE()  # this is not a fatal error
-    MESSAGE(STATUS "Eigen3 not found: library will be built without Eigen3 linear algebra wrappers")
-  ENDIF()
-ENDIF()
-
 # Dependency: CGAL (optional)
 IF(WITH_CGAL AND Thea_FIND_CGAL)
   IF(EXISTS ${THEA_DEPS_ROOT}/installed-cgal)
@@ -178,9 +170,9 @@ SET(Thea_DEPS_LIBRARIES ${Thea_DEPS_LIBRARIES} ${Thea_DEPS_PLATFORM_LIBRARIES})
 # Unset parameters
 SET(Thea_FIND_Boost      FALSE)
 SET(Thea_FIND_Boost_COMPONENTS )
+SET(Thea_FIND_Eigen3     FALSE)
 SET(Thea_FIND_FreeImage  FALSE)
 SET(Thea_FIND_Lib3ds     FALSE)
 SET(Thea_FIND_CLUTO      FALSE)
-SET(Thea_FIND_Eigen3     FALSE)
 SET(Thea_FIND_CGAL       FALSE)
 SET(Thea_FIND_ALL        FALSE)

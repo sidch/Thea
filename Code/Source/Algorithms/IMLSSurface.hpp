@@ -45,25 +45,20 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Ball3.hpp"
-#include "../MatrixMN.hpp"
+#include "../MatVec.hpp"
 #include "../Noncopyable.hpp"
 #include "../Polygon3.hpp"
 #include "../Triangle3.hpp"
 #include "../UnorderedMap.hpp"
-#include "../VectorN.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
 #include "KDTreeN.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
 
 namespace IMLSSurfaceInternal {
-
-typedef VectorN<2, double>      DoubleVector2;  // Double precision 2-vector.
-typedef VectorN<3, double>      DoubleVector3;  // Double precision 3-vector.
-typedef MatrixMN<3, 3, double>  DoubleMatrix3;  // Double precision 3x3 matrix.
 
 // Three indexed vertices plus base position array.
 class IndexedVertexTriple
@@ -98,11 +93,11 @@ typedef Triangle3<IndexedVertexTriple> IndexedTriangle;  ///< Triangle with inde
 // KD-tree node attributes.
 struct NodeAttribute
 {
-  double         area;        ///< Surface area of the contents of the node
-  double         unweighted;  ///< Unweighted integrals of phi over the surface contained by the node.
-  DoubleVector3  centroid;    ///< Area weighted centroid of the node.
-  DoubleVector3  normal;      ///< Area weighted normal of the node.
-  double         normal_len;  ///< Cached magnitude of the normal.
+  double    area;        ///< Surface area of the contents of the node
+  double    unweighted;  ///< Unweighted integrals of phi over the surface contained by the node.
+  Vector3d  centroid;    ///< Area weighted centroid of the node.
+  Vector3d  normal;      ///< Area weighted normal of the node.
+  double    normal_len;  ///< Cached magnitude of the normal.
 };
 
 typedef KDTreeN<IndexedTriangle, 3, Real, NodeAttribute> TriangleKDTree;
@@ -112,7 +107,7 @@ struct IntegralData
 {
   IntegralData() : I(0), I_phi(0), dI(0), dI_phi(0) {}
 
-  IntegralData(double i, double i_phi, DoubleVector3 const & di, DoubleVector3 const & di_phi)
+  IntegralData(double i, double i_phi, Vector3d const & di, Vector3d const & di_phi)
   : I(i), I_phi(i_phi), dI(di), dI_phi(di_phi) {}
 
   IntegralData operator+(IntegralData const & other) const
@@ -135,7 +130,7 @@ struct IntegralData
   }
 
   double I, I_phi;
-  DoubleVector3 dI, dI_phi;
+  Vector3d dI, dI_phi;
 
 }; // struct IntegralData
 
@@ -157,10 +152,6 @@ struct IntegralData
 class THEA_API IMLSSurface : private Noncopyable
 {
   public:
-    typedef IMLSSurfaceInternal::DoubleVector2  DoubleVector2;  ///< Double precision 2-vector.
-    typedef IMLSSurfaceInternal::DoubleVector3  DoubleVector3;  ///< Double precision 3-vector.
-    typedef IMLSSurfaceInternal::DoubleMatrix3  DoubleMatrix3;  ///< Double precision 3x3 matrix.
-
     /**
      * Construct an IMLS surface from an input mesh.
      *
@@ -196,10 +187,10 @@ class THEA_API IMLSSurface : private Noncopyable
     AxisAlignedBox3 const & getInputBounds() const;
 
     /** Evaluate the function and its derivative (returned by reference). */
-    double deriv(Vector3 const & p, DoubleVector3 & dp) const;
+    double deriv(Vector3 const & p, Vector3d & dp) const;
 
     /** Evaluate the function and its first and second derivatives (returned by reference). */
-    double deriv2(Vector3 const & p, DoubleVector3 & dp, DoubleMatrix3 & ddp) const;
+    double deriv2(Vector3 const & p, Vector3d & dp, Matrix3d & ddp) const;
 
     /** Get the smoothness of the surface (epsilon). */
     double getSmoothness() const { return eps; }
@@ -228,8 +219,8 @@ class THEA_API IMLSSurface : private Noncopyable
       if ((*this)(center) >= 0)
         throw Error("IMLSSurface: Couldn't find negative value center for bounding ball");
 
-      Real radius = getInputBounds().getExtent().length();  // purposely leave some slack in case the surface deviates
-                                                         // significantly from the input mesh
+      Real radius = getInputBounds().getExtent().norm();  // purposely leave some slack in case the surface deviates
+                                                          // significantly from the input mesh
       return Ball3(center, radius);
     }
 
@@ -295,12 +286,12 @@ class THEA_API IMLSSurface : private Noncopyable
     /** Add a general mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
     void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                 typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy = NULL);
+                 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL);
 
     /** Add a DCEL mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
     void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                 typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy = NULL);
+                 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL);
 
     /** Add a mesh group to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
@@ -383,7 +374,7 @@ IMLSSurface::IMLSSurface(Graphics::MeshGroup<MeshT> const & mg, double eps_, dou
     enforceBounds(tris);
 
   kdtree.init(tris.begin(), tris.end(), -1, DEFAULT_MAX_TRIS_PER_LEAF, true);
-  mesh_size = kdtree.getBounds().getExtent().length();
+  mesh_size = kdtree.getBounds().getExtent().norm();
 
   computeCentroidsRec(kdtree.getRoot());
   computeUnweightedRec(kdtree.getRoot());
@@ -401,7 +392,7 @@ IMLSSurface::constructFromMesh(MeshT const & mesh)
     enforceBounds(tris);
 
   kdtree.init(tris.begin(), tris.end(), -1, -1, true);
-  mesh_size = kdtree.getBounds().getExtent().length();
+  mesh_size = kdtree.getBounds().getExtent().norm();
 
   computeCentroidsRec(kdtree.getRoot());
   computeUnweightedRec(kdtree.getRoot());
@@ -411,7 +402,7 @@ IMLSSurface::constructFromMesh(MeshT const & mesh)
 template <typename MeshT>
 void
 IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                     typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type * dummy)
+                     typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy)
 {
   typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
@@ -482,7 +473,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 template <typename MeshT>
 void
 IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
-                     typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type * dummy)
+                     typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy)
 {
   typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;

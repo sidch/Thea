@@ -56,7 +56,7 @@ template <typename T>
 class /* THEA_API */ RangeQueryStructure
 {
   public:
-    THEA_DEF_POINTER_TYPES(RangeQueryStructure, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RangeQueryStructure, std::shared_ptr, std::weak_ptr)
 
     /**
      * Get all objects intersecting a range.

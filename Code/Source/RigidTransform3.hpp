@@ -135,12 +135,12 @@ class /* THEA_API */ RigidTransformN<3, T> : public Internal::RigidTransformNBas
      *
      * @param start_dir The vector to rotate from.
      * @param end_dir The vector to rotate to.
-     * @param unitize_dirs If false, the directions will be assumed to have been pre-normalized to unit length before being
+     * @param normalize_dirs If false, the directions will be assumed to have been pre-normalized to unit length before being
      *   passed to this function.
      */
-    static RigidTransformN rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool unitize_dirs = true)
+    static RigidTransformN rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool normalize_dirs = true)
     {
-      return BaseT::_fromAffine(AffineTransformT::rotationArc(start_dir, end_dir, unitize_dirs));
+      return BaseT::_fromAffine(AffineTransformT::rotationArc(start_dir, end_dir, normalize_dirs));
     }
 
 }; // class RigidTransformN<3, T>

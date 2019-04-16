@@ -18,17 +18,15 @@
 #include "../../FileSystem.hpp"
 #include "../../Image.hpp"
 #include "../../Math.hpp"
-#include "../../Matrix4.hpp"
+#include "../../MatVec.hpp"
 #include "../../Memory.hpp"
 #include "../../Plugin.hpp"
 #include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
-#include "../../Vector3.hpp"
-#include "../../Vector4.hpp"
-#include <boost/functional/hash.hpp>
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <utility>
 
@@ -270,7 +268,7 @@ ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include p
 uint32
 labelHash(string const & label)
 {
-  boost::hash<string> hasher;
+  std::hash<string> hasher;
   string rev = label; reverse(rev.begin(), rev.end());
   return (uint32)((hasher(label) + hasher(rev)) & 0x7FFFFFFF);
 }
@@ -386,7 +384,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 3D texture")
   }
 
-  typedef Thea::shared_ptr<Model> ModelPtr;
+  typedef std::shared_ptr<Model> ModelPtr;
   TheaArray<ModelPtr> overlay_models;
   for (size_t i = 1; i < model_paths.size(); ++i)
   {
@@ -564,7 +562,7 @@ ShapeRendererImpl::parseTransform(string const & s, Matrix4 & m)
     return false;
   }
 
-  m = Matrix4::identity();
+  m = Matrix4::Identity();
   for (int i = 0; i < nfields; ++i)
   {
     istringstream field_in(fields[i]);
@@ -608,22 +606,22 @@ ShapeRendererImpl::parseViewDiscrete(string const & s, View & view, bool silent)
     }
   }
 
-  if (view.dir.squaredLength() <= 1e-10)
+  if (view.dir.squaredNorm() <= 1e-10)
   {
     if (!silent) THEA_ERROR << "View direction is zero vector";
     return false;
   }
 
-  view.dir.unitize();
+  view.dir.normalize();
 
   if (has_up)
     view.up = view_up;
   else if (s == "0-0")
-    view.up = -Vector3::unitZ();
+    view.up = -Vector3::UnitZ();
   else if (s == "0+0")
-    view.up = Vector3::unitZ();
+    view.up = Vector3::UnitZ();
   else
-    view.up = Vector3::unitY();
+    view.up = Vector3::UnitY();
 
   return true;
 }
@@ -647,13 +645,13 @@ ShapeRendererImpl::parseViewContinuous(string const & s, View & view, bool silen
   view = View();
 
   view.dir = Vector3(dx, dy, dz);
-  if (view.dir.squaredLength() <= 1e-10)
+  if (view.dir.squaredNorm() <= 1e-10)
   {
     if (!silent) THEA_ERROR << "View direction is zero vector";
     return false;
   }
 
-  view.dir.unitize();
+  view.dir.normalize();
 
   if (num_params == 6)
   {
@@ -665,25 +663,25 @@ ShapeRendererImpl::parseViewContinuous(string const & s, View & view, bool silen
   {
     view.up = Vector3(ux, uy, uz);
 
-    if (view.up.squaredLength() <= 1e-10)
+    if (view.up.squaredNorm() <= 1e-10)
     {
       if (!silent) THEA_ERROR << "View up is zero vector";
       return false;
     }
 
-    view.up.unitize();
+    view.up.normalize();
   }
   else if (has_up)
     view.up = view_up;
   else
   {
-    Real d = view.dir.dot(Vector3::unitY());
+    Real d = view.dir.dot(Vector3::UnitY());
     if (Math::fuzzyEq(d, (Real)-1))
-      view.up = -Vector3::unitZ();
+      view.up = -Vector3::UnitZ();
     else if (Math::fuzzyEq(d, (Real)1))
-      view.up = Vector3::unitZ();
+      view.up = Vector3::UnitZ();
     else
-      view.up = Vector3::unitY();
+      view.up = Vector3::UnitY();
   }
 
   return true;
@@ -749,11 +747,11 @@ ShapeRendererImpl::parseViewUp(string const & s, Vector3 & up)
   }
 
   if (c == 'x' || c == 'X')
-    up = Vector3::unitX();
+    up = Vector3::UnitX();
   else if (c == 'y' || c == 'Y')
-    up = Vector3::unitY();
+    up = Vector3::UnitY();
   else if (c == 'z' || c == 'Z')
-    up = Vector3::unitZ();
+    up = Vector3::UnitZ();
   else
   {
     THEA_ERROR << "Up direction must be 'x', 'y' or 'z', optionally preceded by + or -";
@@ -829,7 +827,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
   resetArgs();
 
-  Matrix4 current_transform = Matrix4::identity();
+  Matrix4 current_transform = Matrix4::Identity();
 
   argv++;
   argc--;
@@ -1185,7 +1183,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
     if (has_up)
     {
       view.up = view_up;
-      int axis = view_up.maxAbsAxis();
+      int axis = Math::maxAbsAxis(view_up);
       switch (axis)
       {
         case 0:  view.dir = Vector3(-Math::sign(view_up[0]),   Math::sign(view_up[0]),  -1); break;
@@ -1611,7 +1609,7 @@ struct VertexColorizer
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;  // ok to have a few neighbors for output quality -- this is an offline renderer
-    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().length(), (Real)1.0e-8);
+    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
     mesh.addColors();
@@ -1979,7 +1977,7 @@ class FarthestPoint
       Mesh::VertexArray const & vertices = mesh.getVertices();
       for (size_t i = 0; i < vertices.size(); ++i)
       {
-        Real sqdist = (transform * vertices[i] - center).squaredLength();
+        Real sqdist = (Math::hmul(transform, vertices[i]) - center).squaredNorm();
         if (sqdist > max_sqdist)
           max_sqdist = sqdist;
       }
@@ -2038,14 +2036,14 @@ modelBSphere(Model const & model, Matrix4 const & transform)
     center[2] = (Real)(sum_z / sum_w);
   }
 
-  center = transform * center;
+  center = Math::hmul(transform, center);
 
   Real radius = 0;
   if (model.is_point_cloud)
   {
     for (size_t i = 0; i < model.points.size(); ++i)
     {
-      Real sqdist = (transform * model.points[i] - center).squaredLength();
+      Real sqdist = (Math::hmul(transform, model.points[i]) - center).squaredNorm();
       if (i == 0 || sqdist > radius)
         radius = sqdist;
     }
@@ -2071,8 +2069,8 @@ Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int wi
   Real diameter = bsphere.getDiameter();
 
   // Make absolutely sure these are unit vectors
-  Vector3 dir  =  view.dir.unit();
-  Vector3 up   =  view.up.unit();
+  Vector3 dir  =  view.dir.normalized();
+  Vector3 up   =  view.up.normalized();
   Vector3 eye;
 
   if (view.has_eye)
@@ -2248,13 +2246,13 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
     int depth   =  tex3d->getDepth();
     Vector3 box_ext = bbox.getExtent();
     Vector3 vol_ext(width, depth, height);
-    Vector3 dim_ratio = vol_ext / box_ext;
-    int fit_axis = dim_ratio.minAxis();
+    Vector3 dim_ratio = vol_ext.cwiseQuotient(box_ext);
+    int fit_axis = (int)Math::minAxis(dim_ratio);
     box_ext = vol_ext / dim_ratio[fit_axis];
     Vector3 center = bbox.getCenter();
 
-    shader.setUniform("bbox_lo", center - 0.5 * box_ext);
-    shader.setUniform("bbox_hi", center + 0.5 * box_ext);
+    shader.setUniform("bbox_lo", (center - 0.5 * box_ext).eval());
+    shader.setUniform("bbox_hi", (center + 0.5 * box_ext).eval());
   }
 
   return true;

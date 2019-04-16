@@ -43,8 +43,8 @@
 #define __Thea_Graphics_EdgeWelder_hpp__
 
 #include "../Common.hpp"
+#include "../MatVec.hpp"
 #include "../Noncopyable.hpp"
-#include "../Vector3.hpp"
 
 namespace Thea {
 namespace Graphics {

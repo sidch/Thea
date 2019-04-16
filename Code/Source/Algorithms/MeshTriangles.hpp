@@ -49,7 +49,7 @@
 #include "../Triangle3.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -135,7 +135,7 @@ class MeshVertexTriple
  * @see DisplayMesh
  */
 template <typename MeshT>
-class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type>
+class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
   public:
     /** Type of face (enum class). */
@@ -212,7 +212,7 @@ class MeshVertexTriple<MeshT, typename boost::enable_if< Graphics::IsDisplayMesh
       if (mesh->hasNormals())
         return mesh->getIndexedVertex(vertex_indices[i]).getNormal();
       else
-        return (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0]).unit();
+        return (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0]).normalized();
     }
 
     /** Get the index of any one of the three mesh vertices. */
@@ -249,7 +249,7 @@ namespace MeshTrianglesInternal {
 
 // Add a face of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type
 addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.isTriangle())
@@ -308,7 +308,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 
 // Convert the faces of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsGeneralMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type
 buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -317,7 +317,7 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 
 // Add a face of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
 addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   if (face.isTriangle())
@@ -378,7 +378,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 
 // Convert the faces of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsDCELMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
 buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -387,7 +387,7 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 
 // Add a face of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type
 addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 {
   typedef typename TriangleT::VertexTriple VertexTriple;
@@ -442,7 +442,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 
 // Convert the faces of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename boost::enable_if< Graphics::IsDisplayMesh<MeshT> >::type
+typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type
 buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 {
   typedef MeshT Mesh;
@@ -477,7 +477,7 @@ template <typename MeshT>
 class MeshTriangles
 {
   public:
-    THEA_DEF_POINTER_TYPES(MeshTriangles, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(MeshTriangles, std::shared_ptr, std::weak_ptr)
 
     typedef MeshT Mesh;                           ///< The mesh type.
     typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.

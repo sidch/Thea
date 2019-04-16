@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Colors.hpp"
-#include "../VectorN.hpp"
+#include "../MatVec.hpp"
 
 namespace Thea {
 namespace Graphics {

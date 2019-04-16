@@ -44,12 +44,12 @@
 
 #include "Common.hpp"
 #include "Math.hpp"
-#include "VectorN.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
 // Forward declarations
-template <long N, typename T> class LineN;
+template <int N, typename T> class LineN;
 
 namespace Internal {
 
@@ -59,24 +59,24 @@ namespace Internal {
  *
  * @note This class is <b>INTERNAL</b>! Don't use it directly.
  */
-template <long N, typename T>
+template <int N, typename T>
 class /* THEA_DLL_LOCAL */ LineNBase
 {
   public:
-    typedef LineN<N, T>    LineT;    ///< N-dimensional straight line.
-    typedef VectorN<N, T>  VectorT;  ///< N-dimensional vector.
+    typedef LineN<N, T>   LineT;    ///< N-dimensional straight line.
+    typedef Vector<N, T>  VectorT;  ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(LineT, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(LineT, std::shared_ptr, std::weak_ptr)
 
     /** Construct a line from a point on it, and the direction vector of the line (need not be a unit vector). */
     static LineT fromPointAndDirection(VectorT const & point_, VectorT const & direction_)
     {
-      if (Math::fuzzyEq(direction_.squaredLength(), static_cast<T>(0)))
+      if (Math::fuzzyEq(direction_.squaredNorm(), static_cast<T>(0)))
         throw Error("LineN: Direction vector has zero (or nearly zero) length");
 
       LineT line;
       line.point = point_;
-      line.direction = direction_.unit();
+      line.direction = direction_.normalized();
       return line;
     }
 
@@ -101,7 +101,7 @@ class /* THEA_DLL_LOCAL */ LineNBase
     /** Get the square of the distance of the line from a given point. */
     T squaredDistance(VectorT const & p) const
     {
-      return (p - closestPoint(p)).squaredLength();
+      return (p - closestPoint(p)).squaredNorm();
     }
 
     /** Get the point on the line closest to a given point. */
@@ -148,14 +148,14 @@ class /* THEA_DLL_LOCAL */ LineNBase
       if (other_pt)
         *other_pt = c2;
 
-      return (c1 - c2).squaredLength();
+      return (c1 - c2).squaredNorm();
     }
 
     /** Get a textual description of the line. */
     std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[P: " << point.toString() << ", U: " << direction << ']';
+      oss << "[P: " << Thea::toString(point) << ", U: " << Thea::toString(direction) << ']';
       return oss.str();
     }
 
@@ -168,7 +168,7 @@ class /* THEA_DLL_LOCAL */ LineNBase
 } // namespace Internal
 
 /** A straight line in N-dimensional space, where N is any <b>positive</b> (non-zero) integer and T is a field. */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ LineN : public Internal::LineNBase<N, T>
 {
 }; // class LineN

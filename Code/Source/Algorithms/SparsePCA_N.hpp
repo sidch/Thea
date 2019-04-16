@@ -58,11 +58,11 @@ namespace Algorithms {
  *
  * C. Chennubhotla and A. Jepson, "Sparse PCA (SPCA): Extracting Multi-Scale Structure from Data", Proc. ICCV, 641--647, 2001.
  */
-template <typename T, long N, typename ScalarT = Real, typename Enable = void>
+template <typename T, int N, typename ScalarT = Real, typename Enable = void>
 class /* THEA_API */ SparsePCA_N
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;  ///< N-dimensional vector class used for positions and directions.
+    typedef Vector<N, ScalarT> VectorT;  ///< N-dimensional vector class used for positions and directions.
 
     /**
      * Compute the sparse PCA axes of a set of N-dimensional objects. InputIterator must dereference to type T.
@@ -86,11 +86,11 @@ class /* THEA_API */ SparsePCA_N
 }; // class SparsePCA_N
 
 // Principal component analysis of 3D data passed as pointers
-template <typename T, long N, typename ScalarT>
+template <typename T, int N, typename ScalarT>
 class /* THEA_API */ SparsePCA_N<T *, N, ScalarT>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
@@ -104,11 +104,11 @@ class /* THEA_API */ SparsePCA_N<T *, N, ScalarT>
 }; // class SparsePCA_N
 
 // Principal component analysis of objects that map to single points in N-space.
-template <long N, typename T, typename ScalarT>
-class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPointN<T, N> >::type>
+template <int N, typename T, typename ScalarT>
+class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, N>::value >::type>
 {
   public:
-    typedef VectorN<N, ScalarT> VectorT;
+    typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
@@ -225,7 +225,7 @@ class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPoint
     }
 
     // Compute normalized variances.
-    template <long M> static void normalizeVariances(ScalarT const * variances, ScalarT * normalized_variances)
+    template <int M> static void normalizeVariances(ScalarT const * variances, ScalarT * normalized_variances)
     {
       ScalarT sum = 0;
       for (long i = 0; i < M; ++i)
@@ -244,13 +244,13 @@ class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPoint
     }
 
     // Cost function.
-    template <long M> static ScalarT cost(ScalarT const * normalized_variances, VectorT axes[M], ScalarT lambda)
+    template <int M> static ScalarT cost(ScalarT const * normalized_variances, VectorT axes[M], ScalarT lambda)
     {
       return cost1<M>(normalized_variances) + lambda * cost2<M>(axes);
     }
 
     // First term of cost function.
-    template <long M> static ScalarT cost1(ScalarT const * normalized_variances)
+    template <int M> static ScalarT cost1(ScalarT const * normalized_variances)
     {
       // \sum_{i = 0}^{N - 1} -d_m \log d_m
 
@@ -263,7 +263,7 @@ class SparsePCA_N<T, N, ScalarT, typename boost::enable_if< IsNonReferencedPoint
     }
 
     // Second term of cost function.
-    template <long M> static ScalarT cost2(VectorT axes[M])
+    template <int M> static ScalarT cost2(VectorT axes[M])
     {
       // \sum_{i = 0}^{N - 1} \sum_{j = 0}^{N - 1} -axes_{i, j}^2 \log -axes_{i, j}^2
 

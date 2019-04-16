@@ -167,7 +167,7 @@ scanWidth(int width, int bpp, int alignment)
 static ImageCodec const *
 codecFromPath(std::string const & path)
 {
-  typedef shared_ptr<ImageCodec> ICPtr;
+  typedef std::shared_ptr<ImageCodec> ICPtr;
   typedef TheaUnorderedMap<std::string, ICPtr > CodecMap;
 
   static CodecMap codec_map;
@@ -379,7 +379,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot serialize an invalid image");
 
-  Image::Type type = image.getType();
+  Image::Type type(image.getType());
   int width   =  image.getWidth();
   int height  =  image.getHeight();
   int depth   =  image.getDepth();
@@ -762,12 +762,13 @@ Image::clear()
 }
 
 void
-Image::resize(Type type_, int width_, int height_, int depth_)
+Image::resize(int type_, int width_, int height_, int depth_)
 {
-  if (type_ == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
+  Type t(type_);
+  if (t == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
     throw Error("Cannot resize image to unknown type or non-positive size (use clear() function to destroy data)");
 
-  if (type_ == type && width_ == getWidth() && height_ == getHeight() && depth_ == getDepth())
+  if (t == type && width_ == getWidth() && height_ == getHeight() && depth_ == getDepth())
     return;
 
   if (depth_ == 1)
@@ -775,19 +776,19 @@ Image::resize(Type type_, int width_, int height_, int depth_)
     if (!fip_img)
       fip_img = new fipImage;
 
-    fip_img->setSize(ImageInternal::typeToFreeImageType(type_), width_, height_, ImageInternal::typeToFreeImageBPP(type_));
+    fip_img->setSize(ImageInternal::typeToFreeImageType(t), width_, height_, ImageInternal::typeToFreeImageBPP(t));
   }
   else
   {
-    if (type_.getBitsPerPixel() % 8 != 0)
+    if (t.getBitsPerPixel() % 8 != 0)
       throw Error("Non-2D image must have byte-aligned pixels");
 
-    int scan_width = ImageInternal::scanWidth(width_, type_.getBitsPerPixel(), (int)ROW_ALIGNMENT);
+    int scan_width = ImageInternal::scanWidth(width_, t.getBitsPerPixel(), (int)ROW_ALIGNMENT);
     int64 buf_size = scan_width * height_ * depth_;
     data.resize((size_t)buf_size);
   }
 
-  type = type_;
+  type = t;
   width = width_;
   height = height_;
   depth = depth_;

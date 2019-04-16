@@ -45,12 +45,12 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../Line3.hpp"
-#include "../MatrixMN.hpp"
+#include "../MatVec.hpp"
 #include "../Plane3.hpp"
-#include "../VectorN.hpp"
 #include "CentroidN.hpp"
 #include "IteratorModifiers.hpp"
 #include "PointTraitsN.hpp"
+#include <Eigen/Eigenvalues>
 
 namespace Thea {
 namespace Algorithms {
@@ -113,97 +113,64 @@ class /* THEA_API */ LinearLeastSquares3<T *>
 
 // Fitting linear models to sets of objects that map to single points in 3-space.
 template <typename T>
-class LinearLeastSquares3<T, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
+class LinearLeastSquares3<T, typename std::enable_if< IsNonReferencedPointN<T, 3>::value >::type>
 {
-  private:
-    typedef VectorN<3, double> DVec3;
-    typedef MatrixMN<3, 3, double> DMat3;
-
   public:
     template <typename InputIterator>
     static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL)
     {
-      DVec3 center;
-      DMat3 cov = covMatrix(begin, end, center);
+      Vector3d center;
+      Matrix3d cov = covMatrix(begin, end, center);
 
       double sum = 0;
       for (InputIterator iter = begin; iter != end; ++iter)
       {
-        DVec3 diff = DVec3(PointTraitsN<T, 3>::getPosition(*iter)) - center;
+        Vector3d diff = PointTraitsN<T, 3>::getPosition(*iter).template cast<double>() - center;
         sum += (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
       }
 
-      DMat3 m = sum * DMat3::identity() - cov;
-      DVec3 eigenvector;
-      double eigenvalue = eigenSolveSmallest(m, eigenvector);
+      Matrix3d m = sum * Matrix3d::Identity() - cov;
+      Eigen::SelfAdjointEigenSolver<Matrix3d> eigensolver;
+      if (eigensolver.computeDirect(m).info() != Eigen::Success)
+        throw Error("LinearLeastSquares3: Could not eigensolve matrix");
 
-      line = Line3::fromPointAndDirection(Vector3(center), Vector3(eigenvector));
-
-      if (centroid) *centroid = center;
-      return eigenvalue;
+      // Eigenvalues are in increasing order
+      line = Line3::fromPointAndDirection(center.cast<Real>(), eigensolver.eigenvectors().col(0).cast<Real>());
+      if (centroid) *centroid = center.cast<Real>();
+      return eigensolver.eigenvalues()[0];
     }
 
     template <typename InputIterator>
     static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL)
     {
-      DVec3 center;
-      DMat3 cov = covMatrix(begin, end, center);
+      Vector3d center;
+      Matrix3d cov = covMatrix(begin, end, center);
 
-      DVec3 eigenvector;
-      double eigenvalue = eigenSolveSmallest(cov, eigenvector);
+      Eigen::SelfAdjointEigenSolver<Matrix3d> eigensolver;
+      if (eigensolver.computeDirect(cov).info() != Eigen::Success)
+        throw Error("LinearLeastSquares3: Could not eigensolve covariance matrix");
 
-      plane = Plane3::fromPointAndNormal(Vector3(center), Vector3(eigenvector));
-
-      if (centroid) *centroid = center;
-      return eigenvalue;
+      // Eigenvalues are non-negative (covariance matrix is non-negative definite) and in increasing order
+      plane = Plane3::fromPointAndNormal(center.cast<Real>(), eigensolver.eigenvectors().col(0).cast<Real>());
+      if (centroid) *centroid = center.cast<Real>();
+      return eigensolver.eigenvalues()[0];
     }
 
   private:
     /** Compute the covariance matrix between the coordinates of a set of 3D points. */
     template <typename InputIterator>
-    static DMat3 covMatrix(InputIterator begin, InputIterator end, DVec3 & centroid)
+    static Matrix3d covMatrix(InputIterator begin, InputIterator end, Vector3d & centroid)
     {
-      centroid = CentroidN<T, 3>::compute(begin, end);
+      centroid = CentroidN<T, 3>::compute(begin, end).template cast<double>();
 
-      DMat3 m = DMat3::zero();
+      Matrix3d m = Matrix3d::Zero();
       for (InputIterator iter = begin; iter != end; ++iter)
       {
-        DVec3 diff = DVec3(PointTraitsN<T, 3>::getPosition(*iter)) - centroid;
-
-        m(0, 0) += (diff[0] * diff[0]);
-        m(0, 1) += (diff[0] * diff[1]);
-        m(0, 2) += (diff[0] * diff[2]);
-
-        m(1, 1) += (diff[1] * diff[1]);
-        m(1, 2) += (diff[1] * diff[2]);
-
-        m(2, 2) += (diff[2] * diff[2]);
+        Vector3d diff = PointTraitsN<T, 3>::getPosition(*iter).template cast<double>() - centroid;
+        m += diff * diff.transpose();  // outer product
       }
 
-      m(1, 0) = m(0, 1);
-      m(2, 0) = m(0, 2);
-      m(2, 1) = m(1, 2);
-
       return m;
-    }
-
-    /** Compute the smallest eigenvalue (returned) and corresponding eigenvector of a symmetric 3x3 matrix. */
-    static double eigenSolveSmallest(DMat3 const & m, DVec3 & eigenvector)
-    {
-      double eigenvalues[3];
-      DVec3 eigenvectors[3];
-
-      int num_eigen = m.eigenSolveSymmetric((double *)eigenvalues, (DVec3 *)eigenvectors);
-      if (num_eigen <= 0)
-        throw Error("LinearLeastSquares2: Could not eigensolve matrix");
-
-      int min_index = 0;
-      for (int i = 1; i < num_eigen; ++i)
-        if (eigenvalues[i] < eigenvalues[min_index])
-          min_index = i;
-
-      eigenvector = eigenvectors[min_index];
-      return eigenvalues[min_index];
     }
 
 }; // class LinearLeastSquares3<Point3>

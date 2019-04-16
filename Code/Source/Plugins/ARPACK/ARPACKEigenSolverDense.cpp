@@ -40,52 +40,50 @@
 //============================================================================
 
 #include "ARPACKEigenSolver.hpp"
-#include "../../MatrixUtil.hpp"
 #include <ardsnsym.h>
 
 namespace Thea {
 namespace Algorithms {
 
 long
-ARPACKEigenSolver::solveDense(int nev, bool shift_invert, double sigma, char * which, int ncv, double tol, int maxit,
-                              double * resid, bool AutoShift)
+ARPACKEigenSolver::solveDense(AbstractDenseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which,
+                              int ncv, double tol, int maxit, double * resid, bool auto_shift)
 {
-  MatrixWrapper<double>::DenseColumnMatrix const & dcm = matrix.getDenseColumnMatrix();
-  if (dcm.isEmpty())
+  try
   {
-    THEA_WARNING << getName() << ": Attempting to compute eigenvalues of an empty matrix -- no eigenpairs computed";
-    return 0;
+    // Create the matrix
+    ARdsNonSymMatrix<double, double> arm(m.rows(), const_cast<double *>(m.data()));
+
+    // Setup the problem
+    std::shared_ptr< ARdsNonSymStdEig<double> > eig =
+        shift_invert ? std::shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, sigma, which, ncv,
+                                                                                                tol, maxit, resid, auto_shift))
+                     : std::shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, which, ncv, tol,
+                                                                                                maxit, resid, auto_shift));
+    eig->Trace();
+
+    // Find eigenpairs
+    size_t nconv = (size_t)eig->FindEigenvectors();
+
+    eigenvalues [0].resize(nconv); eigenvalues [1].resize(nconv);
+    eigenvectors[0].resize(nconv); eigenvectors[1].resize(nconv);
+
+    for (size_t i = 0; i < nconv; ++i)
+    {
+      eigenvalues[0][i] = eig->EigenvalueReal((int)i);
+      eigenvalues[1][i] = eig->EigenvalueImag((int)i);
+
+      eigenvectors[0][i].resize(ndims); eigenvectors[1][i].resize(ndims);
+      for (long j = 0; j < ndims; ++j)
+      {
+        eigenvectors[0][i][j] = eig->EigenvectorReal((int)i, (int)j);
+        eigenvectors[1][i][j] = eig->EigenvectorImag((int)i, (int)j);
+      }
+    }
+
+    return (long)nconv;
   }
-
-  // Create the matrix
-  alwaysAssertM(MatrixUtil::isSquare(dcm), std::string(getName()) + ": Operator matrix is not square");
-  ARdsNonSymMatrix<double, double> arm(dcm.numRows(), const_cast<double *>(&dcm.data()[0]));
-
-  // Setup the problem
-  shared_ptr< ARdsNonSymStdEig<double> > eig =
-      shift_invert ? shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, sigma, which, ncv, tol,
-                                                                                         maxit, resid, AutoShift))
-                   : shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, which, ncv, tol, maxit,
-                                                                                         resid, AutoShift));
-  eig->Trace();
-
-  // Find eigenpairs
-  size_t nconv = (size_t)eig->FindEigenvectors();
-
-  eigenvalues.resize(nconv);
-  eigenvectors.resize(nconv);
-
-  size_t n = (size_t)dcm.numRows();
-  for (size_t i = 0; i < nconv; ++i)
-  {
-    eigenvalues[i] = Eigenvalue(eig->EigenvalueReal((int)i), eig->EigenvalueImag((int)i));
-
-    eigenvectors[i].resize(n);
-    for (size_t j = 0; j < n; ++j)
-      eigenvectors[i][j] = std::complex<double>(eig->EigenvectorReal((int)i, (int)j), eig->EigenvectorImag((int)i, (int)j));
-  }
-
-  return (long)nconv;
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s: Error solving dense eigensystem", getName())
 }
 
 } // namespace Algorithms

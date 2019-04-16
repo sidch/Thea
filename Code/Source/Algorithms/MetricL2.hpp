@@ -45,13 +45,12 @@
 #include "../Common.hpp"
 #include "../AxisAlignedBoxN.hpp"
 #include "../BallN.hpp"
+#include "../MatVec.hpp"
 #include "../Triangle3.hpp"
-#include "../VectorN.hpp"
 #include "PointTraitsN.hpp"
 #include "TransformedObject.hpp"
-#include <boost/type_traits/is_pointer.hpp>
-#include <boost/utility/enable_if.hpp>
 #include <cmath>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -64,7 +63,7 @@ namespace Algorithms {
  *
  * @todo Complete closestPoints() specializations for all supported types.
  */
-template <typename A, typename B, long N, typename T, typename Enable = void>
+template <typename A, typename B, int N, typename T, typename Enable = void>
 struct /* THEA_API */ MetricL2Impl
 {
   public:
@@ -89,7 +88,7 @@ struct /* THEA_API */ MetricL2Impl
      * @return A monotonic approximation (the square of the Euclidean distance in this case) to the shortest distance between
      * the objects, i.e. the value of monotoneApproxDistance(\a a, \a b).
      */
-    static T closestPoints(A const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+    static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
     {
       return static_cast<T>(a.squaredDistance(b, &cpa, &cpb));
     }
@@ -127,7 +126,7 @@ class THEA_API MetricL2
      * MetricL2Impl as required for specific types of objects. Note that if types A and B differ, you must explicitly specialize
      * both MetricL2Impl<A, B> and MetricL2Impl<B, A>.
      */
-    template <long N, typename T, typename A, typename B> static T distance(A const & a, B const & b)
+    template <int N, typename T, typename A, typename B> static T distance(A const & a, B const & b)
     { return MetricL2Impl<A, B, N, T>::distance(a, b); }
 
     /**
@@ -136,7 +135,7 @@ class THEA_API MetricL2
      * required for specific types of objects. Note that if types A and B differ, you must explicitly specialize
      * both MetricL2Impl<A, B> and MetricL2Impl<B, A>.
      */
-    template <long N, typename T, typename A, typename B> static T monotoneApproxDistance(A const & a, B const & b)
+    template <int N, typename T, typename A, typename B> static T monotoneApproxDistance(A const & a, B const & b)
     { return MetricL2Impl<A, B, N, T>::monotoneApproxDistance(a, b); }
 
     /**
@@ -147,8 +146,8 @@ class THEA_API MetricL2
      * @return A monotonic approximation (the square of the Euclidean distance in this case) to the shortest distance between
      * the objects, i.e. the value of monotoneApproxDistance(\a a, \a b).
      */
-    template <long N, typename T, typename A, typename B>
-    static T closestPoints(A const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+    template <int N, typename T, typename A, typename B>
+    static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
     { return MetricL2Impl<A, B, N, T>::closestPoints(a, b, cpa, cpb); }
 
 }; // class MetricL2
@@ -157,33 +156,33 @@ class THEA_API MetricL2
 // Support for pointer types
 //=============================================================================================================================
 
-template <typename A, typename B, long N, typename T>
+template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A *, B *, N, T>
 {
   public:
     static T distance(A const * a, B const * b) { return MetricL2::distance<N, T>(*a, *b); }
     static T monotoneApproxDistance(A const * a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(*a, *b); }
-    static T closestPoints(A const * a, B const * b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+    static T closestPoints(A const * a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
     { return MetricL2::closestPoints<N, T>(*a, *b, cpa, cpb); }
 };
 
-template <typename A, typename B, long N, typename T>
+template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A, B *, N, T>
 {
   public:
     static T distance(A const & a, B const * b) { return MetricL2::distance<N, T>(a, *b); }
     static T monotoneApproxDistance(A const & a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(a, *b); }
-    static T closestPoints(A const & a, B const * b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+    static T closestPoints(A const & a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
     { return MetricL2::closestPoints<N, T>(a, *b, cpa, cpb); }
 };
 
-template <typename A, typename B, long N, typename T>
+template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A *, B, N, T>
 {
   public:
     static T distance(A const * a, B const & b) { return MetricL2::distance<N, T>(*a, b); }
     static T monotoneApproxDistance(A const * a, B const & b) { return MetricL2::monotoneApproxDistance<N, T>(*a, b); }
-    static T closestPoints(A const * a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+    static T closestPoints(A const * a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
     { return MetricL2::closestPoints<N, T>(*a, b, cpa, cpb); }
 };
 
@@ -203,53 +202,53 @@ template <typename ObjT, typename TransT> struct TransformedObjectCheck< Transfo
 } // namespace MetricL2Internal
 
 // Both objects are points
-template <typename A, typename B, long N, typename T>
-struct MetricL2Impl<A, B, N, T, typename boost::enable_if_c< IsNonReferencedPointN<A, N>::value
-                                                          && IsNonReferencedPointN<B, N>::value >::type>
+template <typename A, typename B, int N, typename T>
+struct MetricL2Impl<A, B, N, T, typename std::enable_if< IsNonReferencedPointN<A, N>::value
+                                                      && IsNonReferencedPointN<B, N>::value >::type>
 {
   static T distance(A const & a, B const & b)
-  { return (PointTraitsN<A, N, T>::getPosition(a) - PointTraitsN<B, N, T>::getPosition(b)).length(); }
+  { return (PointTraitsN<A, N, T>::getPosition(a) - PointTraitsN<B, N, T>::getPosition(b)).norm(); }
 
   static T monotoneApproxDistance(A const & a, B const & b)
-  { return (PointTraitsN<A, N, T>::getPosition(a) - PointTraitsN<B, N, T>::getPosition(b)).squaredLength(); }
+  { return (PointTraitsN<A, N, T>::getPosition(a) - PointTraitsN<B, N, T>::getPosition(b)).squaredNorm(); }
 
-  static T closestPoints(A const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   {
     cpa = PointTraitsN<A, N, T>::getPosition(a);
     cpb = PointTraitsN<B, N, T>::getPosition(b);
-    return (cpa - cpb).squaredLength();
+    return (cpa - cpb).squaredNorm();
   }
 };
 
 // Only the second object is a point
-template <typename A, typename B, long N, typename T>
-struct MetricL2Impl<A, B, N, T, typename boost::enable_if_c< !IsPointN<A, N>::value
-                                                          && !MetricL2Internal::TransformedObjectCheck<A>::value
-                                                          && !boost::is_pointer<A>::value
-                                                          && IsNonReferencedPointN<B, N>::value >::type>
+template <typename A, typename B, int N, typename T>
+struct MetricL2Impl<A, B, N, T, typename std::enable_if< !IsPointN<A, N>::value
+                                                      && !MetricL2Internal::TransformedObjectCheck<A>::value
+                                                      && !std::is_pointer<A>::value
+                                                      && IsNonReferencedPointN<B, N>::value >::type>
 {
   static T distance(A const & a, B const & b) { return a.distance(PointTraitsN<B, N, T>::getPosition(b)); }
 
   static T monotoneApproxDistance(A const & a, B const & b)
   {
-    VectorN<N, T> p = PointTraitsN<B, N, T>::getPosition(b);
-    return (a.closestPoint(p) - p).squaredLength();
+    Vector<N, T> p = PointTraitsN<B, N, T>::getPosition(b);
+    return (a.closestPoint(p) - p).squaredNorm();
   }
 
-  static T closestPoints(A const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   {
     cpb = PointTraitsN<B, N, T>::getPosition(b);
     cpa = a.closestPoint(cpb);
-    return (cpa - cpb).squaredLength();
+    return (cpa - cpb).squaredNorm();
   }
 };
 
 // Only the first object is a point
-template <typename A, typename B, long N, typename T>
-struct MetricL2Impl<A, B, N, T, typename boost::enable_if_c< IsNonReferencedPointN<A, N>::value
-                                                          && !IsPointN<B, N>::value
-                                                          && !MetricL2Internal::TransformedObjectCheck<B>::value
-                                                          && !boost::is_pointer<B>::value >::type>
+template <typename A, typename B, int N, typename T>
+struct MetricL2Impl<A, B, N, T, typename std::enable_if< IsNonReferencedPointN<A, N>::value
+                                                      && !IsPointN<B, N>::value
+                                                      && !MetricL2Internal::TransformedObjectCheck<B>::value
+                                                      && !std::is_pointer<B>::value >::type>
 {
   static T distance(A const & a, B const & b)
   { return MetricL2Impl<B, A, N, T>::distance(b, a); }
@@ -257,7 +256,7 @@ struct MetricL2Impl<A, B, N, T, typename boost::enable_if_c< IsNonReferencedPoin
   static T monotoneApproxDistance(A const & a, B const & b)
   { return MetricL2Impl<B, A, N, T>::monotoneApproxDistance(b, a); }
 
-  static T closestPoints(A const & a, B const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return MetricL2Impl<B, A, N, T>::closestPoints(b, a, cpb, cpa); }
 };
 
@@ -265,39 +264,40 @@ struct MetricL2Impl<A, B, N, T, typename boost::enable_if_c< IsNonReferencedPoin
 // Specializations where the distance()/squaredDistance() member functions are not defined in both classes
 //=============================================================================================================================
 
-template <long N, typename T>
+template <int N, typename T>
 struct MetricL2Impl<LineN<N, T>, AxisAlignedBoxN<N, T>, N, T>
 {
   static T distance(LineN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(LineN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(LineN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(LineN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <long N, typename T>
+template <int N, typename T>
 struct MetricL2Impl<LineSegmentN<N, T>, AxisAlignedBoxN<N, T>, N, T>
 {
   static T distance(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T monotoneApproxDistance(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b)
+  { return b.squaredDistance(a); }
+  static T closestPoints(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <long N, typename T>
+template <int N, typename T>
 struct MetricL2Impl<RayN<N, T>, AxisAlignedBoxN<N, T>, N, T>
 {
   static T distance(RayN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(RayN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(RayN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(RayN<N, T> const & a, AxisAlignedBoxN<N, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <long N, typename T>
+template <int N, typename T>
 struct MetricL2Impl<AxisAlignedBoxN<N, T>, BallN<N, T>, N, T>
 {
   static T distance(AxisAlignedBoxN<N, T> const & a, BallN<N, T> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(AxisAlignedBoxN<N, T> const & a, BallN<N, T> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(AxisAlignedBoxN<N, T> const & a, BallN<N, T> const & b, VectorN<N, T> & cpa, VectorN<N, T> & cpb)
+  static T closestPoints(AxisAlignedBoxN<N, T> const & a, BallN<N, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
@@ -306,7 +306,7 @@ struct MetricL2Impl<LineN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
   static T distance(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b, VectorN<3, T> & cpa, VectorN<3, T> & cpb)
+  static T closestPoints(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
@@ -314,8 +314,10 @@ template <typename VertexTripleT, typename T>
 struct MetricL2Impl<LineSegmentN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
   static T distance(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b, VectorN<3, T> & cpa, VectorN<3, T> & cpb)
+  static T monotoneApproxDistance(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b)
+  { return b.squaredDistance(a); }
+  static T closestPoints(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b,
+                         Vector<3, T> & cpa, Vector<3, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
@@ -324,7 +326,7 @@ struct MetricL2Impl<RayN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
   static T distance(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b, VectorN<3, T> & cpa, VectorN<3, T> & cpb)
+  static T closestPoints(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
@@ -333,7 +335,7 @@ struct MetricL2Impl<BallN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {
   static T distance(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
   static T monotoneApproxDistance(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b, VectorN<3, T> & cpa, VectorN<3, T> & cpb)
+  static T closestPoints(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 

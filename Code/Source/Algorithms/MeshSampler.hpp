@@ -46,8 +46,8 @@
 #include "../Graphics/MeshGroup.hpp"
 #include "FurthestPointSampling.hpp"
 #include "MeshTriangles.hpp"
+#include "../MatVec.hpp"
 #include "../Random.hpp"
-#include "../Vector3.hpp"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>

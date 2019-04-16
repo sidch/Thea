@@ -41,7 +41,7 @@
 
 #include "ARPACKEigenSolver.hpp"
 #include "../../Array.hpp"
-#include "../../MatrixUtil.hpp"
+
 #ifdef THEA_HAVE_SUPERLU
 #  include <arlsnsym.h>
 #endif
@@ -49,67 +49,103 @@
 namespace Thea {
 namespace Algorithms {
 
+namespace ARPACKEigenSolverInternal {
+
+#ifdef THEA_HAVE_SUPERLU
+
+static bool
+indicesToInt(int type, long n, void const * begin, TheaArray<int> & out)
+{
+#define THEA_ARPACK_CONVERT_AND_PUSH(numtype) \
+  { \
+    out.resize((size_t)n); \
+    for (long i = 0; i < n; ++i) out[(size_t)i] = ((numtype const *)begin)[i]; \
+  }
+
+  switch (type)
+  {
+    case NumericType::INT8   : THEA_ARPACK_CONVERT_AND_PUSH(int8);   break;
+    case NumericType::INT16  : THEA_ARPACK_CONVERT_AND_PUSH(int16);  break;
+    case NumericType::INT32  : THEA_ARPACK_CONVERT_AND_PUSH(int32);  break;
+    case NumericType::INT64  : THEA_ARPACK_CONVERT_AND_PUSH(int64);  break;
+    case NumericType::UINT8  : THEA_ARPACK_CONVERT_AND_PUSH(uint8);  break;
+    case NumericType::UINT16 : THEA_ARPACK_CONVERT_AND_PUSH(uint16); break;
+    case NumericType::UINT32 : THEA_ARPACK_CONVERT_AND_PUSH(uint32); break;
+    case NumericType::UINT64 : THEA_ARPACK_CONVERT_AND_PUSH(uint64); break;
+
+    default:
+      THEA_ERROR << "ARPACKEigenSolver: Unsupported compressed sparse matrix index type";
+      return false;
+  }
+
+  return true;
+
+#undef THEA_ARPACK_CONVERT_AND_PUSH
+}
+
+#endif // THEA_HAVE_SUPERLU
+
+} // namespace ARPACKEigenSolverInternal
+
 long
-ARPACKEigenSolver::solveSparse(int nev, bool shift_invert, double sigma, char * which, int ncv, double tol, int maxit,
-                               double * resid, bool AutoShift)
+ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<double> const & m, int nev, bool shift_invert, double sigma,
+                               char * which, int ncv, double tol, int maxit, double * resid, bool auto_shift)
 {
 #ifdef THEA_HAVE_SUPERLU
 
-  MatrixWrapper<double>::SparseColumnMatrix const & scm = matrix.getSparseColumnMatrix();
-  if (scm.isEmpty())
+  try
   {
-    THEA_WARNING << getName() << ": Attempting to compute eigenvalues of an empty matrix -- no eigenpairs computed";
-    return 0;
+    // Create the matrix
+    alwaysAssertM(m.isColumnMajor(), std::string(getName()) + ": Operator matrix is not in compressed column (CSC) format");
+    alwaysAssertM(m.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
+
+    TheaArray<int> irow;
+    ARPACKEigenSolverInternal::indicesToInt(m.getInnerIndexType(), m.numStoredElements(), m.getInnerIndices(), irow);
+
+    TheaArray<int> pcol;
+    ARPACKEigenSolverInternal::indicesToInt(m.getOuterIndexType(), m.outerSize(), m.getOuterIndices(), pcol);
+
+    int nnz = (int)m.numStoredElements();
+    alwaysAssertM(nnz == pcol[pcol.size() - 1],
+                  std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
+
+    ARluNonSymMatrix<double, double> arm(m.rows(), nnz, m.getValues(), (irow.empty() ? NULL : &irow[0]), &pcol[0]);
+
+    // Setup the problem
+    std::shared_ptr< ARluNonSymStdEig<double> > eig =
+        shift_invert ? std::shared_ptr< ARluNonSymStdEig<double> >(new ARluNonSymStdEig<double>(nev, arm, sigma, which, ncv,
+                                                                                                tol, maxit, resid, auto_shift))
+                     : std::shared_ptr< ARluNonSymStdEig<double> >(new ARluNonSymStdEig<double>(nev, arm, which, ncv, tol,
+                                                                                                maxit, resid, auto_shift));
+    eig->Trace();
+
+    // Find eigenpairs
+    size_t nconv = (size_t)eig->FindEigenvectors();
+
+    eigenvalues [0].resize(nconv); eigenvalues [1].resize(nconv);
+    eigenvectors[0].resize(nconv); eigenvectors[1].resize(nconv);
+
+    for (size_t i = 0; i < nconv; ++i)
+    {
+      eigenvalues[0][i] = eig->EigenvalueReal((int)i);
+      eigenvalues[1][i] = eig->EigenvalueImag((int)i));
+
+      eigenvectors[0][i].resize(ndims); eigenvectors[1][i].resize(ndims);
+      for (long j = 0; j < ndims; ++j)
+      {
+        eigenvectors[0][i][j] = eig->EigenvectorReal((int)i, (int)j);
+        eigenvectors[1][i][j] = eig->EigenvectorImag((int)i, (int)j);
+      }
+    }
+
+    return (long)nconv;
   }
-
-  // Create the matrix
-  alwaysAssertM(MatrixUtil::isSquare(scm), std::string(getName()) + ": Operator matrix is not square");
-  alwaysAssertM(scm.isValid(), std::string(getName()) + ": Operator matrix has invalid internal state");
-
-  TheaArray<int> irow(scm.getRowIndices().begin(),    scm.getRowIndices().end());
-  TheaArray<int> pcol(scm.getColumnIndices().begin(), scm.getColumnIndices().end());
-  int nnz = (int)scm.numSetElements();
-
-  // Repeat the isValid() checks to check if something got screwed up during the conversion
-  alwaysAssertM(irow.size() == scm.getValues().size(),
-                std::string(getName()) + ": irow and nzval arrays should have same size");
-  alwaysAssertM(pcol.size() == (size_t)scm.numRows() + 1,
-                getName() + format(": pcol array should have %ld + 1 = %ld entries, instead has %ld entries",
-                (long)scm.numRows(), (long)scm.numRows() + 1, (long)pcol.size()));
-  alwaysAssertM(nnz == pcol[pcol.size() - 1],
-                std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
-
-  ARluNonSymMatrix<double, double> arm(scm.numRows(), nnz, const_cast<double *>(&scm.getValues()[0]), &irow[0], &pcol[0]);
-
-  // Setup the problem
-  shared_ptr< ARluNonSymStdEig<double> > eig =
-      shift_invert ? shared_ptr< ARluNonSymStdEig<double> >(new ARluNonSymStdEig<double>(nev, arm, sigma, which, ncv, tol,
-                                                                                         maxit, resid, AutoShift))
-                   : shared_ptr< ARluNonSymStdEig<double> >(new ARluNonSymStdEig<double>(nev, arm, which, ncv, tol, maxit,
-                                                                                         resid, AutoShift));
-  eig->Trace();
-
-  // Find eigenpairs
-  size_t nconv = (size_t)eig->FindEigenvectors();
-
-  eigenvalues.resize(nconv);
-  eigenvectors.resize(nconv);
-
-  size_t n = (size_t)scm.numRows();
-  for (size_t i = 0; i < nconv; ++i)
-  {
-    eigenvalues[i] = Eigenvalue(eig->EigenvalueReal((int)i), eig->EigenvalueImag((int)i));
-
-    eigenvectors[i].resize(n);
-    for (size_t j = 0; j < n; ++j)
-      eigenvectors[i][j] = std::complex<double>(eig->EigenvectorReal((int)i, (int)j), eig->EigenvectorImag((int)i, (int)j));
-  }
-
-  return (long)nconv;
+  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s: Error solving dense eigensystem", getName())
 
 #else
 
-  throw Error(std::string(getName()) + ": Sparse linear solver (SuperLU) not available");
+  THEA_ERROR << getName() << ": Sparse linear solver (SuperLU) not available";
+  return -1;
 
 #endif
 }

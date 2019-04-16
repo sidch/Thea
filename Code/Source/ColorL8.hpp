@@ -97,6 +97,20 @@ class THEA_API ColorL8
     /** The value of the color. */
     uint8 & value() { return val; }
 
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
+    {
+      debugAssertM(channel == 0, "ColorL8: Channel must be 0");
+      return val;
+    }
+
+    /** Array-style channel access. */
+    template <typename IntegerT> uint8 & operator[](IntegerT channel)
+    {
+      debugAssertM(channel == 0, "ColorL8: Channel must be 0");
+      return val;
+    }
+
     /** Addition operator. Upper-bounds result to 255. */
     ColorL8 operator+(ColorL8 const & other) const
     {

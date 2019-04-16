@@ -66,11 +66,10 @@
 #include "Array.hpp"
 #include "Colors.hpp"
 #include "CoordinateFrame3.hpp"
-#include "MatrixMN.hpp"
+#include "MatVec.hpp"
 #include "NamedObject.hpp"
 #include "Noncopyable.hpp"
 #include "Plane3.hpp"
-#include "VectorN.hpp"
 
 namespace Thea {
 
@@ -144,7 +143,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     bool operator==(BinaryInputStream const &) const;
 
   public:
-    THEA_DEF_POINTER_TYPES(BinaryInputStream, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(BinaryInputStream, std::shared_ptr, std::weak_ptr)
 
     /** Constant to use with the copy_memory option (evaluates to false). */
     static bool const NO_COPY;

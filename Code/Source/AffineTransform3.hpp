@@ -62,7 +62,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
     AffineTransformN() {}
 
     /** Construct from a linear transform, followed by a translation. */
-    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::zero()) : BaseT(linear_, translation_) {}
+    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
 
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
@@ -72,13 +72,13 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      * of the 3x4 matrix specifying the transform.
      */
     AffineTransformN(VectorT const & x, VectorT const & y, VectorT const & z, VectorT const & translation_)
-    : BaseT(MatrixT(x[0], y[0], z[0], x[1], y[1], z[1], x[2], y[2], z[2]), translation_) {}
+    : BaseT((MatrixT() << x, y, z).finished(), translation_) {}
 
     /** Construct from a 3x4 array. */
     AffineTransformN(T const &  m00, T const &  m01, T const &  m02, T const & m03,
                      T const &  m10, T const &  m11, T const &  m12, T const & m13,
                      T const &  m20, T const &  m21, T const &  m22, T const & m23)
-    : BaseT(MatrixT(m00, m01, m02, m10, m11, m12, m20, m21, m22), VectorT(m03, m13, m23)) {}
+    : BaseT((MatrixT() << m00, m01, m02, m10, m11, m12, m20, m21, m22).finished(), VectorT(m03, m13, m23)) {}
 
     using BaseT::scaling;
 
@@ -99,7 +99,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
     /** Construct a rotation specified by an angle (in radians) around an axis. */
     static AffineTransformN rotationAxisAngle(VectorT const & axis, Real radians)
     {
-      return AffineTransformN(MatrixT::rotationAxisAngle(axis, radians), VectorT::zero());
+      return AffineTransformN(Math::rotationAxisAngle<T>(axis, radians), VectorT::Zero());
     }
 
     /**
@@ -107,7 +107,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesXYZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesXYZ(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesXYZ<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -115,7 +115,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesXZY(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesXZY(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesXZY<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -123,7 +123,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesYXZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesYXZ(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesYXZ<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -131,7 +131,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesYZX(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesYZX(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesYZX<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -139,7 +139,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesZXY(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesZXY(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesZXY<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -147,7 +147,7 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      */
     static AffineTransformN rotationEulerAnglesZYX(Real yaw_radians, Real pitch_radians, Real roll_radians)
     {
-      return AffineTransformN(MatrixT::rotationEulerAnglesZYX(yaw_radians, pitch_radians, roll_radians), VectorT::zero());
+      return AffineTransformN(Math::rotationEulerAnglesZYX<T>(yaw_radians, pitch_radians, roll_radians), VectorT::Zero());
     }
 
     /**
@@ -155,12 +155,12 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
      *
      * @param start_dir The vector to rotate from.
      * @param end_dir The vector to rotate to.
-     * @param unitize_dirs If false, the directions will be assumed to have been pre-normalized to unit length before being
+     * @param normalize_dirs If false, the directions will be assumed to have been pre-normalized to unit length before being
      *   passed to this function.
      */
-    static AffineTransformN rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool unitize_dirs = true)
+    static AffineTransformN rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool normalize_dirs = true)
     {
-      return AffineTransformN(MatrixT::rotationArc(start_dir, end_dir, unitize_dirs), VectorT::zero());
+      return AffineTransformN(Math::rotationArc<T>(start_dir, end_dir, normalize_dirs), VectorT::Zero());
     }
 
 }; // class AffineTransformN<3, T>

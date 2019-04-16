@@ -58,7 +58,7 @@ midpoint(size_t i, size_t j, TheaArray<Vector3> & vertices, MidpointMap & midpoi
   MidpointMap::const_iterator existing = midpoints.find(edge);
   if (existing == midpoints.end())
   {
-    Vector3 p = (vertices[i] + vertices[j]).unit();
+    Vector3 p = (vertices[i] + vertices[j]).normalized();
     midpoints[edge] = vertices.size();
     vertices.push_back(p);
 

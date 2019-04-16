@@ -82,7 +82,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     typedef typename EdgeList::const_reverse_iterator    EdgeConstReverseIterator;    ///< Const reverse iterator over edges.
 
     /** Construct with the given normal. */
-    GeneralMeshFace(Vector3 const & normal = Vector3::zero()) : NormalBaseType(normal), index(-1), marked(false) {}
+    GeneralMeshFace(Vector3 const & normal = Vector3::Zero()) : NormalBaseType(normal), index(-1), marked(false) {}
 
     /** Check if the face has a given vertex. */
     bool hasVertex(Vertex const * vertex) const
@@ -327,7 +327,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       if (vertices.size() > 3)
       {
         // vi1 might be a concave corner -- we need to add up the cross products at all vertices
-        Vector3 sum_cross = Vector3::zero();
+        Vector3 sum_cross = Vector3::Zero();
         for ( ; vi0 != vertices.end(); ++vi0, ++vi1, ++vi2)
         {
           if (vi1 == vertices.end()) vi1 = vertices.begin();
@@ -338,13 +338,13 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
           sum_cross += e2.cross(e1);
         }
 
-        setNormal(sum_cross.unit());
+        setNormal(sum_cross.normalized());
       }
       else
       {
         Vector3 e1 = (*vi0)->getPosition() - (*vi1)->getPosition();
         Vector3 e2 = (*vi2)->getPosition() - (*vi1)->getPosition();
-        setNormal(e2.cross(e1).unit());  // counter-clockwise
+        setNormal(e2.cross(e1).normalized());  // counter-clockwise
       }
     }
 

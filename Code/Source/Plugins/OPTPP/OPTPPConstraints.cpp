@@ -55,15 +55,15 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
 {
   typedef MatrixWrapper<T, I2, I1> MW;
 
-  dst.ReSize(src.numRows(), src.numColumns());
+  dst.ReSize(src.rows(), src.cols());
 
   switch (src.getFormat())
   {
     case MatrixFormat::DENSE_ROW_MAJOR:
     {
       typename MW::DenseRowMatrix const & drm = src.getDenseRowMatrix();
-      for (int r = 0; r < drm.numRows(); ++r)
-        for (int c = 0; c < drm.numColumns(); ++c)
+      for (int r = 0; r < drm.rows(); ++r)
+        for (int c = 0; c < drm.cols(); ++c)
           dst(r, c) = static_cast<NEWMAT::Real>(drm(r, c));
 
       break;
@@ -72,8 +72,8 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
     case MatrixFormat::DENSE_COLUMN_MAJOR:
     {
       typename MW::DenseColumnMatrix const & dcm = src.getDenseColumnMatrix();
-      for (int c = 0; c < dcm.numColumns(); ++c)
-        for (int r = 0; r < dcm.numRows(); ++r)
+      for (int c = 0; c < dcm.cols(); ++c)
+        for (int r = 0; r < dcm.rows(); ++r)
           dst(r, c) = static_cast<NEWMAT::Real>(dcm(r, c));
 
       break;
@@ -87,7 +87,7 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
       TheaArray<T>  const & val   =  srm.getValues();
 
       dst = 0;  // set all entries to zero
-      for (size_t r = 0; r < (size_t)srm.numRows(); ++r)
+      for (size_t r = 0; r < (size_t)srm.rows(); ++r)
         for (I1 i = irow[r]; i < irow[r + 1]; ++i)
         {
           int col = (int)icol[(size_t)i];
@@ -105,7 +105,7 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
       TheaArray<T>  const & val   =  scm.getValues();
 
       dst = 0;  // set all entries to zero
-      for (size_t c = 0; c < (size_t)scm.numColumns(); ++c)
+      for (size_t c = 0; c < (size_t)scm.cols(); ++c)
         for (I1 i = icol[c]; i < icol[c + 1]; ++i)
         {
           int row = (int)irow[(size_t)i];
@@ -132,8 +132,8 @@ toNEWMATColumnVector(TheaArray<T> const & src, NEWMAT::ColumnVector & dst)
 OPTPP::LinearConstraint *
 toOPTPPConstraint(LinearConstraint const & constraint)
 {
-  alwaysAssertM(constraint.getCoefficients().isSquare()
-             && constraint.getCoefficients().numRows() == (int)constraint.getConstants().size(),
+  alwaysAssertM(Math::isSquare(constraint.getCoefficients())
+             && constraint.getCoefficients().rows() == (int)constraint.getConstants().size(),
                 "OPTPPNumericalOptimizer: Dimension mismatch in constraint");
 
   NEWMAT::Matrix lhs;

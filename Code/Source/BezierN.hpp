@@ -55,7 +55,7 @@
 #define __Thea_BezierN_hpp__
 
 #include "Common.hpp"
-#include "Matrix.hpp"
+#include "MatVec.hpp"
 #include "SplineN.hpp"
 
 namespace Thea {
@@ -65,7 +65,7 @@ namespace Thea {
  *
  * This implementation uses code from Dave Eberly's Geometric Tools library.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ BezierN : public SplineN<N, T>
 {
   private:
@@ -82,7 +82,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     {
       alwaysAssertM(order_ >= 1, "BezierN: Order must be non-negative");
 
-      ctrl[0].resize((size_t)order_ + 1, VectorT::zero());
+      ctrl[0].resize((size_t)order_ + 1, VectorT::Zero());
       this->setChanged(true);
     }
 
@@ -110,12 +110,12 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
 
   private:
     mutable TheaArray<VectorT>  ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
-    mutable Matrix<double>      binom;    ///< Cached binomial coefficients.
+    mutable MatrixX<double>      binom;   ///< Cached binomial coefficients.
 
     /** Cache binomial coefficients for computing Bernstein polynomials. */
     void cacheBinom() const
     {
-      if (binom.numRows() > 0)
+      if (binom.rows() > 0)
         return;
 
       long n = (long)ctrl[0].size();

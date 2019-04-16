@@ -41,6 +41,7 @@
 
 #include "CSPARSELinearSolver.hpp"
 #include "../../Algorithms/FastCopy.hpp"
+#include "../../AbstractCompressedSparseMatrix.hpp"
 #include "../../Array.hpp"
 #include "csparse.h"
 #include <cmath>
@@ -48,11 +49,37 @@
 namespace Thea {
 namespace Algorithms {
 
-CSPARSELinearSolver::CSPARSELinearSolver(std::string const & name_)
-: NamedObject(name_)
-{}
-
 namespace CSPARSELinearSolverInternal {
+
+static bool
+indicesToInt(int type, long n, void const * begin, TheaArray<int> & out)
+{
+#define THEA_CSPARSE_CONVERT_AND_PUSH(numtype) \
+  { \
+    out.resize((size_t)n); \
+    for (long i = 0; i < n; ++i) out[(size_t)i] = ((numtype const *)begin)[i]; \
+  }
+
+  switch (type)
+  {
+    case NumericType::INT8   : THEA_CSPARSE_CONVERT_AND_PUSH(int8);   break;
+    case NumericType::INT16  : THEA_CSPARSE_CONVERT_AND_PUSH(int16);  break;
+    case NumericType::INT32  : THEA_CSPARSE_CONVERT_AND_PUSH(int32);  break;
+    case NumericType::INT64  : THEA_CSPARSE_CONVERT_AND_PUSH(int64);  break;
+    case NumericType::UINT8  : THEA_CSPARSE_CONVERT_AND_PUSH(uint8);  break;
+    case NumericType::UINT16 : THEA_CSPARSE_CONVERT_AND_PUSH(uint16); break;
+    case NumericType::UINT32 : THEA_CSPARSE_CONVERT_AND_PUSH(uint32); break;
+    case NumericType::UINT64 : THEA_CSPARSE_CONVERT_AND_PUSH(uint64); break;
+
+    default:
+      THEA_ERROR << "CSPARSELinearSolver: Unsupported compressed sparse matrix index type";
+      return false;
+  }
+
+  return true;
+
+#undef THEA_CSPARSE_CONVERT_AND_PUSH
+}
 
 // Return value: 1: symmetric, 2: upper-triangular, 3: lower-triangular, 0: other
 int
@@ -142,72 +169,82 @@ makeSymmetric(cs * A)
 
 } // namespace CSPARSELinearSolverInternal
 
+CSPARSELinearSolver::CSPARSELinearSolver(std::string const & name_)
+: NamedObject(name_), has_solution(false)
+{}
+
+CSPARSELinearSolver::~CSPARSELinearSolver()
+{}
+
 bool
-CSPARSELinearSolver::solve(Options const & options)
+CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options)
 {
   using namespace CSPARSELinearSolverInternal;
 
   has_solution = false;
-  solution.clear();
+  solution.resize(0);
 
-  switch (coeffs.getFormat())
+  try
   {
-    case MatrixFormat::DENSE_ROW_MAJOR:
-    case MatrixFormat::DENSE_COLUMN_MAJOR:
-      throw Error(std::string(getName()) + ": The CSPARSE linear solver does not support dense coefficient matrices");
-
-    case MatrixFormat::SPARSE_ROW_MAJOR:  // should never be encountered since we always cache as sparse column-major
-      throw Error(std::string(getName()) + ": The CSPARSE linear solver does not support sparse row-major matrices");
-
-    case MatrixFormat::SPARSE_COLUMN_MAJOR:
+    if (a.asSparse() && a.asSparse()->asCompressed())
     {
-      MatrixWrapper<double>::SparseColumnMatrix const & scm = coeffs.getSparseColumnMatrix();
-      alwaysAssertM(scm.numRows() == (int)constants.size(),
-                    std::string(getName()) + ": Size of coefficient matrix does not match number of constants");
-
-      if (scm.isEmpty())
+      if (a.rows() <= 0 || a.cols() <= 0)
       {
         THEA_WARNING << getName() << ": Attempting to solve empty system";
         has_solution = true;
         return has_solution;
       }
 
-      std::string method = toUpper(options.get<std::string>("method", "LU"));
+      std::string method = toUpper(options ? options->getString("method", "LU") : "LU");
 
       // Only QR factorization allows rectangular matrices, returning least-squares solutions
-      alwaysAssertM(method == "QR" || MatrixUtil::isSquare(scm),
+      alwaysAssertM(method == "QR" || Math::isSquare(a),
                     std::string(getName()) + ": Coefficient matrix for method '" + method + "' must be square");
 
+      AbstractCompressedSparseMatrix<double> const & sm = *a.asSparse()->asCompressed();
+
+      // Convert the coefficient matrix to CSPARSE format
+      alwaysAssertM(sm.isColumnMajor(),
+                    std::string(getName()) + ": Coefficient matrix is not in compressed column (CSC) format");
+      alwaysAssertM(sm.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
+
+      // TODO: avoid the copy when the input indices are actually ints
+      TheaArray<int> irow;
+      indicesToInt(sm.getInnerIndexType(), sm.numStoredElements(), sm.getInnerIndices(), irow);
+
+      TheaArray<int> pcol;
+      indicesToInt(sm.getOuterIndexType(), sm.outerSize(), sm.getOuterIndices(), pcol);
+
+      int nnz = (int)sm.numStoredElements();
+      alwaysAssertM(nnz == pcol[pcol.size() - 1],
+                    std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
+
       // Create the coefficient matrix
-      // (The row indices are ints by default, but just in case the parent class changes the default format let's cache them in
-      // an explicit int array.)
-      TheaArray<int> pcol(scm.getColumnIndices().begin(), scm.getColumnIndices().end());
-      TheaArray<int> irow(scm.getRowIndices().begin(), scm.getRowIndices().end());
-      cs A;
-      A.nzmax = (int)scm.numSetElements();
-      A.m = scm.numRows();
-      A.n = scm.numColumns();
-      A.p = &pcol[0];
-      A.i = &irow[0];
-      A.x = const_cast<double *>(&scm.getValues()[0]);  // assume the values are always double-precision
-      A.nz = -1;
+      cs C;
+      C.nzmax = nnz;
+      C.m = sm.rows();
+      C.n = sm.cols();
+      C.p = &pcol[0];
+      C.i = irow.empty() ? NULL : &irow[0];
+      C.x = const_cast<double *>(sm.getValues());
+      C.nz = -1;
 
       // Check if the matrix is symmetric, and if necessary symmetrize it if is triangular
-      cs * Ap = &A;
-      int sym = isSymmetric(&A);
+      cs * Cp = &C;
+      int sym = isSymmetric(&C);
       if (sym == 2 || sym == 3)
       {
-        if (options.get<bool>("symmetrize-triangular", false))
-          Ap = makeSymmetric(&A);
+        if (options && options->getInteger("symmetrize-triangular", 0) != 0)
+          Cp = makeSymmetric(&C);
         else
           sym = 0;
       }
 
       // Initialize the solutions vector with the constants vector. This will be overwritten by the solver.
-      solution.resize(std::max(constants.size(), scm.numColumns()));
-      Algorithms::fastCopy(constants.begin(), constants.end(), solution.begin());
-      if (solution.size() > constants.size())
-        std::fill(solution.begin() + constants.size(), solution.end(), 0);
+      solution.resize(std::max(C.m, C.n));
+      Algorithms::fastCopy(b, b + C.m, solution.data());
+      if (solution.size() > C.m)  // underdetermined system
+        solution.tail(solution.size() - C.m).setZero();
 
       int ok = 0;
       try
@@ -217,66 +254,51 @@ CSPARSELinearSolver::solve(Options const & options)
           THEA_DEBUG << getName() << ": Trying to solve linear system by Cholesky factorization";
 
           if (!sym)
-            throw Error(std::string(getName())
-                      + ": Cholesky factorization requires a symmetric positive-definite coefficient matrix");
+            throw Error("Cholesky factorization requires a symmetric positive-definite coefficient matrix");
 
-          ok = cs_cholsol(Ap, &solution[0], 1);
+          ok = cs_cholsol(Cp, solution.data(), 1);
 
           THEA_DEBUG << getName() << ": Solution by Cholesky factorization failed:"
                                      " please check that the coefficient matrix is symmetric positive-definite";
         }
         else if (method == "QR")
         {
-          THEA_DEBUG << getName() << ": Trying to solve linear system by QR factorization";
+          THEA_DEBUG << getName() << "Trying to solve linear system by QR factorization";
 
-          ok = cs_qrsol(Ap, &solution[0], 3);
+          ok = cs_qrsol(Cp, solution.data(), 3);
         }
         else if (method == "LU")
         {
           THEA_DEBUG << getName() << ": Trying to solve linear system by LU factorization";
 
-          double tol = options.get<double>("tol", 1e-10);
-          ok = cs_lusol(Ap, &solution[0], 1, tol);
+          static double const DEFAULT_TOLERANCE = 1e-10;
+          double tol = options ? options->getFloat("tol", DEFAULT_TOLERANCE) : DEFAULT_TOLERANCE;
+          ok = cs_lusol(Cp, solution.data(), 1, tol);
         }
         else
-          throw Error(std::string(getName()) + ": Unknown solution method '" + method + '\'');
+          throw Error("Unknown solution method '" + method + '\'');
       }
       catch (...)
       {
         // Cleanup
-        if (Ap != &A)
-          cs_spfree(Ap);
+        if (Cp != &C)
+          cs_spfree(Cp);
 
         throw;
       }
 
       // Cleanup
-      if (Ap != &A)
-        cs_spfree(Ap);
+      if (Cp != &C)
+        cs_spfree(Cp);
 
       has_solution = (ok != 0);
-      break;
     }
-
-    default:
-      throw Error(std::string(getName()) + ": Unknown format of cached matrix");
+    else
+       throw Error("Unsupported coefficient matrix format: only compressed column (CSC) allowed)");
   }
+  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s: Error solving linear system", getName())
 
   return has_solution;
-}
-
-MatrixFormat
-CSPARSELinearSolver::getPreferredFormat(MatrixFormat input_format)
-{
-  switch (input_format)
-  {
-    case MatrixFormat::SPARSE_ROW_MAJOR:
-    case MatrixFormat::SPARSE_COLUMN_MAJOR:
-      return MatrixFormat::SPARSE_COLUMN_MAJOR;
-
-    default:
-      return input_format;
-  }
 }
 
 CSPARSELinearSolverFactory::~CSPARSELinearSolverFactory()
@@ -285,7 +307,7 @@ CSPARSELinearSolverFactory::~CSPARSELinearSolverFactory()
 }
 
 LinearSolver *
-CSPARSELinearSolverFactory::createLinearSolver(std::string const & name)
+CSPARSELinearSolverFactory::createLinearSolver(char const * name)
 {
   CSPARSELinearSolver * ls = new CSPARSELinearSolver(name);
   linear_solvers.insert(ls);

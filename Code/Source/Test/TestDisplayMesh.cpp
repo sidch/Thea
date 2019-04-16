@@ -1,10 +1,12 @@
 // #define USE_GENERAL_MESH
 
 #include "../Common.hpp"
+#include "../AffineTransform3.hpp"
 #include "../Application.hpp"
 #include "../Colors.hpp"
 #include "../FilePath.hpp"
 #include "../Math.hpp"
+#include "../MatVec.hpp"
 #include "../Plugin.hpp"
 #include "../Stopwatch.hpp"
 #include "../Graphics/RenderSystem.hpp"
@@ -251,17 +253,17 @@ draw()
   render_system->setColorClearValue(ColorRGB::white());
   render_system->clear();
 
-  Matrix3 rotx = Matrix3::rotationAxisAngle(Vector3::unitX(), Math::degreesToRadians(view_rotx));
-  Matrix3 roty = Matrix3::rotationAxisAngle(Vector3::unitY(), Math::degreesToRadians(view_roty));
-  Matrix3 rotz = Matrix3::rotationAxisAngle(Vector3::unitZ(), Math::degreesToRadians(view_rotz));
+  Matrix3 rotx = Math::rotationAxisAngle(Vector3(1, 0, 0), Math::degreesToRadians(view_rotx));
+  Matrix3 roty = Math::rotationAxisAngle(Vector3(0, 1, 0), Math::degreesToRadians(view_roty));
+  Matrix3 rotz = Math::rotationAxisAngle(Vector3(0, 0, 1), Math::degreesToRadians(view_rotz));
 
-  // std::cout << "rotx = " << rotx.toString() << std::endl;
-  // std::cout << "roty = " << roty.toString() << std::endl;
-  // std::cout << "rotz = " << rotz.toString() << std::endl;
+  // std::cout << "rotx = " << toString(rotx) << std::endl;
+  // std::cout << "roty = " << toString(roty) << std::endl;
+  // std::cout << "rotz = " << toString(rotz) << std::endl;
 
-  Matrix4 mat = Matrix4(rotx * roty * rotz, Vector3::zero())
-              * Matrix4::homScaling(scale)
-              * Matrix4::homTranslation(translate);
+  Matrix4 mat = (AffineTransform3(rotx * roty * rotz, Vector3::Zero())
+               * AffineTransform3::scaling(scale)
+               * AffineTransform3::translation(translate)).homogeneous();
 
   glShadeModel(GL_SMOOTH);
   glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);

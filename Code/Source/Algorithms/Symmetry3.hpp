@@ -49,8 +49,8 @@
 #include "PointTraitsN.hpp"
 #include "../Math.hpp"
 #include "../UnorderedSet.hpp"
-#include <boost/utility/enable_if.hpp>
 #include <cmath>
+#include <type_traits>
 
 namespace Thea {
 namespace Algorithms {
@@ -93,7 +93,7 @@ class /* THEA_API */ Symmetry3<T *>
 
 // Symmetries of point clouds.
 template <typename T>
-class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPointN<T, 3> >::type>
+class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN<T, 3>::value >::type>
 {
   public:
     template <typename InputIterator>
@@ -109,7 +109,7 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
       Vector3 centroid = (precomputed_centroid ? *precomputed_centroid : CentroidN<T, 3>::compute(begin, end));
       Real radius = 0;
       for (InputIterator pi = begin; pi != end; ++pi)
-        radius = std::max(radius, (PointTraitsN<T, 3>::getPosition(*pi) - centroid).squaredLength());
+        radius = std::max(radius, (PointTraitsN<T, 3>::getPosition(*pi) - centroid).squaredNorm());
 
       radius = std::sqrt(radius);
 
@@ -201,7 +201,9 @@ class /* THEA_API */ Symmetry3<T, typename boost::enable_if< IsNonReferencedPoin
         }
 
       Vector3 nrm = plane.getNormal();
-      Vector3 u, v; nrm.createOrthonormalBasis(u, v);
+      Matrix3 basis = Math::orthonormalBasis(nrm);
+      Vector3 u = basis.col(0);
+      Vector3 v = basis.col(1);
 
       long total_count[2] = { 0, 0 };
       for (InputIterator pi = begin; pi != end; ++pi)

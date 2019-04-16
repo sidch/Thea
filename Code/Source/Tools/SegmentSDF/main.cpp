@@ -1,5 +1,4 @@
 #include "Graph.hpp"
-
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/Clustering.hpp"
@@ -9,18 +8,18 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Colors.hpp"
 #include "../../Math.hpp"
+#include "../../MatVec.hpp"
 #include "../../System.hpp"
+#include "../../ThreadGroup.hpp"
 #include "../../UnionFind.hpp"
 #include "../../UnorderedMap.hpp"
-#include "../../VectorN.hpp"
-#include <boost/functional/hash.hpp>
-#include <boost/thread/thread.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
+#include <thread>
 
 // If defined, map the label to a color and print it as a fake normal after the position, instead of the SDF and label
 #define DEBUG_PTS
@@ -48,7 +47,7 @@ main(int argc, char * argv[])
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
 typedef MeshKDTree<Mesh> KDTree;
-typedef VectorN<4, double> ClusterablePoint;
+typedef Vector<4, double> ClusterablePoint;
 
 ClusterablePoint
 toClusterablePoint(Vector3 const & pos, Real sdf)
@@ -403,15 +402,15 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   size_t samples_per_thread = (descs.size() <= num_threads
                                   ? 1 : (size_t)ceil(descs.size() / (double)num_threads));
 
-  boost::thread_group threads;
+  ThreadGroup threads;
   int thread_index = 0;
   for (size_t begin = 0; begin < descs.size(); begin += samples_per_thread, ++thread_index)
   {
-    threads.add_thread(new boost::thread(doMeanShiftBlock, &descs, &modes, begin, begin + samples_per_thread, bandwidth,
-                                         thread_index));
+    threads.addThread(new std::thread(doMeanShiftBlock, &descs, &modes, begin, begin + samples_per_thread, bandwidth,
+                                      thread_index));
   }
 
-  threads.join_all();
+  threads.joinAll();
 
   // Sort the set of modes
   sort(modes.begin(), modes.end());
@@ -490,7 +489,7 @@ double
 computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3 const *> const & normals,
                  KDTree const & kdtree)
 {
-  Real skin_width = 0.01 * kdtree.getBounds().getExtent().length();
+  Real skin_width = 0.01 * kdtree.getBounds().getExtent().norm();
   THEA_CONSOLE << "Skin width = " << skin_width;
 
   ConvexHull3::Options(ConvexHull3::Options::Approx(100, skin_width));
@@ -505,7 +504,7 @@ computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3
   hull_kdtree.add(hull_mesh);
   hull_kdtree.init();
 
-  Real extent = kdtree.getBounds().getExtent().length();
+  Real extent = kdtree.getBounds().getExtent().norm();
   THEA_CONSOLE << "Extent = " << extent;
   if (Math::fuzzyEq(extent, (Real)0))
     return 0;
@@ -556,7 +555,7 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
 
   SampleClusterConnectivityGraph cluster_conn_graph;
   {
-    double       const INTERSECTION_THRESHOLD  =  0.01 * kdtree.getBounds().getExtent().length();
+    double const INTERSECTION_THRESHOLD  =  0.01 * kdtree.getBounds().getExtent().norm();
     size_t const NNBRS_THRESHOLD         =  10;
 
     for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)

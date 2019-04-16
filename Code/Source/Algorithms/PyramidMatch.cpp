@@ -135,10 +135,13 @@ downsample1D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
       w1 = src[j + 1];
       sum_weights = w0 + w1;
 
-      dst_means[i] = Math::fuzzyEq(sum_weights, (Real)0) ? 0.5f * halve1D(src_means[j]
-                                                                        + add1D(src_means[j + 1], 1))
-                                                         : halve1D(w0 * src_means[j]
-                                                                 + w1 * add1D(src_means[j + 1], 1)) / sum_weights;
+      if (Math::fuzzyEq(sum_weights, (Real)0))
+        dst_means[i] = 0.5f * halve1D(MeanT(src_means[j]
+                                          + add1D(src_means[j + 1], 1)));
+      else
+        dst_means[i] = halve1D(MeanT(w0 * src_means[j]
+                                   + w1 * add1D(src_means[j + 1], 1))) / sum_weights;
+
       smoothIncrement1D(dst, dst_size, (int)i, toReal(dst_means[i]), sum_weights);
     }
   }
@@ -174,14 +177,16 @@ downsample2D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
         w11 = src[j11];
         sum_weights = w00 + w10 + w01 + w11;
 
-        dst_means[i] = Math::fuzzyEq(sum_weights, (Real)0) ? 0.25f * halve2D(      src_means[j00]
-                                                                           + add2D(src_means[j10], offset10)
-                                                                           + add2D(src_means[j01], offset01)
-                                                                           + add2D(src_means[j11], offset11))
-                                                           : halve2D(w00 *       src_means[j00]
-                                                                   + w10 * add2D(src_means[j10], offset10)
-                                                                   + w01 * add2D(src_means[j01], offset01)
-                                                                   + w11 * add2D(src_means[j11], offset11)) / sum_weights;
+        if (Math::fuzzyEq(sum_weights, (Real)0))
+          dst_means[i] = 0.25f * halve2D(MeanT(src_means[j00]
+                                             + add2D(src_means[j10], offset10)
+                                             + add2D(src_means[j01], offset01)
+                                             + add2D(src_means[j11], offset11)));
+        else
+          dst_means[i] = halve2D(MeanT(w00 *       src_means[j00]
+                                     + w10 * add2D(src_means[j10], offset10)
+                                     + w01 * add2D(src_means[j01], offset01)
+                                     + w11 * add2D(src_means[j11], offset11))) / sum_weights;
 
         smoothIncrement2D(dst, dst_sx, dst_sy, x, y, dst_means[i].x(), dst_means[i].y(), sum_weights);
       }
@@ -232,22 +237,24 @@ downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * 
           w111 = src[j111];
           sum_weights = w000 + w100 + w010 + w110 + w001 + w101 + w011 + w111;
 
-          dst_means[i] = Math::fuzzyEq(sum_weights, (Real)0) ? 0.125f * 0.5f * (src_means[j000]
-                                                                              + src_means[j100] + offset100
-                                                                              + src_means[j010] + offset010
-                                                                              + src_means[j110] + offset110
-                                                                              + src_means[j001] + offset001
-                                                                              + src_means[j101] + offset101
-                                                                              + src_means[j011] + offset011
-                                                                              + src_means[j111] + offset111)
-                                                             : (0.5f / sum_weights) * (w000 * src_means[j000]
-                                                                                     + w100 * src_means[j100] + offset100
-                                                                                     + w010 * src_means[j010] + offset010
-                                                                                     + w110 * src_means[j110] + offset110
-                                                                                     + w001 * src_means[j001] + offset001
-                                                                                     + w101 * src_means[j101] + offset101
-                                                                                     + w011 * src_means[j011] + offset011
-                                                                                     + w111 * src_means[j111] + offset111);
+          if (Math::fuzzyEq(sum_weights, (Real)0))
+            dst_means[i] = 0.125f * 0.5f * (src_means[j000]
+                                          + src_means[j100] + offset100
+                                          + src_means[j010] + offset010
+                                          + src_means[j110] + offset110
+                                          + src_means[j001] + offset001
+                                          + src_means[j101] + offset101
+                                          + src_means[j011] + offset011
+                                          + src_means[j111] + offset111);
+          else
+            dst_means[i] = (0.5f / sum_weights) * (w000 * src_means[j000]
+                                                 + w100 * src_means[j100] + offset100
+                                                 + w010 * src_means[j010] + offset010
+                                                 + w110 * src_means[j110] + offset110
+                                                 + w001 * src_means[j001] + offset001
+                                                 + w101 * src_means[j101] + offset101
+                                                 + w011 * src_means[j011] + offset011
+                                                 + w111 * src_means[j111] + offset111);
 
           smoothIncrement3D(dst, dst_sx, dst_sy, dst_sz, x, y, z, dst_means[i], sum_weights);
         }

@@ -83,13 +83,13 @@ class /* THEA_API */ CoordinateFrameN<3, T> : public Internal::CoordinateFrameNB
     void setViewFrame(VectorT const & eye, VectorT const & look_at, VectorT const & up)
     {
       // See documentation of gluLookAt
-      VectorT f = (look_at - eye).unit();
-      VectorT s = f.cross(up).unit();
+      VectorT f = (look_at - eye).normalized();
+      VectorT s = f.cross(up).normalized();
       VectorT u = s.cross(f);
 
-      this->_setRotation(MatrixT(s[0], u[0], -f[0],
-                                 s[1], u[1], -f[1],
-                                 s[2], u[2], -f[2]));
+      this->_setRotation((MatrixT() << s[0], u[0], -f[0],
+                                       s[1], u[1], -f[1],
+                                       s[2], u[2], -f[2]).finished());
 
       this->setTranslation(eye);
     }
@@ -122,7 +122,7 @@ class /* THEA_API */ CoordinateFrameN<3, T> : public Internal::CoordinateFrameNB
     static RigidTransformT rotationEulerAnglesZXY(Real yaw, Real pitch, Real roll)  { return RigidTransformT(); }
     static RigidTransformT rotationEulerAnglesZYX(Real yaw, Real pitch, Real roll)  { return RigidTransformT(); }
 
-    static RigidTransformT rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool unitize_dirs = true)
+    static RigidTransformT rotationArc(VectorT const & start_dir, VectorT const & end_dir, bool normalize_dirs = true)
     { return RigidTransformT(); }
 
 }; // class CoordinateFrameN<3, T>

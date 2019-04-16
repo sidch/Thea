@@ -55,7 +55,7 @@ template <typename T>
 class Filter
 {
   public:
-    THEA_DEF_POINTER_TYPES(Filter, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(Filter, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~Filter() {}

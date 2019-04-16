@@ -14,9 +14,7 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
 #include "../../IOStream.hpp"
-#include "../../Matrix.hpp"
-#include "../../Vector3.hpp"
-#include <boost/algorithm/string/trim.hpp>
+#include "../../MatVec.hpp"
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -84,15 +82,15 @@ bool computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions
                              double max_distance, TheaArray<double> & values);
 bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
-                                    Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+                                    MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
                      TheaArray<double> & values);
 bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius,
                            TheaArray<double> & values);
 bool computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
-                       int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+                       int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
-                        Matrix<double, MatrixLayout::ROW_MAJOR> & values);
+                        MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
 main(int argc, char * argv[])
@@ -208,7 +206,7 @@ main(int argc, char * argv[])
     {
       line_num++;
 
-      boost::trim(line);
+      line = trimWhitespace(line);
       if (line.empty())
         continue;
 
@@ -239,7 +237,7 @@ main(int argc, char * argv[])
 
   for (size_t i = 0; i < pts.size(); ++i)
   {
-    Vector3 cp(0);
+    Vector3 cp = Vector3::Zero();
     long elem = kdtree.closestElement<MetricL2>(pts[i], -1, NULL, &cp);
     if (elem < 0)
     {
@@ -352,15 +350,15 @@ main(int argc, char * argv[])
         }
       }
 
-      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is a histogram
+      MatrixX<double, MatrixLayout::ROW_MAJOR> values;  // each row is a histogram
       if (!computeLocalDistanceHistograms(mg, positions, num_samples, num_bins, dist_type, max_distance, reduction_ratio,
                                           values))
       {
         return -1;
       }
 
-      alwaysAssertM(values.numRows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
-      alwaysAssertM(positions.empty() || values.numColumns() == num_bins,
+      alwaysAssertM(values.rows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
+      alwaysAssertM(positions.empty() || values.cols() == num_bins,
                     "Number of distance histogram bins doesn't match input parameter");
 
       for (size_t j = 0; j < positions.size(); ++j)
@@ -495,14 +493,14 @@ main(int argc, char * argv[])
         num_samples = -1;
       }
 
-      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is the spin image at a query point
+      MatrixX<double, MatrixLayout::ROW_MAJOR> values;  // each row is the spin image at a query point
       if (!computeSpinImages(mg, positions, num_samples, num_radial_bins, num_height_bins, values))
       {
         return -1;
       }
 
-      alwaysAssertM(values.numRows() == (long)positions.size(), "Number of spin images doesn't match number of points");
-      alwaysAssertM(positions.empty() || values.numColumns() == num_radial_bins * num_height_bins,
+      alwaysAssertM(values.rows() == (long)positions.size(), "Number of spin images doesn't match number of points");
+      alwaysAssertM(positions.empty() || values.cols() == num_radial_bins * num_height_bins,
                     "Number of spin image bins doesn't match input parameter");
 
       long num_features = num_radial_bins * num_height_bins;
@@ -538,18 +536,18 @@ main(int argc, char * argv[])
         }
       }
 
-      Matrix<double, MatrixLayout::ROW_MAJOR> values;  // each row is the feature vector of a query point
+      MatrixX<double, MatrixLayout::ROW_MAJOR> values;  // each row is the feature vector of a query point
       if (!computeRandomWalks(mg, positions, num_samples, num_steps, num_walks, values))
       {
         return -1;
       }
 
-      alwaysAssertM(values.numRows() == (long)positions.size(),
+      alwaysAssertM(values.rows() == (long)positions.size(),
                     "Number of random walk descriptors doesn't match number of points");
-      alwaysAssertM(positions.empty() || values.numColumns() == 3 * num_steps,
+      alwaysAssertM(positions.empty() || values.cols() == 3 * num_steps,
                     "Length of random walk descriptor != 3 * number of steps");
 
-      long num_features = values.numColumns();
+      long num_features = values.cols();
       for (size_t j = 0; j < positions.size(); ++j)
       {
         double const * row_start = &values((long)j, 0);
@@ -680,7 +678,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
     case MeshScaleType::BBOX:
     {
       mg.updateBounds();
-      return mg.getBounds().getExtent().length();
+      return mg.getBounds().getExtent().norm();
     }
 
     case MeshScaleType::AVG_DIST:
@@ -696,7 +694,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 
       double sum_dists = 0;
       for (size_t i = 0; i < samples.size(); ++i)
-        sum_dists += (samples[i] - centroid).length();
+        sum_dists += (samples[i] - centroid).norm();
 
       return (3.0 * sum_dists) / samples.size();  // 3 instead of 2 since the avg is in general smaller than the max
     }
@@ -781,7 +779,7 @@ computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, lon
 bool
 computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
                                DistanceType dist_type, double max_distance, double reduction_ratio,
-                               Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+                               MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histograms";
 
@@ -870,7 +868,7 @@ computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long 
 
 bool
 computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
-                  int num_height_bins, Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+                  int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing spin images";
 
@@ -879,7 +877,7 @@ computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_
 
   MeshFeatures::Local::SpinImage<> spin_image(mg, num_samples, (Real)mesh_scale);
 
-  Matrix<double> f;
+  MatrixX<double> f;
   for (size_t i = 0; i < positions.size(); ++i)
   {
     spin_image.compute(positions[i], num_radial_bins, num_height_bins, f);
@@ -896,7 +894,7 @@ computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_
 
 bool
 computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
-                   Matrix<double, MatrixLayout::ROW_MAJOR> & values)
+                   MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing random walks";
 

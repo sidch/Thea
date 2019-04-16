@@ -1,8 +1,7 @@
 #include "../Common.hpp"
 #include "../Algorithms/JointBoost.hpp"
-#include <boost/algorithm/string.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include "../StringAlg.hpp"
+#include "../UnorderedMap.hpp"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -46,7 +45,7 @@ main(int argc, char * argv[])
 class ExampleSet : public JointBoost::TrainingData
 {
   public:
-    typedef boost::shared_ptr<ExampleSet> Ptr;
+    typedef std::shared_ptr<ExampleSet> Ptr;
 
     ExampleSet(long nfeatures) : features((long)0, nfeatures) {}
 
@@ -58,28 +57,28 @@ class ExampleSet : public JointBoost::TrainingData
 
     void addExample(double const * example_features, long example_class)
     {
-      features.appendRow();
-      features.setRow(features.numRows() - 1, example_features);
+      features.conservativeResize(features.rows() + 1, Eigen::NoChange);
+      features.row(features.rows() - 1) = Eigen::Map<RowVectorXd const>(example_features, features.cols());
       classes.push_back(example_class);
     }
 
-    long numExamples() const { return features.numRows(); }
-    long numFeatures() const { return features.numColumns(); }
+    long numExamples() const { return features.rows(); }
+    long numFeatures() const { return features.cols(); }
 
-    void getFeature(long feature_index, vector<double> & values) const
+    void getFeature(long feature_index, TheaArray<double> & values) const
     {
-      values.resize((size_t)numExamples());
-      features.getColumn(feature_index, &values[0]);
+      values.resize((size_t)features.rows());
+      Eigen::Map<VectorXd>(&values[0], features.rows()) = features.col(feature_index);
     }
 
-    void getClasses(vector<long> & classes_) const
+    void getClasses(TheaArray<long> & classes_) const
     {
       classes_ = classes;
     }
 
     void getExampleFeatures(long example, double * f) const
     {
-      features.getRow(example, f);
+      Eigen::Map<RowVectorXd>(f, features.cols()) = features.row(example);
     }
 
     long getExampleClass(long example) const
@@ -88,7 +87,7 @@ class ExampleSet : public JointBoost::TrainingData
     }
 
   private:
-    Matrix<double> features;
+    MatrixX<double, MatrixLayout::ROW_MAJOR> features;
     vector<long> classes;
 };
 
@@ -162,7 +161,7 @@ testJointBoostFile(string const & path)
   ExampleSet::Ptr training_subset;
   ExampleSet::Ptr holdout_subset;
 
-  typedef boost::unordered_map<string, long> LabelIndexMap;
+  typedef TheaUnorderedMap<string, long> LabelIndexMap;
   LabelIndexMap labels;
 
   vector<double> features;
@@ -172,12 +171,12 @@ testJointBoostFile(string const & path)
   string line;
   while (getline(in, line))
   {
-    boost::trim(line);
+    line = trimWhitespace(line);
     if (line.empty())
       continue;
 
     vector<string> fields;
-    boost::split(fields, line, boost::is_any_of(",\t"), boost::token_compress_on);
+    stringSplit(line, ",\t", fields, /* skip_empty_fields = */ false);
 
     if (fields.size() < 2)
     {

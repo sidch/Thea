@@ -62,7 +62,7 @@ class /* THEA_API */ AffineTransformN<2, T> : public Internal::AffineTransformNB
     AffineTransformN() {}
 
     /** Construct from a linear transform, followed by a translation. */
-    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::zero()) : BaseT(linear_, translation_) {}
+    AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
 
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
@@ -72,12 +72,12 @@ class /* THEA_API */ AffineTransformN<2, T> : public Internal::AffineTransformNB
      * of the 2x3 matrix specifying the transform.
      */
     AffineTransformN(VectorT const & x, VectorT const & y, VectorT const & translation_)
-    : BaseT(MatrixT(x[0], y[0], x[1], y[1]), translation_) {}
+    : BaseT((MatrixT() << x, y).finished(), translation_) {}
 
     /** Construct from a 2x3 array. */
     AffineTransformN(T const &  m00, T const &  m01, T const &  m02,
                      T const &  m10, T const &  m11, T const &  m12)
-    : BaseT(MatrixT(m00, m01, m10, m11), VectorT(m02, m12)) {}
+    : BaseT((MatrixT() << m00, m01, m10, m11).finished(), VectorT(m02, m12)) {}
 
     using BaseT::scaling;
 
@@ -98,7 +98,7 @@ class /* THEA_API */ AffineTransformN<2, T> : public Internal::AffineTransformNB
     /** Construct a rotation specified by an angle (in radians) around the origin. */
     static AffineTransformN rotation(Real radians)
     {
-      return AffineTransformN(MatrixT::rotation(radians), VectorT::zero());
+      return AffineTransformN(MatrixT::rotation(radians), VectorT::Zero());
     }
 
 }; // class AffineTransformN<2, T>

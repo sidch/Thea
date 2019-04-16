@@ -7,7 +7,7 @@
 // For full licensing information including reproduction of these external
 // licenses, see the file LICENSE.txt provided in the documentation.
 //
-// Copyright (C) 2011, Siddhartha Chaudhuri/Stanford University
+// Copyright (C) 2019, Siddhartha Chaudhuri
 //
 // All rights reserved.
 //
@@ -42,211 +42,116 @@
 #ifndef __Thea_MatrixWrapper_hpp__
 #define __Thea_MatrixWrapper_hpp__
 
-#include "Common.hpp"
-#include "CompressedSparseMatrix.hpp"
-#include "Matrix.hpp"
-#include "MatrixFormat.hpp"
+#include "AbstractDenseMatrix.hpp"
+#include "MatVec.hpp"
+#include <type_traits>
 
 namespace Thea {
 
-/** A wrapper for storing a single dense or sparse matrix, in row or column-major form. */
-template <typename T, typename Index2DT = int, typename Index1DT = long>
-class MatrixWrapper : public virtual BasicMatrix<T>
+/**
+ * Wrapper for a dense 2D matrix, implementing a pure virtual interface for passing across shared library boundaries. MatrixT
+ * must be an instance of the Eigen::Matrix template.
+ */
+template <typename MatrixT>
+class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT::value_type>
 {
+  private:
+    static_assert(std::is_base_of<Eigen::MatrixBase<MatrixT>, MatrixT>::value,
+                  "MatrixWrapper: Wrapped matrix must be Eigen::Matrix");
+
+    typedef AbstractDenseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type
+
   public:
-    THEA_DEF_POINTER_TYPES(MatrixWrapper, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(MatrixWrapper, std::shared_ptr, std::weak_ptr)
 
-    typedef Index2DT  Index2D;  ///< The type of 2D element indices for sparse matrices.
-    typedef Index1DT  Index1D;  ///< The type of 1D (flat) element indices for sparse matrices.
+    typedef MatrixT WrappedMatrix;  ///< The wrapped matrix type.
+    using typename BaseT::Value;
+    using typename BaseT::value_type;
 
-    typedef Matrix<T, MatrixLayout::ROW_MAJOR>           DenseRowMatrix;      ///< A matrix in dense row-major form.
-    typedef Matrix<T, MatrixLayout::COLUMN_MAJOR>        DenseColumnMatrix;   ///< A matrix in dense column-major form.
-    typedef CompressedRowMatrix<T, Index2D, Index1D>     SparseRowMatrix;     ///< A matrix in sparse row-major form.
-    typedef CompressedColumnMatrix<T, Index2D, Index1D>  SparseColumnMatrix;  ///< A matrix in sparse column-major form.
-
-    /** Default constructor. */
-    MatrixWrapper() : format(MatrixFormat::UNKNOWN) {}
-
-    /** Constructor. Stores a copy of the given matrix in the specified format. */
-    template <typename MatrixT> MatrixWrapper(MatrixT const & matrix, MatrixFormat dst_format)
+    /**
+     * Constructor. The passed matrix must persist as long as this class is being actively used, since it is accessed via a
+     * pointer.
+     */
+    MatrixWrapper(MatrixT * mat)
+    : m(mat)
     {
-      setMatrix(matrix, dst_format);
+      alwaysAssertM(mat, "MatrixWrapper: Must be initialized with an existing matrix");
     }
 
-    /** Copy constructor. Does a deep copy of the wrapped matrix. */
-    MatrixWrapper(MatrixWrapper const & src) { operator=(src); }
+    /** Destructor. */
+    ~MatrixWrapper() {}
 
-    /** Templated copy constructor. Does a deep copy of the wrapped matrix. */
-    template <typename U, typename I2, typename I1> MatrixWrapper(MatrixWrapper<U, I2, I1> const & src)
+    /** Get the wrapped matrix. */
+    MatrixT const & getMatrix() const { return *m; }
+
+    /** Get the wrapped matrix. */
+    MatrixT & getMatrix() { return *m; }
+
+    // Functions from AbstractMatrix
+    long rows() const { return m->rows(); }
+    long cols() const { return m->cols(); }
+    void setZero() { m->setZero(); }
+
+    bool isResizable() const
     {
-      operator=(src);
+      return MatrixT::RowsAtCompileTime == Eigen::Dynamic || MatrixT::ColsAtCompileTime == Eigen::Dynamic;
     }
 
-    /** Assignment operator. Does a deep copy of the wrapped matrix. */
-    MatrixWrapper & operator=(MatrixWrapper const & src)
+    bool resize(long nrows, long ncols)
     {
-      MatrixFormat src_format = src.getFormat();
-      switch (src_format)
+      try  // no exceptions should cross shared library boundaries
       {
-        case MatrixFormat::DENSE_ROW_MAJOR:      setMatrix(src.getDenseRowMatrix(), src_format);     break;
-        case MatrixFormat::DENSE_COLUMN_MAJOR:   setMatrix(src.getDenseColumnMatrix(), src_format);  break;
-        case MatrixFormat::SPARSE_ROW_MAJOR:     setMatrix(src.getSparseRowMatrix(), src_format);    break;
-        case MatrixFormat::SPARSE_COLUMN_MAJOR:  setMatrix(src.getSparseColumnMatrix(), src_format); break;
-        default: {}
+        m->resize(nrows, ncols);
+        return (m->rows() == nrows && m->cols() == ncols);  // check if it failed without throwing an exception
       }
-
-      return *this;
+      THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
     }
 
-    /** Templated assignment operator. Does a deep copy of the wrapped matrix. */
-    template <typename U, typename I2, typename I1> MatrixWrapper & operator=(MatrixWrapper<U, I2, I1> const & src)
+    // Functions from AbstractAddressableMatrix
+    Value const & at(long row, long col) const { return (*m)(row, col); }
+    Value & at(long row, long col) { return (*m)(row, col); }
+
+    // Functions from AbstractDenseMatrix
+    bool isRowMajor() const { return MatrixT::Flags & Eigen::RowMajorBit; }
+    bool isColumnMajor() const { return !isRowMajor(); }
+    Value const * data() const { return m->data(); }
+    Value * data() { return m->data(); }
+    void fill(Value const & value) { m->fill(value); }
+
+    void getRow(long row, Value * values) const
     {
-      MatrixFormat src_format = src.getFormat();
-      switch (src_format)
-      {
-        case MatrixFormat::DENSE_ROW_MAJOR:      setMatrix(src.getDenseRowMatrix(), src_format);     break;
-        case MatrixFormat::DENSE_COLUMN_MAJOR:   setMatrix(src.getDenseColumnMatrix(), src_format);  break;
-        case MatrixFormat::SPARSE_ROW_MAJOR:     setMatrix(src.getSparseRowMatrix(), src_format);    break;
-        case MatrixFormat::SPARSE_COLUMN_MAJOR:  setMatrix(src.getSparseColumnMatrix(), src_format); break;
-        default: {}
-      }
-
-      return *this;
+      for (long c = 0, ncols = m->cols(); c < ncols; ++c)
+        values[c] = (*m)(row, c);
     }
 
-    /** Store a copy of the given matrix in the specified format. */
-    template <typename MatrixT> void setMatrix(MatrixT const & matrix, MatrixFormat dst_format)
+    void setRow(long row, Value const * values)
     {
-      dense_row_matrix.reset();
-      dense_column_matrix.reset();
-      sparse_column_matrix.reset();
-      sparse_row_matrix.reset();
-
-      // Choose a dense row-major storage format by default
-      if (dst_format == MatrixFormat::UNKNOWN)
-        format = MatrixFormat::DENSE_ROW_MAJOR;
-      else
-        format = dst_format;
-
-      switch (dst_format)
-      {
-        case MatrixFormat::DENSE_ROW_MAJOR:
-          dense_row_matrix = typename DenseRowMatrix::Ptr(new DenseRowMatrix(matrix)); break;
-
-        case MatrixFormat::DENSE_COLUMN_MAJOR:
-          dense_column_matrix = typename DenseColumnMatrix::Ptr(new DenseColumnMatrix(matrix)); break;
-
-        case MatrixFormat::SPARSE_ROW_MAJOR:
-          sparse_row_matrix = typename SparseRowMatrix::Ptr(new SparseRowMatrix(matrix)); break;
-
-        case MatrixFormat::SPARSE_COLUMN_MAJOR:
-          sparse_column_matrix = typename SparseColumnMatrix::Ptr(new SparseColumnMatrix(matrix)); break;
-
-        default: {}
-      }
+      for (long c = 0, ncols = m->cols(); c < ncols; ++c)
+        (*m)(row, c) = values[c];
     }
 
-    /** Get the format of the wrapped matrix. */
-    MatrixFormat getFormat() const { return format; }
-
-    long numRows() const
+    void getColumn(long col, Value * values) const
     {
-      switch (format)
-      {
-        case MatrixFormat::DENSE_ROW_MAJOR:      return dense_row_matrix->numRows();
-        case MatrixFormat::DENSE_COLUMN_MAJOR:   return dense_column_matrix->numRows();
-        case MatrixFormat::SPARSE_ROW_MAJOR:     return sparse_row_matrix->numRows();
-        case MatrixFormat::SPARSE_COLUMN_MAJOR:  return sparse_column_matrix->numRows();
-        default: throw Error("MatrixWrapper: Can't get number of rows of unknown matrix type");
-      }
+      for (long r = 0, nrows = m->rows(); r < nrows; ++r)
+        values[r] = (*m)(r, col);
     }
 
-    long numColumns() const
+    void setColumn(long col, Value const * values)
     {
-      switch (format)
-      {
-        case MatrixFormat::DENSE_ROW_MAJOR:     return dense_row_matrix->numColumns();
-        case MatrixFormat::DENSE_COLUMN_MAJOR:  return dense_column_matrix->numColumns();
-        case MatrixFormat::SPARSE_ROW_MAJOR:    return sparse_row_matrix->numColumns();
-        case MatrixFormat::SPARSE_COLUMN_MAJOR: return sparse_column_matrix->numColumns();
-        default: throw Error("MatrixWrapper: Can't get number of columns of unknown matrix type");
-      }
+      for (long r = 0, nrows = m->rows(); r < nrows; ++r)
+        (*m)(r, col) = values[r];
     }
 
-    void makeZero()
-    {
-      switch (format)
-      {
-        case MatrixFormat::DENSE_ROW_MAJOR:     dense_row_matrix->makeZero(); return;
-        case MatrixFormat::DENSE_COLUMN_MAJOR:  dense_column_matrix->makeZero(); return;
-        case MatrixFormat::SPARSE_ROW_MAJOR:    sparse_row_matrix->makeZero(); return;
-        case MatrixFormat::SPARSE_COLUMN_MAJOR: sparse_column_matrix->makeZero(); return;
-        default: throw Error("MatrixWrapper: Can't zero unknown matrix type");
-      }
-    }
-
-    /** Get the wrapped dense row-major matrix. Call only if getFormat() returns MatrixFormat::DENSE_ROW_MAJOR. */
-    DenseRowMatrix const & getDenseRowMatrix() const
-    {
-      debugAssertM(format == MatrixFormat::DENSE_ROW_MAJOR, "MatrixWrapper: Wrapped matrix is not dense row-major");
-      return *dense_row_matrix;
-    }
-
-    /** Get the wrapped dense row-major matrix. Call only if getFormat() returns MatrixFormat::DENSE_ROW_MAJOR. */
-    DenseRowMatrix & getDenseRowMatrix()
-    {
-      debugAssertM(format == MatrixFormat::DENSE_ROW_MAJOR, "MatrixWrapper: Wrapped matrix is not dense row-major");
-      return *dense_row_matrix;
-    }
-
-    /** Get the wrapped dense column-major matrix. Call only if getFormat() returns MatrixFormat::DENSE_COLUMN_MAJOR. */
-    DenseColumnMatrix const & getDenseColumnMatrix() const
-    {
-      debugAssertM(format == MatrixFormat::DENSE_COLUMN_MAJOR, "MatrixWrapper: Wrapped matrix is not dense column-major");
-      return *dense_column_matrix;
-    }
-
-    /** Get the wrapped dense column-major matrix. Call only if getFormat() returns MatrixFormat::DENSE_COLUMN_MAJOR. */
-    DenseColumnMatrix & getDenseColumnMatrix()
-    {
-      debugAssertM(format == MatrixFormat::DENSE_COLUMN_MAJOR, "MatrixWrapper: Wrapped matrix is not dense column-major");
-      return *dense_column_matrix;
-    }
-
-    /** Get the wrapped sparse row-major matrix. Call only if getFormat() returns MatrixFormat::SPARSE_ROW_MAJOR. */
-    SparseRowMatrix const & getSparseRowMatrix() const
-    {
-      debugAssertM(format == MatrixFormat::SPARSE_ROW_MAJOR, "MatrixWrapper: Wrapped matrix is not sparse row-major");
-      return *sparse_row_matrix;
-    }
-
-    /** Get the wrapped sparse row-major matrix. Call only if getFormat() returns MatrixFormat::SPARSE_ROW_MAJOR. */
-    SparseRowMatrix & getSparseRowMatrix()
-    {
-      debugAssertM(format == MatrixFormat::SPARSE_ROW_MAJOR, "MatrixWrapper: Wrapped matrix is not sparse row-major");
-      return *sparse_row_matrix;
-    }
-
-    /** Get the wrapped sparse column-major matrix. Call only if getFormat() returns MatrixFormat::SPARSE_COLUMN_MAJOR. */
-    SparseColumnMatrix const & getSparseColumnMatrix() const
-    {
-      debugAssertM(format == MatrixFormat::SPARSE_COLUMN_MAJOR, "MatrixWrapper: Wrapped matrix is not sparse column-major");
-      return *sparse_column_matrix;
-    }
-
-    /** Get the wrapped sparse column-major matrix. Call only if getFormat() returns MatrixFormat::SPARSE_COLUMN_MAJOR. */
-    SparseColumnMatrix & getSparseColumnMatrix()
-    {
-      debugAssertM(format == MatrixFormat::SPARSE_COLUMN_MAJOR, "MatrixWrapper: Wrapped matrix is not sparse column-major");
-      return *sparse_column_matrix;
-    }
+    // Type-casting functions
+    AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
+    AbstractAddressableMatrix<Value> * asAddressable() { return this; }
+    AbstractSparseMatrix<Value> const * asSparse() const { return NULL; }
+    AbstractSparseMatrix<Value> * asSparse() { return NULL; }
+    AbstractDenseMatrix<Value> const * asDense() const { return this; }
+    AbstractDenseMatrix<Value> * asDense() { return this; }
 
   private:
-    MatrixFormat format;
-    typename DenseColumnMatrix::Ptr   dense_column_matrix;
-    typename DenseRowMatrix::Ptr      dense_row_matrix;
-    typename SparseColumnMatrix::Ptr  sparse_column_matrix;
-    typename SparseRowMatrix::Ptr     sparse_row_matrix;
+    MatrixT * m;  ///< The wrapped matrix.
 
 }; // class MatrixWrapper
 

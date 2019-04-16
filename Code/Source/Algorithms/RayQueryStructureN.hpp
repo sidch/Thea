@@ -52,7 +52,7 @@ namespace Algorithms {
  * A description of the intersection point of a ray with a structure. Specifies the hit time, the normal at the intersection
  * point, and the index of the intersected element.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RayStructureIntersectionN : public RayIntersectionN<N, T>
 {
   private:
@@ -83,11 +83,11 @@ class /* THEA_API */ RayStructureIntersectionN : public RayIntersectionN<N, T>
  * Interface for a structure that supports ray intersection queries in N-space. None of the functions are virtual, this just
  * defines a concept subclasses must implement.
  */
-template <long N, typename T = Real>
+template <int N, typename T = Real>
 class /* THEA_API */ RayQueryStructureN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayQueryStructureN, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(RayQueryStructureN, std::shared_ptr, std::weak_ptr)
 
     typedef RayN<N, T> RayT;
     typedef RayStructureIntersectionN<N, T> RayStructureIntersectionT;

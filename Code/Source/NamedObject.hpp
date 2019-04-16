@@ -73,10 +73,10 @@ class THEA_API AbstractNamedObject
  * This also means that a derived class in an inheritance hierarchy involving NamedObject must explicitly call the NamedObject
  * constructor if it wants to initialize the name.
  */
-class THEA_API NamedObject : public AbstractNamedObject
+class THEA_API NamedObject : public virtual AbstractNamedObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(NamedObject, shared_ptr, weak_ptr)
+    THEA_DEF_POINTER_TYPES(NamedObject, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
     virtual ~NamedObject() = 0;
@@ -113,7 +113,6 @@ inline
 NamedObject::~NamedObject()
 {
   // Pure virtual destructor should have a body
-  //
   // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
 }
 
