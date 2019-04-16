@@ -26,7 +26,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ## Installation
 
-*Thea* is written in standards-compliant C++98, and should compile with any recent compiler on Mac, Linux and Windows. It uses [CMake](https:///cmake.org) as a cross-platform buildsystem. However, I do not normally work on Windows, and do not currently provide build instructions for this platform. I have successfully done Windows builds in the past and there is no reason why it should not work with a bit of effort getting the dependencies installed. I will try to add full Windows instructions in the future, time permitting.
+*Thea* is written in standards-compliant C++11, and should compile with any recent compiler on Mac, Linux and Windows. It uses [CMake](https:///cmake.org) as a cross-platform buildsystem. However, I do not normally work on Windows, and do not currently provide build instructions for this platform. I have successfully done Windows builds in the past and there is no reason why it should not work with a bit of effort getting the dependencies installed. I will try to add full Windows instructions in the future, time permitting.
 
 ### Installing the dependencies
 
@@ -90,7 +90,7 @@ Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs 
 
 The usual command line to link your program with the library is:
 ```
-c++ -Wall -g2 -O2 -fno-strict-aliasing \
+c++ -std=c++11 -Wall -g2 -O2 -fno-strict-aliasing \
     -I"$prefix/include" \
     <source-files> \
     -L"$prefix/lib" -lThea \
