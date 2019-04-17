@@ -365,7 +365,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     {
       // From Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
 
-      Vector3 c1, c2;
+      Vector3 c1(0, 0, 0), c2(0, 0, 0);  // squash an uninitialized variable warning
       Real min_sqdist = std::numeric_limits<Real>::max();
 
       // First test for intersection

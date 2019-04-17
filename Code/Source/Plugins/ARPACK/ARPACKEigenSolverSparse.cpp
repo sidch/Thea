@@ -109,7 +109,8 @@ ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<double> const & m,
     alwaysAssertM(nnz == pcol[pcol.size() - 1],
                   std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
 
-    ARluNonSymMatrix<double, double> arm(m.rows(), nnz, m.getValues(), (irow.empty() ? NULL : &irow[0]), &pcol[0]);
+    ARluNonSymMatrix<double, double> arm(m.rows(), nnz, const_cast<double *>(m.getValues()),
+                                         (irow.empty() ? NULL : &irow[0]), &pcol[0]);
 
     // Setup the problem
     std::shared_ptr< ARluNonSymStdEig<double> > eig =
@@ -128,7 +129,7 @@ ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<double> const & m,
     for (size_t i = 0; i < nconv; ++i)
     {
       eigenvalues[0][i] = eig->EigenvalueReal((int)i);
-      eigenvalues[1][i] = eig->EigenvalueImag((int)i));
+      eigenvalues[1][i] = eig->EigenvalueImag((int)i);
 
       eigenvectors[0][i].resize(ndims); eigenvectors[1][i].resize(ndims);
       for (long j = 0; j < ndims; ++j)

@@ -106,11 +106,12 @@ namespace Thea {
 //  *
 //  * From Ralf Holly, http://www.drdobbs.com/compile-time-assertions/184401873
 //  */
-// #define THEA_STATIC_ASSERT(e) \
-// do \
-// { \
-//   enum { assert_static__ = 1/((int)(e)) }; \
-// } while (0)
+/* #define THEA_STATIC_ASSERT(e) \
+ * do \
+ * { \
+ * enum { assert_static__ = 1/((int)(e)) }; \
+ * } while (0)
+ */
 
 /** Get the class of an object. */
 template <typename T>

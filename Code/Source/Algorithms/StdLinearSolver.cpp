@@ -169,10 +169,6 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               }
 
               default:
-                // Try an iterative solver
-                if (solveIterative(a, b))  // returns true if a matching solver was found
-                  break;
-
                 throw Error("Unsupported method for unconstrained dense least squares problems");
             }
 

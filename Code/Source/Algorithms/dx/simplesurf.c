@@ -883,7 +883,7 @@ error:
   
   _dxfFreeHashTable(e_table);
 
-  if (*new_edges) DXFree((Pointer)(*new_edges)); *new_edges = NULL;
+  if (*new_edges) { DXFree((Pointer)(*new_edges)); *new_edges = NULL; }
 	
   return 0;
 }
@@ -1095,8 +1095,8 @@ int _dxfEliminateStandaloneVertices(int nV, float *v, int *new_nV, float **new_v
 
 error:
 
-  if (*new_v_exported)         DXFree((Pointer) (*new_v_exported));    *new_v_exported    = NULL;
-  if (*vlut)                   DXFree((Pointer) (*vlut));              *vlut              = NULL;
+  if (*new_v_exported)         { DXFree((Pointer) (*new_v_exported));    *new_v_exported    = NULL; }
+  if (*vlut)                   { DXFree((Pointer) (*vlut));              *vlut              = NULL; }
   if (valence)                 DXFree((Pointer) valence);
   
   if (old_to_new_vertex_index) DXFree((Pointer) old_to_new_vertex_index);

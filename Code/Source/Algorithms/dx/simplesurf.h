@@ -1409,6 +1409,7 @@ float _dxfFastCompactness3DTriangle2(Vertex *tri, float *triangle_area);
   the_origin = (shortest_edge + 1) %3;                                         \
                                                                                \
   (origin) = the_origin;                                                       \
+  (void)(origin);  /* squash unused variable warning */                        \
                                                                                \
   /* II- assign the smallest edge to one of the vectors x1 and x2 */           \
   {                                                                            \
