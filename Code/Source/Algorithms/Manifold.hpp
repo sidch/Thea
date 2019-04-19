@@ -62,10 +62,9 @@ class THEA_API Manifold
      * Polygons to Manifold Surfaces", IEEE Trans. Vis. Comp. Graph., 7(2), pp. 136--151, 2001. Currently only the "cutting"
      * part is implemented (via IBM's OpenDX source code).
      */
-    static bool makeOrientedManifold(TheaArray<Vector3> const & in_vertices,
-                                     TheaArray< TheaArray<long> > const & in_faces,
-                                     TheaArray<Vector3> & out_vertices, TheaArray< TheaArray<long> > & out_faces,
-                                     TheaArray<long> & vertex_map, TheaArray<long> & face_map);
+    static bool makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<long> > const & in_faces,
+                                     Array<Vector3> & out_vertices, Array< Array<long> > & out_faces,
+                                     Array<long> & vertex_map, Array<long> & face_map);
 
     /**
      * Convert a non-manifold mesh to manifold form. Each vertex with a non-manifold neighbourhood is split up into copies with
@@ -84,7 +83,7 @@ class THEA_API Manifold
      * @return True if some vertices needed to be duplicated, false if no changes were required.
      */
     template <typename FaceT>
-    static bool makeManifold(TheaArray<FaceT> & faces, long num_vertices, TheaArray<long> & vertex_map)
+    static bool makeManifold(Array<FaceT> & faces, long num_vertices, Array<long> & vertex_map)
     {
       if (num_vertices <= 0 || faces.size() <= 0)
         return false;
@@ -98,7 +97,7 @@ class THEA_API Manifold
         vertex_map[i] = (long)i;
 
       // Associate each vertex with its incident faces
-      TheaArray< TheaArray<size_t> > v2f(nv);
+      Array< Array<size_t> > v2f(nv);
       for (size_t i = 0; i < nf; ++i)
         for (typename FaceT::const_iterator vi = faces[i].begin(); vi != faces[i].end(); ++vi)
         {
@@ -120,7 +119,7 @@ class THEA_API Manifold
 
         // Set of edges (represented by their further vertices) incident at this vertex that have already been observed to be
         // shared by two faces
-        TheaSet<size_t> shared_edges;
+        Set<size_t> shared_edges;
 
         // Group the faces into maximal edge-connected components
         typedef UnionFind<size_t> UnionFind;
@@ -143,7 +142,7 @@ class THEA_API Manifold
             if (!created_new_vertex) // create a copy of the vertex
             {
               copy_index++;
-              v2f.push_back(TheaArray<size_t>());
+              v2f.push_back(Array<size_t>());
               vertex_map.push_back(vertex_map[i]);
               vertex_stack.push(copy_index);
 
@@ -165,7 +164,7 @@ class THEA_API Manifold
         // If we made a copy of this vertex, we can get rid of faces reassigned to the copy
         if (created_new_vertex)
         {
-          TheaArray<size_t> nbd;
+          Array<size_t> nbd;
           for (size_t j = 0; j < v2f[i].size(); ++j)
             if (uf.sameSet(0, j))
               nbd.push_back(v2f[i][j]);
@@ -229,7 +228,7 @@ class THEA_API Manifold
      */
     template <typename FaceT>
     static bool shareEdgeAtVertex(FaceT const & face1, FaceT const & face2, size_t vertex,
-                                  TheaSet<size_t> & shared_edges)
+                                  Set<size_t> & shared_edges)
     {
       size_t u1, u2, w1, w2;
       if (!getNeighbouringVertices(face1, vertex, u1, u2))

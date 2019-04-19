@@ -47,11 +47,19 @@
 
 namespace Thea {
 
-/** Hashtable-based set of objects. */
-#define TheaUnorderedSet std::unordered_set
+/** Hash table-based set of objects. */
+template < typename T,
+           typename Hash = std::hash<T>,
+           typename Pred = std::equal_to<T>,
+           typename Alloc = std::allocator<T>
+         > using UnorderedSet = std::unordered_set<T, Hash, Pred, Alloc>;
 
-/** Hashtable-based set of objects, allowing multiple copies of the same. */
-#define TheaUnorderedMultiSet std::unordered_multiset
+/** Hash table-based set of objects, with possible duplication. */
+template < typename T,
+           typename Hash = std::hash<T>,
+           typename Pred = std::equal_to<T>,
+           typename Alloc = std::allocator<T>
+         > using UnorderedMultiSet = std::unordered_multiset<T, Hash, Pred, Alloc>;
 
 } // namespace Thea
 

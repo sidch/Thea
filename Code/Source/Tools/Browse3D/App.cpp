@@ -110,7 +110,7 @@ App::optsToString() const
 bool
 parseModel(std::string const & str, std::string & path, AffineTransform3 & transform)
 {
-  TheaArray<std::string> fields;
+  Array<std::string> fields;
   stringSplit(str, '|', fields);
   if (fields.empty() || fields.size() > 2)
   {
@@ -375,7 +375,7 @@ void
 App::loadPlugins()
 {
   // Try to load the OpenGL plugin
-  TheaArray<std::string> plugin_dirs; plugin_dirs.push_back(opts.plugin_dir);
+  Array<std::string> plugin_dirs; plugin_dirs.push_back(opts.plugin_dir);
   std::string plugin_path = Application::getPluginPath("TheaPluginGL", &plugin_dirs);
   if (plugin_path.empty())
     throw Error("Could not locate OpenGL plugin 'TheaPluginGL'");

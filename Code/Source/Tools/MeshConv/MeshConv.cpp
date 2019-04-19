@@ -21,13 +21,13 @@ enum Axis { X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2 };
 bool
 splitMesh(MG::Ptr mg)
 {
-  typedef TheaUnorderedMap<Mesh::Vertex const *, Mesh::Vertex *> VertexMap;
+  typedef UnorderedMap<Mesh::Vertex const *, Mesh::Vertex *> VertexMap;
 
-  TheaArray<Mesh::Ptr> new_meshes;
+  Array<Mesh::Ptr> new_meshes;
   bool has_new = false;
   for (MG::MeshIterator mi = mg->meshesBegin(); mi != mg->meshesEnd(); ++mi)
   {
-    TheaArray< TheaArray<Mesh::Face *> > cc;
+    Array< Array<Mesh::Face *> > cc;
     ConnectedComponents::findEdgeConnected(**mi, cc);
 
     if (cc.size() <= 1)
@@ -43,7 +43,7 @@ splitMesh(MG::Ptr mg)
     {
       Mesh::Ptr m(new Mesh(format("%s/%ld", (*mi)->getName(), (long)j)));
       VertexMap vmap;
-      TheaArray<Mesh::Vertex *> new_face_vertices;
+      Array<Mesh::Vertex *> new_face_vertices;
       Mesh::Vertex * new_vertex = NULL;
 
       for (size_t k = 0; k < cc[j].size(); ++k)
@@ -148,7 +148,7 @@ main(int argc, char * argv[])
   CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
                                                                                 .setIgnoreTexCoords(true)));
   Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
-  TheaArray<MeshCodec<Mesh>::Ptr> read_codecs;
+  Array<MeshCodec<Mesh>::Ptr> read_codecs;
   read_codecs.push_back(codec_obj);
   read_codecs.push_back(codec_3ds);
 

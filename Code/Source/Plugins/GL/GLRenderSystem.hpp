@@ -202,10 +202,10 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     typedef TheaStack<BufferState>      BufferStack;
     typedef TheaStack<GLShader *>       ShaderStack;
 
-    typedef TheaUnorderedSet<GLFramebuffer *>  FramebufferSet;
-    typedef TheaUnorderedSet<GLTexture *>      TextureSet;
-    typedef TheaUnorderedSet<GLShader *>       ShaderSet;
-    typedef TheaUnorderedSet<GLVARArea *>      VARAreaSet;
+    typedef UnorderedSet<GLFramebuffer *>  FramebufferSet;
+    typedef UnorderedSet<GLTexture *>      TextureSet;
+    typedef UnorderedSet<GLShader *>       ShaderSet;
+    typedef UnorderedSet<GLVARArea *>      VARAreaSet;
 
     /**
      * Set the current vertex area to match the specified VAR. The vertex area used within a single

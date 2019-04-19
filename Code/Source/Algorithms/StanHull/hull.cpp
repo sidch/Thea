@@ -75,14 +75,14 @@ T Max(const T &a,const T &b)
 }
 
 template <class T>
-T Min(const T &a,const T &b) 
+T Min(const T &a,const T &b)
 {
 	return (a<b)?a:b;
 }
 
 //----------------------------------
 
-class int3  
+class int3
 {
 public:
 	int x,y,z;
@@ -164,7 +164,7 @@ class float3x3
 	const float3& operator[](int i) const {assert(i>=0&&i<3);return (&x)[i];}
 	float&        operator()(int r, int c)       {assert(r>=0&&r<3&&c>=0&&c<3);return ((&x)[r])[c];}
 	const float&  operator()(int r, int c) const {assert(r>=0&&r<3&&c>=0&&c<3);return ((&x)[r])[c];}
-}; 
+};
 float3x3 Transpose( const float3x3& m );
 float3   operator*( const float3& v  , const float3x3& m  );
 float3   operator*( const float3x3& m , const float3& v   );
@@ -207,7 +207,7 @@ class float4x4
 	float4x4(const float4 &_x, const float4 &_y, const float4 &_z, const float4 &_w):x(_x),y(_y),z(_z),w(_w){}
 	float4x4(float m00, float m01, float m02, float m03,
 						float m10, float m11, float m12, float m13,
-				float m20, float m21, float m22, float m23, 
+				float m20, float m21, float m22, float m23,
 				float m30, float m31, float m32, float m33 )
 			:x(m00,m01,m02,m03),y(m10,m11,m12,m13),z(m20,m21,m22,m23),w(m30,m31,m32,m33){}
 	float&       operator()(int r, int c)       {assert(r>=0&&r<4&&c>=0&&c<4);return ((&x)[r])[c];}
@@ -265,7 +265,7 @@ float		dot( const Quaternion &a, const Quaternion &b );
 float3		operator*( const Quaternion& q, const float3& v );
 float3		operator*( const float3& v, const Quaternion& q );
 Quaternion	slerp( Quaternion a, const Quaternion& b, float interp );
-Quaternion  Interpolate(const Quaternion &q0,const Quaternion &q1,float alpha); 
+Quaternion  Interpolate(const Quaternion &q0,const Quaternion &q1,float alpha);
 Quaternion  RotationArc(float3 v0, float3 v1 );  // returns quat q where q*v0=v1
 Quaternion  Inverse(const Quaternion &q);
 float4x4     MatrixFromQuatVec(const Quaternion &q, const float3 &v);
@@ -333,9 +333,9 @@ float Interpolate(const float &f0,const float &f1,float alpha)
 int     argmin(float a[],int n)
 {
 	int r=0;
-	for(int i=1;i<n;i++) 
+	for(int i=1;i<n;i++)
 		{
-		if(a[i]<a[r]) 
+		if(a[i]<a[r])
 				{
 			r = i;
 		}
@@ -349,9 +349,9 @@ int     argmin(float a[],int n)
 
 
 
-float3 operator+( const float3& a, const float3& b ) 
+float3 operator+( const float3& a, const float3& b )
 {
-	return float3(a.x+b.x, a.y+b.y, a.z+b.z); 
+	return float3(a.x+b.x, a.y+b.y, a.z+b.z);
 }
 
 
@@ -361,37 +361,37 @@ float3 operator-( const float3& a, const float3& b )
 }
 
 
-float3 operator-( const float3& v )                     
+float3 operator-( const float3& v )
 {
 	return float3( -v.x, -v.y, -v.z );
 }
 
 
-float3 operator*( const float3& v, float s )      
+float3 operator*( const float3& v, float s )
 {
 	return float3( v.x*s, v.y*s, v.z*s );
 }
 
 
-float3 operator*( float s, const float3& v )      
+float3 operator*( float s, const float3& v )
 {
-	return float3( v.x*s, v.y*s, v.z*s ); 
+	return float3( v.x*s, v.y*s, v.z*s );
 }
 
 
 float3 operator/( const float3& v, float s )
-{ 
-	return v*(1.0f/s); 
-}
-
-float  dot( const float3& a, const float3& b )    
 {
-	return a.x*b.x + a.y*b.y + a.z*b.z; 
+	return v*(1.0f/s);
 }
 
-float3 cmul( const float3 &v1, const float3 &v2) 
-{ 
-	return float3(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z); 
+float  dot( const float3& a, const float3& b )
+{
+	return a.x*b.x + a.y*b.y + a.z*b.z;
+}
+
+float3 cmul( const float3 &v1, const float3 &v2)
+{
+	return float3(v1.x*v2.x, v1.y*v2.y, v1.z*v2.z);
 }
 
 
@@ -483,7 +483,7 @@ float3 Round(const float3 &a,float precision)
 }
 
 
-float3 Interpolate(const float3 &v0,const float3 &v1,float alpha) 
+float3 Interpolate(const float3 &v0,const float3 &v1,float alpha)
 {
 	return v0*(1-alpha) + v1*alpha;
 }
@@ -503,7 +503,7 @@ float3 VectorMax(const float3 &a,const float3 &b)
 //  - dot product
 //  - cross product
 // Therefore we never declare/implement this function.
-// So we will never see:  float3 operator*(float3 a,float3 b) 
+// So we will never see:  float3 operator*(float3 a,float3 b)
 
 
 
@@ -520,9 +520,9 @@ float3x3 Inverse(const float3x3 &a)
 	float3x3 b;
 	float d=Determinant(a);
 	assert(d!=0);
-	for(int i=0;i<3;i++) 
+	for(int i=0;i<3;i++)
 		{
-		for(int j=0;j<3;j++) 
+		for(int j=0;j<3;j++)
 				{
 			int i1=(i+1)%3;
 			int i2=(i+2)%3;
@@ -545,9 +545,9 @@ float3x3 Transpose( const float3x3& m )
 }
 
 
-float3 operator*(const float3& v , const float3x3 &m ) { 
-	return float3((m.x.x*v.x + m.y.x*v.y + m.z.x*v.z), 
-					(m.x.y*v.x + m.y.y*v.y + m.z.y*v.z), 
+float3 operator*(const float3& v , const float3x3 &m ) {
+	return float3((m.x.x*v.x + m.y.x*v.y + m.z.x*v.z),
+					(m.x.y*v.x + m.y.y*v.y + m.z.y*v.z),
 					(m.x.z*v.x + m.y.z*v.y + m.z.z*v.z));
 }
 float3 operator*(const float3x3 &m,const float3& v  ) {
@@ -556,18 +556,18 @@ float3 operator*(const float3x3 &m,const float3& v  ) {
 
 
 float3x3 operator*( const float3x3& a, const float3x3& b )
-{ 
-	return float3x3(a.x*b,a.y*b,a.z*b); 
+{
+	return float3x3(a.x*b,a.y*b,a.z*b);
 }
 
-float3x3 operator*( const float3x3& a, const float& s )  
-{ 
-	return float3x3(a.x*s, a.y*s ,a.z*s); 
+float3x3 operator*( const float3x3& a, const float& s )
+{
+	return float3x3(a.x*s, a.y*s ,a.z*s);
 }
-float3x3 operator/( const float3x3& a, const float& s )  
-{ 
+float3x3 operator/( const float3x3& a, const float& s )
+{
 	float t=1/s;
-	return float3x3(a.x*t, a.y*t ,a.z*t); 
+	return float3x3(a.x*t, a.y*t ,a.z*t);
 }
 float3x3 operator+( const float3x3& a, const float3x3& b )
 {
@@ -616,9 +616,9 @@ float4   operator*( const float4&   v, const float4x4& m )
 	return v.x*m.x + v.y*m.y + v.z*m.z + v.w*m.w; // yes this actually works
 }
 
-int operator==( const float4 &a, const float4 &b ) 
+int operator==( const float4 &a, const float4 &b )
 {
-	return (a.x==b.x && a.y==b.y && a.z==b.z && a.w==b.w); 
+	return (a.x==b.x && a.y==b.y && a.z==b.z && a.w==b.w);
 }
 
 
@@ -631,32 +631,32 @@ int operator==( const float4 &a, const float4 &b )
 
 
 
-float4 cmul( const float4 &a, const float4 &b) 
+float4 cmul( const float4 &a, const float4 &b)
 {
 	return float4(a.x*b.x,a.y*b.y,a.z*b.z,a.w*b.w);
 }
 
 
-float4 operator*( const float4 &v, float s) 
+float4 operator*( const float4 &v, float s)
 {
 	return float4(v.x*s,v.y*s,v.z*s,v.w*s);
 }
 
 
-float4 operator*( float s, const float4 &v) 
+float4 operator*( float s, const float4 &v)
 {
 	return float4(v.x*s,v.y*s,v.z*s,v.w*s);
 }
 
 
-float4 operator+( const float4 &a, const float4 &b) 
+float4 operator+( const float4 &a, const float4 &b)
 {
 	return float4(a.x+b.x,a.y+b.y,a.z+b.z,a.w+b.w);
 }
 
 
 
-float4 operator-( const float4 &a, const float4 &b) 
+float4 operator-( const float4 &a, const float4 &b)
 {
 	return float4(a.x-b.x,a.y-b.y,a.z-b.z,a.w-b.w);
 }
@@ -758,7 +758,7 @@ float4x4 Inverse(const float4x4 &m)
 		src[i] = m(i,0) ;
 		src[i + 4] = m(i,1);
 		src[i + 8] = m(i,2);
-		src[i + 12] = m(i,3); 
+		src[i + 12] = m(i,3);
 	}
 	/* calculate pairs for first 8 elements (cofactors) */
 	tmp[0]  = src[10] * src[15];
@@ -836,9 +836,9 @@ Quaternion operator*( const Quaternion& a, const Quaternion& b )
 {
 	Quaternion c;
 	c.w = a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z;
-	c.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y; 
-	c.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x; 
-	c.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w; 
+	c.x = a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y;
+	c.y = a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x;
+	c.z = a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w;
 	return c;
 }
 
@@ -911,8 +911,8 @@ float dot( const Quaternion &a,const Quaternion &b )
 Quaternion normalize( Quaternion a )
 {
 	float m = sqrtf(sqr(a.w)+sqr(a.x)+sqr(a.y)+sqr(a.z));
-	if(m<0.000000001) 
-		{    
+	if(m<0.000000001)
+		{
 		a.w=1;
 		a.x=a.y=a.z=0;
 		return a;
@@ -922,7 +922,7 @@ Quaternion normalize( Quaternion a )
 
 Quaternion slerp( Quaternion a, const Quaternion& b, float interp )
 {
-	if(dot(a,b) <0.0) 
+	if(dot(a,b) <0.0)
 		{
 		a.w=-a.w;
 		a.x=-a.x;
@@ -944,7 +944,7 @@ Quaternion Interpolate(const Quaternion &q0,const Quaternion &q1,float alpha) {
 }
 
 
-Quaternion YawPitchRoll( float yaw, float pitch, float roll ) 
+Quaternion YawPitchRoll( float yaw, float pitch, float roll )
 {
 	roll  *= DEG2RAD;
 	yaw   *= DEG2RAD;
@@ -988,7 +988,7 @@ float Pitch( const float3& v )
 
 
 void Plane::Transform(const float3 &position, const Quaternion &orientation) {
-	//   Transforms the plane to the space defined by the 
+	//   Transforms the plane to the space defined by the
 	//   given position/orientation.
 	static float3 newnormal;
 	static float3 origin;
@@ -1025,9 +1025,9 @@ Quaternion RotationArc(float3 v0,float3 v1){
 }
 
 
-float4x4 MatrixFromQuatVec(const Quaternion &q, const float3 &v) 
+float4x4 MatrixFromQuatVec(const Quaternion &q, const float3 &v)
 {
-	// builds a 4x4 transformation matrix based on orientation q and translation v 
+	// builds a 4x4 transformation matrix based on orientation q and translation v
 	float qx2 = q.x*q.x;
 	float qy2 = q.y*q.y;
 	float qz2 = q.z*q.z;
@@ -1040,18 +1040,18 @@ float4x4 MatrixFromQuatVec(const Quaternion &q, const float3 &v)
 	float qzqw = q.z*q.w;
 
 	return float4x4(
-		1-2*(qy2+qz2),  
+		1-2*(qy2+qz2),
 		2*(qxqy+qzqw),
-		2*(qxqz-qyqw),  
-		0            ,  
-		2*(qxqy-qzqw),  
+		2*(qxqz-qyqw),
+		0            ,
+		2*(qxqy-qzqw),
 		1-2*(qx2+qz2),
-		2*(qyqz+qxqw),  
-		0            ,  
-		2*(qxqz+qyqw),  
-		2*(qyqz-qxqw),  
-		1-2*(qx2+qy2),  
-		0    , 
+		2*(qyqz+qxqw),
+		0            ,
+		2*(qxqz+qyqw),
+		2*(qyqz-qxqw),
+		1-2*(qx2+qy2),
+		0    ,
 		 v.x ,
 		 v.y ,
 		 v.z ,
@@ -1105,10 +1105,10 @@ float3 TriNormal(const float3 &v0, const float3 &v1, const float3 &v2)
 
 
 
-int BoxInside(const float3 &p, const float3 &bmin, const float3 &bmax) 
+int BoxInside(const float3 &p, const float3 &bmin, const float3 &bmax)
 {
-	return (p.x >= bmin.x && p.x <=bmax.x && 
-			p.y >= bmin.y && p.y <=bmax.y && 
+	return (p.x >= bmin.x && p.x <=bmax.x &&
+			p.y >= bmin.y && p.y <=bmax.y &&
 			p.z >= bmin.z && p.z <=bmax.z );
 }
 
@@ -1120,13 +1120,13 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 				*impact=v0;
 				return 1;
 		}
-	if(v0.x<=bmin.x && v1.x>=bmin.x) 
+	if(v0.x<=bmin.x && v1.x>=bmin.x)
 		{
 		float a = (bmin.x-v0.x)/(v1.x-v0.x);
 		//v.x = bmin.x;
 		float vy =  (1-a) *v0.y + a*v1.y;
 		float vz =  (1-a) *v0.z + a*v1.z;
-		if(vy>=bmin.y && vy<=bmax.y && vz>=bmin.z && vz<=bmax.z) 
+		if(vy>=bmin.y && vy<=bmax.y && vz>=bmin.z && vz<=bmax.z)
 				{
 			impact->x = bmin.x;
 			impact->y = vy;
@@ -1134,13 +1134,13 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 			return 1;
 		}
 	}
-	else if(v0.x >= bmax.x  &&  v1.x <= bmax.x) 
+	else if(v0.x >= bmax.x  &&  v1.x <= bmax.x)
 		{
 		float a = (bmax.x-v0.x)/(v1.x-v0.x);
 		//v.x = bmax.x;
 		float vy =  (1-a) *v0.y + a*v1.y;
 		float vz =  (1-a) *v0.z + a*v1.z;
-		if(vy>=bmin.y && vy<=bmax.y && vz>=bmin.z && vz<=bmax.z) 
+		if(vy>=bmin.y && vy<=bmax.y && vz>=bmin.z && vz<=bmax.z)
 				{
 			impact->x = bmax.x;
 			impact->y = vy;
@@ -1148,13 +1148,13 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 			return 1;
 		}
 	}
-	if(v0.y<=bmin.y && v1.y>=bmin.y) 
+	if(v0.y<=bmin.y && v1.y>=bmin.y)
 		{
 		float a = (bmin.y-v0.y)/(v1.y-v0.y);
 		float vx =  (1-a) *v0.x + a*v1.x;
 		//v.y = bmin.y;
 		float vz =  (1-a) *v0.z + a*v1.z;
-		if(vx>=bmin.x && vx<=bmax.x && vz>=bmin.z && vz<=bmax.z) 
+		if(vx>=bmin.x && vx<=bmax.x && vz>=bmin.z && vz<=bmax.z)
 				{
 			impact->x = vx;
 			impact->y = bmin.y;
@@ -1162,7 +1162,7 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 			return 1;
 		}
 	}
-	else if(v0.y >= bmax.y  &&  v1.y <= bmax.y) 
+	else if(v0.y >= bmax.y  &&  v1.y <= bmax.y)
 		{
 		float a = (bmax.y-v0.y)/(v1.y-v0.y);
 		float vx =  (1-a) *v0.x + a*v1.x;
@@ -1176,13 +1176,13 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 			return 1;
 		}
 	}
-	if(v0.z<=bmin.z && v1.z>=bmin.z) 
+	if(v0.z<=bmin.z && v1.z>=bmin.z)
 		{
 		float a = (bmin.z-v0.z)/(v1.z-v0.z);
 		float vx =  (1-a) *v0.x + a*v1.x;
 		float vy =  (1-a) *v0.y + a*v1.y;
 		// v.z = bmin.z;
-		if(vy>=bmin.y && vy<=bmax.y && vx>=bmin.x && vx<=bmax.x) 
+		if(vy>=bmin.y && vy<=bmax.y && vx>=bmin.x && vx<=bmax.x)
 				{
 			impact->x = vx;
 			impact->y = vy;
@@ -1190,13 +1190,13 @@ int BoxIntersect(const float3 &v0, const float3 &v1, const float3 &bmin, const f
 			return 1;
 		}
 	}
-	else if(v0.z >= bmax.z  &&  v1.z <= bmax.z) 
+	else if(v0.z >= bmax.z  &&  v1.z <= bmax.z)
 		{
 		float a = (bmax.z-v0.z)/(v1.z-v0.z);
 		float vx =  (1-a) *v0.x + a*v1.x;
 		float vy =  (1-a) *v0.y + a*v1.y;
 		// v.z = bmax.z;
-		if(vy>=bmin.y && vy<=bmax.y && vx>=bmin.x && vx<=bmax.x) 
+		if(vy>=bmin.y && vy<=bmax.y && vx>=bmin.x && vx<=bmax.x)
 				{
 			impact->x = vx;
 			impact->y = vy;
@@ -1216,14 +1216,14 @@ float DistanceBetweenLines(const float3 &ustart, const float3 &udir, const float
 	float distu = -dot(cp,ustart);
 	float distv = -dot(cp,vstart);
 	float dist = (float)fabs(distu-distv);
-	if(upoint) 
+	if(upoint)
 		{
 		Plane plane;
 		plane.normal = normalize(cross(vdir,cp));
 		plane.dist = -dot(plane.normal,vstart);
 		*upoint = PlaneLineIntersection(plane,ustart,ustart+udir);
 	}
-	if(vpoint) 
+	if(vpoint)
 		{
 		Plane plane;
 		plane.normal = normalize(cross(udir,cp));
@@ -1234,19 +1234,19 @@ float DistanceBetweenLines(const float3 &ustart, const float3 &udir, const float
 }
 
 
-Quaternion VirtualTrackBall(const float3 &cop, const float3 &cor, const float3 &dir1, const float3 &dir2) 
+Quaternion VirtualTrackBall(const float3 &cop, const float3 &cor, const float3 &dir1, const float3 &dir2)
 {
 	// routine taken from game programming gems.
 	// Implement track ball functionality to spin stuf on the screen
 	//  cop   center of projection
 	//  cor   center of rotation
-	//  dir1  old mouse direction 
+	//  dir1  old mouse direction
 	//  dir2  new mouse direction
 	// pretend there is a sphere around cor.  Then find the points
 	// where dir1 and dir2 intersect that sphere.  Find the
 	// rotation that takes the first point to the second.
 	float m;
-	// compute plane 
+	// compute plane
 	float3 nrml = cor - cop;
 	float fudgefactor = 1.0f/(magnitude(nrml) * 0.25f); // since trackball proportional to distance from cop
 	nrml = normalize(nrml);
@@ -1259,7 +1259,7 @@ Quaternion VirtualTrackBall(const float3 &cop, const float3 &cor, const float3 &
 		{
 				u/=m;
 		}
-	else 
+	else
 		{
 		u=u - (nrml * sqrtf(1-m*m));
 	}
@@ -1267,11 +1267,11 @@ Quaternion VirtualTrackBall(const float3 &cop, const float3 &cor, const float3 &
 	v=v-cor;
 	v=v*fudgefactor;
 	m= magnitude(v);
-	if(m>1) 
+	if(m>1)
 		{
 				v/=m;
 		}
-	else 
+	else
 		{
 		v=v - (nrml * sqrtf(1-m*m));
 	}
@@ -1285,7 +1285,7 @@ int PolyHit(const float3 *vert, const int n, const float3 &v0, const float3 &v1,
 	countpolyhit++;
 	int i;
 	float3 nrml(0,0,0);
-	for(i=0;i<n;i++) 
+	for(i=0;i<n;i++)
 		{
 		int i1=(i+1)%n;
 		int i2=(i+2)%n;
@@ -1300,12 +1300,12 @@ int PolyHit(const float3 *vert, const int n, const float3 &v0, const float3 &v1,
 	nrml = nrml * (1.0f/m);
 	float dist = -dot(nrml,vert[0]);
 	float d0,d1;
-	if((d0=dot(v0,nrml)+dist) <0  ||  (d1=dot(v1,nrml)+dist) >0) 
-		{        
+	if((d0=dot(v0,nrml)+dist) <0  ||  (d1=dot(v1,nrml)+dist) >0)
+		{
 				return 0;
 		}
 
-	static float3 the_point; 
+	static float3 the_point;
 	// By using the cached plane distances d0 and d1
 	// we can optimize the following:
 	//     the_point = planelineintersection(nrml,dist,v0,v1);
@@ -1314,7 +1314,7 @@ int PolyHit(const float3 *vert, const int n, const float3 &v0, const float3 &v1,
 
 
 	int inside=1;
-	for(int j=0;inside && j<n;j++) 
+	for(int j=0;inside && j<n;j++)
 		{
 			// let inside = 0 if outside
 			float3 pp1,pp2,side;
@@ -1323,7 +1323,7 @@ int PolyHit(const float3 *vert, const int n, const float3 &v0, const float3 &v1,
 			side = cross((pp2-pp1),(the_point-pp1));
 			inside = (dot(nrml,side) >= 0.0);
 	}
-	if(inside) 
+	if(inside)
 		{
 		if(normal){*normal=nrml;}
 		if(impact){*impact=the_point;}
@@ -1374,7 +1374,7 @@ template <class Type> Array<Type>::Array(int s)
 	count=0;
 	array_size = 0;
 	element = NULL;
-	if(s) 
+	if(s)
 	{
 		allocate(s);
 	}
@@ -1595,7 +1595,7 @@ public:
 float planetestepsilon = PAPERWIDTH;
 
 
-class ConvexH 
+class ConvexH
 {
   public:
 	class HalfEdge
@@ -1609,7 +1609,7 @@ class ConvexH
 	};
 	Array<REAL3> vertices;
 	Array<HalfEdge> edges;
-	Array<Plane>  facets;
+	Array<Plane> facets;
 	ConvexH(int vertices_size,int edges_size,int facets_size);
 };
 
@@ -1656,7 +1656,7 @@ public:
 	unsigned char undermap;
 	unsigned char overmap;
 };
-class EdgeFlag 
+class EdgeFlag
 {
 public:
 	unsigned char planetest;
@@ -1689,7 +1689,7 @@ int AssertIntact(ConvexH &convex) {
 			inext = estart;
 		}
 		assert(convex.edges[inext].p == convex.edges[i].p);
-		HalfEdge &edge = convex.edges[i];
+		HalfEdge &edge = convex.edges[i]; (void)edge;
 		int nb = convex.edges[i].ea;
 		assert(nb!=255);
 		if(nb==255 || nb==-1) return 0;
@@ -1783,13 +1783,13 @@ ConvexH *test_cube() {
 	convex->edges[17] = HalfEdge(14,2,4);
 	convex->edges[18] = HalfEdge( 7,6,4);
 	convex->edges[19] = HalfEdge( 8,4,4);
-	
+
 	convex->edges[20] = HalfEdge(10,1,5);
 	convex->edges[21] = HalfEdge( 5,5,5);
 	convex->edges[22] = HalfEdge(12,7,5);
 	convex->edges[23] = HalfEdge( 1,3,5);
 
-	
+
 	return convex;
 }
 ConvexH *ConvexHMakeCube(const REAL3 &bmin, const REAL3 &bmax) {
@@ -1816,10 +1816,10 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 	int i;
 	int vertcountunder=0;
 	int vertcountover =0;
-	int edgecountunder=0;
-	int edgecountover =0;
-	int planecountunder=0;
-	int planecountover =0;
+	int edgecountunder=0; (void)edgecountunder;
+	int edgecountover =0; (void)edgecountover;
+	int planecountunder=0; (void)planecountunder;
+	int planecountover =0; (void)planecountover;
 	static Array<int> vertscoplanar;  // existing vertex members of convex that are coplanar
 	vertscoplanar.count=0;
 	static Array<int> edgesplit;  // existing edges that members of convex that cross the splitplane
@@ -1853,7 +1853,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 			vertflag[i].undermap = -1; // for debugging purposes
 		}
 	}
-	int vertcountunderold = vertcountunder; // for debugging only
+	int vertcountunderold = vertcountunder; (void)vertcountunderold;  // for debugging only
 
 	int under_edge_count =0;
 	int underplanescount=0;
@@ -1864,8 +1864,8 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 		int enextface;
 		int planeside = 0;
 		int e1 = e0+1;
-		int eus=-1;
-		int ecop=-1;
+		int eus=-1; (void)eus;
+		int ecop=-1; (void)ecop;
 		int vout=-1;
 		int vin =-1;
 		int coplanaredge = -1;
@@ -1893,7 +1893,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 			}
 			else if((vertflag[edge0.v].planetest | vertflag[edge1.v].planetest)  == UNDER) {
 				// at least one endpoint under, the other coplanar or under
-				
+
 				edgeflag[e0].undermap = under_edge_count;
 				tmpunderedges[under_edge_count].v = vertflag[edge0.v].undermap;
 				tmpunderedges[under_edge_count].p = underplanescount;
@@ -1906,7 +1906,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 				under_edge_count++;
 			}
 			else if((vertflag[edge0.v].planetest | vertflag[edge1.v].planetest)  == COPLANAR) {
-				// both endpoints coplanar 
+				// both endpoints coplanar
 				// must check a 3rd point to see if UNDER
 				int e2 = e1+1;
 				if(e2>=convex.edges.count || convex.edges[e2].p!=currentplane) {
@@ -1915,7 +1915,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 				assert(convex.edges[e2].p==currentplane);
 				HalfEdge &edge2 = convex.edges[e2];
 				if(vertflag[edge2.v].planetest==UNDER) {
-					
+
 					edgeflag[e0].undermap = under_edge_count;
 					tmpunderedges[under_edge_count].v = vertflag[edge0.v].undermap;
 					tmpunderedges[under_edge_count].p = underplanescount;
@@ -1931,8 +1931,8 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 				}
 			}
 			else if(vertflag[edge0.v].planetest == UNDER && vertflag[edge1.v].planetest == OVER) {
-				// first is under 2nd is over 
-				
+				// first is under 2nd is over
+
 				edgeflag[e0].undermap = under_edge_count;
 				tmpunderedges[under_edge_count].v = vertflag[edge0.v].undermap;
 				tmpunderedges[under_edge_count].p = underplanescount;
@@ -1952,7 +1952,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 					vout = vertcountunder++;
 				}
 				under_edge_count++;
-				/// hmmm something to think about: i might be able to output this edge regarless of 
+				/// hmmm something to think about: i might be able to output this edge regarless of
 				// wheter or not we know v-in yet.  ok i;ll try this now:
 				tmpunderedges[under_edge_count].v = vout;
 				tmpunderedges[under_edge_count].p = underplanescount;
@@ -1969,8 +1969,8 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 
 			}
 			else if(vertflag[edge0.v].planetest == COPLANAR && vertflag[edge1.v].planetest == OVER) {
-				// first is coplanar 2nd is over 
-				
+				// first is coplanar 2nd is over
+
 				edgeflag[e0].undermap = -1;
 				vout = vertflag[edge0.v].undermap;
 				// I hate this but i have to make sure part of this face is UNDER before ouputting this vert
@@ -1986,11 +1986,11 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 					tmpunderedges[under_edge_count].ea = -1;
 					coplanaredge = under_edge_count; // hmmm should make a note of the edge # for later on
 					under_edge_count++;
-					
+
 				}
 			}
 			else if(vertflag[edge0.v].planetest == OVER && vertflag[edge1.v].planetest == UNDER) {
-				// first is over next is under 
+				// first is over next is under
 				// new vertex!!!
 				assert(vin==-1);
 				if(e0<edge0.ea) {
@@ -2028,8 +2028,8 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 				under_edge_count++;
 			}
 			else if(vertflag[edge0.v].planetest == OVER && vertflag[edge1.v].planetest == COPLANAR) {
-				// first is over next is coplanar 
-				
+				// first is over next is coplanar
+
 				edgeflag[e0].undermap = -1;
 				vin = vertflag[edge1.v].undermap;
 				assert(vin!=-1);
@@ -2043,7 +2043,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 			else {
 				assert(0);
 			}
-			
+
 
 			e0=e1;
 			e1++; // do the modulo at the beginning of the loop
@@ -2111,7 +2111,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 		tmpunderedges[coplanaredges[i].ea].ea = under_edge_count+i;
 		under.edges[under_edge_count+i].v  = coplanaredges[i].v0;
 	}
-	
+
 	memcpy(under.edges.element,tmpunderedges,sizeof(HalfEdge)*under_edge_count);
 	memcpy(under.facets.element,tmpunderplanes,sizeof(Plane)*underplanescount);
 	return punder;
@@ -2164,7 +2164,7 @@ int maxdirfiltered(const T *p,int count,const T &dir,Array<int> &allow)
 	}
 	assert(m!=-1);
 	return m;
-} 
+}
 
 float3 orth(const float3 &v)
 {
@@ -2218,21 +2218,21 @@ int maxdirsterid(const T *p,int count,const T &dir,Array<int> &allow)
 	}
 	assert(0);
 	return m;
-} 
+}
 
 
 
 
-int operator ==(const int3 &a,const int3 &b) 
+int operator ==(const int3 &a,const int3 &b)
 {
-	for(int i=0;i<3;i++) 
+	for(int i=0;i<3;i++)
 	{
 		if(a[i]!=b[i]) return 0;
 	}
 	return 1;
 }
 
-int3 roll3(int3 a) 
+int3 roll3(int3 a)
 {
 	int tmp=a[0];
 	a[0]=a[1];
@@ -2240,15 +2240,15 @@ int3 roll3(int3 a)
 	a[2]=tmp;
 	return a;
 }
-int isa(const int3 &a,const int3 &b) 
+int isa(const int3 &a,const int3 &b)
 {
 	return ( a==b || roll3(a)==b || a==roll3(b) );
 }
-int b2b(const int3 &a,const int3 &b) 
+int b2b(const int3 &a,const int3 &b)
 {
 	return isa(a,int3(b[2],b[1],b[0]));
 }
-int above(float3* vertices,const int3& t, const float3 &p, float epsilon) 
+int above(float3* vertices,const int3& t, const float3 &p, float epsilon)
 {
 	float3 n=TriNormal(vertices[t[0]],vertices[t[1]],vertices[t[2]]);
 	return (dot(n,p-vertices[t[0]]) > epsilon); // EPSILON???
@@ -2308,7 +2308,7 @@ int &Tri::neib(int a,int b)
 {
 	static int er=-1;
 	int i;
-	for(i=0;i<3;i++) 
+	for(i=0;i<3;i++)
 	{
 		int i1=(i+1)%3;
 		int i2=(i+2)%3;
@@ -2321,7 +2321,7 @@ int &Tri::neib(int a,int b)
 void b2bfix(Tri* s,Tri*t)
 {
 	int i;
-	for(i=0;i<3;i++) 
+	for(i=0;i<3;i++)
 	{
 		int i1=(i+1)%3;
 		int i2=(i+2)%3;
@@ -2349,8 +2349,8 @@ void checkit(Tri *t)
 	{
 		int i1=(i+1)%3;
 		int i2=(i+2)%3;
-		int a = (*t)[i1];
-		int b = (*t)[i2];
+		int a = (*t)[i1]; (void)a;
+		int b = (*t)[i2]; (void)b;
 		assert(a!=b);
 		assert( tris[t->n[i]]->neib(b,a) == t->id);
 	}
@@ -2407,11 +2407,11 @@ public:
 int4 FindSimplex(float3 *verts,int verts_count,Array<int> &allow)
 {
 	float3 basis[3];
-	basis[0] = float3( 0.01f, 0.02f, 1.0f );      
-	int p0 = maxdirsterid(verts,verts_count, basis[0],allow);   
+	basis[0] = float3( 0.01f, 0.02f, 1.0f );
+	int p0 = maxdirsterid(verts,verts_count, basis[0],allow);
 	int	p1 = maxdirsterid(verts,verts_count,-basis[0],allow);
 	basis[0] = verts[p0]-verts[p1];
-	if(p0==p1 || basis[0]==float3(0,0,0)) 
+	if(p0==p1 || basis[0]==float3(0,0,0))
 		return int4(-1,-1,-1,-1);
 	basis[1] = cross(float3(     1, 0.02f, 0),basis[0]);
 	basis[2] = cross(float3(-0.02f,     1, 0),basis[0]);
@@ -2421,13 +2421,13 @@ int4 FindSimplex(float3 *verts,int verts_count,Array<int> &allow)
 	{
 		p2 = maxdirsterid(verts,verts_count,-basis[1],allow);
 	}
-	if(p2 == p0 || p2 == p1) 
+	if(p2 == p0 || p2 == p1)
 		return int4(-1,-1,-1,-1);
 	basis[1] = verts[p2] - verts[p0];
 	basis[2] = normalize(cross(basis[1],basis[0]));
 	int p3 = maxdirsterid(verts,verts_count,basis[2],allow);
 	if(p3==p0||p3==p1||p3==p2) p3 = maxdirsterid(verts,verts_count,-basis[2],allow);
-	if(p3==p0||p3==p1||p3==p2) 
+	if(p3==p0||p3==p1||p3==p2)
 		return int4(-1,-1,-1,-1);
 	assert(!(p0==p1||p0==p2||p0==p3||p1==p2||p1==p3||p2==p3));
 	if(dot(verts[p3]-verts[p0],cross(verts[p1]-verts[p0],verts[p2]-verts[p0])) <0) {Swap(p2,p3);}
@@ -2442,7 +2442,7 @@ int calchullgen(float3 *verts,int verts_count, int vlimit)
 	float3 bmin(*verts),bmax(*verts);
 	Array<int> isextreme(verts_count);
 	Array<int> allow(verts_count);
-	for(j=0;j<verts_count;j++) 
+	for(j=0;j<verts_count;j++)
 	{
 		allow.Add(1);
 		isextreme.Add(0);
@@ -2478,17 +2478,17 @@ int calchullgen(float3 *verts,int verts_count, int vlimit)
 	vlimit-=4;
 	while(vlimit >0 && (te=extrudable(epsilon)))
 	{
-		int3 ti=*te;
+		int3 ti=*te; (void)ti;
 		int v=te->vmax;
 		assert(!isextreme[v]);  // wtf we've already done this vertex
 		isextreme[v]=1;
 		//if(v==p0 || v==p1 || v==p2 || v==p3) continue; // done these already
 		j=tris.count;
-		int newstart=j;
+		int newstart=j; (void)newstart;
 		while(j--) {
 			if(!tris[j]) continue;
 			int3 t=*tris[j];
-			if(above(verts,t,verts[v],0.01f*epsilon)) 
+			if(above(verts,t,verts[v],0.01f*epsilon))
 			{
 				extrude(tris[j],v);
 			}
@@ -2505,9 +2505,9 @@ int calchullgen(float3 *verts,int verts_count, int vlimit)
 				Tri *nb = tris[tris[j]->n[0]];
 				assert(nb);assert(!hasvert(*nb,v));assert(nb->id<j);
 				extrude(nb,v);
-				j=tris.count; 
+				j=tris.count;
 			}
-		} 
+		}
 		j=tris.count;
 		while(j--)
 		{
@@ -2516,7 +2516,7 @@ int calchullgen(float3 *verts,int verts_count, int vlimit)
 			if(t->vmax>=0) break;
 			float3 n=TriNormal(verts[(*t)[0]],verts[(*t)[1]],verts[(*t)[2]]);
 			t->vmax = maxdirsterid(verts,verts_count,n,allow);
-			if(isextreme[t->vmax]) 
+			if(isextreme[t->vmax])
 			{
 				t->vmax=-1; // already done that vertex - algorithm needs to be able to terminate.
 			}
@@ -2530,7 +2530,7 @@ int calchullgen(float3 *verts,int verts_count, int vlimit)
 	return 1;
 }
 
-int calchull(float3 *verts,int verts_count, int *&tris_out, int &tris_count,int vlimit) 
+int calchull(float3 *verts,int verts_count, int *&tris_out, int &tris_count,int vlimit)
 {
 	int rc=calchullgen(verts,verts_count,  vlimit) ;
 	if(!rc) return 0;
@@ -2547,7 +2547,7 @@ int calchull(float3 *verts,int verts_count, int *&tris_out, int &tris_count,int 
 	return 1;
 }
 
-int calchullpbev(float3 *verts,int verts_count,int vlimit, Array<Plane> &planes,float bevangle) 
+int calchullpbev(float3 *verts,int verts_count,int vlimit, Array<Plane> &planes,float bevangle)
 {
 	int i,j;
 	planes.count=0;
@@ -2579,19 +2579,19 @@ int calchullpbev(float3 *verts,int verts_count,int vlimit, Array<Plane> &planes,
 	return 1;
 }
 
-int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int maxplanes, 
+int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int maxplanes,
 			 float3 *&verts_out, int &verts_count_out,  int *&faces_out, int &faces_count_out ,float inflate)
 {
 	int i,j;
-	if(verts_count <4) return NULL;
+	if(verts_count <4) return 0;
 	maxplanes = Min(maxplanes,planes_count);
 	float3 bmin(verts[0]),bmax(verts[0]);
-	for(i=0;i<verts_count;i++) 
+	for(i=0;i<verts_count;i++)
 	{
 		bmin = VectorMin(bmin,verts[i]);
 		bmax = VectorMax(bmax,verts[i]);
 	}
-	float diameter = magnitude(bmax-bmin);
+	float diameter = magnitude(bmax-bmin); (void)diameter;
 //	inflate *=diameter;   // RELATIVE INFLATION
 	bmin -= float3(inflate,inflate,inflate);
 	bmax += float3(inflate,inflate,inflate);
@@ -2605,7 +2605,7 @@ int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int m
 	planetestepsilon = magnitude(emax-emin) * PAPERWIDTH;
 	// todo: add bounding cube planes to force bevel. or try instead not adding the diameter expansion ??? must think.
 	// ConvexH *convex = ConvexHMakeCube(bmin - float3(diameter,diameter,diameter),bmax+float3(diameter,diameter,diameter));
-	ConvexH *c = ConvexHMakeCube(REAL3(bmin),REAL3(bmax)); 
+	ConvexH *c = ConvexHMakeCube(REAL3(bmin),REAL3(bmax));
 	int k;
 	while(maxplanes-- && (k=candidateplane(planes,planes_count,c,epsilon))>=0)
 	{
@@ -2638,7 +2638,7 @@ int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int m
 	faces_out[0]=k; // number of faces.
 	assert(k==c->facets.count);
 	assert(faces_count_out == 1+c->facets.count+c->edges.count);
-	verts_out = c->vertices.element; // new float3[c->vertices.count]; 
+	verts_out = c->vertices.element; // new float3[c->vertices.count];
 	verts_count_out = c->vertices.count;
 	for(i=0;i<c->vertices.count;i++)
 	{
@@ -2649,7 +2649,7 @@ int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int m
 	return 1;
 }
 
-int overhullv(float3 *verts, int verts_count,int maxplanes, 
+int overhullv(float3 *verts, int verts_count,int maxplanes,
 			 float3 *&verts_out, int &verts_count_out,  int *&faces_out, int &faces_count_out ,float inflate,float bevangle,int vlimit)
 {
 	if(!verts_count) return 0;
@@ -2923,7 +2923,7 @@ bool  HullLibrary::CleanupVertices(unsigned int svcount,
 
 	#define EPSILON 0.000001f // close enough to consider two floating point numbers to be 'the same'.
 
-	bool ret = false;
+	bool ret = false; (void)ret;
 
 	vcount = 0;
 

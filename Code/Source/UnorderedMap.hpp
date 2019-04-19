@@ -47,11 +47,21 @@
 
 namespace Thea {
 
-/** Hashtable-based map from keys to values. */
-#define TheaUnorderedMap std::unordered_map
+/** Hash table-based mapping from keys to values. */
+template < typename Key,
+           typename T,
+           typename Hash = std::hash<Key>,
+           typename Pred = std::equal_to<Key>,
+           typename Alloc = std::allocator< std::pair<Key const, T> >
+         > using UnorderedMap = std::unordered_map<Key, T, Hash, Pred, Alloc>;
 
-/** Hashtable-based map from keys to values, allowing multiple values that share the same key. */
-#define TheaUnorderedMultiMap std::unordered_multimap
+/** Hash table-based mapping from (possibly duplicate) keys to values. */
+template < typename Key,
+           typename T,
+           typename Hash = std::hash<Key>,
+           typename Pred = std::equal_to<Key>,
+           typename Alloc = std::allocator< std::pair<Key const, T> >
+         > using UnorderedMultiMap = std::unordered_multimap<Key, T, Hash, Pred, Alloc>;
 
 } // namespace Thea
 

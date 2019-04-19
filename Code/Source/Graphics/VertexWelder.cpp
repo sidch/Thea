@@ -78,7 +78,7 @@ class VertexWelderImpl
       }
     };
 
-    typedef TheaUnorderedMultiMap<Long3, WeldableVertex, Long3Hasher> VertexMap;
+    typedef UnorderedMultiMap<Long3, WeldableVertex, Long3Hasher> VertexMap;
 
     Long3 toGrid(Vector3 const & pos) const
     {

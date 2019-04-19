@@ -12,7 +12,7 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-bool computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values);
+bool computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, Array<Real> & values);
 
 int
 main(int argc, char * argv[])
@@ -66,8 +66,8 @@ main(int argc, char * argv[])
   int height = image.getHeight();
 
   // Compute features
-  TheaArray< TheaArray<Real> > features((size_t)(width * height));
-  TheaArray<string> feat_names;
+  Array< Array<Real> > features((size_t)(width * height));
+  Array<string> feat_names;
 
   for (int i = 1; i < argc; ++i)
   {
@@ -89,7 +89,7 @@ main(int argc, char * argv[])
         }
       }
 
-      TheaArray<Real> values;
+      Array<Real> values;
       if (!computeShapeContext(image, num_radial_bins, num_polar_bins, values))
         return -1;
 
@@ -134,7 +134,7 @@ main(int argc, char * argv[])
   {
     for (int j = 0; j < width; ++j)
     {
-      TheaArray<Real> const & entry = features[(size_t)(i * width + j)];
+      Array<Real> const & entry = features[(size_t)(i * width + j)];
 
       bool all_zero = true;
       for (size_t k = 0; k < entry.size(); ++k)
@@ -164,7 +164,7 @@ main(int argc, char * argv[])
 }
 
 bool
-computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values)
+computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, Array<Real> & values)
 {
   THEA_CONSOLE << "Computing shape contexts";
 

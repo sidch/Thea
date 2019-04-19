@@ -94,11 +94,11 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
             VectorXd nnls_b = Eigen::Map<VectorXd const>(b, num_objectives);  // will also be overwritten, so make a copy
             solution.resize(ndims);
 
-            double             rnorm;
-            TheaArray<double>  w((size_t)ndims);
-            TheaArray<double>  zz((size_t)num_objectives);
-            TheaArray<int>     index((size_t)ndims);
-            int                mode;
+            double         rnorm;
+            Array<double>  w((size_t)ndims);
+            Array<double>  zz((size_t)num_objectives);
+            Array<int>     index((size_t)ndims);
+            int            mode;
 
             int mda = (int)num_objectives, im = (int)num_objectives, in = (int)ndims;
             nnls_c(nnls_a.data(), &mda, &im, &in, nnls_b.data(), solution.data(), &rnorm, &w[0], &zz[0], &index[0], &mode);

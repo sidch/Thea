@@ -90,7 +90,7 @@ class THEA_API BestFitEllipsoid3
     /** Recompute the best-fit ellipsoid. */
     void update() const;
 
-    TheaArray<Vector3> points;
+    Array<Vector3> points;
     Real eps;
     mutable Vector3 center, axis[3];
     mutable Box3 obb;

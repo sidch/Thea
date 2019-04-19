@@ -77,13 +77,13 @@ class VTN
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
 {
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, long> type;
+  typedef UnorderedMap<typename MeshT::Vertex const *, long> type;
 };
 
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
+  typedef UnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
 
 } // namespace CodecOBJInternal
@@ -269,7 +269,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      TheaArray<uint8> enc_block;
+      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
       if (read_prefixed_info)
@@ -290,17 +290,17 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       }
 
       using CodecOBJInternal::VTN;
-      typedef TheaUnorderedMap<VTN, typename Builder::VertexHandle> VTNVertexMap;
-      typedef TheaUnorderedMap<long, typename Builder::VertexHandle> IndexVertexMap;
+      typedef UnorderedMap<VTN, typename Builder::VertexHandle> VTNVertexMap;
+      typedef UnorderedMap<long, typename Builder::VertexHandle> IndexVertexMap;
       VTNVertexMap vtn_refs;
       IndexVertexMap vrefs;
-      TheaArray<typename Builder::VertexHandle> face;
+      Array<typename Builder::VertexHandle> face;
 
       // OBJ is not neatly divided into separate meshes (e.g. *all* the vertices can be put at the beginning), so we need to
       // cache the vertices and add them to meshes on-demand.
-      TheaArray<Vector3> vertices;
-      TheaArray<Vector2> texcoords;
-      TheaArray<Vector3> normals;
+      Array<Vector3> vertices;
+      Array<Vector2> texcoords;
+      Array<Vector3> normals;
 
       std::string line;
       double x, y, z;

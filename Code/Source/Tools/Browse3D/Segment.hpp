@@ -52,7 +52,7 @@ namespace Browse3D {
 class Segment
 {
   public:
-    typedef TheaUnorderedSet<Mesh *> MeshSet;  ///< A set of meshes
+    typedef UnorderedSet<Mesh *> MeshSet;  ///< A set of meshes
 
     /** Default constructor. */
     Segment() : label("AnonymousSegment") {}

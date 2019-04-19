@@ -160,7 +160,7 @@ class THEA_API Polygon3
      *
      * @return The number of triangles created.
      */
-    long triangulate(TheaArray<long> & tri_indices, Real epsilon = -1) const;
+    long triangulate(Array<long> & tri_indices, Real epsilon = -1) const;
 
     /** Compute the area of the polygon. */
     Real computeArea() const { return computeArea(vertices.begin(), vertices.end()); }
@@ -346,7 +346,7 @@ class THEA_API Polygon3
     Real projArea() const;
 
     /** Check if a triangle can be removed. */
-    bool snip(size_t u, size_t v, size_t w, size_t n, TheaArray<size_t> const & indices,
+    bool snip(size_t u, size_t v, size_t w, size_t n, Array<size_t> const & indices,
               Real epsilon) const;
 
     /** Advance an iterator round the polygon with vertices [vbegin, vend). */
@@ -359,10 +359,10 @@ class THEA_API Polygon3
         return vbegin;
     }
 
-    TheaArray<IndexedVertex> vertices;
+    Array<IndexedVertex> vertices;
     long max_index;
     AxisAlignedBox3 bounds;
-    mutable TheaArray<Vector2> proj_vertices;
+    mutable Array<Vector2> proj_vertices;
 
     friend class Polygon2;
 

@@ -125,8 +125,8 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     {
       float f_val;
       int i_val;
-      TheaArray<float> f_array;
-      TheaArray<int> i_array;
+      Array<float> f_array;
+      Array<int> i_array;
       GLTexture * texture;
     };
 
@@ -149,7 +149,7 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     };
 
     /** A set of uniforms read from source code. */
-    typedef TheaMap<std::string, UniformData> Uniforms;
+    typedef Map<std::string, UniformData> Uniforms;
 
     /** Read the list of active uniforms in the shader object. */
     void readActiveUniforms();

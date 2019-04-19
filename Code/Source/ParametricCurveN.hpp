@@ -124,7 +124,7 @@ class /* THEA_API */ ParametricCurveN
       alwaysAssertM(num_arc_samples >= 2, "ParametricCurveN: At least two samples must be used to approximate arc lengths");
 
       // Generate num_points samples with uniform parameter spacing
-      TheaArray<VectorT> arc_samples((size_t)num_arc_samples);
+      Array<VectorT> arc_samples((size_t)num_arc_samples);
       T arc_scaling = (max_param - min_param) / static_cast<T>(num_arc_samples - 1);
       T t;
       for (long i = 0; i < num_arc_samples; ++i)
@@ -135,12 +135,12 @@ class /* THEA_API */ ParametricCurveN
 
       // Compute the normalized arc length for each sampled point, by a piecewise linear approximation. This is a monotonically
       // increasing sorted array with first element 0 and last element 1.
-      TheaArray<double> arclen;
+      Array<double> arclen;
       chordLengthParametrize(arc_samples.begin(), arc_samples.end(), arclen, 0.0, 1.0);
 
       // Generate a uniform distribution of normalized arc lengths, map each arc length to the corresponding interval in the
       // generated sequence, and use linear interpolation within the interval to find the corresponding curve parameter
-      typedef TheaArray<double>::iterator DoubleIterator;
+      typedef Array<double>::iterator DoubleIterator;
       DoubleIterator last = arclen.begin();
       for (size_t i = 0; i < (size_t)num_points; ++i)
       {
@@ -191,7 +191,7 @@ class /* THEA_API */ ParametricCurveN
 
     /** Estimate curve parameters for a sequence of points, by accumulating pairwise segment lengths along the sequence. */
     template <typename InputIterator>
-    static void chordLengthParametrize(InputIterator begin, InputIterator end, TheaArray<double> & u,
+    static void chordLengthParametrize(InputIterator begin, InputIterator end, Array<double> & u,
                                        double min_param_ = 0, double max_param_ = 1)
     {
       using namespace Algorithms;

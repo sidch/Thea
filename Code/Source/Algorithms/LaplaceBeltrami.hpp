@@ -123,7 +123,7 @@ class THEA_API LaplaceBeltrami
                                                               MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
-      TheaUnorderedMap<typename MeshT::Vertex const *, long> indices;
+      UnorderedMap<typename MeshT::Vertex const *, long> indices;
       long num_vertices = 0;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
         indices[&(*vi)] = num_vertices++;
@@ -198,7 +198,7 @@ class THEA_API LaplaceBeltrami
                                                               MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
-      TheaUnorderedMap<typename MeshT::Vertex const *, long> indices;
+      UnorderedMap<typename MeshT::Vertex const *, long> indices;
       long num_vertices = 0;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
         indices[&(*vi)] = num_vertices++;

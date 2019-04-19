@@ -84,7 +84,7 @@ class EdgeWelderImpl
       }
     };
 
-    typedef TheaUnorderedMultiMap<Long3Pair, WeldableEdge, Long3PairHasher> EdgeMap;
+    typedef UnorderedMultiMap<Long3Pair, WeldableEdge, Long3PairHasher> EdgeMap;
 
     Long3 toGrid(Vector3 const & pos) const
     {

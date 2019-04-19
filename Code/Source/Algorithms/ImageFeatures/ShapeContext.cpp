@@ -155,7 +155,7 @@ struct QuadTreeNode
 {
   Rect rect;
   Real weight;
-  TheaArray<size_t> children;
+  Array<size_t> children;
 
   void getBounds(int & xmin, int & ymin, int & xmax, int & ymax) const
   {
@@ -172,7 +172,7 @@ struct QuadTree
 {
   static int const MIN_NODE_WIDTH = 10;
 
-  TheaArray<QuadTreeNode> nodes;
+  Array<QuadTreeNode> nodes;
   Image image;
 
   QuadTree(Image const & image_)
@@ -310,7 +310,7 @@ ShapeContext::~ShapeContext()
 }
 
 void
-ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, bool ignore_empty_pixels,
+ShapeContext::compute(long num_radial_bins, long num_polar_bins, Array<Real> & values, bool ignore_empty_pixels,
                       Real max_radius) const
 {
   using namespace ShapeContextInternal;
@@ -385,7 +385,7 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, TheaArray<Real>
 }
 
 void
-ShapeContext::compute(int row, int col, long num_radial_bins, long num_polar_bins, TheaArray<Real> & values, Real max_radius)
+ShapeContext::compute(int row, int col, long num_radial_bins, long num_polar_bins, Array<Real> & values, Real max_radius)
 const
 {
   using namespace ShapeContextInternal;

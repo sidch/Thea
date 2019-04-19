@@ -55,13 +55,13 @@ namespace CodecPLYInternal {
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
 {
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, long> type;
+  typedef UnorderedMap<typename MeshT::Vertex const *, long> type;
 };
 
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
+  typedef UnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
 
 } // namespace CodecPLYInternal
@@ -156,7 +156,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     {
       ElementType type;           ///< Type of element.
       long num_elems;             ///< Number of elements in the block.
-      TheaArray<Property> props;  ///< Element properties
+      Array<Property> props;  ///< Element properties
 
     }; // struct ElementBlock
 
@@ -167,7 +167,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
       bool binary;
       Endianness endianness;
-      TheaArray<ElementBlock> elem_blocks;
+      Array<ElementBlock> elem_blocks;
 
     }; // struct Header
 
@@ -297,7 +297,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      TheaArray<uint8> enc_block;
+      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
       if (read_prefixed_info)
@@ -471,8 +471,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
       Builder builder(mesh);
       builder.begin();
 
-      TheaArray<typename Builder::VertexHandle> vrefs;
-      TheaArray<typename Builder::VertexHandle> face;
+      Array<typename Builder::VertexHandle> vrefs;
+      Array<typename Builder::VertexHandle> face;
 
       std::string line;
       long num_vertices = 0, num_faces = 0;
@@ -610,7 +610,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     }
 
     /** Return a binary-encoded list of elements of a specified type. */
-    template <typename T> void readBinaryList(BinaryInputStream & in, Property const & prop, TheaArray<T> & items) const
+    template <typename T> void readBinaryList(BinaryInputStream & in, Property const & prop, Array<T> & items) const
     {
       debugAssertM(prop.type == PropertyType::LIST, std::string(getName()) + ": Can't read non-list property as list");
 
@@ -646,8 +646,8 @@ class CodecPLY : public CodecPLYBase<MeshT>
       Builder builder(mesh);
       builder.begin();
 
-      TheaArray<typename Builder::VertexHandle> vrefs;
-      TheaArray<typename Builder::VertexHandle> face;
+      Array<typename Builder::VertexHandle> vrefs;
+      Array<typename Builder::VertexHandle> face;
 
       in.setEndianness(header.endianness);
 
@@ -684,7 +684,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
             case ElementType::FACE:
             {
-              TheaArray<long> face_vertices;
+              Array<long> face_vertices;
               readBinaryList(in, block.props[0], face_vertices);
 
               if (!face_vertices.empty())

@@ -134,7 +134,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       if (num_reparam_steps_per_iter < 0) num_reparam_steps_per_iter = 1;  // conservative choice, following Graphics Gems
 
       // Initialize parameter values for the points
-      TheaArray<double> u;
+      Array<double> u;
       if (initial_params)
       {
         T const * up = initial_params;
@@ -218,7 +218,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * of the control vectors, weighted by these basis functions as coefficients. (This need not be the most efficient way to
      * evaluate points on the curve, and hence the implementation of eval() is left to the subclass.)
      */
-    virtual void getBasisFunctions(double t, TheaArray<double> & b) const = 0;
+    virtual void getBasisFunctions(double t, Array<double> & b) const = 0;
 
     /**
      * Check if the first and last control vectors of the curve can be interpreted as the positions of the beginning and end
@@ -240,7 +240,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * @return The sum of squared fitting errors, or a negative value on error.
      */
     template <typename InputIterator>
-    double llsqFit(InputIterator begin, InputIterator end, TheaArray<double> const & u, bool fix_first_and_last)
+    double llsqFit(InputIterator begin, InputIterator end, Array<double> const & u, bool fix_first_and_last)
     {
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;
@@ -260,8 +260,8 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       size_t num_unknowns = (size_t)(N * num_unknown_ctrls);
 
       StdLinearSolver llsq((long)num_unknowns);
-      TheaArray<double> basis;
-      TheaArray<double> coeffs(num_unknowns, 0.0);
+      Array<double> basis;
+      Array<double> coeffs(num_unknowns, 0.0);
 
       // Cache the first and last points of the sequence
       InputIterator first = begin, last = begin;
@@ -308,14 +308,14 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         return -1;
       }
 
-      TheaArray<double> const & sol = llsq.getSolution();
+      Array<double> const & sol = llsq.getSolution();
       alwaysAssertM(sol.size() == num_unknowns,
                     "SplineN: Linear least-squares solution length doesn't match number of unknowns");
 
       // Update the control vectors
       if (fix_first_and_last) setControl(0, first_pos);
 
-      TheaArray<VectorT> new_ctrls(num_unknown_ctrls);
+      Array<VectorT> new_ctrls(num_unknown_ctrls);
       for (long i = 0; i < N; ++i)
       {
         size_t offset = (size_t)(i * num_unknown_ctrls);
@@ -338,7 +338,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * See "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, <i>%Graphics Gems</i>, 1990.
      */
     template <typename InputIterator>
-    bool refineParameters(InputIterator begin, InputIterator end, TheaArray<double> & u, long num_newton_iters)
+    bool refineParameters(InputIterator begin, InputIterator end, Array<double> & u, long num_newton_iters)
     {
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;

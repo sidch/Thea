@@ -102,7 +102,7 @@ Mesh::updateFeatures() const
 
   Vector3 centroid = Algorithms::CentroidN<Vertex, 3>::compute(verticesBegin(), verticesEnd());
 
-  TheaArray<Real> all_dists;
+  Array<Real> all_dists;
   for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
     all_dists.push_back((vi->getPosition() - centroid).norm());
 
@@ -129,7 +129,7 @@ Mesh::updateFeatures() const
 namespace MeshInternal {
 
 bool
-areSimilarFeatureVectors(TheaArray<double> const & f0, long nv0, TheaArray<double> const & f1, long nv1)
+areSimilarFeatureVectors(Array<double> const & f0, long nv0, Array<double> const & f1, long nv1)
 {
   if (nv0 != nv1)
     return false;
@@ -165,11 +165,11 @@ countVertices(MeshGroup const & mg, long & num_vertices)
 
 // A rather hacky way of forming a joint descriptor, suitable only for exact matches like we want here
 void
-accumGroupFeatures(MeshGroup const & mg, TheaArray<double> & features)
+accumGroupFeatures(MeshGroup const & mg, Array<double> & features)
 {
   for (MeshGroup::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
   {
-    TheaArray<double> const & mf = (*mi)->getFeatures();
+    Array<double> const & mf = (*mi)->getFeatures();
     if (features.empty())
       features.resize(mf.size());
 
@@ -209,7 +209,7 @@ isSimilarTo(MeshGroup const & lhs, MeshGroup const & rhs)
   if (nv0 != nv1)
     return false;
 
-  TheaArray<double> f0, f1;
+  Array<double> f0, f1;
   accumGroupFeatures(lhs, f0);
   accumGroupFeatures(rhs, f1);
 
@@ -228,8 +228,8 @@ isSimilarTo(Mesh const & lhs, MeshGroup const & rhs)
   if (nv0 != nv1)
     return false;
 
-  TheaArray<double> const & f0 = lhs.getFeatures();
-  TheaArray<double> f1;
+  Array<double> const & f0 = lhs.getFeatures();
+  Array<double> f1;
   accumGroupFeatures(rhs, f1);
 
   return areSimilarFeatureVectors(f0, nv0, f1, nv1);

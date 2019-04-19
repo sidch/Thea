@@ -234,8 +234,8 @@ class THEA_API PluginManager : public FactoryRegistry
 
     }; // struct PluginDynLib
 
-    typedef TheaMap<std::string, PluginDynLib>  DynLibMap;   ///< Maps paths to the corresponding dynamic libraries.
-    typedef TheaList<Plugin *>                  PluginList;  ///< List of plugins.
+    typedef Map<std::string, PluginDynLib>  DynLibMap;   ///< Maps paths to the corresponding dynamic libraries.
+    typedef List<Plugin *>                  PluginList;  ///< List of plugins.
 
     friend class DynLibManager;
 

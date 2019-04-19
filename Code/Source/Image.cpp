@@ -168,7 +168,7 @@ static ImageCodec const *
 codecFromPath(std::string const & path)
 {
   typedef std::shared_ptr<ImageCodec> ICPtr;
-  typedef TheaUnorderedMap<std::string, ICPtr > CodecMap;
+  typedef UnorderedMap<std::string, ICPtr > CodecMap;
 
   static CodecMap codec_map;
   if (codec_map.empty())  // only on the first call
@@ -311,7 +311,7 @@ codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_pref
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
   /* input stream?)  */                                                                                                       \
-  TheaArray<uint8> img_block((size_t)size);                                                                             \
+  Array<uint8> img_block((size_t)size);                                                                             \
   input.readBytes((int64)size, &img_block[0]);                                                                                \
                                                                                                                               \
   /* Decode the image */                                                                                                      \
@@ -443,7 +443,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   if (width > 0 && height > 0 && depth > 0 && bpp > 0)
   {
     int bytes_pp = bpp / 8;
-    TheaArray<uint8> row_buf((size_t)stream_scan_width, 0);
+    Array<uint8> row_buf((size_t)stream_scan_width, 0);
     for (int i = 0; i < depth; ++i)
       for (int j = 0; j < height; ++j)
       {
@@ -559,7 +559,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
     return;
 
   int bytes_pp = bpp / 8;
-  TheaArray<uint8> row_buf((size_t)stream_scan_width);
+  Array<uint8> row_buf((size_t)stream_scan_width);
   for (int i = 0; i < depth; ++i)
     for (int j = 0; j < height; ++j)
     {
@@ -1035,7 +1035,7 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
 
   // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
   // stream?)
-  TheaArray<uint8> img_block((size_t)size);
+  Array<uint8> img_block((size_t)size);
   input.readBytes((int64)size, &img_block[0]);
 
   ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, &img_block[0]);

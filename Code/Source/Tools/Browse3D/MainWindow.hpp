@@ -221,7 +221,7 @@ class MainWindow : public wxFrame
 
     // Models
     Model * model;
-    TheaArray<Model *> overlays;
+    Array<Model *> overlays;
 
     // Widgets
     MainWindowUI ui;

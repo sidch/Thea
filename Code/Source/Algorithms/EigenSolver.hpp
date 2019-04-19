@@ -148,7 +148,7 @@ class THEA_API EigenSolverManager
     EigenSolverFactory * getFactory(std::string const & type);
 
   private:
-    typedef TheaMap<std::string, EigenSolverFactory *> FactoryMap;  ///< Maps eigensolver types to factory instances.
+    typedef Map<std::string, EigenSolverFactory *> FactoryMap;  ///< Maps eigensolver types to factory instances.
 
     FactoryMap installed_factories;  ///< Set of installed factories, one for each eigensolver type.
 

@@ -260,7 +260,7 @@ class THEA_API Clustering
      * @return The number of clusters found.
      */
     template <typename T>
-    static int computeFlat(TheaArray<T> const & points, TheaArray<int> & labels, FlatOptions options = FlatOptions::defaults(),
+    static int computeFlat(Array<T> const & points, Array<int> & labels, FlatOptions options = FlatOptions::defaults(),
                            int num_clusters_hint = 2)
     {
       if (points.size() <= 0)
@@ -389,7 +389,7 @@ class THEA_API Clustering
      * @return The number of clusters found.
      */
     template <typename MatrixT>
-    static int computeFlat(MatrixT const & weights, TheaArray<int> & labels, FlatOptions options = FlatOptions::defaults(),
+    static int computeFlat(MatrixT const & weights, Array<int> & labels, FlatOptions options = FlatOptions::defaults(),
                            int num_clusters_hint = 2)
     {
       int num_clusters_found = 0;
@@ -502,8 +502,8 @@ class THEA_API Clustering
      * binary trees.
      */
     template <typename T>
-    static void overlayHierarchy(TheaArray<T> const & points, TheaArray<int> const & flat_labels, int num_clusters,
-                                 TheaArray<int> & tree_labels, HierarchyOverlayMethod method = HierarchyOverlayMethod::AUTO)
+    static void overlayHierarchy(Array<T> const & points, Array<int> const & flat_labels, int num_clusters,
+                                 Array<int> & tree_labels, HierarchyOverlayMethod method = HierarchyOverlayMethod::AUTO)
     {
       switch (method)
       {
@@ -517,8 +517,8 @@ class THEA_API Clustering
      * edge is not present).
      */
     template <typename MatrixT>
-    static void overlayHierarchy(MatrixT const & weights, TheaArray<int> const & flat_labels, int num_clusters,
-                                 TheaArray<int> & tree_labels, HierarchyOverlayMethod method = HierarchyOverlayMethod::AUTO)
+    static void overlayHierarchy(MatrixT const & weights, Array<int> const & flat_labels, int num_clusters,
+                                 Array<int> & tree_labels, HierarchyOverlayMethod method = HierarchyOverlayMethod::AUTO)
     {
       switch (method)
       {
@@ -530,22 +530,22 @@ class THEA_API Clustering
 
 #ifdef THEA_ENABLE_CLUTO
     /** Get the number of dimensions of a vector. The dummy argument is needed for template resolution. */
-    template <typename T>            static size_t numElems (T const & t);
+    template <typename T>         static size_t numElems (T const & t);
     template <int N, typename T>  static size_t numElems (Vector<N, T> const & v);
-    template <typename T>            static size_t numElems (TheaArray<T> const & v);
+    template <typename T>         static size_t numElems (Array<T> const & v);
 
     /** Copy a vector to a float array and return a pointer to the next array position. */
-    template <typename T>            static float * copyToFloatArray(T const & t, float * fp);
+    template <typename T>         static float * copyToFloatArray(T const & t, float * fp);
     template <int N, typename T>  static float * copyToFloatArray(Vector<N, T> const & v, float * fp);
-    template <typename T>            static float * copyToFloatArray(TheaArray<T> const & v, float * fp);
+    template <typename T>         static float * copyToFloatArray(Array<T> const & v, float * fp);
 
     /** Convert an array of points to a CLUTO matrix. */
-    template <typename T> static void toClutoMatrix(TheaArray<T> const & points, ClutoMatrix & cm);
+    template <typename T> static void toClutoMatrix(Array<T> const & points, ClutoMatrix & cm);
 
     /**
      * Convert an array of points to a CLUTO matrix, where each point is itself an array (all points must have same dimensions).
      */
-    template <typename T> static void toClutoMatrix(TheaArray< TheaArray<T> > const & points, ClutoMatrix & cm);
+    template <typename T> static void toClutoMatrix(Array< Array<T> > const & points, ClutoMatrix & cm);
 
     /** Convert a dense matrix row-major to a CLUTO dense matrix. */
     template <typename T> static void toClutoMatrix(MatrixX<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMatrix & cm);
@@ -581,12 +581,12 @@ class THEA_API Clustering
 // Get the number of dimensions of a vector. The dummy argument is needed for template resolution.
 //=============================================================================================================================
 
-template <typename T>            size_t Clustering::numElems         (T const & t)             { return 1; }
-template <> inline               size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
-template <> inline               size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
-template <> inline               size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
-template <int N, typename T>    size_t Clustering::numElems         (Vector<N, T> const & v) { return (size_t)N; }
-template <typename T>            size_t Clustering::numElems         (TheaArray<T> const & v)  { return v.size(); }
+template <typename T>         size_t Clustering::numElems         (T const & t)             { return 1; }
+template <> inline            size_t Clustering::numElems<Vector2>(Vector2 const & t)       { return 2; }
+template <> inline            size_t Clustering::numElems<Vector3>(Vector3 const & t)       { return 3; }
+template <> inline            size_t Clustering::numElems<Vector4>(Vector4 const & t)       { return 4; }
+template <int N, typename T>  size_t Clustering::numElems         (Vector<N, T> const & v)  { return (size_t)N; }
+template <typename T>         size_t Clustering::numElems         (Array<T> const & v)      { return v.size(); }
 
 //=============================================================================================================================
 // Copy a vector to a float array and return a pointer to the next array position.
@@ -613,9 +613,9 @@ Clustering::copyToFloatArray(Vector<N, T> const & v, float * fp)
 
 template <typename T>
 float *
-Clustering::copyToFloatArray(TheaArray<T> const & v, float * fp)
+Clustering::copyToFloatArray(Array<T> const & v, float * fp)
 {
-  for (typename TheaArray<T>::const_iterator vi = v.begin(); vi != v.end(); ++vi, ++fp)
+  for (typename Array<T>::const_iterator vi = v.begin(); vi != v.end(); ++vi, ++fp)
     *fp = static_cast<float>(*vi);
 
   return fp;
@@ -627,7 +627,7 @@ Clustering::copyToFloatArray(TheaArray<T> const & v, float * fp)
 
 template <typename T>
 void
-Clustering::toClutoMatrix(TheaArray<T> const & points, ClutoMatrix & cm)
+Clustering::toClutoMatrix(Array<T> const & points, ClutoMatrix & cm)
 {
   size_t num_points = points.size();
   size_t num_elems  = numElems(points[0]);
@@ -643,7 +643,7 @@ Clustering::toClutoMatrix(TheaArray<T> const & points, ClutoMatrix & cm)
 
 template <typename T>
 void
-Clustering::toClutoMatrix(TheaArray< TheaArray<T> > const & points, ClutoMatrix & cm)
+Clustering::toClutoMatrix(Array< Array<T> > const & points, ClutoMatrix & cm)
 {
   size_t num_points = points.size();
   size_t num_elems  = points[0].size();
@@ -672,7 +672,7 @@ Clustering::toClutoMatrix(MatrixX<T, MatrixLayout::ROW_MAJOR> const & m, ClutoMa
 {
   cm.getRowIndices().clear();
   cm.getColumnIndices().clear();
-  cm.getValues() = TheaArray<float>(m.begin(), m.end());
+  cm.getValues() = Array<float>(m.begin(), m.end());
 }
 
 template <typename T>
@@ -686,7 +686,7 @@ Clustering::toClutoMatrix(MatrixX<T, MatrixLayout::COLUMN_MAJOR> const & m, Clut
   {
     cm.getValues().resize(m.rows() * m.cols());
 
-    TheaArray<float>::iterator cp = cm.getValues().begin();
+    Array<float>::iterator cp = cm.getValues().begin();
     for (int i = 0; i < m.rows(); ++i)
       for (int j = 0; j < m.cols(); ++j, ++cp)
         *cp = m(j, i);

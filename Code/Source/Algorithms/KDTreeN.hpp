@@ -232,7 +232,7 @@ class /* THEA_API */ KDTreeN
 
         }; // Buffer
 
-        TheaArray<Buffer *> buffers;
+        Array<Buffer *> buffers;
         size_t buffer_capacity;
         long current_buffer;
 
@@ -344,22 +344,22 @@ class /* THEA_API */ KDTreeN
     class RangeQueryFunctor
     {
       public:
-        RangeQueryFunctor(TheaArray<T> & result_) : result(result_) {}
+        RangeQueryFunctor(Array<T> & result_) : result(result_) {}
         bool operator()(long index, T & t) { result.push_back(t); return false; }
 
       private:
-        TheaArray<T> & result;
+        Array<T> & result;
     };
 
     /** A functor to add the indices of results of a range query to an array. */
     class RangeQueryIndicesFunctor
     {
       public:
-        RangeQueryIndicesFunctor(TheaArray<long> & result_) : result(result_) {}
+        RangeQueryIndicesFunctor(Array<long> & result_) : result(result_) {}
         bool operator()(long index, T & t) { result.push_back(index); return false; }
 
       private:
-        TheaArray<long> & result;
+        Array<long> & result;
     };
 
   public:
@@ -442,7 +442,7 @@ class /* THEA_API */ KDTreeN
   private:
     typedef MemoryPool<Node> NodePool;  ///< A pool for quickly allocating kd-tree nodes.
     typedef MemoryPool<ElementIndex> IndexPool;  ///< A pool for quickly allocating element indices.
-    typedef TheaArray<T> ElementArray;  ///< An array of elements.
+    typedef Array<T> ElementArray;  ///< An array of elements.
     typedef KDTreeNInternal::SampleFilter<T, N, ScalarT> SampleFilter;  ///< Filter for samples, wrapping a filter for elements.
 
   public:
@@ -937,7 +937,7 @@ class /* THEA_API */ KDTreeN
      *   union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQuery(RangeT const & range, TheaArray<T> & result, bool discard_prior_results = true) const
+    void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
       if (root)
@@ -957,7 +957,7 @@ class /* THEA_API */ KDTreeN
      *   queries over a union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQueryIndices(RangeT const & range, TheaArray<long> & result, bool discard_prior_results = true) const
+    void rangeQueryIndices(RangeT const & range, Array<long> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
       if (root)
@@ -1066,8 +1066,8 @@ class /* THEA_API */ KDTreeN
     // Allow the comparator unrestricted access to the kd-tree.
     friend struct ObjectLess;
 
-    typedef TheaArray<Filter<T> *> FilterStack;  ///< A stack of element filters.
-    typedef TheaArray<SampleFilter> SampleFilterStack;  ///< A stack of point sample filters.
+    typedef Array<Filter<T> *> FilterStack;  ///< A stack of element filters.
+    typedef Array<SampleFilter> SampleFilterStack;  ///< A stack of point sample filters.
 
     void moveIndicesToLeafPool(Node * leaf, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
@@ -1712,7 +1712,7 @@ class /* THEA_API */ KDTreeN
       delete acceleration_structure; acceleration_structure = NULL;
 
       static int const DEFAULT_NUM_ACCELERATION_SAMPLES = 250;
-      TheaArray<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
+      Array<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
                                                                                   : num_acceleration_samples);
       VectorT src_cp, dst_cp;
       for (size_t i = 0; i < acceleration_samples.size(); ++i)

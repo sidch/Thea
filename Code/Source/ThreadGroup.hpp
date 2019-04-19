@@ -102,7 +102,7 @@ class THEA_API ThreadGroup
     /** Destructor. */
     ~ThreadGroup()
     {
-      for (TheaList<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (List<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
         delete *it;
     }
 
@@ -112,7 +112,7 @@ class THEA_API ThreadGroup
       std::thread::id id = std::this_thread::get_id();
       boost::shared_lock<boost::shared_mutex> guard(m);
 
-      for (TheaList<std::thread *>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (List<std::thread *>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
       {
         if ((*it)->get_id() == id)
           return true;
@@ -129,7 +129,7 @@ class THEA_API ThreadGroup
         std::thread::id id = thrd->get_id();
         boost::shared_lock<boost::shared_mutex> guard(m);
 
-        for (TheaList<std::thread*>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+        for (List<std::thread*>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
         {
           if ((*it)->get_id() == id)
             return true;
@@ -165,7 +165,7 @@ class THEA_API ThreadGroup
     {
       boost::lock_guard<boost::shared_mutex> guard(m);
 
-      TheaList<std::thread *>::iterator const it = std::find(threads.begin(), threads.end(), thrd);
+      List<std::thread *>::iterator const it = std::find(threads.begin(), threads.end(), thrd);
       if (it != threads.end())
         threads.erase(it);
     }
@@ -176,7 +176,7 @@ class THEA_API ThreadGroup
       alwaysAssertM(!containsThisThread(), "ThreadGroup: Can't join the executing thread");
       boost::shared_lock<boost::shared_mutex> guard(m);
 
-      for (TheaList<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (List<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
       {
         if ((*it)->joinable())
           (*it)->join();
@@ -190,7 +190,7 @@ class THEA_API ThreadGroup
     }
 
   private:
-    TheaList<std::thread *> threads;  // Holds the set of threads.
+    List<std::thread *> threads;  // Holds the set of threads.
     mutable boost::shared_mutex m;    // Mutex allowing multiple-reader/single-writer access to the thread list.
 
 }; // class ThreadGroup

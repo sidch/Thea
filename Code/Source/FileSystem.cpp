@@ -139,7 +139,7 @@ namespace FileSystemInternal {
 
 bool
 objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, int types,
-                           TheaArray<std::string> const & patterns, bool ignore_case)
+                           Array<std::string> const & patterns, bool ignore_case)
 {
   if (types > 0 && types != FileSystem::ObjectType::ALL)
   {
@@ -188,13 +188,13 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
 } // namespace FileSystemInternal
 
 long
-FileSystem::getDirectoryContents(std::string const & dir, TheaArray<std::string> & objects, int types,
+FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & objects, int types,
                                  std::string const & patterns, bool recursive, bool ignore_case)
 {
   if (!directoryExists(dir))
     return -1;
 
-  TheaArray<std::string> patlist;
+  Array<std::string> patlist;
   if (!patterns.empty())
   {
     stringSplit(patterns, ' ', patlist, true);

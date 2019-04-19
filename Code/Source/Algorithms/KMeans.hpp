@@ -218,14 +218,14 @@ class THEA_API KMeans : public Serializable
       // Find initial assignment of points to clusters
       //=======================================================================================================================
 
-      TheaArray<long> labeling_local;
+      Array<long> labeling_local;
       if (!labeling)
       {
         labeling_local.resize((size_t)num_points, -1);
         labeling = &labeling_local[0];
       }
 
-      TheaArray<double> sqdist_local;
+      Array<double> sqdist_local;
       if (!squared_distances)
       {
         sqdist_local.resize((size_t)num_points);
@@ -365,7 +365,7 @@ class THEA_API KMeans : public Serializable
         addPointToCenter(points, index, 0);
 
         // Subsequent centers by k-means++
-        TheaArray<double> sqdist((size_t)num_points);
+        Array<double> sqdist((size_t)num_points);
         double start_time = System::time();
         for (long i = 1; i < num_clusters; ++i)
         {
@@ -404,7 +404,7 @@ class THEA_API KMeans : public Serializable
         centers.resize(num_clusters, num_features);
         centers.fill(0);
 
-        TheaArray<long> indices((size_t)num_points);
+        Array<long> indices((size_t)num_points);
         for (long i = 0; i < num_points; ++i)
           indices[(size_t)i] = i;
 
@@ -567,7 +567,7 @@ class THEA_API KMeans : public Serializable
 
       centers.fill(0);
 
-      TheaArray<long> num_assigned((size_t)num_clusters, 0);
+      Array<long> num_assigned((size_t)num_clusters, 0);
       for (long i = 0; i < num_points; ++i)
       {
         long cc_index = cluster_indices[i];

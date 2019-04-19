@@ -111,7 +111,7 @@ class THEA_API BagOfWords : public Serializable
                                                      AddressableMatrixT >::value >::type * dummy = NULL) const
     {
       long num_points = points.rows();
-      TheaArray<long> labeling((size_t)num_points);
+      Array<long> labeling((size_t)num_points);
       vocabulary.mapToClusters(points, &labeling[0]);
 
       long num_words = numWords();

@@ -106,8 +106,8 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver, public virtu
 
     long ndims;  /**< The dimensionality of the problem, i.e. the length of each eigenvector or equivalently the size of the
                       input matrix. */
-    TheaArray<double> eigenvalues[2];  ///< Real and imaginary parts of eigenvalues.
-    TheaArray< VectorX<double> > eigenvectors[2];  ///< Real and imaginary parts of eigenvectors, if computed (else empty).
+    Array<double> eigenvalues[2];  ///< Real and imaginary parts of eigenvalues.
+    Array< VectorX<double> > eigenvectors[2];  ///< Real and imaginary parts of eigenvectors, if computed (else empty).
 
 }; // class ARPACKEigenSolver
 
@@ -125,7 +125,7 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolverFactory : public EigenSolverFactory
     void destroyAllEigenSolvers();
 
   private:
-    typedef TheaSet<EigenSolver *> EigenSolverSet;  ///< Set of eigensolvers.
+    typedef Set<EigenSolver *> EigenSolverSet;  ///< Set of eigensolvers.
 
     EigenSolverSet eigen_solvers;  ///< All eigensolvers created by this factory.
 };

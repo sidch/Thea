@@ -75,7 +75,7 @@ namespace Thea {
 
 /**
  * Sequential or random access input from binary files/memory. For every <code>readX</code> method there are also versions that
- * operate on a whole TheaArray or C-array. The first method resizes the TheaArray to the appropriate size before reading. For a
+ * operate on a whole Array or C-array. The first method resizes the Array to the appropriate size before reading. For a
  * C-array, they require the pointer to reference memory block at least large enough to hold <I>n</I> elements.
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
@@ -539,7 +539,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
 
 #   define THEA_BINARY_INPUT_STREAM_DECLARE_READER(fname, tname) \
     void read##fname(int64 n, tname * out); \
-    void read##fname(int64 n, TheaArray<tname> & out);
+    void read##fname(int64 n, Array<tname> & out);
 
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Bool8,               bool)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(UInt8,               uint8)

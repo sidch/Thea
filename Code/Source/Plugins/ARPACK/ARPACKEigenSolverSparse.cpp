@@ -54,7 +54,7 @@ namespace ARPACKEigenSolverInternal {
 #ifdef THEA_HAVE_SUPERLU
 
 static bool
-indicesToInt(int type, long n, void const * begin, TheaArray<int> & out)
+indicesToInt(int type, long n, void const * begin, Array<int> & out)
 {
 #define THEA_ARPACK_CONVERT_AND_PUSH(numtype) \
   { \
@@ -99,10 +99,10 @@ ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<double> const & m,
     alwaysAssertM(m.isColumnMajor(), std::string(getName()) + ": Operator matrix is not in compressed column (CSC) format");
     alwaysAssertM(m.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
 
-    TheaArray<int> irow;
+    Array<int> irow;
     ARPACKEigenSolverInternal::indicesToInt(m.getInnerIndexType(), m.numStoredElements(), m.getInnerIndices(), irow);
 
-    TheaArray<int> pcol;
+    Array<int> pcol;
     ARPACKEigenSolverInternal::indicesToInt(m.getOuterIndexType(), m.outerSize(), m.getOuterIndices(), pcol);
 
     int nnz = (int)m.numStoredElements();

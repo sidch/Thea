@@ -69,7 +69,7 @@ class Impl
 
     typedef SampleGraph::SurfaceSample SurfaceSample;
     typedef ShortestPaths<SampleGraph> Geodesics;
-    typedef TheaMap<Geodesics::VertexHandle, ParamData> ParamDataMap;  // FIXME: Can we use UnorderedMap?
+    typedef Map<Geodesics::VertexHandle, ParamData> ParamDataMap;  // FIXME: Can we use UnorderedMap?
 
   public:
     Impl(Options const & options_) : options(options_), radius(0) {}

@@ -515,7 +515,7 @@ TextOutputStream::wordWrapIndentAppend(std::string const & str)
           // Spaces were somewhere in the middle of the old string.
           // replace them with a newline.
           // Copy over the characters that should be saved
-          TheaArray<char> temp;
+          Array<char> temp;
 
           for (size_t j = lastSpace + 1; j < data.size(); ++j)
           {

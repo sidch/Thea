@@ -436,7 +436,7 @@ DisplayMesh::updateEdges()
   if (wireframe_enabled)
   {
     typedef std::pair<uint32, uint32> Edge;
-    typedef TheaUnorderedSet<Edge> EdgeSet;
+    typedef UnorderedSet<Edge> EdgeSet;
 
     EdgeSet added_edges;
     Edge edge;

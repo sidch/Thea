@@ -65,8 +65,8 @@ bool GLCaps::bug_slowVBO               = false;
 
 // Cache of values supplied to supportsImageFormat. Works on pointers since there is no way for users to construct their own
 // ImageFormats.
-static TheaMap<Texture::Format const *, bool> _supportedTextureFormat;
-static TheaMap<Texture::Format const *, bool> _supportedRenderBufferFormat;
+static Map<Texture::Format const *, bool> _supportedTextureFormat;
+static Map<Texture::Format const *, bool> _supportedRenderBufferFormat;
 
 GLCaps::Vendor
 GLCaps::computeVendor()
@@ -579,7 +579,7 @@ bool
 GLCaps::supportsTexture(Texture::Format const * fmt)
 {
   // First, check if we've already tested this format
-  TheaMap<Texture::Format const *, bool>::iterator existing = _supportedTextureFormat.find(fmt);
+  Map<Texture::Format const *, bool>::iterator existing = _supportedTextureFormat.find(fmt);
   if (existing == _supportedTextureFormat.end())
   {
     bool supportsFormat = false;
@@ -624,7 +624,7 @@ bool
 GLCaps::supportsRenderBuffer(const Texture::Format* fmt)
 {
   // First, check if we've already tested this format
-  TheaMap<Texture::Format const *, bool>::iterator existing = _supportedRenderBufferFormat.find(fmt);
+  Map<Texture::Format const *, bool>::iterator existing = _supportedRenderBufferFormat.find(fmt);
   if (existing == _supportedRenderBufferFormat.end())
   {
     bool supportsFormat = false;

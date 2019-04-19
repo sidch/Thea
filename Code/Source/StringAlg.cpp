@@ -83,7 +83,7 @@ char const * NEWLINE = "\n";
 #endif
 
 void
-parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool strip_quotes)
+parseCommaSeparated(std::string const & s, Array<std::string> & array, bool strip_quotes)
 {
   array.clear();
 
@@ -270,13 +270,13 @@ toLower(std::string const & s)
 }
 
 long
-stringSplit(std::string const & s, char split_char, TheaArray<std::string> & result, bool skip_empty_fields)
+stringSplit(std::string const & s, char split_char, Array<std::string> & result, bool skip_empty_fields)
 {
   return stringSplit(s, std::string(1, split_char), result, skip_empty_fields);
 }
 
 long
-stringSplit(std::string const & s, std::string const & split_chars, TheaArray<std::string> & result, bool skip_empty_fields)
+stringSplit(std::string const & s, std::string const & split_chars, Array<std::string> & result, bool skip_empty_fields)
 {
   result.clear();
 

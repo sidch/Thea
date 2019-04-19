@@ -45,7 +45,11 @@
 #include "Platform.hpp"
 #include <list>
 
-/** Linked list, guaranteed to be a drop-in replacement for std::list. */
-#define TheaList std::list
+namespace Thea {
+
+/** Linked list. */
+template < typename T, typename Alloc = std::allocator<T> > using List = std::list<T, Alloc>;
+
+} // namespace Thea
 
 #endif

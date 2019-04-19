@@ -230,8 +230,8 @@ class ICP3
         return AffineTransformT::identity();
       }
 
-      TheaArray<VectorT> from_points((size_t)from_num_pts);
-      TheaArray<VectorT> to_points((size_t)from_num_pts);
+      Array<VectorT> from_points((size_t)from_num_pts);
+      Array<VectorT> to_points((size_t)from_num_pts);
       for (size_t i = 0; i < from_points.size(); ++i)
         from_points[i] = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
 

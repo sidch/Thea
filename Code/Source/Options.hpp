@@ -91,7 +91,7 @@ class THEA_API AbstractOptions
  * A set of options, specified as key-value pairs. Supports a much more general set of value types than the simpler abstract
  * interface it implements.
  */
-class THEA_API Options : public AbstractOptions, private TheaMap<std::string, boost::any>
+class THEA_API Options : public AbstractOptions, private Map<std::string, boost::any>
 {
   public:
     /** Destructor. */

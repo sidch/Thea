@@ -174,7 +174,7 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     std::string             path;
 
     /** Buffered data to write. */
-    TheaArray<char>         data;
+    Array<char>             data;
 
     /** Number of indents to prepend before each line.  Always set using setIndentLevel. */
     int                     indentLevel;

@@ -56,8 +56,8 @@ class THEA_API BiasedNormalizedCuts
 {
   public:
     template <typename MatrixT>
-    static void compute(MatrixT const & adjacency_matrix, TheaArray<long> const & vertices_of_interest, double correlation,
-                        TheaArray<double> & vertex_indicators)
+    static void compute(MatrixT const & adjacency_matrix, Array<long> const & vertices_of_interest, double correlation,
+                        Array<double> & vertex_indicators)
     {
     }
 

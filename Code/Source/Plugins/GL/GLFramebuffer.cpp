@@ -231,7 +231,7 @@ GLFramebuffer::detach(AttachmentPoint ap)
 
       if (GLFramebuffer__isDrawBuffer(ap))
       {
-        TheaArray<GLenum>::iterator loc = std::find(gl_draw_buffers.begin(), gl_draw_buffers.end(), gl_ap);
+        Array<GLenum>::iterator loc = std::find(gl_draw_buffers.begin(), gl_draw_buffers.end(), gl_ap);
         if (loc != gl_draw_buffers.end())  // should always be true
           gl_draw_buffers.erase(loc);
       }

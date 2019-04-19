@@ -74,8 +74,8 @@ class /* THEA_API */ GeneralMeshVertex
     typedef PositionAttribute<Vector3>  PositionBaseType;
     typedef NormalAttribute<Vector3>    NormalBaseType;
 
-    typedef TheaList< Edge *, AllocatorT<Edge *> > EdgeList;
-    typedef TheaList< Face *, AllocatorT<Face *> > FaceList;
+    typedef List< Edge *, AllocatorT<Edge *> > EdgeList;
+    typedef List< Face *, AllocatorT<Face *> > FaceList;
 
   public:
     typedef typename EdgeList::iterator        EdgeIterator;       ///< Iterator over edges.
@@ -364,9 +364,9 @@ class /* THEA_API */ GeneralMeshVertex
 
     /** Make an exact copy of the vertex. */
     void copyTo(GeneralMeshVertex & dst,
-                TheaUnorderedMap<GeneralMeshVertex const *, GeneralMeshVertex *> const & vertex_map,
-                TheaUnorderedMap<Edge const *, Edge *> const & edge_map,
-                TheaUnorderedMap<Face const *, Face *> const & face_map) const
+                UnorderedMap<GeneralMeshVertex const *, GeneralMeshVertex *> const & vertex_map,
+                UnorderedMap<Edge const *, Edge *> const & edge_map,
+                UnorderedMap<Face const *, Face *> const & face_map) const
     {
       dst.setPosition(this->getPosition());
       dst.setNormal(this->getNormal());

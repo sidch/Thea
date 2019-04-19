@@ -176,7 +176,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      TheaArray<uint8> enc_block;
+      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
       if (read_prefixed_info)
@@ -298,7 +298,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
           transform = Matrix4::Identity();
 
         // Read list of vertices
-        TheaArray<typename Builder::VertexHandle> vrefs;
+        Array<typename Builder::VertexHandle> vrefs;
         typename Builder::VertexHandle vref;
         for (size_t i = 0; i < (size_t)num_vertices; ++i)
         {

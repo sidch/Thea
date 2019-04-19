@@ -84,7 +84,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     }
 
     /** Construct a hyperplane from N points on it. */
-    static HyperplaneT fromNPoints(TheaArray<VectorT> const & points)
+    static HyperplaneT fromNPoints(Array<VectorT> const & points)
     {
       alwaysAssertM(points.size() >= N,
                     format("HyperplaneN: Too few points specified (provided %ld points, hyperplane requires %ld points)",

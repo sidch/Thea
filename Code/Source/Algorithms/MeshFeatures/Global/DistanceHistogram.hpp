@@ -144,7 +144,7 @@ class DistanceHistogram
       if (num_queries <= 0)
         return;
 
-      TheaArray<int32> query_indices((size_t)num_queries);
+      Array<int32> query_indices((size_t)num_queries);
       Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
       Histogram local_histogram(histogram.numBins());

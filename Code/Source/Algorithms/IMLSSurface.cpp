@@ -79,15 +79,15 @@ struct NodeValuePair
 // Traverse the tree looking for leaf nodes that contain the query. Returns a vector of leaf nodes paired with min square
 // distance to the node's bounding box. Also returns a vector of the unexplored internal node-distance^2 pairs. Resulting
 // vectors are unsorted.
-void traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<NodeValuePair> & leaves,
-                    TheaArray<NodeValuePair> & internal_nodes);
+void traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & leaves,
+                    Array<NodeValuePair> & internal_nodes);
 
 // Compute the minimum squared distance between a query point and the triangles in a kd-tree node.
 double triSquaredDistance(TriangleKDTree const & kdtree, TriangleKDTree::Node const & node, Vector3 const & query);
 
 // Find the leaf node closest to a query point (w.r.t. the triangles in the node), and queue all explored nodes.
 TriangleKDTree::Node const * closestLeaf(TriangleKDTree const & kdtree, Vector3 const & query,
-                                         TheaArray<NodeValuePair> & explored);
+                                         Array<NodeValuePair> & explored);
 
 // Integrals of f(x) dx and x * f(x) dx over [0, 1] where f(x) = 1 / ((x + k1)^2 + k2)^2.
 void lineIntegrals(double k1, double k2, double & I1, double & Ix);
@@ -160,7 +160,7 @@ template <typename T, typename F> T triangleQuadrature(F quad_func, Vector3 cons
 } // namespace IMLSSurfaceInternal
 
 void
-IMLSSurface::enforceBounds(TheaArray<IndexedTriangle> & tris)
+IMLSSurface::enforceBounds(Array<IndexedTriangle> & tris)
 {
   // build enclosure
   AxisAlignedBox3 box;
@@ -225,7 +225,7 @@ void
 IMLSSurface::computeEnclosingPhi()
 {
   typedef std::pair<size_t, double> PairID;
-  TheaArray<PairID> outside;
+  Array<PairID> outside;
 
   double mean = 0;
   size_t const num_verts = bounded ? verts.size() - 8: verts.size();
@@ -251,13 +251,13 @@ IMLSSurface::computeEnclosingPhi()
   {
     THEA_DEBUG << "IMLSSurface: " << outside.size() << " vertices outside";
 
-    for (TheaArray<PairID>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
+    for (Array<PairID>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
       phi[oi->first] -= s * oi->second;
 
     computeUnweightedRec(kdtree.getRoot());
 
-    TheaArray<PairID> next_outside;
-    for (TheaArray<PairID>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
+    Array<PairID> next_outside;
+    for (Array<PairID>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
     {
       double val = (*this)(verts[oi->first]);
       if (val > std::fabs(std::numeric_limits<double>::epsilon() * phi[oi->first]))
@@ -388,11 +388,11 @@ IMLSSurface::eval(Vector3 const & p, Functor & functor) const
   using namespace IMLSSurfaceInternal;
 
   // Find the nodes that need to be evaluated
-  TheaArray<NodeValuePair> remain;
+  Array<NodeValuePair> remain;
   closestLeaf(kdtree, p, remain);
 
   // Compute the (negative) maximum error of integration -- stored negative so that the max error is first when sorted by <
-  for (TheaArray<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
+  for (Array<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
   {
     double max_w2 = weight2(ri->value);
     double min_w2 = weight2(ri->node->getBounds().squaredMaxDistance(p));
@@ -433,7 +433,7 @@ IMLSSurface::eval(Vector3 const & p, Functor & functor) const
   }
 
   // Approximate the contribution from the remaining nodes
-  for (TheaArray<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
+  for (Array<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
     functor.evalNode(p, *ri->node);
 }
 
@@ -644,8 +644,8 @@ IMLSSurface::deriv2(Vector3 const & p, Vector3d & dp, Matrix3d & ddp) const
 namespace IMLSSurfaceInternal {
 
 void
-traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<NodeValuePair> & leaves,
-               TheaArray<NodeValuePair> & internal_nodes)
+traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & leaves,
+               Array<NodeValuePair> & internal_nodes)
 {
   internal_nodes.clear();
   leaves.clear();
@@ -653,7 +653,7 @@ traverseKDTree(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<N
   if (kdtree.isEmpty())
     return;
 
-  TheaArray<TriangleKDTree::Node const *> to_examine;
+  Array<TriangleKDTree::Node const *> to_examine;
   to_examine.push_back(kdtree.getRoot());
 
   for (size_t i = 0; i < to_examine.size(); ++i)
@@ -692,10 +692,10 @@ triSquaredDistance(TriangleKDTree const & kdtree, TriangleKDTree::Node const & n
 }
 
 TriangleKDTree::Node const *
-closestLeaf(TriangleKDTree const & kdtree, Vector3 const & query, TheaArray<NodeValuePair> & explored)
+closestLeaf(TriangleKDTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & explored)
 {
   // Find the leaves containing the query point, if any
-  TheaArray<NodeValuePair> leaf_queue, internal_queue;
+  Array<NodeValuePair> leaf_queue, internal_queue;
   traverseKDTree(kdtree, query, leaf_queue, internal_queue);
 
   explored.clear();

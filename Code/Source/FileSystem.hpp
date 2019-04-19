@@ -128,7 +128,7 @@ class THEA_API FileSystem
      *   negative value.
      */
     static long getDirectoryContents(std::string const & dir,
-                                     TheaArray<std::string> & objects,
+                                     Array<std::string> & objects,
                                      int types = -1,
                                      std::string const & patterns = "",
                                      bool recursive = false,

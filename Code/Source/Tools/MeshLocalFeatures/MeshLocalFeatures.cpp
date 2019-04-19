@@ -74,22 +74,22 @@ bool is_oriented = false;  // all normals point outwards
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
-bool computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                TheaArray<double> & values);
-bool computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                                long num_samples, double nbd_radius, TheaArray<double> & values);
-bool computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, DistanceType dist_type,
-                             double max_distance, TheaArray<double> & values);
-bool computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
+bool computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+                Array<double> & values);
+bool computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
+                                long num_samples, double nbd_radius, Array<double> & values);
+bool computeAverageDistances(MG const & mg, Array<Vector3> const & positions, long num_samples, DistanceType dist_type,
+                             double max_distance, Array<double> & values);
+bool computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
                                     MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
-                     TheaArray<double> & values);
-bool computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius,
-                           TheaArray<double> & values);
-bool computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
+bool computeLocalPCA(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+                     Array<double> & values);
+bool computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius,
+                           Array<double> & values);
+bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samples, int num_radial_bins,
                        int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+bool computeRandomWalks(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
                         MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 
 int
@@ -191,7 +191,7 @@ main(int argc, char * argv[])
                << mesh_scale_type.toString() << ')';
 
   // Load points
-  TheaArray<Vector3> pts;
+  Array<Vector3> pts;
   {
     ifstream in(pts_path.c_str());
     if (!in)
@@ -231,9 +231,9 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Created mesh kd-tree";
 
-  TheaArray<Vector3> positions(pts.size());
-  TheaArray<Vector3> face_normals(pts.size());
-  TheaArray<Vector3> smooth_normals(pts.size());
+  Array<Vector3> positions(pts.size());
+  Array<Vector3> face_normals(pts.size());
+  Array<Vector3> smooth_normals(pts.size());
 
   for (size_t i = 0; i < pts.size(); ++i)
   {
@@ -256,8 +256,8 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Snapped query points to mesh";
 
   // Compute features
-  TheaArray< TheaArray<double> > features(positions.size());
-  TheaArray<string> feat_names;
+  Array< Array<double> > features(positions.size());
+  Array<string> feat_names;
 
   for (int i = 1; i < argc; ++i)
   {
@@ -298,7 +298,7 @@ main(int argc, char * argv[])
         }
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeAverageDistances(mg, positions, num_samples, dist_type, max_distance, values))
         return -1;
 
@@ -406,7 +406,7 @@ main(int argc, char * argv[])
         }
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (pca_type == PCA_RATIO)
       {
         if (!computeLocalPCARatios(mg, positions, num_samples, nbd_radius, values))
@@ -449,7 +449,7 @@ main(int argc, char * argv[])
         }
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeProjectedCurvatures(mg, positions, smooth_normals, num_samples, nbd_radius, values))
         return -1;
 
@@ -463,7 +463,7 @@ main(int argc, char * argv[])
     //=========================================================================================================================
     else if (feat == "--sdf")
     {
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeSDF(kdtree, positions, face_normals, values))
         return -1;
 
@@ -684,7 +684,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
     case MeshScaleType::AVG_DIST:
     {
       MeshSampler<Mesh> sampler(mg);
-      TheaArray<Vector3> samples;
+      Array<Vector3> samples;
       sampler.sampleEvenlyByArea(50000, samples);
 
       if (samples.size() <= 1)
@@ -709,8 +709,8 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 }
 
 bool
-computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-           TheaArray<double> & values)
+computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+           Array<double> & values)
 {
   THEA_CONSOLE << "Computing SDF features";
 
@@ -743,8 +743,8 @@ computeSDF(KDTree const & kdtree, TheaArray<Vector3> const & positions, TheaArra
 }
 
 bool
-computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals,
-                           long num_samples, double nbd_radius, TheaArray<double> & values)
+computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
+                           long num_samples, double nbd_radius, Array<double> & values)
 {
   THEA_CONSOLE << "Computing projected curvatures";
 
@@ -760,8 +760,8 @@ computeProjectedCurvatures(MG const & mg, TheaArray<Vector3> const & positions, 
 }
 
 bool
-computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, DistanceType dist_type,
-                        double max_distance, TheaArray<double> & values)
+computeAverageDistances(MG const & mg, Array<Vector3> const & positions, long num_samples, DistanceType dist_type,
+                        double max_distance, Array<double> & values)
 {
   THEA_CONSOLE << "Computing average " << dist_type.toString() << " distances";
 
@@ -777,7 +777,7 @@ computeAverageDistances(MG const & mg, TheaArray<Vector3> const & positions, lon
 }
 
 bool
-computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_bins,
+computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_bins,
                                DistanceType dist_type, double max_distance, double reduction_ratio,
                                MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
@@ -805,8 +805,8 @@ computeLocalDistanceHistograms(MG const & mg, TheaArray<Vector3> const & positio
 }
 
 bool
-computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
-                TheaArray<double> & values)
+computeLocalPCA(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+                Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA features";
 
@@ -838,8 +838,8 @@ computeLocalPCA(MG const & mg, TheaArray<Vector3> const & positions, long num_sa
 }
 
 bool
-computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, double nbd_radius,
-                      TheaArray<double> & values)
+computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius,
+                      Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA ratios";
 
@@ -867,7 +867,7 @@ computeLocalPCARatios(MG const & mg, TheaArray<Vector3> const & positions, long 
 }
 
 bool
-computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, int num_radial_bins,
+computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samples, int num_radial_bins,
                   int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing spin images";
@@ -893,7 +893,7 @@ computeSpinImages(MG const & mg, TheaArray<Vector3> const & positions, long num_
 }
 
 bool
-computeRandomWalks(MG const & mg, TheaArray<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+computeRandomWalks(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
                    MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing random walks";

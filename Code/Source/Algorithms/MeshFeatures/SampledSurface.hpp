@@ -130,15 +130,15 @@ class SampledSurface
 
     /** Compute sample points with normals on the mesh. */
     template <typename MeshT>
-    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, TheaArray<SurfaceSample> & samples)
+    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, Array<SurfaceSample> & samples)
     {
       typedef typename MeshSampler<MeshT>::Triangle Triangle;
 
       static long const DEFAULT_NUM_SAMPLES = 5000;
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
-      TheaArray<Vector3> positions;
-      TheaArray<Triangle const *> tris;
+      Array<Vector3> positions;
+      Array<Triangle const *> tris;
       sampler.sampleEvenlyByArea(num_samples, positions, NULL, &tris);
 
       samples.clear();
@@ -282,7 +282,7 @@ class SampledSurface
     }
 
     /** Get the array of samples. */
-    TheaArray<SurfaceSample> const & getSamples() const { return samples; }
+    Array<SurfaceSample> const & getSamples() const { return samples; }
 
     /** Get a particular sample. */
     SurfaceSample const & getSample(long index) const
@@ -337,8 +337,8 @@ class SampledSurface
         return sample_graph;
 
       size_t n = (size_t)numSamples();
-      TheaArray<Vector3> positions(n);
-      TheaArray<Vector3> normals(n);
+      Array<Vector3> positions(n);
+      Array<Vector3> normals(n);
 
       for (size_t i = 0; i < n; ++i)
       {
@@ -388,7 +388,7 @@ class SampledSurface
     Real getNormalizationScale() const { return scale; }
 
   private:
-    TheaArray<SurfaceSample> samples;  ///< Set of internally-generated surface samples.
+    Array<SurfaceSample> samples;  ///< Set of internally-generated surface samples.
     mutable InternalSampleKDTree * sample_kdtree;  ///< kd-tree on surface samples.
     ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed kd-tree on surface samples.
     bool owns_sample_graph;  ///< Was the sample graph precomputed?

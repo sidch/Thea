@@ -99,14 +99,14 @@ Polygon2::clear()
 }
 
 long
-Polygon2::triangulate(TheaArray<long> & tri_indices) const
+Polygon2::triangulate(Array<long> & tri_indices) const
 {
   return impl->triangulate(tri_indices);
 }
 
 long
-Polygon2::triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & tri_indices,
-                              TheaArray<bool> * tri_vert_is_boundary,TriangulationOptions const & options) const
+Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indices,
+                              Array<bool> * tri_vert_is_boundary,TriangulationOptions const & options) const
 {
   struct triangulateio in, out;
 

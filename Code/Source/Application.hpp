@@ -96,7 +96,7 @@ class THEA_API Application
      * @param plugin_name Name of the plugin, with or without extension, relative path, leading "lib", etc.
      * @param plugin_dirs Optional additional set of search directories.
      */
-    static std::string getPluginPath(std::string const & plugin_name, TheaArray<std::string> const * plugin_dirs = NULL);
+    static std::string getPluginPath(std::string const & plugin_name, Array<std::string> const * plugin_dirs = NULL);
 
     /** Get the global plugin manager. */
     static PluginManager & getPluginManager() { return *globals.plugin_mgr; }

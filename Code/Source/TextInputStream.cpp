@@ -241,9 +241,9 @@ TextInputStream::readLine()
 }
 
 static void
-toUpper(TheaUnorderedSet<std::string> & set)
+toUpper(UnorderedSet<std::string> & set)
 {
-  TheaArray<std::string> symbols(set.begin(), set.end());
+  Array<std::string> symbols(set.begin(), set.end());
   set.clear();
 
   for (size_t i = 0; i < symbols.size(); ++i)

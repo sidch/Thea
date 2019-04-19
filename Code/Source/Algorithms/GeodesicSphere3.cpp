@@ -49,10 +49,10 @@ namespace Algorithms {
 namespace GeodesicSphere3Internal {
 
 typedef std::pair<size_t, size_t> IndexPair;
-typedef TheaUnorderedMap<IndexPair, size_t> MidpointMap;
+typedef UnorderedMap<IndexPair, size_t> MidpointMap;
 
 long
-midpoint(size_t i, size_t j, TheaArray<Vector3> & vertices, MidpointMap & midpoints)
+midpoint(size_t i, size_t j, Array<Vector3> & vertices, MidpointMap & midpoints)
 {
   IndexPair edge = (i < j ? IndexPair(i, j) : IndexPair(j, i));
   MidpointMap::const_iterator existing = midpoints.find(edge);
@@ -70,7 +70,7 @@ midpoint(size_t i, size_t j, TheaArray<Vector3> & vertices, MidpointMap & midpoi
 
 void
 geodesicSphereSubdivide(long depth, size_t i0, size_t i1, size_t i2,
-                        TheaArray<Vector3> & vertices, TheaArray<long> * triangles, MidpointMap & midpoints)
+                        Array<Vector3> & vertices, Array<long> * triangles, MidpointMap & midpoints)
 {
   if (depth <= 0)
   {
@@ -97,7 +97,7 @@ geodesicSphereSubdivide(long depth, size_t i0, size_t i1, size_t i2,
 } // namespace GeodesicSphere3Internal
 
 bool
-GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaArray<long> * triangles)
+GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long> * triangles)
 {
   // http://www.opengl.org.ru/docs/pg/0208.html
 
@@ -160,8 +160,8 @@ GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaAr
 }
 
 bool
-GeodesicSphere3::compute(long num_subdivs, TheaArray<Vector3> & vertices, TheaArray<long> const & old_triangles,
-                         TheaArray<long> * new_triangles)
+GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long> const & old_triangles,
+                         Array<long> * new_triangles)
 {
   if (num_subdivs < 0)
   {

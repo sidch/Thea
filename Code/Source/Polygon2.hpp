@@ -118,7 +118,7 @@ class THEA_API Polygon2
      *
      * @return The number of triangles created.
      */
-    long triangulate(TheaArray<long> & tri_indices) const;
+    long triangulate(Array<long> & tri_indices) const;
 
     /**
      * Triangulate the polygon, inserting Steiner vertices as necessary in the interior of the polygon for a well-conditioned
@@ -133,8 +133,8 @@ class THEA_API Polygon2
      *
      * @return The number of triangles created.
      */
-    long triangulateInterior(TheaArray<Vector2> & tri_verts, TheaArray<long> & tri_indices,
-                             TheaArray<bool> * tri_vert_is_boundary = NULL,
+    long triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indices,
+                             Array<bool> * tri_vert_is_boundary = NULL,
                              TriangulationOptions const & options = TriangulationOptions::defaults()) const;
 
     /** Compute the area of the polygon. */

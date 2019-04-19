@@ -96,7 +96,7 @@ class DiscreteExponentialMap : private Noncopyable
 
     }; // class Options
 
-    typedef TheaUnorderedMap<long, Vector2> ParameterMap;  ///< Map from sample indices to parameters.
+    typedef UnorderedMap<long, Vector2> ParameterMap;  ///< Map from sample indices to parameters.
 
     /** Constructor. */
     DiscreteExponentialMap(Options const & options = Options::defaults());

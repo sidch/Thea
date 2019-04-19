@@ -149,7 +149,7 @@ struct OBB
 // Compute the OBB for a set of points relative to a transform matrix and see if it is smaller than the current best value. If
 // so, return it.
 static void
-computeOBB(TheaArray<Vector3> const & points, CoordinateFrame3 const & cframe, OBB & current_best_result, bool overwrite)
+computeOBB(Array<Vector3> const & points, CoordinateFrame3 const & cframe, OBB & current_best_result, bool overwrite)
 {
   if (points.empty())
     return;
@@ -176,7 +176,7 @@ computeOBB(TheaArray<Vector3> const & points, CoordinateFrame3 const & cframe, O
 }
 
 static void
-computeBestFitOBB(TheaArray<Vector3> const & points, Box3 & result, bool has_up, Vector3 const & up)
+computeBestFitOBB(Array<Vector3> const & points, Box3 & result, bool has_up, Vector3 const & up)
 {
   if (points.empty())
   {

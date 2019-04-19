@@ -106,8 +106,8 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     }; // class WriteCallback
 
   private:
-    typedef TheaSet<MeshPtr>  MeshSet;
-    typedef TheaSet<Ptr>      GroupSet;
+    typedef Set<MeshPtr>  MeshSet;
+    typedef Set<Ptr>      GroupSet;
 
   public:
     typedef typename MeshSet::iterator         MeshIterator;
@@ -407,7 +407,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * on a default option. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be saved.
      */
-    void save(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs,
+    void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
               WriteCallback * callback = NULL) const
     {
       save(path, Codec_AUTO(), &codecs, callback);
@@ -427,7 +427,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * default option. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be loaded.
      */
-    void load(std::string const & path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs,
+    void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
               ReadCallback * callback = NULL)
     {
       load(path, Codec_AUTO(), &codecs, callback);
@@ -438,7 +438,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs,
+    void save(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
               WriteCallback * callback) const
     {
       MeshCodec<Mesh> const * mesh_codec = NULL;
@@ -471,7 +471,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Codec const & codec, TheaArray< typename MeshCodec<Mesh>::Ptr > const * codecs,
+    void load(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
               ReadCallback * callback)
     {
       MeshCodec<Mesh> const * mesh_codec = NULL;
@@ -568,7 +568,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     }
 
     /** Try to get the appropriate codec for a mesh, given a collection of codecs. */
-    static MeshCodec<Mesh> const * codecFromPath(std::string path, TheaArray< typename MeshCodec<Mesh>::Ptr > const & codecs)
+    static MeshCodec<Mesh> const * codecFromPath(std::string path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs)
     {
       path = toLower(path);
       for (size_t i = 0; i < codecs.size(); ++i)

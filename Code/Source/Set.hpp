@@ -45,13 +45,20 @@
 #include "Platform.hpp"
 #include <set>
 
-/** Set of objects, guaranteed to be a drop-in replacement for std::set. Requires an ordering on the objects. */
-#define TheaSet std::set
+namespace Thea {
 
-/**
- * Set of objects (with possible duplication), guaranteed to be a drop-in replacement for std::multiset. Requires an ordering on
- * the objects.
- */
-#define TheaMultiSet std::multiset
+/** Set of objects. Requires an ordering on the objects. */
+template < typename T,
+           typename Compare = std::less<T>,
+           typename Alloc = std::allocator<T>
+         > using Set = std::set<T, Compare, Alloc>;
+
+/** Set of objects, with possible duplication. Requires an ordering on the objects. */
+template < typename T,
+           typename Compare = std::less<T>,
+           typename Alloc = std::allocator<T>
+         > using MultiSet = std::multiset<T, Compare, Alloc>;
+
+} // namespace Thea
 
 #endif

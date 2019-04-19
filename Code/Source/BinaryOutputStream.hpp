@@ -77,7 +77,7 @@ namespace Thea {
 
 /**
  * Sequential or random access output to binary files/memory. For every <code>writeX</code> method there are also versions that
- * operate on a whole TheaArray or C-array.
+ * operate on a whole Array or C-array.
  *
  * Any method call can trigger an out-of-memory error when writing to a memory buffer if it can't be expanded any more.
  *
@@ -531,7 +531,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
 
 #define THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(fname, tname)\
     void write##fname(int64 n, tname const * out); \
-    void write##fname(int64 n, TheaArray<tname> const & out);
+    void write##fname(int64 n, Array<tname> const & out);
 
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(Bool8,               bool)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(UInt8,               uint8)

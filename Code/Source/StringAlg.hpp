@@ -83,7 +83,7 @@ namespace Thea {
  *
  * @see stringSplit, TextInput
  */
-THEA_API void parseCommaSeparated(std::string const & s, TheaArray<std::string> & array, bool strip_quotes = true);
+THEA_API void parseCommaSeparated(std::string const & s, Array<std::string> & array, bool strip_quotes = true);
 
 /**
  * Split a string at each occurrence of a splitting character.
@@ -95,7 +95,7 @@ THEA_API void parseCommaSeparated(std::string const & s, TheaArray<std::string> 
  *
  * @return The number of fields found.
  */
-THEA_API long stringSplit(std::string const & s, char split_char, TheaArray<std::string> & result,
+THEA_API long stringSplit(std::string const & s, char split_char, Array<std::string> & result,
                           bool skip_empty_fields = false);
 
 /**
@@ -109,7 +109,7 @@ THEA_API long stringSplit(std::string const & s, char split_char, TheaArray<std:
  *
  * @return The number of fields found.
  */
-THEA_API long stringSplit(std::string const & s, std::string const & split_chars, TheaArray<std::string> & result,
+THEA_API long stringSplit(std::string const & s, std::string const & split_chars, Array<std::string> & result,
                           bool skip_empty_fields = false);
 
 /**

@@ -174,7 +174,7 @@ class UnionFind
       }
     }
 
-    typedef TheaUnorderedMap<T, long> ObjectMap;  ///< Map from objects to their IDs.
+    typedef UnorderedMap<T, long> ObjectMap;  ///< Map from objects to their IDs.
 
     bool has_objects;
     ObjectMap objects;

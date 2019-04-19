@@ -94,8 +94,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
 {
   private:
     typedef Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribute, FaceAttribute> BaseType;
-    typedef TheaUnorderedMap<long, Vertex *> IndexVertexMap;
-    typedef TheaUnorderedMap<long, Face *> IndexFaceMap;
+    typedef UnorderedMap<long, Vertex *> IndexVertexMap;
+    typedef UnorderedMap<long, Face *> IndexFaceMap;
 
   public:
     THEA_DEF_POINTER_TYPES(Mesh, std::shared_ptr, std::weak_ptr)
@@ -162,7 +162,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     MeshGroup * getAncestor(long generations) const;
     bool hasAncestor(MeshGroup const * anc) const;
 
-    TheaArray<double> const & getFeatures() const { updateFeatures(); return features; }
+    Array<double> const & getFeatures() const { updateFeatures(); return features; }
     void invalidateFeatures() { valid_features = false; }
 
   private:
@@ -171,7 +171,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     MeshGroup * parent;
 
     mutable bool valid_features;
-    mutable TheaArray<double> features;
+    mutable Array<double> features;
 
     static IndexVertexMap index_to_vertex;  // horrible hack
     static IndexFaceMap index_to_face;  // horrible hack

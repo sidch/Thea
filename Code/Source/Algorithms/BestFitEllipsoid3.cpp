@@ -119,7 +119,7 @@ BestFitEllipsoid3::update() const
     typedef Traits::Point                                           Point;
     typedef CGAL::Approximate_min_ellipsoid_d<Traits>               AME;
 
-    TheaArray<Point> p(points.size());
+    Array<Point> p(points.size());
     for (size_t i = 0; i < points.size(); ++i)
     {
       Vector3 const & point = points[i];

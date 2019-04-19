@@ -25,7 +25,7 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-typedef TheaUnorderedMap<int32, string> IndexLabelMap;
+typedef UnorderedMap<int32, string> IndexLabelMap;
 
 static int const MAX_NBRS = 8;
 int MAX_ROUNDS = 25;
@@ -80,12 +80,12 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 } // namespace Algorithms
 } // namespace Thea
 
-typedef TheaArray<Sample> SampleArray;
+typedef Array<Sample> SampleArray;
 typedef RefToPtrIterator<Sample const, SampleArray::const_iterator> SamplePtrIterator;
 typedef KDTreeN<Sample const *, 3> KDTree;
 typedef BoundedArrayN<MAX_NBRS, size_t> NeighborSet;
-typedef TheaArray<NeighborSet> NeighborSets;
-typedef TheaArray<Offset> OffsetArray;
+typedef Array<NeighborSet> NeighborSets;
+typedef Array<Offset> OffsetArray;
 
 struct NNFilter : public Filter<Sample const *>
 {
@@ -391,7 +391,7 @@ Vector3
 computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, int32 selected_label = -1,
                         bool only_active = false)
 {
-  TheaArray<size_t> selected_samples;
+  Array<size_t> selected_samples;
   for (size_t i = 0; i < samples.size(); ++i)
     if ((selected_label < 0 || samples[i].label == selected_label) && (!only_active || samples[i].active))
       selected_samples.push_back(i);
@@ -459,7 +459,7 @@ initTransform(int32 selected_label,
 #ifdef CONNECTED_COMPONENTS
 
 void
-selectSamples(SampleArray const & all_samples, int selected_label, TheaArray<size_t> & selected_samples)
+selectSamples(SampleArray const & all_samples, int selected_label, Array<size_t> & selected_samples)
 {
   selected_samples.clear();
 
@@ -469,7 +469,7 @@ selectSamples(SampleArray const & all_samples, int selected_label, TheaArray<siz
 }
 
 void
-findConnectedComponents(TheaArray<size_t> const & selected_samples, NeighborSets const & nbrs,
+findConnectedComponents(Array<size_t> const & selected_samples, NeighborSets const & nbrs,
                         UnionFind<size_t> & uf)
 {
   for (size_t i = 0; i < selected_samples.size(); ++i)
@@ -482,16 +482,16 @@ findConnectedComponents(TheaArray<size_t> const & selected_samples, NeighborSets
 }
 
 void
-computeComponentProperties(SampleArray const & all_samples, TheaArray<size_t> const & selected_samples,
-                           UnionFind<size_t> const & uf, TheaArray<long> & cc_reps, TheaArray<long> & cc_counts,
-                           TheaArray<AxisAlignedBox3> & cc_bounds)
+computeComponentProperties(SampleArray const & all_samples, Array<size_t> const & selected_samples,
+                           UnionFind<size_t> const & uf, Array<long> & cc_reps, Array<long> & cc_counts,
+                           Array<AxisAlignedBox3> & cc_bounds)
 {
   size_t ncc = (size_t)uf.numSets();
   cc_reps.resize(ncc); fill(cc_reps.begin(), cc_reps.end(), -1);
   cc_counts.resize(ncc); fill(cc_counts.begin(), cc_counts.end(), 0);
   cc_bounds.resize(ncc); fill(cc_bounds.begin(), cc_bounds.end(), AxisAlignedBox3());
 
-  typedef TheaUnorderedMap<long, size_t> RepSetMap;  // maps from ID of set's representative sample to set ID
+  typedef UnorderedMap<long, size_t> RepSetMap;  // maps from ID of set's representative sample to set ID
   RepSetMap set_ids;
 
   for (size_t i = 0; i < selected_samples.size(); ++i)
@@ -515,7 +515,7 @@ computeComponentProperties(SampleArray const & all_samples, TheaArray<size_t> co
 
 template <typename T>
 void
-sortIndices(TheaArray<T> const & values, TheaArray<size_t> & sorted_indices, bool descending = false)
+sortIndices(Array<T> const & values, Array<size_t> & sorted_indices, bool descending = false)
 {
   sorted_indices.resize(values.size());
   for (size_t i = 0; i < sorted_indices.size(); ++i)
@@ -528,8 +528,8 @@ sortIndices(TheaArray<T> const & values, TheaArray<size_t> & sorted_indices, boo
 }
 
 void
-deactivateSmallComponents(TheaArray<size_t> const & selected_samples, UnionFind<size_t> const & uf,
-                          long num_active_sets, TheaArray<long> const & cc_reps, TheaArray<size_t> const & cc_sorted,
+deactivateSmallComponents(Array<size_t> const & selected_samples, UnionFind<size_t> const & uf,
+                          long num_active_sets, Array<long> const & cc_reps, Array<size_t> const & cc_sorted,
                           SampleArray & all_samples)
 {
   for (size_t i = 0; i < selected_samples.size(); ++i)
@@ -566,7 +566,7 @@ initOffsetsForLabel(int32 selected_label,
     // Select samples to be processed
     //=========================================================================================================================
 
-    TheaArray<size_t> selected_samples1, selected_samples2;
+    Array<size_t> selected_samples1, selected_samples2;
     selectSamples(samples1, selected_label, selected_samples1);
     selectSamples(samples2, selected_label, selected_samples2);
 
@@ -600,13 +600,13 @@ initOffsetsForLabel(int32 selected_label,
     // Map connected components to each other
     //=========================================================================================================================
 
-    TheaArray<long> cc_reps1, cc_reps2;
-    TheaArray<long> cc_counts1, cc_counts2;
-    TheaArray<AxisAlignedBox3> cc_bounds1, cc_bounds2;
+    Array<long> cc_reps1, cc_reps2;
+    Array<long> cc_counts1, cc_counts2;
+    Array<AxisAlignedBox3> cc_bounds1, cc_bounds2;
     computeComponentProperties(samples1, selected_samples1, uf1, cc_reps1, cc_counts1, cc_bounds1);
     computeComponentProperties(samples2, selected_samples2, uf2, cc_reps2, cc_counts2, cc_bounds2);
 
-    TheaArray<size_t> cc_sorted1, cc_sorted2;
+    Array<size_t> cc_sorted1, cc_sorted2;
     sortIndices(cc_counts1, cc_sorted1, true);
     sortIndices(cc_counts2, cc_sorted2, true);
 
@@ -658,8 +658,8 @@ initOffsets(SampleArray & samples1, NeighborSets const & nbrs1, KDTree & kdtree1
 }
 
 void
-enforceConstraints(SampleArray const & samples1, SampleArray const & samples2, TheaArray<size_t> const & salient_indices1,
-                   TheaArray<size_t> const & salient_indices2, OffsetArray & offsets1)
+enforceConstraints(SampleArray const & samples1, SampleArray const & samples2, Array<size_t> const & salient_indices1,
+                   Array<size_t> const & salient_indices2, OffsetArray & offsets1)
 {
   for (size_t i = 0; i < salient_indices1.size(); ++i)
     offsets1[salient_indices1[i]].set(samples2[salient_indices2[i]].p - samples1[salient_indices1[i]].p);
@@ -669,8 +669,8 @@ enforceConstraints(SampleArray const & samples1, SampleArray const & samples2, T
 //
 // TODO: Do salient points and point labels play nice with each other?
 bool
-alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3> const & salient1,
-              TheaArray<Vector3> const & salient2, OffsetArray & offsets1)
+alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> const & salient1,
+              Array<Vector3> const & salient2, OffsetArray & offsets1)
 {
   // Init kd-trees
   KDTree kdtree1(SamplePtrIterator(samples1.begin()), SamplePtrIterator(samples1.end()));
@@ -693,7 +693,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, TheaArray<Vector3>
     return false;
   }
 
-  TheaArray<size_t> salient_indices1, salient_indices2;
+  Array<size_t> salient_indices1, salient_indices2;
   for (size_t i = 0; i < salient1.size(); ++i)
   {
     long nn_index = kdtree1.closestElement<MetricL2>(salient1[i]);
@@ -809,7 +809,7 @@ main(int argc, char * argv[])
   string offsets_path1;
   string salient_path1, salient_path2;
   long max_salient = -1;
-  TheaArray<string> salient_exclude_prefixes;  // all salient points with tags with these prefixes will be ignored
+  Array<string> salient_exclude_prefixes;  // all salient points with tags with these prefixes will be ignored
 
   int positional = 0;
 
@@ -909,7 +909,7 @@ main(int argc, char * argv[])
     return -1;
 
   bool has_salient = (!salient_path1.empty() && !salient_path2.empty());
-  TheaArray<Vector3> salient1, salient2;
+  Array<Vector3> salient1, salient2;
   if (has_salient)
   {
     ifstream in1(salient_path1.c_str());
@@ -926,7 +926,7 @@ main(int argc, char * argv[])
       return -1;
     }
 
-    TheaArray<string> salient_lines1, salient_lines2;
+    Array<string> salient_lines1, salient_lines2;
     string line;
     while (getline(in1, line)) salient_lines1.push_back(line);
     while (getline(in2, line)) salient_lines2.push_back(line);

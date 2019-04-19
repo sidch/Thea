@@ -93,7 +93,7 @@ bool const BinaryInputStream::NO_COPY = false;
 #define THEA_INITIAL_READ_BUFFER_LENGTH 50000000
 
 void
-BinaryInputStream::readBool8(int64 n, TheaArray<bool> & out)
+BinaryInputStream::readBool8(int64 n, Array<bool> & out)
 {
   out.resize((size_t)n);
 
@@ -103,7 +103,7 @@ BinaryInputStream::readBool8(int64 n, TheaArray<bool> & out)
 }
 
 #define THEA_BINARY_INPUT_STREAM_DEFINE_READER(fname, tname) \
-  void BinaryInputStream::read##fname(int64 n, TheaArray<tname> & out) \
+  void BinaryInputStream::read##fname(int64 n, Array<tname> & out) \
   { \
     out.resize((size_t)n); \
     read##fname(n, &out[0]); \

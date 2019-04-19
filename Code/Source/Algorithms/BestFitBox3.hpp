@@ -90,7 +90,7 @@ class THEA_API BestFitBox3
     /** Recompute the best-fit oriented bounding box. */
     void update() const;
 
-    TheaArray<Vector3> points;
+    Array<Vector3> points;
     bool has_up;
     Vector3 up;
 

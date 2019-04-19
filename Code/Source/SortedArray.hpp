@@ -53,7 +53,7 @@ template < typename T, typename Compare = std::less<T> >
 class SortedArray
 {
   private:
-    TheaArray<T> values;
+    Array<T> values;
     Compare compare;
 
   public:

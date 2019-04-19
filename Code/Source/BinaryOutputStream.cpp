@@ -65,7 +65,7 @@ THEA_INSTANTIATE_SMART_POINTERS(Thea::BinaryOutputStream)
 namespace Thea {
 
 void
-BinaryOutputStream::writeBool8(int64 n, TheaArray<bool> const & out)
+BinaryOutputStream::writeBool8(int64 n, Array<bool> const & out)
 {
   // std::vector optimizes bool in a way that prevents fast writing
   for (int64 i = 0; i < n; ++i)
@@ -73,7 +73,7 @@ BinaryOutputStream::writeBool8(int64 n, TheaArray<bool> const & out)
 }
 
 #define THEA_BINARY_OUTPUT_STREAM_DEFINE_WRITER(fname, tname) \
-  void BinaryOutputStream::write##fname(int64 n, TheaArray<tname> const & out) \
+  void BinaryOutputStream::write##fname(int64 n, Array<tname> const & out) \
   { \
     write##fname(n, &out[0]); \
   }

@@ -45,8 +45,8 @@ main(int argc, char * argv[])
   return status;
 }
 
-typedef TheaArray<string> LabelArray;
-typedef TheaUnorderedMap<string, int> LabelIndexMap;
+typedef Array<string> LabelArray;
+typedef UnorderedMap<string, int> LabelIndexMap;
 
 struct FaceAttribute
 {
@@ -178,8 +178,8 @@ struct WriteCallback : public MG::WriteCallback
   }
 
   LabelArray const & labels;
-  TheaArray< TheaArray<long> > faces_per_label;
-  TheaArray<long> unlabeled_faces;
+  Array< Array<long> > faces_per_label;
+  Array<long> unlabeled_faces;
 
 }; // struct WriteCallback
 
@@ -213,7 +213,7 @@ meshFix(int argc, char * argv[])
   opts_ply.setSkipEmptyMeshes(no_empty);
   CodecPLY<Mesh>::Ptr codec_ply(new CodecPLY<Mesh>(opts_ply));
 
-  TheaArray<MeshCodec<Mesh>::Ptr> codecs;
+  Array<MeshCodec<Mesh>::Ptr> codecs;
   codecs.push_back(codec_3ds);
   codecs.push_back(codec_obj);
   codecs.push_back(codec_off);
@@ -561,7 +561,7 @@ struct Flattener
 
   bool operator()(Mesh const & mesh)
   {
-    typedef TheaUnorderedMap<Mesh::Vertex const *, Mesh::Vertex *> VertexMap;
+    typedef UnorderedMap<Mesh::Vertex const *, Mesh::Vertex *> VertexMap;
     VertexMap vmap;
 
     for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
@@ -574,7 +574,7 @@ struct Flattener
       vmap[&(*vi)] = new_vertex;
     }
 
-    TheaArray<Mesh::Vertex *> face_vertices;
+    Array<Mesh::Vertex *> face_vertices;
     for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     {
       face_vertices.clear();
@@ -627,7 +627,7 @@ delDanglers(Mesh & mesh)
 
 struct FaceSeq
 {
-  TheaArray<Mesh::Vertex const *> seq;
+  Array<Mesh::Vertex const *> seq;
 
   FaceSeq(Mesh::Face const & face, bool sorted)
   {
@@ -659,7 +659,7 @@ struct hash<FaceSeq>
 
 } // namespace std
 
-typedef TheaUnorderedSet<FaceSeq> FaceSet;
+typedef UnorderedSet<FaceSeq> FaceSet;
 
 struct DupFaceDeleter
 {
@@ -839,7 +839,7 @@ tJuncts(Mesh & mesh)
   double tol = scaledTolerance(mesh, t_juncts_tolerance);
   double sqtol = tol * tol;
 
-  TheaArray<Mesh::Vertex *> boundary_verts;
+  Array<Mesh::Vertex *> boundary_verts;
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     if (vi->isBoundary())
       boundary_verts.push_back(&(*vi));
@@ -847,8 +847,8 @@ tJuncts(Mesh & mesh)
   typedef KDTreeN<Mesh::Vertex *, 3> VertexKDTree;
   VertexKDTree kdtree(boundary_verts.begin(), boundary_verts.end());
 
-  TheaArray<Mesh::Edge *> boundary_edges;
-  TheaArray<LineSegment3> boundary_segs;
+  Array<Mesh::Edge *> boundary_edges;
+  Array<LineSegment3> boundary_segs;
   LineSegment3 seg;
   for (Mesh::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
     if (ei->isBoundary())
@@ -960,7 +960,7 @@ consistentWinding(Mesh::Face const * face0, Mesh::Face const * face1, Mesh::Edge
 bool
 orient(Mesh & mesh)
 {
-  TheaArray< TheaArray<Mesh::Face *> > cc;
+  Array< Array<Mesh::Face *> > cc;
   long num_cc = ConnectedComponents::findEdgeConnected(mesh, cc);
 
   enum { NOT_VISITED, VISITED };
@@ -1317,7 +1317,7 @@ struct VisibilityOrienter
     Vector3 const * cameras = hi_qual ? CAMERAS_HI : CAMERAS_LO;
     size_t num_cameras = hi_qual ? NUM_CAMERAS_HI : NUM_CAMERAS_LO;
 
-    TheaArray<Vector3> face_pts;
+    Array<Vector3> face_pts;
     face_pts.reserve(32);
 
     for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)

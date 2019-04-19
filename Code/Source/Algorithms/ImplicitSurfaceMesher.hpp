@@ -278,7 +278,7 @@ class THEA_API ImplicitSurfaceMesher
       typedef Graphics::IncrementalMeshBuilder<MeshT> Builder;
       Builder builder(&dst);
 
-      TheaArray<typename Builder::VertexHandle> vertices;
+      Array<typename Builder::VertexHandle> vertices;
 
       builder.begin();
         for (size_t i = 0; i < polygonizer.no_vertices(); ++i)
@@ -321,7 +321,7 @@ class THEA_API ImplicitSurfaceMesher
       typedef Graphics::IncrementalMeshBuilder<MeshT> Builder;
       Builder builder(&dst);
 
-      typedef TheaUnorderedMap<Tr::Vertex const *, typename Builder::VertexHandle> VertexMap;
+      typedef UnorderedMap<Tr::Vertex const *, typename Builder::VertexHandle> VertexMap;
       VertexMap vmap;
 
       builder.begin();

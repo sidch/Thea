@@ -110,7 +110,7 @@ namespace SampleGraphInternal {
 class SamplePointerGraph
 {
   public:
-    typedef TheaArray<SurfaceSample *> NodeArray;
+    typedef Array<SurfaceSample *> NodeArray;
     typedef SurfaceSample * VertexHandle;
     typedef SurfaceSample const * VertexConstHandle;
     typedef NodeArray::iterator VertexIterator;
@@ -174,14 +174,14 @@ struct DijkstraCallback
 } // namespace SampleGraphInternal
 
 void
-SampleGraph::extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs)
+SampleGraph::extractOriginalAdjacencies(Array<SurfaceSample *> & sample_ptrs)
 {
   using namespace SampleGraphInternal;
 
   SamplePointerGraph graph(&sample_ptrs);
   ShortestPaths<SamplePointerGraph> shortest_paths;
 
-  TheaArray<SurfaceSample> samples_with_new_nbrs(samples.size());
+  Array<SurfaceSample> samples_with_new_nbrs(samples.size());
   for (size_t i = 0; i < samples.size(); ++i)
   {
     samples_with_new_nbrs[i] = samples[i];
@@ -259,7 +259,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
     return false;
   }
 
-  TheaArray<SurfaceSample::Neighbor> nbrs((size_t)options.max_degree);
+  Array<SurfaceSample::Neighbor> nbrs((size_t)options.max_degree);
   long num_nbrs, nbr_index;
   for (size_t i = 0; i < samples.size(); ++i)
   {

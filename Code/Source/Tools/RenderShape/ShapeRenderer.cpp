@@ -38,7 +38,7 @@ using namespace Graphics;
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
 typedef std::pair<Mesh const *, long> FaceRef;
-typedef TheaUnorderedMap<FaceRef, uint32> FaceIndexMap;
+typedef UnorderedMap<FaceRef, uint32> FaceIndexMap;
 
 struct View
 {
@@ -58,8 +58,8 @@ struct Model
   bool convert_to_points;
   MG mesh_group;
   bool is_point_cloud;
-  TheaArray<Vector3> points;
-  TheaArray<ColorRGBA> point_colors;
+  Array<Vector3> points;
+  Array<ColorRGBA> point_colors;
 };
 
 enum PointUsage
@@ -82,12 +82,12 @@ class ShapeRendererImpl
     static Texture * matcap_tex;
     static Texture * tex3d;
 
-    TheaArray<string> model_paths;
-    TheaArray<Matrix4> transforms;
+    Array<string> model_paths;
+    Array<Matrix4> transforms;
     float zoom;
     string out_path;
     int out_width, out_height;
-    TheaArray<View> views;
+    Array<View> views;
     bool has_up;
     Vector3 view_up;
     float point_size;
@@ -97,7 +97,7 @@ class ShapeRendererImpl
     bool show_edges;
     ColorRGBA edge_color;
     string labels_path;
-    TheaArray<int> labels;
+    Array<int> labels;
     string features_path;
     bool accentuate_features;
     bool color_by_tex3d;
@@ -241,10 +241,10 @@ ShapeRendererImpl::resetArgs()
 int
 ShapeRendererImpl::exec(string const & cmdline)  // cmdline should not include program name
 {
-  TheaArray<string> args;
+  Array<string> args;
   stringSplit(cmdline, " \t\n\f\r", args, true);
 
-  TheaArray<char *> argv(args.size() + 1);
+  Array<char *> argv(args.size() + 1);
 
   string prog_name = FilePath::objectName(Application::programPath());
   argv[0] = new char[prog_name.length() + 1];
@@ -385,7 +385,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
 
   typedef std::shared_ptr<Model> ModelPtr;
-  TheaArray<ModelPtr> overlay_models;
+  Array<ModelPtr> overlay_models;
   for (size_t i = 1; i < model_paths.size(); ++i)
   {
     ModelPtr overlay_model(new Model);
@@ -554,7 +554,7 @@ ShapeRendererImpl::usage()
 bool
 ShapeRendererImpl::parseTransform(string const & s, Matrix4 & m)
 {
-  TheaArray<string> fields;
+  Array<string> fields;
   long nfields = stringSplit(trimWhitespace(s), ",;:[({<>})] \t\n\r\f", fields, true);
   if (nfields != 12 && nfields != 16)
   {
@@ -1286,10 +1286,10 @@ struct FaceColorizer
   ShapeRendererImpl const * parent;
   FaceIndexMap const & tri_ids;
   FaceIndexMap const & quad_ids;
-  TheaArray<int> const * labels;
+  Array<int> const * labels;
 
   FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_,
-                TheaArray<int> const * labels_ = NULL)
+                Array<int> const * labels_ = NULL)
   : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_) {}
 
   bool operator()(Mesh & mesh)
@@ -1361,7 +1361,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     return false;
   }
 
-  TheaArray<int> labels;
+  Array<int> labels;
   string ext = toLower(FilePath::extension(labels_path));
   if (ext == "lab")
   {
@@ -1378,7 +1378,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       return false;
     }
 
-    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    typedef UnorderedMap<string, int> LabelIndexMap;
     LabelIndexMap label_indices;
 
     string line;
@@ -1444,7 +1444,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     }
 
     // Build mapping from face indices to their parent meshes
-    TheaArray<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), NULL);
+    Array<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), NULL);
     for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
       face_meshes[(size_t)fi->second] = fi->first.first;
 
@@ -1452,10 +1452,10 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       face_meshes[(size_t)fi->second] = fi->first.first;
 
     // Build map from meshes to their labels
-    typedef TheaUnorderedMap<Mesh const *, int> MeshLabelMap;
+    typedef UnorderedMap<Mesh const *, int> MeshLabelMap;
     MeshLabelMap mesh_labels;
 
-    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    typedef UnorderedMap<string, int> LabelIndexMap;
     LabelIndexMap label_indices;
 
     string line;
@@ -1527,7 +1527,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       return false;
     }
 
-    typedef TheaUnorderedMap<string, int> LabelIndexMap;
+    typedef UnorderedMap<string, int> LabelIndexMap;
     LabelIndexMap label_indices;
 
     string line;
@@ -1659,8 +1659,8 @@ struct VertexColorizer
 bool
 ShapeRendererImpl::loadFeatures(Model & model)
 {
-  TheaArray<Vector3> feat_pts;
-  TheaArray< TheaArray<Real> > feat_vals(1);
+  Array<Vector3> feat_pts;
+  Array< Array<Real> > feat_vals(1);
   try
   {
     ifstream in(features_path.c_str());
@@ -1683,7 +1683,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
       {
         while (line_in >> f)
         {
-          feat_vals.push_back(TheaArray<Real>());
+          feat_vals.push_back(Array<Real>());
           feat_vals.back().push_back(f);
         }
       }
@@ -1728,7 +1728,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
       {
         for (size_t i = 0; i < feat_vals.size(); ++i)
         {
-          TheaArray<Real> sorted = feat_vals[i];
+          Array<Real> sorted = feat_vals[i];
           sort(sorted.begin(), sorted.end());
 
           size_t tenth = (int)(0.1 * sorted.size());

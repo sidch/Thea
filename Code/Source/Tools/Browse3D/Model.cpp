@@ -327,7 +327,7 @@ namespace ModelInternal {
 
 struct CollectVerticesFunctor
 {
-  CollectVerticesFunctor(TheaArray<MeshVertex *> * verts_) : verts(verts_) {}
+  CollectVerticesFunctor(Array<MeshVertex *> * verts_) : verts(verts_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -337,7 +337,7 @@ struct CollectVerticesFunctor
     return false;
   }
 
-  TheaArray<MeshVertex *> * verts;
+  Array<MeshVertex *> * verts;
 
 }; // struct CollectVerticesFunctor
 
@@ -350,7 +350,7 @@ Model::updateVertexKDTree() const
 
   vertex_kdtree->clear(false);
 
-  TheaArray<MeshVertex *> verts;
+  Array<MeshVertex *> verts;
   ModelInternal::CollectVerticesFunctor func(&verts);
   mesh_group->forEachMeshUntil(&func);
   vertex_kdtree->init(verts.begin(), verts.end());
@@ -760,8 +760,8 @@ struct SimilarComponentCollector
   Mesh const * query_mesh;
   MeshGroup const * query_group;
 
-  TheaArray<Mesh const *> similar_meshes;
-  TheaArray<MeshGroup const *> similar_groups;
+  Array<Mesh const *> similar_meshes;
+  Array<MeshGroup const *> similar_groups;
 };
 
 } // namespace ModelInternal
@@ -1102,8 +1102,8 @@ Model::loadFeatures(std::string const & path_)
     return has_features;
   }
 
-  TheaArray<Vector3> feat_pts;
-  TheaArray< TheaArray<Real> > feat_vals(1);
+  Array<Vector3> feat_pts;
+  Array< Array<Real> > feat_vals(1);
   has_features = true;
   try
   {
@@ -1127,7 +1127,7 @@ Model::loadFeatures(std::string const & path_)
       {
         while (line_in >> f)
         {
-          feat_vals.push_back(TheaArray<Real>());
+          feat_vals.push_back(Array<Real>());
           feat_vals.back().push_back(f);
         }
       }
@@ -1175,7 +1175,7 @@ Model::loadFeatures(std::string const & path_)
       {
         for (size_t i = 0; i < feat_vals.size(); ++i)
         {
-          TheaArray<Real> sorted = feat_vals[i];
+          Array<Real> sorted = feat_vals[i];
           std::sort(sorted.begin(), sorted.end());
 
           size_t tenth = (int)(0.1 * sorted.size());
@@ -1230,7 +1230,7 @@ namespace ModelInternal {
 class FaceLabeler
 {
   public:
-    FaceLabeler(TheaArray<ColorRGBA> const & elem_colors_) : elem_colors(elem_colors_) {}
+    FaceLabeler(Array<ColorRGBA> const & elem_colors_) : elem_colors(elem_colors_) {}
 
     bool operator()(Mesh & mesh) const
     {
@@ -1247,7 +1247,7 @@ class FaceLabeler
     }
 
   private:
-    TheaArray<ColorRGBA> const & elem_colors;
+    Array<ColorRGBA> const & elem_colors;
 };
 
 } // namespace ModelInternal
@@ -1267,7 +1267,7 @@ Model::loadElementLabels(std::string const & path_)
     return has_elem_labels;
   }
 
-  TheaArray<ColorRGBA> elem_colors;
+  Array<ColorRGBA> elem_colors;
   std::string line;
   while (std::getline(in, line))
   {
@@ -1305,7 +1305,7 @@ Model::loadElementLabels(std::string const & path_)
 namespace ModelInternal {
 
 std::string
-getDefaultPath(std::string model_path, std::string const & query_path, TheaArray<std::string> const & query_exts)
+getDefaultPath(std::string model_path, std::string const & query_path, Array<std::string> const & query_exts)
 {
   if (FileSystem::fileExists(query_path))
     return query_path;
@@ -1346,7 +1346,7 @@ getDefaultPath(std::string model_path, std::string const & query_path, TheaArray
 std::string
 Model::getDefaultFeaturesPath() const
 {
-  TheaArray<std::string> exts;
+  Array<std::string> exts;
   exts.push_back(".arff");
   exts.push_back(".features");
 
@@ -1356,7 +1356,7 @@ Model::getDefaultFeaturesPath() const
 std::string
 Model::getDefaultElementLabelsPath() const
 {
-  TheaArray<std::string> exts;
+  Array<std::string> exts;
   exts.push_back(".seg");
 
   return ModelInternal::getDefaultPath(path, app().options().elem_labels, exts);

@@ -248,7 +248,7 @@ class THEA_API Image : public AbstractImage, public Serializable
 
     // Image data
     fipImage * fip_img;
-    TheaArray< uint8, AlignedAllocator<uint8, ROW_ALIGNMENT> > data;  // pixel buffer when fipImage won't work, e.g. 3D images
+    Array< uint8, AlignedAllocator<uint8, ROW_ALIGNMENT> > data;  // pixel buffer when fipImage won't work, e.g. 3D images
 
     // Cached type properties for fast access
     int   num_channels;

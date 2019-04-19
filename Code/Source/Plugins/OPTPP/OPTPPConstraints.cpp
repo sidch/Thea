@@ -82,9 +82,9 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
     case MatrixFormat::SPARSE_ROW_MAJOR:
     {
       typename MW::SparseRowMatrix const & srm = src.getSparseRowMatrix();
-      TheaArray<I1> const & irow  =  srm.getRowIndices();
-      TheaArray<I2> const & icol  =  srm.getColumnIndices();
-      TheaArray<T>  const & val   =  srm.getValues();
+      Array<I1> const & irow  =  srm.getRowIndices();
+      Array<I2> const & icol  =  srm.getColumnIndices();
+      Array<T>  const & val   =  srm.getValues();
 
       dst = 0;  // set all entries to zero
       for (size_t r = 0; r < (size_t)srm.rows(); ++r)
@@ -100,9 +100,9 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
     case MatrixFormat::SPARSE_COLUMN_MAJOR:
     {
       typename MW::SparseColumnMatrix const & scm = src.getSparseColumnMatrix();
-      TheaArray<I1> const & icol  =  scm.getColumnIndices();
-      TheaArray<I2> const & irow  =  scm.getRowIndices();
-      TheaArray<T>  const & val   =  scm.getValues();
+      Array<I1> const & icol  =  scm.getColumnIndices();
+      Array<I2> const & irow  =  scm.getRowIndices();
+      Array<T>  const & val   =  scm.getValues();
 
       dst = 0;  // set all entries to zero
       for (size_t c = 0; c < (size_t)scm.cols(); ++c)
@@ -122,7 +122,7 @@ toNEWMATMatrix(MatrixWrapper<T, I2, I1> const & src, NEWMAT::Matrix & dst)
 
 template <typename T>
 void
-toNEWMATColumnVector(TheaArray<T> const & src, NEWMAT::ColumnVector & dst)
+toNEWMATColumnVector(Array<T> const & src, NEWMAT::ColumnVector & dst)
 {
   dst.ReSize((int)src.size());
   for (size_t i = 0; i < src.size(); ++i)

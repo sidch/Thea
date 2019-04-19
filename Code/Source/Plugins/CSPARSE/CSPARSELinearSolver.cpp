@@ -52,7 +52,7 @@ namespace Algorithms {
 namespace CSPARSELinearSolverInternal {
 
 static bool
-indicesToInt(int type, long n, void const * begin, TheaArray<int> & out)
+indicesToInt(int type, long n, void const * begin, Array<int> & out)
 {
 #define THEA_CSPARSE_CONVERT_AND_PUSH(numtype) \
   { \
@@ -209,10 +209,10 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
       alwaysAssertM(sm.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
 
       // TODO: avoid the copy when the input indices are actually ints
-      TheaArray<int> irow;
+      Array<int> irow;
       indicesToInt(sm.getInnerIndexType(), sm.numStoredElements(), sm.getInnerIndices(), irow);
 
-      TheaArray<int> pcol;
+      Array<int> pcol;
       indicesToInt(sm.getOuterIndexType(), sm.outerSize(), sm.getOuterIndices(), pcol);
 
       int nnz = (int)sm.numStoredElements();

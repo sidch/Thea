@@ -63,10 +63,10 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
   return cp;
 }
 
-int countSDFModes(TheaArray<Real> const & sdf_values);
+int countSDFModes(Array<Real> const & sdf_values);
 ColorRGB const & getPaletteColor(int i);
-int combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, KDTree const & kdtree,
-                               TheaArray<int> & labels, double concavity_threshold, double score_threshold);
+int combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KDTree const & kdtree,
+                               Array<int> & labels, double concavity_threshold, double score_threshold);
 
 int
 segmentSDF(int argc, char * argv[])
@@ -111,7 +111,7 @@ segmentSDF(int argc, char * argv[])
 
   double density = approx_num_samples / total_area;
 
-  TheaArray<Vector3> positions, normals;
+  Array<Vector3> positions, normals;
   for (long i = 0; i < kdtree.numElements(); ++i)
   {
     KDTree::Element const & elem = kdtree.getElements()[(size_t)i];
@@ -134,7 +134,7 @@ segmentSDF(int argc, char * argv[])
   THEA_CONSOLE << "Computed " << positions.size() << " sample points on the mesh";
 
   // Compute SDF values
-  TheaArray<Real> sdf_values(positions.size());
+  Array<Real> sdf_values(positions.size());
   MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
   for (size_t i = 0; i < positions.size(); ++i)
     sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
@@ -157,7 +157,7 @@ segmentSDF(int argc, char * argv[])
 
 #ifndef THEA_MAC
 
-  TheaArray<ClusterablePoint> clusterable_pts(positions.size());
+  Array<ClusterablePoint> clusterable_pts(positions.size());
   for (size_t i = 0; i < positions.size(); ++i)
     clusterable_pts[i] = toClusterablePoint(positions[i], sdf_values[i]);
 
@@ -169,7 +169,7 @@ segmentSDF(int argc, char * argv[])
                                   Clustering::SplitPriority::BEST_FIRST);
 
   // Do the clustering
-  TheaArray<int> labels(positions.size());
+  Array<int> labels(positions.size());
   int num_clusters = Clustering::computeFlat(clusterable_pts, labels, options, num_clusters_hint);
 
   THEA_CONSOLE << "Segmented points into " << num_clusters << " clusters";
@@ -293,7 +293,7 @@ struct IndexedValue
 };
 
 double
-estimateBandwidth(TheaArray<IndexedValue> const & sorted_pts)
+estimateBandwidth(Array<IndexedValue> const & sorted_pts)
 {
   // See Silverman (1986), eq. 3.31, and
   // http://www1.american.edu/academic.depts/cas/econ/gaussres/utilitys/KERNEL/KONING/KNLIB.PS
@@ -320,7 +320,7 @@ estimateBandwidth(TheaArray<IndexedValue> const & sorted_pts)
 }
 
 double
-doMeanShift(double start, TheaArray<IndexedValue> const & sorted_pts, double bandwidth, unsigned int num_iters = 100,
+doMeanShift(double start, Array<IndexedValue> const & sorted_pts, double bandwidth, unsigned int num_iters = 100,
             double threshold = 0.001)
 {
   double inv_bandwidth = 1.0 / bandwidth;
@@ -331,7 +331,7 @@ doMeanShift(double start, TheaArray<IndexedValue> const & sorted_pts, double ban
     double lo = start - 1.2 * bandwidth;
     double hi = start + 1.2 * bandwidth;
 
-    typedef TheaArray<IndexedValue>::const_iterator Iterator;
+    typedef Array<IndexedValue>::const_iterator Iterator;
     Iterator begin = lower_bound(sorted_pts.begin(), sorted_pts.end(), IndexedValue(lo, -1));
     Iterator end   = upper_bound(sorted_pts.begin(), sorted_pts.end(), IndexedValue(hi, -1));
 
@@ -360,7 +360,7 @@ doMeanShift(double start, TheaArray<IndexedValue> const & sorted_pts, double ban
 }
 
 void
-doMeanShiftBlock(TheaArray<IndexedValue> const * descs, TheaArray<IndexedValue> * modes, size_t begin, size_t end,
+doMeanShiftBlock(Array<IndexedValue> const * descs, Array<IndexedValue> * modes, size_t begin, size_t end,
                  double bandwidth, int thread_index)
 {
   static unsigned int const NUM_ITERS = 100;
@@ -380,10 +380,10 @@ defaultConcurrency()
 }
 
 int
-countSDFModes(TheaArray<Real> const & sdf_values)
+countSDFModes(Array<Real> const & sdf_values)
 {
   // Associate descriptors with sample indices
-  TheaArray<IndexedValue> descs(sdf_values.size());
+  Array<IndexedValue> descs(sdf_values.size());
   for (size_t i = 0; i < sdf_values.size(); ++i)
     descs[i] = IndexedValue(sdf_values[i], (int)i);
 
@@ -394,7 +394,7 @@ countSDFModes(TheaArray<Real> const & sdf_values)
   THEA_CONSOLE << "Estimated bandwidth = " << bandwidth;
 
   // Do mean shift on each point to find its nearest mode
-  TheaArray<IndexedValue> modes(descs.size());
+  Array<IndexedValue> modes(descs.size());
 
   size_t num_threads = (size_t)defaultConcurrency();  // numCores()
   THEA_CONSOLE << "Using " << num_threads << " threads to find initial modes via mean-shift";
@@ -464,8 +464,8 @@ typedef Graph<SampleCluster *, double> SampleClusterConnectivityGraph;
 struct SampleCluster
 {
   int label;
-  TheaArray<Vector3 const *> positions;
-  TheaArray<Vector3 const *> normals;
+  Array<Vector3 const *> positions;
+  Array<Vector3 const *> normals;
   KDTreeN<Vector3 const *, 3> * kdtree;
   double concavity;
   SampleClusterConnectivityGraph::VertexIterator conn_vertex;
@@ -483,10 +483,10 @@ struct SampleCluster
   }
 };
 
-typedef TheaUnorderedMap<int, SampleCluster> SampleClusterMap;
+typedef UnorderedMap<int, SampleCluster> SampleClusterMap;
 
 double
-computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3 const *> const & normals,
+computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *> const & normals,
                  KDTree const & kdtree)
 {
   Real skin_width = 0.01 * kdtree.getBounds().getExtent().norm();
@@ -532,8 +532,8 @@ computeConcavity(TheaArray<Vector3 const *> const & positions, TheaArray<Vector3
 }
 
 int
-combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vector3> const & normals, KDTree const & kdtree,
-                           TheaArray<int> & labels, double concavity_threshold, double score_threshold)
+combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KDTree const & kdtree,
+                           Array<int> & labels, double concavity_threshold, double score_threshold)
 {
   if (concavity_threshold < 0) concavity_threshold  =  0.015;
   if (score_threshold     < 0) score_threshold      =  0.9;
@@ -594,11 +594,11 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
   for (SampleClusterConnectivityGraph::EdgeIterator ei = cluster_conn_graph.edgesBegin(); ei != cluster_conn_graph.edgesEnd();
        ++ei)
   {
-    TheaArray<Vector3 const *> combined_positions(ei->getOrigin()->attr()->positions);
+    Array<Vector3 const *> combined_positions(ei->getOrigin()->attr()->positions);
     combined_positions.insert(combined_positions.end(), ei->getEnd()->attr()->positions.begin(),
                                                         ei->getEnd()->attr()->positions.end());
 
-    TheaArray<Vector3 const *> combined_normals(ei->getOrigin()->attr()->normals);
+    Array<Vector3 const *> combined_normals(ei->getOrigin()->attr()->normals);
     combined_normals.insert(combined_normals.end(), ei->getEnd()->attr()->normals.begin(),
                                                     ei->getEnd()->attr()->normals.end());
 
@@ -640,12 +640,12 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
     ov->attr()->concavity = max_edge->attr();
 
     // Merge the sample lists of the two clusters
-    TheaArray<Vector3 const *> & opositions = ov->attr()->positions;
-    TheaArray<Vector3 const *> & epositions = max_edge->getEnd()->attr()->positions;
+    Array<Vector3 const *> & opositions = ov->attr()->positions;
+    Array<Vector3 const *> & epositions = max_edge->getEnd()->attr()->positions;
     opositions.insert(opositions.end(), epositions.begin(), epositions.end());
 
-    TheaArray<Vector3 const *> & onormals = ov->attr()->normals;
-    TheaArray<Vector3 const *> & enormals = max_edge->getEnd()->attr()->normals;
+    Array<Vector3 const *> & onormals = ov->attr()->normals;
+    Array<Vector3 const *> & enormals = max_edge->getEnd()->attr()->normals;
     onormals.insert(onormals.end(), enormals.begin(), enormals.end());
 
     // Mark the KD-tree for an update
@@ -659,10 +659,10 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
     // Recompute the convexity values for all edges incident at this vertex
     for (SampleClusterConnectivityGraph::Vertex::EdgeIterator ei = ov->incomingEdgesBegin(); ei != ov->incomingEdgesEnd(); ++ei)
     {
-      TheaArray<Vector3 const *> combined_positions((*ei)->getOrigin()->attr()->positions);
+      Array<Vector3 const *> combined_positions((*ei)->getOrigin()->attr()->positions);
       combined_positions.insert(combined_positions.end(), opositions.begin(), opositions.end());
 
-      TheaArray<Vector3 const *> combined_normals((*ei)->getOrigin()->attr()->normals);
+      Array<Vector3 const *> combined_normals((*ei)->getOrigin()->attr()->normals);
       combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
 
       double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);
@@ -671,10 +671,10 @@ combineClustersByConvexity(TheaArray<Vector3> const & positions, TheaArray<Vecto
 
     for (SampleClusterConnectivityGraph::Vertex::EdgeIterator ei = ov->outgoingEdgesBegin(); ei != ov->outgoingEdgesEnd(); ++ei)
     {
-      TheaArray<Vector3 const *> combined_positions((*ei)->getEnd()->attr()->positions);
+      Array<Vector3 const *> combined_positions((*ei)->getEnd()->attr()->positions);
       combined_positions.insert(combined_positions.end(), opositions.begin(), opositions.end());
 
-      TheaArray<Vector3 const *> combined_normals((*ei)->getEnd()->attr()->normals);
+      Array<Vector3 const *> combined_normals((*ei)->getEnd()->attr()->normals);
       combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
 
       double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);

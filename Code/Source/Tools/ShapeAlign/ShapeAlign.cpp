@@ -46,7 +46,7 @@ usage(int argc, char * argv[])
 }
 
 bool
-sampleMesh(string const & mesh_path, TheaArray<Vector3d> & samples)
+sampleMesh(string const & mesh_path, Array<Vector3d> & samples)
 {
   typedef DisplayMesh Mesh;
   typedef MeshGroup<Mesh> MG;
@@ -57,7 +57,7 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3d> & samples)
     mg.load(mesh_path);
 
     MeshSampler<Mesh> sampler(mg);
-    TheaArray<Vector3> pts;
+    Array<Vector3> pts;
     sampler.sampleEvenlyByArea(num_mesh_samples, pts);
 
     samples.resize(pts.size());
@@ -72,7 +72,7 @@ sampleMesh(string const & mesh_path, TheaArray<Vector3d> & samples)
 }
 
 bool
-loadPoints(string const & points_path, TheaArray<Vector3d> & points)
+loadPoints(string const & points_path, Array<Vector3d> & points)
 {
   string path_lc = toLower(points_path);
   if (endsWith(path_lc, ".obj")
@@ -203,7 +203,7 @@ loadPoints(string const & points_path, TheaArray<Vector3d> & points)
 }
 
 AffineTransform3d
-normalization(TheaArray<Vector3d> const & from_pts, TheaArray<Vector3d> const & to_pts, double & from_scale, double & to_scale)
+normalization(Array<Vector3d> const & from_pts, Array<Vector3d> const & to_pts, double & from_scale, double & to_scale)
 {
   from_scale = to_scale = 1.0;
 
@@ -268,7 +268,7 @@ normalizeError(double err, double scale, long num_points)
 }
 
 bool
-loadShapePaths(string const & path, TheaArray<string> & shape_paths)
+loadShapePaths(string const & path, Array<string> & shape_paths)
 {
   shape_paths.clear();
 
@@ -299,11 +299,11 @@ loadShapePaths(string const & path, TheaArray<string> & shape_paths)
 int
 alignShapes(string const & from_path, string const & to_path, std::ostream * out)
 {
-  TheaArray<Vector3d> from_pts;
+  Array<Vector3d> from_pts;
   if (!loadPoints(from_path, from_pts))
     return -1;
 
-  TheaArray<Vector3d> to_pts;
+  Array<Vector3d> to_pts;
   if (!loadPoints(to_path, to_pts))
     return -1;
 
@@ -342,7 +342,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      TheaArray<Vector3d> rot_from_pts(from_pts.size());
+      Array<Vector3d> rot_from_pts(from_pts.size());
       double rot_error;
       bool first = true;
 
@@ -393,7 +393,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      TheaArray<Vector3d> rot_from_pts(from_pts.size());
+      Array<Vector3d> rot_from_pts(from_pts.size());
       double rot_error;
       bool first = true;
 
@@ -594,7 +594,7 @@ main(int argc, char * argv[])
     out = &fout;
   }
 
-  TheaArray<string> from_shape_paths, to_shape_paths;
+  Array<string> from_shape_paths, to_shape_paths;
   if (!loadShapePaths(from_path, from_shape_paths) || !loadShapePaths(to_path, to_shape_paths))
     return -1;
 

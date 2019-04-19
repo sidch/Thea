@@ -94,7 +94,7 @@ class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizerFactory : public NumericalOpti
     void destroyAllNumericalOptimizers();
 
   private:
-    typedef TheaSet<NumericalOptimizer *> NumericalOptimizerSet;  ///< Set of numerical optimizers.
+    typedef Set<NumericalOptimizer *> NumericalOptimizerSet;  ///< Set of numerical optimizers.
 
     NumericalOptimizerSet optimizers;  ///< All numerical optimizers created by this factory.
 };

@@ -56,13 +56,13 @@ bool abs_values = false;
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
-bool computeBounds(MG & mg, TheaArray<double> & values);
-bool computeExtent(MG & mg, TheaArray<double> & values);
+bool computeBounds(MG & mg, Array<double> & values);
+bool computeExtent(MG & mg, Array<double> & values);
 bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
-                              double reduction_ratio, TheaArray<double> & values);
+                              double reduction_ratio, Array<double> & values);
 bool computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio,
-                               TheaArray<double> & values);
-bool computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<double> & values);
+                               Array<double> & values);
+bool computeSDFHistogram(MG const & mg, long num_bins, long num_samples, Array<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -156,15 +156,15 @@ main(int argc, char * argv[])
                << mesh_scale_type.toString() << ')';
 
   // Compute features
-  TheaArray<double> features;
-  TheaArray<string> feat_names;
+  Array<double> features;
+  Array<string> feat_names;
 
   for (int i = 1; i < argc; ++i)
   {
     string feat = string(argv[i]);
     if (feat == "--bbox")
     {
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeBounds(mg, values))
         return -1;
 
@@ -172,7 +172,7 @@ main(int argc, char * argv[])
     }
     else if (feat == "--ext")
     {
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeExtent(mg, values))
         return -1;
 
@@ -207,7 +207,7 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeCurvatureHistogram(mg, num_bins, num_samples, reduction_ratio, values))
         return -1;
 
@@ -259,7 +259,7 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeDistanceHistogram(mg, num_bins, num_samples, dist_type, max_distance, reduction_ratio, values))
         return -1;
 
@@ -287,7 +287,7 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      TheaArray<double> values;
+      Array<double> values;
       if (!computeSDFHistogram(mg, num_bins, num_samples, values))
         return -1;
 
@@ -402,7 +402,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
     case MeshScaleType::AVG_DIST:
     {
       MeshSampler<Mesh> sampler(mg);
-      TheaArray<Vector3> samples;
+      Array<Vector3> samples;
       sampler.sampleEvenlyByArea(50000, samples);
 
       if (samples.size() <= 1)
@@ -427,7 +427,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 }
 
 bool
-computeBounds(MG & mg, TheaArray<double> & values)
+computeBounds(MG & mg, Array<double> & values)
 {
   THEA_CONSOLE << "Computing mesh bounding box";
 
@@ -449,7 +449,7 @@ computeBounds(MG & mg, TheaArray<double> & values)
 }
 
 bool
-computeExtent(MG & mg, TheaArray<double> & values)
+computeExtent(MG & mg, Array<double> & values)
 {
   THEA_CONSOLE << "Computing mesh extent";
 
@@ -468,7 +468,7 @@ computeExtent(MG & mg, TheaArray<double> & values)
 
 bool
 computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
-                         double reduction_ratio, TheaArray<double> & values)
+                         double reduction_ratio, Array<double> & values)
 {
   THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histogram";
 
@@ -486,7 +486,7 @@ computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, Distanc
 }
 
 bool
-computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio, TheaArray<double> & values)
+computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio, Array<double> & values)
 {
   THEA_CONSOLE << "Computing curvature histogram";
 
@@ -502,7 +502,7 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
     reduction_ratio = 5000.0 / num_samples;
 
   long num_queries = Math::clamp((long)std::ceil(reduction_ratio * num_samples), 0L, num_samples - 1);
-  TheaArray<int32> query_indices((size_t)num_queries);
+  Array<int32> query_indices((size_t)num_queries);
   Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
   for (size_t i = 0; i < query_indices.size(); ++i)
@@ -526,7 +526,7 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
 }
 
 bool
-computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<double> & values)
+computeSDFHistogram(MG const & mg, long num_bins, long num_samples, Array<double> & values)
 {
   THEA_CONSOLE << "Computing SDF histogram";
 
@@ -539,7 +539,7 @@ computeSDFHistogram(MG const & mg, long num_bins, long num_samples, TheaArray<do
     num_samples = 5000;
 
   MeshSampler<Mesh> sampler(mg);
-  TheaArray<Vector3> positions, normals;
+  Array<Vector3> positions, normals;
   sampler.sampleEvenlyByArea(num_samples, positions, &normals);
 
   for (long i = 0; i < num_samples; ++i)

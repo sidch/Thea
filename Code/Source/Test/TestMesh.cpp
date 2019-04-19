@@ -86,7 +86,7 @@ testGeneralMesh(int argc, char * argv[])
   kdtree.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
-  TheaArray< TheaArray<GM::Face *> > components;
+  Array< Array<GM::Face *> > components;
   ConnectedComponents::findEdgeConnected(*mesh, components);
 #endif
 
@@ -106,7 +106,7 @@ testDCELMesh(int argc, char * argv[])
   kdtree.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
-  TheaArray< TheaArray<DM::Face *> > components;
+  Array< Array<DM::Face *> > components;
   ConnectedComponents::findEdgeConnected(*mesh, components);
 #endif
 

@@ -95,9 +95,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     typedef GeneralMeshFace   <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;
 
   private:
-    typedef TheaList<Vertex, AllocatorT<Vertex> >  VertexList;
-    typedef TheaList<Edge,   AllocatorT<Edge>   >  EdgeList;
-    typedef TheaList<Face,   AllocatorT<Face>   >  FaceList;
+    typedef List<Vertex, AllocatorT<Vertex> >  VertexList;
+    typedef List<Edge,   AllocatorT<Edge>   >  EdgeList;
+    typedef List<Face,   AllocatorT<Face>   >  FaceList;
 
   public:
     typedef typename VertexList::iterator        VertexIterator;       ///< Iterator over vertices.
@@ -224,13 +224,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      * data in the maps is <b>not</b> cleared.
      */
     void copyTo(GeneralMesh & dst,
-                TheaUnorderedMap<Vertex const *, Vertex *> * vertex_map = NULL,
-                TheaUnorderedMap<Edge const *, Edge *> * edge_map = NULL,
-                TheaUnorderedMap<Face const *, Face *> * face_map = NULL) const
+                UnorderedMap<Vertex const *, Vertex *> * vertex_map = NULL,
+                UnorderedMap<Edge const *, Edge *> * edge_map = NULL,
+                UnorderedMap<Face const *, Face *> * face_map = NULL) const
     {
-      typedef TheaUnorderedMap<Vertex const *, Vertex *> VertexMap;
-      typedef TheaUnorderedMap<Edge   const *, Edge   *> EdgeMap;
-      typedef TheaUnorderedMap<Face   const *, Face   *> FaceMap;
+      typedef UnorderedMap<Vertex const *, Vertex *> VertexMap;
+      typedef UnorderedMap<Edge   const *, Edge   *> EdgeMap;
+      typedef UnorderedMap<Face   const *, Face   *> FaceMap;
 
       VertexMap  tmp_vertex_map;
       EdgeMap    tmp_edge_map;
@@ -1018,7 +1018,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       }
       else
       {
-        TheaArray<Vertex *> face_vertices((size_t)face->numVertices());
+        Array<Vertex *> face_vertices((size_t)face->numVertices());
         Polygon3 poly;
         {
           size_t i = 0;
@@ -1029,7 +1029,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
           }
         }
 
-        TheaArray<long> tri_indices;
+        Array<long> tri_indices;
         ntris = poly.triangulate(tri_indices, epsilon);
         if (ntris >= 1)
         {
@@ -1617,11 +1617,11 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       num_quad_indices  =  (long)packed_quads.size();
     }
 
-    typedef TheaArray<Vector3>    PositionArray;  ///< Array of vertex positions.
-    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
-    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
-    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
+    typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
+    typedef Array<Vector3>    NormalArray;    ///< Array of normals.
+    typedef Array<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
     FaceList    faces;        ///< Set of mesh faces.
     VertexList  vertices;     ///< Set of mesh vertices.
@@ -1656,7 +1656,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     VAR * quads_var;             ///< GPU buffer for quad indices.
     VAR * edges_var;             ///< GPU buffer for edges.
 
-    mutable TheaArray<Vertex *> face_vertices;  ///< Internal cache of vertex pointers for a face.
+    mutable Array<Vertex *> face_vertices;  ///< Internal cache of vertex pointers for a face.
 
 }; // class GeneralMesh
 

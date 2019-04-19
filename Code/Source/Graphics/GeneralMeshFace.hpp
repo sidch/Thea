@@ -68,8 +68,8 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
   private:
     typedef NormalAttribute<Vector3> NormalBaseType;
 
-    typedef TheaList< Vertex *, AllocatorT<Vertex *> >  VertexList;
-    typedef TheaList< Edge *,   AllocatorT<Edge *>   >  EdgeList;
+    typedef List< Vertex *, AllocatorT<Vertex *> >  VertexList;
+    typedef List< Edge *,   AllocatorT<Edge *>   >  EdgeList;
 
   public:
     typedef typename VertexList::iterator                VertexIterator;              ///< Iterator over vertices.
@@ -483,9 +483,9 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
 
     /** Make an exact copy of the face. */
     void copyTo(GeneralMeshFace & dst,
-                TheaUnorderedMap<Vertex const *, Vertex *> const & vertex_map,
-                TheaUnorderedMap<Edge const *, Edge *> const & edge_map,
-                TheaUnorderedMap<GeneralMeshFace const *, GeneralMeshFace *> const & face_map) const
+                UnorderedMap<Vertex const *, Vertex *> const & vertex_map,
+                UnorderedMap<Edge const *, Edge *> const & edge_map,
+                UnorderedMap<GeneralMeshFace const *, GeneralMeshFace *> const & face_map) const
     {
       dst.setNormal(this->getNormal());
       dst.setAttr(this->attr());  // assume attributes can be simply copied

@@ -105,7 +105,7 @@ class /* THEA_API */ ShortestPaths
     class MapCallback
     {
       public:
-        MapCallback(TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result_) : result(result_) {}
+        MapCallback(UnorderedMap<VertexHandle, ShortestPathInfo> & result_) : result(result_) {}
 
         bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred)
         {
@@ -114,7 +114,7 @@ class /* THEA_API */ ShortestPaths
         }
 
       private:
-        TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result;
+        UnorderedMap<VertexHandle, ShortestPathInfo> & result;
 
     }; // class MapCallback
 
@@ -142,8 +142,8 @@ class /* THEA_API */ ShortestPaths
      * @param include_unreachable If true, vertices unreachable from the source vertex are also returned, mapped to negative
      *   distances and without predecessors.
      */
-    void dijkstra(Graph & graph, VertexHandle src, TheaUnorderedMap<VertexHandle, ShortestPathInfo> & result, double limit = -1,
-                  TheaUnorderedMap<VertexHandle, double> const * src_region = NULL, bool include_unreachable = false)
+    void dijkstra(Graph & graph, VertexHandle src, UnorderedMap<VertexHandle, ShortestPathInfo> & result, double limit = -1,
+                  UnorderedMap<VertexHandle, double> const * src_region = NULL, bool include_unreachable = false)
     {
       result.clear();
       MapCallback callback(result);
@@ -185,7 +185,7 @@ class /* THEA_API */ ShortestPaths
      */
     template <typename CallbackT>
     void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
-                              TheaUnorderedMap<VertexHandle, double> const * src_region = NULL,
+                              UnorderedMap<VertexHandle, double> const * src_region = NULL,
                               bool include_unreachable = false);
 
   private:
@@ -210,7 +210,7 @@ class /* THEA_API */ ShortestPaths
 
     }; // struct ScratchElement
 
-    typedef TheaUnorderedMap<VertexHandle, ScratchElement> Scratch;  ///< Scratch space for all vertices.
+    typedef UnorderedMap<VertexHandle, ScratchElement> Scratch;  ///< Scratch space for all vertices.
 
     /** Compare the distances to two vertices. */
     static int compareDistances(void * vx_data1, void * vx_data2);
@@ -223,7 +223,7 @@ template <typename GraphT>
 template <typename CallbackT>
 void
 ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
-                                            TheaUnorderedMap<VertexHandle, double> const * src_region, bool include_unreachable)
+                                            UnorderedMap<VertexHandle, double> const * src_region, bool include_unreachable)
 {
   if (graph.numVertices() <= 0 || !callback)
     return;
@@ -234,7 +234,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
 #endif
 
   // Sanity checks
-  typedef TheaUnorderedMap<VertexHandle, double> DistanceMap;
+  typedef UnorderedMap<VertexHandle, double> DistanceMap;
   bool has_src_region = (src_region && !src_region->empty());
   if (has_src_region)
   {

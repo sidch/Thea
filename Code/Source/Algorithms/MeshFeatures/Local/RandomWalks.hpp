@@ -134,7 +134,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
 
       alwaysAssertM(seed_index >= 0, "RandomWalks: Seed sample for random walks not found");
 
-      TheaArray<long> counts((size_t)num_steps, 0);
+      Array<long> counts((size_t)num_steps, 0);
       for (long i = 0; i < num_walks; ++i)
       {
         long walk_steps = walk(seed_index, num_steps, features);

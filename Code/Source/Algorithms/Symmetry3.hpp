@@ -113,8 +113,8 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
 
       radius = std::sqrt(radius);
 
-      TheaArray<Vector3> vertices;
-      TheaArray<long> triangles;
+      Array<Vector3> vertices;
+      Array<long> triangles;
       GeodesicSphere3::compute(2, vertices, &triangles);
 
       long best_dir = -1;
@@ -140,10 +140,10 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
         if (round < num_rounds - 1)
         {
           first_vertex_of_round = vertices.size();
-          TheaArray<long> tris_to_subdivide;
+          Array<long> tris_to_subdivide;
 
           // Collect triangles incident on the best direction vertex
-          TheaUnorderedSet<long> nbr_verts;
+          UnorderedSet<long> nbr_verts;
           for (size_t i = 0; i < triangles.size(); i += 3)
           {
             if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)

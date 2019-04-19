@@ -113,8 +113,8 @@ class THEA_API LogisticRegression
 
   private:
     long ndims;                     ///< The number of dimensions of the problem, i.e. the size of the solution vector x.
-    TheaArray<double> llsq_coeffs;  ///< Scratch space for passing coefficients. Has (dims() + 1) * llsq_consts.size() entries.
-    TheaArray<double> llsq_consts;  ///< Scratch space for passing constants.
+    Array<double> llsq_coeffs;  ///< Scratch space for passing coefficients. Has (dims() + 1) * llsq_consts.size() entries.
+    Array<double> llsq_consts;  ///< Scratch space for passing constants.
     bool has_solution;              ///< Was the logistic regression problem successfully solved by solve()?
     VectorX<double> solution;       ///< The solution vector of the logistic regression problem.
 

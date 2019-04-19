@@ -153,11 +153,11 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
                 "JointBoost: Incorrect number of class names specified");
 
   // Get classes for training data
-  TheaArray<long> classes;
+  Array<long> classes;
   training_data->getClasses(classes);
 
   // Initialize the weights
-  TheaArray<double> training_weights;
+  Array<double> training_weights;
   training_data->getWeights(training_weights);
   weights.resize(num_classes, (long)classes.size());
   if (!training_weights.empty())
@@ -261,7 +261,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     stumps.push_back(stump);
 
     // Update weights
-    TheaArray<double> stump_features;
+    Array<double> stump_features;
     training_data->getFeature(stump->f, stump_features);
 
     for (long c = 0; c < num_classes; ++c)
@@ -300,7 +300,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
 }
 
 double
-JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes)
+JointBoost::optimizeStump(SharedStump & stump, Array<long> const & stump_classes)
 {
   if (num_features <= 0)
   {
@@ -309,7 +309,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
   }
 
   // Select a random fraction of the features
-  TheaArray<int32> candidate_features;
+  Array<int32> candidate_features;
   if (feature_sampling_fraction >= 1)
   {
     for (long f = 0; f < num_features; ++f)
@@ -332,7 +332,7 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
     test.f = candidate_features[f];
 
     // Get feature values
-    TheaArray<double> stump_features;
+    Array<double> stump_features;
     training_data->getFeature(test.f, stump_features);
 
     // Optimize the stump via an exhaustive or a greedy search over subsets of classes
@@ -356,8 +356,8 @@ JointBoost::optimizeStump(SharedStump & stump, TheaArray<long> const & stump_cla
 }
 
 double
-JointBoost::optimizeStumpExhaustive(SharedStump & stump, TheaArray<double> const & stump_features,
-                                    TheaArray<long> const & stump_classes)
+JointBoost::optimizeStumpExhaustive(SharedStump & stump, Array<double> const & stump_features,
+                                    Array<long> const & stump_classes)
 {
   // Loop over all possible subsets of classes
   SharedStump test = stump;
@@ -391,11 +391,11 @@ JointBoost::optimizeStumpExhaustive(SharedStump & stump, TheaArray<double> const
 }
 
 double
-JointBoost::optimizeStumpGreedy(SharedStump & stump, TheaArray<double> const & stump_features,
-                                TheaArray<long> const & stump_classes)
+JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump_features,
+                                Array<long> const & stump_classes)
 {
-  TheaArray<SharedStump> candidate_stumps;
-  TheaArray<double> candidate_errors;
+  Array<SharedStump> candidate_stumps;
+  Array<double> candidate_errors;
 
   SharedStump test = stump;
   SharingSet current_n((SharingSet::size_type)num_classes, 0);  // initially empty
@@ -471,7 +471,7 @@ struct IndexedComparator
 };
 
 void
-sortIndexed(TheaArray<double> const & values, TheaArray<size_t> & sorted_indices)
+sortIndexed(Array<double> const & values, Array<size_t> & sorted_indices)
 {
   sorted_indices.resize(values.size());
   for (size_t i = 0; i < sorted_indices.size(); ++i)
@@ -481,9 +481,8 @@ sortIndexed(TheaArray<double> const & values, TheaArray<size_t> & sorted_indices
 }
 
 void
-getClassificationAccuracy(double split_value, SharingSet const & pos_classes, TheaArray<double> const & features,
-                          TheaArray<long> const & classes, TheaArray<size_t> const & sorted_indices,
-                          TheaArray<int> & accuracy)
+getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Array<double> const & features,
+                          Array<long> const & classes, Array<size_t> const & sorted_indices, Array<int> & accuracy)
 {
   accuracy.resize(features.size());
   for (size_t i = 0; i < features.size(); ++i)
@@ -499,7 +498,7 @@ getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Th
 }
 
 double
-splitQuality(MatrixX<double> const & weights, TheaArray<long> const & classes, TheaArray<int> const & accuracy)
+splitQuality(MatrixX<double> const & weights, Array<long> const & classes, Array<int> const & accuracy)
 {
   // We'll define the split quality as
   //
@@ -518,8 +517,8 @@ splitQuality(MatrixX<double> const & weights, TheaArray<long> const & classes, T
 }
 
 void
-getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & weights, TheaArray<double> const & features,
-                       TheaArray<long> const & classes, long max_thresholds, TheaArray<double> & thresholds)
+getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & weights, Array<double> const & features,
+                       Array<long> const & classes, long max_thresholds, Array<double> & thresholds)
 {
   // A good threshold separates the positive classes from the negative classes. In other words, we want either many positive
   // examples > theta and many negative examples <= theta, or vice versa. Note that the positive examples need *not* be mostly
@@ -527,7 +526,7 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
   // as well as possible. (Hence, the absolute value of splitQuality() is relevant, not its sign.)
 
   // Sort the examples by feature value
-  TheaArray<size_t> sorted_indices;
+  Array<size_t> sorted_indices;
   sortIndexed(features, sorted_indices);
 
   // Get the minimum and maximum feature values
@@ -542,7 +541,7 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
   double tolerance = 1.0e-10 * (hi - lo);
 
   // Generate samples and adjust their position to be better cuts
-  typedef TheaUnorderedSet<size_t> IndexSet;
+  typedef UnorderedSet<size_t> IndexSet;
   IndexSet threshold_set;
   for (long t = 0; t < max_thresholds; ++t)
   {
@@ -552,7 +551,7 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
     double threshold = features[mapped_index];
 
     // Measure the classification accuracy (+/-1) per example, and the overall quality of the split
-    TheaArray<int> accuracy;
+    Array<int> accuracy;
     getClassificationAccuracy(threshold, pos_classes, features, classes, sorted_indices, accuracy);
     double quality = splitQuality(weights, classes, accuracy);
 
@@ -630,13 +629,13 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
 } // namespace JointBoostInternal
 
 double
-JointBoost::fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
+JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, Array<long> const & stump_classes,
                      long * num_generated_thresholds)
 {
   using namespace JointBoostInternal;
 
   // Find good places to cut the features (candidate values of the threshold theta)
-  TheaArray<double> thresholds;
+  Array<double> thresholds;
 
 #ifdef JOINT_BOOST_TEST_ALL_THRESHOLDS
   thresholds = stump_features;
@@ -772,15 +771,15 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
     stumps.push_back(new_stump);
 
   MatrixX<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
-  TheaArray<double> feat;
+  Array<double> feat;
   for (long i = 0; i < num_features; ++i)
   {
     validation_data_.getFeature(i, feat);
     validation_features.col(i) = Eigen::Map<VectorXd>(&feat[0], (long)feat.size());
   }
 
-  TheaArray<long> validation_classes;
-  TheaArray<double> validation_weights;
+  Array<long> validation_classes;
+  Array<double> validation_weights;
 
   validation_data_.getClasses(validation_classes);
   validation_data_.getWeights(validation_weights);

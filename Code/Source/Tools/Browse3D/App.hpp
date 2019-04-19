@@ -80,8 +80,8 @@ class App : public wxApp
       std::string working_dir;                             ///< The application's initial working directory.
       std::string model;                                   ///< The initial shape to load.
       AffineTransform3 model_transform;                    ///< The transformation of the initial shape.
-      TheaArray<std::string> overlays;                     ///< The initial overlays to load.
-      TheaArray<AffineTransform3> overlay_transforms;      ///< The transforms of the overlays.
+      Array<std::string> overlays;                     ///< The initial overlays to load.
+      Array<AffineTransform3> overlay_transforms;      ///< The transforms of the overlays.
       std::string features;                                ///< Path to directory/file containing features to load.
       std::string elem_labels;                             ///< Path to directory/file containing face/point labels to load.
 

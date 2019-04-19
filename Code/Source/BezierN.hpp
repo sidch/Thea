@@ -109,8 +109,8 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     bool hasDeriv(long deriv_order) const { return (deriv_order >= 0 && deriv_order <= 3); }
 
   private:
-    mutable TheaArray<VectorT>  ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
-    mutable MatrixX<double>      binom;   ///< Cached binomial coefficients.
+    mutable Array<VectorT>   ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
+    mutable MatrixX<double>  binom;    ///< Cached binomial coefficients.
 
     /** Cache binomial coefficients for computing Bernstein polynomials. */
     void cacheBinom() const
@@ -198,7 +198,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       return result;
     }
 
-    void getBasisFunctions(double t, TheaArray<double> & b) const
+    void getBasisFunctions(double t, Array<double> & b) const
     {
       // Bernstein basis
 

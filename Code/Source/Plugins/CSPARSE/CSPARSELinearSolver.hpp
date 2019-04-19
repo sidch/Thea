@@ -113,7 +113,7 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolverFactory : public LinearSolverFac
     void destroyAllLinearSolvers();
 
   private:
-    typedef TheaSet<LinearSolver *> LinearSolverSet;  ///< Set of linear solvers.
+    typedef Set<LinearSolver *> LinearSolverSet;  ///< Set of linear solvers.
 
     LinearSolverSet linear_solvers;  ///< All linear solvers created by this factory.
 };

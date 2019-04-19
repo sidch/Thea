@@ -545,7 +545,7 @@ class THEA_API RenderSystemManager
     RenderSystemFactory * getFactory(std::string const & type);
 
   private:
-    typedef TheaMap<std::string, RenderSystemFactory *> FactoryMap;  ///< Maps rendersystem types to factory instances.
+    typedef Map<std::string, RenderSystemFactory *> FactoryMap;  ///< Maps rendersystem types to factory instances.
 
     FactoryMap installed_factories;  ///< Set of installed factories, one for each rendersystem type.
 

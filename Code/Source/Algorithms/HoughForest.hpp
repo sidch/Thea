@@ -400,13 +400,13 @@ class THEA_API HoughForest : public Serializable
 
     long num_classes;                 ///< Number of object classes.
     long num_features;                ///< Number of features per object.
-    TheaArray<long> num_vote_params;  ///< Number of Hough parameters per class.
+    Array<long> num_vote_params;  ///< Number of Hough parameters per class.
     long max_vote_params;             ///< Maximum number of Hough parameters for any class.
     Options options;                  ///< Additional options.
 
-    TheaArray<TreePtr> trees;  ///< Set of Hough trees in the forest.
+    Array<TreePtr> trees;  ///< Set of Hough trees in the forest.
 
-    TheaArray<long> all_classes;  ///< Cached copy of all class labels in training data.
+    Array<long> all_classes;  ///< Cached copy of all class labels in training data.
     RowMajMatrix all_features;    ///< Cached copy of all features in training data.
     RowMajMatrix all_self_votes;  ///< Cached copy of all Hough self-votes in training data.
 

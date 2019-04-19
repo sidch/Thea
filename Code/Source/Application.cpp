@@ -147,13 +147,13 @@ Application::getResourcePath(std::string const & resource_name)
 }
 
 std::string
-Application::getPluginPath(std::string const & plugin_name, TheaArray<std::string> const * plugin_dirs)
+Application::getPluginPath(std::string const & plugin_name, Array<std::string> const * plugin_dirs)
 {
   std::string app_dir = FilePath::parent(FileSystem::resolve(Application::programPath()));
   std::string app_plugin_dir1 = FilePath::concat(FilePath::parent(app_dir), "lib");     // in parent
   std::string app_plugin_dir2 = FilePath::concat(FilePath::parent(app_dir), "../lib");  // in grandparent
 
-  TheaArray<std::string> search_dirs;
+  Array<std::string> search_dirs;
   search_dirs.push_back(app_dir);             // the application directory has highest priority
   search_dirs.push_back(app_plugin_dir1);     // the parent directory is next
   search_dirs.push_back(app_plugin_dir2);     // the grandparent directory is next

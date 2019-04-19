@@ -250,7 +250,7 @@ namespace MeshTrianglesInternal {
 // Add a face of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 {
   if (face.isTriangle())
   {
@@ -284,9 +284,9 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
   }
   else
   {
-    TheaArray<typename MeshT::Vertex *> face_vertices;
+    Array<typename MeshT::Vertex *> face_vertices;
     Polygon3 poly;
-    TheaArray<long> tri_indices;
+    Array<long> tri_indices;
 
     long i = 0;
     for (typename MeshT::Face::VertexIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi, ++i)
@@ -309,7 +309,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 // Convert the faces of a general mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type
-buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     addFace<MeshT>(mesh, *fi, tris);
@@ -318,7 +318,7 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 // Add a face of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 {
   if (face.isTriangle())
   {
@@ -352,9 +352,9 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
   }
   else
   {
-    TheaArray<typename MeshT::Vertex *> face_vertices;
+    Array<typename MeshT::Vertex *> face_vertices;
     Polygon3 poly;
-    TheaArray<long> tri_indices;
+    Array<long> tri_indices;
 
     typename MeshT::Halfedge * he = face.getHalfedge();
     long num_verts = face.numVertices();
@@ -379,7 +379,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 // Convert the faces of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
-buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     addFace<MeshT>(mesh, **fi, tris);
@@ -388,7 +388,7 @@ buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
 // Add a face of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type
-addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
+addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 {
   typedef typename TriangleT::VertexTriple VertexTriple;
 
@@ -443,7 +443,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, TheaArray<TriangleT> & tris)
 // Convert the faces of a display mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
 typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type
-buildTriangleList(MeshT & mesh, TheaArray<TriangleT> & tris)
+buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 {
   typedef MeshT Mesh;
   typedef TriangleT Triangle;
@@ -483,7 +483,7 @@ class MeshTriangles
     typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.
     typedef MeshVertexTriple<Mesh> VertexTriple;  ///< A triple of mesh vertices.
     typedef Triangle3< VertexTriple > Triangle;   ///< The triangle defined by a triple of mesh vertices.
-    typedef TheaArray<Triangle> TriangleArray;    ///< An array of mesh triangles.
+    typedef Array<Triangle> TriangleArray;    ///< An array of mesh triangles.
 
     /** Triangulate the faces of a mesh and add them to the set. */
     void add(Mesh & mesh)

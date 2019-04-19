@@ -68,7 +68,7 @@ class /* THEA_API */ RangeQueryStructure
      *   union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQuery(RangeT const & range, TheaArray<T> & result, bool discard_prior_results = true) const;
+    void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const;
 
     /**
      * Get the indices of all objects intersecting a range.
@@ -80,7 +80,7 @@ class /* THEA_API */ RangeQueryStructure
      *   queries over a union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQueryIndices(RangeT const & range, TheaArray<long> & result, bool discard_prior_results = true) const;
+    void rangeQueryIndices(RangeT const & range, Array<long> & result, bool discard_prior_results = true) const;
 
     /**
      * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function

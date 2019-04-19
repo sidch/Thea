@@ -165,7 +165,7 @@ class THEA_API DynLibManager
     void unloadAll();
 
   private:
-    typedef TheaMap<std::string, DynLib *> DynLibMap;  ///< Maps paths to the corresponding library objects.
+    typedef Map<std::string, DynLib *> DynLibMap;  ///< Maps paths to the corresponding library objects.
 
     DynLibMap libs;  ///< Set of loaded libraries.
 

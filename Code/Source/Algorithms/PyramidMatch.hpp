@@ -72,7 +72,7 @@ class THEA_API Pyramid1D : public Serializable
     template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, NULL, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
-    template <typename T> Pyramid1D(TheaArray<T> const & base_data)
+    template <typename T> Pyramid1D(Array<T> const & base_data)
     { construct(&base_data[0], (int)base_data.size(), NULL, false); }
 
     /**
@@ -82,7 +82,7 @@ class THEA_API Pyramid1D : public Serializable
     template <typename T>
     Pyramid1D(T const * base_data, int n, Real const * means, bool smooth_base_level = false)
     {
-      TheaArray<Real> means_copy(means, means + n);
+      Array<Real> means_copy(means, means + n);
       construct(base_data, n, &means_copy[0], smooth_base_level);
     }
 
@@ -91,9 +91,9 @@ class THEA_API Pyramid1D : public Serializable
      * mean of each bin should be specified relative to the limits of the bin, in the range [0, 1].
      */
     template <typename T>
-    Pyramid1D(TheaArray<T> const & base_data, TheaArray<Real> const & means, bool smooth_base_level = false)
+    Pyramid1D(Array<T> const & base_data, Array<Real> const & means, bool smooth_base_level = false)
     {
-      TheaArray<Real> means_copy = means;
+      Array<Real> means_copy = means;
       construct(&base_data[0], (int)base_data.size(), &means_copy[0], smooth_base_level);
     }
 
@@ -147,10 +147,10 @@ class THEA_API Pyramid1D : public Serializable
     void createPyramid(Real * means);
 
     /** Resize a 1D array to half its size, combining each successive pair of elements. */
-    void downsample(TheaArray<Real> const & src, TheaArray<Real> & dst, Real * means) const;
+    void downsample(Array<Real> const & src, Array<Real> & dst, Real * means) const;
 
     int num_levels;
-    TheaArray< TheaArray<Real> > levels;
+    Array< Array<Real> > levels;
 
     friend class PyramidMatch;
 
@@ -188,7 +188,7 @@ class THEA_API Pyramid2D : public Serializable
     template <typename T>
     Pyramid2D(T const * base_data, int nx_, int ny_, Vector2 const * means, bool smooth_base_level = false)
     {
-      TheaArray<Vector2> means_copy(means, means + nx_ * ny_);
+      Array<Vector2> means_copy(means, means + nx_ * ny_);
       construct(base_data, nx_, ny_, &means_copy[0], smooth_base_level);
     }
 
@@ -235,7 +235,7 @@ class THEA_API Pyramid2D : public Serializable
     /** 2D array of scalars. */
     struct Array2D
     {
-      TheaArray<Real> data;
+      Array<Real> data;
       int sx, sy;
 
       Array2D() : sx(0), sy(0) {}
@@ -289,7 +289,7 @@ class THEA_API Pyramid2D : public Serializable
 
     int num_levels;
     int nx, ny;
-    TheaArray<Array2D> levels;
+    Array<Array2D> levels;
 
     friend class PyramidMatch;
 
@@ -316,7 +316,7 @@ class THEA_API Pyramid3D : public Serializable
     template <typename T> Pyramid3D(T const * base_data, int nx_, int ny_, int nz_, Vector3 const * means,
                                     bool smooth_base_level = false)
     {
-      TheaArray<Vector3> means_copy(means, means + nx_ * ny_ * nz_);
+      Array<Vector3> means_copy(means, means + nx_ * ny_ * nz_);
       construct(base_data, nx_, ny_, nz_, &means_copy[0], smooth_base_level);
     }
 
@@ -347,7 +347,7 @@ class THEA_API Pyramid3D : public Serializable
     /** 3D array of scalars. */
     struct Array3D
     {
-      TheaArray<Real> data;
+      Array<Real> data;
       int sx, sy, sz;
 
       Array3D() : sx(0), sy(0), sz(0) {}
@@ -405,7 +405,7 @@ class THEA_API Pyramid3D : public Serializable
 
     int num_levels;
     int nx, ny, nz;
-    TheaArray<Array3D> levels;
+    Array<Array3D> levels;
 
     friend class PyramidMatch;
 

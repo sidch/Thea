@@ -45,13 +45,22 @@
 #include "Platform.hpp"
 #include <map>
 
-/** Maps keys to values, guaranteed to be a drop-in replacement for std::map. Requires an ordering on the keys. */
-#define TheaMap std::map
+namespace Thea {
 
-/**
- * Maps (possibly duplicate) keys to values, guaranteed to be a drop-in replacement for std::multimap. Requires an ordering on
- * the keys.
- */
-#define TheaMultiMap std::multimap
+/** Maps keys to values. Requires an ordering on the keys. */
+template < typename Key,
+           typename T,
+           typename Compare = std::less<Key>,
+           typename Alloc = std::allocator< std::pair<Key const, T> >
+         > using Map = std::map<Key, T, Compare, Alloc>;
+
+/** Maps (possibly duplicate) keys to values. Requires an ordering on the keys. */
+template < typename Key,
+           typename T,
+           typename Compare = std::less<Key>,
+           typename Alloc = std::allocator< std::pair<Key const, T> >
+         > using MultiMap = std::multimap<Key, T, Compare, Alloc>;
+
+} // namespace Thea
 
 #endif

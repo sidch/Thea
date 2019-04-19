@@ -61,7 +61,7 @@ struct ReadCallback : public MeshCodec<Mesh>::ReadCallback
 
 struct VertexCollector
 {
-  VertexCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_, TheaArray<long> * indices_)
+  VertexCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<long> * indices_)
   : positions(positions_), normals(normals_), indices(indices_) {}
 
   bool operator()(Mesh const & mesh)
@@ -76,14 +76,14 @@ struct VertexCollector
     return false;
   }
 
-  TheaArray<Vector3> * positions;
-  TheaArray<Vector3> * normals;
-  TheaArray<long> * indices;
+  Array<Vector3> * positions;
+  Array<Vector3> * normals;
+  Array<long> * indices;
 };
 
 struct FaceCenterCollector
 {
-  FaceCenterCollector(TheaArray<Vector3> * positions_, TheaArray<Vector3> * normals_, TheaArray<long> * indices_)
+  FaceCenterCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<long> * indices_)
   : positions(positions_), normals(normals_), indices(indices_) {}
 
   bool operator()(Mesh const & mesh)
@@ -98,13 +98,13 @@ struct FaceCenterCollector
     return false;
   }
 
-  TheaArray<Vector3> * positions;
-  TheaArray<Vector3> * normals;
-  TheaArray<long> * indices;
+  Array<Vector3> * positions;
+  Array<Vector3> * normals;
+  Array<long> * indices;
 };
 
 bool
-loadLabels_Lab(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -188,11 +188,11 @@ struct FaceToMeshMapper
     return false;
   }
 
-  TheaArray<Mesh const *> mapping;
+  Array<Mesh const *> mapping;
 };
 
 bool
-loadLabels_Labels(string const & path, MG const & mg, TheaArray<string> & labels, TheaArray<long> & face_labels)
+loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Array<long> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -258,7 +258,7 @@ loadLabels_Labels(string const & path, MG const & mg, TheaArray<string> & labels
 }
 
 bool
-loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray<long> & face_labels)
+loadLabels_FaceLabels(string const & path, Array<string> & labels, Array<long> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -298,7 +298,7 @@ loadLabels_FaceLabels(string const & path, TheaArray<string> & labels, TheaArray
 }
 
 bool
-loadLabels(string const & path, MG const & mg, TheaArray<string> & labels, TheaArray<long> & face_labels)
+loadLabels(string const & path, MG const & mg, Array<string> & labels, Array<long> & face_labels)
 {
   string ext = toLower(FilePath::extension(path));
   if (ext == "lab")
@@ -310,7 +310,7 @@ loadLabels(string const & path, MG const & mg, TheaArray<string> & labels, TheaA
 }
 
 bool
-loadSamples(string const & path, TheaArray<Vector3> & positions, TheaArray<string> & lines)
+loadSamples(string const & path, Array<Vector3> & positions, Array<string> & lines)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -456,12 +456,12 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      TheaArray<Vector3> orig_pos;
-      TheaArray<string> orig_lines;
+      Array<Vector3> orig_pos;
+      Array<string> orig_lines;
       if (!loadSamples(presampled_path, orig_pos, orig_lines))
         return -1;
 
-      TheaArray<long> selected;
+      Array<long> selected;
       if (!orig_pos.empty())
       {
         selected.resize((size_t)num_samples);
@@ -490,15 +490,15 @@ main(int argc, char * argv[])
       Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
       CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
                                                                                     .setIgnoreTexCoords(true)));
-      TheaArray<MeshCodec<Mesh>::Ptr> read_codecs;
+      Array<MeshCodec<Mesh>::Ptr> read_codecs;
       read_codecs.push_back(codec_3ds);
       read_codecs.push_back(codec_obj);
 
       MG mg("MeshGroup");
       mg.load(mesh_path, read_codecs, &read_callback);
 
-      TheaArray<string> labels;
-      TheaArray<long> face_labels;
+      Array<string> labels;
+      Array<long> face_labels;
       bool output_labels = (!vertex_samples && !labels_path.empty());
       if (output_labels)
       {
@@ -506,9 +506,9 @@ main(int argc, char * argv[])
           return -1;
       }
 
-      TheaArray<Vector3> positions;
-      TheaArray<Vector3> normals;
-      TheaArray<long> indices;
+      Array<Vector3> positions;
+      Array<Vector3> normals;
+      Array<long> indices;
 
       bool need_face_ids = (output_ids || output_labels);
       bool do_random_sampling = true;
@@ -530,7 +530,7 @@ main(int argc, char * argv[])
       if (do_random_sampling)
       {
         MeshSampler<Mesh> sampler(mg);
-        TheaArray< MeshSampler<Mesh>::Triangle const * > tris;
+        Array< MeshSampler<Mesh>::Triangle const * > tris;
 
         if (uniformly_separated)
         {

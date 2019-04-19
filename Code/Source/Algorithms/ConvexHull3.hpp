@@ -120,7 +120,7 @@ class THEA_API ConvexHull3
       Builder builder(&mesh);
       builder.begin();
 
-      TheaArray<typename Builder::VertexHandle> approx_vrefs(approx_vertices.size());
+      Array<typename Builder::VertexHandle> approx_vrefs(approx_vertices.size());
       for (size_t i = 0; i < approx_vertices.size(); ++i)
         approx_vrefs[i] = builder.addVertex(approx_vertices[i]);
 
@@ -146,10 +146,10 @@ class THEA_API ConvexHull3
     void updateApprox() const;
 
     Options options;
-    TheaArray<Vector3> points;
+    Array<Vector3> points;
 
-    mutable TheaArray<Vector3> approx_vertices;
-    mutable TheaArray<size_t> approx_indices;
+    mutable Array<Vector3> approx_vertices;
+    mutable Array<size_t> approx_indices;
 
     mutable bool approx_updated;
     mutable bool exact_updated;

@@ -67,7 +67,7 @@ class THEA_API ConnectedComponents
      * @see GeneralMesh
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceT *> > & components,
+    static long findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
                                   typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
@@ -84,7 +84,7 @@ class THEA_API ConnectedComponents
      * @see DCELMesh
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnected(MeshT & mesh, TheaArray< TheaArray<FaceT *> > & components,
+    static long findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
                                   typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
@@ -100,10 +100,10 @@ class THEA_API ConnectedComponents
      * @return The number of components found (== components.size())
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnectedDefault(MeshT & mesh, TheaArray< TheaArray<FaceT *> > & components)
+    static long findEdgeConnectedDefault(MeshT & mesh, Array< Array<FaceT *> > & components)
     {
       // Begin with all faces as separate components
-      TheaArray<FaceT *> faces;
+      Array<FaceT *> faces;
       collectFaces(mesh, faces);
 
       typedef UnionFind<FaceT *> FaceUnionFind;
@@ -115,7 +115,7 @@ class THEA_API ConnectedComponents
       // Reserve space for the result
       components.resize(uf.numSets());
 
-      typedef TheaUnorderedMap<long, size_t> ComponentIndexMap;
+      typedef UnorderedMap<long, size_t> ComponentIndexMap;
       ComponentIndexMap component_indices;
 
       // Loop over faces, adding each to the appropriate result subarray
@@ -185,7 +185,7 @@ class THEA_API ConnectedComponents
 
     /** Collect all the faces of a GeneralMesh. */
     template <typename MeshT, typename FaceT>
-    static void collectFaces(MeshT & mesh, TheaArray<FaceT *> & faces,
+    static void collectFaces(MeshT & mesh, Array<FaceT *> & faces,
                              typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       faces.clear();
@@ -195,7 +195,7 @@ class THEA_API ConnectedComponents
 
     /** Collect all the faces of a DCELMesh. */
     template <typename MeshT, typename FaceT>
-    static void collectFaces(MeshT & mesh, TheaArray<FaceT *> & faces,
+    static void collectFaces(MeshT & mesh, Array<FaceT *> & faces,
                              typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)

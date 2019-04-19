@@ -219,7 +219,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
 namespace PointCloudInternal {
 
 bool
-readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<Real> > & features, bool has_point_prefix)
+readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > & features, bool has_point_prefix)
 {
   std::ifstream in(path.c_str());
   if (!in)
@@ -248,7 +248,7 @@ readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<
     {
       while (line_in >> f)
       {
-        features.push_back(TheaArray<Real>((long)num_points));
+        features.push_back(Array<Real>((long)num_points));
         features.back()[0] = (Real)f;
       }
     }
@@ -268,7 +268,7 @@ readFeaturesTXT(std::string const & path, long num_points, TheaArray< TheaArray<
 }
 
 bool
-readFeaturesARFF(std::string const & path, long num_points, TheaArray< TheaArray<Real> > & features)
+readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> > & features)
 {
   std::ifstream in(path.c_str());
   if (!in)
@@ -314,7 +314,7 @@ readFeaturesARFF(std::string const & path, long num_points, TheaArray< TheaArray
   for (size_t i = 0; i < features.size(); ++i)
     features[i].resize((size_t)num_points);
 
-  TheaArray<std::string> fields;
+  Array<std::string> fields;
   double f;
   for (long i = 0; i < num_points; ++i)
   {
@@ -398,7 +398,7 @@ PointCloud::loadFeatures(std::string const & filename_)
       {
         for (size_t i = 0; i < features.size(); ++i)
         {
-          TheaArray<Real> sorted = features[i];
+          Array<Real> sorted = features[i];
           std::sort(sorted.begin(), sorted.end());
 
           size_t tenth = (int)(0.1 * sorted.size());
@@ -493,7 +493,7 @@ PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string
 }
 
 bool
-PointCloud::setPointColors(TheaArray<ColorRGBA> const & colors_)
+PointCloud::setPointColors(Array<ColorRGBA> const & colors_)
 {
   if (colors_.size() < points.size())
   {
@@ -624,7 +624,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     vertices_var = var_area->createArray(vertex_bytes);
     if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
 
-    TheaArray<Vector3> vbuf(points.size());
+    Array<Vector3> vbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       vbuf[i] = points[i].p;
 
@@ -636,7 +636,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     colors_var = var_area->createArray(color_bytes);
     if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
 
-    TheaArray<ColorRGBA> cbuf(points.size());
+    Array<ColorRGBA> cbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       cbuf[i] = getColor(i);
 

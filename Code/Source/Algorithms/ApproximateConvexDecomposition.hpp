@@ -63,10 +63,10 @@ class THEA_API ApproximateConvexPointDecomposition
     { points.insert(points.end(), begin, end); }
 
     /** Compute the approximate convex decomposition. */
-    void decompose(double convexity_threshold, TheaArray< TheaArray<int> > & results);
+    void decompose(double convexity_threshold, Array< Array<int> > & results);
 
   private:
-    TheaArray<Vector3> points;
+    Array<Vector3> points;
 
 }; // class ApproximateConvexPointDecomposition
 

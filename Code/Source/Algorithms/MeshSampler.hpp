@@ -125,9 +125,9 @@ class MeshSampler
      * @return The number of samples computed.
      */
     long sampleEvenlyByArea(long desired_num_samples,
-                            TheaArray<Vector3> & positions,
-                            TheaArray<Vector3> * face_normals = NULL,
-                            TheaArray<Triangle const *> * triangles = NULL,
+                            Array<Vector3> & positions,
+                            Array<Vector3> * face_normals = NULL,
+                            Array<Triangle const *> * triangles = NULL,
                             CountMode count_mode = CountMode::EXACT,
                             bool verbose = false) const
     {
@@ -190,7 +190,7 @@ class MeshSampler
       int prev_percent = 0;
       if (count_mode == CountMode::EXACT)
       {
-        TheaArray<double> cum_areas((size_t)tcount);
+        Array<double> cum_areas((size_t)tcount);
         cum_areas[0] = tarray[0].getArea();
         for (size_t i = 1; i < cum_areas.size(); ++i)
           cum_areas[i] = cum_areas[i - 1] + tarray[i].getArea();
@@ -295,9 +295,9 @@ class MeshSampler
      * @return The number of samples computed.
      */
     long sampleEvenlyBySeparation(long desired_num_samples,
-                                  TheaArray<Vector3> & positions,
-                                  TheaArray<Vector3> * face_normals = NULL,
-                                  TheaArray<Triangle const *> * triangles = NULL,
+                                  Array<Vector3> & positions,
+                                  Array<Vector3> * face_normals = NULL,
+                                  Array<Triangle const *> * triangles = NULL,
                                   CountMode count_mode = CountMode::EXACT,
                                   Real oversampling_factor = -1,
                                   bool verbose = false) const
@@ -313,9 +313,9 @@ class MeshSampler
       }
 
       // Compute oversampling by area
-      TheaArray<Vector3> orig_positions;
-      TheaArray<Vector3> orig_face_normals;
-      TheaArray<Triangle const *> orig_triangles;
+      Array<Vector3> orig_positions;
+      Array<Vector3> orig_face_normals;
+      Array<Triangle const *> orig_triangles;
 
       static Real const DEFAULT_OVERSAMPLING_FACTOR = 3;
       if (oversampling_factor < 0)
@@ -337,7 +337,7 @@ class MeshSampler
                      << " sample(s)";
       }
 
-      TheaArray<long> selected((size_t)desired_num_samples);
+      Array<long> selected((size_t)desired_num_samples);
       if (FurthestPointSampling::subsample(orig_num_samples, &orig_positions[0], desired_num_samples, &selected[0],
                                            DistanceType::GEODESIC, verbose) < desired_num_samples)
       {

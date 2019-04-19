@@ -133,7 +133,7 @@ class THEA_API NumericalOptimizerManager
     NumericalOptimizerFactory * getFactory(std::string const & type);
 
   private:
-    typedef TheaMap<std::string, NumericalOptimizerFactory *> FactoryMap;  /**< Maps numerical optimizer types to factory
+    typedef Map<std::string, NumericalOptimizerFactory *> FactoryMap;  /**< Maps numerical optimizer types to factory
                                                                                 instances. */
 
     FactoryMap installed_factories;  ///< Set of installed factories, one for each numerical optimizer type.

@@ -224,11 +224,11 @@ class SampleGraph : private Noncopyable
 
     }; // class Options
 
-    typedef SampleGraphInternal::SurfaceSample  SurfaceSample;          ///< Point sampled from a surface.
-    typedef TheaArray<SurfaceSample>            SampleArray;            ///< Array of samples.
+    typedef SampleGraphInternal::SurfaceSample  SurfaceSample;  ///< Point sampled from a surface.
+    typedef Array<SurfaceSample>                SampleArray;    ///< Array of samples.
 
   private:
-    typedef KDTreeN<SurfaceSample *, 3>         SampleKDTree;           ///< KD-tree on surface samples.
+    typedef KDTreeN<SurfaceSample *, 3>         SampleKDTree;   ///< KD-tree on surface samples.
 
   public:
     //=========================================================================================================================
@@ -398,7 +398,7 @@ class SampleGraph : private Noncopyable
         return;
 
       // Aggregate samples
-      TheaArray<SurfaceSample *> sample_ptrs(samples.size() + dense_samples.size());
+      Array<SurfaceSample *> sample_ptrs(samples.size() + dense_samples.size());
 
       for (size_t i = 0; i < samples.size(); ++i)
         sample_ptrs[i] = &samples[i];
@@ -586,7 +586,7 @@ class SampleGraph : private Noncopyable
     /**
      * Extract adjacencies between the original set of samples, by following geodesic paths in the graph of oversampled points.
      */
-    void extractOriginalAdjacencies(TheaArray<SurfaceSample *> & sample_ptrs);
+    void extractOriginalAdjacencies(Array<SurfaceSample *> & sample_ptrs);
 
     /** Update the average separation to the correct value. We'll compute this by brute force instead of sampling for now. */
     void updateAverageSeparation()

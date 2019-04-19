@@ -89,7 +89,7 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
     GLuint gl_fbid;
     GLTexture * attachment_table[AttachmentPoint::MAX_ATTACHMENTS];
     int num_attachments;
-    TheaArray<GLenum> gl_draw_buffers;
+    Array<GLenum> gl_draw_buffers;
     int width;
     int height;
 

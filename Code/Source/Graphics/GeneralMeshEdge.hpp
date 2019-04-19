@@ -65,7 +65,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     typedef GeneralMeshFace  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;    ///< Face of the mesh.
 
   private:
-    typedef TheaList< Face *, AllocatorT<Face *> > FaceList;
+    typedef List< Face *, AllocatorT<Face *> > FaceList;
 
   public:
     typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
@@ -297,9 +297,9 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
 
     /** Make an exact copy of the edge. */
     void copyTo(GeneralMeshEdge & dst,
-                TheaUnorderedMap<Vertex const *, Vertex *> const & vertex_map,
-                TheaUnorderedMap<GeneralMeshEdge const *, GeneralMeshEdge *> const & edge_map,
-                TheaUnorderedMap<Face const *, Face *> const & face_map) const
+                UnorderedMap<Vertex const *, Vertex *> const & vertex_map,
+                UnorderedMap<GeneralMeshEdge const *, GeneralMeshEdge *> const & edge_map,
+                UnorderedMap<Face const *, Face *> const & face_map) const
     {
       dst.setAttr(this->attr());  // assume attributes can be simply copied
 

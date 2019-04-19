@@ -55,13 +55,13 @@ namespace CodecOFFInternal {
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
 {
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, long> type;
+  typedef UnorderedMap<typename MeshT::Vertex const *, long> type;
 };
 
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef TheaUnorderedMap<std::pair<MeshT const *, long>, long> type;
+  typedef UnorderedMap<std::pair<MeshT const *, long>, long> type;
 };
 
 } // namespace CodecOFFInternal
@@ -212,7 +212,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      TheaArray<uint8> enc_block;
+      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
       if (read_prefixed_info)
@@ -274,8 +274,8 @@ class CodecOFF : public CodecOFFBase<MeshT>
       Builder builder(mesh);
       builder.begin();
 
-      TheaArray<typename Builder::VertexHandle> vrefs;
-      TheaArray<typename Builder::VertexHandle> face;
+      Array<typename Builder::VertexHandle> vrefs;
+      Array<typename Builder::VertexHandle> face;
 
       // Read list of vertices
       double x, y, z;
@@ -402,8 +402,8 @@ class CodecOFF : public CodecOFFBase<MeshT>
       Builder builder(mesh);
       builder.begin();
 
-      TheaArray<typename Builder::VertexHandle> vrefs;
-      TheaArray<typename Builder::VertexHandle> face;
+      Array<typename Builder::VertexHandle> vrefs;
+      Array<typename Builder::VertexHandle> face;
 
       // Read list of vertices
       Vector3 vertex;

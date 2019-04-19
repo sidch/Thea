@@ -106,9 +106,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       }
     };
 
-    typedef TheaUnorderedSet<Vertex *>               VertexSet;
-    typedef TheaSet<Halfedge *, HalfedgeComparator>  HalfedgeSet;  // store halfedges in sequence so twins are consecutive
-    typedef TheaUnorderedSet<Face *>                 FaceSet;
+    typedef UnorderedSet<Vertex *>               VertexSet;
+    typedef Set<Halfedge *, HalfedgeComparator>  HalfedgeSet;  // store halfedges in sequence so twins are consecutive
+    typedef UnorderedSet<Face *>                 FaceSet;
 
     /** Iterate over edges (every other halfedge). */
     template <typename BaseIterT>
@@ -733,7 +733,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       if (!face)
       {
         THEA_WARNING << "Adding isolated face";
-        TheaArray<Vertex *> iso_verts;
+        Array<Vertex *> iso_verts;
         size_t existing0 = 0, existing1 = 0;
         if (e && e->isBoundaryEdge())
         {
@@ -787,7 +787,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * pointers to the new vertices.
      */
     bool addIsolatedVertices(size_t num_verts, Vertex ** verts, size_t existing0, size_t existing1,
-                             TheaArray<Vertex *> & iso_verts)
+                             Array<Vertex *> & iso_verts)
     {
       bool has_existing_edge = (existing0 != existing1);
       for (size_t i = 0; i < num_verts; ++i)
@@ -829,7 +829,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     {
       // For each vertex, check that the halfedge emanating from it exists as a boundary halfedge, or can be successfully added.
       // Store either the existing edge to the next vertex, or the preceding boundary halfedge _into_ the vertex.
-      TheaArray<Halfedge *> edges(num_verts);
+      Array<Halfedge *> edges(num_verts);
       Halfedge * prev = first, * e;
       size_t start_index = reverse ? (origin > 0 ? origin - 1 : num_verts - 1)
                                          : (origin < num_verts - 1 ? origin + 1 : 0);
@@ -1364,11 +1364,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       num_quad_indices  =  (long)packed_quads.size();
     }
 
-    typedef TheaArray<Vector3>    PositionArray;  ///< Array of vertex positions.
-    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
-    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
-    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
+    typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
+    typedef Array<Vector3>    NormalArray;    ///< Array of normals.
+    typedef Array<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
     FaceSet      faces;                ///< Set of mesh faces.
     VertexSet    vertices;             ///< Set of mesh vertices.
@@ -1404,7 +1404,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     VAR * quads_var;             ///< GPU buffer for quad indices.
     VAR * edges_var;             ///< GPU buffer for edges.
 
-    mutable TheaArray<Vertex *> face_vertices;  // internal cache for vertex pointers for a face
+    mutable Array<Vertex *> face_vertices;  // internal cache for vertex pointers for a face
 };
 
 template <typename V, typename E, typename F>

@@ -279,11 +279,11 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     /** Mesh type tag. */
     struct DISPLAY_MESH_TAG {};
 
-    typedef TheaArray<Vector3>    VertexArray;    ///< Array of vertex positions.
-    typedef TheaArray<Vector3>    NormalArray;    ///< Array of normals.
-    typedef TheaArray<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
-    typedef TheaArray<ColorRGBA>  ColorArray;     ///< Array of colors.
-    typedef TheaArray<uint32>     IndexArray;     ///< Array of indices.
+    typedef Array<Vector3>    VertexArray;    ///< Array of vertex positions.
+    typedef Array<Vector3>    NormalArray;    ///< Array of normals.
+    typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
+    typedef Array<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
     typedef DisplayMeshVertex Vertex;  ///< A convenience wrapper for accessing a vertex's properties.
     typedef DisplayMeshIndexedVertex IndexedVertex;  ///< A reference to a vertex's properties via its index.
@@ -313,9 +313,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     IndexArray edges;  ///< Edge indices (in pairs).
 
     // Element source indices (typically from source files)
-    TheaArray<long> vertex_source_indices;
-    TheaArray<long> tri_source_face_indices;
-    TheaArray<long> quad_source_face_indices;
+    Array<long> vertex_source_indices;
+    Array<long> tri_source_face_indices;
+    Array<long> quad_source_face_indices;
 
     bool valid_bounds;  ///< Is the bounding box valid?
     AxisAlignedBox3 bounds;  ///< Bounding box.
@@ -689,8 +689,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     void updateEdges();
 
     // Temporary storage for triangulating polygons with more than 4 vertices
-    TheaArray<long> face_vertex_indices;
-    TheaArray<long> triangulated_indices;
+    Array<long> face_vertex_indices;
+    Array<long> triangulated_indices;
 
 }; // class DisplayMesh
 

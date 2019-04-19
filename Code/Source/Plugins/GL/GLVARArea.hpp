@@ -95,7 +95,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     /** Destroy all vertex arrays that are allocated from this area. */
     void destroyAllArrays();
 
-    typedef TheaUnorderedSet<VAR *> VARSet;
+    typedef UnorderedSet<VAR *> VARSet;
 
     GLRenderSystem * render_system;
     std::string name;

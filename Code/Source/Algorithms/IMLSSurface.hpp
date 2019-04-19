@@ -64,7 +64,7 @@ namespace IMLSSurfaceInternal {
 class IndexedVertexTriple
 {
   private:
-    TheaArray<Vector3> const * array;
+    Array<Vector3> const * array;
     size_t indices[3];
 
   public:
@@ -72,7 +72,7 @@ class IndexedVertexTriple
     IndexedVertexTriple() {}
 
     /** Initializing constructor. */
-    IndexedVertexTriple(TheaArray<Vector3> const * array_, size_t i0, size_t i1, size_t i2)
+    IndexedVertexTriple(Array<Vector3> const * array_, size_t i0, size_t i1, size_t i2)
     {
       array = array_;
       indices[0] = i0;
@@ -285,20 +285,20 @@ class THEA_API IMLSSurface : private Noncopyable
 
     /** Add a general mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
-    void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
+    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
                  typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL);
 
     /** Add a DCEL mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
-    void addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
+    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
                  typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL);
 
     /** Add a mesh group to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
-    void addMeshGroup(Graphics::MeshGroup<MeshT> const & mg, TheaArray<IndexedTriangle> & tris);
+    void addMeshGroup(Graphics::MeshGroup<MeshT> const & mg, Array<IndexedTriangle> & tris);
 
     /** Add a loose bounding box of all input meshes to the polygon soup, ensuring the isosurface is bounded. */
-    void enforceBounds(TheaArray<IndexedTriangle> & tris);
+    void enforceBounds(Array<IndexedTriangle> & tris);
 
     /** Evaluate the weighting function given a squared distance. */
     double weight(double dist2) const
@@ -334,9 +334,9 @@ class THEA_API IMLSSurface : private Noncopyable
      */
     void evalRec(Vector3 const & p, TriangleKDTree::Node const * start, Functor & functor) const;
 
-    TheaArray<Vector3>  verts;   ///< Mesh vertices.
-    TheaArray<double>   phi;     ///< Phi values assigned per vertex.
-    TriangleKDTree      kdtree;  ///< KD-tree of mesh triangles.
+    Array<Vector3>  verts;   ///< Mesh vertices.
+    Array<double>   phi;     ///< Phi values assigned per vertex.
+    TriangleKDTree  kdtree;  ///< KD-tree of mesh triangles.
 
     double  mesh_size;  ///< Size of the input mesh, measured as the diagonal of its bounding box.
     double  eps;        ///< Smoothness.
@@ -367,7 +367,7 @@ IMLSSurface::IMLSSurface(Graphics::MeshGroup<MeshT> const & mg, double eps_, dou
   setSmoothness(eps_);
   setAccuracy(lambda_);
 
-  TheaArray<IndexedTriangle> tris;
+  Array<IndexedTriangle> tris;
   addMeshGroup(mg, tris);
 
   if (bounded)
@@ -385,7 +385,7 @@ template <typename MeshT>
 void
 IMLSSurface::constructFromMesh(MeshT const & mesh)
 {
-  TheaArray<IndexedTriangle> tris;
+  Array<IndexedTriangle> tris;
   addMesh(mesh, tris);
 
   if (bounded)
@@ -401,10 +401,10 @@ IMLSSurface::constructFromMesh(MeshT const & mesh)
 
 template <typename MeshT>
 void
-IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
+IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
                      typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy)
 {
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
+  typedef UnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
 
   size_t base = verts.size();
@@ -422,7 +422,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
   size_t i0, i1, i2, i3;
   Polygon3 poly;
-  TheaArray<long> tri_indices;
+  Array<long> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
   {
     if (fi->isTriangle())
@@ -472,10 +472,10 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
 template <typename MeshT>
 void
-IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
+IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
                      typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy)
 {
-  typedef TheaUnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
+  typedef UnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
 
   size_t base = verts.size();
@@ -493,7 +493,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
   size_t i0, i1, i2, i3;
   Polygon3 poly;
-  TheaArray<long> tri_indices;
+  Array<long> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
   {
     if (fi->isTriangle())
@@ -547,7 +547,7 @@ IMLSSurface::addMesh(MeshT const & mesh, TheaArray<IndexedTriangle> & tris,
 
 template <typename MeshT>
 void
-IMLSSurface::addMeshGroup(Graphics::MeshGroup<MeshT> const & mg, TheaArray<IndexedTriangle> & tris)
+IMLSSurface::addMeshGroup(Graphics::MeshGroup<MeshT> const & mg, Array<IndexedTriangle> & tris)
 {
   for (typename Graphics::MeshGroup<MeshT>::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
     addMesh(**mi, tris);

@@ -79,7 +79,7 @@ ConvexHull3::updateApprox() const
   THEA_DEBUG << "ConvexHull3: Computing convex hull of " << points.size() << " points";
 
   // Convert the input points to a packed array of floats
-  TheaArray<float> coords(3 * points.size());
+  Array<float> coords(3 * points.size());
   size_t base = 0;
   for (size_t i = 0; i < points.size(); ++i, base += 3)
   {
@@ -132,7 +132,7 @@ ConvexHull3::updateApprox() const
       THEA_DEBUG << "ConvexHull3: Requested triangles, but higher-degree polygons obtained";
 
       Polygon3 poly;
-      TheaArray<long> tri_indices;
+      Array<long> tri_indices;
       size_t num_face_vertices = 0, index;
 
       for (size_t i = 0; i < (size_t)result.mNumIndices; i += (1 + num_face_vertices))

@@ -78,7 +78,7 @@ rangeToString(IteratorT begin, IteratorT end)
 class ExampleSet: public HoughForest::TrainingData
 {
   private:
-    typedef TheaUnorderedMap<long, long> IDMap;
+    typedef UnorderedMap<long, long> IDMap;
 
   public:
     THEA_DEF_POINTER_TYPES(ExampleSet, std::shared_ptr, std::weak_ptr)
@@ -194,8 +194,8 @@ class ExampleSet: public HoughForest::TrainingData
       resize((long)hough_class_to_input_class.size(), num_features, num_vote_params, num_examples);
       {
         std::ifstream in(path.c_str());
-        TheaArray<double> example_features((size_t)num_features);
-        TheaArray<double> example_self_vote((size_t)num_vote_params);
+        Array<double> example_features((size_t)num_features);
+        Array<double> example_self_vote((size_t)num_vote_params);
         long class_id, model_id;
         for (long i = 0; i < num_examples; ++i)
         {
@@ -289,7 +289,7 @@ class ExampleSet: public HoughForest::TrainingData
     long num_classes;
     MatrixX<double, MatrixLayout::ROW_MAJOR> features;
     MatrixX<double, MatrixLayout::COLUMN_MAJOR> votes;
-    TheaArray<long> classes;
+    Array<long> classes;
     IDMap input_class_to_hough_class;
     IDMap hough_class_to_input_class;
 
@@ -343,7 +343,7 @@ testHoughForestFile(string const & path)
   // opts.setMaxCandidateThresholds(10);
   opts.setProbabilisticSampling(true);
 
-  TheaArray<long> num_vote_params((size_t)training_data.numClasses());
+  Array<long> num_vote_params((size_t)training_data.numClasses());
   for (size_t i = 0; i < num_vote_params.size(); ++i)
     num_vote_params[i] = training_data.numVoteParameters((long)i);
 
@@ -360,8 +360,8 @@ testHoughForestFile(string const & path)
   hf.setVerbose(1);
 
   VoteCallback callback(&training_data);
-  TheaArray<double> training_vote, test_vote;
-  TheaArray<double> features((size_t)training_data.numFeatures());
+  Array<double> training_vote, test_vote;
+  Array<double> features((size_t)training_data.numFeatures());
 
   for (long c = 1; c < training_data.numClasses(); ++c)
   {

@@ -154,7 +154,7 @@ Polygon3_insideTriangle2(Vector2 const & A, Vector2 const & B, Vector2 const & C
 }
 
 bool
-Polygon3::snip(size_t u, size_t v, size_t w, size_t n, TheaArray<size_t> const & indices,
+Polygon3::snip(size_t u, size_t v, size_t w, size_t n, Array<size_t> const & indices,
                Real epsilon) const
 {
   Vector2 const & A = proj_vertices[indices[u]];
@@ -203,7 +203,7 @@ Polygon3::snip(size_t u, size_t v, size_t w, size_t n, TheaArray<size_t> const &
 //
 //   Instead, we will project onto the plane of the polygon.
 long
-Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
+Polygon3::triangulate(Array<long> & tri_indices, Real epsilon) const
 {
   if (epsilon < 0)
     epsilon = Math::eps<Real>();
@@ -238,7 +238,7 @@ Polygon3::triangulate(TheaArray<long> & tri_indices, Real epsilon) const
       proj_vertices[i] = Vector2(v.dot(axis0), v.dot(axis1));
     }
 
-    TheaArray<size_t> indices(n);
+    Array<size_t> indices(n);
     bool flipped = false;
     if (projArea() > 0)
     {

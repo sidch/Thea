@@ -408,7 +408,7 @@ MainWindow::selectAndLoadModel(wxEvent & event)
 }
 
 void
-getMeshPatterns(TheaArray<std::string> & patterns)
+getMeshPatterns(Array<std::string> & patterns)
 {
   patterns.clear();
   patterns.push_back("*.3ds");
@@ -420,7 +420,7 @@ getMeshPatterns(TheaArray<std::string> & patterns)
 }
 
 void
-getFeaturePatterns(TheaArray<std::string> & patterns)
+getFeaturePatterns(Array<std::string> & patterns)
 {
   patterns.clear();
   patterns.push_back("*.arff");
@@ -430,7 +430,7 @@ getFeaturePatterns(TheaArray<std::string> & patterns)
 }
 
 long
-fileIndex(TheaArray<std::string> const & files, std::string const & file, TheaArray<std::string> const * patterns = NULL)
+fileIndex(Array<std::string> const & files, std::string const & file, Array<std::string> const * patterns = NULL)
 {
   std::string fname = FilePath::objectName(file);
   for (size_t i = 0; i < files.size(); ++i)
@@ -441,8 +441,8 @@ fileIndex(TheaArray<std::string> const & files, std::string const & file, TheaAr
 }
 
 long
-fileIndex(std::string const & dir, std::string const & file, TheaArray<std::string> & files,
-          TheaArray<std::string> const * patterns = NULL)
+fileIndex(std::string const & dir, std::string const & file, Array<std::string> & files,
+          Array<std::string> const * patterns = NULL)
 {
   files.clear();
 
@@ -465,10 +465,10 @@ fileIndex(std::string const & dir, std::string const & file, TheaArray<std::stri
 void
 MainWindow::loadPreviousModel(wxEvent & event)
 {
-  TheaArray<std::string> patterns;
+  Array<std::string> patterns;
   getMeshPatterns(patterns);
 
-  TheaArray<std::string> files;
+  Array<std::string> files;
   long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
   if (files.empty())
     return;
@@ -489,10 +489,10 @@ MainWindow::loadPreviousModel(wxEvent & event)
 void
 MainWindow::loadNextModel(wxEvent & event)
 {
-  TheaArray<std::string> patterns;
+  Array<std::string> patterns;
   getMeshPatterns(patterns);
 
-  TheaArray<std::string> files;
+  Array<std::string> files;
   long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
   if (files.empty())
     return;
@@ -513,10 +513,10 @@ MainWindow::loadNextModel(wxEvent & event)
 void
 MainWindow::loadPreviousFeatures(wxEvent & event)
 {
-  TheaArray<std::string> patterns;
+  Array<std::string> patterns;
   getFeaturePatterns(patterns);
 
-  TheaArray<std::string> files;
+  Array<std::string> files;
   long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (files.empty())
     return;
@@ -537,10 +537,10 @@ MainWindow::loadPreviousFeatures(wxEvent & event)
 void
 MainWindow::loadNextFeatures(wxEvent & event)
 {
-  TheaArray<std::string> patterns;
+  Array<std::string> patterns;
   getFeaturePatterns(patterns);
 
-  TheaArray<std::string> files;
+  Array<std::string> files;
   long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (files.empty())
     return;
@@ -585,7 +585,7 @@ MainWindow::addPickedSample(wxEvent & event)
 void
 MainWindow::syncSamples(wxEvent & event)
 {
-  TheaArray<Model::Sample> const & samples = model->getSamples();
+  Array<Model::Sample> const & samples = model->getSamples();
   wxArrayString labels;
   for (size_t i = 0; i < samples.size(); ++i)
   {
@@ -659,7 +659,7 @@ MainWindow::contractPickedSegment(wxEvent & event)
 void
 MainWindow::syncSegments(wxEvent & event)
 {
-  TheaArray<Segment> const & segments = model->getSegments();
+  Array<Segment> const & segments = model->getSegments();
   wxArrayString labels;
   for (size_t i = 0; i < segments.size(); ++i)
   {

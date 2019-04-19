@@ -163,7 +163,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
         return Vector3(eval[0], eval[1], eval[2]);
       }
 
-      TheaArray<Vector3> nbd_pts;
+      Array<Vector3> nbd_pts;
 
     }; // struct LocalPCAFunctor
 

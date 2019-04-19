@@ -32,7 +32,7 @@ typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
 typedef MeshKDTree<Mesh> KDTree;
 
-int loadSamples(string const & samples_path, TheaArray<Vector3> & positions, TheaArray<Vector3> & normals);
+int loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vector3> & normals);
 
 struct MeshTransformer
 {
@@ -195,8 +195,8 @@ main(int argc, char * argv[])
   // Load points
   //===========================================================================================================================
 
-  TheaArray<Vector3> sample_positions;
-  TheaArray<Vector3> sample_normals;
+  Array<Vector3> sample_positions;
+  Array<Vector3> sample_normals;
   if (loadSamples(samples_path, sample_positions, sample_normals))
     return -1;
 
@@ -208,8 +208,8 @@ main(int argc, char * argv[])
   // Load mesh or dense samples
   //===========================================================================================================================
 
-  TheaArray<Vector3> dense_positions;
-  TheaArray<Vector3> dense_normals;
+  Array<Vector3> dense_positions;
+  Array<Vector3> dense_normals;
   bool dense_has_normals = false;
   KDTree kdtree;
   if (mesh_path != "-")
@@ -348,7 +348,7 @@ main(int argc, char * argv[])
 }
 
 int
-loadSamples(string const & samples_path, TheaArray<Vector3> & positions, TheaArray<Vector3> & normals)
+loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vector3> & normals)
 {
   ifstream in(samples_path.c_str());
   if (!in)

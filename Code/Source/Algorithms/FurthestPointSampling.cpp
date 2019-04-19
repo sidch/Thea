@@ -95,7 +95,7 @@ FurthestPointSampling::subsample(long num_orig_points, Vector3 const * orig_poin
 
   // Repeatedly add the furthest sample from the selected set to the selected set
   ShortestPaths<SampleGraph> shortest_paths;
-  TheaUnorderedMap<SampleGraph::VertexHandle, double> src_region;
+  UnorderedMap<SampleGraph::VertexHandle, double> src_region;
   int prev_percent = 0;
   for (long i = 0; i < num_desired_points; ++i)
   {

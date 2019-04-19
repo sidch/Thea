@@ -220,7 +220,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     long numSamples() const { return (long)samples.size(); }
 
     /** Get the set of sample points. */
-    TheaArray<Sample> const & getSamples() const { return samples; }
+    Array<Sample> const & getSamples() const { return samples; }
 
     /** Add a sample point. */
     void addSample(Sample const & sample);
@@ -271,7 +271,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     long numSegments() const { return (long)segments.size(); }
 
     /** Get the set of labeled segments. */
-    TheaArray<Segment> const & getSegments() const { return segments; }
+    Array<Segment> const & getSegments() const { return segments; }
 
     /** Add a segment. */
     void addSegment(Segment const & segment);
@@ -408,12 +408,12 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     ColorRGBA color;
     AxisAlignedBox3 bounds;
 
-    TheaArray<Sample> samples;
+    Array<Sample> samples;
     bool valid_pick;
     Sample picked_sample;
     long selected_sample;
 
-    TheaArray<Segment> segments;
+    Array<Segment> segments;
     Segment picked_segment;
     long segment_depth_promotion;
     long selected_segment;

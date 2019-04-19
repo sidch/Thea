@@ -45,7 +45,7 @@ namespace Thea {
 namespace Algorithms {
 
 void
-ApproximateConvexPointDecomposition::decompose(double convexity_threshold, TheaArray< TheaArray<int> > & results)
+ApproximateConvexPointDecomposition::decompose(double convexity_threshold, Array< Array<int> > & results)
 {
   results.clear();
 }

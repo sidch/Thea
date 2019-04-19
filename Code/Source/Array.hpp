@@ -45,18 +45,10 @@
 #include "Platform.hpp"
 #include <vector>
 
-/** Dynamically resizable array, guaranteed to be a drop-in replacement for std::vector. */
-#define TheaArray std::vector
-
 namespace Thea {
 
-/**
- * Size type for arrays. Typedef-ed just in case this is set to something other than std::size_t.
- *
- * @deprecated As of March 2018, Thea uses <tt>size_t</tt> throughout. This typedef is retained for compatibility with older
- *   code.
- */
-typedef std::size_t array_size_t;
+/** Dynamically resizable array. */
+template < typename T, typename Alloc = std::allocator<T> > using Array = std::vector<T, Alloc>;
 
 } // namespace Thea
 

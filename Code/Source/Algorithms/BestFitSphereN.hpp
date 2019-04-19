@@ -101,9 +101,9 @@ class /* THEA_API */ BestFitSphereN
       }
       else
       {
-        typedef Seb::Smallest_enclosing_ball< (unsigned int)N, double, PointT, TheaArray<PointT> > Miniball;
+        typedef Seb::Smallest_enclosing_ball< (unsigned int)N, double, PointT, Array<PointT> > Miniball;
 
-        Miniball mb(const_cast< TheaArray<PointT> &>(points));
+        Miniball mb(const_cast< Array<PointT> &>(points));
         mb.invalidate();  // to schedule recompute; this does not get rid of data
         double r = mb.radius();
         double const * mbc = mb.center_begin();
@@ -117,7 +117,7 @@ class /* THEA_API */ BestFitSphereN
       updated = true;
     }
 
-    TheaArray<PointT> points;
+    Array<PointT> points;
     mutable BallT ball;
     mutable bool updated;
 

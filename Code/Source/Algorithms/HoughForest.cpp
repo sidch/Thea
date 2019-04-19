@@ -204,9 +204,9 @@ class HoughNode
     long depth;
     long split_feature;
     double split_value;
-    TheaArray<long> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
-    TheaArray<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
-    TheaArray<Gaussian1D> class_feature_distrib;
+    Array<long> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
+    Array<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
+    Array<Gaussian1D> class_feature_distrib;
     HoughNode * left;
     HoughNode * right;
 
@@ -331,7 +331,7 @@ class HoughTree
     typedef HoughForest::VoteCallback VoteCallback;
 
     // Constructor.
-    HoughTree(HoughForest * parent_, long num_classes_, long num_features_, TheaArray<long> num_vote_params_,
+    HoughTree(HoughForest * parent_, long num_classes_, long num_features_, Array<long> num_vote_params_,
               Options const & options_)
     : parent(parent_),
       num_classes(num_classes_),
@@ -416,10 +416,10 @@ class HoughTree
               max_depth = node->left->depth;
 
             // Divide the elements into left and right subtrees, depending on their feature values
-            TheaArray<double> features;
+            Array<double> features;
             getNodeFeatures(node, split_feature, training_data, features);
 
-            TheaArray<double> left_features, right_features;
+            Array<double> left_features, right_features;
             for (size_t i = 0; i < node->elems.size(); ++i)
             {
               if (features[i] < split_value)
@@ -659,7 +659,7 @@ class HoughTree
         }
       }
 
-      TheaArray<double> features, reordered_features;
+      Array<double> features, reordered_features;
       double min_uncertainty = -1;
       split_feature = -1;
       split_value = 0;
@@ -727,20 +727,20 @@ class HoughTree
 
     // Get the value of a single feature for each element in a list.
     void getNodeFeatures(Node const * node, long feature_index, TrainingData const & training_data,
-                         TheaArray<double> & features) const
+                         Array<double> & features) const
     {
       features.resize(node->elems.size());
       training_data.getFeatures(feature_index, (long)node->elems.size(), &node->elems[0], &features[0]);
     }
 
     // Measure the frequency of occurrence of each class in a set of elements.
-    void measureClassFrequencies(TheaArray<long> const & elems, TrainingData const & training_data,
-                                 TheaArray<long> & class_freq) const
+    void measureClassFrequencies(Array<long> const & elems, TrainingData const & training_data,
+                                 Array<long> & class_freq) const
     {
       class_freq.resize((size_t)num_classes);
       std::fill(class_freq.begin(), class_freq.end(), 0);
 
-      TheaArray<long> classes(elems.size());
+      Array<long> classes(elems.size());
       training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
       for (size_t i = 0; i < classes.size(); ++i)
@@ -748,8 +748,8 @@ class HoughTree
     }
 
     // Measure the cumulative frequency of occurrence of classes, in order of ID, in a set of elements.
-    void measureClassCumulativeFrequencies(TheaArray<long> const & elems, TrainingData const & training_data,
-                                           TheaArray<long> & class_cum_freq) const
+    void measureClassCumulativeFrequencies(Array<long> const & elems, TrainingData const & training_data,
+                                           Array<long> & class_cum_freq) const
     {
       measureClassFrequencies(elems, training_data, class_cum_freq);
 
@@ -758,9 +758,9 @@ class HoughTree
     }
 
     // Sort a set of elements by their class ID's.
-    void sortByClass(TheaArray<long> & elems, TrainingData const & training_data) const
+    void sortByClass(Array<long> & elems, TrainingData const & training_data) const
     {
-      TheaArray<long> classes(elems.size());
+      Array<long> classes(elems.size());
       training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
       // Quadratic-time sort but we expect this to be called only by leaf nodes with few elements
@@ -774,14 +774,14 @@ class HoughTree
     }
 
     // Measure the classification/regression uncertainty of a collection training examples.
-    double measureUncertainty(TheaArray<long> const & elems, TrainingData const & training_data, MeasureMode measure_mode) const
+    double measureUncertainty(Array<long> const & elems, TrainingData const & training_data, MeasureMode measure_mode) const
     {
       if (measure_mode == CLASS_UNCERTAINTY)
       {
         // The uncertainty is defined to be the Shannon entropy of the labeling:
         //   Entropy = -\sum_{c \in Classes} p(c) log p(c)
 
-        TheaArray<long> class_freq;
+        Array<long> class_freq;
         measureClassFrequencies(elems, training_data, class_freq);
 
         double entropy = 0;
@@ -800,15 +800,15 @@ class HoughTree
         // one object voting for parameters of another object) are ignored.
 
         // First get the class of each training example
-        TheaArray<long> classes(elems.size());
+        Array<long> classes(elems.size());
         training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
         // Now measure the vote variance per class
         MatrixX<double> sum_votes(num_classes, max_vote_params); sum_votes.setZero();  // to measure "square of mean"
-        TheaArray<double> sum_vote_sqlen((size_t)num_classes, 0.0);                    // to measure "mean of squares"
-        TheaArray<long> class_freq((size_t)num_classes, 0);                            // only count elements that have valid
+        Array<double> sum_vote_sqlen((size_t)num_classes, 0.0);                        // to measure "mean of squares"
+        Array<long> class_freq((size_t)num_classes, 0);                                // only count elements that have valid
                                                                                        // Hough votes for their own classes
-        TheaArray<double> vote((size_t)max_vote_params);
+        Array<double> vote((size_t)max_vote_params);
         for (size_t i = 0; i < elems.size(); ++i)
         {
           if (classes[i] == BACKGROUND_CLASS)  // ignore background class, assumed to have index 0
@@ -859,7 +859,7 @@ class HoughTree
     }
 
     // Measure the classification/regression uncertainty after splitting elements along a feature.
-    double measureUncertaintyAfterSplit(TheaArray<long> const & elems, TheaArray<double> const & features, double split_value,
+    double measureUncertaintyAfterSplit(Array<long> const & elems, Array<double> const & features, double split_value,
                                         TrainingData const & training_data, MeasureMode measure_mode, bool & valid_split) const
     {
       static Real const MAX_ASYMMETRY = 7;
@@ -872,7 +872,7 @@ class HoughTree
         return 0;
       }
 
-      TheaArray<long> left_elems, right_elems;
+      Array<long> left_elems, right_elems;
       for (size_t i = 0; i < elems.size(); ++i)
       {
         if (features[i] < split_value)
@@ -898,7 +898,7 @@ class HoughTree
     }
 
     // Adjust the split value to bisect the closest pair from the left and right sides.
-    double refineSplitValue(double split_value, TheaArray<double> const & features) const
+    double refineSplitValue(double split_value, Array<double> const & features) const
     {
       double left_max = 0, right_min = 0;
       bool found_left = false, found_right = false;
@@ -934,17 +934,17 @@ class HoughTree
     }
 
     // Estimate the distribution of a set of 1D feature values
-    void estimateClassFeatureDistributions(TheaArray<double> const & features, TheaArray<long> const & elems,
-                                           TrainingData const & training_data, TheaArray<Gaussian1D> & class_feature_distrib)
+    void estimateClassFeatureDistributions(Array<double> const & features, Array<long> const & elems,
+                                           TrainingData const & training_data, Array<Gaussian1D> & class_feature_distrib)
     {
       alwaysAssertM(!elems.empty(), "HoughForest: Can't model distribution of empty set");
 
-      TheaArray<long> classes(elems.size());
+      Array<long> classes(elems.size());
       training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
-      TheaArray<double> sum((size_t)num_classes, 0.0);
-      TheaArray<double> sum_squares((size_t)num_classes, 0.0);
-      TheaArray<long>   class_freq((size_t)num_classes, 0);
+      Array<double> sum((size_t)num_classes, 0.0);
+      Array<double> sum_squares((size_t)num_classes, 0.0);
+      Array<long>   class_freq((size_t)num_classes, 0);
 
       for (size_t i = 0; i < elems.size(); ++i)
       {
@@ -970,14 +970,14 @@ class HoughTree
       }
     }
 
-    void estimateClassGaussians(TheaArray<long> const & elems, TrainingData const & training_data,
-                                TheaArray<Gaussian> & gaussians)
+    void estimateClassGaussians(Array<long> const & elems, TrainingData const & training_data,
+                                Array<Gaussian> & gaussians)
     {
       // NOTE: Incomplete
 
       gaussians.resize((size_t)num_classes);
 
-      TheaArray<long> classes(elems.size());
+      Array<long> classes(elems.size());
       training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
 
       MatrixX<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (long)elems.size());
@@ -996,7 +996,7 @@ class HoughTree
     HoughForest * parent;
     long num_classes;
     long num_features;
-    TheaArray<long> num_vote_params;
+    Array<long> num_vote_params;
     long max_vote_params;
     Options options;
     Node * root;

@@ -178,7 +178,7 @@ GLShader::readActiveUniforms()
     glGetObjectParameterivARB(program_id, GL_OBJECT_ACTIVE_UNIFORM_MAX_LENGTH_ARB, &max_uniform_name_length);
     glGetObjectParameterivARB(program_id, GL_OBJECT_ACTIVE_UNIFORMS_ARB, &num_active_uniforms);
 
-    TheaArray<GLcharARB> name_chars(max_uniform_name_length);
+    Array<GLcharARB> name_chars(max_uniform_name_length);
 
     // Loop over glGetActiveUniformARB and store the results away.
     for (int i = 0; i < num_active_uniforms; ++i)
@@ -318,7 +318,7 @@ GLShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
     glGetObjectParameterivARB(obj_id, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infolog_length);
     if (infolog_length > 0)
     {
-      TheaArray<char> infolog(infolog_length);
+      Array<char> infolog(infolog_length);
       GLsizei chars_written;
       glGetInfoLogARB(obj_id, (GLsizei)infolog_length, &chars_written, &infolog[0]);
       throw Error(std::string(getName()) + ": " + error_msg + " (" + &infolog[0] + ')');

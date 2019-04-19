@@ -90,19 +90,19 @@ class THEA_API JointBoost
          * Get the values of a particular feature for all training examples. \a feature_index must be in the range
          * 0... numFeatures() - 1.
          */
-        virtual void getFeature(long feature_index, TheaArray<double> & values) const = 0;
+        virtual void getFeature(long feature_index, Array<double> & values) const = 0;
 
         /** Get the class of each training example. */
-        virtual void getClasses(TheaArray<long> & classes) const = 0;
+        virtual void getClasses(Array<long> & classes) const = 0;
 
         /** Get the weight of each training example. If an empty array is returned, all weights are set to 1. */
-        virtual void getWeights(TheaArray<double> & weights) const { weights.clear(); }
+        virtual void getWeights(Array<double> & weights) const { weights.clear(); }
 
         /**
          * Get the name of each class. If it returns an empty vector, the numeric index of the class will be used as the label
          * name.
          */
-        virtual void getClassNames(TheaArray<std::string> & names) const { names.clear(); };
+        virtual void getClassNames(Array<std::string> & names) const { names.clear(); };
 
     }; // class TrainingData
 
@@ -262,7 +262,7 @@ class THEA_API JointBoost
       double a;             ///< Regression weight a.
       double b;             ///< Regression weight b.
       double theta;         ///< Cut threshold.
-      TheaArray<double> k;  ///< Constants for classes not in the sharing set.
+      Array<double> k;  ///< Constants for classes not in the sharing set.
 
       /** Evaluate the stump for a given feature and class. */
       double operator()(double feature_value, long class_index) const
@@ -285,18 +285,17 @@ class THEA_API JointBoost
     }; // struct SharedStump
 
     /** Optimize a stump, for the current set of weights, by searching over features and subsets of classes. */
-    double optimizeStump(SharedStump & stump, TheaArray<long> const & stump_classes);
+    double optimizeStump(SharedStump & stump, Array<long> const & stump_classes);
 
     /** Optimize a stump via exhaustive O(2^C) search over all subsets of classes. */
-    double optimizeStumpExhaustive(SharedStump & stump, TheaArray<double> const & stump_features,
-                                   TheaArray<long> const & stump_classes);
+    double optimizeStumpExhaustive(SharedStump & stump, Array<double> const & stump_features,
+                                   Array<long> const & stump_classes);
 
     /** Optimize a stump via greedy O(C^2) search over subsets of classes. */
-    double optimizeStumpGreedy(SharedStump & stump, TheaArray<double> const & stump_features,
-                               TheaArray<long> const & stump_classes);
+    double optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump_features, Array<long> const & stump_classes);
 
     /** Fit stump parameters a, b and theta, for a particular subset of classes. */
-    double fitStump(SharedStump & stump, TheaArray<double> const & stump_features, TheaArray<long> const & stump_classes,
+    double fitStump(SharedStump & stump, Array<double> const & stump_features, Array<long> const & stump_classes,
                     long * num_generated_thresholds = NULL);
 
     /**
@@ -313,10 +312,10 @@ class THEA_API JointBoost
     /** Save the trained classifier to an output stream. */
     bool serialize(std::ostream & out) const;
 
-    long num_classes;                    ///< Number of object classes.
-    long num_features;                   ///< Number of features per object.
-    TheaArray<std::string> class_names;  ///< Name of each class, if specified in training data.
-    Options options;                     ///< Additional options.
+    long num_classes;                ///< Number of object classes.
+    long num_features;               ///< Number of features per object.
+    Array<std::string> class_names;  ///< Name of each class, if specified in training data.
+    Options options;                 ///< Additional options.
 
     TrainingData const * training_data;  ///< Cached handle to training data, valid only during training.
     double feature_sampling_fraction;  ///< Cached fraction of features test per round, valid only during training.
@@ -324,7 +323,7 @@ class THEA_API JointBoost
                                           features, valid only during training. */
 
     MatrixX<double> weights;  ///< Weights indexed by (class index, object_index).
-    TheaArray<SharedStump::Ptr> stumps;  ///< Current set of selected decision stumps.
+    Array<SharedStump::Ptr> stumps;  ///< Current set of selected decision stumps.
 
 }; // class JointBoost
 

@@ -65,13 +65,13 @@ class ExampleSet : public JointBoost::TrainingData
     long numExamples() const { return features.rows(); }
     long numFeatures() const { return features.cols(); }
 
-    void getFeature(long feature_index, TheaArray<double> & values) const
+    void getFeature(long feature_index, Array<double> & values) const
     {
       values.resize((size_t)features.rows());
       Eigen::Map<VectorXd>(&values[0], features.rows()) = features.col(feature_index);
     }
 
-    void getClasses(TheaArray<long> & classes_) const
+    void getClasses(Array<long> & classes_) const
     {
       classes_ = classes;
     }
@@ -161,7 +161,7 @@ testJointBoostFile(string const & path)
   ExampleSet::Ptr training_subset;
   ExampleSet::Ptr holdout_subset;
 
-  typedef TheaUnorderedMap<string, long> LabelIndexMap;
+  typedef UnorderedMap<string, long> LabelIndexMap;
   LabelIndexMap labels;
 
   vector<double> features;
