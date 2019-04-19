@@ -79,7 +79,7 @@ getElementsRowMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
   alwaysAssertM(buf, "Math::getElementsRowMajor: Output buffer should be non-null");
 
   Eigen::Map< MatrixX<OutT, MatrixLayout::ROW_MAJOR> > bm(buf, m.rows(), m.cols());
-  bm = m.template cast<OutT>();
+  bm = m;
 }
 
 /** Get the elements of a matrix in column-major order. */
@@ -90,7 +90,7 @@ getElementsColumnMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
   alwaysAssertM(buf, "Math::getElementsColumnMajor: Output buffer should be non-null");
 
   Eigen::Map< MatrixX<OutT, MatrixLayout::COLUMN_MAJOR> > bm(buf, m.rows(), m.cols());
-  bm = m.template cast<OutT>();
+  bm = m;
 }
 
 /** Get the coordinate of a vector with the least value. The behavior is undefined if \a v is not a (row or column) vector. */
