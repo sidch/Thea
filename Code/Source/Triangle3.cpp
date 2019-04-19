@@ -764,11 +764,11 @@ int tri_tri_intersect_with_isectline(Real const V0[3], Real const V1[3], Real co
 }
 
 Vector3 closestPointOnLineSegment(
-  Eigen::MatrixBase<Vector3> const & v0,
-  Eigen::MatrixBase<Vector3> const & v1,
-  Eigen::MatrixBase<Vector3> const & edgeDirection,
-  float const                        edgeLength,
-  Eigen::MatrixBase<Vector3> const & point)
+  Vector3 const  &  v0,
+  Vector3 const  &  v1,
+  Vector3 const  &  edgeDirection,
+  float const       edgeLength,
+  Vector3 const  &  point)
 {
   // Vector towards the point
   Vector3 c = point - v0;
@@ -793,11 +793,11 @@ Vector3 closestPointOnLineSegment(
 }
 
 Vector3 closestPointOnTrianglePerimeter(
-  Eigen::MatrixBase<Vector3> const     v[3],
-  Eigen::MatrixBase<Vector3> const     edgeDirection[3],
-  float const                          edgeLength[3],
-  Eigen::MatrixBase<Vector3> const  &  point,
-  int                               &  edgeIndex)
+  Vector3 const     v[3],
+  Vector3 const     edgeDirection[3],
+  float const       edgeLength[3],
+  Vector3 const  &  point,
+  int            &  edgeIndex)
 {
   // Closest point on segment from v[i] to v[i + 1]
   Vector3 r[3];
@@ -844,10 +844,10 @@ Vector3 closestPointOnTrianglePerimeter(
 
 Vector3
 closestPointOnTrianglePerimeter(
-  Eigen::MatrixBase<Vector3> const & v0,
-  Eigen::MatrixBase<Vector3> const & v1,
-  Eigen::MatrixBase<Vector3> const & v2,
-  Eigen::MatrixBase<Vector3> const & point)
+  Vector3 const & v0,
+  Vector3 const & v1,
+  Vector3 const & v2,
+  Vector3 const & point)
 {
   Vector3 v[3] = {v0, v1, v2};
   Vector3 edgeDirection[3] = {(v1 - v0), (v2 - v1), (v0 - v2)};
@@ -865,11 +865,11 @@ closestPointOnTrianglePerimeter(
 
 bool
 isPointInsideTriangle(
-  Eigen::MatrixBase<Vector3> const &  v0,
-  Eigen::MatrixBase<Vector3> const &  v1,
-  Eigen::MatrixBase<Vector3> const &  v2,
-  int                                 primary_axis,
-  Eigen::MatrixBase<Vector3> const &  p)
+  Vector3 const  &  v0,
+  Vector3 const  &  v1,
+  Vector3 const  &  v2,
+  int               primary_axis,
+  Vector3 const  &  p)
 {
   // Check that the point is within the triangle using a Barycentric coordinate test on a two dimensional plane.
   int i, j;
@@ -913,8 +913,7 @@ isPointInsideTriangle(
 }
 
 Real
-rayTriangleIntersectionTime(Ray3 const & ray, Eigen::MatrixBase<Vector3> const & v0,
-                            Eigen::MatrixBase<Vector3> const & edge01, Eigen::MatrixBase<Vector3> const & edge02)
+rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02)
 {
   // The code is taken from Dave Eberly's Wild Magic library, v5.3, released under the Boost license:
   // http://www.boost.org/LICENSE_1_0.txt .

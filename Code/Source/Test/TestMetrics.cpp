@@ -32,11 +32,11 @@ main(int argc, char * argv[])
 void
 testMetrics(int argc, char * argv[])
 {
-  cout << MetricL2::distance<2, Real>(Vector2::Zero().eval(), Vector2(1, 1)) << endl;
-  cout << MetricL2::distance<3, Real>(Vector3::Zero().eval(), Vector3(1, 1, 1)) << endl;
-  cout << MetricL2::distance<4, Real>(Vector4::Zero().eval(), Vector4(1, 1, 1, 1)) << endl;
+  cout << MetricL2::distance<2, Real>(Vector2::Zero(), Vector2(1, 1)) << endl;
+  cout << MetricL2::distance<3, Real>(Vector3::Zero(), Vector3(1, 1, 1)) << endl;
+  cout << MetricL2::distance<4, Real>(Vector4::Zero(), Vector4(1, 1, 1, 1)) << endl;
 
-  AxisAlignedBox3 aabb(Vector3::Zero().eval(), Vector3(1, 1, 1));
+  AxisAlignedBox3 aabb(Vector3::Zero(), Vector3(1, 1, 1));
   Vector3 p(2, 2, 2);
 
   cout << MetricL2::distance<3, Real>(aabb, p) << endl;

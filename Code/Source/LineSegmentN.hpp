@@ -58,13 +58,9 @@ namespace Internal {
 
 // Get the closest pair of points between two line segments, and the square of the distance between them. Adapted from Christer
 // Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
-template <int N, typename T> T closestPtSegmentSegment(Eigen::MatrixBase< Vector<N, T> > const & p1,
-                                                        Eigen::MatrixBase< Vector<N, T> > const & q1, bool is_line1,
-                                                        Eigen::MatrixBase< Vector<N, T> > const & p2,
-                                                        Eigen::MatrixBase< Vector<N, T> > const & q2, bool is_line2,
-                                                        T & s, T & t,
-                                                        Eigen::MatrixBase< Vector<N, T> > & c1,
-                                                        Eigen::MatrixBase< Vector<N, T> > & c2);
+template <int N, typename T> T closestPtSegmentSegment(Vector<N, T> const & p1, Vector<N, T> const & q1, bool is_line1,
+                                                       Vector<N, T> const & p2, Vector<N, T> const & q2, bool is_line2,
+                                                       T & s, T & t, Vector<N, T> & c1, Vector<N, T> & c2);
 
 /**
  * <b>[Internal]</b> Base class for straight line segments in N-dimensional space, where N is any <b>positive</b> (non-zero)
@@ -257,11 +253,9 @@ namespace Internal {
 
 template <int N, typename T>
 T
-closestPtSegmentSegment(Eigen::MatrixBase< Vector<N, T> > const & p1, Eigen::MatrixBase< Vector<N, T> > const & q1,
-                        bool is_line1,
-                        Eigen::MatrixBase< Vector<N, T> > const & p2, Eigen::MatrixBase< Vector<N, T> > const & q2,
-                        bool is_line2,
-                        T & s, T & t, Eigen::MatrixBase< Vector<N, T> > & c1, Eigen::MatrixBase< Vector<N, T> > & c2)
+closestPtSegmentSegment(Vector<N, T> const & p1, Vector<N, T> const & q1, bool is_line1,
+                        Vector<N, T> const & p2, Vector<N, T> const & q2, bool is_line2,
+                        T & s, T & t, Vector<N, T> & c1, Vector<N, T> & c2)
 {
   typedef Vector<N, T> VectorT;
 

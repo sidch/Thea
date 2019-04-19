@@ -71,8 +71,10 @@ template <typename T, int N> class IsPointN<T const, N>  { public: static bool c
 template <typename T, int N> class IsPointN<T *, N>      { public: static bool const value = IsPointN<T, N>::value; };
 
 // Specialization for Vector
-template <int N, typename ScalarT>
-class /* THEA_API */ IsPointN< Vector<N, ScalarT>, N >
+template <typename T, int N>
+class /* THEA_API */ IsPointN< T, N, typename std::enable_if< std::is_base_of< Eigen::DenseBase<T>, T >::value
+                                                           && T::IsVectorAtCompileTime != 0
+                                                           && T::SizeAtCompileTime == N >::type >
 {
   public:
     static bool const value = true;

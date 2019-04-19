@@ -129,21 +129,20 @@ THEA_API int tri_tri_intersect_with_isectline(Real const V0[3],Real const V1[3],
                                               Real isectpt1[3],Real isectpt2[3]);
 
 // Check if a point is inside a triangle.
-THEA_API bool isPointInsideTriangle(Eigen::MatrixBase<Vector3> const &  v0,
-                                    Eigen::MatrixBase<Vector3> const &  v1,
-                                    Eigen::MatrixBase<Vector3> const &  v2,
-                                    int                                 primary_axis,
-                                    Eigen::MatrixBase<Vector3> const &  p);
+THEA_API bool isPointInsideTriangle(Vector3 const &  v0,
+                                    Vector3 const &  v1,
+                                    Vector3 const &  v2,
+                                    int              primary_axis,
+                                    Vector3 const &  p);
 
 // Closest point on the perimeter of a triangle.
-THEA_API Vector3 closestPointOnTrianglePerimeter(Eigen::MatrixBase<Vector3> const & v0,
-                                                 Eigen::MatrixBase<Vector3> const & v1,
-                                                 Eigen::MatrixBase<Vector3> const & v2,
-                                                 Eigen::MatrixBase<Vector3> const & point);
+THEA_API Vector3 closestPointOnTrianglePerimeter(Vector3 const & v0,
+                                                 Vector3 const & v1,
+                                                 Vector3 const & v2,
+                                                 Vector3 const & point);
 
 // Intersection time of a ray with a triangle. Returns a negative value if the ray does not intersect the triangle.
-THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Eigen::MatrixBase<Vector3> const & v0,
-                                          Eigen::MatrixBase<Vector3> const & edge01, Eigen::MatrixBase<Vector3> const & edge02);
+THEA_API Real rayTriangleIntersectionTime(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02);
 
 } // namespace Triangle3Internal
 

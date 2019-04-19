@@ -72,9 +72,9 @@ isSquare(MatrixT const & m)
 }
 
 /** Get the elements of a matrix in row-major order. */
-template <typename MatrixT, typename OutT>
+template <typename Derived, typename OutT>
 void
-getElementsRowMajor(Eigen::MatrixBase<MatrixT> const & m, OutT * buf)
+getElementsRowMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
 {
   alwaysAssertM(buf, "Math::getElementsRowMajor: Output buffer should be non-null");
 
@@ -83,9 +83,9 @@ getElementsRowMajor(Eigen::MatrixBase<MatrixT> const & m, OutT * buf)
 }
 
 /** Get the elements of a matrix in column-major order. */
-template <typename MatrixT, typename OutT>
+template <typename Derived, typename OutT>
 void
-getElementsColumnMajor(Eigen::MatrixBase<MatrixT> const & m, OutT * buf)
+getElementsColumnMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
 {
   alwaysAssertM(buf, "Math::getElementsColumnMajor: Output buffer should be non-null");
 
@@ -146,7 +146,7 @@ maxAbsAxis(Eigen::MatrixBase<Derived> const & v)
 template <typename T, int N, int O1, int R1, int C1, int O2, int R2, int C2>
 Eigen::Matrix<T, N - 1, 1, O2, R2, C2>
 hmul(Eigen::MatrixBase< Eigen::Matrix<T, N,     N, O1, R1, C1> > const & m,
-       Eigen::MatrixBase< Eigen::Matrix<T, N - 1, 1, O2, R2, C2> > const & v)
+     Eigen::MatrixBase< Eigen::Matrix<T, N - 1, 1, O2, R2, C2> > const & v)
 {
   return (m * v.homogeneous()).hnormalized();
 }
@@ -543,9 +543,9 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
  *    // Output: [1 ... ; ... ]
  * \endcode
  */
-template <typename MatrixT>
+template <typename Derived>
 std::string
-toString(Eigen::DenseBase<MatrixT> const & m, long max_rows = 4, long max_cols = 4)
+toString(Eigen::DenseBase<Derived> const & m, long max_rows = 4, long max_cols = 4)
 {
   long first_rows = m.rows(), last_rows = 0;
   long first_cols = m.cols(), last_cols = 0;
