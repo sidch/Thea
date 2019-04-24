@@ -98,7 +98,7 @@ class /* THEA_API */ AffineTransformN<2, T> : public Internal::AffineTransformNB
     /** Construct a rotation specified by an angle (in radians) around the origin. */
     static AffineTransformN rotation(Real radians)
     {
-      return AffineTransformN(MatrixT::rotation(radians), VectorT::Zero());
+      return AffineTransformN(Math::rotation(radians), VectorT::Zero());
     }
 
 }; // class AffineTransformN<2, T>

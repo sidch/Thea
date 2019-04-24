@@ -151,13 +151,36 @@ hmul(Eigen::MatrixBase< Eigen::Matrix<T, N,     N, O1, R1, C1> > const & m,
   return (m * v.homogeneous()).hnormalized();
 }
 
+/**
+ * Given a 2D vector \a v, get the vector <tt>u</tt> perpendicular to it and of the same length, forming a right-handed basis
+ * <tt>(u, v)</tt>.
+ */
+template <typename T>
+Vector<2, T>
+orthogonalVector(Eigen::MatrixBase< Vector<2, T> > const & v)
+{
+  return Vector<2, T>(v[1], -v[0]);
+}
+
+/**
+ * Given a 2D vector \a v, get the unit vector <tt>u</tt> perpendicular to it, forming an orthonormal right-handed basis
+ * <tt>(u, v.normalized())</tt>. In other words, if \a v is the Y axis of the local frame, then the function returns the unit X
+ * axis.
+ */
+template <typename T>
+Vector<2, T>
+orthogonalDirection(Eigen::MatrixBase< Vector<2, T> > const & v)
+{
+  return orthogonalVector(v).normalized();
+}
+
 /** Given a 3D vector, get an arbitrary unit vector perpendicular to it. */
 template <typename T>
 Vector<3, T>
 orthogonalDirection(Eigen::MatrixBase< Vector<3, T> > const & v)
 {
   if (maxAbsAxis(v) == 0)
-    return Vector<3, T>(v[1], -v[0], 0);
+    return Vector<3, T>(v[1], -v[0], 0).normalized();
   else
     return Vector<3, T>(0, v[2], -v[1]).normalized();
 }
@@ -177,6 +200,19 @@ orthonormalBasis(Eigen::MatrixBase< Vector<3, T> > const & w)
 
   Matrix<3, 3, T> m;
   m << u, v, wnrm;
+  return m;
+}
+
+/** Matrix to rotate a 2D vector about the origin by an angle (in radians). */
+template <typename T>
+Matrix<2, 2, T>
+rotation(T const & radians)
+{
+  T s = std::sin(radians);
+  T c = std::cos(radians);
+
+  Matrix<2, 2, T> m; m << c, -s,
+                          s,  c;
   return m;
 }
 
@@ -481,7 +517,7 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
 }
 
 /**
- * Constructs a 3D perspective projection matrix from the given parameters. \a nearval and \a farval are the <i>negative</i> of
+ * Constructs a 3D perspective projection matrix from the given parameters. \a nearval and \a farval are the <i>negative</i> of
  * the near and far plane Z values (to follow OpenGL conventions). Set \a y_increases_upwards to false if Y increases downwards
  * instead, e.g. for screen pixel space.
  */
@@ -518,6 +554,62 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
                                0,  y,  b,  0,
                                0,  0,  c,  d,
                                0,  0, -1,  0).finished();
+}
+
+/**
+ * Solve for the real eigenvalues and eigenvectors of a 2x2 matrix.
+ *
+ * @param m The matrix whose eigenvalues/vectors will be found.
+ * @param eigenvalues Used to return the eigenvalues of the matrix. Must be preallocated to at least 2 elements.
+ * @param eigenvectors Used to return the eigenvectors of the matrix. Must be preallocated to at least 2 elements.
+ * @param tol Numerical tolerance, negative for default.
+ *
+ * @return The number of real eigenvalues found.
+ */
+template <typename T>
+int
+eigenSolve(Eigen::MatrixBase< Matrix<2, 2, T> > const & m, T * eigenvalues, Vector<2, T> * eigenvectors, T const & tol = -1)
+{
+  T a = m(0, 0), b = m(0, 1);
+  T c = m(1, 0), d = m(1, 1);
+
+  T trace  =  a + d;
+  T det    =  a * d - b * c;
+
+  T disc = trace * trace / 4 - det;
+  if (disc < 0)
+    return 0;
+
+  T s = std::sqrt(disc);
+  eigenvalues[0] = trace / 2 - s;
+  eigenvalues[1] = trace / 2 + s;
+
+  if (!Math::fuzzyEq(c, static_cast<T>(0), (tol >= 0 ? tol : Math::eps(c, static_cast<T>(0)))))
+  {
+    eigenvectors[0][0] = eigenvalues[0] - d;
+    eigenvectors[0][1] = c;
+
+    eigenvectors[1][0] = eigenvalues[1] - d;
+    eigenvectors[1][1] = c;
+  }
+  else if (!Math::fuzzyEq(b, static_cast<T>(0), (tol >= 0 ? tol : Math::eps(b, static_cast<T>(0)))))
+  {
+    eigenvectors[0][0] = b;
+    eigenvectors[0][1] = eigenvalues[0] - a;
+
+    eigenvectors[1][0] = b;
+    eigenvectors[1][1] = eigenvalues[1] - a;
+  }
+  else
+  {
+    eigenvectors[0][0] = 1;
+    eigenvectors[0][1] = 0;
+
+    eigenvectors[1][0] = 0;
+    eigenvectors[1][1] = 1;
+  }
+
+  return 2;
 }
 
 } // namespace Math

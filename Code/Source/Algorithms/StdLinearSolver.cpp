@@ -458,13 +458,13 @@ StdLinearSolver::setMaxIterations(long max_iters_)
 }
 
 bool
-StdLinearSolver::solve(MatrixXd const & a, double const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref<MatrixXd> const & a, double const * b, AbstractOptions const * options)
 {
   return impl->solve(a, b, options);
 }
 
 bool
-StdLinearSolver::solve(SparseMatrix<double> const & a, double const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, AbstractOptions const * options)
 {
   return impl->solve(a, b, options);
 }

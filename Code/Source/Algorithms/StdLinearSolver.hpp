@@ -163,10 +163,10 @@ class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
     void setMaxIterations(long max_iters_);
 
     /** Solve the linear system Ax = b for a dense double-precision matrix A. */
-    bool solve(MatrixXd const & a, double const * b, AbstractOptions const * options = NULL);
+    bool solve(Eigen::Ref<MatrixXd> const & a, double const * b, AbstractOptions const * options = NULL);
 
     /** Solve the linear system Ax = b for a sparse double-precision matrix A. */
-    bool solve(SparseMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL);
+    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, AbstractOptions const * options = NULL);
 
     // Functions from LinearSolver
     bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL);

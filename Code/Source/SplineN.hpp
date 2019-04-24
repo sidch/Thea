@@ -51,10 +51,12 @@
 #define __Thea_SplineN_hpp__
 
 #include "Common.hpp"
+#include "Array.hpp"
 #include "ParametricCurveN.hpp"
 #include "Algorithms/FastCopy.hpp"
 #include "Algorithms/StdLinearSolver.hpp"
 #include "Algorithms/PointTraitsN.hpp"
+#include <iterator>
 
 namespace Thea {
 
@@ -218,7 +220,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * of the control vectors, weighted by these basis functions as coefficients. (This need not be the most efficient way to
      * evaluate points on the curve, and hence the implementation of eval() is left to the subclass.)
      */
-    virtual void getBasisFunctions(double t, Array<double> & b) const = 0;
+    virtual void getBasisFunctions(double t, VectorXd & b) const = 0;
 
     /**
      * Check if the first and last control vectors of the curve can be interpreted as the positions of the beginning and end
@@ -245,6 +247,13 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;
 
+      // If the sequence is empty, fitting is not possible
+      if (begin == end)
+      {
+        THEA_ERROR << "SplineN: Cannot fit curve to empty sequence of points";
+        return -1;
+      }
+
       // Check if fixing first and last positions is even possible. Else, turn this feature off.
       if (fix_first_and_last && !firstAndLastControlsArePositions())
       {
@@ -253,15 +262,16 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         fix_first_and_last = false;
       }
 
-      size_t num_ctrls = (size_t)this->numControls();
-      size_t num_fixed = (fix_first_and_last ? 2 : 0);
-      size_t fixed_offset = (fix_first_and_last ? 1 : 0);
-      size_t num_unknown_ctrls = num_ctrls - num_fixed;
-      size_t num_unknowns = (size_t)(N * num_unknown_ctrls);
+      long num_ctrls = (long)this->numControls();
+      long num_fixed = (fix_first_and_last ? 2 : 0);
+      long fixed_offset = (fix_first_and_last ? 1 : 0);
+      long num_unknown_ctrls = num_ctrls - num_fixed;
+      long num_unknowns = (long)(N * num_unknown_ctrls);
+      long num_objectives = (long)(N * std::distance(begin, end));
 
-      StdLinearSolver llsq((long)num_unknowns);
-      Array<double> basis;
-      Array<double> coeffs(num_unknowns, 0.0);
+      VectorXd basis;
+      MatrixXd coeffs(num_objectives, num_unknowns);
+      VectorXd constants(num_objectives);
 
       // Cache the first and last points of the sequence
       InputIterator first = begin, last = begin;
@@ -277,7 +287,9 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       }
 
       // Try to make each point in the sequence match the point on the curve with the corresponding parameters
+      coeffs.fill(0.0);
       size_t i = 0;
+      long obj = 0;
       for (InputIterator pi = begin; pi != end; ++pi, ++i)
       {
         getBasisFunctions(u[i], basis);
@@ -289,28 +301,25 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         }
 
         // One scalar objective for each dimension
-        for (long j = 0; j < N; ++j)
+        for (long j = 0; j < N; ++j, ++obj)
         {
-          size_t offset = (size_t)j * num_unknown_ctrls;
-          fastCopy(&basis[0] + fixed_offset, &basis[0] + basis.size() - fixed_offset, &coeffs[0] + offset);
+          long offset = j * num_unknown_ctrls;
+          coeffs.row(obj).segment(offset, basis.size() - num_fixed)
+              = basis.segment(fixed_offset, basis.size() - num_fixed);  // assigning col vector to row vector should be ok
 
-          llsq.addObjective(&coeffs[0], d[j]);
-
-          // Reset the range
-          fill(coeffs.begin() + offset, coeffs.begin() + offset + num_unknown_ctrls, 0.0);
+          constants[obj] = d[j];
         }
       }
 
       // Solve the least-squares linear system
-      if (!llsq.solve(StdLinearSolver::Constraint::UNCONSTRAINED))
+      StdLinearSolver llsq(StdLinearSolver::Method::DEFAULT, StdLinearSolver::Constraint::UNCONSTRAINED);
+      if (!llsq.solve(coeffs, constants.data()))
       {
         THEA_ERROR << "SplineN: Could not solve linear least-squares curve fitting problem";
         return -1;
       }
 
-      Array<double> const & sol = llsq.getSolution();
-      alwaysAssertM(sol.size() == num_unknowns,
-                    "SplineN: Linear least-squares solution length doesn't match number of unknowns");
+      double const * sol = llsq.getSolution();
 
       // Update the control vectors
       if (fix_first_and_last) setControl(0, first_pos);
@@ -318,18 +327,22 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       Array<VectorT> new_ctrls(num_unknown_ctrls);
       for (long i = 0; i < N; ++i)
       {
-        size_t offset = (size_t)(i * num_unknown_ctrls);
-
-        for (size_t j = 0; j < num_unknown_ctrls; ++j)
-          new_ctrls[j][i] = static_cast<T>(sol[offset + j]);
+        long offset = i * num_unknown_ctrls;
+        for (long j = 0; j < num_unknown_ctrls; ++j)
+          new_ctrls[(size_t)j][i] = static_cast<T>(sol[offset + j]);
       }
 
-      for (size_t i = 0; i < num_unknown_ctrls; ++i)
-        setControl((long)(i + fixed_offset), new_ctrls[i]);
+      for (long i = 0; i < num_unknown_ctrls; ++i)
+        setControl(i + fixed_offset, new_ctrls[(size_t)i]);
 
-      if (fix_first_and_last) setControl((long)num_ctrls - 1, last_pos);
+      if (fix_first_and_last) setControl(num_ctrls - 1, last_pos);
 
-      return llsq.squaredError();
+      double err = 0;
+      if (llsq.getSquaredError(err))
+        return err;
+
+      Eigen::Map<VectorXd const> sol_vec(sol, (long)num_unknowns);
+      return (coeffs * sol_vec - constants).squaredNorm();
     }
 
     /**

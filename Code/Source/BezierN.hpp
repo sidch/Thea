@@ -198,24 +198,24 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       return result;
     }
 
-    void getBasisFunctions(double t, Array<double> & b) const
+    void getBasisFunctions(double t, VectorXd & b) const
     {
       // Bernstein basis
 
       cacheBinom();
 
       long n = getOrder();
-      b.resize((size_t)n + 1);
+      b.resize(n + 1);
 
       b[0] = 1.0;
       double tpow = t;
       for (long i = 1; i <= n; ++i, tpow *= t)
-        b[(size_t)i] = binom(n, i) * tpow;
+        b[i] = binom(n, i) * tpow;
 
       double omt = 1 - t;
       double omt_pow = omt;
       for (long i = n - 1; i >= 0; --i, omt_pow *= omt)
-        b[(size_t)i] *= omt_pow;
+        b[i] *= omt_pow;
     }
 
     bool firstAndLastControlsArePositions() const { return true; }
