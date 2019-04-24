@@ -1829,7 +1829,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 
 	EdgeFlag  edgeflag[512];
 	VertFlag  vertflag[256];
-	PlaneFlag planeflag[128];
+	PlaneFlag planeflag[128]; (void)planeflag;
 	HalfEdge  tmpunderedges[512];
 	Plane	  tmpunderplanes[128];
 	Coplanar coplanaredges[512];
@@ -1861,7 +1861,7 @@ ConvexH *ConvexHCrop(ConvexH &convex,const Plane &slice)
 
 	for(int currentplane=0; currentplane<convex.facets.count; currentplane++) {
 		int estart =e0;
-		int enextface;
+		int enextface = 0;
 		int planeside = 0;
 		int e1 = e0+1;
 		int eus=-1; (void)eus;
@@ -2606,7 +2606,7 @@ int overhull(Plane *planes,int planes_count,float3 *verts, int verts_count,int m
 	// todo: add bounding cube planes to force bevel. or try instead not adding the diameter expansion ??? must think.
 	// ConvexH *convex = ConvexHMakeCube(bmin - float3(diameter,diameter,diameter),bmax+float3(diameter,diameter,diameter));
 	ConvexH *c = ConvexHMakeCube(REAL3(bmin),REAL3(bmax));
-	int k;
+	int k = 0;
 	while(maxplanes-- && (k=candidateplane(planes,planes_count,c,epsilon))>=0)
 	{
 		ConvexH *tmp = c;
