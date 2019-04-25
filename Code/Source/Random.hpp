@@ -70,7 +70,7 @@ namespace Thea {
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  *
- * @cite SFMT http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/index.html
+ * @see http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/index.html
  */
 class THEA_API Random
 {

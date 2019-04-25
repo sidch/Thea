@@ -618,7 +618,7 @@ eigenSolve(Eigen::MatrixBase< Matrix<2, 2, T> > const & m, T * eigenvalues, Vect
  * Get a single-line string representation of a matrix or vector. If the number of rows (or columns) of the matrix is larger
  * than \a max_rows (resp. \a max_cols), the middle elements will be elided via ellipsis.
  *
- * \begincode
+ * \code
  * Matrix3 m; m << 1, 2, 3,
  *                 4, 5, 6,
  *                 7, 8, 9;

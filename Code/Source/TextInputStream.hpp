@@ -382,8 +382,8 @@ class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
       int                              startingLineNumberOffset;
 
       /**
-       * Parse -1.#IND00 as the floating point number returned by Thea::Math::nan(), -1.#INF00 as -Thea::Math::inf(), and
-       * 1.#INF00 as Thea::Math::inf(). Note that the C99 standard specifies that a variety of formats like "nan" are to be
+       * Parse -1.\#IND00 as the floating point number returned by Thea::Math::nan(), -1.\#INF00 as -Thea::Math::inf(), and
+       * 1.\#INF00 as Thea::Math::inf(). Note that the C99 standard specifies that a variety of formats like "nan" are to be
        * used; these are supported by Thea::TextInputStream::Settings::simpleFloatSpecials.
        *
        * An alternative to specifying msvcFloatSpecials is to read numbers as:

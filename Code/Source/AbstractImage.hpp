@@ -169,8 +169,8 @@ class THEA_API AbstractImage
     virtual void clear() = 0;
 
     /**
-     * Resize the image, changing its type and dimensions. All previous image data is discarded. \type should be one of the Type
-     * values.
+     * Resize the image, changing its type and dimensions. All previous image data is discarded. \a type should be one of the
+     * Type values.
      */
     virtual void resize(int type, int width, int height, int depth = 1) = 0;
 

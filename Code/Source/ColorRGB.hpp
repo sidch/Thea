@@ -350,7 +350,7 @@ class THEA_API ColorRGB
      * @note toHSV(fromHSV(hsv)) may not be hsv, if it is at a grey point or black point. The components of hsv should lie in
      *   the unit interval.
      *
-     * @cite Smith78 Alvy Ray Smith SIGGRAPH 1978 "Color Gamut Transform Pairs"
+     * @see Alvy Ray Smith. "Color Gamut Transform Pairs". SIGGRAPH 1978
      */
     static ColorRGB fromHSV(Vector3 const & hsv);
 

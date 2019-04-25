@@ -71,12 +71,12 @@ namespace Thea {
  * a rotation by A about axis v has the form [sin(A/2)*v, cos(A/2)]. For a unit quaternion, q.conj() == q.inverse() is a
  * rotation by -A about v. -q is the same rotation as q (negate both the axis and angle).
  *
- * A non-unit quaterion q represents the same rotation as q.normalize() (Dam98 pg 28).
+ * A non-unit quaterion q represents the same rotation as q.normalize() (Dam et al. p28).
  *
  * Although quaternion-vector operations (eg. Quat + Vector3) are well defined, they are not supported by this class because
  * they typically are bugs when they appear in code.
  *
- * @cite Dam98 Erik B. Dam, Martin Koch, Martin Lillholm, Quaternions, Interpolation and Animation. Technical Report
+ * @see Erik B. Dam, Martin Koch and Martin Lillholm. "Quaternions, Interpolation and Animation". Technical Report
  *   DIKU-TR-98/5, Department of Computer Science, University of Copenhagen, Denmark. 1998.
  */
 class THEA_API Quat
@@ -262,7 +262,7 @@ class THEA_API Quat
      *
      * Should correctly rotate between 0 and Pi in the right order.
      *
-     * @cite Eberly Based on Game Physics -- David Eberly pg 538-540
+     * @see David Eberly. "Game Physics". pp 538-540
      *
      * @param target Interpolation target.
      * @param alpha Interpolation parameter.
@@ -277,7 +277,7 @@ class THEA_API Quat
     /**
      * Get the inverse of the quaternion. Note that q.inverse() = q.conj() for a unit quaternion.
      *
-     * @cite Dam99 page 13
+     * @see Dam et al. p13
      */
     Quat inverse() const
     {
@@ -355,7 +355,7 @@ class THEA_API Quat
      *
      * Note that q.pow(a).pow(b) = q.pow(a + b).
      *
-     * @cite Dam98 pg 21
+     * @see Dam et al. p21
      */
     Quat pow(Real p) const
     {
@@ -381,7 +381,7 @@ class THEA_API Quat
     /**
      * Generate a uniform random unit quaternion (a random "direction")
      *
-     * @cite Shoemake From "Uniform Random Rotations", Ken Shoemake, Graphics Gems III.
+     * @see Ken Shoemake. "Uniform Random Rotations". Graphics Gems III
      */
     static Quat unitRandom();
 
@@ -1416,7 +1416,7 @@ class THEA_API Quat
 /**
  * Multiply a quaternion by a scalar.
  *
- * @cite Watt Based on Watt & Watt, page 360
+ * @see Watt & Watt, p360
  */
 inline Quat
 operator*(Real s, Quat const & q)
