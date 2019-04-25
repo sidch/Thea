@@ -14,20 +14,23 @@ SET(Thea_FIND_ALL TRUE)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 # Dependency: OpenGL
-FIND_PACKAGE(OpenGL REQUIRED)
+FIND_PACKAGE(OpenGL)
 IF(NOT OPENGL_GLU_FOUND)
-  MESSAGE(FATAL_ERROR "GLU was not found")
+  SET(OPENGL_FOUND FALSE)
 ENDIF()
 
 # Dependency: GLUT
-FIND_PACKAGE(GLUT REQUIRED)
-IF(NOT GLUT_FOUND)
-  MESSAGE(FATAL_ERROR "GLUT not found")
-ENDIF()
+FIND_PACKAGE(GLUT)
 MESSAGE(STATUS "Found GLUT: headers at ${GLUT_INCLUDE_DIR}, libraries at ${GLUT_LIBRARIES}")
 
-IF(APPLE)
-  ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
+IF(OPENGL_FOUND)
+  INCLUDE_DIRECTORIES(BEFORE
+                      ${GLUT_INCLUDE_DIR}
+                      ${OPENGL_INCLUDE_DIRS})
+
+  IF(APPLE)
+    ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
+  ENDIF()
 ENDIF()
 
 # Shared library flags
@@ -36,10 +39,7 @@ IF(THEA_DLL)
 ENDIF()
 
 # Include directories
-INCLUDE_DIRECTORIES(BEFORE
-                    ${SourceRoot}
-                    ${GLUT_INCLUDE_DIR}
-                    ${OPENGL_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(BEFORE ${SourceRoot})
 
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib)
@@ -132,6 +132,8 @@ ENDIF()
 # TestDisplayMesh
 #===========================================================
 
+IF(OPENGL_FOUND AND GLUT_FOUND)
+
 # Source file lists
 SET(TheaTestDisplayMeshSources
       ${SourceRoot}/Test/TestDisplayMesh.cpp)
@@ -157,9 +159,13 @@ IF(APPLE)
   OSX_FIX_DYLIB_REFERENCES(TheaTestDisplayMesh "${TheaTestDisplayMeshLibraries}")
 ENDIF()
 
+ENDIF()
+
 #===========================================================
 # TestGL
 #===========================================================
+
+IF(OPENGL_FOUND AND GLUT_FOUND)
 
 # Source file lists
 SET(TheaTestGLSources
@@ -184,6 +190,8 @@ SET_TARGET_PROPERTIES(TheaTestGL PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
 IF(APPLE)
   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
   OSX_FIX_DYLIB_REFERENCES(TheaTestGL "${TheaTestGLLibraries}")
+ENDIF()
+
 ENDIF()
 
 #===========================================================
