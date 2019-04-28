@@ -39,8 +39,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_NumericTypes_hpp__
-#define __Thea_NumericTypes_hpp__
+#ifndef __Thea_NumericType_hpp__
+#define __Thea_NumericType_hpp__
 
 #include "Platform.hpp"
 #include "EnumClass.hpp"

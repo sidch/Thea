@@ -54,7 +54,7 @@
 #define __Thea_AtomicInt32_hpp__
 
 #include "Platform.hpp"
-#include "NumericTypes.hpp"
+#include "NumericType.hpp"
 
 #if defined(THEA_MAC)
 #  include <libkern/OSAtomic.h>

@@ -50,7 +50,7 @@
 #include "Hash.hpp"
 #include "Memory.hpp"
 #include "Noncopyable.hpp"
-#include "NumericTypes.hpp"
+#include "NumericType.hpp"
 #include <cassert>
 #include <cstdlib>
 #include <iostream>

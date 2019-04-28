@@ -44,7 +44,7 @@
 
 #include "Platform.hpp"
 #include "EnumClass.hpp"
-#include "NumericTypes.hpp"
+#include "NumericType.hpp"
 
 namespace Thea {
 
