@@ -1488,7 +1488,7 @@ struct DrawFaceNormals
         c /= fi->numVertices();
 
         render_system->sendVertex(c);
-        render_system->sendVertex((c + normal_scale * fi->getNormal()).eval());
+        render_system->sendVertex(Vector3(c + normal_scale * fi->getNormal()));
       }
 
     render_system->endPrimitive();
@@ -1511,7 +1511,7 @@ struct DrawVertexNormals
       for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       {
         render_system->sendVertex(vi->getPosition());
-        render_system->sendVertex((vi->getPosition() + normal_scale * vi->getNormal()).eval());
+        render_system->sendVertex(Vector3(vi->getPosition() + normal_scale * vi->getNormal()));
       }
 
     render_system->endPrimitive();

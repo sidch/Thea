@@ -79,6 +79,22 @@ GLVAR::toString() const
   return oss.str();
 }
 
+// We need to be able to interpret an array of (say) Vector3's as a tightly packed list of scalars
+static_assert(sizeof(Vector2)    == 2 * sizeof(Real),   "GLVAR: Vector2 has padding, can't be tightly packed in an array");
+static_assert(sizeof(Vector3)    == 3 * sizeof(Real),   "GLVAR: Vector3 has padding, can't be tightly packed in an array");
+static_assert(sizeof(Vector4)    == 4 * sizeof(Real),   "GLVAR: Vector4 has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorL)     == 1 * sizeof(Real),   "GLVAR: ColorL has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorL8)    == 1 * sizeof(uint8),  "GLVAR: ColorL8 has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorL16)   == 1 * sizeof(uint16), "GLVAR: ColorL16 has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorRGB)   == 3 * sizeof(Real),   "GLVAR: ColorRGB has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorRGB8)  == 3 * sizeof(uint8),  "GLVAR: ColorRGB8 has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorRGBA)  == 4 * sizeof(Real),   "GLVAR: ColorRGBA has padding, can't be tightly packed in an array");
+static_assert(sizeof(ColorRGBA8) == 4 * sizeof(uint8),  "GLVAR: ColorRGBA8 has padding, can't be tightly packed in an array");
+
+static_assert(sizeof(Real) == sizeof(float32) || sizeof(Real) == sizeof(float64),
+              "GLVAR: Real number type must be either 32-bit float or 64-bit double");
+GLenum GL_REAL_TYPE = (sizeof(Real) == sizeof(float32) ? GL_FLOAT : GL_DOUBLE);
+
 #define GLVAR_UPDATE_ARRAY(func_name, type_, gl_type_, num_components_, gl_target_) \
   void \
   GLVAR::func_name(long start_elem, long num_elems_to_update, type_ const * array) \
@@ -121,22 +137,24 @@ GLVAR::toString() const
 #define GLVAR_UPDATE_INDEX_ARRAY(type_, gl_type_, num_components_) \
   GLVAR_UPDATE_ARRAY(updateIndices, type_, gl_type_, num_components_, GL_ELEMENT_ARRAY_BUFFER_ARB)
 
-GLVAR_UPDATE_VECTOR_ARRAY(float,    GL_FLOAT,  1)
-GLVAR_UPDATE_VECTOR_ARRAY(Vector2,  GL_FLOAT,  2)
-GLVAR_UPDATE_VECTOR_ARRAY(Vector3,  GL_FLOAT,  3)
-GLVAR_UPDATE_VECTOR_ARRAY(Vector4,  GL_FLOAT,  4)
+GLVAR_UPDATE_VECTOR_ARRAY(float32,    GL_FLOAT,           1)
+GLVAR_UPDATE_VECTOR_ARRAY(float64,    GL_DOUBLE,          1)
 
-GLVAR_UPDATE_COLOR_ARRAY(ColorL,      GL_FLOAT,           1)
+GLVAR_UPDATE_VECTOR_ARRAY(Vector2,    GL_REAL_TYPE,       2)
+GLVAR_UPDATE_VECTOR_ARRAY(Vector3,    GL_REAL_TYPE,       3)
+GLVAR_UPDATE_VECTOR_ARRAY(Vector4,    GL_REAL_TYPE,       4)
+
+GLVAR_UPDATE_COLOR_ARRAY(ColorL,      GL_REAL_TYPE,       1)
 GLVAR_UPDATE_COLOR_ARRAY(ColorL8,     GL_UNSIGNED_BYTE,   1)
 GLVAR_UPDATE_COLOR_ARRAY(ColorL16,    GL_UNSIGNED_SHORT,  1)
-GLVAR_UPDATE_COLOR_ARRAY(ColorRGB,    GL_FLOAT,           3)
+GLVAR_UPDATE_COLOR_ARRAY(ColorRGB,    GL_REAL_TYPE,       3)
 GLVAR_UPDATE_COLOR_ARRAY(ColorRGB8,   GL_UNSIGNED_BYTE,   3)
-GLVAR_UPDATE_COLOR_ARRAY(ColorRGBA,   GL_FLOAT,           4)
+GLVAR_UPDATE_COLOR_ARRAY(ColorRGBA,   GL_REAL_TYPE,       4)
 GLVAR_UPDATE_COLOR_ARRAY(ColorRGBA8,  GL_UNSIGNED_BYTE,   4)
 
-GLVAR_UPDATE_INDEX_ARRAY(uint8,   GL_UNSIGNED_BYTE,   1)
-GLVAR_UPDATE_INDEX_ARRAY(uint16,  GL_UNSIGNED_SHORT,  1)
-GLVAR_UPDATE_INDEX_ARRAY(uint32,  GL_UNSIGNED_INT,    1)
+GLVAR_UPDATE_INDEX_ARRAY(uint8,       GL_UNSIGNED_BYTE,   1)
+GLVAR_UPDATE_INDEX_ARRAY(uint16,      GL_UNSIGNED_SHORT,  1)
+GLVAR_UPDATE_INDEX_ARRAY(uint32,      GL_UNSIGNED_INT,    1)
 
 void
 GLVAR::clear()

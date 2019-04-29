@@ -70,7 +70,20 @@ class THEA_API VAR
      * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
      *   RenderSystem::endIndexedPrimitives() block.
      */
-    virtual void updateVectors(long start_elem, long num_elems_to_update, float const * array) = 0;
+    virtual void updateVectors(long start_elem, long num_elems_to_update, float32 const * array) = 0;
+
+    /**
+     * Update a section of a vector array. If the VAR is currently non-empty, the new and old data types must match. Call
+     * clear() before changing types.
+     *
+     * The update may increase the number of elements in the VAR, as long as it does not exceed the buffer capacity. The number
+     * of elements (numElements()) is measured from the start of the VAR to the last initialized element: any uninitialized
+     * portions in the middle will be included in the tally!
+     *
+     * @note Do <b>not</b> call this function within a RenderSystem::beginIndexedPrimitives() /
+     *   RenderSystem::endIndexedPrimitives() block.
+     */
+    virtual void updateVectors(long start_elem, long num_elems_to_update, float64 const * array) = 0;
 
     /**
      * Update a section of a vector array. If the VAR is currently non-empty, the new and old data types must match. Call

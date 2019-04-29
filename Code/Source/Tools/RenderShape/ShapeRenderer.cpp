@@ -2251,8 +2251,8 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
     box_ext = vol_ext / dim_ratio[fit_axis];
     Vector3 center = bbox.getCenter();
 
-    shader.setUniform("bbox_lo", (center - 0.5 * box_ext).eval());
-    shader.setUniform("bbox_hi", (center + 0.5 * box_ext).eval());
+    shader.setUniform("bbox_lo", Vector3(center - 0.5 * box_ext));
+    shader.setUniform("bbox_hi", Vector3(center + 0.5 * box_ext));
   }
 
   return true;

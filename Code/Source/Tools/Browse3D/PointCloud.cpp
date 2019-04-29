@@ -726,7 +726,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         for (size_t i = 0; i < points.size(); ++i)
         {
           render_system.sendVertex(points[i].p);
-          render_system.sendVertex((points[i].p + normal_scale * points[i].n).eval());
+          render_system.sendVertex(Vector3(points[i].p + normal_scale * points[i].n));
         }
 
       render_system.endPrimitive();

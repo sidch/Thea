@@ -90,7 +90,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
           offset_dir = (c_lng * prev_s_lat) * u + (s_lng * prev_s_lat) * v + prev_c_lat * w;
           offset = radius * offset_dir;
           render_system.sendNormal(offset_dir);
-          render_system.sendVertex((center + offset).eval());
+          render_system.sendVertex(Vector3(center + offset));
 
           offset_dir = (c_lng * s_lat) * u + (s_lng * s_lat) * v + c_lat * w;
           offset = radius * offset_dir;
@@ -158,8 +158,8 @@ drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center
       Vector3 offset_dir = s * u + c * v;
       Vector3 offset = radius * offset_dir;
       render_system.sendNormal(offset_dir);
-      render_system.sendVertex((base_center + offset).eval());
-      render_system.sendVertex((top_center + offset).eval());
+      render_system.sendVertex(Vector3(base_center + offset));
+      render_system.sendVertex(Vector3(top_center + offset));
     }
 
   render_system.endPrimitive();
@@ -223,13 +223,13 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
         if (alternate_colors)
           render_system.setColor(j & 0x01 ? color2 : color1);
 
-        render_system.sendNormal((n.x() * u + n.y() * v + n.z() * w).eval());
-        render_system.sendVertex((center + p.x() * u + p.y() * v + p.z() * w).eval());
+        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w));
+        render_system.sendVertex(Vector3(center + p.x() * u + p.y() * v + p.z() * w));
 
         p += Vector3(c_maj * width * c_min_offset, s_maj * width * c_min_offset, width * s_min_offset);
         n += Vector3(c_maj * c_min_offset, s_maj * c_min_offset, s_min_offset);
-        render_system.sendNormal((n.x() * u + n.y() * v + n.z() * w).eval());
-        render_system.sendVertex((center + p.x() * u + p.y() * v + p.z() * w).eval());
+        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w));
+        render_system.sendVertex(Vector3(center + p.x() * u + p.y() * v + p.z() * w));
       }
     }
 

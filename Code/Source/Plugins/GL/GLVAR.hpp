@@ -67,7 +67,8 @@ class THEA_GL_DLL_LOCAL GLVAR : public VAR
     /** Get a string describing the VAR. */
     std::string toString() const;
 
-    void updateVectors(long start_elem, long num_elems_to_update, float const * array);
+    void updateVectors(long start_elem, long num_elems_to_update, float32 const * array);
+    void updateVectors(long start_elem, long num_elems_to_update, float64 const * array);
     void updateVectors(long start_elem, long num_elems_to_update, Vector2 const * array);
     void updateVectors(long start_elem, long num_elems_to_update, Vector3 const * array);
     void updateVectors(long start_elem, long num_elems_to_update, Vector4 const * array);

@@ -43,12 +43,16 @@
 #define __Thea_Array_hpp__
 
 #include "Platform.hpp"
+#include "AlignedAllocator.hpp"
 #include <vector>
 
 namespace Thea {
 
 /** Dynamically resizable array. */
 template < typename T, typename Alloc = std::allocator<T> > using Array = std::vector<T, Alloc>;
+
+/** Dynamically resizable array with aligned memory allocation. */
+template < typename T, size_t N = 16 > using AlignedArray = std::vector< T, AlignedAllocator<T, N> >;
 
 } // namespace Thea
 

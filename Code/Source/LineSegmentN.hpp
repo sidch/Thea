@@ -164,8 +164,8 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, other.point,
-                                              (other.point + other.direction).eval(), false, s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, other.point,
+                                              VectorT(other.point + other.direction), false, s, t, c1, c2);
 
       if (this_pt)  *this_pt  = c1;
       if (other_pt) *other_pt = c2;
@@ -184,8 +184,8 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, line.getPoint(),
-                                              (line.getPoint() + line.getDirection()).eval(), true, s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, line.getPoint(),
+                                              VectorT(line.getPoint() + line.getDirection()), true, s, t, c1, c2);
 
       if (this_pt) *this_pt = c1;
       if (line_pt) *line_pt = c2;
@@ -204,8 +204,8 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, (point + direction).eval(), false, ray.getOrigin(),
-                                              (ray.getOrigin() + ray.getDirection()).eval(), true, s, t, c1, c2);
+      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, ray.getOrigin(),
+                                              VectorT(ray.getOrigin() + ray.getDirection()), true, s, t, c1, c2);
       if (t < 0)
         c2 = ray.getOrigin();
 

@@ -54,8 +54,8 @@ namespace Thea {
  * entirely on the stack. If the array size is known at compile-time, this class is usually a more efficient alternative to
  * BoundedSortedArray.
  *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that <tt>std::is_trivially_copyable</tt>
- * is true for T.
+ * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
+ * <tt>std::is_trivially_copyable</tt> is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. The capacity N should be
  * <b>positive</b> (non-zero).

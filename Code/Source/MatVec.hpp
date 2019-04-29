@@ -57,22 +57,32 @@ namespace Thea {
 #endif
 
 // Typedef common instantiations. These are fully instantiated and have no further template parameters.
-#define THEA_DECL_MATRIX_TYPEDEFS(scalar, suffix) \
-    typedef Eigen::Matrix< scalar, 2,              2             , DEFAULT_MATRIX_LAYOUT      >   Matrix2    ## suffix; \
-    typedef Eigen::Matrix< scalar, 2,              Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   Matrix2X   ## suffix; \
-    typedef Eigen::Matrix< scalar, 3,              3             , DEFAULT_MATRIX_LAYOUT      >   Matrix3    ## suffix; \
-    typedef Eigen::Matrix< scalar, 3,              Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   Matrix3X   ## suffix; \
-    typedef Eigen::Matrix< scalar, 4,              4             , DEFAULT_MATRIX_LAYOUT      >   Matrix4    ## suffix; \
-    typedef Eigen::Matrix< scalar, 4,              Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   Matrix4X   ## suffix; \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 2             , DEFAULT_MATRIX_LAYOUT      >   MatrixX2   ## suffix; \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 3             , DEFAULT_MATRIX_LAYOUT      >   MatrixX3   ## suffix; \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 4             , DEFAULT_MATRIX_LAYOUT      >   MatrixX4   ## suffix; \
-    typedef Eigen::Matrix< scalar, 2,              1             , MatrixLayout::COLUMN_MAJOR >   Vector2    ## suffix; \
-    typedef Eigen::Matrix< scalar, 3,              1             , MatrixLayout::COLUMN_MAJOR >   Vector3    ## suffix; \
-    typedef Eigen::Matrix< scalar, 4,              1             , MatrixLayout::COLUMN_MAJOR >   Vector4    ## suffix; \
-    typedef Eigen::Matrix< scalar, 1,              2             , MatrixLayout::ROW_MAJOR    >   RowVector2 ## suffix; \
-    typedef Eigen::Matrix< scalar, 1,              3             , MatrixLayout::ROW_MAJOR    >   RowVector3 ## suffix; \
-    typedef Eigen::Matrix< scalar, 1,              4             , MatrixLayout::ROW_MAJOR    >   RowVector4 ## suffix;
+// Alignment is DISABLED for fixed-size vectorizable types (Vector4f, Matrix4f, Vector2d etc). These require special handling
+// for every class which directly or indirectly has such a member, and could lead to unexpected bugs and considerably less ease
+// of use.
+//
+// See:
+// - http://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+// - https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
+// - http://eigen.tuxfamily.org/dox/group__TopicFixedSizeVectorizable.html
+// - https://stackoverflow.com/q/41087043
+//
+#define THEA_DECL_MATRIX_TYPEDEFS(scalar, suffix)                                                                             \
+    typedef Eigen::Matrix< scalar, 2, 2,              DEFAULT_MATRIX_LAYOUT      | Eigen::DontAlign >  Matrix2    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 3, 3,              DEFAULT_MATRIX_LAYOUT      | Eigen::DontAlign >  Matrix3    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 4, 4,              DEFAULT_MATRIX_LAYOUT      | Eigen::DontAlign >  Matrix4    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 2, 1,              MatrixLayout::COLUMN_MAJOR | Eigen::DontAlign >  Vector2    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 3, 1,              MatrixLayout::COLUMN_MAJOR | Eigen::DontAlign >  Vector3    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 4, 1,              MatrixLayout::COLUMN_MAJOR | Eigen::DontAlign >  Vector4    ## suffix;  \
+    typedef Eigen::Matrix< scalar, 1, 2,              MatrixLayout::ROW_MAJOR    | Eigen::DontAlign >  RowVector2 ## suffix;  \
+    typedef Eigen::Matrix< scalar, 1, 3,              MatrixLayout::ROW_MAJOR    | Eigen::DontAlign >  RowVector3 ## suffix;  \
+    typedef Eigen::Matrix< scalar, 1, 4,              MatrixLayout::ROW_MAJOR    | Eigen::DontAlign >  RowVector4 ## suffix;  \
+    typedef Eigen::Matrix< scalar, 2, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT                         >  Matrix2X   ## suffix;  \
+    typedef Eigen::Matrix< scalar, 3, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT                         >  Matrix3X   ## suffix;  \
+    typedef Eigen::Matrix< scalar, 4, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT                         >  Matrix4X   ## suffix;  \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 2, DEFAULT_MATRIX_LAYOUT                         >  MatrixX2   ## suffix;  \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 3, DEFAULT_MATRIX_LAYOUT                         >  MatrixX3   ## suffix;  \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 4, DEFAULT_MATRIX_LAYOUT                         >  MatrixX4   ## suffix;
 
 THEA_DECL_MATRIX_TYPEDEFS(Real, )
 THEA_DECL_MATRIX_TYPEDEFS(float, f)
@@ -86,9 +96,9 @@ THEA_DECL_MATRIX_TYPEDEFS(int, i)
 // Typedef additional instantiations of fully resizable matrices, NOT including the "plain X" versions which will be declared
 // below with (fully optional) template arguments to avoid having to repeatedly type
 // <code>Matrix<Eigen::Dynamic, Eigen::Dynamic, T></code> in templated code.
-#define THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(scalar, suffix) \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   MatrixX    ## suffix; \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 1             , MatrixLayout::COLUMN_MAJOR >   VectorX    ## suffix; \
+#define THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(scalar, suffix)                                                                   \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   MatrixX    ## suffix;       \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 1             , MatrixLayout::COLUMN_MAJOR >   VectorX    ## suffix;       \
     typedef Eigen::Matrix< scalar, 1,              Eigen::Dynamic, MatrixLayout::ROW_MAJOR    >   RowVectorX ## suffix;
 
 THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(float, f)
@@ -100,13 +110,27 @@ THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(int, i)
 #undef THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS
 
 /**
- * General 2D dense matrix template, alias for <code>Eigen::Matrix</code> with a custom default layout (row or column major).
+ * General 2D dense matrix template, alias for <code>Eigen::Matrix</code> with a custom default layout (row or column major) and
+ * alignment preference.
+ *
+ * This alias currently <b>disables alignment</b> for all fixed-size types: fixed-size vectorizable types (Vector4f, Matrix4f,
+ * Vector2d etc) require special handling for every class which directly or indirectly has such a member, and could lead to
+ * unexpected bugs and considerably less ease of use.
+ *
+ * @see
+ *   - http://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ *   - https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
+ *   - http://eigen.tuxfamily.org/dox/group__TopicFixedSizeVectorizable.html
+ *   - https://stackoverflow.com/q/41087043
  */
 template <int Rows, int Cols, typename T = Real,
           int Options = DEFAULT_MATRIX_LAYOUT,
           int MaxRowsAtCompileTime = Rows,
           int MaxColsAtCompileTime = Cols>
-using Matrix = Eigen::Matrix<T, Rows, Cols, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+using Matrix = Eigen::Matrix<T, Rows, Cols,
+                             Options | ((Options & Eigen::DontAlign) == 0 && (Rows == Eigen::Dynamic || Cols == Eigen::Dynamic)
+                                      ? Eigen::AutoAlign : Eigen::DontAlign),
+                             MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
 /**
  * General 2D dense matrix template with dynamic resizing, alias for <code>Eigen::Matrix</code> with Eigen::Dynamic and a custom
@@ -118,12 +142,28 @@ template <typename T = Real,
           int MaxColsAtCompileTime = Eigen::Dynamic>
 using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
-/** General 1D dense column vector template, alias for <code>Eigen::Matrix<T, Size, 1,...></code>. */
+/**
+ * General 1D dense column vector template, alias for <code>Eigen::Matrix<T, Size, 1,...></code>, with a custom alignment
+ * preference.
+ *
+ * This alias currently <b>disables alignment</b> for all fixed-size types: fixed-size vectorizable types (Vector4f, Vector2d
+ * etc) require special handling for every class which directly or indirectly has such a member, and could lead to unexpected
+ * bugs and considerably less ease of use.
+ *
+ * @see
+ *   - http://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ *   - https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
+ *   - http://eigen.tuxfamily.org/dox/group__TopicFixedSizeVectorizable.html
+ *   - https://stackoverflow.com/q/41087043
+ */
 template <int Size, typename T = Real,
           int Options = MatrixLayout::COLUMN_MAJOR,
           int MaxRowsAtCompileTime = Size,
           int MaxColsAtCompileTime = 1>
-using Vector = Eigen::Matrix<T, Size, 1, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+using Vector = Eigen::Matrix<T, Size, 1,
+                             Options | ((Options & Eigen::DontAlign) == 0 && Size == Eigen::Dynamic
+                                      ? Eigen::AutoAlign : Eigen::DontAlign),
+                             MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
 /**
  * General 1D dense column vector template with dynamic resizing, alias for <code>Eigen::Matrix<T, Eigen::Dynamic, 1,...></code>
@@ -135,12 +175,28 @@ template <typename T = Real,
           int MaxColsAtCompileTime = 1>
 using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
-/** General 1D dense row vector template, alias for <code>Eigen::Matrix<T, 1, Size,...></code>. */
+/**
+ * General 1D dense row vector template, alias for <code>Eigen::Matrix<T, 1, Size,...></code>, with a custom alignment
+ * preference.
+ *
+ * This alias currently <b>disables alignment</b> for all fixed-size types: fixed-size vectorizable types (RowVector4f,
+ * RowVector2d etc) require special handling for every class which directly or indirectly has such a member, and could lead to
+ * unexpected bugs and considerably less ease of use.
+ *
+ * @see
+ *   - http://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+ *   - https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
+ *   - http://eigen.tuxfamily.org/dox/group__TopicFixedSizeVectorizable.html
+ *   - https://stackoverflow.com/q/41087043
+ */
 template <int Size, typename T = Real,
           int Options = MatrixLayout::ROW_MAJOR,
           int MaxRowsAtCompileTime = 1,
           int MaxColsAtCompileTime = Size>
-using RowVector = Eigen::Matrix<T, 1, Size, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+using RowVector = Eigen::Matrix<T, 1, Size,
+                                Options | ((Options & Eigen::DontAlign) == 0 && Size == Eigen::Dynamic
+                                         ? Eigen::AutoAlign : Eigen::DontAlign),
+                                MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
 /**
  * General 1D dense row vector template with dynamic resizing, alias for <code>Eigen::Matrix<T, 1, Eigen::Dynamic,...></code>
