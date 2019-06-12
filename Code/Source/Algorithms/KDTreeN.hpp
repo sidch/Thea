@@ -1814,7 +1814,7 @@ class /* THEA_API */ KDTreeN
     long max_depth;
     long max_elems_in_leaf;
 
-    Matrix<3, 3, ScalarT> transform_inverse_transpose;
+    Matrix<N, N, ScalarT> transform_inverse_transpose;
 
     FilterStack filters;
 
