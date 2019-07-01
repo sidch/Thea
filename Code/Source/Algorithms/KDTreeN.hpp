@@ -439,16 +439,18 @@ class /* THEA_API */ KDTreeN
 
     }; // Node
 
-  private:
+  protected:
     typedef MemoryPool<Node> NodePool;  ///< A pool for quickly allocating kd-tree nodes.
     typedef MemoryPool<ElementIndex> IndexPool;  ///< A pool for quickly allocating element indices.
+
+  private:
     typedef Array<T> ElementArray;  ///< An array of elements.
     typedef KDTreeNInternal::SampleFilter<T, N, ScalarT> SampleFilter;  ///< Filter for samples, wrapping a filter for elements.
 
   public:
     /** Default constructor. */
     KDTreeN()
-    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), accelerate_nn_queries(false),
+    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
       valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
     {}
 
@@ -459,18 +461,18 @@ class /* THEA_API */ KDTreeN
      * @param end Points to one position beyond the last element to be added.
      * @param max_depth_ Maximum depth of the tree. The root is at depth zero. Use a negative argument to auto-select a suitable
      *   value.
-     * @param max_elems_in_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
+     * @param max_elems_per_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
      *   argument to auto-select a suitable value.
      * @param save_memory If true, element references at inner nodes of the tree are deleted to save memory. This could slow
      *   down range searches since every positive result will only be obtained at the leaves.
      */
     template <typename InputIterator>
-    KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_in_leaf_ = -1,
+    KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_per_leaf_ = -1,
             bool save_memory = false)
-    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_in_leaf(0), accelerate_nn_queries(false),
+    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
       valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
     {
-      init(begin, end, max_elems_in_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
+      init(begin, end, max_elems_per_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
     }
 
     /**
@@ -481,7 +483,7 @@ class /* THEA_API */ KDTreeN
      * @param end Points to one position beyond the last element to be added.
      * @param max_depth_ Maximum depth of the tree. The root is at depth zero. Use a negative argument to auto-select a suitable
      *   value.
-     * @param max_elems_in_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
+     * @param max_elems_per_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
      *   argument to auto-select a suitable value.
      * @param save_memory If true, element references at inner nodes of the tree are deleted to save memory. This could slow
      *   down range searches since every positive result will only be obtained at the leaves.
@@ -492,7 +494,7 @@ class /* THEA_API */ KDTreeN
      *   implementation-specific cases.
      */
     template <typename InputIterator>
-    void init(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_in_leaf_ = -1,
+    void init(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_per_leaf_ = -1,
               bool save_memory = false, bool deallocate_previous_memory = true)
     {
       clear(deallocate_previous_memory);
@@ -550,11 +552,11 @@ class /* THEA_API */ KDTreeN
         return;
 
       static long const DEFAULT_MAX_ELEMS_IN_LEAF = 10;
-      max_elems_in_leaf = max_elems_in_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_in_leaf_;
+      max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
 
       // The fraction of elements held by the larger node at each split is 0.5
       static double const SPLIT_FRACTION = 0.5;
-      long est_depth = Math::binaryTreeDepth(num_elems, max_elems_in_leaf, SPLIT_FRACTION);
+      long est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
       max_depth = max_depth_;
       if (max_depth < 0)
         max_depth = est_depth;
@@ -695,7 +697,8 @@ class /* THEA_API */ KDTreeN
     void setTransform(Transform const & trans_)
     {
       TransformableBaseT::setTransform(trans_);
-      transform_inverse_transpose = trans_.getLinear().inverse().transpose();
+      transform_inverse = trans_.inverse();
+      transform_inverse_transpose = transform_inverse.getLinear().transpose();
       invalidateBounds();
 
       if (valid_acceleration_structure)
@@ -705,6 +708,8 @@ class /* THEA_API */ KDTreeN
     void clearTransform()
     {
       TransformableBaseT::clearTransform();
+      transform_inverse = AffineTransformN<N, ScalarT>::identity();
+      transform_inverse_transpose = Matrix<N, N, ScalarT>::Identity();
       invalidateBounds();
 
       if (valid_acceleration_structure)
@@ -742,7 +747,7 @@ class /* THEA_API */ KDTreeN
 
     /**
      * Get the node corresponding to the root of the kd-tree. This function is provided so that users can implement their own
-     * tree traversal procedures without being restricted by the interface of RangeQueryStructure3.
+     * tree traversal procedures.
      *
      * This function cannot be used to change the structure of the tree, or any value in it (unless <code>const_cast</code> is
      * used, which is not recommended).
@@ -753,6 +758,12 @@ class /* THEA_API */ KDTreeN
 
     /** Get the number of nodes in the tree. */
     long numNodes() const { return num_nodes; }
+
+    /** Get the maximum subdivision depth (number of levels not counting the root) of the kd-tree. */
+    long maxDepth() const { return max_depth; }
+
+    /** Get the maximum number of elements in each leaf of the kd-tree. */
+    long maxElementsPerLeaf() const { return max_elems_per_leaf; }
 
     /** Get a bounding box for all the objects in the tree. */
     AxisAlignedBoxT const & getBounds() const
@@ -1069,6 +1080,21 @@ class /* THEA_API */ KDTreeN
     typedef Array<Filter<T> *> FilterStack;  ///< A stack of element filters.
     typedef Array<SampleFilter> SampleFilterStack;  ///< A stack of point sample filters.
 
+  protected:
+    /** Get the inverse of the transform applied to the kd-tree. */
+    AffineTransformN<N, ScalarT> const & getTransformInverse() const { return transform_inverse; }
+
+    /** Get the transpose of the inverse of the linear part of the transform applied to the kd-tree. */
+    Matrix<N, N, ScalarT> const & getTransformInverseTranspose() const { return transform_inverse_transpose; }
+
+    /** Get the main memory pool for nodes. */
+    NodePool & getNodePool() { return node_pool; }
+
+    /** Get the main memory pool for indices. */
+    IndexPool & getIndexPool() { return index_pool; }
+
+  private:
+    /** Move the set of element indices for a leaf from the end of the main index pool to an index pool for leaves. */
     void moveIndicesToLeafPool(Node * leaf, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
       if (leaf)
@@ -1080,7 +1106,15 @@ class /* THEA_API */ KDTreeN
       }
     }
 
-    /** Recursively construct the tree. */
+  protected:
+    /**
+     * Recursively construct a (sub-)tree. If \a save_memory is true, element indices for this subtree are assumed to be in a
+     * block at the end of \a main_index_pool. They are subsequently moved to arrays associated with the leaves, allocated in
+     * \a leaf_index_pool. They are deleted from \a main_index_pool when this function exits, thus deallocating index arrays
+     * held by internal nodes. If \a save_memory is false, each node maintains its own list of all elements in its subtree.
+     *
+     * @note To use this function with a node accessed via getRoot(), you'll have to const_cast it to a non-const type first.
+     */
     void createTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
       // Assume the start node is fully constructed at this stage.
@@ -1089,7 +1123,7 @@ class /* THEA_API */ KDTreeN
       // leaf pool, since we don't yet know if this node will turn out to be a leaf). In this case, after the function finishes,
       // the node's indices will be deallocated from the main index pool (and possibly moved to the leaf pool).
 
-      if (!start || start->depth >= max_depth || (long)start->num_elems <= max_elems_in_leaf)
+      if (!start || start->depth >= max_depth || (long)start->num_elems <= max_elems_per_leaf)
       {
         if (save_memory)
           moveIndicesToLeafPool(start, main_index_pool, leaf_index_pool);
@@ -1272,7 +1306,8 @@ class /* THEA_API */ KDTreeN
 
     /**
      * Recursively look for the closest pair of points between two elements. Only pairs separated by less than the current
-     * minimum distance will be considered.
+     * minimum distance (as stored in \a pair) will be considered. If \a get_closest_points is true, the positions of the
+     * closest pair of points will be stored in \a pair, not just the distance between them.
      */
     template <typename MetricT, typename QueryT>
     void closestPair(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds, NeighborPair & pair,
@@ -1300,6 +1335,7 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  private:
     /**
      * Search the elements in a leaf node for the one closest to another element, when the latter is a proximity query
      * structure.
@@ -1369,15 +1405,16 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  protected:
     /**
      * Recursively look for the k closest elements to a query object. Only elements at less than the specified maximum distance
-     * will be considered.
+     * \a dist_bound will be considered. If \a get_closest_points is true, the positions of the closest pair of points will be
+     * stored with each pair, not just the distance between them.
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
     void kClosestPairs(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds,
                        BoundedNeighborPairSet & k_closest_pairs, double dist_bound, bool get_closest_points,
-                       long use_as_query_index_and_swap)
-    const
+                       long use_as_query_index_and_swap) const
     {
       if (!start->lo)  // leaf
         kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, get_closest_points, use_as_query_index_and_swap);
@@ -1408,6 +1445,7 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  private:
     /**
      * Search the elements in a leaf node for the k nearest neighbors of an object, when the latter is a proximity query
      * structure of compatible type.
@@ -1502,6 +1540,7 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  protected:
     /**
      * Apply a functor to all elements of a subtree within a range, stopping when the functor returns true on any point. The
      * RangeT class should support containment queries with AxisAlignedBoxT.
@@ -1560,11 +1599,11 @@ class /* THEA_API */ KDTreeN
       return false;
     }
 
+  private:
     /** Transform a ray to local/object space. */
     RayT toObjectSpace(RayT const & ray) const
     {
-      AffineTransform3 inv_trans = TransformableBaseT::getTransform().inverse();  // TODO: cache this
-      return RayT(inv_trans * ray.getOrigin(), inv_trans.getLinear() * ray.getDirection());
+      return RayT(transform_inverse * ray.getOrigin(), transform_inverse.getLinear() * ray.getDirection());
     }
 
     /** Transform a normal to world space. */
@@ -1582,6 +1621,7 @@ class /* THEA_API */ KDTreeN
       return (new_time >= 0 && (old_time < 0 || new_time <= old_time));
     }
 
+  protected:
     /** Get the time taken for a ray to hit the nearest object in a node, in the forward direction. */
     template <typename RayIntersectionTesterT>
     Real rayIntersectionTime(Node const * start, RayT const & ray, Real max_time) const
@@ -1659,7 +1699,8 @@ class /* THEA_API */ KDTreeN
           if (!elementPassesFilters(elem))
             continue;
 
-          RayIntersection3 isec = RayIntersectionTesterT::template rayIntersection<N, ScalarT>(ray, elem, best_isec.getTime());
+          RayIntersectionN<N, ScalarT> isec = RayIntersectionTesterT::template rayIntersection<N, ScalarT>(ray, elem,
+                                                                                                           best_isec.getTime());
           if (improvedRayTime(isec.getTime(), best_isec.getTime()))
           {
             best_isec = RayStructureIntersectionT(isec, (long)index);
@@ -1704,6 +1745,7 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  private:
     /** Build a structure to accelerate nearest neighbor queries. */
     template <typename MetricT> void buildAccelerationStructure() const
     {
@@ -1801,6 +1843,7 @@ class /* THEA_API */ KDTreeN
       }
     }
 
+  private:
     Node * root;
 
     long num_elems;  // elems.size() doesn't tell us how many elements there are, it's just the capacity of the elems array
@@ -1812,8 +1855,9 @@ class /* THEA_API */ KDTreeN
     IndexPool index_pool;
 
     long max_depth;
-    long max_elems_in_leaf;
+    long max_elems_per_leaf;
 
+    AffineTransformN<N, ScalarT> transform_inverse;
     Matrix<N, N, ScalarT> transform_inverse_transpose;
 
     FilterStack filters;

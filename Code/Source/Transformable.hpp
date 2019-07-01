@@ -70,10 +70,10 @@ class /* THEA_API */ Transformable
     /** Check if a transform has been set. */
     bool hasTransform() const { return has_trans; }
 
-    /** Get the transformation. */
+    /** Get the transformation, if one has been set. Else, the return value is undefined. */
     Transform const & getTransform() const { return trans; }
 
-    /** Get the transformation. */
+    /** Get the transformation, if one has been set. Else, the return value is undefined. */
     Transform & getTransform() { return trans; }
 
     /** Set the transformation. */
