@@ -111,7 +111,7 @@ class /* THEA_API */ LinearLeastSquares2<T, typename std::enable_if< IsNonRefere
       m(1, 0) = m(0, 1);
 
       Eigen::SelfAdjointEigenSolver eigensolver;
-      if (eigensolver.computeDirect(m) != Eigen::Success)
+      if (eigensolver.computeDirect(m).info() != Eigen::Success)
         throw Error("LinearLeastSquares2: Could not eigensolve covariance matrix");
 
       // Eigenvalues are non-negative (covariance matrix is non-negative definite) and in increasing order
