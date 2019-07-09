@@ -91,7 +91,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
             MatrixX<double, MatrixLayout::COLUMN_MAJOR> nnls_a = a;  // NNLS requires a COLUMN-MAJOR (Fortran-style) matrix.
                                                                      // Plus values will be overwritten, so need a copy anyway.
-            VectorXd nnls_b = Eigen::Map<VectorXd const>(b, num_objectives);  // will also be overwritten, so make a copy
+            VectorXd nnls_b = VectorXdConstMap(b, num_objectives);  // will also be overwritten, so make a copy
             solution.resize(ndims);
 
             double         rnorm;
@@ -126,7 +126,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               case StdLinearSolver::Method::HOUSEHOLDER_QR:
               {
                 Eigen::HouseholderQR<typename MatrixT::PlainObject> solver(a);
-                solution = solver.solve(Eigen::Map<VectorXd const>(b, num_objectives));
+                solution = solver.solve(VectorXdConstMap(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -136,7 +136,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::ColPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map<VectorXd const>(b, num_objectives));
+                solution = solver.solve(VectorXdConstMap(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -145,7 +145,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::FullPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map<VectorXd const>(b, num_objectives));
+                solution = solver.solve(VectorXdConstMap(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -154,7 +154,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::CompleteOrthogonalDecomposition<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map<VectorXd const>(b, num_objectives));
+                solution = solver.solve(VectorXdConstMap(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -163,7 +163,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::BDCSVD<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map<VectorXd const>(b, num_objectives));
+                solution = solver.solve(VectorXdConstMap(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -237,7 +237,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -252,7 +252,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -266,7 +266,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -292,7 +292,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -304,7 +304,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -317,7 +317,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -331,7 +331,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map<VectorXd>(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;

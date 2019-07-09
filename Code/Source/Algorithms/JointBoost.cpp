@@ -775,7 +775,7 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
   for (long i = 0; i < num_features; ++i)
   {
     validation_data_.getFeature(i, feat);
-    validation_features.col(i) = Eigen::Map<VectorXd>(&feat[0], (long)feat.size());
+    validation_features.col(i) = VectorXdMap(&feat[0], (long)feat.size());
   }
 
   Array<long> validation_classes;

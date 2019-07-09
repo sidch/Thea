@@ -97,9 +97,9 @@ THEA_DECL_MATRIX_TYPEDEFS(int, i)
 // below with (fully optional) template arguments to avoid having to repeatedly type
 // <code>Matrix<Eigen::Dynamic, Eigen::Dynamic, T></code> in templated code.
 #define THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(scalar, suffix)                                                                   \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >   MatrixX    ## suffix;       \
-    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 1             , MatrixLayout::COLUMN_MAJOR >   VectorX    ## suffix;       \
-    typedef Eigen::Matrix< scalar, 1,              Eigen::Dynamic, MatrixLayout::ROW_MAJOR    >   RowVectorX ## suffix;
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, Eigen::Dynamic, DEFAULT_MATRIX_LAYOUT      >  MatrixX    ## suffix;        \
+    typedef Eigen::Matrix< scalar, Eigen::Dynamic, 1             , MatrixLayout::COLUMN_MAJOR >  VectorX    ## suffix;        \
+    typedef Eigen::Matrix< scalar, 1,              Eigen::Dynamic, MatrixLayout::ROW_MAJOR    >  RowVectorX ## suffix;
 
 THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(float, f)
 THEA_DECL_RESIZABLE_MATRIX_TYPEDEFS(double, d)
@@ -207,6 +207,72 @@ template <typename T = Real,
           int MaxRowsAtCompileTime = 1,
           int MaxColsAtCompileTime = Eigen::Dynamic>
 using RowVectorX = Eigen::Matrix<T, 1, Eigen::Dynamic, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+
+// Typedef Eigen::Map wrappers for interpreting raw data as common Eigen types.
+#define THEA_DECL_MATRIX_MAP_TYPEDEFS(suffix)                                 \
+    typedef Eigen::Map< Matrix2    ## suffix >  Matrix2    ## suffix ## Map;  \
+    typedef Eigen::Map< Matrix3    ## suffix >  Matrix3    ## suffix ## Map;  \
+    typedef Eigen::Map< Matrix4    ## suffix >  Matrix4    ## suffix ## Map;  \
+    typedef Eigen::Map< Vector2    ## suffix >  Vector2    ## suffix ## Map;  \
+    typedef Eigen::Map< Vector3    ## suffix >  Vector3    ## suffix ## Map;  \
+    typedef Eigen::Map< Vector4    ## suffix >  Vector4    ## suffix ## Map;  \
+    typedef Eigen::Map< RowVector2 ## suffix >  RowVector2 ## suffix ## Map;  \
+    typedef Eigen::Map< RowVector3 ## suffix >  RowVector3 ## suffix ## Map;  \
+    typedef Eigen::Map< RowVector4 ## suffix >  RowVector4 ## suffix ## Map;  \
+    typedef Eigen::Map< Matrix2X   ## suffix >  Matrix2X   ## suffix ## Map;  \
+    typedef Eigen::Map< Matrix3X   ## suffix >  Matrix3X   ## suffix ## Map;  \
+    typedef Eigen::Map< Matrix4X   ## suffix >  Matrix4X   ## suffix ## Map;  \
+    typedef Eigen::Map< MatrixX2   ## suffix >  MatrixX2   ## suffix ## Map;  \
+    typedef Eigen::Map< MatrixX3   ## suffix >  MatrixX3   ## suffix ## Map;  \
+    typedef Eigen::Map< MatrixX4   ## suffix >  MatrixX4   ## suffix ## Map;  \
+    \
+    typedef Eigen::Map< Matrix2    ## suffix const >  Matrix2    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Matrix3    ## suffix const >  Matrix3    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Matrix4    ## suffix const >  Matrix4    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Vector2    ## suffix const >  Vector2    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Vector3    ## suffix const >  Vector3    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Vector4    ## suffix const >  Vector4    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< RowVector2 ## suffix const >  RowVector2 ## suffix ## ConstMap;  \
+    typedef Eigen::Map< RowVector3 ## suffix const >  RowVector3 ## suffix ## ConstMap;  \
+    typedef Eigen::Map< RowVector4 ## suffix const >  RowVector4 ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Matrix2X   ## suffix const >  Matrix2X   ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Matrix3X   ## suffix const >  Matrix3X   ## suffix ## ConstMap;  \
+    typedef Eigen::Map< Matrix4X   ## suffix const >  Matrix4X   ## suffix ## ConstMap;  \
+    typedef Eigen::Map< MatrixX2   ## suffix const >  MatrixX2   ## suffix ## ConstMap;  \
+    typedef Eigen::Map< MatrixX3   ## suffix const >  MatrixX3   ## suffix ## ConstMap;  \
+    typedef Eigen::Map< MatrixX4   ## suffix const >  MatrixX4   ## suffix ## ConstMap;
+
+THEA_DECL_MATRIX_MAP_TYPEDEFS()
+THEA_DECL_MATRIX_MAP_TYPEDEFS(f)
+THEA_DECL_MATRIX_MAP_TYPEDEFS(d)
+THEA_DECL_MATRIX_MAP_TYPEDEFS(cf)
+THEA_DECL_MATRIX_MAP_TYPEDEFS(cd)
+THEA_DECL_MATRIX_MAP_TYPEDEFS(i)
+
+#undef THEA_DECL_MATRIX_MAP_TYPEDEFS
+
+#define THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(suffix)                       \
+    typedef Eigen::Map< MatrixX    ## suffix >  MatrixX    ## suffix ## Map;  \
+    typedef Eigen::Map< VectorX    ## suffix >  VectorX    ## suffix ## Map;  \
+    typedef Eigen::Map< RowVectorX ## suffix >  RowVectorX ## suffix ## Map;  \
+    \
+    typedef Eigen::Map< MatrixX    ## suffix const >  MatrixX    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< VectorX    ## suffix const >  VectorX    ## suffix ## ConstMap;  \
+    typedef Eigen::Map< RowVectorX ## suffix const >  RowVectorX ## suffix ## ConstMap;
+
+THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(f)
+THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(d)
+THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cf)
+THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cd)
+THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(i)
+
+typedef Eigen::Map< MatrixX<> >  MatrixXMap;
+typedef Eigen::Map< VectorX<> >  VectorXMap;
+
+typedef Eigen::Map< MatrixX<> const >  MatrixXConstMap;
+typedef Eigen::Map< VectorX<> const >  VectorXConstMap;
+
+#undef THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS
 
 } // namespace Thea
 

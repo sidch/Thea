@@ -341,7 +341,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       if (llsq.getSquaredError(err))
         return err;
 
-      Eigen::Map<VectorXd const> sol_vec(sol, (long)num_unknowns);
+      VectorXdConstMap sol_vec(sol, (long)num_unknowns);
       return (coeffs * sol_vec - constants).squaredNorm();
     }
 
