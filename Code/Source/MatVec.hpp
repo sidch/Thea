@@ -208,7 +208,10 @@ template <typename T = Real,
           int MaxColsAtCompileTime = Eigen::Dynamic>
 using RowVectorX = Eigen::Matrix<T, 1, Eigen::Dynamic, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
 
+//=============================================================================================================================
 // Typedef Eigen::Map wrappers for interpreting raw data as common Eigen types.
+//=============================================================================================================================
+
 #define THEA_DECL_MATRIX_MAP_TYPEDEFS(suffix)                                 \
     typedef Eigen::Map< Matrix2    ## suffix >  Matrix2    ## suffix ## Map;  \
     typedef Eigen::Map< Matrix3    ## suffix >  Matrix3    ## suffix ## Map;  \
@@ -266,11 +269,13 @@ THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cf)
 THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cd)
 THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(i)
 
-typedef Eigen::Map< MatrixX<> >  MatrixXMap;
-typedef Eigen::Map< VectorX<> >  VectorXMap;
+typedef Eigen::Map< MatrixX<>    >  MatrixXMap;
+typedef Eigen::Map< VectorX<>    >  VectorXMap;
+typedef Eigen::Map< RowVectorX<> >  RowVectorXMap;
 
-typedef Eigen::Map< MatrixX<> const >  MatrixXConstMap;
-typedef Eigen::Map< VectorX<> const >  VectorXConstMap;
+typedef Eigen::Map< MatrixX<>    const >  MatrixXConstMap;
+typedef Eigen::Map< VectorX<>    const >  VectorXConstMap;
+typedef Eigen::Map< RowVectorX<> const >  RowVectorXConstMap;
 
 #undef THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS
 
