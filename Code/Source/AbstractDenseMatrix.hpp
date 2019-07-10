@@ -44,6 +44,7 @@
 
 #include "AbstractAddressableMatrix.hpp"
 #include "MatVec.hpp"
+#include <type_traits>
 
 namespace Thea {
 
@@ -74,55 +75,46 @@ class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMat
 
 }; // class AbstractDenseMatrix
 
-//=============================================================================================================================
-// Define conversion functions for interpreting AbstractDenseMatrix objects as Eigen::Map objects.
-//
-// E.g.:
-//     AbstractDenseMatrix<Real> const * d = <... get a matrix e.g. from across a DLL boundary ...>
-//     MatrixXConstMap m = Math::toMatrixXConstMap(*d);
-//     ... treat m as a normal Eigen dynamic-size matrix ...
-//=============================================================================================================================
-
 namespace Math {
 
-#define THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER1(scalar, matrix_type, const_flag)          \
-  inline matrix_type ## Map to ## matrix_type(AbstractDenseMatrix<scalar> const_flag & m)  \
-  { return matrix_type ## Map(m.data(), m.rows(), m.cols()); }  // Eigen should automatically do dimension checks
-
-#define THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, matrix_type)            \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER1(scalar, matrix_type, )                \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER1(scalar, matrix_type ## Const, const)
-
-#define THEA_DEFINE_MATRIX_MAP_FUNCTIONS(scalar, suffix)                  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix2    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix3    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix4    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Vector2    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Vector3    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Vector4    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, RowVector2 ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, RowVector3 ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, RowVector4 ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix2X   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix3X   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, Matrix4X   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, MatrixX2   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, MatrixX3   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, MatrixX4   ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, MatrixX    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, VectorX    ## suffix)  \
-  THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2(scalar, RowVectorX ## suffix)
-
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(Real, )
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(float, f)
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(double, d)
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(std::complex<float>, cf)
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(std::complex<double>, cd)
-THEA_DEFINE_MATRIX_MAP_FUNCTIONS(int, i)
-
-#undef THEA_DEFINE_MATRIX_MAP_FUNCTIONS
-#undef THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER2
-#undef THEA_DEFINE_MATRIX_MAP_FUNCTIONS_HELPER1
+/**
+ * Convenience function for interpreting raw buffers wrapped in AbstractDenseMatrix objects as Eigen::Map objects. It avoids
+ * having to pass the matrix dimensions separately as required by the Eigen::Map constructors for non-fixed-size matrices. Note
+ * that the function signature is equivalent to:
+ *
+ * \code
+ *   Eigen::Map<MatrixT const> mapTo(AbstractDenseMatrix<ScalarT> const & m);
+ * \endcode
+ *
+ * for const-qualified matrix types, and
+ *
+ * \code
+ *   Eigen::Map<MatrixT> mapTo(AbstractDenseMatrix<ScalarT> & m);
+ * \endcode
+ *
+ * for non-const types.
+ *
+ * E.g.:
+ * \code
+ *   AbstractDenseMatrix<Real> const * d = <... get a matrix e.g. from across a DLL boundary ...>
+ *   MatrixXConstMap m = Math::mapTo<MatrixX<> const>(*d);
+ *   ... treat m as a normal Eigen dynamic-size matrix ...
+ * \endcode
+ */
+template <typename MatrixT, typename AbstractDenseMatrixT>
+Eigen::Map<MatrixT>  // this should ensure only valid Eigen types will match this function
+mapTo(AbstractDenseMatrixT & m,
+      typename std::enable_if< std::is_base_of< AbstractDenseMatrix<typename AbstractDenseMatrixT::value_type>,
+                                                AbstractDenseMatrixT >::value
+                            && std::is_same<typename AbstractDenseMatrixT::value_type,
+                                            typename MatrixT::value_type>::value
+                            && std::is_const<AbstractDenseMatrixT>::value == std::is_const<MatrixT>::value
+                             >::type * dummy = 0)
+{
+  alwaysAssertM(MatrixT::IsVectorAtCompileTime || MatrixT::IsRowMajor == m.isRowMajor(),
+                "mapTo: AbstractDenseMatrix layout does not match target Eigen::Map matrix type");
+  return Eigen::Map<MatrixT>(m.data(), m.rows(), m.cols());   // Eigen should automatically do dimension checks
+};
 
 } // namespace Math
 
