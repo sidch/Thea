@@ -321,8 +321,8 @@ Random::sortedIntegers(int32 lo, int32 hi, int32 m, int32 * selected)
 namespace RandomInternal {
 
 // http://burtleburtle.net/bob/hash/doobs.html
-unsigned long
-mix(unsigned long a, unsigned long b, unsigned long c)
+uintx
+mix(uintx a, uintx b, uintx c)
 {
   a=a-b;  a=a-c;  a=a^(c >> 13);
   b=b-c;  b=b-a;  b=b^(a << 8);
@@ -343,10 +343,10 @@ Random::getRandomSeed()
 {
   // http://stackoverflow.com/questions/322938/recommended-way-to-initialize-srand
 #ifdef THEA_WINDOWS
-  return (uint32)RandomInternal::mix((unsigned long)std::clock(), (unsigned long)std::time(NULL),
-                                     (unsigned long)GetCurrentProcessId());
+  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(NULL),
+                                     (uintx)GetCurrentProcessId());
 #else
-  return (uint32)RandomInternal::mix((unsigned long)std::clock(), (unsigned long)std::time(NULL), (unsigned long)getpid());
+  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(NULL), (uintx)getpid());
 #endif
 }
 

@@ -63,7 +63,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -76,7 +76,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    LocalPCA(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    LocalPCA(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -90,7 +90,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    LocalPCA(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    LocalPCA(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -141,7 +141,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
     {
       void reset() { nbd_pts.clear(); }
 
-      template <typename SampleT> bool operator()(long index, SampleT & t)
+      template <typename SampleT> bool operator()(intx index, SampleT & t)
       {
         nbd_pts.push_back(PointTraitsN<SampleT, 3>::getPosition(t));
         return false;

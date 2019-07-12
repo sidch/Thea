@@ -88,10 +88,10 @@ struct THEA_API IndexedVertex
   IndexedVertex() {}
 
   /** Initializing constructor. */
-  IndexedVertex(Vector3 const & position_, long index_) : position(position_), index(index_) {}
+  IndexedVertex(Vector3 const & position_, intx index_) : position(position_), index(index_) {}
 
   Vector3 position;  ///< The position of the vertex.
-  long index;  ///< The index of the vertex.
+  intx index;  ///< The index of the vertex.
 };
 
 } // namespace Polygon3Internal
@@ -138,18 +138,18 @@ class THEA_API Polygon3
      * Add an indexed vertex to the polygon. The vertex is inserted at the end of the current sequence of vertices. For
      * efficiency the polygon <b>is not checked for planarity</b>, the caller should ensure that all vertices are coplanar.
      */
-    void addVertex(Vector3 const & p, long index);
+    void addVertex(Vector3 const & p, intx index);
 
     /** Get the number of vertices in the polygon. */
-    long numVertices() const;
+    intx numVertices() const;
 
     /**
      * Get the vertex at position \a poly_index in the sequence of vertices around the polygon boundary.
      *
      * @note \a poly_index is determined by the sequence of addVertex() calls, <b>NOT</b> by the index supplied in
-     *   addVertex(Vector2 const &, long)!
+     *   addVertex(Vector2 const &, intx)!
      */
-    IndexedVertex const & getVertex(long poly_index) const;
+    IndexedVertex const & getVertex(intx poly_index) const;
 
     /** Delete all vertices from the polygon. */
     void clear();
@@ -160,7 +160,7 @@ class THEA_API Polygon3
      *
      * @return The number of triangles created.
      */
-    long triangulate(Array<long> & tri_indices, Real epsilon = -1) const;
+    intx triangulate(Array<intx> & tri_indices, Real epsilon = -1) const;
 
     /** Compute the area of the polygon. */
     Real computeArea() const { return computeArea(vertices.begin(), vertices.end()); }
@@ -264,8 +264,8 @@ class THEA_API Polygon3
     template <typename T>
     static int triangulateQuad(Vector<3, T> const & p0, Vector<3, T> const & p1,
                                Vector<3, T> const & p2, Vector<3, T> const & p3,
-                               long & i0, long & j0, long & k0,
-                               long & i1, long & j1, long & k1)
+                               intx & i0, intx & j0, intx & k0,
+                               intx & i1, intx & j1, intx & k1)
     {
       return triangulateQuad(p0, p1, p2, p3, i0, j0, k0, i1, j1, k1, static_cast<T>(-1));
     }
@@ -296,8 +296,8 @@ class THEA_API Polygon3
     template <typename T>
     static int triangulateQuad(Vector<3, T> const & p0, Vector<3, T> const & p1,
                                Vector<3, T> const & p2, Vector<3, T> const & p3,
-                               long & i0, long & j0, long & k0,
-                               long & i1, long & j1, long & k1,
+                               intx & i0, intx & j0, intx & k0,
+                               intx & i1, intx & j1, intx & k1,
                                T const & epsilon)
     {
       typedef Vector<3, T> VectorT;
@@ -360,7 +360,7 @@ class THEA_API Polygon3
     }
 
     Array<IndexedVertex> vertices;
-    long max_index;
+    intx max_index;
     AxisAlignedBox3 bounds;
     mutable Array<Vector2> proj_vertices;
 

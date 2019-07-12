@@ -23,10 +23,10 @@ main(int argc, char * argv[])
 bool
 testPCA()
 {
-  static long const DATA_SIZE = 10;
+  static intx const DATA_SIZE = 10;
   Vector3 data[DATA_SIZE];
   cout << "Data vectors:" << endl;
-  for (long i = 0; i < DATA_SIZE; ++i)
+  for (intx i = 0; i < DATA_SIZE; ++i)
   {
     data[i] = Vector3(rand() / (Real)RAND_MAX,
                       rand() / (Real)RAND_MAX,
@@ -44,13 +44,13 @@ testPCA()
   PCA_N<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
 
   cout << "\nPrincipal axes = " << endl;
-  for (long i = 0; i < 3; ++i)
+  for (intx i = 0; i < 3; ++i)
     cout << "  " << axes[i] << " (variance = " << vars[i] << ')' << endl;
   cout << "Centroid = " << centroid << endl;
 
-  for (long i = 0; i < 3; ++i)
+  for (intx i = 0; i < 3; ++i)
   {
-    long j = (i + 1) % 3;
+    intx j = (i + 1) % 3;
     cout << i << " x " << j << " = " << toString(axes[i].cross(axes[j])) << endl;
   }
 
@@ -61,13 +61,13 @@ testPCA()
   SparsePCA_N<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
 
   cout << "\nSparse principal axes = " << endl;
-  for (long i = 0; i < 3; ++i)
+  for (intx i = 0; i < 3; ++i)
     cout << "  " << axes[i] << " (variance = " << vars[i] << ')' << endl;
   cout << "Centroid = " << centroid << endl;
 
-  for (long i = 0; i < 3; ++i)
+  for (intx i = 0; i < 3; ++i)
   {
-    long j = (i + 1) % 3;
+    intx j = (i + 1) % 3;
     cout << i << " x " << j << " = " << toString(axes[i].cross(axes[j])) << endl;
   }
 

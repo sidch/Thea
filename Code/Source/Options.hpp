@@ -56,13 +56,13 @@ class THEA_API AbstractOptions
     virtual ~AbstractOptions() {}
 
     /** Check if an option has been set. */
-    virtual bool hasOption(char const * option_name) const = 0;
+    virtual int8 hasOption(char const * option_name) const = 0;
 
     /** Set the value of an integer option. */
-    virtual void setInteger(char const * option_name, long value) = 0;
+    virtual void setInteger(char const * option_name, int64 value) = 0;
 
     /** Set the value of a floating-point option. */
-    virtual void setFloat(char const * option_name, double value) = 0;
+    virtual void setFloat(char const * option_name, float64 value) = 0;
 
     /** Set the value of a string option. */
     virtual void setString(char const * option_name, char const * value) = 0;
@@ -71,13 +71,13 @@ class THEA_API AbstractOptions
      * Get the value of an integer option. If the option has not been set, the default value specified by the last parameter is
      * returned.
      */
-    virtual long getInteger(char const * option_name, long default_value) const = 0;
+    virtual int64 getInteger(char const * option_name, int64 default_value) const = 0;
 
     /**
      * Get the value of a floating-point option. If the option has not been set, the default value specified by the last
      * parameter is returned.
      */
-    virtual double getFloat(char const * option_name, double default_value) const = 0;
+    virtual float64 getFloat(char const * option_name, float64 default_value) const = 0;
 
     /**
      * Get the value of a string option. If the option has not been set, the default value specified by the last parameter is
@@ -98,12 +98,12 @@ class THEA_API Options : public AbstractOptions, private Map<std::string, boost:
     ~Options() {}
 
     // Functions from abstract interface
-    bool hasOption(char const * option_name) const { return find(option_name) != end(); }
-    void setInteger(char const * option_name, long value) { set<long>(option_name, value); }
-    void setFloat(char const * option_name, double value) { set<double>(option_name, value); }
+    int8 hasOption(char const * option_name) const { return find(option_name) != end(); }
+    void setInteger(char const * option_name, int64 value) { set<int64>(option_name, value); }
+    void setFloat(char const * option_name, float64 value) { set<float64>(option_name, value); }
     void setString(char const * option_name, char const * value) { set<std::string>(option_name, std::string(value)); }
-    long getInteger(char const * option_name, long default_value) const { return get<long>(option_name, default_value); }
-    double getFloat(char const * option_name, double default_value) const { return get<double>(option_name, default_value); }
+    int64 getInteger(char const * option_name, int64 default_value) const { return get<int64>(option_name, default_value); }
+    float64 getFloat(char const * option_name, float64 default_value) const { return get<float64>(option_name, default_value); }
     char const * getString(char const * option_name, char const * default_value) const;
 
     /** Set the value of an option. */

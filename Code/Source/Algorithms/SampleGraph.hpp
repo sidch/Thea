@@ -122,13 +122,13 @@ class SurfaceSample
     SurfaceSample() {}
 
     /** Construct with an index and maximum number of neighbors. */
-    SurfaceSample(long index_, int max_nbrs) : index(index_), nbrs(max_nbrs) {}
+    SurfaceSample(intx index_, int max_nbrs) : index(index_), nbrs(max_nbrs) {}
 
     /** Get the sample index. */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Set the sample index. */
-    void setIndex(long index_) { index = index_; }
+    void setIndex(intx index_) { index = index_; }
 
     /** Get the position of the sample. */
     Vector3 const & getPosition() const { return p; }
@@ -152,7 +152,7 @@ class SurfaceSample
     NeighborSet & getNeighbors() { return nbrs; }
 
   private:
-    long index;        ///< Index of the sample.
+    intx index;        ///< Index of the sample.
     Vector3 p;         ///< Sample position.
     Vector3 n;         ///< Sample normal.
     NeighborSet nbrs;  ///< Set of neighboring samples.
@@ -245,7 +245,7 @@ class SampleGraph : private Noncopyable
     typedef SurfaceSample::Neighbor const *     NeighborConstIterator;  ///< Const iterator over neighbors of a vertex.
 
     /** Get the number of vertices (samples) in the graph. */
-    long numVertices() const { return (long)samples.size(); }
+    intx numVertices() const { return (intx)samples.size(); }
 
     /** Get an iterator to the first vertex. */
     VertexIterator verticesBegin() { return samples.begin(); }
@@ -266,7 +266,7 @@ class SampleGraph : private Noncopyable
     VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
 
     /** Get the number of neighbors of a vertex. */
-    long numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
+    intx numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
 
     /** Get an iterator to the first neighbor of a vertex. */
     NeighborIterator neighborsBegin(VertexHandle vertex)
@@ -315,20 +315,20 @@ class SampleGraph : private Noncopyable
     SampleGraph & operator=(SampleGraph const & src);
 
     /** Get the number of samples in the graph. */
-    long numSamples() const { return (long)samples.size(); }
+    intx numSamples() const { return (intx)samples.size(); }
 
     /** Get the set of samples in the graph. */
     SampleArray const & getSamples() const { return samples; }
 
     /** Get a sample by its index. */
-    SurfaceSample const & getSample(long index) const
+    SurfaceSample const & getSample(intx index) const
     {
-      debugAssertM(index >= 0 && index < (long)samples.size(), "SampleGraph: Sample index out of bounds");
+      debugAssertM(index >= 0 && index < (intx)samples.size(), "SampleGraph: Sample index out of bounds");
       return samples[(size_t)index];
     }
 
     /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
-    void setSamples(long num_samples, Vector3 const * positions, Vector3 const * normals = NULL)
+    void setSamples(intx num_samples, Vector3 const * positions, Vector3 const * normals = NULL)
     {
       alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of samples");
       alwaysAssertM(num_samples == 0 || positions, "SampleGraph: Sample positions must be specified");
@@ -336,7 +336,7 @@ class SampleGraph : private Noncopyable
       samples.resize((size_t)num_samples);
       for (size_t i = 0; i < samples.size(); ++i)
       {
-        samples[i].setIndex((long)i);
+        samples[i].setIndex((intx)i);
         samples[i].setPosition(positions[i]);
         samples[i].getNeighbors().setCapacity(options.max_degree);
       }
@@ -359,7 +359,7 @@ class SampleGraph : private Noncopyable
      * final graph, but will be used to more accurately compute adjacencies. If normals are not specified, they must also not
      * have been specified for the main samples.
      */
-    void setOversampling(long num_samples, Vector3 const * dense_positions, Vector3 const * dense_normals = NULL)
+    void setOversampling(intx num_samples, Vector3 const * dense_positions, Vector3 const * dense_normals = NULL)
     {
       alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of dense samples");
       alwaysAssertM(!has_normals || dense_normals,
@@ -405,7 +405,7 @@ class SampleGraph : private Noncopyable
 
       for (size_t i = 0; i < dense_samples.size(); ++i)
       {
-        dense_samples[i].setIndex((long)(samples.size() + i));
+        dense_samples[i].setIndex((intx)(samples.size() + i));
         sample_ptrs[samples.size() + i] = &dense_samples[i];
       }
 
@@ -421,13 +421,13 @@ class SampleGraph : private Noncopyable
 
       // Get a measure of the average pairwise separation of samples
       avg_separation = 0;
-      long num_trials = std::min(100L, (long)sample_ptrs.size());
-      for (long i = 0; i < num_trials; ++i)
+      intx num_trials = std::min(100L, (intx)sample_ptrs.size());
+      for (intx i = 0; i < num_trials; ++i)
       {
         size_t index = (size_t)Random::common().integer(0, (int32)sample_ptrs.size() - 1);
         FilterSelf filter(sample_ptrs[index]);
         sample_kdtree.pushFilter(&filter);
-          long nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
+          intx nn_index = sample_kdtree.closestElement<MetricL2>(sample_ptrs[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "SampleGraph: Nearest neighbor of sample not found");
           avg_separation += (sample_ptrs[(size_t)nn_index]->getPosition()
                            - sample_ptrs[index]->getPosition()).squaredNorm();
@@ -497,7 +497,7 @@ class SampleGraph : private Noncopyable
         }
 
         /** Called for every candidate neighbor. */
-        bool operator()(long index, SurfaceSample * nbr)
+        bool operator()(intx index, SurfaceSample * nbr)
         {
           Real sep = 0;
           if (isValidNeighbor(nbr, sep))
@@ -592,14 +592,14 @@ class SampleGraph : private Noncopyable
     void updateAverageSeparation()
     {
       avg_separation = 0;
-      long num_edges = 0;  // double-counts, but we'll ignore that for now
+      intx num_edges = 0;  // double-counts, but we'll ignore that for now
       for (size_t i = 0; i < samples.size(); ++i)
       {
         SurfaceSample::NeighborSet const & nbrs = samples[i].getNeighbors();
         for (int j = 0; j < nbrs.size(); ++j)
           avg_separation += nbrs[j].getSeparation();
 
-        num_edges += (long)nbrs.size();
+        num_edges += (intx)nbrs.size();
       }
 
       if (num_edges > 0)

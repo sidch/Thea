@@ -60,7 +60,7 @@ class /* THEA_API */ AbstractSparseMatrix : public virtual AbstractMatrix<T>
      * Get the number of entries actually stored in the matrix. These are often called "non-zeros", though they may actually
      * have the numeric value 0.
      */
-    virtual long numStoredElements() const = 0;
+    virtual int64 numStoredElements() const = 0;
 
     /**
      * If the matrix is stored in compressed column or row format, get a pointer to a derived interface supporting access

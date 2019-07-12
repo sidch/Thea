@@ -159,23 +159,23 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
         MeshFaceHandle() {}
 
         /** Construct from an index/type pair. */
-        MeshFaceHandle(long index_, FaceType type_) : index(index_), type(type_) {}
+        MeshFaceHandle(intx index_, FaceType type_) : index(index_), type(type_) {}
 
         /** Get the index of the face in the source mesh. */
-        long getIndex() const { return index; }
+        intx getIndex() const { return index; }
 
         /** Get the type of the face (quad/triangle). */
         FaceType getType() const { return type; }
 
       private:
-        long index;
+        intx index;
         FaceType type;
 
     }; // class MeshFaceHandle
 
     typedef MeshT           Mesh;                   ///< The mesh type.
-    typedef long            MeshVertexHandle;       ///< A handle to a vertex of the mesh.
-    typedef long            MeshVertexConstHandle;  ///< A const handle to a vertex of the mesh.
+    typedef intx            MeshVertexHandle;       ///< A handle to a vertex of the mesh.
+    typedef intx            MeshVertexConstHandle;  ///< A const handle to a vertex of the mesh.
     typedef MeshFaceHandle  MeshFaceConstHandle;    ///< A const handle to a face of the mesh.
 
     /** Default constructor. */
@@ -183,7 +183,7 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
 
     /** Constructs the triple from three mesh vertices. */
     template <typename IntegerT>
-    MeshVertexTriple(IntegerT vi0, IntegerT vi1, IntegerT vi2, Mesh * mesh_, long face_index_, FaceType face_type_)
+    MeshVertexTriple(IntegerT vi0, IntegerT vi1, IntegerT vi2, Mesh * mesh_, intx face_index_, FaceType face_type_)
     : mesh(mesh_), face_index(face_index_), face_type(face_type_)
     {
       typename Mesh::VertexArray const & mv = mesh->getVertices();
@@ -191,9 +191,9 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
       vertices[1] = mv[(size_t)vi1];
       vertices[2] = mv[(size_t)vi2];
 
-      vertex_indices[0] = (long)vi0;
-      vertex_indices[1] = (long)vi1;
-      vertex_indices[2] = (long)vi2;
+      vertex_indices[0] = (intx)vi0;
+      vertex_indices[1] = (intx)vi1;
+      vertex_indices[2] = (intx)vi2;
     }
 
     /** Get the position of any one of the three vertices. */
@@ -223,7 +223,7 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     }
 
     /** Get the index, in the source mesh, of the associated mesh face from which the vertices were obtained. */
-    long getMeshFaceIndex() const { return face_index; }
+    intx getMeshFaceIndex() const { return face_index; }
 
     /** Check if the associated mesh face is a triangle or a quad. */
     FaceType getMeshFaceType() const { return face_type; }
@@ -239,8 +239,8 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
   private:
     Vector3 vertices[3];     ///< The positions of the vertices of the mesh triangle.
     Mesh * mesh;             ///< The mesh containing the triangle.
-    long vertex_indices[3];  ///< The indices of the vertices of the mesh triangle.
-    long face_index;         ///< The index of the face containing the triangle.
+    intx vertex_indices[3];  ///< The indices of the vertices of the mesh triangle.
+    intx face_index;         ///< The index of the face containing the triangle.
     FaceType face_type;      ///< Type of face (triangle/quad).
 
 }; // class MeshVertexTriple<DisplayMesh>
@@ -269,8 +269,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
     v[2] = *(vi++);
     v[3] = *vi;
 
-    long i0, j0, k0;
-    long i1, j1, k1;
+    intx i0, j0, k0;
+    intx i1, j1, k1;
     int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
                                              i0, j0, k0, i1, j1, k1);
 
@@ -286,9 +286,9 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
   {
     Array<typename MeshT::Vertex *> face_vertices;
     Polygon3 poly;
-    Array<long> tri_indices;
+    Array<intx> tri_indices;
 
-    long i = 0;
+    intx i = 0;
     for (typename MeshT::Face::VertexIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi, ++i)
     {
       face_vertices.push_back(*vi);
@@ -337,8 +337,8 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
     v[2] = he->next()->next()->getOrigin();
     v[3] = he->next()->next()->next()->getOrigin();
 
-    long i0, j0, k0;
-    long i1, j1, k1;
+    intx i0, j0, k0;
+    intx i1, j1, k1;
     int num_tris = Polygon3::triangulateQuad(v[0]->getPosition(), v[1]->getPosition(), v[2]->getPosition(), v[3]->getPosition(),
                                              i0, j0, k0, i1, j1, k1);
 
@@ -354,11 +354,11 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
   {
     Array<typename MeshT::Vertex *> face_vertices;
     Polygon3 poly;
-    Array<long> tri_indices;
+    Array<intx> tri_indices;
 
     typename MeshT::Halfedge * he = face.getHalfedge();
-    long num_verts = face.numVertices();
-    for (long i = 0; i < num_verts; ++i)
+    intx num_verts = face.numVertices();
+    for (intx i = 0; i < num_verts; ++i)
     {
       face_vertices.push_back(he->getOrigin());
       poly.addVertex(he->getOrigin()->getPosition(), i);
@@ -399,7 +399,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
     size_t end = beg + 3 * (size_t)face.numTriangles();
     for (size_t i = beg; i < end; i += 3)
     {
-      tris.push_back(TriangleT(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (long)i / 3,
+      tris.push_back(TriangleT(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3,
                                             VertexTriple::FaceType::TRIANGLE)));
     }
   }
@@ -412,15 +412,15 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
     size_t end = beg + 4 * (size_t)face.numQuads();
     for (size_t i = beg; i < end; i += 4)
     {
-      long i0, j0, k0;
-      long i1, j1, k1;
+      intx i0, j0, k0;
+      intx i1, j1, k1;
       int num_tris = Polygon3::triangulateQuad(vertices[(size_t)quad_indices[i    ]],
                                                vertices[(size_t)quad_indices[i + 1]],
                                                vertices[(size_t)quad_indices[i + 2]],
                                                vertices[(size_t)quad_indices[i + 3]],
                                                i0, j0, k0, i1, j1, k1);
 
-      long quad = (long)i / 4;
+      intx quad = (intx)i / 4;
       if (num_tris > 0)
       {
         tris.push_back(TriangleT(VertexTriple(quad_indices[(size_t)(i + i0)],
@@ -451,14 +451,14 @@ buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 
   typename Mesh::IndexArray const & tri_indices = mesh.getTriangleIndices();
   for (size_t i = 0; i < tri_indices.size(); i += 3)
-    tris.push_back(Triangle(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (long)i / 3,
+    tris.push_back(Triangle(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3,
                             VertexTriple::FaceType::TRIANGLE)));
 
   // FIXME: Handle non-convex faces
   typename Mesh::IndexArray const & quad_indices = mesh.getQuadIndices();
   for (size_t i = 0; i < quad_indices.size(); i += 4)
   {
-    long quad = (long)i / 4;
+    intx quad = (intx)i / 4;
     tris.push_back(Triangle(VertexTriple(quad_indices[i], quad_indices[i + 1], quad_indices[i + 2], &mesh, quad,
                             VertexTriple::FaceType::QUAD)));
     tris.push_back(Triangle(VertexTriple(quad_indices[i], quad_indices[i + 2], quad_indices[i + 3], &mesh, quad,
@@ -520,7 +520,7 @@ class MeshTriangles
     bool isEmpty() const { return tris.empty(); }
 
     /** Get the number of triangles in the set. */
-    long numTriangles() const { return (long)tris.size(); }
+    intx numTriangles() const { return (intx)tris.size(); }
 
     /** Get the triangles in the set. */
     TriangleArray const & getTriangles() const { return tris; }

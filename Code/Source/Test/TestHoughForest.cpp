@@ -40,7 +40,7 @@ string
 arrayToString(ArrayT const & arr)
 {
   ostringstream oss; oss << '[';
-  for (long i = 0; i < (long)arr.size(); ++i)
+  for (intx i = 0; i < (intx)arr.size(); ++i)
   {
     if (i > 0) oss << ", ";
     oss << arr[i];
@@ -78,24 +78,24 @@ rangeToString(IteratorT begin, IteratorT end)
 class ExampleSet: public HoughForest::TrainingData
 {
   private:
-    typedef UnorderedMap<long, long> IDMap;
+    typedef UnorderedMap<intx, intx> IDMap;
 
   public:
     THEA_DEF_POINTER_TYPES(ExampleSet, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. */
-    ExampleSet(long num_classes_ = 0) : num_classes(num_classes_) {}
+    ExampleSet(intx num_classes_ = 0) : num_classes(num_classes_) {}
 
     /** Construct with known parameters. */
-    ExampleSet(long num_classes_, long num_features_, long num_vote_params_, long num_examples_)
+    ExampleSet(intx num_classes_, intx num_features_, intx num_vote_params_, intx num_examples_)
     {
       resize(num_classes_, num_features_, num_vote_params_, num_examples_);
     }
 
     /** Set the data for a single example point. */
-    void setExample(long example_index, double const * example_features, long example_class, double const * example_self_vote)
+    void setExample(intx example_index, double const * example_features, intx example_class, double const * example_self_vote)
     {
-      alwaysAssertM(example_index >= 0 && example_index < (long)classes.size(), "Example index out of bounds");
+      alwaysAssertM(example_index >= 0 && example_index < (intx)classes.size(), "Example index out of bounds");
 
       features.col(example_index) = VectorXdConstMap(example_features, features.rows());
       classes[(size_t)example_index] = example_class;
@@ -103,7 +103,7 @@ class ExampleSet: public HoughForest::TrainingData
     }
 
     /** Convert an input class ID (read from file) to a Hough class ID in the range [0, num_classes - 1]. */
-    long inputClassToHoughClass(long c) const
+    intx inputClassToHoughClass(intx c) const
     {
       IDMap::const_iterator existing = input_class_to_hough_class.find(c);
       if (existing != input_class_to_hough_class.end())
@@ -113,7 +113,7 @@ class ExampleSet: public HoughForest::TrainingData
     }
 
     /** Convert a Hough class ID in the range [0, num_classes - 1] to an input class ID (read from file). */
-    long houghClassToInputClass(long c) const
+    intx houghClassToInputClass(intx c) const
     {
       IDMap::const_iterator existing = hough_class_to_input_class.find(c);
       if (existing != hough_class_to_input_class.end())
@@ -134,10 +134,10 @@ class ExampleSet: public HoughForest::TrainingData
     {
       THEA_CONSOLE << "Reading example set from: " << path;
 
-      long num_vote_params = 3;
+      intx num_vote_params = 3;
 
       // Read number of examples, features
-      long num_examples = 0, num_features = 0;
+      intx num_examples = 0, num_features = 0;
       hough_class_to_input_class.clear();
       input_class_to_hough_class.clear();
       {
@@ -148,7 +148,7 @@ class ExampleSet: public HoughForest::TrainingData
           return false;
         }
 
-        long next_non_background_class_id = 1;
+        intx next_non_background_class_id = 1;
 
         std::string line;
         while (std::getline(in, line))
@@ -160,12 +160,12 @@ class ExampleSet: public HoughForest::TrainingData
 
             std::istringstream line_in(line);
 
-            long class_id, model_id;
+            intx class_id, model_id;
             line_in >> class_id >> model_id;
 
             if (inputClassToHoughClass(class_id) < 0)
             {
-              long hough_class_id = 0;
+              intx hough_class_id = 0;
               if (class_id != 0)  // foreground class
                 hough_class_id = next_non_background_class_id++;
 
@@ -191,20 +191,20 @@ class ExampleSet: public HoughForest::TrainingData
       THEA_CONSOLE << "  #examples    : " << num_examples;
 
       // Read actual data
-      resize((long)hough_class_to_input_class.size(), num_features, num_vote_params, num_examples);
+      resize((intx)hough_class_to_input_class.size(), num_features, num_vote_params, num_examples);
       {
         std::ifstream in(path.c_str());
         Array<double> example_features((size_t)num_features);
         Array<double> example_self_vote((size_t)num_vote_params);
-        long class_id, model_id;
-        for (long i = 0; i < num_examples; ++i)
+        intx class_id, model_id;
+        for (intx i = 0; i < num_examples; ++i)
         {
           in >> class_id >> model_id;
 
-          for (long j = 0; j < num_vote_params; ++j)
+          for (intx j = 0; j < num_vote_params; ++j)
             in >> example_self_vote[(size_t)j];
 
-          for (long j = 0; j < num_features; ++j)
+          for (intx j = 0; j < num_features; ++j)
             in >> example_features[(size_t)j];
 
           setExample(i, &example_features[0], inputClassToHoughClass(class_id), &example_self_vote[0]);
@@ -217,60 +217,60 @@ class ExampleSet: public HoughForest::TrainingData
     }
 
     /** Get the number of example points. */
-    long numExamples() const { return (long)classes.size(); }
+    intx numExamples() const { return (intx)classes.size(); }
 
     /** Get the number of classes (including the background class, always assumed to have ID 0. */
-    long numClasses() const { return (long)input_class_to_hough_class.size(); }
+    intx numClasses() const { return (intx)input_class_to_hough_class.size(); }
 
     /** Get the number of features. */
-    long numFeatures() const { return features.rows(); }
+    intx numFeatures() const { return features.rows(); }
 
     /** Get the number of vote parameters for a given class. */
-    long numVoteParameters(long class_index) const { return votes.rows(); }
+    intx numVoteParameters(intx class_index) const { return votes.rows(); }
 
     /** Get the value of a particular feature for all examples. */
-    void getFeatures(long feature_index, double * values) const
+    void getFeatures(intx feature_index, double * values) const
     {
       double const * row_start = &features(feature_index, 0);
       std::memcpy(values, row_start, (size_t)features.cols() * sizeof(double));
     }
 
     /** Get the value of a particular feature for a selected set of examples. */
-    void getFeatures(long feature_index, long num_selected_examples, long const * selected_examples, double * values) const
+    void getFeatures(intx feature_index, intx num_selected_examples, intx const * selected_examples, double * values) const
     {
       double const * row_start = &features(feature_index, 0);
-      for (long i = 0; i < num_selected_examples; ++i)
+      for (intx i = 0; i < num_selected_examples; ++i)
         values[i] = row_start[selected_examples[i]];
     }
 
     /** Get the feature vector of a single example. */
-    void getExampleFeatures(long example_index, double * values) const
+    void getExampleFeatures(intx example_index, double * values) const
     {
-      for (long i = 0; i < features.rows(); ++i)
+      for (intx i = 0; i < features.rows(); ++i)
         values[i] = features(i, example_index);
     }
 
     /** Get the Hough class ID's (in the range [0, num_classes - 1]) of all examples. */
-    void getClasses(long * classes_) const
+    void getClasses(intx * classes_) const
     {
       std::memcpy(classes_, &classes[0], classes.size() * sizeof(double));
     }
 
     /** Get the Hough class ID's (in the range [0, num_classes - 1]) of a selected set of examples. */
-    void getClasses(long num_selected_examples, long const * selected_examples, long * classes_) const
+    void getClasses(intx num_selected_examples, intx const * selected_examples, intx * classes_) const
     {
-      for (long i = 0; i < num_selected_examples; ++i)
+      for (intx i = 0; i < num_selected_examples; ++i)
         classes_[i] = classes[(size_t)selected_examples[i]];
     }
 
     /** Get the Hough class ID (in the range [0, num_classes - 1]) of a single example. */
-    long getClass(long example_index) const
+    intx getClass(intx example_index) const
     {
       return classes[(size_t)example_index];
     }
 
     /** Get the Hough vote for a single example. */
-    void getSelfVote(long example_index, double * params) const
+    void getSelfVote(intx example_index, double * params) const
     {
       double const * col_start = &votes(0, example_index);
       std::memcpy(params, col_start, (size_t)votes.rows() * sizeof(double));
@@ -278,7 +278,7 @@ class ExampleSet: public HoughForest::TrainingData
 
   private:
     /** Resize the set according to a given set of parameters. */
-    void resize(long num_classes_, long num_features_, long num_vote_params_, long num_examples_)
+    void resize(intx num_classes_, intx num_features_, intx num_vote_params_, intx num_examples_)
     {
       num_classes = num_classes_;
       classes.resize((size_t)num_examples_);
@@ -286,10 +286,10 @@ class ExampleSet: public HoughForest::TrainingData
       votes.resize(num_vote_params_, num_examples_);
     }
 
-    long num_classes;
+    intx num_classes;
     MatrixX<double, MatrixLayout::ROW_MAJOR> features;
     MatrixX<double, MatrixLayout::COLUMN_MAJOR> votes;
-    Array<long> classes;
+    Array<intx> classes;
     IDMap input_class_to_hough_class;
     IDMap hough_class_to_input_class;
 
@@ -343,9 +343,9 @@ testHoughForestFile(string const & path)
   // opts.setMaxCandidateThresholds(10);
   opts.setProbabilisticSampling(true);
 
-  Array<long> num_vote_params((size_t)training_data.numClasses());
+  Array<intx> num_vote_params((size_t)training_data.numClasses());
   for (size_t i = 0; i < num_vote_params.size(); ++i)
-    num_vote_params[i] = training_data.numVoteParameters((long)i);
+    num_vote_params[i] = training_data.numVoteParameters((intx)i);
 
   HoughForest hf(training_data.numClasses(), training_data.numFeatures(), &num_vote_params[0], opts);
   hf.train(NUM_TREES, training_data);
@@ -363,18 +363,18 @@ testHoughForestFile(string const & path)
   Array<double> training_vote, test_vote;
   Array<double> features((size_t)training_data.numFeatures());
 
-  for (long c = 1; c < training_data.numClasses(); ++c)
+  for (intx c = 1; c < training_data.numClasses(); ++c)
   {
-    long inpc = training_data.houghClassToInputClass(c);
+    intx inpc = training_data.houghClassToInputClass(c);
 
     THEA_CONSOLE << "\n======================================";
     THEA_CONSOLE << "Voting for class " << inpc;
     THEA_CONSOLE << "======================================";
 
-    for (long i = 0; i < NUM_POINTS_PER_CLASS; ++i)
+    for (intx i = 0; i < NUM_POINTS_PER_CLASS; ++i)
     {
-      long index = std::rand() % training_data.numExamples();
-      long num_vote_params = training_data.numVoteParameters(c);
+      intx index = std::rand() % training_data.numExamples();
+      intx num_vote_params = training_data.numVoteParameters(c);
 
       training_vote.resize((size_t)num_vote_params);
       test_vote.resize((size_t)num_vote_params);

@@ -315,25 +315,25 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     bool isEmpty() const { return vertices.empty() && faces.empty() && halfedges.empty(); }
 
     /** Get the number of vertices. */
-    long numVertices() const { return (long)vertices.size(); }
+    intx numVertices() const { return (intx)vertices.size(); }
 
     /** Get the number of halfedges. */
-    long numHalfedges() const { return (long)halfedges.size(); }
+    intx numHalfedges() const { return (intx)halfedges.size(); }
 
     /** Get the number of edges. */
-    long numEdges() const
+    intx numEdges() const
     {
       debugAssertM(halfedges.size() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
-      return (long)(halfedges.size() / 2);
+      return (intx)(halfedges.size() / 2);
     }
 
     /** Get the number of faces. */
-    long numFaces() const { return (long)faces.size(); }
+    intx numFaces() const { return (intx)faces.size(); }
 
     /** Compute the number of triangles in the mesh. */
-    long numTriangles() const
+    intx numTriangles() const
     {
-      long rval = 0;
+      intx rval = 0;
       for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isTriangle())
           rval++;
@@ -342,9 +342,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     }
 
     /** Compute the number of quads in the mesh. */
-    long numQuads() const
+    intx numQuads() const
     {
-      long rval = 0;
+      intx rval = 0;
       for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isQuad())
           rval++;
@@ -365,7 +365,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      *
      * @return A pointer to the new vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL)
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL)
     {
       if (vertices.empty()) bounds.set(point, point);
       else                  bounds.merge(point);
@@ -397,7 +397,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * @return A pointer to the new created face, or null on error.
      */
     template <typename VertexInputIterator>
-    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, long index = -1)
+    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, intx index = -1)
     {
       if (vbegin == vend)
       {
@@ -528,7 +528,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       // need to ensure that we're not examining a deleted halfedge, and also allows us to check for some errors before we make
       // any changes.
       Halfedge * e0 = loop0_start, * e1 = loop1_start;
-      long n = 0;
+      intx n = 0;
       do
       {
         if (!e0->isBoundary() || !e1->isBoundary())
@@ -558,7 +558,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       e0 = loop0_start;  // we should be here already, but let's play safe
       e1 = loop1_start;
       Halfedge * next0 = NULL, * next1 = NULL;
-      for (long i = 0; i < n; ++i, e0 = next0, e1 = next1)
+      for (intx i = 0; i < n; ++i, e0 = next0, e1 = next1)
       {
         if (i < n - 1)
         {
@@ -598,7 +598,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
         // Seal the edge by deleting the loop-side halfedges, and making the face-side halfedges twins
         Halfedge * t0 = e0->twin_he;
         Halfedge * t1 = e1->twin_he;
-        long index = e0->index;
+        intx index = e0->index;
 
         removeHalfedge(e0);
         removeHalfedge(e1);
@@ -905,7 +905,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       // any consistency checks until we've finished adding the face.
       Halfedge * new_e, * new_twin, * next_e, * last = NULL; (void)last;  // Squash -Wunused-but-set-variable
       Vertex * vi, * vnext;
-      long index0, index1;
+      intx index0, index1;
       bool added_canonical_edge_to_face = false;
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -1044,12 +1044,12 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      * Get indices for a pair of new twin halfedges. If the indices are getting too large, this function reindexes the set of
      * halfedges.
      */
-    void nextHalfedgeIndices(long & index0, long & index1)
+    void nextHalfedgeIndices(intx & index0, intx & index1)
     {
-      static long const THRESHOLD = std::numeric_limits<long>::max() - 4;
+      static intx const THRESHOLD = std::numeric_limits<intx>::max() - 4;
       if (next_halfedge_index > THRESHOLD)
       {
-        if ((long)halfedges.size() > THRESHOLD)  // too many halfedges, we can't do anything!
+        if ((intx)halfedges.size() > THRESHOLD)  // too many halfedges, we can't do anything!
           throw Error(getNameStr() + ": Too many halfedges, can't assign indices!");
 
         next_halfedge_index = 0;
@@ -1176,8 +1176,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     {
       Halfedge * twin = edge->twin();
 
-      long twin_index = twin->index;
-      long index0 = -1, index1 = -1;
+      intx twin_index = twin->index;
+      intx index0 = -1, index1 = -1;
       nextHalfedgeIndices(index0, index1);
 
       // Update the twin's index
@@ -1360,8 +1360,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
       else
         packed_edges.clear();
 
-      num_tri_indices   =  (long)packed_tris.size();
-      num_quad_indices  =  (long)packed_quads.size();
+      num_tri_indices   =  (intx)packed_tris.size();
+      num_quad_indices  =  (intx)packed_quads.size();
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
@@ -1373,10 +1373,10 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     FaceSet      faces;                ///< Set of mesh faces.
     VertexSet    vertices;             ///< Set of mesh vertices.
     HalfedgeSet  halfedges;            ///< Set of mesh halfedges.
-    long         next_halfedge_index;  ///< Index to be assigned to the next added halfedge.
+    intx         next_halfedge_index;  ///< Index to be assigned to the next added halfedge.
 
-    long max_vertex_index;  ///< The largest index of a vertex in the mesh.
-    long max_face_index;    ///< The largest index of a face in the mesh.
+    intx max_vertex_index;  ///< The largest index of a vertex in the mesh.
+    intx max_face_index;    ///< The largest index of a face in the mesh.
 
     AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
@@ -1392,8 +1392,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
     IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
     IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
-    long           num_tri_indices;          ///< Number of triangles in the mesh.
-    long           num_quad_indices;         ///< Number of quads in the mesh.
+    intx           num_tri_indices;          ///< Number of triangles in the mesh.
+    intx           num_quad_indices;         ///< Number of quads in the mesh.
 
     VARArea * var_area;          ///< GPU buffer area.
     VAR * vertex_positions_var;  ///< GPU buffer for vertex positions.
@@ -1447,21 +1447,21 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
     packVertexColors<Vertex>();
     packVertexTexCoords<Vertex>();
 
-    long vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (long)packed_vertex_positions.size() + PADDING : 0;
-    long vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (long)packed_vertex_normals.size()   + PADDING : 0;
-    long vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (long)packed_vertex_colors.size()    + PADDING : 0;
-    long vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (long)packed_vertex_texcoords.size() + PADDING : 0;
+    intx vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (intx)packed_vertex_positions.size() + PADDING : 0;
+    intx vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (intx)packed_vertex_normals.size()   + PADDING : 0;
+    intx vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (intx)packed_vertex_colors.size()    + PADDING : 0;
+    intx vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (intx)packed_vertex_texcoords.size() + PADDING : 0;
 
     packTopology();
 
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
-    long num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
+    intx num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
 #else
-    long tri_bytes   =  !packed_tris.empty()   ?  4 * (long)packed_tris.size()   +  PADDING : 0;  // uint32
-    long quad_bytes  =  !packed_quads.empty()  ?  4 * (long)packed_quads.size()  +  PADDING : 0;  // uint32
-    long edge_bytes  =  !packed_edges.empty()  ?  4 * (long)packed_edges.size()  +  PADDING : 0;  // uint32
+    intx tri_bytes   =  !packed_tris.empty()   ?  4 * (intx)packed_tris.size()   +  PADDING : 0;  // uint32
+    intx quad_bytes  =  !packed_quads.empty()  ?  4 * (intx)packed_quads.size()  +  PADDING : 0;  // uint32
+    intx edge_bytes  =  !packed_edges.empty()  ?  4 * (intx)packed_edges.size()  +  PADDING : 0;  // uint32
 
-    long num_bytes = vertex_position_bytes
+    intx num_bytes = vertex_position_bytes
                    + vertex_normal_bytes
                    + vertex_color_bytes
                    + vertex_texcoord_bytes
@@ -1484,7 +1484,7 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
 
     if (var_area)
     {
-      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (long)(1.5 * num_bytes))
+      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
       {
         render_system.destroyVARArea(var_area);
 
@@ -1505,28 +1505,28 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
     {
       vertex_positions_var = var_area->createArray(vertex_position_bytes);
       if (!vertex_positions_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
-      vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!packed_vertex_normals.empty())
     {
       vertex_normals_var = var_area->createArray(vertex_normal_bytes);
       if (!vertex_normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
-      vertex_normals_var->updateVectors(0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+      vertex_normals_var->updateVectors(0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!packed_vertex_colors.empty())
     {
       vertex_colors_var = var_area->createArray(vertex_color_bytes);
       if (!vertex_colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
-      vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!packed_vertex_texcoords.empty())
     {
       vertex_texcoords_var = var_area->createArray(vertex_texcoord_bytes);
       if (!vertex_texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
-      vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
 
 #ifndef THEA_DCEL_MESH_NO_INDEX_ARRAY
@@ -1534,21 +1534,21 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
     {
       tris_var = var_area->createArray(tri_bytes);
       if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
-      tris_var->updateIndices(0, (long)packed_tris.size(), &packed_tris[0]);
+      tris_var->updateIndices(0, (intx)packed_tris.size(), &packed_tris[0]);
     }
 
     if (!packed_quads.empty())
     {
       quads_var = var_area->createArray(quad_bytes);
       if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
-      quads_var->updateIndices(0, (long)packed_quads.size(), &packed_quads[0]);
+      quads_var->updateIndices(0, (intx)packed_quads.size(), &packed_quads[0]);
     }
 
     if (!packed_edges.empty())
     {
       edges_var = var_area->createArray(edge_bytes);
       if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
-      edges_var->updateIndices(0, (long)packed_edges.size(), &packed_edges[0]);
+      edges_var->updateIndices(0, (intx)packed_edges.size(), &packed_edges[0]);
     }
 #endif
   }
@@ -1557,25 +1557,25 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
     if (!gpuBufferIsValid(BufferID::VERTEX_POSITION) && !vertices.empty())
     {
       packVertexPositions();
-      vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_NORMAL) && !vertices.empty())
     {
       packVertexNormals();
-      vertex_normals_var->updateVectors (0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+      vertex_normals_var->updateVectors (0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_COLOR) && hasVertexColors())
     {
       packVertexColors<Vertex>();
-      vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_TEXCOORD) && hasVertexTexCoords())
     {
       packVertexTexCoords<Vertex>();
-      vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
   }
 
@@ -1671,12 +1671,12 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, RenderOptions cons
 
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
         if (!edges.empty())
-          render_system.sendIndices(RenderSystem::Primitive::LINES, (long)halfedges.size(), &packed_edges[0]);
+          render_system.sendIndices(RenderSystem::Primitive::LINES, (intx)halfedges.size(), &packed_edges[0]);
 #else
         if (!halfedges.empty())
         {
           render_system.setIndexArray(edges_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, (long)halfedges.size());
+          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, (intx)halfedges.size());
         }
 #endif
 

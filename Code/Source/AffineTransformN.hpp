@@ -115,9 +115,9 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     Matrix<N + 1, N + 1, T> homogeneous() const
     {
       Matrix<N + 1, N + 1, T> m = Matrix<N + 1, N + 1, T>::Identity();
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
-        for (long j = 0; j < N; ++j)
+        for (intx j = 0; j < N; ++j)
           m(i, j) = linear(i, j);
 
         m(i, N) = trans[i];
@@ -130,9 +130,9 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     Matrix<N, N + 1, T> toMatrix() const
     {
       Matrix<N, N + 1, T> m;
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
-        for (long j = 0; j < N; ++j)
+        for (intx j = 0; j < N; ++j)
           m(i, j) = linear(i, j);
 
         m(i, N) = trans[i];
@@ -149,14 +149,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     }
 
     /** Get an element of the N x (N + 1) matrix representing this transform. */
-    T operator()(long i, long j) const
+    T operator()(intx i, intx j) const
     {
       debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformT: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);
     }
 
     /** Get an element of the N x (N + 1) matrix representing this transform. */
-    T & operator()(long i, long j)
+    T & operator()(intx i, intx j)
     {
       debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformT: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);

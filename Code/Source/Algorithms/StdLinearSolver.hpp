@@ -148,7 +148,7 @@ class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
     double getTolerance() const;
 
     /* Get the maximum number of solver iterations, if the solver is iterative. */
-    long maxIterations() const;
+    intx maxIterations() const;
 
     /** Set the solution method. */
     void setMethod(Method method_);
@@ -157,23 +157,23 @@ class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
     void setConstraint(Constraint constraint_);
 
     /* Set the solution tolerance/threshold. */
-    void setTolerance(double tol);
+    void setTolerance(float64 tol);
 
     /* Get the maximum number of solver iterations, if the solver is iterative. A negative number implies the default value. */
-    void setMaxIterations(long max_iters_);
+    void setMaxIterations(intx max_iters_);
 
     /** Solve the linear system Ax = b for a dense double-precision matrix A. */
-    bool solve(Eigen::Ref<MatrixXd> const & a, double const * b, AbstractOptions const * options = NULL);
+    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, AbstractOptions const * options = NULL);
 
     /** Solve the linear system Ax = b for a sparse double-precision matrix A. */
     bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, AbstractOptions const * options = NULL);
 
     // Functions from LinearSolver
-    bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL);
-    long dims() const;
-    bool hasSolution() const;
-    double const * getSolution() const;
-    bool getSquaredError(double & err) const;
+    int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = NULL);
+    int64 dims() const;
+    int8 hasSolution() const;
+    float64 const * getSolution() const;
+    int8 getSquaredError(float64 & err) const;
 
   private:
     StdLinearSolverInternal::StdLinearSolverImpl * impl;  ///< Contains base function implementations using PIMPL idiom.

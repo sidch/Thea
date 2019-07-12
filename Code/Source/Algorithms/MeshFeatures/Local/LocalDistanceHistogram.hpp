@@ -64,7 +64,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -77,7 +77,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    LocalDistanceHistogram(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    LocalDistanceHistogram(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -91,7 +91,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    LocalDistanceHistogram(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    LocalDistanceHistogram(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -166,8 +166,8 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
 
       if (process_all)
       {
-        long num_samples = this->numSamples();
-        for (long i = 0; i < num_samples; ++i)
+        intx num_samples = this->numSamples();
+        for (intx i = 0; i < num_samples; ++i)
           callback(i, this->getSamplePosition(i));
       }
       else
@@ -212,7 +212,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
       alwaysAssertM(graph, "LocalDistanceHistogram: Non-null sample graph required to compute geodesic distances");
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
-      long seed_index = -1;
+      intx seed_index = -1;
       if (this->hasExternalKDTree())
         seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
       else
@@ -235,7 +235,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
       : position(position_), histogram(histogram_), acceptance_probability(acceptance_probability_)
       {}
 
-      template <typename SampleT> bool operator()(long index, SampleT const & t)
+      template <typename SampleT> bool operator()(intx index, SampleT const & t)
       {
         if (acceptance_probability < 1 && Random::common().uniform01() > acceptance_probability)
           return false;

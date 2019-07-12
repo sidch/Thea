@@ -123,8 +123,8 @@ class THEA_API LaplaceBeltrami
                                                               MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
-      UnorderedMap<typename MeshT::Vertex const *, long> indices;
-      long num_vertices = 0;
+      UnorderedMap<typename MeshT::Vertex const *, int64> indices;
+      int64 num_vertices = 0;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
         indices[&(*vi)] = num_vertices++;
 
@@ -137,7 +137,7 @@ class THEA_API LaplaceBeltrami
       typename MeshT::Edge const * first_edge, * ej_next, * ej_prev, * ej;
       typename MeshT::Vertex const * vx, * vj, * vj_prev, * vj_next;
       typename MatrixT::Value denom, cot_a_ij, cot_b_ij, x;
-      long i, j, num_visited;
+      int64 i, j, num_visited;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       {
         vx = &(*vi);
@@ -198,8 +198,8 @@ class THEA_API LaplaceBeltrami
                                                               MatrixT>::value >::type * dummy = NULL)
     {
       // First sequentially index all vertices of the mesh
-      UnorderedMap<typename MeshT::Vertex const *, long> indices;
-      long num_vertices = 0;
+      UnorderedMap<typename MeshT::Vertex const *, intx> indices;
+      int64 num_vertices = 0;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
         indices[&(*vi)] = num_vertices++;
 
@@ -212,7 +212,7 @@ class THEA_API LaplaceBeltrami
       typename MeshT::Halfedge const * he_j_next, * he_j_prev, * he_j;
       typename MeshT::Vertex const * vj, * vj_prev, * vj_next;
       typename MatrixT::Value denom, cot_a_ij, cot_b_ij, x;
-      long i, j;
+      int64 i, j;
       for (typename MeshT::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       {
         i = indices[&(*vi)];

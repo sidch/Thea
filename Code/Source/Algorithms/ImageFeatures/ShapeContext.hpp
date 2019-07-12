@@ -87,7 +87,7 @@ class THEA_API ShapeContext
      *   corresponding entries in \a values are set to zero.
      * @param max_radius Limits the area of the context for a pixel to this radius (negative for default).
      */
-    void compute(long num_radial_bins, long num_polar_bins, Array<Real> & values, bool ignore_empty_pixels = true,
+    void compute(intx num_radial_bins, intx num_polar_bins, Array<Real> & values, bool ignore_empty_pixels = true,
                  Real max_radius = -1) const;
 
     /**
@@ -101,7 +101,7 @@ class THEA_API ShapeContext
      *   dimension for packing).
      * @param max_radius Limits the area of the context to this radius (negative for default).
      */
-    void compute(int row, int col, long num_radial_bins, long num_polar_bins, Array<Real> & values, Real max_radius = -1)
+    void compute(int row, int col, intx num_radial_bins, intx num_polar_bins, Array<Real> & values, Real max_radius = -1)
          const;
 
   private:

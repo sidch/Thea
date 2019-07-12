@@ -67,7 +67,7 @@ class THEA_API ConnectedComponents
      * @see GeneralMesh
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
+    static intx findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
                                   typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
@@ -84,7 +84,7 @@ class THEA_API ConnectedComponents
      * @see DCELMesh
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
+    static intx findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
                                   typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       return findEdgeConnectedDefault(mesh, components);
@@ -100,7 +100,7 @@ class THEA_API ConnectedComponents
      * @return The number of components found (== components.size())
      */
     template <typename MeshT, typename FaceT>
-    static long findEdgeConnectedDefault(MeshT & mesh, Array< Array<FaceT *> > & components)
+    static intx findEdgeConnectedDefault(MeshT & mesh, Array< Array<FaceT *> > & components)
     {
       // Begin with all faces as separate components
       Array<FaceT *> faces;
@@ -115,7 +115,7 @@ class THEA_API ConnectedComponents
       // Reserve space for the result
       components.resize(uf.numSets());
 
-      typedef UnorderedMap<long, size_t> ComponentIndexMap;
+      typedef UnorderedMap<intx, size_t> ComponentIndexMap;
       ComponentIndexMap component_indices;
 
       // Loop over faces, adding each to the appropriate result subarray
@@ -123,7 +123,7 @@ class THEA_API ConnectedComponents
       for (size_t i = 0; i < faces.size(); ++i)
       {
         FaceT * face = faces[i];
-        long rep = uf.find(uf.getObjectID(face));
+        intx rep = uf.find(uf.getObjectID(face));
         typename ComponentIndexMap::iterator existing = component_indices.find(rep);
         if (existing == component_indices.end())
         {
@@ -138,7 +138,7 @@ class THEA_API ConnectedComponents
         components[component_index].push_back(face);
       }
 
-      return (long)components.size();
+      return (intx)components.size();
     }
 
     /**
@@ -155,8 +155,8 @@ class THEA_API ConnectedComponents
         for (typename MeshT::Edge::FaceIterator fi = ei->facesBegin(); fi != ei->facesEnd(); ++fi)
           for (typename MeshT::Edge::FaceIterator fj = ei->facesBegin(); fj != fi; ++fj)
           {
-            long handle1 = uf.getObjectID(*fi);
-            long handle2 = uf.getObjectID(*fj);
+            intx handle1 = uf.getObjectID(*fi);
+            intx handle2 = uf.getObjectID(*fj);
             uf.merge(handle1, handle2);
           }
       }
@@ -176,8 +176,8 @@ class THEA_API ConnectedComponents
         typename MeshT::Halfedge * edge = *ei;
         if (!edge->isBoundaryEdge())
         {
-          long handle1 = uf.getObjectID(edge->getFace());
-          long handle2 = uf.getObjectID(edge->twin()->getFace());
+          intx handle1 = uf.getObjectID(edge->getFace());
+          intx handle2 = uf.getObjectID(edge->twin()->getFace());
           uf.merge(handle1, handle2);
         }
       }

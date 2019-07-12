@@ -47,7 +47,7 @@ namespace Thea {
 namespace Math {
 
 int
-binaryTreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio)
+binaryTreeDepth(intx num_elems, int max_elems_in_leaf, Real split_ratio)
 {
   alwaysAssertM(num_elems >= 0, "Math: Can't compute binary tree depth for negative number of elements");
   alwaysAssertM(max_elems_in_leaf > 0, "Math: Can't compute binary tree depth for non-positive number of elements at leaf");

@@ -85,29 +85,29 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver, public virtu
      *   - <i>Type:</i> floating-point
      *   - <i>Default</i>: machine precision
      */
-    long solve(AbstractMatrix<double> const & m, bool compute_eigenvectors = true, long num_requested_eigenpairs = -1,
-               AbstractOptions const * options = NULL);
+    int64 solve(AbstractMatrix<float64> const & m, int8 compute_eigenvectors = true, int64 num_requested_eigenpairs = -1,
+                AbstractOptions const * options = NULL);
 
-    long dims() const { return ndims; }
-    long numEigenpairs() const { return (long)eigenvalues[0].size(); }
-    bool getEigenvalue(long i, double & re, double & im) const;
-    bool getEigenvector(long i, double const * & re, double const * & im) const;
-    bool hasRelativeErrors() const { return false; }
-    bool getRelativeError(long i, double & error) const;
+    int64 dims() const { return ndims; }
+    int64 numEigenpairs() const { return (int64)eigenvalues[0].size(); }
+    int8 getEigenvalue(int64 i, float64 & re, float64 & im) const;
+    int8 getEigenvector(int64 i, float64 const * & re, float64 const * & im) const;
+    int8 hasRelativeErrors() const { return false; }
+    int8 getRelativeError(int64 i, float64 & error) const;
 
   private:
     /** Solve a dense system */
-    long solveDense(AbstractDenseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which, int ncv,
-                    double tol, int maxit, double * resid = 0, bool auto_shift = true);
+    int64 solveDense(AbstractDenseMatrix<float64> const & m, int32 nev, int8 shift_invert, float64 sigma, char * which,
+                     int32 ncv, float64 tol, int32 maxit, float64 * resid = 0, int8 auto_shift = true);
 
     /** Solve a sparse system */
-    long solveSparse(AbstractCompressedSparseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which,
-                     int ncv, double tol, int maxit, double * resid = 0, bool auto_shift = true);
+    int64 solveSparse(AbstractCompressedSparseMatrix<float64> const & m, int32 nev, int8 shift_invert, float64 sigma,
+                      char * which, int32 ncv, float64 tol, int32 maxit, float64 * resid = 0, int8 auto_shift = true);
 
-    long ndims;  /**< The dimensionality of the problem, i.e. the length of each eigenvector or equivalently the size of the
+    int64 ndims;  /**< The dimensionality of the problem, i.e. the length of each eigenvector or equivalently the size of the
                       input matrix. */
-    Array<double> eigenvalues[2];  ///< Real and imaginary parts of eigenvalues.
-    Array< VectorX<double> > eigenvectors[2];  ///< Real and imaginary parts of eigenvectors, if computed (else empty).
+    Array<float64> eigenvalues[2];  ///< Real and imaginary parts of eigenvalues.
+    Array< VectorX<float64> > eigenvectors[2];  ///< Real and imaginary parts of eigenvectors, if computed (else empty).
 
 }; // class ARPACKEigenSolver
 

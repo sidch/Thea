@@ -72,7 +72,7 @@ class MeshCodec : public Codec
      * Serialize a mesh group to a binary output stream. Optionally prefixes extra information about the mesh block such as its
      * size and type (which may have not been specified in the encoding format itself).
      */
-    virtual long serializeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+    virtual intx serializeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool prefix_info,
                                     WriteCallback * callback) const = 0;
 
     /**

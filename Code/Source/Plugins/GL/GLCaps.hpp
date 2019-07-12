@@ -40,8 +40,8 @@ class THEA_GL_DLL_LOCAL GLCaps
 
     /**
      * Loads OpenGL extensions (such as glBindBufferARB). Call this once at the beginning of the program, <b>after</b> a video
-     * device is created. This is called for you if you use GLRenderSystem. It is safe to call this function twice as long
-     * as the calls are from the same thread.
+     * device is created. This is called for you if you use GLRenderSystem. It is safe to call this function twice as long as
+     * the calls are from the same thread.
      */
     static void init();
 

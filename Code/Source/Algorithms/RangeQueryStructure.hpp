@@ -80,13 +80,13 @@ class /* THEA_API */ RangeQueryStructure
      *   queries over a union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQueryIndices(RangeT const & range, Array<long> & result, bool discard_prior_results = true) const;
+    void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const;
 
     /**
      * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
      * (or be a function pointer with the equivalent signature)
      * \code
-     * bool operator()(long index, T & t)
+     * bool operator()(intx index, T & t)
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular

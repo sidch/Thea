@@ -55,10 +55,10 @@
 
 namespace Thea {
 
-long
+intx
 System::concurrency()
 {
-  long cc = (long)std::thread::hardware_concurrency();
+  intx cc = (intx)std::thread::hardware_concurrency();
   if (cc <= 0)
     return 1;  // operate in single-threaded mode as fallback
   else
@@ -66,7 +66,7 @@ System::concurrency()
 }
 
 void
-System::sleep(long ms)
+System::sleep(intx ms)
 {
 #ifdef THEA_WINDOWS
   Sleep(static_cast<DWORD>(ms));

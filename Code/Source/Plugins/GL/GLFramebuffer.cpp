@@ -83,7 +83,7 @@ GLFramebuffer::GLFramebuffer(GLRenderSystem * render_system_, char const * name_
   glGenFramebuffersEXT(1, &gl_fbid);
   THEA_CHECK_GL_OK
 
-  for (int i = 0; i < AttachmentPoint::MAX_ATTACHMENTS; ++i)
+  for (int32 i = 0; i < AttachmentPoint::MAX_ATTACHMENTS; ++i)
     attachment_table[i] = NULL;
 }
 
@@ -93,14 +93,14 @@ GLFramebuffer::~GLFramebuffer()
     glDeleteFramebuffersEXT(1, &gl_fbid);
 }
 
-static bool
+static int8
 GLFramebuffer__isDrawBuffer(Framebuffer::AttachmentPoint ap)
 {
   return (ap != Framebuffer::AttachmentPoint::DEPTH && ap != Framebuffer::AttachmentPoint::STENCIL);
 }
 
 void
-GLFramebuffer::attach(AttachmentPoint ap, Texture * texture, Texture::Face face, int z_offset)
+GLFramebuffer::attach(AttachmentPoint ap, Texture * texture, Texture::Face face, int64 z_offset)
 {
   GLTexture * gl_texture = dynamic_cast<GLTexture *>(texture);
   debugAssertM((texture && gl_texture) || (!texture && !gl_texture),
@@ -268,7 +268,7 @@ GLFramebuffer::detachAll()
     }
 
     // Remove all current attachments
-    for (int ap = 0; ap < AttachmentPoint::MAX_ATTACHMENTS; ++ap)
+    for (int32 ap = 0; ap < AttachmentPoint::MAX_ATTACHMENTS; ++ap)
     {
       if (attachment_table[ap])
       {
@@ -328,7 +328,7 @@ GLFramebuffer::use()
   }
 
   glDrawBuffersARB((GLsizei)gl_draw_buffers.size(), &gl_draw_buffers[0]);
-  glViewport(0, 0, width, height);
+  glViewport(0, 0, (GLsizei)width, (GLsizei)height);
   THEA_CHECK_GL_OK
 }
 

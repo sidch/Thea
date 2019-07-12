@@ -82,7 +82,7 @@ class /* THEA_API */ GeodesicExtrema
      *
      * @return The number of extreme vertices found.
      */
-    long getExtrema(Graph const & graph, double min_prominence, long max_results, Array<VertexConstHandle> & extrema)
+    intx getExtrema(Graph const & graph, double min_prominence, intx max_results, Array<VertexConstHandle> & extrema)
     {
     }
 

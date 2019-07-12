@@ -59,7 +59,7 @@ class THEA_API Polygon2
     struct THEA_API TriangulationOptions
     {
       Real area_bound;  ///< The maximum area of any output triangle (default -1, indicating no upper bound).
-      long max_steiner_points;  /**< The maximum number of Steiner points that can be inserted (default -1, indicating no
+      intx max_steiner_points;  /**< The maximum number of Steiner points that can be inserted (default -1, indicating no
                                      limit). */
 
       /** Constructor. */
@@ -77,10 +77,10 @@ class THEA_API Polygon2
       IndexedVertex() {}
 
       /** Initializing constructor. */
-      IndexedVertex(Vector2 const & position_, long index_) : position(position_), index(index_) {}
+      IndexedVertex(Vector2 const & position_, intx index_) : position(position_), index(index_) {}
 
       Vector2 position;  ///< The position of the vertex.
-      long index;  ///< The index of the vertex.
+      intx index;  ///< The index of the vertex.
     };
 
     /** Construct an empty polygon. */
@@ -96,18 +96,18 @@ class THEA_API Polygon2
     void addVertex(Vector2 const & p);
 
     /** Add an indexed vertex to the polygon. The vertex is inserted at the end of the current sequence of vertices. */
-    void addVertex(Vector2 const & p, long index);
+    void addVertex(Vector2 const & p, intx index);
 
     /** Get the number of vertices in the polygon. */
-    long numVertices() const;
+    intx numVertices() const;
 
     /**
      * Get the vertex at position \a poly_index in the sequence of vertices around the polygon boundary.
      *
      * @note \a poly_index is determined by the sequence of addVertex() calls, <b>NOT</b> by the index supplied in
-     *   addVertex(Vector2 const &, long)!
+     *   addVertex(Vector2 const &, intx)!
      */
-    IndexedVertex getVertex(long poly_index) const;
+    IndexedVertex getVertex(intx poly_index) const;
 
     /** Delete all vertices from the polygon. */
     void clear();
@@ -118,7 +118,7 @@ class THEA_API Polygon2
      *
      * @return The number of triangles created.
      */
-    long triangulate(Array<long> & tri_indices) const;
+    intx triangulate(Array<intx> & tri_indices) const;
 
     /**
      * Triangulate the polygon, inserting Steiner vertices as necessary in the interior of the polygon for a well-conditioned
@@ -133,7 +133,7 @@ class THEA_API Polygon2
      *
      * @return The number of triangles created.
      */
-    long triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indices,
+    intx triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indices,
                              Array<bool> * tri_vert_is_boundary = NULL,
                              TriangulationOptions const & options = TriangulationOptions::defaults()) const;
 

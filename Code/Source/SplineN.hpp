@@ -87,7 +87,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      *
      * @param index The index of the control vector, in the range 0 to numControls() - 1.
      */
-    virtual VectorT const & getControl(long index) const = 0;
+    virtual VectorT const & getControl(intx index) const = 0;
 
     /**
      * Set a control vector of the curve.
@@ -98,7 +98,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * @note Subclasses that implement this function should remember to call <tt>setChanged(true)</tt>, to trigger a call to
      *   update() to refresh cached data when required.
      */
-    virtual void setControl(long index, VectorT const & pos) = 0;
+    virtual void setControl(intx index, VectorT const & pos) = 0;
 
     /**
      * Fit the curve to a sequence of points [begin, end). The algorithm alternates between least-squares fitting (with known
@@ -125,8 +125,8 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
                        T const * initial_params = NULL,
                        T * final_params = NULL,
                        bool fix_first_and_last = false,
-                       long max_reparam_iters = -1,
-                       long num_reparam_steps_per_iter = -1,
+                       intx max_reparam_iters = -1,
+                       intx num_reparam_steps_per_iter = -1,
 
                        typename std::enable_if<
                                   Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>::value
@@ -146,7 +146,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       else
         this->chordLengthParametrize(begin, end, u, (double)this->minParam(), (double)this->maxParam());
 
-      if ((long)u.size() < this->numControls())
+      if ((intx)u.size() < this->numControls())
       {
         THEA_ERROR << "SplineN: Cannot fit curve to fewer data points than control vectors";
         return -1;
@@ -186,7 +186,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       std::ostringstream oss;
       oss << "[order = " << this->getOrder() << ", param-range = [" << this->minParam() << ", " << this->maxParam()
           << "], ctrl = [";
-      for (long i = 0; i < this->numControls(); ++i)
+      for (intx i = 0; i < this->numControls(); ++i)
       {
         if (i > 0) oss << ", ";
         oss << getControl(i);
@@ -262,12 +262,12 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         fix_first_and_last = false;
       }
 
-      long num_ctrls = (long)this->numControls();
-      long num_fixed = (fix_first_and_last ? 2 : 0);
-      long fixed_offset = (fix_first_and_last ? 1 : 0);
-      long num_unknown_ctrls = num_ctrls - num_fixed;
-      long num_unknowns = (long)(N * num_unknown_ctrls);
-      long num_objectives = (long)(N * std::distance(begin, end));
+      intx num_ctrls = (intx)this->numControls();
+      intx num_fixed = (fix_first_and_last ? 2 : 0);
+      intx fixed_offset = (fix_first_and_last ? 1 : 0);
+      intx num_unknown_ctrls = num_ctrls - num_fixed;
+      intx num_unknowns = (intx)(N * num_unknown_ctrls);
+      intx num_objectives = (intx)(N * std::distance(begin, end));
 
       VectorXd basis;
       MatrixXd coeffs(num_objectives, num_unknowns);
@@ -289,7 +289,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       // Try to make each point in the sequence match the point on the curve with the corresponding parameters
       coeffs.fill(0.0);
       size_t i = 0;
-      long obj = 0;
+      intx obj = 0;
       for (InputIterator pi = begin; pi != end; ++pi, ++i)
       {
         getBasisFunctions(u[i], basis);
@@ -301,9 +301,9 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         }
 
         // One scalar objective for each dimension
-        for (long j = 0; j < N; ++j, ++obj)
+        for (intx j = 0; j < N; ++j, ++obj)
         {
-          long offset = j * num_unknown_ctrls;
+          intx offset = j * num_unknown_ctrls;
           coeffs.row(obj).segment(offset, basis.size() - num_fixed)
               = basis.segment(fixed_offset, basis.size() - num_fixed);  // assigning col vector to row vector should be ok
 
@@ -325,14 +325,14 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       if (fix_first_and_last) setControl(0, first_pos);
 
       Array<VectorT> new_ctrls(num_unknown_ctrls);
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
-        long offset = i * num_unknown_ctrls;
-        for (long j = 0; j < num_unknown_ctrls; ++j)
+        intx offset = i * num_unknown_ctrls;
+        for (intx j = 0; j < num_unknown_ctrls; ++j)
           new_ctrls[(size_t)j][i] = static_cast<T>(sol[offset + j]);
       }
 
-      for (long i = 0; i < num_unknown_ctrls; ++i)
+      for (intx i = 0; i < num_unknown_ctrls; ++i)
         setControl(i + fixed_offset, new_ctrls[(size_t)i]);
 
       if (fix_first_and_last) setControl(num_ctrls - 1, last_pos);
@@ -341,7 +341,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       if (llsq.getSquaredError(err))
         return err;
 
-      VectorXdConstMap sol_vec(sol, (long)num_unknowns);
+      VectorXdConstMap sol_vec(sol, (intx)num_unknowns);
       return (coeffs * sol_vec - constants).squaredNorm();
     }
 
@@ -351,7 +351,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * See "An Algorithm for Automatically Fitting Digitized Curves", Philip J. Schneider, <i>%Graphics Gems</i>, 1990.
      */
     template <typename InputIterator>
-    bool refineParameters(InputIterator begin, InputIterator end, Array<double> & u, long num_newton_iters)
+    bool refineParameters(InputIterator begin, InputIterator end, Array<double> & u, intx num_newton_iters)
     {
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;
@@ -368,7 +368,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         // Target point
         VectorT p = PointTraitsN<PointT, N, T>::getPosition(*pi);
 
-        for (long j = 0; j < num_newton_iters; ++j)
+        for (intx j = 0; j < num_newton_iters; ++j)
         {
           // We're trying to minimize (Q(t) - P)^2, i.e. finding the root of (Q(t) - P).Q'(t) = 0. The corresponding
           // Newton-Raphson step is t <-- t - f(t)/f'(t), where f(t) = (Q(t) - P).Q'(t). Differentiating, we get

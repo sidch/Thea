@@ -28,11 +28,11 @@ main(int argc, char * argv[])
 void
 printMatrix(MatrixX<float> const & m)
 {
-  for (long r = 0; r < m.rows(); ++r)
+  for (intx r = 0; r < m.rows(); ++r)
   {
     cout << " [";
 
-    for (long c = 0; c < m.cols(); ++c)
+    for (intx c = 0; c < m.cols(); ++c)
       cout << '\t' << m(r, c);
 
     cout << "\t]" << endl;

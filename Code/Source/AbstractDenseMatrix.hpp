@@ -59,10 +59,10 @@ class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMat
     THEA_DEF_POINTER_TYPES(AbstractDenseMatrix, std::shared_ptr, std::weak_ptr)
 
     /** Is the matrix stored in row-major format? */
-    virtual bool isRowMajor() const = 0;
+    virtual int8 isRowMajor() const = 0;
 
     /** Is the matrix stored in column-major format? */
-    virtual bool isColumnMajor() const = 0;
+    virtual int8 isColumnMajor() const = 0;
 
     /** Get a pointer to the beginning of the matrix's data block. */
     virtual T const * data() const = 0;

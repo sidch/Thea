@@ -53,13 +53,15 @@ class THEA_API AnalyticD1ScalarFunction : public virtual ScalarFunction
   public:
     THEA_DEF_POINTER_TYPES(AnalyticD1ScalarFunction, std::shared_ptr, std::weak_ptr)
 
-    /** Compute the gradient of the function at a given point. */
-    virtual void gradientAt(float const * p, float * result) const = 0;
+    /** Compute the gradient of the function at a given point. Returns true on success, false on error. */
+    virtual bool gradientAt(float32 const * p, float32 * result) const = 0;
 
-    /** Compute the gradient of the function at a given point. */
-    virtual void gradientAt(double const * p, double * result) const = 0;
+    /** Compute the gradient of the function at a given point. Returns true on success, false on error. */
+    virtual bool gradientAt(float64 const * p, float64 * result) const = 0;
 
-    /** If the function has an analytic second derivative, cast this object to the corresponding type. */
+    /**
+     * If the function has an analytic second derivative, cast this object to the corresponding type. Returns null on failure.
+     */
     virtual AnalyticD2ScalarFunction const * asAnalyticD2() const = 0;
 
 }; // class AnalyticD1ScalarFunction

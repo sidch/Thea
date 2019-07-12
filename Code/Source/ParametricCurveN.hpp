@@ -73,10 +73,10 @@ class /* THEA_API */ ParametricCurveN
     T const & maxParam() const { return max_param; }
 
     /** Get the order of the curve, or a negative value if the curve has no well-defined order. */
-    virtual long getOrder() const { return -1; }
+    virtual intx getOrder() const { return -1; }
 
     /** Get the number of control vectors of the curve, or a negative value if the curve is not defined by control vectors. */
-    virtual long numControls() const { return -1; }
+    virtual intx numControls() const { return -1; }
 
     /** Get the point on the curve with parameter value \a t, in the range [minParam(), maxParam()]. */
     VectorT getPoint(T const & t) const
@@ -88,13 +88,13 @@ class /* THEA_API */ ParametricCurveN
      * Check if the curve's getDeriv() function supports evaluating derivatives of a given order (1 for first derivative, 2 for
      * second, and so on).
      */
-    virtual bool hasDeriv(long deriv_order) const = 0;
+    virtual bool hasDeriv(intx deriv_order) const = 0;
 
     /**
      * Get the first, second, or higher derivative (specified by \a deriv_order = 1, 2, ...) of the curve at parameter value
      * \a t, in the range [minParam(), maxParam()].
      */
-    VectorT getDeriv(T const & t, long deriv_order = 1) const
+    VectorT getDeriv(T const & t, intx deriv_order = 1) const
     {
       return eval(t, deriv_order);
     }
@@ -110,14 +110,14 @@ class /* THEA_API */ ParametricCurveN
      * @param num_arc_samples If non-negative, specifies the number of samples for approximating arc lengths along the curve
      *   (must be at least 2). This value should normally be left at the default setting.
      */
-    virtual void getEvenlySpacedPoints(long num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
-                                       long num_arc_samples = -1) const
+    virtual void getEvenlySpacedPoints(intx num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
+                                       intx num_arc_samples = -1) const
     {
       alwaysAssertM(num_points >= 2, "ParametricCurveN: At least two evenly-spaced points must be sampled");
 
       if (num_arc_samples < 0)
       {
-        long curve_complexity = std::max(2L, std::max(numControls() - 1, getOrder()));
+        intx curve_complexity = std::max(2L, std::max(numControls() - 1, getOrder()));
         num_arc_samples = curve_complexity * 50;
       }
 
@@ -127,7 +127,7 @@ class /* THEA_API */ ParametricCurveN
       Array<VectorT> arc_samples((size_t)num_arc_samples);
       T arc_scaling = (max_param - min_param) / static_cast<T>(num_arc_samples - 1);
       T t;
-      for (long i = 0; i < num_arc_samples; ++i)
+      for (intx i = 0; i < num_arc_samples; ++i)
       {
         t = i * arc_scaling + min_param;
         arc_samples[(size_t)i] = eval(t, 0);
@@ -187,7 +187,7 @@ class /* THEA_API */ ParametricCurveN
      *
      * @return The desired position or derivative vector.
      */
-    virtual VectorT eval(T const & t, long deriv_order) const = 0;
+    virtual VectorT eval(T const & t, intx deriv_order) const = 0;
 
     /** Estimate curve parameters for a sequence of points, by accumulating pairwise segment lengths along the sequence. */
     template <typename InputIterator>

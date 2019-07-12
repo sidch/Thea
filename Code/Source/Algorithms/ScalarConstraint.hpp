@@ -60,11 +60,11 @@ class ScalarConstraint
     /** Get the function. */
     virtual ScalarFunction const & getFunction() const = 0;
 
-    /** Get the comparison operator. */
-    virtual CompareOp getCompareOp() const = 0;
+    /** Get the comparison operator, corresponding to a value of the CompareOp enum class. */
+    virtual int32 getCompareOp() const = 0;
 
     /** Get the right-hand side. */
-    virtual double getRHS() const = 0;
+    virtual float64 getRHS() const = 0;
 
 }; // class ScalarConstraint
 

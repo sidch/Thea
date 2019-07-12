@@ -21,7 +21,7 @@ zernike(ImageMatrix<T> const & m)
   zernike.compute(m, 0.5 * (m.cols() - 1), 0.5 * (m.rows() - 1),
                      0.5 * sqrt(Math::square(m.cols()) + Math::square(m.rows())), moments);
 
-  for (long i = 0; i < moments.cols(); ++i)
+  for (intx i = 0; i < moments.cols(); ++i)
     THEA_CONSOLE<< "Moment magnitude [" << i << "] = " << moments.col(i).norm();
 
   return 0;

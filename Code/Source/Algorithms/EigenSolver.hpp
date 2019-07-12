@@ -52,7 +52,7 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * Eigenvalue solver interface. The operator matrix must currently be real (and double-precision), though complex
+ * Eigenvalue solver interface. The operator matrix must currently be real (and float64-precision), though complex
  * eigenvalues/eigenvectors can be returned.
  *
  * To create an instance of an EigenSolver, one typically loads the plugin for the relevant implementation and calls
@@ -62,7 +62,7 @@ class THEA_API EigenSolver : public virtual AbstractNamedObject
 {
   public:
     /** Destructor. */
-    virtual ~EigenSolver() {}
+    virtual ~EigenSolver() = 0;
 
     /**
      * Find the eigenvalues (and optionally eigenvectors) of a matrix, optionally requesting a particular number of eigenpairs.
@@ -77,21 +77,21 @@ class THEA_API EigenSolver : public virtual AbstractNamedObject
      *
      * @return The number of eigenpairs found, or a negative number on error.
      */
-    virtual long solve(AbstractMatrix<double> const & m, bool compute_eigenvectors = true, long num_requested_eigenpairs = -1,
-                       AbstractOptions const * options = NULL) = 0;
+    virtual int64 solve(AbstractMatrix<float64> const & m, int8 compute_eigenvectors = true,
+                        int64 num_requested_eigenpairs = -1, AbstractOptions const * options = NULL) = 0;
 
     /** Get the size of each eigenvector, which is also the number of rows (or columns) of the input operator matrix. */
-    virtual long dims() const = 0;
+    virtual int64 dims() const = 0;
 
     /** Get the number of eigenpairs computed by the last call to solve(). */
-    virtual long numEigenpairs() const = 0;
+    virtual int64 numEigenpairs() const = 0;
 
     /**
      * Get the \a i'th eigenvalue computed by the last call to solve(), as a complex number with real and imaginary parts.
      *
      * @return True on success, false on error.
      */
-    virtual bool getEigenvalue(long i, double & re, double & im) const = 0;
+    virtual int8 getEigenvalue(int64 i, float64 & re, float64 & im) const = 0;
 
     /**
      * Get the \a i'th eigenvector computed by the last call to solve(), if available. The vector is returned as two arrays of
@@ -100,19 +100,22 @@ class THEA_API EigenSolver : public virtual AbstractNamedObject
      *
      * @return True on success, false on error.
      */
-    virtual bool getEigenvector(long i, double const * & re, double const * & im) const = 0;
+    virtual int8 getEigenvector(int64 i, float64 const * & re, float64 const * & im) const = 0;
 
     /** Check if the solver has stored the relative error of each eigenpair. */
-    virtual bool hasRelativeErrors() const = 0;
+    virtual int8 hasRelativeErrors() const = 0;
 
     /**
      * Get the relative error of the \a i'th eigenpair computed by the last call to solve(), if available.
      *
      * @return True on success, false on error.
      */
-    virtual bool getRelativeError(long i, double & error) const = 0;
+    virtual int8 getRelativeError(int64 i, float64 & error) const = 0;
 
 }; // class EigenSolver
+
+// Pure virtual destructor should have implementation
+inline EigenSolver::~EigenSolver() {}
 
 /** An interface for a eigensolver factory. Should be implemented and registered by each actual eigensolver. */
 class THEA_API EigenSolverFactory

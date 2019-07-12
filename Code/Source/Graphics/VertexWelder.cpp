@@ -60,9 +60,9 @@ class VertexWelderImpl
 
     struct Long3
     {
-      long x, y, z;
+      intx x, y, z;
 
-      Long3(long x_, long y_, long z_) : x(x_), y(y_), z(z_) {}
+      Long3(intx x_, intx y_, intx z_) : x(x_), y(y_), z(z_) {}
 
       bool operator==(Long3 const & other) const { return x == other.x && y == other.y && z == other.z; }
     };
@@ -82,9 +82,9 @@ class VertexWelderImpl
 
     Long3 toGrid(Vector3 const & pos) const
     {
-      return Long3(static_cast<long>(std::floor(pos.x() / (double)weld_radius)),
-                   static_cast<long>(std::floor(pos.y() / (double)weld_radius)),
-                   static_cast<long>(std::floor(pos.z() / (double)weld_radius)));
+      return Long3(static_cast<intx>(std::floor(pos.x() / (double)weld_radius)),
+                   static_cast<intx>(std::floor(pos.y() / (double)weld_radius)),
+                   static_cast<intx>(std::floor(pos.z() / (double)weld_radius)));
     }
 
     Real weld_radius;

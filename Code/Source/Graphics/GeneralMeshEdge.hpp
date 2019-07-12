@@ -198,7 +198,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     }
 
     /** Get the number of faces incident on the edge. */
-    long numFaces() const { return (long)faces.size(); }
+    intx numFaces() const { return (intx)faces.size(); }
 
     /** Get an iterator pointing to the first face. */
     FaceConstIterator facesBegin() const { return faces.begin(); }

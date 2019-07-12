@@ -130,11 +130,11 @@ class SampledSurface
 
     /** Compute sample points with normals on the mesh. */
     template <typename MeshT>
-    void computeSamples(MeshSampler<MeshT> & sampler, long num_samples, Array<SurfaceSample> & samples)
+    void computeSamples(MeshSampler<MeshT> & sampler, intx num_samples, Array<SurfaceSample> & samples)
     {
       typedef typename MeshSampler<MeshT>::Triangle Triangle;
 
-      static long const DEFAULT_NUM_SAMPLES = 5000;
+      static intx const DEFAULT_NUM_SAMPLES = 5000;
       if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
 
       Array<Vector3> positions;
@@ -164,7 +164,7 @@ class SampledSurface
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    SampledSurface(long num_samples, Vector3 const * positions, Vector3 const * normals, Real normalization_scale = -1)
+    SampledSurface(intx num_samples, Vector3 const * positions, Vector3 const * normals, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
     {
       alwaysAssertM(num_samples >= 0,   "SampledSurface: Number of precomputed samples must be non-negative");
@@ -188,7 +188,7 @@ class SampledSurface
      *   diameter will be used.
      */
     template <typename MeshT>
-    SampledSurface(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    SampledSurface(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh);
@@ -211,7 +211,7 @@ class SampledSurface
      *   diameter will be used.
      */
     template <typename MeshT>
-    SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh_group);
@@ -242,7 +242,7 @@ class SampledSurface
       // Cache the external samples for quick access to positions and normals
       typedef typename ExternalSampleKDTree::Element ExternalSample;
       ExternalSample const * ext_samples = precomp_kdtree->getElements();
-      long num_samples = precomp_kdtree->numElements();
+      intx num_samples = precomp_kdtree->numElements();
 
       samples.resize((size_t)num_samples);
       for (size_t i = 0; i < samples.size(); ++i)
@@ -285,9 +285,9 @@ class SampledSurface
     Array<SurfaceSample> const & getSamples() const { return samples; }
 
     /** Get a particular sample. */
-    SurfaceSample const & getSample(long index) const
+    SurfaceSample const & getSample(intx index) const
     {
-      debugAssertM(index >= 0 && index < (long)samples.size(), "SampledSurface: Sample index out of bounds");
+      debugAssertM(index >= 0 && index < (intx)samples.size(), "SampledSurface: Sample index out of bounds");
       return samples[(size_t)index];
     }
 
@@ -342,14 +342,14 @@ class SampledSurface
 
       for (size_t i = 0; i < n; ++i)
       {
-        positions[i] = getSamplePosition((long)i);
-        normals[i] = getSampleNormal((long)i);
+        positions[i] = getSamplePosition((intx)i);
+        normals[i] = getSampleNormal((intx)i);
       }
 
       sample_graph = new SampleGraph(options);
 
       if (n > 0)
-        sample_graph->setSamples((long)n, &positions[0], &normals[0]);
+        sample_graph->setSamples((intx)n, &positions[0], &normals[0]);
 
       sample_graph->init();
 
@@ -365,20 +365,20 @@ class SampledSurface
     }
 
     /** Get the number of surface samples. */
-    long numSamples() const
+    intx numSamples() const
     {
-      return (long)samples.size();
+      return (intx)samples.size();
     }
 
     /** Get the position of the surface sample with index \a index. */
-    Vector3 getSamplePosition(long index) const
+    Vector3 getSamplePosition(intx index) const
     {
       debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
       return samples[(size_t)index].getPosition();
     }
 
     /** Get the normal of the surface sample with index \a index. */
-    Vector3 getSampleNormal(long index) const
+    Vector3 getSampleNormal(intx index) const
     {
       debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
       return samples[(size_t)index].getNormal();

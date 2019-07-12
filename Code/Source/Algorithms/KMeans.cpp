@@ -103,7 +103,7 @@ KMeans::Options::deserialize(TextInputStream & input, Codec const & codec)
     input.readSymbol("=");
 
     if (field == "max_iterations")
-      max_iterations = (long)input.readNumber();
+      max_iterations = (intx)input.readNumber();
     else if (field == "max_time")
       max_time = input.readNumber();
     else if (field == "seeding")
@@ -168,58 +168,58 @@ KMeans::save(std::string const & path) const
 void
 KMeans::deserialize(BinaryInputStream & input, Codec const & codec)
 {
-  long num_clusters = input.readInt64();
+  intx num_clusters = input.readInt64();
   if (num_clusters < 0) throw Error("KMeans: Negative number of clusters read");
 
-  long num_point_features = input.readInt64();
+  intx num_point_features = input.readInt64();
   if (num_point_features < 0) throw Error("KMeans: Negative number of point features read");
 
   centers.resize(num_clusters, num_point_features);
-  for (long i = 0; i < num_clusters; ++i)
-    for (long j = 0; j < num_point_features; ++j)
+  for (intx i = 0; i < num_clusters; ++i)
+    for (intx j = 0; j < num_point_features; ++j)
       centers(i, j) = input.readFloat64();
 }
 
 void
 KMeans::deserialize(TextInputStream & input, Codec const & codec)
 {
-  long num_clusters = (long)input.readNumber();
+  intx num_clusters = (intx)input.readNumber();
   if (num_clusters < 0) throw Error("KMeans: Negative number of clusters read");
 
-  long num_point_features = (long)input.readNumber();
+  intx num_point_features = (intx)input.readNumber();
   if (num_point_features < 0) throw Error("KMeans: Negative number of point features read");
 
   centers.resize(num_clusters, num_point_features);
-  for (long i = 0; i < num_clusters; ++i)
-    for (long j = 0; j < num_point_features; ++j)
+  for (intx i = 0; i < num_clusters; ++i)
+    for (intx j = 0; j < num_point_features; ++j)
       centers(i, j) = input.readNumber();
 }
 
 void
 KMeans::serialize(BinaryOutputStream & output, Codec const & codec) const
 {
-  long num_clusters = numClusters();
-  long num_point_features = numPointFeatures();
+  intx num_clusters = numClusters();
+  intx num_point_features = numPointFeatures();
 
   output.writeInt64(num_clusters);
   output.writeInt64(num_point_features);
 
-  for (long i = 0; i < num_clusters; ++i)
-    for (long j = 0; j < num_point_features; ++j)
+  for (intx i = 0; i < num_clusters; ++i)
+    for (intx j = 0; j < num_point_features; ++j)
       output.writeFloat64(centers(i, j));
 }
 
 void
 KMeans::serialize(TextOutputStream & output, Codec const & codec) const
 {
-  long num_clusters = numClusters();
-  long num_point_features = numPointFeatures();
+  intx num_clusters = numClusters();
+  intx num_point_features = numPointFeatures();
 
   output.printf("%ld %ld\n", num_clusters, num_point_features);
 
-  for (long i = 0; i < num_clusters; ++i)
+  for (intx i = 0; i < num_clusters; ++i)
   {
-    for (long j = 0; j < num_point_features; ++j)
+    for (intx j = 0; j < num_point_features; ++j)
     {
       if (j == num_point_features - 1)
         output.printf("%lg\n", centers(i, j));

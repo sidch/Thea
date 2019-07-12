@@ -51,16 +51,16 @@ namespace Thea {
  * Union-find data structure. Original code by Kartik Kukreja, https://github.com/kartikkukreja/ . The data structure will save
  * a copy of each object to support getObjectID(), so T should be easily copyable (a small/POD class, or a pointer).
  */
-template <typename T = long>
+template <typename T = intx>
 class UnionFind
 {
   public:
     /**
      * Create a union-find data structure for \a n objects, which will be assumed to have sequential IDs from 0 to \a n - 1. If
      * you use this constructor, note that getObjectID() will return the expected results (operating as an identity function)
-     * only if <code>T = long</code>. Else, avoid calling getObjectID().
+     * only if <code>T = intx</code>. Else, avoid calling getObjectID().
      */
-    UnionFind(long n)
+    UnionFind(intx n)
     : has_objects(false)
     {
       init(n);
@@ -74,7 +74,7 @@ class UnionFind
     template <typename InputIterator> UnionFind(InputIterator begin, InputIterator end)
     : has_objects(true)
     {
-      long n = 0;
+      intx n = 0;
       for (InputIterator iter = begin; iter != end; ++iter, ++n)
         objects[*iter] = n;
 
@@ -90,26 +90,26 @@ class UnionFind
 
     /**
      * Get the ID of an object, or a negative value if it is not present in the data structure. Note that if you used the
-     * UnionFind(long) constructor, this function will give the expected results (operating as an identity function) only if
-     * <code>T = long</code>.
+     * UnionFind(intx) constructor, this function will give the expected results (operating as an identity function) only if
+     * <code>T = intx</code>.
      */
-    long getObjectID(T const & obj) const
+    intx getObjectID(T const & obj) const
     {
       typename ObjectMap::const_iterator existing = objects.find(obj);
       return (existing == objects.end() ? -1 : existing->second);
     }
 
     /** Return the ID of the representative element of the set corresponding to the object with ID \a p. */
-    long find(long p) const
+    intx find(intx p) const
     {
-      long root = p;
+      intx root = p;
 
       while (root != id[root])
         root = id[root];
 
       while (p != root)
       {
-        long newp = id[p];
+        intx newp = id[p];
         id[p] = root;
         p = newp;
       }
@@ -118,10 +118,10 @@ class UnionFind
     }
 
     /** Replace sets containing \a x and \a y with their union. */
-    void merge(long x, long y)
+    void merge(intx x, intx y)
     {
-      long i = find(x);
-      long j = find(y);
+      intx i = find(x);
+      intx j = find(y);
 
       if (i == j)
         return;
@@ -142,52 +142,52 @@ class UnionFind
     }
 
     /** Are objects \a x and \a y in the same set? */
-    bool sameSet(long x, long y) const
+    bool sameSet(intx x, intx y) const
     {
       return find(x) == find(y);
     }
 
     /** Get the number of disjoint sets. */
-    long numSets() const
+    intx numSets() const
     {
       return count;
     }
 
     /** Get the size of the set containing object \a p. */
-    long sizeOfSet(long p) const
+    intx sizeOfSet(intx p) const
     {
       return sz[find(p)];
     }
 
   private:
     /** Initialize buffers for a set of \a n objects. */
-    void init(long n)
+    void init(intx n)
     {
       count = n;
-      id = new long[n];
-      sz = new long[n];
+      id = new intx[n];
+      sz = new intx[n];
 
-      for (long i = 0; i < n; ++i)
+      for (intx i = 0; i < n; ++i)
       {
         id[i] = i;
         sz[i] = 1;
       }
     }
 
-    typedef UnorderedMap<T, long> ObjectMap;  ///< Map from objects to their IDs.
+    typedef UnorderedMap<T, intx> ObjectMap;  ///< Map from objects to their IDs.
 
     bool has_objects;
     ObjectMap objects;
-    long * id;
-    long * sz;
-    long count;
+    intx * id;
+    intx * sz;
+    intx count;
 
 }; // class UnionFind
 
-// Specialization for T = long
+// Specialization for T = intx
 template <>
-inline long
-UnionFind<long>::getObjectID(long const & obj) const
+inline intx
+UnionFind<intx>::getObjectID(intx const & obj) const
 {
   if (has_objects)
   {

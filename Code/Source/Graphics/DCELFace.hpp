@@ -100,10 +100,10 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     bool isQuad() const { return num_edges == 4; }
 
     /** Get the index of the face, typically in the source file (or negative if unindexed). */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Set the index of the face, typically from the source file (or negative if unindexed). */
-    void setIndex(long index_) { index = index_; }
+    void setIndex(intx index_) { index = index_; }
 
     /** Update the face normal by recomputing it from vertex data. */
     void updateNormal()
@@ -121,7 +121,7 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
         return Vector3::Zero();
 
       Vector3 c = halfedge->getOrigin()->getPosition();
-      long nv = 1;
+      intx nv = 1;
       Halfedge const * e = halfedge->next();
       while (e != halfedge)
       {
@@ -180,7 +180,7 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     template <typename _VertexAttribute, typename _HalfedgeAttribute, typename _FaceAttribute> friend class DCELMesh;
 
     Halfedge * halfedge;
-    long index;
+    intx index;
     int num_edges;
 
 #if 0

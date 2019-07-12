@@ -187,7 +187,7 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
 
 } // namespace FileSystemInternal
 
-long
+intx
 FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & objects, int types,
                                  std::string const & patterns, bool recursive, bool ignore_case)
 {
@@ -223,7 +223,7 @@ FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & o
         objects.push_back(iter->path().string());
   }
 
-  return (long)objects.size();
+  return (intx)objects.size();
 }
 
 bool

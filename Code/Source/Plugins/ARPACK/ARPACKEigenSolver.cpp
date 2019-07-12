@@ -53,8 +53,8 @@ ARPACKEigenSolver::ARPACKEigenSolver(std::string const & name_)
 ARPACKEigenSolver::~ARPACKEigenSolver()
 {}
 
-long
-ARPACKEigenSolver::solve(AbstractMatrix<double> const & m, bool compute_eigenvectors, long num_requested_eigenpairs,
+int64
+ARPACKEigenSolver::solve(AbstractMatrix<float64> const & m, int8 compute_eigenvectors, int64 num_requested_eigenpairs,
                          AbstractOptions const * options)
 {
   if (!Math::isSquare(m))
@@ -76,23 +76,23 @@ ARPACKEigenSolver::solve(AbstractMatrix<double> const & m, bool compute_eigenvec
   if (num_requested_eigenpairs < 0)
     num_requested_eigenpairs = ndims;
 
-  char const * DEFAULT_WHICH = "LM";
-  int const DEFAULT_NCV = 0;
-  int const DEFAULT_TOL = std::max(1e-7, 5e-9 * ndims);
-  int const DEFAULT_MAXIT = 100;
-  int const DEFAULT_SIGMA = 0;
+  char     const * DEFAULT_WHICH = "LM";
+  int32    const   DEFAULT_NCV = 0;
+  float64  const   DEFAULT_TOL = std::max(1e-7, 5e-9 * ndims);
+  int32    const   DEFAULT_MAXIT = 100;
+  int32    const   DEFAULT_SIGMA = 0;
 
   std::string which_s = options ? options->getString("which", DEFAULT_WHICH) : DEFAULT_WHICH;
   char which[3];
   std::strncpy(which, which_s.c_str(), 2);  // make a copy since ARPACK++ doesn't const-protect this string
   which[2] = 0;
 
-  int ncv     =  options ? (int)options->getInteger("ncv",   DEFAULT_NCV  ) : DEFAULT_NCV;
-  double tol  =  options ?      options->getFloat  ("tol",   DEFAULT_TOL  ) : DEFAULT_TOL;
-  int maxit   =  options ? (int)options->getInteger("maxit", DEFAULT_MAXIT) : DEFAULT_MAXIT;
+  int32 ncv    =  options ? (int32)options->getInteger("ncv",   DEFAULT_NCV  ) : DEFAULT_NCV;
+  float64 tol  =  options ?        options->getFloat  ("tol",   DEFAULT_TOL  ) : DEFAULT_TOL;
+  int32 maxit  =  options ? (int32)options->getInteger("maxit", DEFAULT_MAXIT) : DEFAULT_MAXIT;
 
-  double sigma = 0;
-  bool shift_invert = options && options->hasOption("sigma");
+  float64 sigma = 0;
+  int8 shift_invert = options && options->hasOption("sigma");
   if (shift_invert)
     sigma = options->getFloat("sigma", DEFAULT_SIGMA);
 
@@ -110,10 +110,10 @@ ARPACKEigenSolver::solve(AbstractMatrix<double> const & m, bool compute_eigenvec
   }
 }
 
-bool
-ARPACKEigenSolver::getEigenvalue(long i, double & re, double & im) const
+int8
+ARPACKEigenSolver::getEigenvalue(int64 i, float64 & re, float64 & im) const
 {
-  if (i < 0 || i >= (long)eigenvalues[0].size())
+  if (i < 0 || i >= (int64)eigenvalues[0].size())
   {
     THEA_ERROR << getName() << ": Index of eigenvalue out of range";
     return false;
@@ -125,16 +125,16 @@ ARPACKEigenSolver::getEigenvalue(long i, double & re, double & im) const
   return true;
 }
 
-bool
-ARPACKEigenSolver::getEigenvector(long i, double const * & re, double const * & im) const
+int8
+ARPACKEigenSolver::getEigenvector(int64 i, float64 const * & re, float64 const * & im) const
 {
-  if (i < 0 || i >= (long)eigenvalues[0].size())
+  if (i < 0 || i >= (int64)eigenvalues[0].size())
   {
     THEA_ERROR << getName() << ": Index of eigenvector out of range";
     return false;
   }
 
-  if (i >= (long)eigenvectors[0].size())  // eigenvectors were not computed
+  if (i >= (int64)eigenvectors[0].size())  // eigenvectors were not computed
     return false;
 
   re = eigenvectors[0][(size_t)i].data();
@@ -143,8 +143,8 @@ ARPACKEigenSolver::getEigenvector(long i, double const * & re, double const * & 
   return true;
 }
 
-bool
-ARPACKEigenSolver::getRelativeError(long i, double & error) const
+int8
+ARPACKEigenSolver::getRelativeError(int64 i, float64 & error) const
 {
   THEA_ERROR << getName() << ": Relative errors not available";
   return false;

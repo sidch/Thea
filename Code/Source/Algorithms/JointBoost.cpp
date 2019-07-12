@@ -72,7 +72,7 @@ JointBoost::Options::Options()
 {
 }
 
-JointBoost::JointBoost(long num_classes_, long num_features_, Options const & options_)
+JointBoost::JointBoost(intx num_classes_, intx num_features_, Options const & options_)
 : num_classes(num_classes_),
   num_features(num_features_),
   options(options_)
@@ -101,7 +101,7 @@ JointBoost::clear()
 }
 
 std::string
-JointBoost::getClassName(long i) const
+JointBoost::getClassName(intx i) const
 {
   if (class_names.empty())
   {
@@ -113,7 +113,7 @@ JointBoost::getClassName(long i) const
     return class_names[(size_t)i];
 }
 
-long
+intx
 JointBoost::train(TrainingData const & training_data_, TrainingData const * validation_data_)
 {
   alwaysAssertM(training_data_.numExamples() > 0, "JointBoost: No training examples provided");
@@ -123,8 +123,8 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
   training_data = &training_data_;
 
   // Set values of parameters
-  long min_rounds = options.min_boosting_rounds;
-  long max_rounds = options.max_boosting_rounds;
+  intx min_rounds = options.min_boosting_rounds;
+  intx max_rounds = options.max_boosting_rounds;
 
   if (min_rounds <= 0)
     min_rounds = 1;
@@ -149,22 +149,22 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
 
   // Get class names from training data, if available
   training_data->getClassNames(class_names);
-  alwaysAssertM(class_names.empty() || (long)class_names.size() == num_classes,
+  alwaysAssertM(class_names.empty() || (intx)class_names.size() == num_classes,
                 "JointBoost: Incorrect number of class names specified");
 
   // Get classes for training data
-  Array<long> classes;
+  Array<intx> classes;
   training_data->getClasses(classes);
 
   // Initialize the weights
   Array<double> training_weights;
   training_data->getWeights(training_weights);
-  weights.resize(num_classes, (long)classes.size());
+  weights.resize(num_classes, (intx)classes.size());
   if (!training_weights.empty())
   {
     for (size_t i = 0; i < training_weights.size(); ++i)
-      for (long c = 0; c < num_classes; ++c)
-        weights(c, (long)i) = training_weights[i];
+      for (intx c = 0; c < num_classes; ++c)
+        weights(c, (intx)i) = training_weights[i];
   }
   else
     weights.fill(1);
@@ -187,7 +187,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
   stumps.clear();
   double error = -1;
   double validation_error = -1;
-  for (long round = 0; round < max_rounds; ++round)
+  for (intx round = 0; round < max_rounds; ++round)
   {
     if (options.verbose) THEA_CONSOLE << "JointBoost: Training round " << round;
 
@@ -196,12 +196,12 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
 
     // Compute the k values for the stump
     stump->k.resize((size_t)num_classes, 0);
-    for (long c = 0; c < num_classes; ++c)
+    for (intx c = 0; c < num_classes; ++c)
     {
       double k_numer = 0, k_denom = 0;
       for (size_t i = 0; i < classes.size(); ++i)
       {
-        double w = weights(c, (long)i);
+        double w = weights(c, (intx)i);
         int z = (classes[i] == c ? +1 : -1);
 
         k_numer += (w * z);
@@ -264,19 +264,19 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     Array<double> stump_features;
     training_data->getFeature(stump->f, stump_features);
 
-    for (long c = 0; c < num_classes; ++c)
+    for (intx c = 0; c < num_classes; ++c)
       for (size_t i = 0; i < classes.size(); ++i)
       {
-        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (intx)i);
 
         int z = (classes[i] == c ? +1 : -1);
         double h = (*stump)(stump_features[i], c);
 
         // THEA_CONSOLE << "      h[i = " << i << ", c = " << c << "] = " << h << ", z = " << z;
 
-        weights(c, (long)i) *= std::exp(-z * h);
+        weights(c, (intx)i) *= std::exp(-z * h);
 
-        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (long)i);
+        // THEA_CONSOLE << "      weights[c = " << c << ", i = " << i << "] = " << weights(c, (intx)i);
       }
   }
 
@@ -296,11 +296,11 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
       THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error;
   }
 
-  return (long)stumps.size();
+  return (intx)stumps.size();
 }
 
 double
-JointBoost::optimizeStump(SharedStump & stump, Array<long> const & stump_classes)
+JointBoost::optimizeStump(SharedStump & stump, Array<intx> const & stump_classes)
 {
   if (num_features <= 0)
   {
@@ -312,7 +312,7 @@ JointBoost::optimizeStump(SharedStump & stump, Array<long> const & stump_classes
   Array<int32> candidate_features;
   if (feature_sampling_fraction >= 1)
   {
-    for (long f = 0; f < num_features; ++f)
+    for (intx f = 0; f < num_features; ++f)
       candidate_features.push_back(f);
   }
   else
@@ -322,7 +322,7 @@ JointBoost::optimizeStump(SharedStump & stump, Array<long> const & stump_classes
     Random::common().integers(0, (int32)num_features - 1, num_candidate_features, &candidate_features[0]);
   }
 
-  if (options.verbose && (long)candidate_features.size() < num_features)
+  if (options.verbose && (intx)candidate_features.size() < num_features)
     THEA_CONSOLE << "JointBoost:     Optimizing over " << candidate_features.size() << " randomly selected feature(s)";
 
   SharedStump test = stump;
@@ -357,20 +357,20 @@ JointBoost::optimizeStump(SharedStump & stump, Array<long> const & stump_classes
 
 double
 JointBoost::optimizeStumpExhaustive(SharedStump & stump, Array<double> const & stump_features,
-                                    Array<long> const & stump_classes)
+                                    Array<intx> const & stump_classes)
 {
   // Loop over all possible subsets of classes
   SharedStump test = stump;
-  unsigned long num_subsets = (1L << num_classes);  // assume no more classes than an unsigned long can hold
+  uintx num_subsets = ((uintx)1 << num_classes);  // assume no more classes than an uintx can hold
   double min_err = -1;
   double cum_num_thresholds = 0;
-  for (unsigned long subset = 1; subset + 1 < num_subsets; ++subset)
+  for (uintx subset = 1; subset + 1 < num_subsets; ++subset)
   {
     test.n = SharingSet((SharingSet::size_type)num_classes, subset);
 
     // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
 
-    long num_thresholds = 0;
+    intx num_thresholds = 0;
     double err = fitStump(test, stump_features, stump_classes, &num_thresholds);
     if (err >= 0 && (min_err < 0 || err < min_err))
     {
@@ -392,7 +392,7 @@ JointBoost::optimizeStumpExhaustive(SharedStump & stump, Array<double> const & s
 
 double
 JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump_features,
-                                Array<long> const & stump_classes)
+                                Array<intx> const & stump_classes)
 {
   Array<SharedStump> candidate_stumps;
   Array<double> candidate_errors;
@@ -400,14 +400,14 @@ JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump
   SharedStump test = stump;
   SharingSet current_n((SharingSet::size_type)num_classes, 0);  // initially empty
   double cum_num_thresholds = 0;
-  long num_fitted_stumps = 0;
-  for (long c = 0; c < num_classes - 1; ++c)
+  intx num_fitted_stumps = 0;
+  for (intx c = 0; c < num_classes - 1; ++c)
   {
     // Add the single new class to the current set that jointly gives the minimum error
     SharedStump best_stump;
     double min_err = -1;
     bool min_found = false;
-    for (long c = 0; c < num_classes - 1; ++c)
+    for (intx c = 0; c < num_classes - 1; ++c)
     {
       if (current_n[(SharingSet::size_type)c])
         continue;
@@ -417,7 +417,7 @@ JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump
 
       // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
 
-      long num_thresholds = 0;
+      intx num_thresholds = 0;
       double err = fitStump(test, stump_features, stump_classes, &num_thresholds);
       if (err >= 0 && (min_err < 0 || err < min_err))
       {
@@ -482,14 +482,14 @@ sortIndexed(Array<double> const & values, Array<size_t> & sorted_indices)
 
 void
 getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Array<double> const & features,
-                          Array<long> const & classes, Array<size_t> const & sorted_indices, Array<int> & accuracy)
+                          Array<intx> const & classes, Array<size_t> const & sorted_indices, Array<int> & accuracy)
 {
   accuracy.resize(features.size());
   for (size_t i = 0; i < features.size(); ++i)
   {
     size_t index = sorted_indices[i];
 
-    long c = classes[index];
+    intx c = classes[index];
     double f = features[index];
     bool is_positive = pos_classes[(SharingSet::size_type)c];
     bool correct = ((is_positive && f > split_value) || (!is_positive && f <= split_value));
@@ -498,7 +498,7 @@ getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Ar
 }
 
 double
-splitQuality(MatrixX<double> const & weights, Array<long> const & classes, Array<int> const & accuracy)
+splitQuality(MatrixX<double> const & weights, Array<intx> const & classes, Array<int> const & accuracy)
 {
   // We'll define the split quality as
   //
@@ -511,14 +511,14 @@ splitQuality(MatrixX<double> const & weights, Array<long> const & classes, Array
 
   double quality = 0;
   for (size_t i = 0; i < accuracy.size(); ++i)
-    quality += (accuracy[i] * weights(classes[i], (long)i));
+    quality += (accuracy[i] * weights(classes[i], (intx)i));
 
   return quality;
 }
 
 void
 getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & weights, Array<double> const & features,
-                       Array<long> const & classes, long max_thresholds, Array<double> & thresholds)
+                       Array<intx> const & classes, intx max_thresholds, Array<double> & thresholds)
 {
   // A good threshold separates the positive classes from the negative classes. In other words, we want either many positive
   // examples > theta and many negative examples <= theta, or vice versa. Note that the positive examples need *not* be mostly
@@ -543,7 +543,7 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
   // Generate samples and adjust their position to be better cuts
   typedef UnorderedSet<size_t> IndexSet;
   IndexSet threshold_set;
-  for (long t = 0; t < max_thresholds; ++t)
+  for (intx t = 0; t < max_thresholds; ++t)
   {
     // Start with a random seed
     size_t index = (size_t)Random::common().integer(0, (int32)sorted_indices.size() - 1);
@@ -582,14 +582,14 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
           if (offset < 0)  // move left
           {
             // The current example's classification accuracy is inverted. The offset example remains unchanged.
-            long c = classes[mapped_index];
-            offset_quality -= 2 * (accuracy[mapped_index] * weights(c, (long)mapped_index));
+            intx c = classes[mapped_index];
+            offset_quality -= 2 * (accuracy[mapped_index] * weights(c, (intx)mapped_index));
           }
           else // move right
           {
             // The offset example's classification accuracy is inverted. The current example remains unchanged.
-            long c = classes[mapped_offset_index];
-            offset_quality -= 2 * (accuracy[mapped_offset_index] * weights(c, (long)mapped_offset_index));
+            intx c = classes[mapped_offset_index];
+            offset_quality -= 2 * (accuracy[mapped_offset_index] * weights(c, (intx)mapped_offset_index));
           }
         }
 
@@ -629,8 +629,8 @@ getCandidateThresholds(SharingSet const & pos_classes, MatrixX<double> const & w
 } // namespace JointBoostInternal
 
 double
-JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, Array<long> const & stump_classes,
-                     long * num_generated_thresholds)
+JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, Array<intx> const & stump_classes,
+                     intx * num_generated_thresholds)
 {
   using namespace JointBoostInternal;
 
@@ -640,15 +640,15 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
 #ifdef JOINT_BOOST_TEST_ALL_THRESHOLDS
   thresholds = stump_features;
 #else
-  long max_thresholds = (long)std::ceil(max_thresholds_fraction * stump_features.size());
-  if (max_thresholds < (long)stump_features.size())
+  intx max_thresholds = (intx)std::ceil(max_thresholds_fraction * stump_features.size());
+  if (max_thresholds < (intx)stump_features.size())
     getCandidateThresholds(stump.n, weights, stump_features, stump_classes, max_thresholds, thresholds);
   else
     thresholds = stump_features;
 #endif
 
   if (num_generated_thresholds)
-    *num_generated_thresholds = (long)thresholds.size();
+    *num_generated_thresholds = (intx)thresholds.size();
 
   // THEA_CONSOLE << "JointBoost: Generated " << thresholds.size() << " candidate threshold(s) for " << stump.toString();
   // for (size_t t = 0; t < thresholds.size(); ++t)
@@ -656,13 +656,13 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
 
   // Precalculate the error term depending on stump.k -- it does not depend on threshold selection
   double err_k = 0;
-  for (long c = 0; c < num_classes; ++c)
+  for (intx c = 0; c < num_classes; ++c)
   {
     if (!stump.n[(SharingSet::size_type)c])
     {
       for (size_t i = 0; i < stump_classes.size(); ++i)
       {
-        double w = weights(c, (long)i);
+        double w = weights(c, (intx)i);
         int z = (stump_classes[i] == c ? +1 : -1);
 
         err_k += w * Math::square(z - stump.k[(size_t)c]);  // k is precalculated outside this function
@@ -673,19 +673,19 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
   // THEA_CONSOLE << "err_k = " << err_k;
 
   // Fit the stump parameters to the observed data
-  long best_threshold = -1;
+  intx best_threshold = -1;
   double min_err = -1;
   for (size_t t = 0; t < thresholds.size(); ++t)
   {
     double theta = thresholds[t];
     double a_numer = 0, a_denom = 0, b_numer = 0, b_denom = 0;
-    for (long c = 0; c < num_classes; ++c)
+    for (intx c = 0; c < num_classes; ++c)
     {
       if (stump.n[(SharingSet::size_type)c])
       {
         for (size_t i = 0; i < stump_classes.size(); ++i)
         {
-          double w = weights(c, (long)i);
+          double w = weights(c, (intx)i);
           int z = (stump_classes[i] == c ? +1 : -1);
 
           if (stump_features[i] > theta)
@@ -709,7 +709,7 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
 
     if (best_threshold < 0 || err < min_err)
     {
-      best_threshold = (long)t;
+      best_threshold = (intx)t;
       min_err = err;
 
       stump.a = a;
@@ -721,14 +721,14 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
   return min_err;
 }
 
-long
+intx
 JointBoost::predict(double const * features, double * class_probabilities) const
 {
-  long best_class = -1;
+  intx best_class = -1;
   double best_H = -1;
   double sum_probs = 0;
 
-  for (long c = 0; c < num_classes; ++c)
+  for (intx c = 0; c < num_classes; ++c)
   {
     double H = 0;
     for (size_t m = 0; m < stumps.size(); ++m)
@@ -755,7 +755,7 @@ JointBoost::predict(double const * features, double * class_probabilities) const
   // Normalize probabilities
   if (class_probabilities && sum_probs > 0)
   {
-    for (long c = 0; c < num_classes; ++c)
+    for (intx c = 0; c < num_classes; ++c)
       class_probabilities[c] /= sum_probs;
   }
 
@@ -772,25 +772,25 @@ JointBoost::computeValidationError(TrainingData const & validation_data_, Shared
 
   MatrixX<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
   Array<double> feat;
-  for (long i = 0; i < num_features; ++i)
+  for (intx i = 0; i < num_features; ++i)
   {
     validation_data_.getFeature(i, feat);
-    validation_features.col(i) = VectorXdMap(&feat[0], (long)feat.size());
+    validation_features.col(i) = VectorXdMap(&feat[0], (intx)feat.size());
   }
 
-  Array<long> validation_classes;
+  Array<intx> validation_classes;
   Array<double> validation_weights;
 
   validation_data_.getClasses(validation_classes);
   validation_data_.getWeights(validation_weights);
 
-  alwaysAssertM((long)validation_classes.size() == validation_features.rows(),
+  alwaysAssertM((intx)validation_classes.size() == validation_features.rows(),
                 "JointBoost: Ground truth classes for validation data do not match number of examples");
 
   double err = 0;
-  for (long i = 0; i < validation_features.rows(); ++i)
+  for (intx i = 0; i < validation_features.rows(); ++i)
   {
-    long predicted = predict(validation_features.row(i).data());
+    intx predicted = predict(validation_features.row(i).data());
     if (predicted != validation_classes[i])
       err += (validation_weights.empty() ? 1.0 : validation_weights[i]);
   }
@@ -923,9 +923,9 @@ JointBoost::Options::deserialize(TextInputStream & input)
     input.readSymbol("=");
 
     if (field == "min_boosting_rounds")
-      min_boosting_rounds = (long)input.readNumber();
+      min_boosting_rounds = (intx)input.readNumber();
     else if (field == "max_boosting_rounds")
-      max_boosting_rounds = (long)input.readNumber();
+      max_boosting_rounds = (intx)input.readNumber();
     else if (field == "min_fractional_error_reduction")
       min_fractional_error_reduction = input.readNumber();
     else if (field == "feature_sampling_fraction")
@@ -985,7 +985,7 @@ JointBoost::SharedStump::deserialize(std::istream & in)
   if (!(in >> f >> n >> a >> b >> theta))
     return false;
 
-  long num_k = 0;
+  intx num_k = 0;
   in >> num_k;
   if (!in || num_k < 0)
     return false;
@@ -1053,7 +1053,7 @@ JointBoost::deserialize(std::istream & in)
       i++;
   }
 
-  long num_stumps = 0;
+  intx num_stumps = 0;
   if (!(in >> num_stumps))
   {
     THEA_ERROR << "JointBoost: Could not read number of stumps";

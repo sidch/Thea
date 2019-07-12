@@ -132,7 +132,7 @@ ConvexHull3::updateApprox() const
       THEA_DEBUG << "ConvexHull3: Requested triangles, but higher-degree polygons obtained";
 
       Polygon3 poly;
-      Array<long> tri_indices;
+      Array<intx> tri_indices;
       size_t num_face_vertices = 0, index;
 
       for (size_t i = 0; i < (size_t)result.mNumIndices; i += (1 + num_face_vertices))
@@ -155,7 +155,7 @@ ConvexHull3::updateApprox() const
           {
             index = (size_t)result.mIndices[i + j];
             debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
-            poly.addVertex(approx_vertices[index], (long)index);
+            poly.addVertex(approx_vertices[index], (intx)index);
           }
 
           tri_indices.clear();

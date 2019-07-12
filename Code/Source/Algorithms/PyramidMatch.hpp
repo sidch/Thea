@@ -270,7 +270,7 @@ class THEA_API Pyramid2D : public Serializable
 
         Real * dst = &levels[0].data[0];
 
-        long i = 0;
+        intx i = 0;
         for (int y = 0; y < ny; ++y)
           for (int x = 0; x < nx; ++x, ++i)
             PyramidInternal::smoothIncrement2D(dst, nx, ny, x, y, means[i].x(), means[i].y(), base_data[i]);

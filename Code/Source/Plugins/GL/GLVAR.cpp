@@ -53,7 +53,7 @@ GLVAR::GLVAR()
 {
 }
 
-GLVAR::GLVAR(GLVARArea * area_, long num_bytes)
+GLVAR::GLVAR(GLVARArea * area_, int64 num_bytes)
 : area(area_), capacity(num_bytes), pointer(NULL), generation(-1), gl_type(-1), num_components(0), elem_size(0), gl_target(-1),
   num_elems(0)
 {
@@ -92,12 +92,12 @@ static_assert(sizeof(ColorRGBA)  == 4 * sizeof(Real),   "GLVAR: ColorRGBA has pa
 static_assert(sizeof(ColorRGBA8) == 4 * sizeof(uint8),  "GLVAR: ColorRGBA8 has padding, can't be tightly packed in an array");
 
 static_assert(sizeof(Real) == sizeof(float32) || sizeof(Real) == sizeof(float64),
-              "GLVAR: Real number type must be either 32-bit float or 64-bit double");
+              "GLVAR: Real number type must be either 32-bit float64 or 64-bit float64");
 GLenum GL_REAL_TYPE = (sizeof(Real) == sizeof(float32) ? GL_FLOAT : GL_DOUBLE);
 
 #define GLVAR_UPDATE_ARRAY(func_name, type_, gl_type_, num_components_, gl_target_) \
   void \
-  GLVAR::func_name(long start_elem, long num_elems_to_update, type_ const * array) \
+  GLVAR::func_name(int64 start_elem, int64 num_elems_to_update, type_ const * array) \
   { \
     if (num_elems_to_update <= 0) return; \
     \
@@ -116,9 +116,9 @@ GLenum GL_REAL_TYPE = (sizeof(Real) == sizeof(float32) ? GL_FLOAT : GL_DOUBLE);
       gl_target = gl_target_; \
     } \
     \
-    long offset_bytes = start_elem * elem_size; \
-    long num_bytes = num_elems_to_update * elem_size; \
-    long total_size = offset_bytes + num_bytes; \
+    int64 offset_bytes = start_elem * elem_size; \
+    int64 num_bytes = num_elems_to_update * elem_size; \
+    int64 total_size = offset_bytes + num_bytes; \
     if (total_size > capacity) \
       throw Error("GLVAR: Can't update beyond end of VAR"); \
     \
@@ -167,7 +167,7 @@ GLVAR::clear()
 }
 
 void
-GLVAR::uploadToGraphicsSystem(long offset_bytes, long num_bytes, void const * data)
+GLVAR::uploadToGraphicsSystem(int64 offset_bytes, int64 num_bytes, void const * data)
 {
   assert(isValid());
 

@@ -64,7 +64,7 @@ class THEA_API Histogram
      * @param max_value_ The upper limit of the histogram range.
      * @param set_zero If true, the bins are set to zero by the constructor.
      */
-    Histogram(long num_bins_, double * bins_, double min_value_ = 0, double max_value_ = 1, bool set_zero = true)
+    Histogram(intx num_bins_, double * bins_, double min_value_ = 0, double max_value_ = 1, bool set_zero = true)
     : owns_memory(false), num_bins(num_bins_), bins(bins_), sum_values(0)
     {
       alwaysAssertM(num_bins_ > 0, "Histogram: Number of bins must be positive");
@@ -84,7 +84,7 @@ class THEA_API Histogram
      * @param min_value_ The lower limit of the histogram range.
      * @param max_value_ The upper limit of the histogram range.
      */
-    Histogram(long num_bins_, double min_value_ = 0, double max_value_ = 1)
+    Histogram(intx num_bins_, double min_value_ = 0, double max_value_ = 1)
     : owns_memory(true), num_bins(num_bins_), sum_values(0)
     {
       alwaysAssertM(num_bins_ > 0, "Histogram: Number of bins must be positive");
@@ -103,7 +103,7 @@ class THEA_API Histogram
       bin_size(src.bin_size), sum_values(src.sum_values)
     {
       bins = new double[num_bins];
-      for (long i = 0; i < num_bins; ++i)
+      for (intx i = 0; i < num_bins; ++i)
         bins[i] = src.bins[i];
     }
 
@@ -111,7 +111,7 @@ class THEA_API Histogram
     ~Histogram() { if (owns_memory) delete [] bins; }
 
     /** Get the number of bins in the histogram. */
-    long numBins() const { return num_bins; }
+    intx numBins() const { return num_bins; }
 
     /** Get the array of bins in the histogram. */
     double * getBins() { return bins; }
@@ -120,23 +120,23 @@ class THEA_API Histogram
     double const * getBins() const { return bins; }
 
     /** Get the value of a specific bin. */
-    double getBin(long index) const
+    double getBin(intx index) const
     {
       debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0L, num_bins));
       return bins[index];
     }
 
     /** Get a mutable reference to the value of a specific bin. */
-    double & getBin(long index)
+    double & getBin(intx index)
     {
       debugAssertM(index >= 0 && index < num_bins, format("Histogram: Index %ld out of range [%ld, %ld)", index, 0L, num_bins));
       return bins[index];
     }
 
     /** Get the bin corresponding to a particular value, without inserting the latter. */
-    long getBinForValue(double value) const
+    intx getBinForValue(double value) const
     {
-      return Math::clamp((long)std::floor((value - min_value) / bin_size), 0, num_bins - 1);
+      return Math::clamp((intx)std::floor((value - min_value) / bin_size), 0, num_bins - 1);
     }
 
     /** Get the sum of values in the histogram. */
@@ -161,16 +161,16 @@ class THEA_API Histogram
     /** Set all bins to zero. */
     void setZero()
     {
-      for (long i = 0; i < num_bins; ++i)
+      for (intx i = 0; i < num_bins; ++i)
         bins[i] = 0.0;
 
       sum_values = 0.0;
     }
 
     /** Add a value to the histogram and return the index of the bin in which it was inserted. */
-    long insert(double value)
+    intx insert(double value)
     {
-      long bin = getBinForValue(value);
+      intx bin = getBinForValue(value);
       bins[bin] += 1.0;
       sum_values += 1.0;
 
@@ -178,9 +178,9 @@ class THEA_API Histogram
     }
 
     /** Remove a value from the histogram and return the index of the bin from which it was removed. */
-    long remove(double value)
+    intx remove(double value)
     {
-      long bin = getBinForValue(value);
+      intx bin = getBinForValue(value);
       bins[bin] -= 1.0;
       sum_values -= 1.0;
 
@@ -217,7 +217,7 @@ class THEA_API Histogram
                       "Histogram: Base and increment histograms must have same ranges");
       }
 
-      for (long i = 0; i < num_bins; ++i)
+      for (intx i = 0; i < num_bins; ++i)
         bins[i] += h.bins[i];
 
       sum_values += h.sum_values;
@@ -239,7 +239,7 @@ class THEA_API Histogram
                       "Histogram: Base and decrement histograms must have same ranges");
       }
 
-      for (long i = 0; i < num_bins; ++i)
+      for (intx i = 0; i < num_bins; ++i)
         bins[i] -= h.bins[i];
 
       sum_values -= h.sum_values;
@@ -253,7 +253,7 @@ class THEA_API Histogram
     {
       if (sum_values > 0)
       {
-        for (long i = 0; i < num_bins; ++i)
+        for (intx i = 0; i < num_bins; ++i)
           bins[i] /= sum_values;
 
         sum_values = 1.0;
@@ -265,12 +265,12 @@ class THEA_API Histogram
     void recomputeSum()
     {
       sum_values = 0.0;
-      for (long i = 0; i < num_bins; ++i)
+      for (intx i = 0; i < num_bins; ++i)
         sum_values += bins[i];
     }
 
     bool owns_memory;    ///< True if this object internally allocated the array of histogram bins.
-    long num_bins;       ///< The number of histogram bins.
+    intx num_bins;       ///< The number of histogram bins.
     double * bins;       ///< The array of histogram bins.
     double min_value;    ///< The upper limit of binned values.
     double max_value;    ///< The lower limit of binned values.

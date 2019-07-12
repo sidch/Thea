@@ -78,7 +78,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
      * Construct an (initially zero length) Bezier curve of a given order (2 for quadratic Bezier, 3 for cubic Bezier, etc). The
      * segment will be initialized with \a order + 1 control vectors, all initially zero.
      */
-    BezierN(long order_ = 3) : BaseT(0, 1)
+    BezierN(intx order_ = 3) : BaseT(0, 1)
     {
       alwaysAssertM(order_ >= 1, "BezierN: Order must be non-negative");
 
@@ -86,19 +86,19 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       this->setChanged(true);
     }
 
-    long getOrder() const { return (long)ctrl[0].size() - 1; }
+    intx getOrder() const { return (intx)ctrl[0].size() - 1; }
 
-    long numControls() const { return (long)ctrl[0].size(); }
+    intx numControls() const { return (intx)ctrl[0].size(); }
 
-    VectorT const & getControl(long index) const
+    VectorT const & getControl(intx index) const
     {
-      alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
+      alwaysAssertM(index >= 0 && index < (intx)ctrl[0].size(), "BezierN: Control point index out of range");
       return ctrl[0][(size_t)index];
     }
 
-    void setControl(long index, VectorT const & pos)
+    void setControl(intx index, VectorT const & pos)
     {
-      alwaysAssertM(index >= 0 && index < (long)ctrl[0].size(), "BezierN: Control point index out of range");
+      alwaysAssertM(index >= 0 && index < (intx)ctrl[0].size(), "BezierN: Control point index out of range");
 
       size_t i = (size_t)index;
       ctrl[0][i] = pos;
@@ -106,7 +106,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       this->setChanged(true);
     }
 
-    bool hasDeriv(long deriv_order) const { return (deriv_order >= 0 && deriv_order <= 3); }
+    bool hasDeriv(intx deriv_order) const { return (deriv_order >= 0 && deriv_order <= 3); }
 
   private:
     mutable Array<VectorT>   ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
@@ -118,7 +118,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       if (binom.rows() > 0)
         return;
 
-      long n = (long)ctrl[0].size();
+      intx n = (intx)ctrl[0].size();
       binom.resize(n, n);
 
       // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteBezierCurve.h
@@ -128,11 +128,11 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       binom(0, 0) = 1;
       binom(1, 0) = 1;
       binom(1, 1) = 1;
-      for (long i = 2; i < n; ++i)
+      for (intx i = 2; i < n; ++i)
       {
         binom(i, 0) = 1;
         binom(i, i) = 1;
-        for (long j = 1; j < i; ++j)
+        for (intx j = 1; j < i; ++j)
           binom(i, j) = binom(i - 1, j - 1) + binom(i - 1, j);
       }
     }
@@ -168,7 +168,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       this->setChanged(false);
     }
 
-    VectorT eval(T const & t, long deriv_order) const
+    VectorT eval(T const & t, intx deriv_order) const
     {
       alwaysAssertM(t >= -0.00001 && t <= 1.00001, format("BezierN: Curve parameter %lf out of range", static_cast<double>(t)));
       alwaysAssertM(deriv_order >= 0 && deriv_order <= 3, format("BezierN: Invalid derivative order %ld", deriv_order));
@@ -178,10 +178,10 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       T omt = 1 - t;
       VectorT result = omt * ctrl[deriv_order][0];
 
-      long order = getOrder();
+      intx order = getOrder();
       T tpow = t;
-      long isup = order - deriv_order;
-      for (long i = 1; i < isup; ++i)
+      intx isup = order - deriv_order;
+      for (intx i = 1; i < isup; ++i)
       {
         T c = static_cast<T>(binom(isup, i) * tpow);
         result = (result + c * ctrl[deriv_order][i]) * omt;
@@ -189,8 +189,8 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       }
       result = (result + tpow * ctrl[deriv_order][isup]);
 
-      long multiplier = 1;
-      for (long i = 0; i < deriv_order; ++i)
+      intx multiplier = 1;
+      for (intx i = 0; i < deriv_order; ++i)
         multiplier *= (order - i);
 
       result *= multiplier;
@@ -204,17 +204,17 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
 
       cacheBinom();
 
-      long n = getOrder();
+      intx n = getOrder();
       b.resize(n + 1);
 
       b[0] = 1.0;
       double tpow = t;
-      for (long i = 1; i <= n; ++i, tpow *= t)
+      for (intx i = 1; i <= n; ++i, tpow *= t)
         b[i] = binom(n, i) * tpow;
 
       double omt = 1 - t;
       double omt_pow = omt;
-      for (long i = n - 1; i >= 0; --i, omt_pow *= omt)
+      for (intx i = n - 1; i >= 0; --i, omt_pow *= omt)
         b[i] *= omt_pow;
     }
 

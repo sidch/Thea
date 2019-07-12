@@ -61,10 +61,10 @@ THEA_INSTANTIATE_SMART_POINTERS(Thea::Image)
 
 namespace Thea {
 
-int const AbstractImage::Channel::RED    =  FI_RGBA_RED;
-int const AbstractImage::Channel::GREEN  =  FI_RGBA_GREEN;
-int const AbstractImage::Channel::BLUE   =  FI_RGBA_BLUE;
-int const AbstractImage::Channel::ALPHA  =  FI_RGBA_ALPHA;
+int32 const AbstractImage::Channel::RED    =  FI_RGBA_RED;
+int32 const AbstractImage::Channel::GREEN  =  FI_RGBA_GREEN;
+int32 const AbstractImage::Channel::BLUE   =  FI_RGBA_BLUE;
+int32 const AbstractImage::Channel::ALPHA  =  FI_RGBA_ALPHA;
 
 namespace ImageInternal {
 
@@ -156,11 +156,11 @@ typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
 }
 
 // Returns bytes consumed by an aligned row
-int
-scanWidth(int width, int bpp, int alignment)
+int64
+scanWidth(int64 width, int bpp, int32 alignment)
 {
-  int width_bits = width * bpp;
-  int row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
+  int64 width_bits = width * bpp;
+  int64 row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
   return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
 }
 
@@ -245,7 +245,7 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
 
 // Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
 #define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
-long                                                                                                                          \
+intx                                                                                                                          \
 codec::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const                               \
 {                                                                                                                             \
   fipMemoryIO mem;                                                                                                            \
@@ -264,7 +264,7 @@ codec::serializeImage(Image const & image, BinaryOutputStream & output, bool pre
                                                                                                                               \
   output.writeBytes(size_in_bytes, data);                                                                                     \
                                                                                                                               \
-  return (long)(prefix_info ? size_in_bytes + 4 : size_in_bytes);                                                             \
+  return (intx)(prefix_info ? size_in_bytes + 4 : size_in_bytes);                                                             \
 }
 
 // TODO: Add options to all the ones that support them
@@ -373,16 +373,16 @@ THEA_DEF_DESERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
 // 3D formats
 //=============================================================================================================================
 
-long
+intx
 Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot serialize an invalid image");
 
   Image::Type type(image.getType());
-  int width   =  image.getWidth();
-  int height  =  image.getHeight();
-  int depth   =  image.getDepth();
+  int64 width   =  image.getWidth();
+  int64 height  =  image.getHeight();
+  int64 depth   =  image.getDepth();
 
   if (type != Image::Type::LUMINANCE_8U
    && type != Image::Type::RGB_8U
@@ -392,7 +392,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   output.setEndianness(Endianness::LITTLE);
 
   int bpp = image.getBitsPerPixel();
-  int stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
 
   static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
   static uint64 const INFO_HEADER_SIZE = 72;
@@ -444,8 +444,8 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
   {
     int bytes_pp = bpp / 8;
     Array<uint8> row_buf((size_t)stream_scan_width, 0);
-    for (int i = 0; i < depth; ++i)
-      for (int j = 0; j < height; ++j)
+    for (intx i = 0; i < depth; ++i)
+      for (intx j = 0; j < height; ++j)
       {
         uint8 const * in_pixel = (uint8 const *)image.getScanLine(j, i);
         uint8 * out_pixel = &row_buf[0];
@@ -455,7 +455,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
           case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
           case 3:
           {
-            for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
             {
               out_pixel[0] = in_pixel[Image::Channel::BLUE ];
               out_pixel[1] = in_pixel[Image::Channel::GREEN];
@@ -465,7 +465,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
           }
           default: // 4
           {
-            for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
             {
               out_pixel[0] = in_pixel[Image::Channel::BLUE ];
               out_pixel[1] = in_pixel[Image::Channel::GREEN];
@@ -480,7 +480,7 @@ Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool 
       }
   }
 
-  return (long)(prefix_info ? size_in_bytes + 4 : size_in_bytes);
+  return (intx)(prefix_info ? size_in_bytes + 4 : size_in_bytes);
 }
 
 void
@@ -525,9 +525,9 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
   //   8 bytes: Depth resolution in voxels/meter
 
   input.skip(8);
-  int width   =  (int)input.readUInt64();
-  int height  =  (int)input.readUInt64();
-  int depth   =  (int)input.readUInt64();
+  int64 width   =  (int64)input.readUInt64();
+  int64 height  =  (int64)input.readUInt64();
+  int64 depth   =  (int64)input.readUInt64();
 
   int bpp = (int)input.readUInt32();
   if (bpp != 8 && bpp != 24 && bpp != 32)
@@ -537,7 +537,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
   if (compression != 0)
     throw Error(std::string(getName()) + ": Unsupported compression method");
 
-  int stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
   uint64 data_size = input.readUInt64();
   if (data_size != (uint64)stream_scan_width * (uint64)height * (uint64)depth)
     throw Error(std::string(getName()) + ": Pixel data block size does not match image dimensions");
@@ -560,8 +560,8 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
 
   int bytes_pp = bpp / 8;
   Array<uint8> row_buf((size_t)stream_scan_width);
-  for (int i = 0; i < depth; ++i)
-    for (int j = 0; j < height; ++j)
+  for (intx i = 0; i < depth; ++i)
+    for (intx j = 0; j < height; ++j)
     {
       input.readBytes(stream_scan_width, &row_buf[0]);
 
@@ -573,7 +573,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
         case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
         case 3:
         {
-          for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
             out_pixel[Image::Channel::RED  ] = in_pixel[2];
             out_pixel[Image::Channel::GREEN] = in_pixel[1];
@@ -583,7 +583,7 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
         }
         default: // 4
         {
-          for (int k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
             out_pixel[Image::Channel::RED  ] = in_pixel[2];
             out_pixel[Image::Channel::GREEN] = in_pixel[1];
@@ -676,7 +676,7 @@ Image::Image()
   cacheTypeProperties();
 }
 
-Image::Image(Type type_, int width_, int height_, int depth_)
+Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
 : type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(NULL)
 {
   resize(type_, width_, height_, depth_);
@@ -739,7 +739,7 @@ Image::~Image()
   delete fip_img;
 }
 
-bool
+int8
 Image::isValid() const
 {
   return type != Type::UNKNOWN && width >= 0 && height >= 0 && depth >= 0
@@ -762,7 +762,7 @@ Image::clear()
 }
 
 void
-Image::resize(int type_, int width_, int height_, int depth_)
+Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
 {
   Type t(type_);
   if (t == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
@@ -776,14 +776,14 @@ Image::resize(int type_, int width_, int height_, int depth_)
     if (!fip_img)
       fip_img = new fipImage;
 
-    fip_img->setSize(ImageInternal::typeToFreeImageType(t), width_, height_, ImageInternal::typeToFreeImageBPP(t));
+    fip_img->setSize(ImageInternal::typeToFreeImageType(t), (int)width_, (int)height_, ImageInternal::typeToFreeImageBPP(t));
   }
   else
   {
     if (t.getBitsPerPixel() % 8 != 0)
       throw Error("Non-2D image must have byte-aligned pixels");
 
-    int scan_width = ImageInternal::scanWidth(width_, t.getBitsPerPixel(), (int)ROW_ALIGNMENT);
+    int64 scan_width = ImageInternal::scanWidth(width_, t.getBitsPerPixel(), (int32)ROW_ALIGNMENT);
     int64 buf_size = scan_width * height_ * depth_;
     data.resize((size_t)buf_size);
   }
@@ -855,13 +855,13 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 }
 
 void const *
-Image::getScanLine(int row, int z) const
+Image::getScanLine(int64 row, int64 z) const
 {
   return const_cast<Image *>(this)->getScanLine(row, z);
 }
 
 void *
-Image::getScanLine(int row, int z)
+Image::getScanLine(int64 row, int64 z)
 {
   alwaysAssertM(z >= 0 && z < depth, "Image: Z value out of bounds");
 
@@ -872,24 +872,24 @@ Image::getScanLine(int row, int z)
     return fip_img->getScanLine(row);
   else
   {
-    int scan_width = ImageInternal::scanWidth(width, type.getBitsPerPixel(), (int)ROW_ALIGNMENT);
+    int64 scan_width = ImageInternal::scanWidth(width, type.getBitsPerPixel(), (int32)ROW_ALIGNMENT);
     return &data[(z * height + row) * scan_width];
   }
 }
 
-int
+int64
 Image::getScanWidth() const
 {
   if (depth == 1)
     return isValid() ? fip_img->getScanWidth() : 0;
   else
-    return width + ((int)ROW_ALIGNMENT - (width % (int)ROW_ALIGNMENT)) % (int)ROW_ALIGNMENT;
+    return width + ((int64)ROW_ALIGNMENT - (width % (int64)ROW_ALIGNMENT)) % (int64)ROW_ALIGNMENT;
 }
 
-int
+int32
 Image::getRowAlignment() const
 {
-  return depth == 1 ? 4 : ROW_ALIGNMENT;  // the current FreeImage default is 4
+  return depth == 1 ? 4 : (int32)ROW_ALIGNMENT;  // the current FreeImage default is 4
 }
 
 namespace ImageInternal {
@@ -912,7 +912,7 @@ filterToFreeImageFilter(Image::Filter filter)
 } // namespace ImageInternal
 
 bool
-Image::rescale(int new_width, int new_height, int new_depth, Filter filter)
+Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter)
 {
   if (depth != 1 || new_depth != 1)
   {

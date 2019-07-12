@@ -96,7 +96,7 @@ class DiscreteExponentialMap : private Noncopyable
 
     }; // class Options
 
-    typedef UnorderedMap<long, Vector2> ParameterMap;  ///< Map from sample indices to parameters.
+    typedef UnorderedMap<intx, Vector2> ParameterMap;  ///< Map from sample indices to parameters.
 
     /** Constructor. */
     DiscreteExponentialMap(Options const & options = Options::defaults());
@@ -111,7 +111,7 @@ class DiscreteExponentialMap : private Noncopyable
      *
      * @see getParameters(), getParameterMap()
      */
-    void parametrize(SampleGraph const & sample_graph, long origin_index, Vector3 const & u_axis, Vector3 const & v_axis,
+    void parametrize(SampleGraph const & sample_graph, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis,
                      Real radius);
 
     /**
@@ -122,7 +122,7 @@ class DiscreteExponentialMap : private Noncopyable
      *
      * @see parametrize()
      */
-    Vector2 getParameters(long sample_index, bool & has_parameters) const;
+    Vector2 getParameters(intx sample_index, bool & has_parameters) const;
 
     /**
      * Get the full map from sample indices to parameters. Samples that were not parametrized (outside radius) are not included.

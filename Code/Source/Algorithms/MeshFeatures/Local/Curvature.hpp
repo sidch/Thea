@@ -59,7 +59,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -72,7 +72,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    Curvature(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    Curvature(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -86,7 +86,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -118,7 +118,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      */
     double computeProjectedCurvature(Vector3 const & position, Real nbd_radius = -1) const
     {
-      long nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
+      intx nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
                                                 : this->getInternalKDTree()->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
@@ -167,7 +167,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
       : position(p), normal(n), num_offsets(0), sum_offsets(Vector3::Zero())
       {}
 
-      template <typename SampleT> bool operator()(long index, SampleT & t)
+      template <typename SampleT> bool operator()(intx index, SampleT & t)
       {
         if (NormalTraits<SampleT>::getNormal(t).dot(normal) > -1.0e-05f)  // ignore points on hidden side
         {
@@ -185,7 +185,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
       }
 
       Vector3 position, normal;
-      long num_offsets;
+      intx num_offsets;
       Vector3 sum_offsets;
 
     }; // struct ProjectedCurvatureFunctor

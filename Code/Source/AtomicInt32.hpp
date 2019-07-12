@@ -72,7 +72,7 @@ class THEA_API AtomicInt32
 {
   private:
 #if defined(THEA_WINDOWS)
-    typedef long ImplT;
+    typedef intx ImplT;
     volatile ImplT m_value;
 #elif defined(THEA_MAC)
     typedef int32_t ImplT;

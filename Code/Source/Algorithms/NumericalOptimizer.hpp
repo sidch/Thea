@@ -64,13 +64,13 @@ class THEA_API NumericalOptimizer : public virtual AbstractNamedObject
 {
   public:
     /** Destructor. */
-    virtual ~NumericalOptimizer() {}
+    virtual ~NumericalOptimizer() = 0;
 
     /** Get the dimensionality of the problem. */
-    virtual long dims() const = 0;
+    virtual int64 dims() const = 0;
 
-    /** Add a linear constraint to the optimization. */
-    virtual void addConstraint(ScalarConstraint::ConstPtr constraint);
+    /** Add a linear constraint to the optimization. The constraint object must exist as long as this object does. */
+    virtual void addConstraint(ScalarConstraint const * constraint) = 0;
 
     /** Clear all constraints. */
     virtual void clearConstraints() = 0;
@@ -85,16 +85,19 @@ class THEA_API NumericalOptimizer : public virtual AbstractNamedObject
      * @return True if a local minimum was successfully found, else false. (The same value is returned by successive calls to
      *   hasSolution().)
      */
-    virtual bool minimize(ScalarFunction const & objective, double const * hint = NULL,
+    virtual int8 minimize(ScalarFunction const & objective, float64 const * hint = NULL,
                           AbstractOptions const * options = NULL) = 0;
 
     /** Was a local minimum found by the last call to minimize()? */
-    virtual bool hasSolution() const = 0;
+    virtual int8 hasSolution() const = 0;
 
     /** Get the solution vector of the optimization problem. Valid only if hasSolution() returns true. */
-    virtual double const * getSolution() const = 0;
+    virtual float64 const * getSolution() const = 0;
 
 }; // class NumericalOptimizer
+
+// Pure virtual destructor should have implementation
+inline NumericalOptimizer::~NumericalOptimizer() {}
 
 /** An interface for a numerical optimizer factory. Should be implemented and registered by each actual optimizer. */
 class THEA_API NumericalOptimizerFactory

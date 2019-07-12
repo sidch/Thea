@@ -69,9 +69,9 @@ struct DijkstraCallback
 
 } // namespace FurthestPointSamplingInternal
 
-long
-FurthestPointSampling::subsample(long num_orig_points, Vector3 const * orig_points, long num_desired_points,
-                                 long * selected_indices, DistanceType dist_type, bool verbose)
+intx
+FurthestPointSampling::subsample(intx num_orig_points, Vector3 const * orig_points, intx num_desired_points,
+                                 intx * selected_indices, DistanceType dist_type, bool verbose)
 {
   alwaysAssertM(num_desired_points >= 0, "FurthestPointSampling: Can't sample a negative number of points");
   alwaysAssertM(num_orig_points >= num_desired_points,
@@ -97,7 +97,7 @@ FurthestPointSampling::subsample(long num_orig_points, Vector3 const * orig_poin
   ShortestPaths<SampleGraph> shortest_paths;
   UnorderedMap<SampleGraph::VertexHandle, double> src_region;
   int prev_percent = 0;
-  for (long i = 0; i < num_desired_points; ++i)
+  for (intx i = 0; i < num_desired_points; ++i)
   {
     SampleGraph::VertexHandle furthest_sample = NULL;
     if (src_region.empty())

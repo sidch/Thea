@@ -79,7 +79,7 @@ class /* THEA_API */ ProximityQueryStructureN
          * Construct from a pair of query and target indices, and a monotone approximation to the distance between the
          * elements.
          */
-        NeighborPair(long query_index_, long target_index_ = -1, double mon_approx_dist_ = 0)
+        NeighborPair(intx query_index_, intx target_index_ = -1, double mon_approx_dist_ = 0)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_),
           query_point(VectorT::Zero()), target_point(VectorT::Zero())
         {}
@@ -88,7 +88,7 @@ class /* THEA_API */ ProximityQueryStructureN
          * Construct from a pair of query and target indices, a monotone approximation to the distance between the elements, and
          * the positions of the closest pair of points on them.
          */
-        NeighborPair(long query_index_, long target_index_, double mon_approx_dist_, VectorT const & query_point_,
+        NeighborPair(intx query_index_, intx target_index_, double mon_approx_dist_, VectorT const & query_point_,
                      VectorT const & target_point_)
         : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_), query_point(query_point_),
           target_point(target_point_)
@@ -98,16 +98,16 @@ class /* THEA_API */ ProximityQueryStructureN
         bool isValid() const { return query_index >= 0 && target_index >= 0; }
 
         /** Get the index of the query element. */
-        long getQueryIndex() const { return query_index; }
+        intx getQueryIndex() const { return query_index; }
 
         /** Set the index of the query element. */
-        void setQueryIndex(long query_index_) { query_index = query_index_; }
+        void setQueryIndex(intx query_index_) { query_index = query_index_; }
 
         /** Get the index of the target element. */
-        long getTargetIndex() const { return target_index; }
+        intx getTargetIndex() const { return target_index; }
 
         /** Set the index of the target element. */
-        void setTargetIndex(long target_index_) { target_index = target_index_; }
+        void setTargetIndex(intx target_index_) { target_index = target_index_; }
 
         /** Get a monotone approximation of the distance between the neighbors. */
         double getMonotoneApproxDistance() const { return mon_approx_dist; }
@@ -159,8 +159,8 @@ class /* THEA_API */ ProximityQueryStructureN
         }
 
       private:
-        long query_index;
-        long target_index;
+        intx query_index;
+        intx target_index;
         double mon_approx_dist;
         VectorT query_point;
         VectorT target_point;
@@ -184,7 +184,7 @@ class /* THEA_API */ ProximityQueryStructureN
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
     template <typename MetricT, typename QueryT>
-    long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
+    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
          const;
 
     /**
@@ -221,8 +221,8 @@ class /* THEA_API */ ProximityQueryStructureN
      * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
-    long kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
-                       bool get_closest_points = false, bool clear_set = true, long use_as_query_index_and_swap = -1) const;
+    intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
+                       bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const;
 
 }; // class ProximityQueryStructureN
 

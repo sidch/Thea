@@ -55,7 +55,7 @@ namespace Algorithms {
 
 namespace HoughForestInternal {
 
-static long const BACKGROUND_CLASS = 0;
+static intx const BACKGROUND_CLASS = 0;
 
 // A 1-dimensional Gaussian distribution.
 class Gaussian1D
@@ -119,7 +119,7 @@ class Gaussian
     VectorX<double> mean;
     MatrixX<double> inv_cov;
 
-    void resize(long ndims)
+    void resize(intx ndims)
     {
       mean.resize(ndims);
       inv_cov.resize(ndims, ndims);
@@ -127,15 +127,15 @@ class Gaussian
 
   public:
     Gaussian() {}
-    Gaussian(long ndims) { resize(ndims); }
+    Gaussian(intx ndims) { resize(ndims); }
 
     double unnormalizedProb(double const * x) const
     {
       double xCx = 0;
-      for (long i = 0; i < mean.size(); ++i)
+      for (intx i = 0; i < mean.size(); ++i)
       {
         double prod = 0;
-        for (long j = 0; j < mean.size(); ++j)
+        for (intx j = 0; j < mean.size(); ++j)
           prod += (inv_cov(i, j) * (mean[j] - x[j]));
 
         xCx += (mean[i] - x[i]) * prod;
@@ -147,10 +147,10 @@ class Gaussian
     double unnormalizedProbFast(double const * x) const
     {
       double xCx = 0;
-      for (long i = 0; i < mean.size(); ++i)
+      for (intx i = 0; i < mean.size(); ++i)
       {
         double prod = 0;
-        for (long j = 0; j < mean.size(); ++j)
+        for (intx j = 0; j < mean.size(); ++j)
           prod += (inv_cov(i, j) * (mean[j] - x[j]));
 
         xCx += (mean[i] - x[i]) * prod;
@@ -159,7 +159,7 @@ class Gaussian
       return Math::fastMinusExp(0.5 * xCx);
     }
 
-    long dims() const { return (long)mean.size(); }
+    intx dims() const { return (intx)mean.size(); }
 
     VectorX<double> const & getMean() const { return mean; }
     MatrixX<double> const & getInvCov() const { return inv_cov; }
@@ -174,24 +174,24 @@ class Gaussian
     {
       out.writeInt64(dims());
 
-      for (long i = 0; i < mean.size(); ++i)
+      for (intx i = 0; i < mean.size(); ++i)
         out.writeFloat64(mean[i]);
 
-      for (long i = 0; i < inv_cov.rows(); ++i)
-        for (long j = 0; j < inv_cov.cols(); ++j)
+      for (intx i = 0; i < inv_cov.rows(); ++i)
+        for (intx j = 0; j < inv_cov.cols(); ++j)
           out.writeFloat64(inv_cov(i, j));
     }
 
     void deserialize(BinaryInputStream & in)
     {
-      long ndims = (long)in.readInt64();
+      intx ndims = (intx)in.readInt64();
       resize(ndims);
 
-      for (long i = 0; i < mean.size(); ++i)
+      for (intx i = 0; i < mean.size(); ++i)
         mean[i] = in.readFloat64();
 
-      for (long i = 0; i < inv_cov.rows(); ++i)
-        for (long j = 0; j < inv_cov.cols(); ++j)
+      for (intx i = 0; i < inv_cov.rows(); ++i)
+        for (intx j = 0; j < inv_cov.cols(); ++j)
           inv_cov(i, j) = in.readFloat64();
     }
 
@@ -201,16 +201,16 @@ class Gaussian
 class HoughNode
 {
   public:
-    long depth;
-    long split_feature;
+    intx depth;
+    intx split_feature;
     double split_value;
-    Array<long> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
-    Array<long> class_cum_freq;  // i'th entry is number of elements with class ID <= i
+    Array<intx> elems;  // Only in leaf nodes. Sorted by class for efficient sampling from a particular class.
+    Array<intx> class_cum_freq;  // i'th entry is number of elements with class ID <= i
     Array<Gaussian1D> class_feature_distrib;
     HoughNode * left;
     HoughNode * right;
 
-    HoughNode(long depth_ = 0)
+    HoughNode(intx depth_ = 0)
     : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
 
     ~HoughNode()
@@ -230,9 +230,9 @@ class HoughNode
       return !left && !right;
     }
 
-    long numElements() const { return class_cum_freq.empty() ? 0 : class_cum_freq.back(); }
+    intx numElements() const { return class_cum_freq.empty() ? 0 : class_cum_freq.back(); }
 
-    long getClassFrequency(long class_id) const
+    intx getClassFrequency(intx class_id) const
     {
       return class_id == 0 ? class_cum_freq[0]
                            : class_cum_freq[(size_t)class_id] - class_cum_freq[(size_t)class_id - 1];
@@ -280,20 +280,20 @@ class HoughNode
     {
       clear();
 
-      depth = (long)in.readInt64();
-      split_feature = (long)in.readInt64();
+      depth = (intx)in.readInt64();
+      split_feature = (intx)in.readInt64();
       split_value = in.readFloat64();
 
       int64 num_elems = in.readInt64();
       elems.resize((size_t)num_elems);
       for (size_t i = 0; i < elems.size(); ++i)
-        elems[i] = (long)in.readInt64();
+        elems[i] = (intx)in.readInt64();
 
       int64 num_classes = in.readInt64();
 
       class_cum_freq.resize((size_t)num_classes);
       for (size_t i = 0; i < class_cum_freq.size(); ++i)
-        class_cum_freq[i] = (long)in.readInt64();
+        class_cum_freq[i] = (intx)in.readInt64();
 
       class_feature_distrib.resize((size_t)num_classes);
       for (size_t i = 0; i < class_feature_distrib.size(); ++i)
@@ -331,7 +331,7 @@ class HoughTree
     typedef HoughForest::VoteCallback VoteCallback;
 
     // Constructor.
-    HoughTree(HoughForest * parent_, long num_classes_, long num_features_, Array<long> num_vote_params_,
+    HoughTree(HoughForest * parent_, intx num_classes_, intx num_features_, Array<intx> num_vote_params_,
               Options const & options_)
     : parent(parent_),
       num_classes(num_classes_),
@@ -371,14 +371,14 @@ class HoughTree
       // Set up root node
       root = new Node(0);
       root->elems.resize((size_t)training_data.numExamples());
-      for (long i = 0; i < training_data.numExamples(); ++i)
+      for (intx i = 0; i < training_data.numExamples(); ++i)
         root->elems[(size_t)i] = i;
 
       measureClassCumulativeFrequencies(root->elems, training_data, root->class_cum_freq);
       root->class_feature_distrib.resize(root->class_cum_freq.size());
 
-      long num_nodes = 1;
-      long max_depth = 0;
+      intx num_nodes = 1;
+      intx max_depth = 0;
 
       // Depth-first expansion of the tree
       std::stack<Node *> nodes;
@@ -391,9 +391,9 @@ class HoughTree
 
         // Split the node
         if (node->depth < options.max_depth
-         && (long)node->elems.size() > options.max_leaf_elements)
+         && (intx)node->elems.size() > options.max_leaf_elements)
         {
-          long split_feature;
+          intx split_feature;
           double split_value;
           MeasureMode measure_mode;
           if (optimizeTest(node, training_data, split_feature, split_value, measure_mode))
@@ -480,7 +480,7 @@ class HoughTree
     }
 
     // Cast a single vote for a query point with given features. */
-    bool singleVoteSelf(long query_class, double const * features, VoteCallback & callback) const
+    bool singleVoteSelf(intx query_class, double const * features, VoteCallback & callback) const
     {
       Node * curr = root;
       while (curr)
@@ -488,24 +488,24 @@ class HoughTree
         if (curr->isLeaf())
         {
           // Elements are sorted by class, so we can access the range of elements for the class directly
-          long start_index = (query_class == 0 ? 0 : curr->class_cum_freq[(size_t)query_class - 1]);
-          long end_index = curr->class_cum_freq[(size_t)query_class] - 1;
+          intx start_index = (query_class == 0 ? 0 : curr->class_cum_freq[(size_t)query_class - 1]);
+          intx end_index = curr->class_cum_freq[(size_t)query_class] - 1;
           if (end_index < start_index)
             return false;
 
-          long index = Random::common().integer(start_index, end_index);
+          intx index = Random::common().integer(start_index, end_index);
           double weight = curr->getClassFrequency(query_class) / (double)curr->numElements();
 
           if (options.verbose >= 2)
           {
-            long actual_index = curr->elems[(size_t)index];
+            intx actual_index = curr->elems[(size_t)index];
             THEA_CONSOLE << "HoughForest: Reached leaf with " << end_index - start_index + 1 << " element(s) of class "
                          << query_class << " at depth " << curr->depth << ", casting vote for element " << actual_index
                          << " with weight " << weight;
 
             std::ostringstream oss;
             oss << "HoughForest:  - Element features = [";
-            for (long i = 0; i < num_features; ++i)
+            for (intx i = 0; i < num_features; ++i)
             {
               if (i > 0) oss << ", ";
               oss << parent->all_features(actual_index, i);
@@ -529,8 +529,8 @@ class HoughTree
           //===================================================================================================================
           // If either the left or the right subtree has zero samples from the query class, we can just visit the other subtree
           //===================================================================================================================
-          long left_freq   =  curr->left->getClassFrequency(query_class);
-          long right_freq  =  curr->right->getClassFrequency(query_class);
+          intx left_freq   =  curr->left->getClassFrequency(query_class);
+          intx right_freq  =  curr->right->getClassFrequency(query_class);
           if (left_freq > 0)
           {
             if (right_freq <= 0)
@@ -640,7 +640,7 @@ class HoughTree
 
   private:
     // Find a suitable splitting decision for a node, based on minimizing classification/regression uncertainty.
-    bool optimizeTest(Node const * node, TrainingData const & training_data, long & split_feature, double & split_value,
+    bool optimizeTest(Node const * node, TrainingData const & training_data, intx & split_feature, double & split_value,
                       MeasureMode & measure_mode) const
     {
       if (node->elems.size() < 4)  // doesn't make sense splitting smaller sets, and the quadrant index math will fail anyway
@@ -664,22 +664,22 @@ class HoughTree
       split_feature = -1;
       split_value = 0;
 
-      long max_feat_iters    =  std::min((options.num_feature_expansions + 1) * options.max_candidate_features, num_features);
-      long max_thresh_iters  =  std::min(options.max_candidate_thresholds, (long)node->elems.size());
+      intx max_feat_iters    =  std::min((options.num_feature_expansions + 1) * options.max_candidate_features, num_features);
+      intx max_thresh_iters  =  std::min(options.max_candidate_thresholds, (intx)node->elems.size());
 
-      for (long feat_iter = 0; feat_iter < max_feat_iters; ++feat_iter)
+      for (intx feat_iter = 0; feat_iter < max_feat_iters; ++feat_iter)
       {
         // Generate a random feature
         // TODO: Rewrite this using randIntegersInRange to avoid repeating features
-        long test_feature = (max_feat_iters < num_features ? Random::common().integer() % num_features : feat_iter);
+        intx test_feature = (max_feat_iters < num_features ? Random::common().integer() % num_features : feat_iter);
 
         // Find a suitable split threshold
         getNodeFeatures(node, test_feature, training_data, features);
 
-        for (long thresh_iter = 0; thresh_iter < max_thresh_iters; ++thresh_iter)
+        for (intx thresh_iter = 0; thresh_iter < max_thresh_iters; ++thresh_iter)
         {
           double test_threshold = 0;
-          if (max_thresh_iters < (long)features.size())
+          if (max_thresh_iters < (intx)features.size())
           {
             // Generate a splitting value in the middle half (second and third quadrants) in the sorted order
             size_t index = features.size() / 4 + (Random::common().integer() % (features.size() / 2));
@@ -726,30 +726,30 @@ class HoughTree
     }
 
     // Get the value of a single feature for each element in a list.
-    void getNodeFeatures(Node const * node, long feature_index, TrainingData const & training_data,
+    void getNodeFeatures(Node const * node, intx feature_index, TrainingData const & training_data,
                          Array<double> & features) const
     {
       features.resize(node->elems.size());
-      training_data.getFeatures(feature_index, (long)node->elems.size(), &node->elems[0], &features[0]);
+      training_data.getFeatures(feature_index, (intx)node->elems.size(), &node->elems[0], &features[0]);
     }
 
     // Measure the frequency of occurrence of each class in a set of elements.
-    void measureClassFrequencies(Array<long> const & elems, TrainingData const & training_data,
-                                 Array<long> & class_freq) const
+    void measureClassFrequencies(Array<intx> const & elems, TrainingData const & training_data,
+                                 Array<intx> & class_freq) const
     {
       class_freq.resize((size_t)num_classes);
       std::fill(class_freq.begin(), class_freq.end(), 0);
 
-      Array<long> classes(elems.size());
-      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+      Array<intx> classes(elems.size());
+      training_data.getClasses((intx)elems.size(), &elems[0], &classes[0]);
 
       for (size_t i = 0; i < classes.size(); ++i)
         class_freq[(size_t)classes[i]]++;
     }
 
     // Measure the cumulative frequency of occurrence of classes, in order of ID, in a set of elements.
-    void measureClassCumulativeFrequencies(Array<long> const & elems, TrainingData const & training_data,
-                                           Array<long> & class_cum_freq) const
+    void measureClassCumulativeFrequencies(Array<intx> const & elems, TrainingData const & training_data,
+                                           Array<intx> & class_cum_freq) const
     {
       measureClassFrequencies(elems, training_data, class_cum_freq);
 
@@ -758,10 +758,10 @@ class HoughTree
     }
 
     // Sort a set of elements by their class ID's.
-    void sortByClass(Array<long> & elems, TrainingData const & training_data) const
+    void sortByClass(Array<intx> & elems, TrainingData const & training_data) const
     {
-      Array<long> classes(elems.size());
-      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+      Array<intx> classes(elems.size());
+      training_data.getClasses((intx)elems.size(), &elems[0], &classes[0]);
 
       // Quadratic-time sort but we expect this to be called only by leaf nodes with few elements
       for (size_t i = 0; i < elems.size(); ++i)
@@ -774,14 +774,14 @@ class HoughTree
     }
 
     // Measure the classification/regression uncertainty of a collection training examples.
-    double measureUncertainty(Array<long> const & elems, TrainingData const & training_data, MeasureMode measure_mode) const
+    double measureUncertainty(Array<intx> const & elems, TrainingData const & training_data, MeasureMode measure_mode) const
     {
       if (measure_mode == CLASS_UNCERTAINTY)
       {
         // The uncertainty is defined to be the Shannon entropy of the labeling:
         //   Entropy = -\sum_{c \in Classes} p(c) log p(c)
 
-        Array<long> class_freq;
+        Array<intx> class_freq;
         measureClassFrequencies(elems, training_data, class_freq);
 
         double entropy = 0;
@@ -800,13 +800,13 @@ class HoughTree
         // one object voting for parameters of another object) are ignored.
 
         // First get the class of each training example
-        Array<long> classes(elems.size());
-        training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+        Array<intx> classes(elems.size());
+        training_data.getClasses((intx)elems.size(), &elems[0], &classes[0]);
 
         // Now measure the vote variance per class
         MatrixX<double> sum_votes(num_classes, max_vote_params); sum_votes.setZero();  // to measure "square of mean"
         Array<double> sum_vote_sqlen((size_t)num_classes, 0.0);                        // to measure "mean of squares"
-        Array<long> class_freq((size_t)num_classes, 0);                                // only count elements that have valid
+        Array<intx> class_freq((size_t)num_classes, 0);                                // only count elements that have valid
                                                                                        // Hough votes for their own classes
         Array<double> vote((size_t)max_vote_params);
         for (size_t i = 0; i < elems.size(); ++i)
@@ -819,7 +819,7 @@ class HoughTree
           // Add up:
           //   - the vote vector
           //   - the square(d length) of the vote
-          for (long j = 0; j < num_vote_params[(size_t)classes[i]]; ++j)
+          for (intx j = 0; j < num_vote_params[(size_t)classes[i]]; ++j)
           {
             double v = vote[(size_t)j];
             sum_votes(classes[i], j) += v;
@@ -833,16 +833,16 @@ class HoughTree
         // parameters) are directly comparable.
 
         double tot_var = 0;
-        for (long i = 0; i < num_classes; ++i)
+        for (intx i = 0; i < num_classes; ++i)
         {
           if (i == BACKGROUND_CLASS)
             continue;
 
-          long num_class_members = class_freq[(size_t)i];
+          intx num_class_members = class_freq[(size_t)i];
           if (num_class_members > 0)
           {
             double sqlen_of_mean = 0;
-            for (long j = 0; j < num_vote_params[(size_t)i]; ++j)
+            for (intx j = 0; j < num_vote_params[(size_t)i]; ++j)
             {
               double v = sum_votes(i, j);
               sqlen_of_mean += (v * v);
@@ -859,7 +859,7 @@ class HoughTree
     }
 
     // Measure the classification/regression uncertainty after splitting elements along a feature.
-    double measureUncertaintyAfterSplit(Array<long> const & elems, Array<double> const & features, double split_value,
+    double measureUncertaintyAfterSplit(Array<intx> const & elems, Array<double> const & features, double split_value,
                                         TrainingData const & training_data, MeasureMode measure_mode, bool & valid_split) const
     {
       static Real const MAX_ASYMMETRY = 7;
@@ -872,7 +872,7 @@ class HoughTree
         return 0;
       }
 
-      Array<long> left_elems, right_elems;
+      Array<intx> left_elems, right_elems;
       for (size_t i = 0; i < elems.size(); ++i)
       {
         if (features[i] < split_value)
@@ -934,17 +934,17 @@ class HoughTree
     }
 
     // Estimate the distribution of a set of 1D feature values
-    void estimateClassFeatureDistributions(Array<double> const & features, Array<long> const & elems,
+    void estimateClassFeatureDistributions(Array<double> const & features, Array<intx> const & elems,
                                            TrainingData const & training_data, Array<Gaussian1D> & class_feature_distrib)
     {
       alwaysAssertM(!elems.empty(), "HoughForest: Can't model distribution of empty set");
 
-      Array<long> classes(elems.size());
-      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+      Array<intx> classes(elems.size());
+      training_data.getClasses((intx)elems.size(), &elems[0], &classes[0]);
 
       Array<double> sum((size_t)num_classes, 0.0);
       Array<double> sum_squares((size_t)num_classes, 0.0);
-      Array<long>   class_freq((size_t)num_classes, 0);
+      Array<intx>   class_freq((size_t)num_classes, 0);
 
       for (size_t i = 0; i < elems.size(); ++i)
       {
@@ -957,7 +957,7 @@ class HoughTree
       class_feature_distrib.resize(class_freq.size());
       for (size_t i = 0; i < class_freq.size(); ++i)
       {
-        long n = class_freq[i];
+        intx n = class_freq[i];
         if (n > 0)
         {
           double mean = sum[i] / n;
@@ -970,41 +970,41 @@ class HoughTree
       }
     }
 
-    void estimateClassGaussians(Array<long> const & elems, TrainingData const & training_data,
+    void estimateClassGaussians(Array<intx> const & elems, TrainingData const & training_data,
                                 Array<Gaussian> & gaussians)
     {
       // NOTE: Incomplete
 
       gaussians.resize((size_t)num_classes);
 
-      Array<long> classes(elems.size());
-      training_data.getClasses((long)elems.size(), &elems[0], &classes[0]);
+      Array<intx> classes(elems.size());
+      training_data.getClasses((intx)elems.size(), &elems[0], &classes[0]);
 
-      MatrixX<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (long)elems.size());
-      for (long i = 0; i < num_features; ++i)
-        training_data.getFeatures(i, (long)elems.size(), &elems[0], &all_features(i, 0));
+      MatrixX<double, MatrixLayout::ROW_MAJOR> all_features(num_features, (intx)elems.size());
+      for (intx i = 0; i < num_features; ++i)
+        training_data.getFeatures(i, (intx)elems.size(), &elems[0], &all_features(i, 0));
 
-      for (long i = 0; i < num_classes; ++i)
+      for (intx i = 0; i < num_classes; ++i)
         estimateClassGaussian(i);
     }
 
-    void estimateClassGaussian(long c)
+    void estimateClassGaussian(intx c)
     {
       // NOTE: Incomplete
     }
 
     HoughForest * parent;
-    long num_classes;
-    long num_features;
-    Array<long> num_vote_params;
-    long max_vote_params;
+    intx num_classes;
+    intx num_features;
+    Array<intx> num_vote_params;
+    intx max_vote_params;
     Options options;
     Node * root;
 
 }; // class HoughTree
 
 double
-uncertaintyForDominantFraction(double dominant_fraction, long num_classes)
+uncertaintyForDominantFraction(double dominant_fraction, intx num_classes)
 {
   double rem_fraction = (1.0 - dominant_fraction) / num_classes;
   if (rem_fraction < 1.0e-10)
@@ -1096,11 +1096,11 @@ HoughForest::Options::save(std::string const & path) const
 void
 HoughForest::Options::deserialize(BinaryInputStream & input, Codec const & codec)
 {
-  max_depth                 =  (long)input.readInt64();
-  max_leaf_elements         =  (long)input.readInt64();
-  max_candidate_features    =  (long)input.readInt64();
-  num_feature_expansions    =  (long)input.readInt64();
-  max_candidate_thresholds  =  (long)input.readInt64();
+  max_depth                 =  (intx)input.readInt64();
+  max_leaf_elements         =  (intx)input.readInt64();
+  max_candidate_features    =  (intx)input.readInt64();
+  num_feature_expansions    =  (intx)input.readInt64();
+  max_candidate_thresholds  =  (intx)input.readInt64();
   min_class_uncertainty     =  (double)input.readFloat64();
   max_dominant_fraction     =  (double)input.readFloat64();
   probabilistic_sampling    =  (input.readInt8() != 0);
@@ -1118,15 +1118,15 @@ HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
     input.readSymbol("=");
 
     if (field == "max_depth")
-      max_depth = (long)input.readNumber();
+      max_depth = (intx)input.readNumber();
     else if (field == "max_leaf_elements")
-      max_leaf_elements = (long)input.readNumber();
+      max_leaf_elements = (intx)input.readNumber();
     else if (field == "max_candidate_features")
-      max_candidate_features = (long)input.readNumber();
+      max_candidate_features = (intx)input.readNumber();
     else if (field == "num_feature_expansions")
-      num_feature_expansions = (long)input.readNumber();
+      num_feature_expansions = (intx)input.readNumber();
     else if (field == "max_candidate_thresholds")
-      max_candidate_thresholds = (long)input.readNumber();
+      max_candidate_thresholds = (intx)input.readNumber();
     else if (field == "min_class_uncertainty")
       min_class_uncertainty = input.readNumber();
     else if (field == "max_dominant_fraction")
@@ -1166,7 +1166,7 @@ HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) 
   output.printf("verbose = %d\n", verbose);
 }
 
-HoughForest::HoughForest(long num_classes_, long num_features_, long const * num_vote_params_, Options const & options_)
+HoughForest::HoughForest(intx num_classes_, intx num_features_, intx const * num_vote_params_, Options const & options_)
 : num_classes(num_classes_),
   num_features(num_features_),
   num_vote_params(num_vote_params_, num_vote_params_ + num_classes_),
@@ -1176,7 +1176,7 @@ HoughForest::HoughForest(long num_classes_, long num_features_, long const * num
   alwaysAssertM(num_classes_ >= 2, "HoughForest: Can't create Hough forest for less than 2 classes");
   alwaysAssertM(num_features_ >= 1, "HoughForest: Can't create Hough forest with no features");
 
-  for (long i = 0; i < num_classes_; ++i)
+  for (intx i = 0; i < num_classes_; ++i)
   {
     alwaysAssertM(num_vote_params_[i] >= 1,
                   format("HoughForest: Can't create Hough forest with no Hough vote parameters for class %ld", i));
@@ -1223,9 +1223,9 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
 
   if (opts_.max_candidate_features < 0)
   {
-    // opts_.max_candidate_features = (long)std::ceil(num_features / 10.0);
+    // opts_.max_candidate_features = (intx)std::ceil(num_features / 10.0);
     // opts_.max_candidate_features = num_features;
-    opts_.max_candidate_features = (long)std::ceil(std::sqrt((double)num_features));
+    opts_.max_candidate_features = (intx)std::ceil(std::sqrt((double)num_features));
   }
 
   if (opts_.num_feature_expansions < 0)
@@ -1236,7 +1236,7 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
   if (opts_.max_candidate_thresholds < 0)
   {
     if (training_data_)
-      opts_.max_candidate_thresholds = std::max(5L, (long)std::ceil(training_data_->numExamples() / 1000.0));
+      opts_.max_candidate_thresholds = std::max(5L, (intx)std::ceil(training_data_->numExamples() / 1000.0));
     else
       opts_.max_candidate_thresholds = 5;
   }
@@ -1250,13 +1250,13 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
 }
 
 void
-HoughForest::train(long num_trees, TrainingData const & training_data_)
+HoughForest::train(intx num_trees, TrainingData const & training_data_)
 {
   alwaysAssertM(num_trees >= 0, "HoughForest: Forest cannot have a negative number of trees");
   alwaysAssertM(training_data_.numFeatures() == numFeatures(), "HoughForest: Training data has different number of features");
   alwaysAssertM(training_data_.numClasses() == numClasses(), "HoughForest: Training data has different number of classes");
 
-  for (long i = 0; i < num_classes; ++i)
+  for (intx i = 0; i < num_classes; ++i)
   {
     alwaysAssertM(training_data_.numVoteParameters(i) == numVoteParameters(i),
                   format("HoughForest: Training data has different number of vote parameters for class %ld", i));
@@ -1307,16 +1307,16 @@ HoughForest::train(long num_trees, TrainingData const & training_data_)
   THEA_CONSOLE << "HoughForest: Training completed in " << overall_timer.elapsedTime() << 's';
 }
 
-long
-HoughForest::voteSelf(long query_class, double const * features, long num_votes, VoteCallback & callback) const
+intx
+HoughForest::voteSelf(intx query_class, double const * features, intx num_votes, VoteCallback & callback) const
 {
   if (trees.empty())
     return 0;
 
-  long votes_cast = 0;
-  for (long i = 0; i < num_votes; ++i)
+  intx votes_cast = 0;
+  for (intx i = 0; i < num_votes; ++i)
   {
-    long tree_index = Random::common().integer(0, (long)trees.size() - 1);
+    intx tree_index = Random::common().integer(0, (intx)trees.size() - 1);
     if (trees[(size_t)tree_index]->singleVoteSelf(query_class, features, callback))
       votes_cast++;
   }
@@ -1325,10 +1325,10 @@ HoughForest::voteSelf(long query_class, double const * features, long num_votes,
 }
 
 void
-HoughForest::singleSelfVoteByLookup(long index, double weight, VoteCallback & callback) const
+HoughForest::singleSelfVoteByLookup(intx index, double weight, VoteCallback & callback) const
 {
-  long c = all_classes[(size_t)index];
-  long nv = num_vote_params[(size_t)c];
+  intx c = all_classes[(size_t)index];
+  intx nv = num_vote_params[(size_t)c];
   callback(Vote(c,
                 nv,
                 all_self_votes.data() + index * all_self_votes.cols(),
@@ -1341,7 +1341,7 @@ HoughForest::singleSelfVoteByLookup(long index, double weight, VoteCallback & ca
 void
 HoughForest::cacheTrainingData(TrainingData const & training_data)
 {
-  long num_examples = training_data.numExamples();
+  intx num_examples = training_data.numExamples();
 
   // Cache classes
   {
@@ -1353,7 +1353,7 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
   {
     all_features.resize(num_examples, num_features);
     VectorXd features(num_examples);
-    for (long i = 0; i < num_features; ++i)
+    for (intx i = 0; i < num_features; ++i)
     {
       training_data.getFeatures(i, &features[0]);  // gets feature i for all training examples
       all_features.col(i) = features;
@@ -1363,7 +1363,7 @@ HoughForest::cacheTrainingData(TrainingData const & training_data)
   // Cache self-votes, one example per row
   {
     all_self_votes.resize(num_examples, max_vote_params);
-    for (long i = 0; i < num_examples; ++i)
+    for (intx i = 0; i < num_examples; ++i)
     {
       double * row_start = all_self_votes.data() + i * all_self_votes.cols();
       training_data.getSelfVote(i, row_start);
@@ -1414,19 +1414,19 @@ HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
 
   input.setEndianness(Endianness::LITTLE);
 
-  num_classes = (long)input.readInt64();
-  num_features = (long)input.readInt64();
+  num_classes = (intx)input.readInt64();
+  num_features = (intx)input.readInt64();
 
   num_vote_params.resize((size_t)num_classes);
-  long max_vote_params = 0;
+  intx max_vote_params = 0;
   for (size_t i = 0; i < num_vote_params.size(); ++i)
   {
-    num_vote_params[i] = (long)input.readInt64();
+    num_vote_params[i] = (intx)input.readInt64();
     if (i == 0 || num_vote_params[i] > max_vote_params)
       max_vote_params = num_vote_params[i];
   }
 
-  long num_trees = (long)input.readInt64();
+  intx num_trees = (intx)input.readInt64();
   trees.resize(num_trees);
   for (size_t i = 0; i < trees.size(); ++i)
   {
@@ -1437,20 +1437,20 @@ HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
   int64 num_examples = input.readInt64();
   all_classes.resize((size_t)num_examples);
   for (size_t i = 0; i < all_classes.size(); ++i)
-    all_classes[i] = (long)input.readInt64();
+    all_classes[i] = (intx)input.readInt64();
 
-  long nrows = (long)input.readInt64();
-  long ncols = (long)input.readInt64();
+  intx nrows = (intx)input.readInt64();
+  intx ncols = (intx)input.readInt64();
   all_features.resize(nrows, ncols);
-  for (long i = 0; i < nrows; ++i)
-    for (long j = 0; j < ncols; ++j)
+  for (intx i = 0; i < nrows; ++i)
+    for (intx j = 0; j < ncols; ++j)
       all_features(i, j) = input.readFloat64();
 
-  nrows = (long)input.readInt64();
-  ncols = (long)input.readInt64();
+  nrows = (intx)input.readInt64();
+  ncols = (intx)input.readInt64();
   all_self_votes.resize(nrows, ncols);
-  for (long i = 0; i < nrows; ++i)
-    for (long j = 0; j < ncols; ++j)
+  for (intx i = 0; i < nrows; ++i)
+    for (intx j = 0; j < ncols; ++j)
       all_self_votes(i, j) = input.readFloat64();
 }
 
@@ -1478,14 +1478,14 @@ HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
 
   output.writeInt64(all_features.rows());
   output.writeInt64(all_features.cols());
-  for (long i = 0; i < all_features.rows(); ++i)
-    for (long j = 0; j < all_features.cols(); ++j)
+  for (intx i = 0; i < all_features.rows(); ++i)
+    for (intx j = 0; j < all_features.cols(); ++j)
       output.writeFloat64(all_features(i, j));
 
   output.writeInt64(all_self_votes.rows());
   output.writeInt64(all_self_votes.cols());
-  for (long i = 0; i < all_self_votes.rows(); ++i)
-    for (long j = 0; j < all_self_votes.cols(); ++j)
+  for (intx i = 0; i < all_self_votes.rows(); ++i)
+    for (intx j = 0; j < all_self_votes.cols(); ++j)
       output.writeFloat64(all_self_votes(i, j));
 }
 

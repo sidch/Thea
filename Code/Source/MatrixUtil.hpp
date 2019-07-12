@@ -637,10 +637,10 @@ eigenSolve(Eigen::MatrixBase< Matrix<2, 2, T> > const & m, T * eigenvalues, Vect
  */
 template <typename Derived>
 std::string
-toString(Eigen::DenseBase<Derived> const & m, long max_rows = 4, long max_cols = 4)
+toString(Eigen::DenseBase<Derived> const & m, intx max_rows = 4, intx max_cols = 4)
 {
-  long first_rows = m.rows(), last_rows = 0;
-  long first_cols = m.cols(), last_cols = 0;
+  intx first_rows = m.rows(), last_rows = 0;
+  intx first_cols = m.cols(), last_cols = 0;
   if (m.rows() > max_rows)
   {
     first_rows = max_rows / 2 + max_rows % 2;
@@ -657,17 +657,17 @@ toString(Eigen::DenseBase<Derived> const & m, long max_rows = 4, long max_cols =
 
   for (int i = 0; i < 2; ++i)
   {
-    long row_begin = (i == 0 ? 0 : m.rows() - last_rows);
-    long row_end   = (i == 0 ? first_rows : m.rows());
+    intx row_begin = (i == 0 ? 0 : m.rows() - last_rows);
+    intx row_end   = (i == 0 ? first_rows : m.rows());
 
-    for (long r = row_begin; r < row_end; ++r)
+    for (intx r = row_begin; r < row_end; ++r)
     {
       for (int j = 0; j < 2; ++j)
       {
-        long col_begin = (j == 0 ? 0 : m.cols() - last_cols);
-        long col_end   = (j == 0 ? first_cols : m.cols());
+        intx col_begin = (j == 0 ? 0 : m.cols() - last_cols);
+        intx col_end   = (j == 0 ? first_cols : m.cols());
 
-        for (long c = col_begin; c < col_end; ++c)
+        for (intx c = col_begin; c < col_end; ++c)
         {
           if (c > col_begin) oss << ' ';
           oss << m(r, c);

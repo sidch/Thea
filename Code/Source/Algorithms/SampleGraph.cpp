@@ -119,7 +119,7 @@ class SamplePointerGraph
     typedef SurfaceSample::Neighbor const * NeighborConstIterator;
 
     SamplePointerGraph(NodeArray * nodes_) : nodes(nodes_) {}
-    long numVertices() const { return (long)nodes->size(); }
+    intx numVertices() const { return (intx)nodes->size(); }
 
     VertexIterator verticesBegin() { return nodes->begin(); }
     VertexConstIterator verticesBegin() const { return nodes->begin(); }
@@ -128,7 +128,7 @@ class SamplePointerGraph
     VertexHandle getVertex(VertexIterator vi) { return *vi; }
     VertexConstHandle getVertex(VertexConstIterator vi) const { return *vi; }
 
-    long numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
+    intx numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
     NeighborIterator neighborsBegin(VertexHandle vertex)
     {
       return vertex->getNeighbors().isEmpty() ? NULL : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
@@ -151,7 +151,7 @@ class SamplePointerGraph
 // Callback for shortest paths algorithm.
 struct DijkstraCallback
 {
-  DijkstraCallback(SurfaceSample * sample_, long num_orig_samples_, int max_nbrs_)
+  DijkstraCallback(SurfaceSample * sample_, intx num_orig_samples_, int max_nbrs_)
   : sample(sample_), num_orig_samples(num_orig_samples_), max_nbrs(max_nbrs_)
   {
     sample->getNeighbors().clear();
@@ -167,7 +167,7 @@ struct DijkstraCallback
   }
 
   SurfaceSample * sample;
-  long num_orig_samples;
+  intx num_orig_samples;
   int max_nbrs;
 };
 
@@ -185,7 +185,7 @@ SampleGraph::extractOriginalAdjacencies(Array<SurfaceSample *> & sample_ptrs)
   for (size_t i = 0; i < samples.size(); ++i)
   {
     samples_with_new_nbrs[i] = samples[i];
-    DijkstraCallback callback(&samples_with_new_nbrs[i], (long)samples.size(), options.max_degree);
+    DijkstraCallback callback(&samples_with_new_nbrs[i], (intx)samples.size(), options.max_degree);
     shortest_paths.dijkstraWithCallback(graph, &samples[i], &callback);
   }
 
@@ -228,7 +228,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
       return false;
     }
 
-    samples.push_back(SurfaceSample((long)samples.size(), 0));
+    samples.push_back(SurfaceSample((intx)samples.size(), 0));
     samples.back().setPosition(p);
     if (has_normals) samples.back().setNormal(n);
   }
@@ -244,7 +244,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
   if (std::getline(gin, line))
   {
     std::istringstream line_in(line);
-    long max_nbrs;
+    intx max_nbrs;
     if (!(line_in >> max_nbrs) || max_nbrs < 0)
     {
       THEA_ERROR << "SampleGraph: Could not read valid maximum degree from '" << graph_path << '\'';
@@ -260,7 +260,7 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
   }
 
   Array<SurfaceSample::Neighbor> nbrs((size_t)options.max_degree);
-  long num_nbrs, nbr_index;
+  intx num_nbrs, nbr_index;
   for (size_t i = 0; i < samples.size(); ++i)
   {
     if (!std::getline(gin, line))
@@ -276,9 +276,9 @@ SampleGraph::load(std::string const & graph_path, std::string const & samples_pa
       return false;
     }
 
-    for (long j = 0; j < num_nbrs; ++j)
+    for (intx j = 0; j < num_nbrs; ++j)
     {
-      if (!(line_in >> nbr_index) || nbr_index < 0 || nbr_index >= (long)samples.size())
+      if (!(line_in >> nbr_index) || nbr_index < 0 || nbr_index >= (intx)samples.size())
       {
         THEA_ERROR << "SampleGraph: Could not read valid neighbor " << j << " of vertex " << i << " from '" << graph_path
                    << '\'';

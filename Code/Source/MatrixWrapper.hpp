@@ -88,57 +88,57 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
     MatrixT & getMatrix() { return *m; }
 
     // Functions from AbstractMatrix
-    long rows() const { return m->rows(); }
-    long cols() const { return m->cols(); }
+    int64 rows() const { return (int64)m->rows(); }
+    int64 cols() const { return (int64)m->cols(); }
     void setZero() { m->setZero(); }
 
-    bool isResizable() const
+    int8 isResizable() const
     {
       return MatrixT::RowsAtCompileTime == Eigen::Dynamic || MatrixT::ColsAtCompileTime == Eigen::Dynamic;
     }
 
-    bool resize(long nrows, long ncols)
+    int8 resize(int64 nrows, int64 ncols)
     {
       try  // no exceptions should cross shared library boundaries
       {
         m->resize(nrows, ncols);
         return (m->rows() == nrows && m->cols() == ncols);  // check if it failed without throwing an exception
       }
-      THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
+      THEA_STANDARD_CATCH_BLOCKS(return 0;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
     }
 
     // Functions from AbstractAddressableMatrix
-    Value const & at(long row, long col) const { return (*m)(row, col); }
-    Value & at(long row, long col) { return (*m)(row, col); }
+    Value const & at(int64 row, int64 col) const { return (*m)(row, col); }
+    Value & at(int64 row, int64 col) { return (*m)(row, col); }
 
     // Functions from AbstractDenseMatrix
-    bool isRowMajor() const { return MatrixT::Flags & Eigen::RowMajorBit; }
-    bool isColumnMajor() const { return !isRowMajor(); }
+    int8 isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
+    int8 isColumnMajor() const { return isRowMajor(); }
     Value const * data() const { return m->data(); }
     Value * data() { return m->data(); }
     void fill(Value const & value) { m->fill(value); }
 
-    void getRow(long row, Value * values) const
+    void getRow(int64 row, Value * values) const
     {
-      for (long c = 0, ncols = m->cols(); c < ncols; ++c)
+      for (intx c = 0, ncols = m->cols(); c < ncols; ++c)
         values[c] = (*m)(row, c);
     }
 
-    void setRow(long row, Value const * values)
+    void setRow(int64 row, Value const * values)
     {
-      for (long c = 0, ncols = m->cols(); c < ncols; ++c)
+      for (intx c = 0, ncols = m->cols(); c < ncols; ++c)
         (*m)(row, c) = values[c];
     }
 
-    void getColumn(long col, Value * values) const
+    void getColumn(int64 col, Value * values) const
     {
-      for (long r = 0, nrows = m->rows(); r < nrows; ++r)
+      for (intx r = 0, nrows = m->rows(); r < nrows; ++r)
         values[r] = (*m)(r, col);
     }
 
-    void setColumn(long col, Value const * values)
+    void setColumn(int64 col, Value const * values)
     {
-      for (long r = 0, nrows = m->rows(); r < nrows; ++r)
+      for (intx r = 0, nrows = m->rows(); r < nrows; ++r)
         (*m)(r, col) = values[r];
     }
 

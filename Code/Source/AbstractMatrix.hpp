@@ -64,23 +64,23 @@ class /* THEA_API */ AbstractMatrix
     virtual ~AbstractMatrix() {}
 
     /** Get the number of rows. */
-    virtual long rows() const = 0;
+    virtual int64 rows() const = 0;
 
     /** Get the number of columns. */
-    virtual long cols() const = 0;
+    virtual int64 cols() const = 0;
 
     /** Set all elements to zero. */
     virtual void setZero() = 0;
 
     /** Check if the matrix can be resized. */
-    virtual bool isResizable() const = 0;
+    virtual int8 isResizable() const = 0;
 
     /**
      * Resize the matrix to new dimensions.
      *
      * @return True if the matrix was successfully resized, else false.
      */
-    virtual bool resize(long nrows, long ncols) = 0;
+    virtual int8 resize(int64 nrows, int64 ncols) = 0;
 
     /**
      * If the matrix elements are addressable by (row, col) pairs, get a pointer to a derived interface supporting such access.

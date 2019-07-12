@@ -61,11 +61,11 @@
 // made about the suitability of this software for any purpose.  It is
 // provided "as is" without express or implied warranty.
 
-__inline long int
+__inline intx int
 lrint(double flt)
 {
 #ifdef _M_X64
-  return (long)((flt > 0.0) ? (flt + 0.5) : (flt - 0.5));
+  return (intx)((flt > 0.0) ? (flt + 0.5) : (flt - 0.5));
 #else
   int intgr;
 
@@ -79,11 +79,11 @@ lrint(double flt)
 #endif
 }
 
-__inline long int
+__inline intx int
 lrintf(float flt)
 {
 #ifdef _M_X64
-  return (long)((flt > 0.0f) ? (flt + 0.5f) : (flt - 0.5f));
+  return (intx)((flt > 0.0f) ? (flt + 0.5f) : (flt - 0.5f));
 #else
   int intgr;
 
@@ -180,7 +180,7 @@ fastLog2(float32 f)
 
 /** Very fast test to check if a number is a power of 2 or not. */
 inline bool
-isPowerOf2(unsigned long i)
+isPowerOf2(uintx i)
 {
   return i > 0 && !(i & (i - 1));
 }
@@ -568,7 +568,7 @@ cspline(T const & a, T const & da, T const & b, T const & db, S const & s)
  * @param split_ratio The average splitting ratio at a node, expressed as the fraction of elements in the larger child of the
  *   node (0.5 is a perfectly fair split). Must be in the range (0, 1).
  */
-THEA_API int binaryTreeDepth(long num_elems, int max_elems_in_leaf, Real split_ratio = 0.5);
+THEA_API int binaryTreeDepth(intx num_elems, int max_elems_in_leaf, Real split_ratio = 0.5);
 
 /**
  * Root of linear equation c0 + c1 * x = 0.

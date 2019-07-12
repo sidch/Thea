@@ -77,41 +77,42 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     /** Destructor. */
     ~ImageMatrix() {}
 
-    long rows() const { return image->getHeight(); }
-    long cols() const { return image->getWidth(); }
-    bool isResizable() const { return true; }
-    bool resize(long num_rows, long num_cols) { image->resize(image->getType(), (int)num_cols, (int)num_rows); return true; }
+    int64 rows() const { return image->getHeight(); }
+    int64 cols() const { return image->getWidth(); }
+    int8 isResizable() const { return true; }
+    int8 resize(int64 num_rows, int64 num_cols) { image->resize(image->getType(), num_cols, num_rows); return true; }
+
     void setZero()
     {
       // Assume all image channels are zero when they are bitwise zero. Scan width is in bytes.
       std::memset(image->getData(), 0, image->getScanWidth() * image->getHeight());
     }
 
-    Value const & at(long row, long col) const { return ((Value const *)image->getScanLine(row))[col]; }
-    Value & at(long row, long col) { return ((Value *)image->getScanLine(row))[col]; }
+    Value const & at(int64 row, int64 col) const { return ((Value const *)image->getScanLine(row))[col]; }
+    Value & at(int64 row, int64 col) { return ((Value *)image->getScanLine(row))[col]; }
 
     // TODO: These could perhaps be made faster by avoiding at()
-    void getRow(long row, Value * values) const
+    void getRow(int64 row, Value * values) const
     {
-      for (long c = 0, ncols = cols(); c < ncols; ++c)
+      for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
         values[c] = at(row, c);
     }
 
-    void setRow(long row, Value const * values)
+    void setRow(int64 row, Value const * values)
     {
-      for (long c = 0, ncols = cols(); c < ncols; ++c)
+      for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
         at(row, c) = values[c];
     }
 
-    void getColumn(long col, Value * values) const
+    void getColumn(int64 col, Value * values) const
     {
-      for (long r = 0, nrows = rows(); r < nrows; ++r)
+      for (intx r = 0, nrows = (intx)rows(); r < nrows; ++r)
         values[r] = at(r, col);
     }
 
-    void setColumn(long col, Value const * values)
+    void setColumn(int64 col, Value const * values)
     {
-      for (long r = 0, nrows = rows(); r < nrows; ++r)
+      for (intx r = 0, nrows = (intx)rows(); r < nrows; ++r)
         at(r, col) = values[r];
     }
 

@@ -93,9 +93,9 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
 
     /**
      * Get the i'th corner of the box, for \a i in the range [0, 2^N - 1]. This function works as expected only if
-     * N <= sizeof(unsigned long).
+     * N <= sizeof(uintx).
      */
-    VectorT getCorner(unsigned long i) const
+    VectorT getCorner(uintx i) const
     {
       return frame.pointToWorldSpace(aab.getCorner(i));
     }
@@ -124,8 +124,8 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     /** Check if the box contains an axis-aligned box. */
     bool contains(AxisAlignedBoxT const & aab_) const
     {
-      // FIXME: Currently works only for N < sizeof(unsigned long)
-      for (unsigned long i = 0; i < (1 << N); ++i)
+      // FIXME: Currently works only for N < sizeof(uintx)
+      for (uintx i = 0; i < (1 << N); ++i)
         if (!contains(aab_.getCorner(i)))
           return false;
 
@@ -137,8 +137,8 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     {
       CoordinateFrameT combined_transform = frame.inverse() * other.frame;
 
-      // FIXME: Currently works only for N < sizeof(unsigned long)
-      for (unsigned long i = 0; i < (1 << N); ++i)
+      // FIXME: Currently works only for N < sizeof(uintx)
+      for (uintx i = 0; i < (1 << N); ++i)
         if (!aab.contains(combined_transform * other.aab.getCorner(i)))
           return false;
 

@@ -81,7 +81,7 @@ class ICP3
      * @param max_iterations_ The maximum number of iterations.
      * @param verbose_ If true, print extra debugging information.
      */
-    ICP3(ScalarT fractional_error_threshold_ = -1, long max_iterations_ = -1, bool verbose_ = false)
+    ICP3(ScalarT fractional_error_threshold_ = -1, intx max_iterations_ = -1, bool verbose_ = false)
     : fractional_error_threshold(fractional_error_threshold_), max_iterations(max_iterations_), has_up(false), verbose(verbose_)
     {
       if (fractional_error_threshold < 0)
@@ -109,7 +109,7 @@ class ICP3
 
     /** Find the transform that best aligns the point set \a from to the point set \a to. */
     template <typename FromT, typename ToT>
-    AffineTransformT align(long from_num_pts, FromT const * from, long to_num_pts, ToT const * to, ScalarT * error = NULL) const
+    AffineTransformT align(intx from_num_pts, FromT const * from, intx to_num_pts, ToT const * to, ScalarT * error = NULL) const
     {
       return align(from_num_pts, from, (DefaultWeightFunc<FromT> *)NULL, to_num_pts, to, error);
     }
@@ -119,8 +119,8 @@ class ICP3
      * cost of aligning each element of \a from.
      */
     template <typename FromT, typename ToT, typename FromWeightFuncT>
-    AffineTransformT align(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
-                           long to_num_pts, ToT const * to, ScalarT * error = NULL) const
+    AffineTransformT align(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+                           intx to_num_pts, ToT const * to, ScalarT * error = NULL) const
     {
       if (from_num_pts <= 0 || to_num_pts <= 0)
         return AffineTransformT::identity();
@@ -133,7 +133,7 @@ class ICP3
 
     /** Find the transform that best aligns the point set \a from to the proximity query structure \a to. */
     template <typename FromT, typename ToProximityQueryStructureT>
-    AffineTransformT align(long from_num_pts, FromT const * from, ToProximityQueryStructureT const & to, ScalarT * error = NULL)
+    AffineTransformT align(intx from_num_pts, FromT const * from, ToProximityQueryStructureT const & to, ScalarT * error = NULL)
                      const
     {
       return align(from_num_pts, from, (DefaultWeightFunc<FromT> *)NULL, to, error);
@@ -144,7 +144,7 @@ class ICP3
      * assigned to the cost of aligning each element of \a from.
      */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
-    AffineTransformT align(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT align(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                            ToProximityQueryStructureT const & to, ScalarT * error = NULL) const
     {
       return align(from_num_pts, from, from_weight_func, NULL, to, NULL, error);
@@ -155,8 +155,8 @@ class ICP3
      * planes. The computed alignment will ensure the symmetry planes coincide.
      */
     template <typename FromT, typename ToT>
-    AffineTransformT alignSymmetric(long from_num_pts, FromT const * from, PlaneT const & from_symmetry_plane,
-                                    long to_num_pts, ToT const * to, PlaneT const & to_symmetry_plane, ScalarT * error = NULL)
+    AffineTransformT alignSymmetric(intx from_num_pts, FromT const * from, PlaneT const & from_symmetry_plane,
+                                    intx to_num_pts, ToT const * to, PlaneT const & to_symmetry_plane, ScalarT * error = NULL)
                                     const
     {
       return alignSymmetric(from_num_pts, from, (DefaultWeightFunc<FromT> *)NULL, from_symmetry_plane,
@@ -169,9 +169,9 @@ class ICP3
      * ensure the symmetry planes coincide.
      */
     template <typename FromT, typename ToT, typename FromWeightFuncT>
-    AffineTransformT alignSymmetric(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT alignSymmetric(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                     PlaneT const & from_symmetry_plane,
-                                    long to_num_pts, ToT const * to, PlaneT const & to_symmetry_plane, ScalarT * error = NULL)
+                                    intx to_num_pts, ToT const * to, PlaneT const & to_symmetry_plane, ScalarT * error = NULL)
                                     const
     {
       if (from_num_pts <= 0 || to_num_pts <= 0)
@@ -188,7 +188,7 @@ class ICP3
      * and \a to have known symmetry planes. The computed alignment will ensure the symmetry planes coincide.
      */
     template <typename FromT, typename ToProximityQueryStructureT>
-    AffineTransformT alignSymmetric(long from_num_pts, FromT const * from, PlaneT const & from_symmetry_plane,
+    AffineTransformT alignSymmetric(intx from_num_pts, FromT const * from, PlaneT const & from_symmetry_plane,
                                     ToProximityQueryStructureT const & to, PlaneT const & to_symmetry_plane,
                                     ScalarT * error = NULL) const
     {
@@ -202,7 +202,7 @@ class ICP3
      * The computed alignment will ensure the symmetry planes coincide.
      */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
-    AffineTransformT alignSymmetric(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT alignSymmetric(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                     PlaneT const & from_symmetry_plane,
                                     ToProximityQueryStructureT const & to, PlaneT const & to_symmetry_plane,
                                     ScalarT * error = NULL) const
@@ -216,7 +216,7 @@ class ICP3
      * assigned to the cost of aligning each element of \a from.
      */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
-    AffineTransformT align(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT align(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                            PlaneT const * from_symmetry_plane, ToProximityQueryStructureT const & to,
                            PlaneT const * to_symmetry_plane, ScalarT * error = NULL) const
     {
@@ -247,7 +247,7 @@ class ICP3
 
       ScalarT new_error = old_error;
       AffineTransformT new_tr = old_tr;
-      for (long i = 0; i < max_iterations; ++i)
+      for (intx i = 0; i < max_iterations; ++i)
       {
         // Align using the point mapping created by the last call to measureError()
         AffineTransformT inc_tr = alignOneStep(from_num_pts, &from_points[0], from_weight_func, from_symmetry_plane,
@@ -303,13 +303,13 @@ class ICP3
      * the first set in the structure.
      */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
-    AffineTransformT alignOneStep(long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT alignOneStep(intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                   PlaneT const * from_sym_plane, ToProximityQueryStructureT const & to,
                                   PlaneT const * to_sym_plane, VectorT * to_points) const
     {
-      for (long i = 0; i < from_num_pts; ++i)
+      for (intx i = 0; i < from_num_pts; ++i)
       {
-        long index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, NULL,
+        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, NULL,
                                                           &to_points[i]);
         if (index < 0)
           throw Error(format("ICP3: Couldn't get nearest neighbor of source point %ld", i));
@@ -320,7 +320,7 @@ class ICP3
 
     /** Align one point set to another, in one ICP step, with a known bijective mapping between the points. */
     template <typename FromT, typename FromWeightFuncT>
-    AffineTransformT alignOneStep(long num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+    AffineTransformT alignOneStep(intx num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                   PlaneT const * from_sym_plane, VectorT const * to, PlaneT const * to_sym_plane) const
     {
       // When both point sets have symmetry planes, we'll align the projections. This does *NOT* minimize the correct error
@@ -331,7 +331,7 @@ class ICP3
       VectorT p_mean = VectorT::Zero();
       VectorT q_mean = VectorT::Zero();
       ScalarT sum_weights = 0;
-      for (long i = 0; i < num_pts; ++i)
+      for (intx i = 0; i < num_pts; ++i)
       {
         VectorT p = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
         VectorT q = to[i];
@@ -361,7 +361,7 @@ class ICP3
 
       // Find covariance matrix
       MatrixT cov; cov.setZero();
-      for (long i = 0; i < num_pts; ++i)
+      for (intx i = 0; i < num_pts; ++i)
       {
         VectorT p = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
         VectorT q = to[i];
@@ -410,15 +410,15 @@ class ICP3
     /** Measure the alignment error of a mapping from each point of \a from to its nearest neighbor in \a to. */
     template <typename FromT, typename ToProximityQueryStructureT, typename FromWeightFuncT>
     static ScalarT measureError(AffineTransformT const & tr,
-                                long from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+                                intx from_num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                 ToProximityQueryStructureT const & to, VectorT * to_points)
     {
       if (from_num_pts <= 0)
         return 0;
 
-      for (long i = 0; i < from_num_pts; ++i)
+      for (intx i = 0; i < from_num_pts; ++i)
       {
-        long index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, NULL,
+        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, NULL,
                                                                                                        &to_points[i]);
         if (index < 0)
           throw Error(format("ICP3: Couldn't get nearest neighbor of source point %ld", i));
@@ -433,7 +433,7 @@ class ICP3
      */
     template <typename FromT, typename FromWeightFuncT>
     static ScalarT measureError(AffineTransformT const & tr,
-                                long num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
+                                intx num_pts, FromT const * from, FromWeightFuncT * from_weight_func,
                                 VectorT const * to)
     {
       if (num_pts <= 0)
@@ -443,7 +443,7 @@ class ICP3
       VectorT q_mean = VectorT::Zero();
 
       ScalarT sum_weights = 0;
-      for (long i = 0; i < num_pts; ++i)
+      for (intx i = 0; i < num_pts; ++i)
       {
         VectorT p = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
         VectorT const & q = to[i];
@@ -468,7 +468,7 @@ class ICP3
 
       ScalarT err = (tr * p_mean - q_mean).squaredNorm();
 
-      for (long i = 0; i < num_pts; ++i)
+      for (intx i = 0; i < num_pts; ++i)
       {
         VectorT p = PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]);
         VectorT q = to[i];
@@ -488,7 +488,7 @@ class ICP3
     }
 
     double fractional_error_threshold;  ///< Maximum fractional change in error to determine convergence.
-    long max_iterations;  ///< Maximum number of iterations.
+    intx max_iterations;  ///< Maximum number of iterations.
     bool has_up;
     VectorT up;
     bool verbose;  ///< Print lots of debugging information?

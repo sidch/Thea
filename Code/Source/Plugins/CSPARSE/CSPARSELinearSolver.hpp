@@ -80,22 +80,22 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver, public v
      *     returned. The other methods all require square matrices.
      * - <b>symmetrize-triangular</b>: If the input matrix is upper- or lower-triangular, it is symmetrized by copying the
      *   existing triangle to its symmetric counterpart
-     *   - <i>Type:</i> <code>bool</code>
+     *   - <i>Type:</i> <code>int8</code>
      *   - <i>Default</i>: <code>false</code>
      * - <b>tol</b>: Tolerance for LU factorization
-     *   - <i>Type:</i> <code>double</code>
+     *   - <i>Type:</i> <code>float64</code>
      *   - <i>Default</i>: 1e-20
      */
-    bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL);
+    int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = NULL);
 
-    long dims() const { return (long)solution.size(); }
-    bool hasSolution() const { return has_solution; }
-    double const * getSolution() const { return solution.data(); }
-    bool getSquaredError(double & err) const { return false; }
+    int64 dims() const { return (int64)solution.size(); }
+    int8 hasSolution() const { return has_solution; }
+    float64 const * getSolution() const { return solution.data(); }
+    int8 getSquaredError(float64 & err) const { return false; }
 
   protected:
     bool has_solution;
-    VectorX<double> solution;  ///< Solution vector (exact or approximate) x of Ax = b.
+    VectorX<float64> solution;  ///< Solution vector (exact or approximate) x of Ax = b.
 
 }; // class CSPARSELinearSolver
 

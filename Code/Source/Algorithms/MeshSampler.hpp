@@ -102,7 +102,7 @@ class MeshSampler
      * Constructs the object to compute sample points on a mesh with a precomputed triangulation. The triangles must persist as
      * long as this object does.
      */
-    MeshSampler(long num_tris, Triangle const * tris) : num_external_tris(num_tris), external_tris(tris)
+    MeshSampler(intx num_tris, Triangle const * tris) : num_external_tris(num_tris), external_tris(tris)
     {
       alwaysAssertM(num_tris <= 0 || tris, "MeshSampler: Triangle list cannot be null");
     }
@@ -124,7 +124,7 @@ class MeshSampler
      *
      * @return The number of samples computed.
      */
-    long sampleEvenlyByArea(long desired_num_samples,
+    intx sampleEvenlyByArea(intx desired_num_samples,
                             Array<Vector3> & positions,
                             Array<Vector3> * face_normals = NULL,
                             Array<Triangle const *> * triangles = NULL,
@@ -142,7 +142,7 @@ class MeshSampler
       }
 
       Triangle const * tarray;
-      long tcount;
+      intx tcount;
       if (num_external_tris > 0)
       {
         tarray = external_tris;
@@ -172,7 +172,7 @@ class MeshSampler
       }
 
       double total_area = 0;
-      for (long i = 0; i < tcount; ++i)
+      for (intx i = 0; i < tcount; ++i)
         total_area += tarray[i].getArea();
 
       if (total_area <= 0)
@@ -205,7 +205,7 @@ class MeshSampler
         for (size_t i = 0; i < positions.size(); ++i)
         {
           double t = Random::common().uniform01() * total_area;
-          long tri_index = std::min((long)(std::lower_bound(first, last, t) - first), tcount - 1);
+          intx tri_index = std::min((intx)(std::lower_bound(first, last, t) - first), tcount - 1);
 
           positions[i] = tarray[tri_index].randomPoint();
           if (face_normals) (*face_normals)[i] = tarray[tri_index].getNormal();
@@ -232,7 +232,7 @@ class MeshSampler
       else
       {
         int prev_percent = 0;
-        for (long i = 0; i < tcount; ++i)
+        for (intx i = 0; i < tcount; ++i)
         {
           double frac_samples = (desired_num_samples * tarray[i].getArea()) / total_area;
           while (frac_samples > 0)
@@ -273,7 +273,7 @@ class MeshSampler
         THEA_CONSOLE << "MeshSampler: Selected " << positions.size() << " sample(s) uniformly by area";
       }
 
-      return (long)positions.size();
+      return (intx)positions.size();
     }
 
     /**
@@ -294,7 +294,7 @@ class MeshSampler
      *
      * @return The number of samples computed.
      */
-    long sampleEvenlyBySeparation(long desired_num_samples,
+    intx sampleEvenlyBySeparation(intx desired_num_samples,
                                   Array<Vector3> & positions,
                                   Array<Vector3> * face_normals = NULL,
                                   Array<Triangle const *> * triangles = NULL,
@@ -321,8 +321,8 @@ class MeshSampler
       if (oversampling_factor < 0)
         oversampling_factor = DEFAULT_OVERSAMPLING_FACTOR;
 
-      long num_oversampling = (long)std::ceil(oversampling_factor * desired_num_samples);
-      long orig_num_samples = sampleEvenlyByArea(num_oversampling, orig_positions,
+      intx num_oversampling = (intx)std::ceil(oversampling_factor * desired_num_samples);
+      intx orig_num_samples = sampleEvenlyByArea(num_oversampling, orig_positions,
                                                  face_normals ? &orig_face_normals : NULL,
                                                  triangles ? &orig_triangles : NULL, CountMode::EXACT);
       if (orig_num_samples < num_oversampling)
@@ -337,7 +337,7 @@ class MeshSampler
                      << " sample(s)";
       }
 
-      Array<long> selected((size_t)desired_num_samples);
+      Array<intx> selected((size_t)desired_num_samples);
       if (FurthestPointSampling::subsample(orig_num_samples, &orig_positions[0], desired_num_samples, &selected[0],
                                            DistanceType::GEODESIC, verbose) < desired_num_samples)
       {
@@ -352,12 +352,12 @@ class MeshSampler
         if (triangles) triangles->push_back(orig_triangles[index]);
       }
 
-      return (long)positions.size();
+      return (intx)positions.size();
     }
 
   private:
     Triangles tris;  ///< An internally computed triangulation of the mesh.
-    long num_external_tris;  ///< Number of externally supplied, precomputed mesh triangles.
+    intx num_external_tris;  ///< Number of externally supplied, precomputed mesh triangles.
     Triangle const * external_tris;  ///< Array of externally supplied, precomputed mesh triangles.
 
 }; // class MeshSampler

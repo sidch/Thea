@@ -62,9 +62,9 @@ class THEA_API Manifold
      * Polygons to Manifold Surfaces", IEEE Trans. Vis. Comp. Graph., 7(2), pp. 136--151, 2001. Currently only the "cutting"
      * part is implemented (via IBM's OpenDX source code).
      */
-    static bool makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<long> > const & in_faces,
-                                     Array<Vector3> & out_vertices, Array< Array<long> > & out_faces,
-                                     Array<long> & vertex_map, Array<long> & face_map);
+    static bool makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<intx> > const & in_faces,
+                                     Array<Vector3> & out_vertices, Array< Array<intx> > & out_faces,
+                                     Array<intx> & vertex_map, Array<intx> & face_map);
 
     /**
      * Convert a non-manifold mesh to manifold form. Each vertex with a non-manifold neighbourhood is split up into copies with
@@ -83,7 +83,7 @@ class THEA_API Manifold
      * @return True if some vertices needed to be duplicated, false if no changes were required.
      */
     template <typename FaceT>
-    static bool makeManifold(Array<FaceT> & faces, long num_vertices, Array<long> & vertex_map)
+    static bool makeManifold(Array<FaceT> & faces, intx num_vertices, Array<intx> & vertex_map)
     {
       if (num_vertices <= 0 || faces.size() <= 0)
         return false;
@@ -94,21 +94,21 @@ class THEA_API Manifold
       // Initialize every vertex to map to itself
       vertex_map.resize(nv);
       for (size_t i = 0; i < nv; ++i)
-        vertex_map[i] = (long)i;
+        vertex_map[i] = (intx)i;
 
       // Associate each vertex with its incident faces
       Array< Array<size_t> > v2f(nv);
       for (size_t i = 0; i < nf; ++i)
         for (typename FaceT::const_iterator vi = faces[i].begin(); vi != faces[i].end(); ++vi)
         {
-          debugAssertM(*vi >= 0 && (long)*vi < num_vertices,
-                      format("Manifold: Vertex index %ld out of range [0, %ld)", (long)*vi, num_vertices));
+          debugAssertM(*vi >= 0 && (intx)*vi < num_vertices,
+                      format("Manifold: Vertex index %ld out of range [0, %ld)", (intx)*vi, num_vertices));
           v2f[(size_t)*vi].push_back(i);
         }
 
       // Queue the set of vertices
       TheaStack<size_t> vertex_stack;
-      for (long i = (long)nv - 1; i >= 0; --i)
+      for (intx i = (intx)nv - 1; i >= 0; --i)
         vertex_stack.push((size_t)i);
 
       // Split the faces at each vertex into manifold groups
@@ -128,7 +128,7 @@ class THEA_API Manifold
         for (size_t j = 0; j < v2f[i].size(); ++j)
           for (size_t k = j + 1; k < v2f[i].size(); ++k)
             if (shareEdgeAtVertex(faces[v2f[i][j]], faces[v2f[i][k]], i, shared_edges))
-              uf.merge((long)j, (long)k);
+              uf.merge((intx)j, (intx)k);
 
         // Retain only the faces edge-connected to the first one, assigning the rest to a copy of the vertex
         bool created_new_vertex = false;
@@ -173,7 +173,7 @@ class THEA_API Manifold
         }
       }
 
-      if ((long)vertex_map.size() > num_vertices)
+      if ((intx)vertex_map.size() > num_vertices)
       {
         THEA_DEBUG << "Manifold: Non-manifold vertices found and fixed";
         return true;

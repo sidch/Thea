@@ -55,7 +55,7 @@ class THEA_API System
 {
   public:
     /** Get the hardware concurrency (approximate number of thread contexts). */
-    static long concurrency();
+    static intx concurrency();
 
     /** Get the machine endianness. */
     static Endianness endianness()
@@ -64,7 +64,7 @@ class THEA_API System
     }
 
     /** Pause the current thread for a given number of milliseconds. */
-    static void sleep(long ms);
+    static void sleep(intx ms);
 
     /**
      * The actual time (measured in seconds since Jan 1 1970 midnight). Adjusted for local timezone and daylight savings time.
@@ -76,7 +76,7 @@ class THEA_API System
      * Begin a timing operation. To count the number of cycles a given operation takes:
      *
      * <pre>
-     *   unsigned long count;
+     *   uint64 count;
      *   System::beginCycleCount(count);
      *   ...
      *   System::endCycleCount(count);

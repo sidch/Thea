@@ -374,7 +374,7 @@ BinaryInputStream::~BinaryInputStream()
 void
 BinaryInputStream::readBytes(int64 n, void * bytes)
 {
-  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (long)n));
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (intx)n));
 
   if (n > 0)
   {
@@ -427,7 +427,7 @@ BinaryInputStream::readUInt64()
 std::string
 BinaryInputStream::readString(int64 n)
 {
-  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative-length string (%ld)", (long)n));
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative-length string (%ld)", (intx)n));
 
   if (n == 0)
     return std::string();

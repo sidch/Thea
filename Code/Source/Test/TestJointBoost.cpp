@@ -47,48 +47,48 @@ class ExampleSet : public JointBoost::TrainingData
   public:
     typedef std::shared_ptr<ExampleSet> Ptr;
 
-    ExampleSet(long nfeatures) : features((long)0, nfeatures) {}
+    ExampleSet(intx nfeatures) : features((intx)0, nfeatures) {}
 
     template <typename DVecT>
-    void addExample(DVecT const & example_features, long example_class)
+    void addExample(DVecT const & example_features, intx example_class)
     {
       addExample(&example_features[0], example_class);
     }
 
-    void addExample(double const * example_features, long example_class)
+    void addExample(double const * example_features, intx example_class)
     {
       features.conservativeResize(features.rows() + 1, Eigen::NoChange);
       features.row(features.rows() - 1) = RowVectorXdConstMap(example_features, features.cols());
       classes.push_back(example_class);
     }
 
-    long numExamples() const { return features.rows(); }
-    long numFeatures() const { return features.cols(); }
+    intx numExamples() const { return features.rows(); }
+    intx numFeatures() const { return features.cols(); }
 
-    void getFeature(long feature_index, Array<double> & values) const
+    void getFeature(intx feature_index, Array<double> & values) const
     {
       values.resize((size_t)features.rows());
       VectorXdMap(&values[0], features.rows()) = features.col(feature_index);
     }
 
-    void getClasses(Array<long> & classes_) const
+    void getClasses(Array<intx> & classes_) const
     {
       classes_ = classes;
     }
 
-    void getExampleFeatures(long example, double * f) const
+    void getExampleFeatures(intx example, double * f) const
     {
       RowVectorXdMap(f, features.cols()) = features.row(example);
     }
 
-    long getExampleClass(long example) const
+    intx getExampleClass(intx example) const
     {
       return classes[(size_t)example];
     }
 
   private:
     MatrixX<double, MatrixLayout::ROW_MAJOR> features;
-    vector<long> classes;
+    vector<intx> classes;
 };
 
 template <typename ArrayT>
@@ -96,7 +96,7 @@ string
 arrayToString(ArrayT const & arr)
 {
   ostringstream oss; oss << '[';
-  for (long i = 0; i < (long)arr.size(); ++i)
+  for (intx i = 0; i < (intx)arr.size(); ++i)
   {
     if (i > 0) oss << ", ";
     oss << arr[i];
@@ -111,13 +111,13 @@ test(JointBoost const & jb, ExampleSet const & test_set, bool get_class_probs = 
 {
   vector<double> class_probabilities((size_t)jb.numClasses());
   vector<double> f((size_t)jb.numFeatures());
-  long num_correct = 0;
-  for (long i = 0; i < test_set.numExamples(); ++i)
+  intx num_correct = 0;
+  for (intx i = 0; i < test_set.numExamples(); ++i)
   {
     test_set.getExampleFeatures(i, &f[0]);
-    long c = test_set.getExampleClass(i);
+    intx c = test_set.getExampleClass(i);
 
-    long pc = jb.predict(&f[0], get_class_probs ? &class_probabilities[0] : NULL);
+    intx pc = jb.predict(&f[0], get_class_probs ? &class_probabilities[0] : NULL);
     if (pc == c)
       num_correct++;
 
@@ -161,7 +161,7 @@ testJointBoostFile(string const & path)
   ExampleSet::Ptr training_subset;
   ExampleSet::Ptr holdout_subset;
 
-  typedef UnorderedMap<string, long> LabelIndexMap;
+  typedef UnorderedMap<string, intx> LabelIndexMap;
   LabelIndexMap labels;
 
   vector<double> features;
@@ -184,7 +184,7 @@ testJointBoostFile(string const & path)
       return false;
     }
 
-    long nfeat = (long)fields.size() - 1;
+    intx nfeat = (intx)fields.size() - 1;
     if (!all_training)
     {
       cout << "Data has " << nfeat << " features per example" << endl;
@@ -200,7 +200,7 @@ testJointBoostFile(string const & path)
     }
 
     features.clear();
-    for (long i = 0; i < nfeat; ++i)
+    for (intx i = 0; i < nfeat; ++i)
     {
       istringstream iss(fields[(size_t)i]);
       iss >> feature;
@@ -210,10 +210,10 @@ testJointBoostFile(string const & path)
     label = fields.back();
 
     LabelIndexMap::const_iterator existing_label = labels.find(label);
-    long index;
+    intx index;
     if (existing_label == labels.end())
     {
-      index = (long)labels.size();
+      index = (intx)labels.size();
       labels[label] = index;
       cout << "Added class with label '" << label << "' and index " << index << endl;
     }
@@ -240,7 +240,7 @@ testJointBoostFile(string const & path)
     return false;
   }
 
-  long num_classes = (long)labels.size();
+  intx num_classes = (intx)labels.size();
 
   cout << "Read " << all_training->numExamples() << " examples from " << num_classes << " classes from file" << endl;
 

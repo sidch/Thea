@@ -67,7 +67,7 @@ namespace Graphics {
  * rendering if possible. In this case, you must explicitly create and attach a framebuffer to the rendersystem before you can
  * call any drawing functions.
  *
- * FIXME: This class still passes some non-POD/non-pure-virtual objects (e.g. Camera, Matrix4) across shared library boundaries.
+ * @todo Make this safe for passing across shared library boundaries.
  */
 class THEA_API RenderSystem : public AbstractNamedObject
 {
@@ -142,7 +142,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
     };
 
     /** Destructor. Frees all resources (textures, shaders, framebuffers, VAR areas etc) created using this rendersystem. */
-    virtual ~RenderSystem() {}
+    virtual ~RenderSystem() = 0;
 
     /**
      * Get a string describing the render system. The string is guaranteed to be valid only till the next operation on the
@@ -163,7 +163,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void destroyShader(Shader * shader) = 0;
 
     /** Create an empty texture of the specified format and size. The texture must be destroyed using destroyTexture(). */
-    virtual Texture * createTexture(char const * name, int width, int height, int depth,
+    virtual Texture * createTexture(char const * name, int64 width, int64 height, int64 depth,
                                     Texture::Format const * desired_format, Texture::Dimension dimension,
                                     Texture::Options const & options = Texture::Options::defaults()) = 0;
 
@@ -191,7 +191,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Create a new, uninitialized area for storing vertex/normal/texture-coordinate/index arrays. The area must be destroyed
      * using destroyVARArea().
      */
-    virtual VARArea * createVARArea(char const * name, long num_bytes, VARArea::Usage usage, bool gpu_memory = true) = 0;
+    virtual VARArea * createVARArea(char const * name, int64 num_bytes, VARArea::Usage usage, int8 gpu_memory = true) = 0;
 
     /** Destroy a memory area created with createVARArea(). */
     virtual void destroyVARArea(VARArea * area) = 0;
@@ -245,7 +245,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Bind a texture to a texture unit. Passing a null pointer disables the unit. The function signals an error if the render
      * system does not support multitexturing and the specified texture unit is non-zero.
      */
-    virtual void setTexture(int texunit, Texture * texture) = 0;
+    virtual void setTexture(int32 texunit, Texture * texture) = 0;
 
     /** Restore the last saved set of texture bindings and related state from the stack. */
     virtual void popTextures() = 0;
@@ -315,7 +315,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void setColorArray(VAR const * colors) = 0;
 
     /** Set the current texture coordinate array. Passing a null VAR unbinds all texture coordinate data. */
-    virtual void setTexCoordArray(int texunit, VAR const * texcoords) = 0;
+    virtual void setTexCoordArray(int32 texunit, VAR const * texcoords) = 0;
 
     /** Set the current normal array. Passing a null VAR unbinds all normal data. */
     virtual void setNormalArray(VAR const * normals) = 0;
@@ -324,19 +324,19 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void setIndexArray(VAR const * indices) = 0;
 
     /** Draw a set of primitives by sending a set of 8-bit indices to the rendersystem. */
-    virtual void sendIndices(Primitive primitive, long num_indices, uint8 const * indices) = 0;
+    virtual void sendIndices(Primitive primitive, int64 num_indices, uint8 const * indices) = 0;
 
     /** Draw a set of primitives by sending a set of 16-bit indices to the rendersystem. */
-    virtual void sendIndices(Primitive primitive, long num_indices, uint16 const * indices) = 0;
+    virtual void sendIndices(Primitive primitive, int64 num_indices, uint16 const * indices) = 0;
 
     /** Draw a set of primitives by sending a set of 32-bit indices to the rendersystem. */
-    virtual void sendIndices(Primitive primitive, long num_indices, uint32 const * indices) = 0;
+    virtual void sendIndices(Primitive primitive, int64 num_indices, uint32 const * indices) = 0;
 
     /**
      * Draw a set of primitives by sending \a num_indices consecutive indices, starting from \a first_index, to the
      * rendersystem.
      */
-    virtual void sendSequentialIndices(Primitive primitive, int first_index, int num_indices) = 0;
+    virtual void sendSequentialIndices(Primitive primitive, int32 first_index, int32 num_indices) = 0;
 
     /**
      * Draw a set of primitives by sending indices from the current index array to the rendersystem. You must call
@@ -348,7 +348,7 @@ class THEA_API RenderSystem : public AbstractNamedObject
      *
      * @see setIndexArray()
      */
-    virtual void sendIndicesFromArray(Primitive primitive, long offset, long num_indices) = 0;
+    virtual void sendIndicesFromArray(Primitive primitive, int64 offset, int64 num_indices) = 0;
 
     /** Finish drawing the current set of indexed primitives and restore the last saved array states from the stack. */
     virtual void endIndexedPrimitives() = 0;
@@ -360,62 +360,62 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void sendVertex(Vector2 const & vertex) = 0;
 
     /** Send a 2-vertex to the rendersystem. */
-    virtual void sendVertex(float x, float y) { sendVertex(Vector2(x, y)); }
+    virtual void sendVertex(float32 x, float32 y) { sendVertex(Vector2(x, y)); }
 
     /** Send a 2-vertex to the rendersystem. */
-    virtual void sendVertex(double x, double y) { sendVertex(Vector2((float)x, (float)y)); }
+    virtual void sendVertex(float64 x, float64 y) { sendVertex(Vector2((float32)x, (float32)y)); }
 
     /** Send a 3-vertex to the rendersystem. */
     virtual void sendVertex(Vector3 const & vertex) = 0;
 
     /** Send a 3-vertex to the rendersystem. */
-    virtual void sendVertex(float x, float y, float z) { sendVertex(Vector3(x, y, z)); }
+    virtual void sendVertex(float32 x, float32 y, float32 z) { sendVertex(Vector3(x, y, z)); }
 
     /** Send a 3-vertex to the rendersystem. */
-    virtual void sendVertex(double x, double y, double z) { sendVertex(Vector3((float)x, (float)y, (float)z)); };
+    virtual void sendVertex(float64 x, float64 y, float64 z) { sendVertex(Vector3((float32)x, (float32)y, (float32)z)); };
 
     /** Send a 4-vertex to the rendersystem. */
     virtual void sendVertex(Vector4 const & vertex) = 0;
 
     /** Send a 4-vertex to the rendersystem. */
-    virtual void sendVertex(float x, float y, float z, float w) { sendVertex(Vector4(x, y, z, w)); };
+    virtual void sendVertex(float32 x, float32 y, float32 z, float32 w) { sendVertex(Vector4(x, y, z, w)); };
 
     /** Send a 4-vertex to the rendersystem. */
-    virtual void sendVertex(double x, double y, double z, double w)
-    { sendVertex(Vector4((float)x, (float)y, (float)z, (float)w)); };
+    virtual void sendVertex(float64 x, float64 y, float64 z, float64 w)
+    { sendVertex(Vector4((float32)x, (float32)y, (float32)z, (float32)w)); };
 
     /** Send a normal to the rendersystem. */
     virtual void sendNormal(Vector3 const & normal) = 0;
 
     /** Send a normal to the rendersystem. */
-    virtual void sendNormal(float x, float y, float z) { sendNormal(Vector3(x, y, z)); }
+    virtual void sendNormal(float32 x, float32 y, float32 z) { sendNormal(Vector3(x, y, z)); }
 
     /** Send a normal to the rendersystem. */
-    virtual void sendNormal(double x, double y, double z) { sendNormal(Vector3((float)x, (float)y, (float)z)); };
+    virtual void sendNormal(float64 x, float64 y, float64 z) { sendNormal(Vector3((float32)x, (float32)y, (float32)z)); };
 
     /** Send a floating-point texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, float texcoord) = 0;
+    virtual void sendTexCoord(int32 texunit, float32 texcoord) = 0;
 
     /** Send a floating-point texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, double texcoord) { sendTexCoord(texunit, (float)texcoord); }
+    virtual void sendTexCoord(int32 texunit, float64 texcoord) { sendTexCoord(texunit, (float32)texcoord); }
 
     /** Send a 2-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, Vector2 const & texcoord) = 0;
+    virtual void sendTexCoord(int32 texunit, Vector2 const & texcoord) = 0;
 
     /** Send a 2-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, float x, float y) { sendTexCoord(texunit, Vector2(x, y)); }
+    virtual void sendTexCoord(int32 texunit, float32 x, float32 y) { sendTexCoord(texunit, Vector2(x, y)); }
 
     /** Send a 2-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, double x, double y) { sendTexCoord(texunit, Vector2((float)x, (float)y)); }
+    virtual void sendTexCoord(int32 texunit, float64 x, float64 y) { sendTexCoord(texunit, Vector2((float32)x, (float32)y)); }
 
     /** Send a 3-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, Vector3 const & texcoord) = 0;
+    virtual void sendTexCoord(int32 texunit, Vector3 const & texcoord) = 0;
 
     /** Send a 3-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, float x, float y, float z) { sendTexCoord(texunit, Vector3(x, y, z)); }
+    virtual void sendTexCoord(int32 texunit, float32 x, float32 y, float32 z) { sendTexCoord(texunit, Vector3(x, y, z)); }
 
     /** Send a 3-component texture coordinate to the rendersystem. */
-    virtual void sendTexCoord(int texunit, double x, double y, double z)
+    virtual void sendTexCoord(int32 texunit, float64 x, float64 y, float64 z)
     { sendTexCoord(texunit, Vector3((Real)x, (Real)y, (Real)z)); }
 
     /** Finish drawing the primitive started by beginPrimitive(). */
@@ -440,10 +440,10 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void pushShapeFlags() = 0;
 
     /** Set the color write state. */
-    virtual void setColorWrite(bool red, bool green, bool blue, bool alpha) = 0;
+    virtual void setColorWrite(int8 red, int8 green, int8 blue, int8 alpha) = 0;
 
     /** Set the depth write state. */
-    virtual void setDepthWrite(bool value) = 0;
+    virtual void setDepthWrite(int8 value) = 0;
 
     /** Set the stencil write mask. */
     virtual void setStencilWrite(uint32 mask) = 0;
@@ -464,13 +464,13 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void setDepthClearValue(Real value) = 0;
 
     /** Set the value to clear the stencil buffer with. */
-    virtual void setStencilClearValue(int value) = 0;
+    virtual void setStencilClearValue(int32 value) = 0;
 
     /** Clear color, depth and stencil buffers. */
     virtual void clear() = 0;
 
     /** Clear the selected buffers. */
-    virtual void clear(bool color, bool depth, bool stencil) = 0;
+    virtual void clear(int8 color, int8 depth, int8 stencil) = 0;
 
     /** Set the depth test. */
     virtual void setDepthTest(DepthTest test) = 0;
@@ -482,10 +482,10 @@ class THEA_API RenderSystem : public AbstractNamedObject
      * Set the depth offset, if any, to be applied to polygon faces. The supplied value is scaled by an implementation-specific
      * offset.
      */
-    virtual void setPolygonOffset(bool enable, Real offset = 1) = 0;
+    virtual void setPolygonOffset(int8 enable, float64 offset = 1) = 0;
 
     /** Set the size (diameter) of rasterized points. This may be ignored if shaders are being used. */
-    virtual void setPointSize(Real size = 1) = 0;
+    virtual void setPointSize(float64 size = 1) = 0;
 
     /** Restore the last saved set of color flags from the stack. */
     virtual void popColorFlags() = 0;
@@ -506,6 +506,9 @@ class THEA_API RenderSystem : public AbstractNamedObject
     virtual void finishAllOperations() = 0;
 
 }; // class RenderSystem
+
+// Pure virtual destructor should have implementation
+inline RenderSystem::~RenderSystem() {}
 
 /** An interface for a rendersystem factory. Should be implemented and registered by each actual rendersystem. */
 class THEA_API RenderSystemFactory

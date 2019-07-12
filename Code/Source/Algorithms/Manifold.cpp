@@ -49,14 +49,14 @@ namespace Thea {
 namespace Algorithms {
 
 bool
-Manifold::makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<long> > const & in_faces,
-                               Array<Vector3> & out_vertices, Array< Array<long> > & out_faces,
-                               Array<long> & vertex_map, Array<long> & face_map)
+Manifold::makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<intx> > const & in_faces,
+                               Array<Vector3> & out_vertices, Array< Array<intx> > & out_faces,
+                               Array<intx> & vertex_map, Array<intx> & face_map)
 {
   // Triangulate all faces, since OpenDX can only take triangles as input
   Array<int> in_triangles;
   Polygon3 poly;
-  Array<long> tri_indices;
+  Array<intx> tri_indices;
   for (size_t i = 0; i < in_faces.size(); ++i)
   {
     poly.clear();
@@ -124,7 +124,7 @@ Manifold::makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<
     out_faces.resize((size_t)new_num_triangles);
     for (int i = 0, i3 = 0; i < new_num_triangles; ++i, i3 += 3)
     {
-      Array<long> & face = out_faces[(size_t)i];
+      Array<intx> & face = out_faces[(size_t)i];
       face.resize(3);
       face[0] = new_triangles[i3    ];
       face[1] = new_triangles[i3 + 1];
@@ -134,11 +134,11 @@ Manifold::makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<
     vertex_map.resize((size_t)new_num_vertices);
     for (int i = 0; i < new_num_vertices; ++i)
       if (vertex_lut[i] >= 0)
-        vertex_map[i] = (long)vertex_lut[i];
+        vertex_map[i] = (intx)vertex_lut[i];
 
     face_map.resize((size_t)new_num_triangles);
     for (int i = 0; i < new_num_triangles; ++i)
-      face_map[(size_t)i] = (long)triangle_lut[i];
+      face_map[(size_t)i] = (intx)triangle_lut[i];
   }
 
   // Cleanup

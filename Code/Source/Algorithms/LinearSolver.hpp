@@ -66,7 +66,7 @@ class THEA_API LinearSolver : public virtual AbstractNamedObject
 {
   public:
     /** Destructor. */
-    virtual ~LinearSolver() {}
+    virtual ~LinearSolver() = 0;
 
     /**
      * Solve the system of linear equations. A set of options may be specified to control the solution process.
@@ -78,24 +78,27 @@ class THEA_API LinearSolver : public virtual AbstractNamedObject
      * @return True if the system was successfully solved, else false. (The same value is returned by subsequent calls to
      *   hasSolution().)
      */
-    virtual bool solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options = NULL) = 0;
+    virtual int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = NULL) = 0;
 
     /** Get the size of the solution, which is also the number of columns of the coefficient matrix A. */
-    virtual long dims() const = 0;
+    virtual int64 dims() const = 0;
 
     /** Was the linear system successfully solved by the last call to solve()? */
-    virtual bool hasSolution() const = 0;
+    virtual int8 hasSolution() const = 0;
 
     /** Get the solution vector x of the linear system Ax = b. Valid only if hasSolution() returns true. */
-    virtual double const * getSolution() const = 0;
+    virtual float64 const * getSolution() const = 0;
 
     /**
      * If the squared error || Ax - b ||^2 was computed during the solution process, put it in \a err and return true. Else
      * return false.
      */
-    virtual bool getSquaredError(double & err) const = 0;
+    virtual int8 getSquaredError(float64 & err) const = 0;
 
 }; // class LinearSolver
+
+// Pure virtual destructor should have implementation
+inline LinearSolver::~LinearSolver() {}
 
 /** An interface for a linear solver factory. Should be implemented and registered by each actual linear solver. */
 class THEA_API LinearSolverFactory

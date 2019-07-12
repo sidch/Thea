@@ -305,18 +305,18 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     bool isEmpty() const { return vertices.empty() && faces.empty() && edges.empty(); }
 
     /** Get the number of vertices. */
-    long numVertices() const { return (long)vertices.size(); };
+    intx numVertices() const { return (intx)vertices.size(); };
 
     /** Get the number of edges. */
-    long numEdges() const { return (long)edges.size(); };
+    intx numEdges() const { return (intx)edges.size(); };
 
     /** Get the number of faces. */
-    long numFaces() const { return (long)faces.size(); };
+    intx numFaces() const { return (intx)faces.size(); };
 
     /** Compute the number of triangles in the mesh. */
-    long numTriangles() const
+    intx numTriangles() const
     {
-      long rval = 0;
+      intx rval = 0;
       for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isTriangle())
           rval++;
@@ -325,9 +325,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     }
 
     /** Compute the number of quads in the mesh. */
-    long numQuads() const
+    intx numQuads() const
     {
-      long rval = 0;
+      intx rval = 0;
       for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isQuad())
           rval++;
@@ -348,7 +348,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      *
      * @return A pointer to the newly created vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                        Vector2 const * texcoord = NULL)
     {
       if (normal)
@@ -382,7 +382,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      * @return A pointer to the newly created face, or null on error.
      */
     template <typename VertexInputIterator>
-    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, long index = -1)
+    Face * addFace(VertexInputIterator vbegin, VertexInputIterator vend, intx index = -1)
     {
       // Create the (initially empty) face
       faces.push_back(Face());
@@ -955,18 +955,18 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      * @return The number of triangulated faces, or a negative number on error. (The number of generated triangles can be
      *   obtained by comparing the number of mesh faces before and after the operation.)
      */
-    long triangulate(Real epsilon = -1)
+    intx triangulate(Real epsilon = -1)
     {
-      long orig_num_faces = numFaces();
-      long num_visited_faces = 0;
-      long num_triangulated_faces = 0;
+      intx orig_num_faces = numFaces();
+      intx num_visited_faces = 0;
+      intx num_triangulated_faces = 0;
 
       // New faces will be added to the end of the face list, so we can just keep track of when we've processed the original
       // number of faces
       for (FaceIterator fi = facesBegin(); num_visited_faces < orig_num_faces; ++fi, ++num_visited_faces)
         if (fi->numVertices() > 3)
         {
-          long nt = triangulate(&(*fi), epsilon);
+          intx nt = triangulate(&(*fi), epsilon);
           if (nt < 0)
             return nt;
 
@@ -985,7 +985,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
      *
      * @return The number of triangles resulting from the operation (1 if the face is already a triangle, negative on error).
      */
-    long triangulate(Face * face, Real epsilon = -1)
+    intx triangulate(Face * face, Real epsilon = -1)
     {
       if (!face)
         return 0;
@@ -993,7 +993,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       if (face->numVertices() <= 3)
         return 1;
 
-      long ntris = 0;
+      intx ntris = 0;
       if (face->numVertices() == 4)
       {
         Vertex * face_vertices[4];
@@ -1003,7 +1003,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
             face_vertices[i] = *fvi;
         }
 
-        long tri_indices[6];
+        intx tri_indices[6];
         ntris = Polygon3::triangulateQuad(face_vertices[0]->getPosition(),
                                           face_vertices[1]->getPosition(),
                                           face_vertices[2]->getPosition(),
@@ -1029,7 +1029,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
           }
         }
 
-        Array<long> tri_indices;
+        Array<intx> tri_indices;
         ntris = poly.triangulate(tri_indices, epsilon);
         if (ntris >= 1)
         {
@@ -1047,7 +1047,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
         face_vertices[1] = *(fvi++);
         face_vertices[2] = *(fvi);
 
-        long tri_indices[3] = { 0, 1, 2 };
+        intx tri_indices[3] = { 0, 1, 2 };
         ntris = 1;
 
         if (!replaceFaceWithTriangulation(face, &face_vertices[0], ntris, &tri_indices[0]))
@@ -1295,7 +1295,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       Face const * face = edge->isBoundary() ? NULL : *edge->facesBegin();  // if we're starting from a boundary edge, the
                                                                             // initial "face" is the empty space before the
                                                                             // first edge
-      long num_visited_edges = 0;
+      intx num_visited_edges = 0;
       while (true)
       {
         if (++num_visited_edges >= vertex->numEdges())
@@ -1446,12 +1446,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     }
 
     /** Replace a higher-degree face with multiple triangular faces. */
-    bool replaceFaceWithTriangulation(Face * face, Vertex ** face_vertices, long num_tris, long * tri_indices)
+    bool replaceFaceWithTriangulation(Face * face, Vertex ** face_vertices, intx num_tris, intx * tri_indices)
     {
       debugAssertM(face, getNameStr() + ": Can't replace null face with triangulation");
 
       Vertex * tri_vertices[3];
-      for (long i = 0; i < num_tris; ++i)
+      for (intx i = 0; i < num_tris; ++i)
       {
         for (int j = 0; j < 3; ++j)
           tri_vertices[j] = face_vertices[tri_indices[3 * i + j]];
@@ -1613,8 +1613,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
       else
         packed_edges.clear();
 
-      num_tri_indices   =  (long)packed_tris.size();
-      num_quad_indices  =  (long)packed_quads.size();
+      num_tri_indices   =  (intx)packed_tris.size();
+      num_quad_indices  =  (intx)packed_quads.size();
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
@@ -1627,8 +1627,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     VertexList  vertices;     ///< Set of mesh vertices.
     EdgeList    edges;        ///< Set of mesh edges.
 
-    long max_vertex_index;    ///< The largest index of a vertex in the mesh.
-    long max_face_index;      ///< The largest index of a face in the mesh.
+    intx max_vertex_index;    ///< The largest index of a vertex in the mesh.
+    intx max_face_index;      ///< The largest index of a face in the mesh.
 
     AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
@@ -1644,8 +1644,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public DrawableOb
     IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
     IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
     IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
-    long           num_tri_indices;          ///< Number of triangles in the mesh.
-    long           num_quad_indices;         ///< Number of quads in the mesh.
+    intx           num_tri_indices;          ///< Number of triangles in the mesh.
+    intx           num_quad_indices;         ///< Number of quads in the mesh.
 
     VARArea * var_area;          ///< GPU buffer area.
     VAR * vertex_positions_var;  ///< GPU buffer for vertex positions.
@@ -1700,21 +1700,21 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     packVertexColors<Vertex>();
     packVertexTexCoords<Vertex>();
 
-    long vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (long)packed_vertex_positions.size() + PADDING : 0;
-    long vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (long)packed_vertex_normals.size()   + PADDING : 0;
-    long vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (long)packed_vertex_colors.size()    + PADDING : 0;
-    long vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (long)packed_vertex_texcoords.size() + PADDING : 0;
+    intx vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (intx)packed_vertex_positions.size() + PADDING : 0;
+    intx vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (intx)packed_vertex_normals.size()   + PADDING : 0;
+    intx vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (intx)packed_vertex_colors.size()    + PADDING : 0;
+    intx vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (intx)packed_vertex_texcoords.size() + PADDING : 0;
 
     packTopology();
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
-    long num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
+    intx num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
 #else
-    long tri_bytes   =  !packed_tris.empty()   ?  4 * (long)packed_tris.size()   +  PADDING : 0;  // uint32
-    long quad_bytes  =  !packed_quads.empty()  ?  4 * (long)packed_quads.size()  +  PADDING : 0;  // uint32
-    long edge_bytes  =  !packed_edges.empty()  ?  4 * (long)packed_edges.size()  +  PADDING : 0;  // uint32
+    intx tri_bytes   =  !packed_tris.empty()   ?  4 * (intx)packed_tris.size()   +  PADDING : 0;  // uint32
+    intx quad_bytes  =  !packed_quads.empty()  ?  4 * (intx)packed_quads.size()  +  PADDING : 0;  // uint32
+    intx edge_bytes  =  !packed_edges.empty()  ?  4 * (intx)packed_edges.size()  +  PADDING : 0;  // uint32
 
-    long num_bytes = vertex_position_bytes
+    intx num_bytes = vertex_position_bytes
                    + vertex_normal_bytes
                    + vertex_color_bytes
                    + vertex_texcoord_bytes
@@ -1737,7 +1737,7 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
 
     if (var_area)
     {
-      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (long)(1.5 * num_bytes))
+      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
       {
         render_system.destroyVARArea(var_area);
 
@@ -1758,28 +1758,28 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     {
       vertex_positions_var = var_area->createArray(vertex_position_bytes);
       if (!vertex_positions_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
-      vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!packed_vertex_normals.empty())
     {
       vertex_normals_var = var_area->createArray(vertex_normal_bytes);
       if (!vertex_normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
-      vertex_normals_var->updateVectors(0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+      vertex_normals_var->updateVectors(0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!packed_vertex_colors.empty())
     {
       vertex_colors_var = var_area->createArray(vertex_color_bytes);
       if (!vertex_colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
-      vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!packed_vertex_texcoords.empty())
     {
       vertex_texcoords_var = var_area->createArray(vertex_texcoord_bytes);
       if (!vertex_texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
-      vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
 
 #ifndef THEA_GENERAL_MESH_NO_INDEX_ARRAY
@@ -1787,21 +1787,21 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     {
       tris_var = var_area->createArray(tri_bytes);
       if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
-      tris_var->updateIndices(0, (long)packed_tris.size(), &packed_tris[0]);
+      tris_var->updateIndices(0, (intx)packed_tris.size(), &packed_tris[0]);
     }
 
     if (!packed_quads.empty())
     {
       quads_var = var_area->createArray(quad_bytes);
       if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
-      quads_var->updateIndices(0, (long)packed_quads.size(), &packed_quads[0]);
+      quads_var->updateIndices(0, (intx)packed_quads.size(), &packed_quads[0]);
     }
 
     if (!packed_edges.empty())
     {
       edges_var = var_area->createArray(edge_bytes);
       if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
-      edges_var->updateIndices(0, (long)packed_edges.size(), &packed_edges[0]);
+      edges_var->updateIndices(0, (intx)packed_edges.size(), &packed_edges[0]);
     }
 #endif
   }
@@ -1810,25 +1810,25 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     if (!gpuBufferIsValid(BufferID::VERTEX_POSITION) && !vertices.empty())
     {
       packVertexPositions();
-      vertex_positions_var->updateVectors(0, (long)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_NORMAL) && !vertices.empty())
     {
       packVertexNormals();
-      vertex_normals_var->updateVectors (0, (long)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+      vertex_normals_var->updateVectors (0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_COLOR) && hasVertexColors())
     {
       packVertexColors<Vertex>();
-      vertex_colors_var->updateColors(0, (long)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
     }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_TEXCOORD) && hasVertexTexCoords())
     {
       packVertexTexCoords<Vertex>();
-      vertex_texcoords_var->updateVectors(0, (long)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
     }
   }
 
@@ -1924,12 +1924,12 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, RenderOption
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
         if (!edges.empty())
-          render_system.sendIndices(RenderSystem::Primitive::LINES, 2 * (long)edges.size(), &packed_edges[0]);
+          render_system.sendIndices(RenderSystem::Primitive::LINES, 2 * (intx)edges.size(), &packed_edges[0]);
 #else
         if (!edges.empty())
         {
           render_system.setIndexArray(edges_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, 2 * (long)edges.size());
+          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, 2 * (intx)edges.size());
         }
 #endif
 

@@ -60,13 +60,13 @@ class THEA_API ScalarFunction
     virtual ~ScalarFunction() {}
 
     /** Get the number of dimensions of the function domain. */
-    virtual int dims() const;
+    virtual int64 dims() const;
 
     /** Compute the value of the function at a given point. */
-    virtual double valueAt(float const * p) const = 0;
+    virtual float64 valueAt(float32 const * p) const = 0;
 
     /** Compute the value of the function at a given point. */
-    virtual double valueAt(double const * p) const = 0;
+    virtual float64 valueAt(float64 const * p) const = 0;
 
     /** If the function has an analytic first derivative, cast this object to the corresponding type. */
     virtual AnalyticD1ScalarFunction const * asAnalyticD1() const = 0;

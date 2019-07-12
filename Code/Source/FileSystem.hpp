@@ -127,7 +127,7 @@ class THEA_API FileSystem
      * @return The number of objects found, equal to the size of \a objects. If the supplied path is not a directory, returns a
      *   negative value.
      */
-    static long getDirectoryContents(std::string const & dir,
+    static intx getDirectoryContents(std::string const & dir,
                                      Array<std::string> & objects,
                                      int types = -1,
                                      std::string const & patterns = "",

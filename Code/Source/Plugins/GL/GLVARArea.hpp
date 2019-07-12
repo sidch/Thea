@@ -59,7 +59,7 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
 {
   public:
     /** Constructor. */
-    GLVARArea(GLRenderSystem * render_system, char const * name_, long capacity_, Usage usage, bool gpu_memory_ = true);
+    GLVARArea(GLRenderSystem * render_system, char const * name_, int64 capacity_, Usage usage, int8 gpu_memory_ = true);
 
     /** Destructor. Automatically destroys all associated vertex arrays. */
     ~GLVARArea();
@@ -72,11 +72,11 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
 
     char const * getName() const { return name.c_str(); }
     void reset();
-    long getCapacity() const { return capacity; }
-    long getAllocatedSize() const { return allocated_size; }
-    bool inGPUMemory() const { return gpu_memory; }
+    int64 getCapacity() const { return capacity; }
+    int64 getAllocatedSize() const { return allocated_size; }
+    int8 inGPUMemory() const { return gpu_memory; }
 
-    VAR * createArray(long num_bytes);
+    VAR * createArray(int64 num_bytes);
     void destroyArray(VAR * array);
 
     /** Get the OpenGL index for this buffer.*/
@@ -86,10 +86,10 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
     void * getBasePointer() const { return base_pointer; }
 
     /** Get the current generation (i.e. the number of times reset() has been called). */
-    int getCurrentGeneration() const { return generation; }
+    int32 getCurrentGeneration() const { return generation; }
 
     /** Mark an extra block as allocated. */
-    void incrementAllocated(long inc) { allocated_size += inc; }
+    void incrementAllocated(int64 inc) { allocated_size += inc; }
 
   private:
     /** Destroy all vertex arrays that are allocated from this area. */
@@ -99,12 +99,12 @@ class THEA_GL_DLL_LOCAL GLVARArea : public VARArea
 
     GLRenderSystem * render_system;
     std::string name;
-    long capacity;
-    bool gpu_memory;
+    int64 capacity;
+    int8 gpu_memory;
     GLuint gl_buffer;
     uint8 * base_pointer;
-    int generation;
-    long allocated_size;
+    int32 generation;
+    int64 allocated_size;
     VARSet vars;
 
 }; // class GLVARArea

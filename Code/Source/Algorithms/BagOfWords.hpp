@@ -70,10 +70,10 @@ class THEA_API BagOfWords : public Serializable
     void setOptions(Options const & options_) { vocabulary.setOptions(options_); }
 
     /** Get the number of words in the vocabulary. */
-    long numWords() const { return vocabulary.numClusters(); }
+    intx numWords() const { return vocabulary.numClusters(); }
 
     /** Get the size of the feature vector of a point. */
-    long numPointFeatures() const { return vocabulary.numPointFeatures(); }
+    intx numPointFeatures() const { return vocabulary.numPointFeatures(); }
 
     /**
      * Train the Bag-of-Words model from a set of training points, one per row of the input matrix. The points are clustered
@@ -86,7 +86,7 @@ class THEA_API BagOfWords : public Serializable
      * @return True if the training converged, else false.
      */
     template <typename AddressableMatrixT>
-    bool train(long num_words, AddressableMatrixT const & training_points,
+    bool train(intx num_words, AddressableMatrixT const & training_points,
                typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
                                                          AddressableMatrixT >::value >::type * dummy = NULL)
     {
@@ -101,7 +101,7 @@ class THEA_API BagOfWords : public Serializable
      * @param points The points for which to build the word histogram. AddressableMatrixT should have the interface of an
      *   AddressableMatrix of some real-valued scalar type.
      * @param histogram The vector of word frequencies, assumed to be preallocated to numWords() entries. U should be a
-     *   real-valued scalar type (e.g. <code>long</code> or <code>double</code>).
+     *   real-valued scalar type (e.g. <code>intx</code> or <code>double</code>).
      * @param point_weights [Optional] The contribution of each point to the histogram (1 if null).
      */
     template <typename AddressableMatrixT, typename U>
@@ -110,12 +110,12 @@ class THEA_API BagOfWords : public Serializable
                                     std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
                                                      AddressableMatrixT >::value >::type * dummy = NULL) const
     {
-      long num_points = points.rows();
-      Array<long> labeling((size_t)num_points);
+      intx num_points = points.rows();
+      Array<intx> labeling((size_t)num_points);
       vocabulary.mapToClusters(points, &labeling[0]);
 
-      long num_words = numWords();
-      for (long i = 0; i < num_words; ++i)
+      intx num_words = numWords();
+      for (intx i = 0; i < num_words; ++i)
         histogram[i] = 0;
 
       for (size_t i = 0; i < labeling.size(); ++i)

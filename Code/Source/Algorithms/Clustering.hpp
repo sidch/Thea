@@ -224,7 +224,7 @@ class THEA_API Clustering
       FlatMethod           method;
       SimilarityMeasure    similarity_measure;
       GraphModel           graph_model;
-      long                 num_nearest_neighbors;
+      intx                 num_nearest_neighbors;
       ClusteringCriterion  clustering_criterion;
       SplitPriority        split_priority;
 
@@ -232,7 +232,7 @@ class THEA_API Clustering
       FlatOptions(FlatMethod method_ = FlatMethod::AUTO,
                   SimilarityMeasure similarity_measure_ = SimilarityMeasure::AUTO,
                   GraphModel graph_model_ = GraphModel::AUTO,
-                  long num_nearest_neighbors_ = -1,
+                  intx num_nearest_neighbors_ = -1,
                   ClusteringCriterion clustering_criterion_ = ClusteringCriterion::AUTO,
                   SplitPriority split_priority_ = SplitPriority::AUTO)
       : method(method_),

@@ -85,9 +85,9 @@ testCSPARSE(int argc, char * argv[])
     cout << "Solution:" << endl;
 
     double const * sols = ls->getSolution();
-    for (long i = 0; i < ls->dims(); ++i)
+    for (intx i = 0; i < ls->dims(); ++i)
     {
-      printf("  x[%ld] = %g (expected %g)\n", (long)i, sols[i], expected[i]);
+      printf("  x[%ld] = %g (expected %g)\n", (intx)i, sols[i], expected[i]);
 
       double allowed_error = std::max(1e-10, EPSILON * expected[i]);
       if (std::fabs(sols[i] - expected[i]) > allowed_error)

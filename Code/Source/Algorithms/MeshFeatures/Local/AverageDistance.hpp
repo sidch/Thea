@@ -62,7 +62,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -75,7 +75,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
      *   distance of \a normalization_scale will be mapped to 1). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    AverageDistance(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    AverageDistance(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -89,7 +89,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
      *   distance of \a normalization_scale will be mapped to 1). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    AverageDistance(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    AverageDistance(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -146,8 +146,8 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 
       if (process_all)
       {
-        long num_samples = this->numSamples();
-        for (long i = 0; i < num_samples; ++i)
+        intx num_samples = this->numSamples();
+        for (intx i = 0; i < num_samples; ++i)
           callback(i, this->getSamplePosition(i));
       }
       else
@@ -183,7 +183,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
       alwaysAssertM(graph, "AverageDistance: Non-null sample graph required to compute geodesic distances");
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
-      long seed_index = -1;
+      intx seed_index = -1;
       if (this->hasExternalKDTree())
         seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
       else
@@ -206,7 +206,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
     {
       EuclideanCallback(Vector3 const & position_) : position(position_), sum_distances(0), num_points(0) {}
 
-      template <typename SampleT> bool operator()(long index, SampleT const & t)
+      template <typename SampleT> bool operator()(intx index, SampleT const & t)
       {
         Real d = (PointTraitsN<SampleT, 3>::getPosition(t) - position).norm();
         sum_distances += d;
@@ -222,7 +222,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 
       Vector3 position;
       double sum_distances;
-      long num_points;
+      intx num_points;
 
     }; // struct EuclideanCallback
 
@@ -245,7 +245,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
       }
 
       double sum_distances;
-      long num_points;
+      intx num_points;
 
     }; // struct GeodesicCallback
 

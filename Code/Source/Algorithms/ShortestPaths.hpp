@@ -246,7 +246,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
 
   // Deallocate scratch space only if absolutely necessary. With this policy, the hash table will have at most 2.5 times the
   // number of vertices (1.5 earlier + 1 on this call) and repeated calls with the same graph will not cause any reallocations.
-  long num_verts = graph.numVertices();
+  intx num_verts = graph.numVertices();
   if (scratch.size() > 1.5 * num_verts)
     scratch = Scratch();  // make sure the memory is actually freed, better than calling scratch.clear()
 
@@ -303,8 +303,8 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
 #endif
 
 #ifdef THEA_SHORTEST_PATHS_DO_STATS
-  long num_enqueued = (has_src_region ? (long)src_region->size() : 1);
-  long num_iters = 0;
+  intx num_enqueued = (has_src_region ? (intx)src_region->size() : 1);
+  intx num_iters = 0;
 #endif
 
   ScratchElement tmp_data;

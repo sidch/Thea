@@ -60,7 +60,7 @@ namespace Thea {
  * and implement the following functions:
  *
  * \code
- *   long numVertices() const;
+ *   intx numVertices() const;
  *   Vertex[Const]Iterator verticesBegin() [const];
  *   Vertex[Const]Iterator verticesEnd() [const];
  *   Vertex[Const]Handle getVertex(Vertex[Const]Iterator) [const];
@@ -104,7 +104,7 @@ class IsGraph
  * and implement the following functions:
  *
  * \code
- *   long numNeighbors(VertexConstHandle vertex) const;
+ *   intx numNeighbors(VertexConstHandle vertex) const;
  *   Neighbor[Const]Iterator neighborsBegin(Vertex[Const]Handle vertex) [const];
  *   Neighbor[Const]Iterator neighborsEnd(Vertex[Const]Handle vertex) [const];
  *   Vertex[Const]Handle getVertex(Neighbor[Const]Iterator) [const];

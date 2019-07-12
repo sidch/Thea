@@ -81,7 +81,7 @@ class /* THEA_API */ SparsePCA_N
      */
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
-                                                          ScalarT eps = -1, long max_iters = -1);
+                                                          ScalarT eps = -1, intx max_iters = -1);
 
 }; // class SparsePCA_N
 
@@ -94,7 +94,7 @@ class /* THEA_API */ SparsePCA_N<T *, N, ScalarT>
 
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
-                                                          ScalarT eps = -1, long max_iters = -1)
+                                                          ScalarT eps = -1, intx max_iters = -1)
     {
       return SparsePCA_N<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin),
                                                  PtrToRefIterator<T, InputIterator>(end),
@@ -112,7 +112,7 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
 
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
-                                                          ScalarT eps = -1, long max_iters = -1)
+                                                          ScalarT eps = -1, intx max_iters = -1)
     {
       if (lambda < 0)
         lambda = (ScalarT)1.0 / ((ScalarT)N * (ScalarT)std::log((double)N));
@@ -142,12 +142,12 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
 
       // Iterate to minimize the cost function
       bool updated = false;
-      for (long iter = 0; iter < max_iters; ++iter)
+      for (intx iter = 0; iter < max_iters; ++iter)
       {
         bool updated_in_iter = false;
 
-        for (long i = 0; i < N; ++i)
-          for (long j = i + 1; j < N; ++j)
+        for (intx i = 0; i < N; ++i)
+          for (intx j = i + 1; j < N; ++j)
           {
             VectorT selected_axes[2] = { axes[i], axes[j] };
 
@@ -155,8 +155,8 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
             ScalarT nvars[2]; normalizeVariances<2>(vars, nvars);
             ScalarT best_cost = cost<2>(nvars, selected_axes, lambda2);
 
-            static long const ANG_ITERS = 180;
-            for (long k = 1; k < ANG_ITERS; ++k)
+            static intx const ANG_ITERS = 180;
+            for (intx k = 1; k < ANG_ITERS; ++k)
             {
               double ang = Math::pi() * (k / (double)ANG_ITERS);
               double s = std::sin(ang);
@@ -228,17 +228,17 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
     template <int M> static void normalizeVariances(ScalarT const * variances, ScalarT * normalized_variances)
     {
       ScalarT sum = 0;
-      for (long i = 0; i < M; ++i)
+      for (intx i = 0; i < M; ++i)
         sum += variances[i];
 
       if (sum > Math::eps<ScalarT>())
       {
-        for (long i = 0; i < M; ++i)
+        for (intx i = 0; i < M; ++i)
           normalized_variances[i] = variances[i] / sum;
       }
       else
       {
-        for (long i = 0; i < M; ++i)
+        for (intx i = 0; i < M; ++i)
           normalized_variances[i] = 0;
       }
     }
@@ -255,7 +255,7 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
       // \sum_{i = 0}^{N - 1} -d_m \log d_m
 
       ScalarT c = 0;
-      for (long i = 0; i < M; ++i)
+      for (intx i = 0; i < M; ++i)
         if (normalized_variances[i] > Math::eps<ScalarT>())
           c += -normalized_variances[i] * std::log(normalized_variances[i]);
 
@@ -268,8 +268,8 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
       // \sum_{i = 0}^{N - 1} \sum_{j = 0}^{N - 1} -axes_{i, j}^2 \log -axes_{i, j}^2
 
       ScalarT c = 0;
-      for (long i = 0; i < M; ++i)
-        for (long j = 0; j < N; ++j)
+      for (intx i = 0; i < M; ++i)
+        for (intx j = 0; j < N; ++j)
         {
           ScalarT sq = axes[i][j] * axes[i][j];
           if (sq > Math::eps<ScalarT>())
@@ -282,8 +282,8 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
     // Sort axes from largest to smallest variance.
     static void sortAxes(ScalarT variances[N], VectorT axes[N])
     {
-      for (long i = 0; i < N; ++i)
-        for (long j = i + 1; j < N; ++j)
+      for (intx i = 0; i < N; ++i)
+        for (intx j = i + 1; j < N; ++j)
         {
           if (variances[i] < variances[j])
           {

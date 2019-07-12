@@ -74,7 +74,7 @@ class Impl
   public:
     Impl(Options const & options_) : options(options_), radius(0) {}
 
-    void parametrize(SampleGraph const & sample_graph, long origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
+    void parametrize(SampleGraph const & sample_graph, intx origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
                      Real radius_)
     {
       clear();
@@ -90,7 +90,7 @@ class Impl
       geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, this, radius);
     }
 
-    Vector2 getParameters(long sample_index, bool & has_parameters) const
+    Vector2 getParameters(intx sample_index, bool & has_parameters) const
     {
       ParameterMap::const_iterator existing = params.find(sample_index);
       if (existing != params.end())
@@ -277,14 +277,14 @@ DiscreteExponentialMap::~DiscreteExponentialMap()
 }
 
 void
-DiscreteExponentialMap::parametrize(SampleGraph const & sample_graph, long origin_index, Vector3 const & u_axis,
+DiscreteExponentialMap::parametrize(SampleGraph const & sample_graph, intx origin_index, Vector3 const & u_axis,
                                     Vector3 const & v_axis, Real radius)
 {
   impl->parametrize(sample_graph, origin_index, u_axis, v_axis, radius);
 }
 
 Vector2
-DiscreteExponentialMap::getParameters(long sample_index, bool & has_parameters) const
+DiscreteExponentialMap::getParameters(intx sample_index, bool & has_parameters) const
 {
   return impl->getParameters(sample_index, has_parameters);
 }

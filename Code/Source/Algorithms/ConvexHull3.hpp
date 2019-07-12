@@ -64,11 +64,11 @@ class THEA_API ConvexHull3
       /** %Options for computing approximate convex hulls. */
       struct THEA_API Approx
       {
-        long max_vertices_hint;  ///< Hint for maximum number of vertices on the hull.
+        intx max_vertices_hint;  ///< Hint for maximum number of vertices on the hull.
         Real skin_width;  ///< Amount to expand the hull by, for a little leeway and robustness.
 
         /** Constructor. */
-        Approx(long max_vertices_hint_ = -1, Real skin_width_ = 0)
+        Approx(intx max_vertices_hint_ = -1, Real skin_width_ = 0)
         : max_vertices_hint(max_vertices_hint_), skin_width(skin_width_) {}
 
         /** The set of default options. */

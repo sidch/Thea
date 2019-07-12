@@ -70,12 +70,12 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
 
     char const * getName() const { return name.c_str(); }
 
-    void attach(AttachmentPoint ap, Texture * texture, Texture::Face face = Texture::Face::POS_X, int z_offset = 0);
+    void attach(AttachmentPoint ap, Texture * texture, Texture::Face face = Texture::Face::POS_X, int64 z_offset = 0);
     void detach(AttachmentPoint ap);
     void detachAll();
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
+    int64 getWidth() const { return width; }
+    int64 getHeight() const { return height; }
 
     /** Get the OpenGL ID of the framebuffer object. */
     GLuint getGLID() const { return gl_fbid; }
@@ -88,10 +88,10 @@ class THEA_GL_DLL_LOCAL GLFramebuffer : public Framebuffer
     std::string name;
     GLuint gl_fbid;
     GLTexture * attachment_table[AttachmentPoint::MAX_ATTACHMENTS];
-    int num_attachments;
+    int32 num_attachments;
     Array<GLenum> gl_draw_buffers;
-    int width;
-    int height;
+    int64 width;
+    int64 height;
 
 }; // class GLFramebuffer
 

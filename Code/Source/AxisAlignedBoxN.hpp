@@ -125,14 +125,13 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 
     /**
      * Get the i'th corner of the box, for \a i in the range [0, 2^N - 1]. This function works as expected only if
-     * N <= sizeof(unsigned long). The d'th coordinate of the returned point is assigned the d'th coordinate of the maximum
-     * corner of the box if the d'th bit of i (where the 0'th bit is the least significant) is 1, and the minimum corner if it
-     * is 0.
+     * N <= sizeof(uintx). The d'th coordinate of the returned point is assigned the d'th coordinate of the maximum corner of
+     * the box if the d'th bit of i (where the 0'th bit is the least significant) is 1, and the minimum corner if it is 0.
      */
-    VectorT getCorner(unsigned long i) const
+    VectorT getCorner(uintx i) const
     {
       VectorT ret;
-      for (long j = 0; j < N; ++j)
+      for (intx j = 0; j < N; ++j)
         ret[j] = ((i >> j) & 0x01) ? hi[j] : lo[j];
 
       return ret;
@@ -151,7 +150,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       do
       {
         // Get the current corner
-        for (long j = 0; j < N; ++j)
+        for (intx j = 0; j < N; ++j)
           corner[j] = counter.test((size_t)j) ? hi[j] : lo[j];
 
         // Transform and merge it
@@ -247,7 +246,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 
       VectorT ext = getExtent();
       T vol = ext[0];
-      for (long i = 1; i < N; ++i)
+      for (intx i = 1; i < N; ++i)
         vol *= ext[i];
 
       return vol;
@@ -302,7 +301,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       if (is_null || other.is_null) return false;
 
       // Look for the absence of a separating plane
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
         if (lo[i] > other.hi[i] || hi[i] < other.lo[i])
           return false;
 
@@ -314,7 +313,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     {
       if (is_null) return false;
 
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
         if (p[i] < lo[i]) return false;
         if (p[i] > hi[i]) return false;
@@ -328,7 +327,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     {
       if (is_null || other.is_null) return false;
 
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
         if (other.lo[i] < lo[i]) return false;
         if (other.hi[i] > hi[i]) return false;
@@ -458,7 +457,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       bool inside = true;
 
       // Find candidate planes.
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
         if (origin[i] < lo[i])
         {
@@ -485,7 +484,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
 
       // Get largest of the max_t's for final choice of intersection
       int which_plane = 0;
-      for (long i = 1; i < N; ++i)
+      for (intx i = 1; i < N; ++i)
         if (max_t[i] > max_t[which_plane])
           which_plane = i;
 
@@ -493,7 +492,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
       if (max_t[which_plane] < static_cast<T>(-0.5))  // miss the box
         return RayIntersectionN<N, T>(-1);
 
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
       {
         if (i != which_plane)
         {

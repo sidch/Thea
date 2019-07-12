@@ -48,7 +48,7 @@
 namespace Thea {
 namespace Algorithms {
 
-LogisticRegression::LogisticRegression(long ndims_)
+LogisticRegression::LogisticRegression(intx ndims_)
 : ndims(ndims_)
 {
   alwaysAssertM(ndims_ >= 1, "LogisticRegression: Number of dimensions must be at least 1");

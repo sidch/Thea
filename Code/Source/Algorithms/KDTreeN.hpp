@@ -234,7 +234,7 @@ class /* THEA_API */ KDTreeN
 
         Array<Buffer *> buffers;
         size_t buffer_capacity;
-        long current_buffer;
+        intx current_buffer;
 
         /** Get the current buffer. */
         Buffer & getCurrentBuffer() { return *buffers[(size_t)current_buffer]; }
@@ -242,7 +242,7 @@ class /* THEA_API */ KDTreeN
         /** Get the next available buffer, creating it if necessary and making it the current one. */
         Buffer & getNextBuffer()
         {
-          long next_buffer = current_buffer < 0 ? 0 : current_buffer + 1;
+          intx next_buffer = current_buffer < 0 ? 0 : current_buffer + 1;
           if ((size_t)next_buffer >= buffers.size())
           {
             buffers.push_back(new Buffer(buffer_capacity));
@@ -327,11 +327,11 @@ class /* THEA_API */ KDTreeN
         /** Deallocate a block of elements from the pool. */
         void free(size_t num_elems)
         {
-          long n = (long)num_elems;
+          intx n = (intx)num_elems;
           while (n > 0 && current_buffer >= 0)
           {
             size_t num_freed = getCurrentBuffer().free(num_elems);
-            n -= (long)num_freed;
+            n -= (intx)num_freed;
 
             if (n > 0)
               current_buffer--;
@@ -345,7 +345,7 @@ class /* THEA_API */ KDTreeN
     {
       public:
         RangeQueryFunctor(Array<T> & result_) : result(result_) {}
-        bool operator()(long index, T & t) { result.push_back(t); return false; }
+        bool operator()(intx index, T & t) { result.push_back(t); return false; }
 
       private:
         Array<T> & result;
@@ -355,11 +355,11 @@ class /* THEA_API */ KDTreeN
     class RangeQueryIndicesFunctor
     {
       public:
-        RangeQueryIndicesFunctor(Array<long> & result_) : result(result_) {}
-        bool operator()(long index, T & t) { result.push_back(index); return false; }
+        RangeQueryIndicesFunctor(Array<intx> & result_) : result(result_) {}
+        bool operator()(intx index, T & t) { result.push_back(index); return false; }
 
       private:
-        Array<long> & result;
+        Array<intx> & result;
     };
 
   public:
@@ -384,7 +384,7 @@ class /* THEA_API */ KDTreeN
     class Node : public AttributedObject<NodeAttributeT>
     {
       private:
-        long depth;
+        intx depth;
         AxisAlignedBoxT bounds;
         size_t num_elems;
         ElementIndex * elems;
@@ -393,7 +393,7 @@ class /* THEA_API */ KDTreeN
 
         friend class KDTreeN;
 
-        void init(long depth_)
+        void init(intx depth_)
         {
           depth = depth_;
           bounds = AxisAlignedBoxT();
@@ -407,10 +407,10 @@ class /* THEA_API */ KDTreeN
         typedef ElementIndex const * ElementIndexConstIterator;
 
         /** Constructor. */
-        Node(long depth_ = 0) : depth(depth_), lo(NULL), hi(NULL) {}
+        Node(intx depth_ = 0) : depth(depth_), lo(NULL), hi(NULL) {}
 
         /** Get the depth of the node in the tree (the root is at depth 0). */
-        long getDepth() const { return depth; }
+        intx getDepth() const { return depth; }
 
         /** Get the bounding box of the node. */
         AxisAlignedBoxT const & getBounds() const { return bounds; }
@@ -420,7 +420,7 @@ class /* THEA_API */ KDTreeN
          * bounding box: in memory-saving mode, indices of all such elements are only held at the leaves of the subtree rooted
          * at this node.
          */
-        long numElementIndices() const { return (long)num_elems; }
+        intx numElementIndices() const { return (intx)num_elems; }
 
         /** Get an iterator to the first element index stored at the node. */
         ElementIndexConstIterator elementIndicesBegin() const { return elems; }
@@ -467,7 +467,7 @@ class /* THEA_API */ KDTreeN
      *   down range searches since every positive result will only be obtained at the leaves.
      */
     template <typename InputIterator>
-    KDTreeN(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_per_leaf_ = -1,
+    KDTreeN(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
             bool save_memory = false)
     : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
       valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
@@ -494,7 +494,7 @@ class /* THEA_API */ KDTreeN
      *   implementation-specific cases.
      */
     template <typename InputIterator>
-    void init(InputIterator begin, InputIterator end, long max_depth_ = -1, long max_elems_per_leaf_ = -1,
+    void init(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
               bool save_memory = false, bool deallocate_previous_memory = true)
     {
       clear(deallocate_previous_memory);
@@ -522,7 +522,7 @@ class /* THEA_API */ KDTreeN
         if (filters.empty())
         {
           std::copy(begin, end, elems.begin());
-          num_elems = (long)max_new_elems;
+          num_elems = (intx)max_new_elems;
         }
         else
         {
@@ -551,12 +551,12 @@ class /* THEA_API */ KDTreeN
       if (num_elems <= 0)
         return;
 
-      static long const DEFAULT_MAX_ELEMS_IN_LEAF = 10;
+      static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 10;
       max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
 
       // The fraction of elements held by the larger node at each split is 0.5
       static double const SPLIT_FRACTION = 0.5;
-      long est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
+      intx est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
       max_depth = max_depth_;
       if (max_depth < 0)
         max_depth = est_depth;
@@ -644,13 +644,13 @@ class /* THEA_API */ KDTreeN
      *
      * @see disableNearestNeighborAcceleration()
      */
-    void enableNearestNeighborAcceleration(long num_acceleration_samples_ = -1)
+    void enableNearestNeighborAcceleration(intx num_acceleration_samples_ = -1)
     {
       if (num_acceleration_samples_ < 0)
       {
-        static long const MIN_ACCEL_SAMPLES = 10;
+        static intx const MIN_ACCEL_SAMPLES = 10;
 
-        num_acceleration_samples_ = std::min(250L, (long)std::ceil(0.1 * numElements()));
+        num_acceleration_samples_ = std::min(250L, (intx)std::ceil(0.1 * numElements()));
         accelerate_nn_queries = (num_acceleration_samples_ >= MIN_ACCEL_SAMPLES);
       }
       else
@@ -740,7 +740,7 @@ class /* THEA_API */ KDTreeN
     bool isEmpty() const { return num_elems <= 0; }
 
     /** Get the number of elements in the tree. The elements themselves can be obtained with getElements(). */
-    long numElements() const { return num_elems; }
+    intx numElements() const { return num_elems; }
 
     /** Get a pointer to an array of the elements in the tree. The number of elements can be obtained with numElements(). */
     T const * getElements() const { return &elems[0]; }
@@ -757,13 +757,13 @@ class /* THEA_API */ KDTreeN
     Node const * getRoot() const { return root; }
 
     /** Get the number of nodes in the tree. */
-    long numNodes() const { return num_nodes; }
+    intx numNodes() const { return num_nodes; }
 
     /** Get the maximum subdivision depth (number of levels not counting the root) of the kd-tree. */
-    long maxDepth() const { return max_depth; }
+    intx maxDepth() const { return max_depth; }
 
     /** Get the maximum number of elements in each leaf of the kd-tree. */
-    long maxElementsPerLeaf() const { return max_elems_per_leaf; }
+    intx maxElementsPerLeaf() const { return max_elems_per_leaf; }
 
     /** Get a bounding box for all the objects in the tree. */
     AxisAlignedBoxT const & getBounds() const
@@ -830,7 +830,7 @@ class /* THEA_API */ KDTreeN
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
     template <typename MetricT, typename QueryT>
-    long closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
+    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
     const
     {
       NeighborPair pair = closestPair<MetricT>(query, dist_bound, closest_point != NULL);
@@ -908,8 +908,8 @@ class /* THEA_API */ KDTreeN
      *   enableNearestNeighborAcceleration().
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
-    long kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
-                       bool get_closest_points = false, bool clear_set = true, long use_as_query_index_and_swap = -1) const
+    intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
+                       bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const
     {
       if (clear_set) k_closest_pairs.clear();
 
@@ -968,7 +968,7 @@ class /* THEA_API */ KDTreeN
      *   queries over a union of simpler ranges).
      */
     template <typename IntersectionTesterT, typename RangeT>
-    void rangeQueryIndices(RangeT const & range, Array<long> & result, bool discard_prior_results = true) const
+    void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
       if (root)
@@ -982,7 +982,7 @@ class /* THEA_API */ KDTreeN
      * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
      * (or be a function pointer with the equivalent signature)
      * \code
-     * bool operator()(long index, T & t)
+     * bool operator()(intx index, T & t)
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
@@ -1059,11 +1059,11 @@ class /* THEA_API */ KDTreeN
     /** Comparator for sorting elements along an axis. */
     struct ObjectLess
     {
-      long coord;
+      intx coord;
       KDTreeN const * tree;
 
       /** Constructor. Axis 0 = X, 1 = Y, 2 = Z. */
-      ObjectLess(long coord_, KDTreeN const * tree_) : coord(coord_), tree(tree_) {}
+      ObjectLess(intx coord_, KDTreeN const * tree_) : coord(coord_), tree(tree_) {}
 
       /** Less-than operator, along the specified axis. */
       bool operator()(ElementIndex a, ElementIndex b)
@@ -1123,7 +1123,7 @@ class /* THEA_API */ KDTreeN
       // leaf pool, since we don't yet know if this node will turn out to be a leaf). In this case, after the function finishes,
       // the node's indices will be deallocated from the main index pool (and possibly moved to the leaf pool).
 
-      if (!start || start->depth >= max_depth || (long)start->num_elems <= max_elems_per_leaf)
+      if (!start || start->depth >= max_depth || (intx)start->num_elems <= max_elems_per_leaf)
       {
         if (save_memory)
           moveIndicesToLeafPool(start, main_index_pool, leaf_index_pool);
@@ -1134,9 +1134,9 @@ class /* THEA_API */ KDTreeN
       // Find a splitting plane
 #define THEA_KDTREEN_SPLIT_LONGEST
 #ifdef THEA_KDTREEN_SPLIT_LONGEST
-      long coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension
+      intx coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension
 #else
-      long coord = (long)(start->depth % N);  // cycle between dimensions
+      intx coord = (intx)(start->depth % N);  // cycle between dimensions
 #endif
 
       // Split elements into lower and upper halves
@@ -1366,7 +1366,7 @@ class /* THEA_API */ KDTreeN
         if (swapped.isValid())
         {
           pair = swapped.swapped();
-          pair.setTargetIndex((long)index);
+          pair.setTargetIndex((intx)index);
         }
       }
     }
@@ -1401,7 +1401,7 @@ class /* THEA_API */ KDTreeN
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
 
         if (pair.getMonotoneApproxDistance() < 0 || mad <= pair.getMonotoneApproxDistance())
-          pair = NeighborPair(0, (long)index, mad, qp, tp);
+          pair = NeighborPair(0, (intx)index, mad, qp, tp);
       }
     }
 
@@ -1414,7 +1414,7 @@ class /* THEA_API */ KDTreeN
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
     void kClosestPairs(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds,
                        BoundedNeighborPairSet & k_closest_pairs, double dist_bound, bool get_closest_points,
-                       long use_as_query_index_and_swap) const
+                       intx use_as_query_index_and_swap) const
     {
       if (!start->lo)  // leaf
         kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, get_closest_points, use_as_query_index_and_swap);
@@ -1457,7 +1457,7 @@ class /* THEA_API */ KDTreeN
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
       bool get_closest_points,
-      long use_as_query_index_and_swap,
+      intx use_as_query_index_and_swap,
       typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
@@ -1471,9 +1471,9 @@ class /* THEA_API */ KDTreeN
         if (TransformableBaseT::hasTransform())
           query.template kClosestPairs<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
                                                                       k_closest_pairs, dist_bound, get_closest_points, false,
-                                                                      (long)index);
+                                                                      (intx)index);
         else
-          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, get_closest_points, false, (long)index);
+          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, get_closest_points, false, (intx)index);
       }
     }
 
@@ -1488,7 +1488,7 @@ class /* THEA_API */ KDTreeN
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
       bool get_closest_points,
-      long use_as_query_index_and_swap,
+      intx use_as_query_index_and_swap,
       typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
     {
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
@@ -1506,8 +1506,8 @@ class /* THEA_API */ KDTreeN
           continue;
 
         // Check if the element is already in the set of neighbors or not
-        NeighborPair pair = (use_as_query_index_and_swap >= 0 ? NeighborPair((long)index, use_as_query_index_and_swap)
-                                                              : NeighborPair(0, (long)index));
+        NeighborPair pair = (use_as_query_index_and_swap >= 0 ? NeighborPair((intx)index, use_as_query_index_and_swap)
+                                                              : NeighborPair(0, (intx)index));
         if (k_closest_pairs.contains(pair, eq_comp))  // already found
           continue;
 
@@ -1567,7 +1567,7 @@ class /* THEA_API */ KDTreeN
           if (!elementPassesFilters(elem))
             continue;
 
-          if ((*functor)(static_cast<long>(index), elem))
+          if ((*functor)(static_cast<intx>(index), elem))
             return true;
         }
       }
@@ -1586,7 +1586,7 @@ class /* THEA_API */ KDTreeN
                                 makeTransformedObject(&elem, &TransformableBaseT::getTransform()), range)
                           : IntersectionTesterT::template intersects<N, ScalarT>(elem, range);
           if (intersects)
-            if ((*functor)(static_cast<long>(index), elem))
+            if ((*functor)(static_cast<intx>(index), elem))
               return true;
         }
       }
@@ -1703,7 +1703,7 @@ class /* THEA_API */ KDTreeN
                                                                                                            best_isec.getTime());
           if (improvedRayTime(isec.getTime(), best_isec.getTime()))
           {
-            best_isec = RayStructureIntersectionT(isec, (long)index);
+            best_isec = RayStructureIntersectionT(isec, (intx)index);
             found = true;
           }
         }
@@ -1759,7 +1759,7 @@ class /* THEA_API */ KDTreeN
       VectorT src_cp, dst_cp;
       for (size_t i = 0; i < acceleration_samples.size(); ++i)
       {
-        long elem_index = Random::common().integer(0, (int32)num_elems - 1);
+        intx elem_index = Random::common().integer(0, (int32)num_elems - 1);
         VectorT p = BoundedTraitsT::getCenter(elems[elem_index]);
 
         // Snap point to element, else it's not a valid NN proxy
@@ -1846,16 +1846,16 @@ class /* THEA_API */ KDTreeN
   private:
     Node * root;
 
-    long num_elems;  // elems.size() doesn't tell us how many elements there are, it's just the capacity of the elems array
+    intx num_elems;  // elems.size() doesn't tell us how many elements there are, it's just the capacity of the elems array
     ElementArray elems;  // elems.size() is *not* the number of elements in the tree!!!
 
-    long num_nodes;
+    intx num_nodes;
     NodePool node_pool;
 
     IndexPool index_pool;
 
-    long max_depth;
-    long max_elems_per_leaf;
+    intx max_depth;
+    intx max_elems_per_leaf;
 
     AffineTransformN<N, ScalarT> transform_inverse;
     Matrix<N, N, ScalarT> transform_inverse_transpose;
@@ -1863,7 +1863,7 @@ class /* THEA_API */ KDTreeN
     FilterStack filters;
 
     bool accelerate_nn_queries;
-    long num_acceleration_samples;
+    intx num_acceleration_samples;
     mutable bool valid_acceleration_structure;
     mutable NearestNeighborAccelerationStructure * acceleration_structure;
     mutable SampleFilterStack sample_filters;

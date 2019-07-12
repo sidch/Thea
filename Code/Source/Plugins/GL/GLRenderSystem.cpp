@@ -194,8 +194,9 @@ GLRenderSystem::destroyShader(Shader * shader)
 }
 
 Texture *
-GLRenderSystem::createTexture(char const * name_, int width, int height, int depth, Texture::Format const * desired_format,
-                              Texture::Dimension dimension, Texture::Options const & options)
+GLRenderSystem::createTexture(char const * name_, int64 width, int64 height, int64 depth,
+                              Texture::Format const * desired_format, Texture::Dimension dimension,
+                              Texture::Options const & options)
 {
   GLTexture * tex = new GLTexture(this, name_, width, height, depth, desired_format, dimension, options);
   if (tex)
@@ -243,7 +244,7 @@ GLRenderSystem::destroyTexture(Texture * texture)
 }
 
 VARArea *
-GLRenderSystem::createVARArea(char const * name_, long num_bytes, VARArea::Usage usage, bool gpu_memory)
+GLRenderSystem::createVARArea(char const * name_, int64 num_bytes, VARArea::Usage usage, int8 gpu_memory)
 {
   GLVARArea * vararea = new GLVARArea(this, name_, num_bytes, usage, gpu_memory);
   if (vararea)
@@ -392,7 +393,7 @@ GLRenderSystem::pushTextures()
 }
 
 void
-GLRenderSystem::setTexture(int texunit, Texture * texture)
+GLRenderSystem::setTexture(int32 texunit, Texture * texture)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glActiveTextureARB(GL_TEXTURE0_ARB + texunit);
@@ -442,7 +443,8 @@ void
 GLRenderSystem::setVertexAreaFromVAR(GLVAR const & v)
 {
   alwaysAssertM(!current_buffer_state.vertex_area || (v.getArea() == current_buffer_state.vertex_area),
-      std::string(getName()) + ": All vertex arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
+                std::string(getName())
+              + ": All vertex arrays used within a single begin/endIndexedPrimitives block must share the same VARArea");
 
   if (v.getArea() != current_buffer_state.vertex_area)
   {
@@ -502,7 +504,7 @@ GLRenderSystem::setColorArray(VAR const * colors)
 }
 
 void
-GLRenderSystem::setTexCoordArray(int texunit, VAR const * texcoords)
+GLRenderSystem::setTexCoordArray(int32 texunit, VAR const * texcoords)
 {
   if (texcoords)
   {
@@ -627,7 +629,7 @@ GLRenderSystem::pushViewMatrices()
 Matrix4
 GLRenderSystem::getMatrix(MatrixMode mode) const
 {
-  float f[16];
+  float32 f[16];
   glGetFloatv((mode == MatrixMode::MODELVIEW ? GL_MODELVIEW_MATRIX : GL_PROJECTION_MATRIX), f);
 
   THEA_CHECK_GL_OK
@@ -679,36 +681,36 @@ GLRenderSystem::popViewMatrices()
 }
 
 void
-GLRenderSystem::sendIndices(Primitive primitive, long num_indices, uint8 const * indices)
+GLRenderSystem::sendIndices(Primitive primitive, int64 num_indices, uint8 const * indices)
 {
   glDrawElements(RenderSystem__primitiveToGLenum(primitive), (GLsizei)num_indices, GL_UNSIGNED_BYTE, indices);
 }
 
 void
-GLRenderSystem::sendIndices(Primitive primitive, long num_indices, uint16 const * indices)
+GLRenderSystem::sendIndices(Primitive primitive, int64 num_indices, uint16 const * indices)
 {
   glDrawElements(RenderSystem__primitiveToGLenum(primitive), (GLsizei)num_indices, GL_UNSIGNED_SHORT, indices);
 }
 
 void
-GLRenderSystem::sendIndices(Primitive primitive, long num_indices, uint32 const * indices)
+GLRenderSystem::sendIndices(Primitive primitive, int64 num_indices, uint32 const * indices)
 {
   glDrawElements(RenderSystem__primitiveToGLenum(primitive), (GLsizei)num_indices, GL_UNSIGNED_INT, indices);
 }
 
 void
-GLRenderSystem::sendSequentialIndices(Primitive primitive, int first_index, int num_indices)
+GLRenderSystem::sendSequentialIndices(Primitive primitive, int32 first_index, int32 num_indices)
 {
   glDrawArrays(RenderSystem__primitiveToGLenum(primitive), first_index, (GLsizei)num_indices);
 }
 
 void
-GLRenderSystem::sendIndicesFromArray(Primitive primitive, long offset, long num_indices)
+GLRenderSystem::sendIndicesFromArray(Primitive primitive, int64 offset, int64 num_indices)
 {
   alwaysAssertM(current_buffer_state.index_var.isValid(), std::string(getName()) + ": No valid index array set");
 
   uint8 * ptr = static_cast<uint8 *>(current_buffer_state.index_var.getBasePointer());
-  int elem_size = current_buffer_state.index_var.getElementSize();
+  int32 elem_size = current_buffer_state.index_var.getElementSize();
 
   glDrawElements(RenderSystem__primitiveToGLenum(primitive),
                  (GLsizei)num_indices,
@@ -729,13 +731,13 @@ GLRenderSystem::sendVertex(Vector2 const & vertex)
 }
 
 void
-GLRenderSystem::sendVertex(float x, float y)
+GLRenderSystem::sendVertex(float32 x, float32 y)
 {
   glVertex2f(x, y);
 }
 
 void
-GLRenderSystem::sendVertex(double x, double y)
+GLRenderSystem::sendVertex(float64 x, float64 y)
 {
   glVertex2d(x, y);
 }
@@ -747,13 +749,13 @@ GLRenderSystem::sendVertex(Vector3 const & vertex)
 }
 
 void
-GLRenderSystem::sendVertex(float x, float y, float z)
+GLRenderSystem::sendVertex(float32 x, float32 y, float32 z)
 {
   glVertex3f(x, y, z);
 }
 
 void
-GLRenderSystem::sendVertex(double x, double y, double z)
+GLRenderSystem::sendVertex(float64 x, float64 y, float64 z)
 {
   glVertex3d(x, y, z);
 }
@@ -765,13 +767,13 @@ GLRenderSystem::sendVertex(Vector4 const & vertex)
 }
 
 void
-GLRenderSystem::sendVertex(float x, float y, float z, float w)
+GLRenderSystem::sendVertex(float32 x, float32 y, float32 z, float32 w)
 {
   glVertex4f(x, y, z, w);
 }
 
 void
-GLRenderSystem::sendVertex(double x, double y, double z, double w)
+GLRenderSystem::sendVertex(float64 x, float64 y, float64 z, float64 w)
 {
   glVertex4d(x, y, z, w);
 }
@@ -783,19 +785,19 @@ GLRenderSystem::sendNormal(Vector3 const & normal)
 }
 
 void
-GLRenderSystem::sendNormal(float x, float y, float z)
+GLRenderSystem::sendNormal(float32 x, float32 y, float32 z)
 {
   glNormal3f(x, y, z);
 }
 
 void
-GLRenderSystem::sendNormal(double x, double y, double z)
+GLRenderSystem::sendNormal(float64 x, float64 y, float64 z)
 {
   glNormal3d(x, y, z);
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, float texcoord)
+GLRenderSystem::sendTexCoord(int32 texunit, float32 texcoord)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord1fARB(GL_TEXTURE0_ARB + texunit, texcoord);
@@ -807,7 +809,7 @@ GLRenderSystem::sendTexCoord(int texunit, float texcoord)
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, double texcoord)
+GLRenderSystem::sendTexCoord(int32 texunit, float64 texcoord)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord1dARB(GL_TEXTURE0_ARB + texunit, texcoord);
@@ -819,19 +821,19 @@ GLRenderSystem::sendTexCoord(int texunit, double texcoord)
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, Vector2 const & texcoord)
+GLRenderSystem::sendTexCoord(int32 texunit, Vector2 const & texcoord)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
-    glMultiTexCoord2fARB(GL_TEXTURE0_ARB + texunit, (float)texcoord.x(), (float)texcoord.y());
+    glMultiTexCoord2fARB(GL_TEXTURE0_ARB + texunit, (float32)texcoord.x(), (float32)texcoord.y());
   else
   {
     debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
-    glTexCoord2f((float)texcoord.x(), (float)texcoord.y());
+    glTexCoord2f((float32)texcoord.x(), (float32)texcoord.y());
   }
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, float x, float y)
+GLRenderSystem::sendTexCoord(int32 texunit, float32 x, float32 y)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord2fARB(GL_TEXTURE0_ARB + texunit, x, y);
@@ -843,7 +845,7 @@ GLRenderSystem::sendTexCoord(int texunit, float x, float y)
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, double x, double y)
+GLRenderSystem::sendTexCoord(int32 texunit, float64 x, float64 y)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord2dARB(GL_TEXTURE0_ARB + texunit, x, y);
@@ -855,19 +857,19 @@ GLRenderSystem::sendTexCoord(int texunit, double x, double y)
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, Vector3 const & texcoord)
+GLRenderSystem::sendTexCoord(int32 texunit, Vector3 const & texcoord)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
-    glMultiTexCoord3fARB(GL_TEXTURE0_ARB + texunit, (float)texcoord.x(), (float)texcoord.y(), (float)texcoord.z());
+    glMultiTexCoord3fARB(GL_TEXTURE0_ARB + texunit, (float32)texcoord.x(), (float32)texcoord.y(), (float32)texcoord.z());
   else
   {
     debugAssertM(texunit == 0, std::string(getName()) + ": Multitexturing not supported, texture unit must be zero");
-    glTexCoord3f((float)texcoord.x(), (float)texcoord.y(), (float)texcoord.z());
+    glTexCoord3f((float32)texcoord.x(), (float32)texcoord.y(), (float32)texcoord.z());
   }
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, float x, float y, float z)
+GLRenderSystem::sendTexCoord(int32 texunit, float32 x, float32 y, float32 z)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord3fARB(GL_TEXTURE0_ARB + texunit, x, y, z);
@@ -879,7 +881,7 @@ GLRenderSystem::sendTexCoord(int texunit, float x, float y, float z)
 }
 
 void
-GLRenderSystem::sendTexCoord(int texunit, double x, double y, double z)
+GLRenderSystem::sendTexCoord(int32 texunit, float64 x, float64 y, float64 z)
 {
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glMultiTexCoord3dARB(GL_TEXTURE0_ARB + texunit, x, y, z);
@@ -931,13 +933,13 @@ GLRenderSystem::pushShapeFlags()
 }
 
 void
-GLRenderSystem::setColorWrite(bool red, bool green, bool blue, bool alpha)
+GLRenderSystem::setColorWrite(int8 red, int8 green, int8 blue, int8 alpha)
 {
   glColorMask(red, green, blue, alpha);
 }
 
 void
-GLRenderSystem::setDepthWrite(bool value)
+GLRenderSystem::setDepthWrite(int8 value)
 {
   glDepthMask(value);
 }
@@ -979,7 +981,7 @@ GLRenderSystem::setDepthClearValue(Real value)
 }
 
 void
-GLRenderSystem::setStencilClearValue(int value)
+GLRenderSystem::setStencilClearValue(int32 value)
 {
   glClearStencil(value);
 }
@@ -991,7 +993,7 @@ GLRenderSystem::clear()
 }
 
 void
-GLRenderSystem::clear(bool color, bool depth, bool stencil)
+GLRenderSystem::clear(int8 color, int8 depth, int8 stencil)
 {
   glClear((color ? GL_COLOR_BUFFER_BIT : 0) | (depth ? GL_DEPTH_BUFFER_BIT : 0) | (stencil ? GL_STENCIL_BUFFER_BIT : 0));
 }
@@ -1027,19 +1029,19 @@ GLRenderSystem::setCullFace(CullFace cull)
 }
 
 void
-GLRenderSystem::setPolygonOffset(bool enable, Real offset)
+GLRenderSystem::setPolygonOffset(int8 enable, float64 offset)
 {
   if (enable)
   {
     glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(offset, offset);
+    glPolygonOffset(offset, (GLfloat)offset);
   }
   else
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 void
-GLRenderSystem::setPointSize(Real size)
+GLRenderSystem::setPointSize(float64 size)
 {
   glEnable(GL_POINT_SMOOTH);
   glPointSize((GLfloat)size);

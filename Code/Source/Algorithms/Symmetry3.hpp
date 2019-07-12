@@ -98,7 +98,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
   public:
     template <typename InputIterator>
     static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 const * precomputed_centroid = NULL,
-                            long num_rounds = -1)
+                            intx num_rounds = -1)
     {
       if (begin == end)  // no points, early exit
         return false;
@@ -114,13 +114,13 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
       radius = std::sqrt(radius);
 
       Array<Vector3> vertices;
-      Array<long> triangles;
+      Array<intx> triangles;
       GeodesicSphere3::compute(2, vertices, &triangles);
 
-      long best_dir = -1;
+      intx best_dir = -1;
       double best_error = -1;
       size_t first_vertex_of_round = 0;
-      for (long round = 0; round < num_rounds; ++round)
+      for (intx round = 0; round < num_rounds; ++round)
       {
         for (size_t i = first_vertex_of_round; i < vertices.size(); ++i)
         {
@@ -128,7 +128,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
           double err = symmetryError(begin, end, candidate, centroid, radius);
           if (best_dir < 0 || err < best_error)
           {
-            best_dir = (long)i;
+            best_dir = (intx)i;
             best_error = err;
             plane = candidate;
           }
@@ -140,13 +140,13 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
         if (round < num_rounds - 1)
         {
           first_vertex_of_round = vertices.size();
-          Array<long> tris_to_subdivide;
+          Array<intx> tris_to_subdivide;
 
           // Collect triangles incident on the best direction vertex
-          UnorderedSet<long> nbr_verts;
+          UnorderedSet<intx> nbr_verts;
           for (size_t i = 0; i < triangles.size(); i += 3)
           {
-            if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
+            if ((intx)triangles[i] == best_dir || (intx)triangles[i + 1] == best_dir || (intx)triangles[i + 2] == best_dir)
             {
               tris_to_subdivide.push_back(triangles[i    ]);
               tris_to_subdivide.push_back(triangles[i + 1]);
@@ -161,12 +161,12 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
           // Collect triangles incident on the one-hop neighbor vertices
           for (size_t i = 0; i < triangles.size(); i += 3)
           {
-            if ((long)triangles[i] == best_dir || (long)triangles[i + 1] == best_dir || (long)triangles[i + 2] == best_dir)
+            if ((intx)triangles[i] == best_dir || (intx)triangles[i + 1] == best_dir || (intx)triangles[i + 2] == best_dir)
               continue;  // already added
 
-            if (nbr_verts.find((long)triangles[i    ]) != nbr_verts.end()
-             || nbr_verts.find((long)triangles[i + 1]) != nbr_verts.end()
-             || nbr_verts.find((long)triangles[i + 2]) != nbr_verts.end())
+            if (nbr_verts.find((intx)triangles[i    ]) != nbr_verts.end()
+             || nbr_verts.find((intx)triangles[i + 1]) != nbr_verts.end()
+             || nbr_verts.find((intx)triangles[i + 2]) != nbr_verts.end())
             {
               tris_to_subdivide.push_back(triangles[i    ]);
               tris_to_subdivide.push_back(triangles[i + 1]);
@@ -191,7 +191,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
       static size_t const NUM_BINS = 10;
 
       double bins[2][NUM_BINS][NUM_BINS];  // 0: negative side, 1: positive side
-      long count[2][NUM_BINS][NUM_BINS];
+      intx count[2][NUM_BINS][NUM_BINS];
 
       for (size_t i = 0; i < NUM_BINS; ++i)
         for (size_t j = 0; j < NUM_BINS; ++j)
@@ -205,7 +205,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
       Vector3 u = basis.col(0);
       Vector3 v = basis.col(1);
 
-      long total_count[2] = { 0, 0 };
+      intx total_count[2] = { 0, 0 };
       for (InputIterator pi = begin; pi != end; ++pi)
       {
         Vector3 p = PointTraitsN<T, 3>::getPosition(*pi) - centroid;
@@ -235,8 +235,8 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
       for (size_t i = 0; i < NUM_BINS; ++i)
         for (size_t j = 0; j < NUM_BINS; ++j)
         {
-          long c0 = count[0][i][j];
-          long c1 = count[1][i][j];
+          intx c0 = count[0][i][j];
+          intx c1 = count[1][i][j];
           if (c0 == 0 && c1 == 0)
             continue;
 

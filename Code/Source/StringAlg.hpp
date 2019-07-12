@@ -95,7 +95,7 @@ THEA_API void parseCommaSeparated(std::string const & s, Array<std::string> & ar
  *
  * @return The number of fields found.
  */
-THEA_API long stringSplit(std::string const & s, char split_char, Array<std::string> & result,
+THEA_API intx stringSplit(std::string const & s, char split_char, Array<std::string> & result,
                           bool skip_empty_fields = false);
 
 /**
@@ -109,7 +109,7 @@ THEA_API long stringSplit(std::string const & s, char split_char, Array<std::str
  *
  * @return The number of fields found.
  */
-THEA_API long stringSplit(std::string const & s, std::string const & split_chars, Array<std::string> & result,
+THEA_API intx stringSplit(std::string const & s, std::string const & split_chars, Array<std::string> & result,
                           bool skip_empty_fields = false);
 
 /**

@@ -58,7 +58,7 @@ extern "C" {
 
 /*     ------------------------------------------------------------------ */
 int nnls_c(double* a,  /* !!! Column-major !!! */
-           const int* mda, const int* m, const int* n, double* b,
+           int* mda, int* m, int* n, double* b,
            double* x, double* rnorm, double* w, double* zz, int* index,
            int* mode);
 

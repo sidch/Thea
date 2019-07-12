@@ -57,7 +57,7 @@ namespace Algorithms {
 
 double const IMLSSurface::DEFAULT_SMOOTHNESS         =  0.01;
 double const IMLSSurface::DEFAULT_ACCURACY           =  0.1;
-long   const IMLSSurface::DEFAULT_MAX_TRIS_PER_LEAF  =  3;
+intx   const IMLSSurface::DEFAULT_MAX_TRIS_PER_LEAF  =  3;
 
 namespace IMLSSurfaceInternal {
 
@@ -481,7 +481,7 @@ IMLSSurface::operator()(Vector3 const & p) const
 {
 #ifdef IMLS_SURFACE_EVAL_TIMER
   static double total_time = 0;
-  static long num_calls = 1;
+  static intx num_calls = 1;
   Stopwatch timer;
   timer.tick();
 #endif
@@ -529,7 +529,7 @@ IMLSSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
 {
   using namespace IMLSSurfaceInternal;
 
-  // static long num_calls = 1;
+  // static intx num_calls = 1;
   // if ((num_calls++) % 1000 == 0) THEA_CONSOLE << num_calls << " calls to EvalFunctor::evalTri";
 
   size_t i0 = tri.getVertices().getIndex(0);
@@ -551,7 +551,7 @@ IMLSSurface::EvalFunctor::evalNode(Vector3 const & p, TriangleKDTree::Node const
 {
   using namespace IMLSSurfaceInternal;
 
-  // static long num_calls = 1;
+  // static intx num_calls = 1;
   // if ((num_calls++) % 1000 == 0) THEA_CONSOLE << num_calls << " calls to EvalFunctor::evalNode";
 
   NodeAttribute const & attrib = node.attr();

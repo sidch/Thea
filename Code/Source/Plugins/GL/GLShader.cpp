@@ -102,7 +102,7 @@ GLShader::attachModuleFromString(ModuleType type, char const * source)
   GLhandleARB module_id = glCreateShaderObjectARB(gltype);
   THEA_CHECK_GL_OK
 
-  int src_length = (int)std::strlen(source);
+  int32 src_length = (int32)std::strlen(source);
   GLcharARB const * src_ptr = (GLcharARB const *)source;
   glShaderSourceARB(module_id, 1, &src_ptr, &src_length);
   THEA_CHECK_GL_OK
@@ -157,7 +157,7 @@ GLShader::readActiveUniforms()
   alwaysAssertM(complete, std::string(getName()) + ": GL will throw an error unless the shader is complete");
 
   uniforms.clear();
-  int last_texture_unit = 0;
+  int32 last_texture_unit = 0;
 
   GLint max_uniform_name_length = 0, num_active_uniforms = 0;
 
@@ -181,7 +181,7 @@ GLShader::readActiveUniforms()
     Array<GLcharARB> name_chars(max_uniform_name_length);
 
     // Loop over glGetActiveUniformARB and store the results away.
-    for (int i = 0; i < num_active_uniforms; ++i)
+    for (int32 i = 0; i < num_active_uniforms; ++i)
     {
       UniformData data;
 
@@ -310,11 +310,11 @@ GLShader::use()
 void
 GLShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string const & error_msg)
 {
-  int status;
+  int32 status;
   glGetObjectParameterivARB(obj_id, status_field, &status);
   if (!status)
   {
-    int infolog_length;
+    int32 infolog_length;
     glGetObjectParameterivARB(obj_id, GL_OBJECT_INFO_LOG_LENGTH_ARB, &infolog_length);
     if (infolog_length > 0)
     {
@@ -340,26 +340,26 @@ GLShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
               + std::string(uniform_name) + '\'');                                                                            \
                                                                                                                               \
   if (entry->second.size != (GLint)uniform_size)                                                                              \
-    throw Error(std::string(getName()) + format(": Uniform '%s' expects size %d", uniform_name, (int)(uniform_size)));
+    throw Error(std::string(getName()) + format(": Uniform '%s' expects size %d", uniform_name, (int32)(uniform_size)));
 
 namespace GLShaderInternal {
 
-static void toFloats(Vector2 const & v, float * f) { f[0] = v.x(); f[1] = v.y(); }
-static void toFloats(Vector3 const & v, float * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); }
-static void toFloats(Vector4 const & v, float * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); f[3] = v.w(); }
+static void toFloats(Vector2 const & v, float32 * f) { f[0] = v.x(); f[1] = v.y(); }
+static void toFloats(Vector3 const & v, float32 * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); }
+static void toFloats(Vector4 const & v, float32 * f) { f[0] = v.x(); f[1] = v.y(); f[2] = v.z(); f[3] = v.w(); }
 
-static void toFloats(ColorL const & c, float * f) { *f = c.value(); }
-static void toFloats(ColorRGB const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); }
-static void toFloats(ColorRGBA const & c, float * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); f[3] = c.a(); }
+static void toFloats(ColorL const & c, float32 * f) { *f = c.value(); }
+static void toFloats(ColorRGB const & c, float32 * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); }
+static void toFloats(ColorRGBA const & c, float32 * f) { f[0] = c.r(); f[1] = c.g(); f[2] = c.b(); f[3] = c.a(); }
 
-static void toFloats(Matrix2 const & m, float * f) { Math::getElementsRowMajor(m, f); }
-static void toFloats(Matrix3 const & m, float * f) { Math::getElementsRowMajor(m, f); }
-static void toFloats(Matrix4 const & m, float * f) { Math::getElementsRowMajor(m, f); }
+static void toFloats(Matrix2 const & m, float32 * f) { Math::getElementsRowMajor(m, f); }
+static void toFloats(Matrix3 const & m, float32 * f) { Math::getElementsRowMajor(m, f); }
+static void toFloats(Matrix4 const & m, float32 * f) { Math::getElementsRowMajor(m, f); }
 
 } // namespace GLShaderInternal
 
 void
-GLShader::setUniform(char const * uniform_name, float value)
+GLShader::setUniform(char const * uniform_name, float32 value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, 1);
@@ -368,7 +368,7 @@ GLShader::setUniform(char const * uniform_name, float value)
 }
 
 void
-GLShader::setUniform(char const * uniform_name, int value)
+GLShader::setUniform(char const * uniform_name, int32 value)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, 1);
@@ -426,7 +426,7 @@ GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix3,      Matrix3,    GL_FLOAT_MAT3_ARB,  
 GLShader__MULTI_FLOAT_SET_UNIFORM(Matrix4,      Matrix4,    GL_FLOAT_MAT4_ARB, 16)
 
 void
-GLShader::setUniform(char const * uniform_name, long num_values, float const * values)
+GLShader::setUniform(char const * uniform_name, int64 num_values, float32 const * values)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_FLOAT, num_values);
@@ -434,12 +434,12 @@ GLShader::setUniform(char const * uniform_name, long num_values, float const * v
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
   entry->second.value.f_array.resize((size_t)num_values);
-  std::memcpy(&entry->second.value.f_array[0], values, (size_t)(num_values * sizeof(float)));
+  std::memcpy(&entry->second.value.f_array[0], values, (size_t)(num_values * sizeof(float32)));
   entry->second.valueChanged();
 }
 
 void
-GLShader::setUniform(char const * uniform_name, long num_values, int const * values)
+GLShader::setUniform(char const * uniform_name, int64 num_values, int32 const * values)
 {
   Uniforms::iterator entry = uniforms.find(uniform_name);
   GLShader__SET_UNIFORM_STANDARD_CHECKS(GL_INT, num_values);
@@ -447,19 +447,19 @@ GLShader::setUniform(char const * uniform_name, long num_values, int const * val
     throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");
 
   entry->second.value.i_array.resize((size_t)num_values);
-  std::memcpy(&entry->second.value.i_array[0], values, (size_t)(num_values * sizeof(int)));
+  std::memcpy(&entry->second.value.i_array[0], values, (size_t)(num_values * sizeof(int32)));
   entry->second.valueChanged();
 }
 
 void
-GLShader::setUniform(char const * uniform_name, long num_values, Texture * const * values)
+GLShader::setUniform(char const * uniform_name, int64 num_values, Texture * const * values)
 {
   throw Error(std::string(getName()) + ": OpenGL texture array uniforms are not supported");
 }
 
 #define GLShader__FLOAT_ARRAY_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(char const * uniform_name, long num_values, uniform_type const * values)                               \
+  GLShader::setUniform(char const * uniform_name, int64 num_values, uniform_type const * values)                               \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, num_values);                                                       \
@@ -469,8 +469,8 @@ GLShader::setUniform(char const * uniform_name, long num_values, Texture * const
     entry->second.value.f_array.resize((size_t)(num_components * num_values));                                          \
                                                                                                                               \
     /* Copy elements one by one to avoid packing issues */                                                                    \
-    static float * array_start = &entry->second.value.f_array[0];                                                             \
-    for (long i = 0; i < num_values; ++i)                                                                                     \
+    static float32 * array_start = &entry->second.value.f_array[0];                                                             \
+    for (intx i = 0; i < num_values; ++i)                                                                                     \
       GLShaderInternal::toFloats(static_cast<uniform_convert_type>(values[i]), array_start + i * num_components);             \
                                                                                                                               \
     entry->second.valueChanged();                                                                                             \

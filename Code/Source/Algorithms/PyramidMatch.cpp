@@ -161,8 +161,8 @@ downsample2D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
   static Vector2 const offset11(1, 1);
 
   int src_sx = 2 * dst_sx;
-  long i = 0;
-  long j00 = 0, j10 = 1, j01 = src_sx, j11 = src_sx + 1;
+  intx i = 0;
+  intx j00 = 0, j10 = 1, j01 = src_sx, j11 = src_sx + 1;
 
   if (src_means)
   {
@@ -212,19 +212,19 @@ downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * 
 
   int src_sx = 2 * dst_sx;
   int src_sxy = src_sx * (2 * dst_sy);
-  long i = 0;
-  long j000 = 0,       j100 = 1,           j010 = src_sx,           j110 = src_sx + 1;
-  long j001 = src_sxy, j101 = src_sxy + 1, j011 = src_sxy + src_sx, j111 = src_sxy + src_sx + 1;
+  intx i = 0;
+  intx j000 = 0,       j100 = 1,           j010 = src_sx,           j110 = src_sx + 1;
+  intx j001 = src_sxy, j101 = src_sxy + 1, j011 = src_sxy + src_sx, j111 = src_sxy + src_sx + 1;
 
   if (src_means)
   {
     Real w000, w100, w010, w110, w001, w101, w011, w111, sum_weights;
 
-    for(long z = 0; z < dst_sz; ++z, j000 += src_sxy, j100 += src_sxy, j010 += src_sxy, j110 += src_sxy,
+    for(intx z = 0; z < dst_sz; ++z, j000 += src_sxy, j100 += src_sxy, j010 += src_sxy, j110 += src_sxy,
                                      j001 += src_sxy, j101 += src_sxy, j011 += src_sxy, j111 += src_sxy)
-      for(long y = 0; y < dst_sy; ++y, j000 += src_sx, j100 += src_sx, j010 += src_sx, j110 += src_sx,
+      for(intx y = 0; y < dst_sy; ++y, j000 += src_sx, j100 += src_sx, j010 += src_sx, j110 += src_sx,
                                        j001 += src_sx, j101 += src_sx, j011 += src_sx, j111 += src_sx)
-        for(long x = 0; x < dst_sx; ++x, ++i, j000 += 2, j100 += 2, j010 += 2, j110 += 2,
+        for(intx x = 0; x < dst_sx; ++x, ++i, j000 += 2, j100 += 2, j010 += 2, j110 += 2,
                                               j001 += 2, j101 += 2, j011 += 2, j111 += 2)
         {
           w000 = src[j000];
@@ -261,11 +261,11 @@ downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * 
   }
   else
   {
-    for(long z = 0; z < dst_sz; ++z, j000 += src_sxy, j100 += src_sxy, j010 += src_sxy, j110 += src_sxy,
+    for(intx z = 0; z < dst_sz; ++z, j000 += src_sxy, j100 += src_sxy, j010 += src_sxy, j110 += src_sxy,
                                      j001 += src_sxy, j101 += src_sxy, j011 += src_sxy, j111 += src_sxy)
-      for(long y = 0; y < dst_sy; ++y, j000 += src_sx, j100 += src_sx, j010 += src_sx, j110 += src_sx,
+      for(intx y = 0; y < dst_sy; ++y, j000 += src_sx, j100 += src_sx, j010 += src_sx, j110 += src_sx,
                                        j001 += src_sx, j101 += src_sx, j011 += src_sx, j111 += src_sx)
-        for(long x = 0; x < dst_sx; ++x, ++i, j000 += 2, j100 += 2, j010 += 2, j110 += 2,
+        for(intx x = 0; x < dst_sx; ++x, ++i, j000 += 2, j100 += 2, j010 += 2, j110 += 2,
                                               j001 += 2, j101 += 2, j011 += 2, j111 += 2)
           dst[i] = src[j000] + src[j100] + src[j010] + src[j110]
                  + src[j001] + src[j101] + src[j011] + src[j111];
@@ -364,8 +364,8 @@ Pyramid3D::downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsa
   {
     Real const * src_ptr = &src.data[0];
     Real * dst_ptr = &dst.data[0];
-    long src_step = src.sx * src.sy;
-    long dst_step = dst_sx * dst_sy;
+    intx src_step = src.sx * src.sy;
+    intx dst_step = dst_sx * dst_sy;
 
     if (means)
     {

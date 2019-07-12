@@ -130,7 +130,7 @@ class /* THEA_API */ LockedOutputStream : public Noncopyable
 #define THEA_LOG_STANDARD_PREFIX Thea::format("[%s] %s:%ld: ", \
                                               Thea::LogInternal::currentDateTimeToString().c_str(), \
                                               Thea::LogInternal::stripPathFromFilename(__FILE__).c_str(), \
-                                              (long)__LINE__)
+                                              (intx)__LINE__)
 
 /**
  * Synchronized console output stream, with no line prefix. Outputs a newline at the end of every sequence of stream operations

@@ -110,7 +110,7 @@ class PCA_N<T, 2, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 2>:
 
       // Construct covariance matrix
       MatrixT cov(0, 0, 0, 0);
-      long n = 0;
+      intx n = 0;
       for (InputIterator i = begin; i != end; ++i, ++n)
       {
         VectorT p = PointTraitsN<T, 2, ScalarT>::getPosition(*i) - ctr;
@@ -176,7 +176,7 @@ class PCA_N<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>:
 
       // Construct covariance matrix
       MatrixT cov = MatrixT::Zero();
-      long n = 0;
+      intx n = 0;
       for (InputIterator i = begin; i != end; ++i, ++n)
       {
         VectorT p = PointTraitsN<T, 3, ScalarT>::getPosition(*i) - ctr;

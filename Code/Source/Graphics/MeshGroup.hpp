@@ -74,13 +74,13 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
          * Called after a vertex has been read and added to the mesh. \a index is the sequential index of the vertex in the mesh
          * file, and need not correspond to the sequence in which vertices are added to the mesh.
          */
-        virtual void vertexRead(Mesh * mesh, long index, typename Mesh::VertexHandle vertex) {}
+        virtual void vertexRead(Mesh * mesh, intx index, typename Mesh::VertexHandle vertex) {}
 
         /**
          * Called after a face has been read and added to the mesh. \a index is the sequential index of the face in the mesh
          * file, and need not correspond to the sequence in which faces are added to the mesh.
          */
-        virtual void faceRead(Mesh * mesh, long index, typename Mesh::FaceHandle face) {}
+        virtual void faceRead(Mesh * mesh, intx index, typename Mesh::FaceHandle face) {}
 
     }; // class ReadCallback
 
@@ -95,13 +95,13 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
          * Called after a vertex has been written to an output stream. \a index is the sequential index of the vertex in the
          * output order, or -1 if the codec does not provide this information.
          */
-        virtual void vertexWritten(Mesh const * mesh, long index, typename Mesh::VertexConstHandle vertex) {}
+        virtual void vertexWritten(Mesh const * mesh, intx index, typename Mesh::VertexConstHandle vertex) {}
 
         /**
          * Called after a face has been written to an output stream. \a index is the sequential index of the face in the output
          * order, or -1 if the codec does not provide this information.
          */
-        virtual void faceWritten(Mesh const * mesh, long index, typename Mesh::FaceConstHandle face) {}
+        virtual void faceWritten(Mesh const * mesh, intx index, typename Mesh::FaceConstHandle face) {}
 
     }; // class WriteCallback
 
@@ -137,9 +137,9 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
      * Get the depth of the mesh group in the hierarchy (the root is at depth 0, its children at depth 1, and so on). The
      * function takes time proportional to the depth.
      */
-    long getDepth() const
+    intx getDepth() const
     {
-      long depth = 0;
+      intx depth = 0;
       MeshGroup const * p = parent;
       while (p)
       {
@@ -151,7 +151,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     }
 
     /** Number of meshes in the group. */
-    long numMeshes() const { return (long)meshes.size(); }
+    intx numMeshes() const { return (intx)meshes.size(); }
 
     /** Get the first mesh in the group. */
     MeshIterator meshesBegin() { return meshes.begin(); }
@@ -175,7 +175,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     void clearMeshes() { meshes.clear(); }
 
     /** Number of children of the group. */
-    long numChildren() const { return (long)children.size(); }
+    intx numChildren() const { return (intx)children.size(); }
 
     /** Get the first child of the group. */
     GroupIterator childrenBegin() { return children.begin(); }
@@ -514,7 +514,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         input.setPosition(pos);
 
         MeshCodec<Mesh> const * codec = NULL;
-        long codec_index = 0;
+        intx codec_index = 0;
         while ((codec = getDefaultCodec(codec_index++)))
           if (codec->getMagic() == magic)
           {
@@ -539,7 +539,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     {
       path = toLower(path);
       MeshCodec<Mesh> const * codec = NULL;
-      long codec_index = 0;
+      intx codec_index = 0;
       while ((codec = getDefaultCodec(codec_index++)))
       {
         for (size_t j = 0; j < codec->getExtensions().size(); ++j)
@@ -551,7 +551,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
     }
 
     /** Get one of the default mesh codecs. */
-    static MeshCodec<Mesh> const * getDefaultCodec(long index)
+    static MeshCodec<Mesh> const * getDefaultCodec(intx index)
     {
       // A set of default codecs that should be implemented for each mesh type
       static Codec3DS<Mesh> const codec_3DS;
@@ -559,7 +559,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       static CodecOFF<Mesh> const codec_OFF;
       static CodecPLY<Mesh> const codec_PLY;
       static MeshCodec<Mesh> const * codecs[] = { &codec_3DS, &codec_OBJ, &codec_OFF, &codec_PLY };
-      static int NUM_CODECS = (long)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
+      static int NUM_CODECS = (intx)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
 
       if (index >= 0 && index < NUM_CODECS)
         return codecs[index];

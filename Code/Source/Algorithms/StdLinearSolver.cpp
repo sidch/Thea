@@ -66,9 +66,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     {}
 
     // Solve the linear system Ax = b for a dense double-precision matrix A.
-    template <typename MatrixT>
-    bool solve(Eigen::MatrixBase<MatrixT> const & a, double const * b, AbstractOptions const * options = NULL,
-               std::enable_if< std::is_same<typename MatrixT::value_type, double>::value > * dummy = NULL)
+    template <typename MatrixT, typename ScalarT>
+    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = NULL,
+               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = NULL)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -79,7 +79,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
         if (a.rows() <= 0 || a.cols() <= 0)
           throw Error("Empty coefficient matrix");
 
-        long num_objectives = a.rows();
+        intx num_objectives = a.rows();
         ndims = a.cols();
 
         switch (constraint)
@@ -89,9 +89,10 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
             if (method != StdLinearSolver::Method::DEFAULT && method != StdLinearSolver::Method::NNLS)
               throw Error("Unsupported method for non-negative least squares problems");
 
-            MatrixX<double, MatrixLayout::COLUMN_MAJOR> nnls_a = a;  // NNLS requires a COLUMN-MAJOR (Fortran-style) matrix.
-                                                                     // Plus values will be overwritten, so need a copy anyway.
-            VectorXd nnls_b = VectorXdConstMap(b, num_objectives);  // will also be overwritten, so make a copy
+            // Values will be overwritten anyway, so make copies
+            MatrixX<double, MatrixLayout::COLUMN_MAJOR> nnls_a = a.template cast<double>();  // NNLS needs Fortran COLUMN-MAJOR
+            VectorX<double> nnls_b = Eigen::Map< VectorX<ScalarT> const >(b, num_objectives).template cast<double>();
+
             solution.resize(ndims);
 
             double         rnorm;
@@ -101,6 +102,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
             int            mode;
 
             int mda = (int)num_objectives, im = (int)num_objectives, in = (int)ndims;
+
+            // NOTE: Assume float64 == double, for passing solution vector to NNLS
             nnls_c(nnls_a.data(), &mda, &im, &in, nnls_b.data(), solution.data(), &rnorm, &w[0], &zz[0], &index[0], &mode);
 
             if (mode == 1)
@@ -126,7 +129,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               case StdLinearSolver::Method::HOUSEHOLDER_QR:
               {
                 Eigen::HouseholderQR<typename MatrixT::PlainObject> solver(a);
-                solution = solver.solve(VectorXdConstMap(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -136,7 +139,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::ColPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(VectorXdConstMap(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -145,7 +148,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::FullPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(VectorXdConstMap(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -154,7 +157,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::CompleteOrthogonalDecomposition<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(VectorXdConstMap(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -163,7 +166,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::BDCSVD<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(VectorXdConstMap(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
                 has_solution = true;
                 break;
               }
@@ -185,10 +188,10 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
       return has_solution;
     }
 
-    // Solve the linear system Ax = b for a sparse double-precision matrix A.
-    template <typename MatrixT>
-    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, double const * b, AbstractOptions const * options = NULL,
-               std::enable_if< std::is_same<typename MatrixT::value_type, double>::value > * dummy = NULL)
+    // Solve the linear system Ax = b for a sparse ScalarT-precision matrix A.
+    template <typename MatrixT, typename ScalarT>
+    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = NULL,
+               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = NULL)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -225,19 +228,19 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
   private:
     // Use one of the iterative solvers to solve the dense or sparse problem. Returns true if a suitable solver was found, NOT
     // if the problem was successfully solved.
-    template <typename MatrixT> bool solveIterative(MatrixT const & a, double const * b)
+    template <typename MatrixT, typename ScalarT> bool solveIterative(MatrixT const & a, ScalarT const * b)
     {
       switch (method)
       {
         case StdLinearSolver::Method::CONJUGATE_GRADIENT:
         {
           Eigen::ConjugateGradient<typename MatrixT::PlainObject> solver;
-          if (tolerance >= 0) solver.setTolerance(tolerance);
+          if (tolerance >= 0) solver.setTolerance((ScalarT)tolerance);
           if (max_iters > 0) solver.setMaxIterations(max_iters);
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -247,12 +250,12 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
         case StdLinearSolver::Method::LEAST_SQUARES_CONJUGATE_GRADIENT:
         {
           Eigen::LeastSquaresConjugateGradient<typename MatrixT::PlainObject> solver;
-          if (tolerance >= 0) solver.setTolerance(tolerance);
+          if (tolerance >= 0) solver.setTolerance((ScalarT)tolerance);
           if (max_iters > 0) solver.setMaxIterations(max_iters);
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -261,12 +264,12 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
         case StdLinearSolver::Method::BICGSTAB:
         {
           Eigen::BiCGSTAB<typename MatrixT::PlainObject> solver;
-          if (tolerance >= 0) solver.setTolerance(tolerance);
+          if (tolerance >= 0) solver.setTolerance((ScalarT)tolerance);
           if (max_iters > 0) solver.setMaxIterations(max_iters);
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -280,8 +283,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Use a solver based on sparse factorization, for column-major matrices. Returns true if a suitable solver was found, NOT
     // if the problem was successfully solved.
-    template <typename MatrixT>
-    bool solveSparseFactorize(MatrixT const & a, double const * b,
+    template <typename MatrixT, typename ScalarT>
+    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
                               typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = NULL)
     {
       switch (method)
@@ -292,7 +295,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -304,7 +307,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -313,11 +316,11 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
         case StdLinearSolver::Method::SPARSE_LU:
         {
           Eigen::SparseLU<typename MatrixT::PlainObject> solver;
-          if (tolerance >= 0) solver.setPivotThreshold(tolerance);
+          if (tolerance >= 0) solver.setPivotThreshold((ScalarT)tolerance);
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -327,11 +330,11 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
         case StdLinearSolver::Method::SPARSE_QR:
         {
           Eigen::SparseQR<typename MatrixT::PlainObject, Eigen::AMDOrdering<typename MatrixT::StorageIndex> > solver;
-          if (tolerance >= 0) solver.setPivotThreshold(tolerance);
+          if (tolerance >= 0) solver.setPivotThreshold((ScalarT)tolerance);
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(VectorXdMap(const_cast<double *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -345,8 +348,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Use a solver based on sparse factorization, for row-major matrices. Eigen does not provide any such solvers, so this
     // method is empty. Returns false to indicate no solver was found.
-    template <typename MatrixT>
-    bool solveSparseFactorize(MatrixT const & a, double const * b,
+    template <typename MatrixT, typename ScalarT>
+    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
                               typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = NULL)
     {
       return false;
@@ -356,25 +359,25 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     StdLinearSolver::Method method;          // Solution method.
     StdLinearSolver::Constraint constraint;  // Solution constraint.
     double tolerance;                        // Solution tolerance/threshold.
-    long max_iters;                          // Maximum number of solver iterations, if solver is iterative.
-    long ndims;                              // Solution dimensions.
+    intx max_iters;                          // Maximum number of solver iterations, if solver is iterative.
+    intx ndims;                              // Solution dimensions.
     bool has_solution;                       // Was a solution computed by the last call to solve()? */
-    VectorX<double> solution;                // The solution vector <b>x</b>.
+    VectorX<float64> solution;               // The solution vector <b>x</b>.
 };
 
 // Shorthand
 template <MatrixLayout::Value L, typename StorageIndex> using SM = Eigen::Map< SparseMatrix<double, L, StorageIndex> >;
 
 // Given a storage index type, dispatch a call to StdLinearSolverImpl::solve() with the correct pointer conversions
-template <MatrixLayout::Value L>
+template <MatrixLayout::Value L, typename ScalarT>
 bool
-implSolve(StdLinearSolverImpl * impl, int storage_type, long nr, long nc, long nnz, void const * in, void const * out,
-          double const * val, void const * nzc, double const * b, AbstractOptions const * opt)
+implSolve(StdLinearSolverImpl * impl, int storage_type, intx nr, intx nc, intx nnz, void const * in, void const * out,
+          ScalarT const * val, void const * nzc, ScalarT const * b, AbstractOptions const * opt)
 {
-  void   * in2  = const_cast<void *>(in);
-  void   * out2 = const_cast<void *>(out);
-  double * val2 = const_cast<double *>(val);
-  void   * nzc2 = const_cast<void *>(nzc);
+  void    * in2  = const_cast<void *>(in);
+  void    * out2 = const_cast<void *>(out);
+  ScalarT * val2 = const_cast<ScalarT *>(val);
+  void    * nzc2 = const_cast<void *>(nzc);
 
   switch (storage_type)
   {
@@ -427,7 +430,7 @@ StdLinearSolver::getTolerance() const
   return impl->tolerance;
 }
 
-long
+intx
 StdLinearSolver::maxIterations() const
 {
   return impl->max_iters;
@@ -452,43 +455,43 @@ StdLinearSolver::setTolerance(double tol)
 }
 
 void
-StdLinearSolver::setMaxIterations(long max_iters_)
+StdLinearSolver::setMaxIterations(intx max_iters_)
 {
   impl->max_iters = max_iters_;
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref<MatrixXd> const & a, double const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, float64 const * b, AbstractOptions const * options)
 {
   return impl->solve(a, b, options);
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, float64 const * b, AbstractOptions const * options)
 {
   return impl->solve(a, b, options);
 }
 
-bool
-StdLinearSolver::solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options)
+int8
+StdLinearSolver::solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options)
 {
   if (a.asAddressable() && a.asAddressable()->asDense())
   {
-    AbstractDenseMatrix<double> const & dm = *a.asAddressable()->asDense();
+    AbstractDenseMatrix<float64> const & dm = *a.asAddressable()->asDense();
     if (dm.isRowMajor())
     {
-      Eigen::Map< MatrixX<double, MatrixLayout::ROW_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
+      Eigen::Map< MatrixX<float64, MatrixLayout::ROW_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
       return impl->solve(wrapped, b, options);
     }
     else  // col-major
     {
-      Eigen::Map< MatrixX<double, MatrixLayout::COLUMN_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
+      Eigen::Map< MatrixX<float64, MatrixLayout::COLUMN_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
       return impl->solve(wrapped, b, options);
     }
   }
   else if (a.asSparse() && a.asSparse()->asCompressed())
   {
-    AbstractCompressedSparseMatrix<double> const & sm = *a.asSparse()->asCompressed();
+    AbstractCompressedSparseMatrix<float64> const & sm = *a.asSparse()->asCompressed();
     int storage_type = sm.getInnerIndexType();
     if (storage_type != sm.getOuterIndexType() || storage_type != sm.getNonZeroCountType())
     {
@@ -516,26 +519,26 @@ StdLinearSolver::solve(AbstractMatrix<double> const & a, double const * b, Abstr
   }
 }
 
-long
+int64
 StdLinearSolver::dims() const
 {
-  return impl->ndims;
+  return (int64)impl->ndims;
 }
 
-bool
+int8
 StdLinearSolver::hasSolution() const
 {
   return impl->has_solution;
 }
 
-double const *
+float64 const *
 StdLinearSolver::getSolution() const
 {
   return impl->solution.data();
 }
 
-bool
-StdLinearSolver::getSquaredError(double & err) const
+int8
+StdLinearSolver::getSquaredError(float64 & err) const
 {
   return false;
 }

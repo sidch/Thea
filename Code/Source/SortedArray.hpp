@@ -65,7 +65,7 @@ class SortedArray
     SortedArray(Compare compare_ = Compare()) : compare(compare_) {}
 
     /** Get the number of elements in the array. */
-    long size() const { return (long)values.size(); }
+    intx size() const { return (intx)values.size(); }
 
     /** Check if the array is empty or not. */
     bool isEmpty() const { return values.empty(); }
@@ -85,7 +85,7 @@ class SortedArray
     }
 
     /** Get the element at a given position in the sorted sequence. */
-    T const & operator[](long i) const
+    T const & operator[](intx i) const
     {
       debugAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
       return values[(size_t)i];
@@ -111,9 +111,9 @@ class SortedArray
      * Get the index of a given value, or negative if it is not present in the array. If the value occurs multiple times, the
      * index of any one occurrence is returned.
      */
-    long find(T const & t) const
+    intx find(T const & t) const
     {
-      long lb = lowerBound(t);
+      intx lb = lowerBound(t);
       return (lb < size() && !compare(t, values[lb])) ? lb : -1;
     }
 
@@ -121,10 +121,10 @@ class SortedArray
      * Get the index of the first element strictly greater than \a t, or return the size of the array if no such element is
      * present.
      */
-    long upperBound(T const & t) const
+    intx upperBound(T const & t) const
     {
-      long first = 0, mid, step;
-      long count = size();
+      intx first = 0, mid, step;
+      intx count = size();
       while (count > 0)
       {
         step = count >> 1;
@@ -145,10 +145,10 @@ class SortedArray
      * Get the index of the first element equal to or greater than \a t, or return the size of the array if no such element is
      * present.
      */
-    long lowerBound(T const & t) const
+    intx lowerBound(T const & t) const
     {
-      long first = 0, mid, step;
-      long count = size();
+      intx first = 0, mid, step;
+      intx count = size();
       while (count > 0)
       {
         step = count >> 1;
@@ -170,7 +170,7 @@ class SortedArray
      *
      * @return The index of the newly inserted element, or negative if the value could not be inserted.
      */
-    long insert(T const & t)
+    intx insert(T const & t)
     {
       if (values.empty())
       {
@@ -179,7 +179,7 @@ class SortedArray
       }
       else
       {
-        long ub = upperBound(t);
+        intx ub = upperBound(t);
         values.insert(values.begin() + (size_t)ub, t);
         return ub;
       }
@@ -192,7 +192,7 @@ class SortedArray
      *
      * @todo Make this faster by merging the containment test with the lookup for the insertion position.
      */
-    long insertUnique(T const & t)
+    intx insertUnique(T const & t)
     {
       if (contains(t))
         return -1;
@@ -201,7 +201,7 @@ class SortedArray
     }
 
     /** Remove the element at the given position from the array. */
-    void erase(long i)
+    void erase(intx i)
     {
       values.erase(values.begin() + (size_t)i);
     }

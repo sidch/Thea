@@ -209,7 +209,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     Plane3 const & getPlane() const { return plane; }
 
     /** Get the primary axis of the triangle (closest to normal). */
-    long getPrimaryAxis() const { return primary_axis; }
+    intx getPrimaryAxis() const { return primary_axis; }
 
     /** Get the normal of the triangle (right-hand rule, going round vertices in order 0, 1, 2). */
     Vector3 const & getNormal() const { return plane.getNormal(); }

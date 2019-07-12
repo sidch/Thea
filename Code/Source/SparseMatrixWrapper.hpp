@@ -69,7 +69,7 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     using typename BaseT::value_type;
 
     /**
-     * Constructor. The passed matrix must persist as long as this class is being actively used, since it is accessed via a
+     * Constructor. The passed matrix must persist as int64 as this class is being actively used, since it is accessed via a
      * pointer.
      */
     SparseMatrixWrapper(MatrixT * mat)
@@ -88,11 +88,11 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     MatrixT & getMatrix() { return *m; }
 
     // Functions from AbstractMatrix
-    long rows() const { return m->rows(); }
-    long cols() const { return m->cols(); }
+    int64 rows() const { return (int64)m->rows(); }
+    int64 cols() const { return (int64)m->cols(); }
     void setZero() { m->setZero(); }
-    bool isResizable() const { return true; }
-    bool resize(long nrows, long ncols)
+    int8 isResizable() const { return true; }
+    int8 resize(int64 nrows, int64 ncols)
     {
       try  // no exceptions should cross shared library boundaries
       {
@@ -103,17 +103,17 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     }
 
     // Functions from AbstractSparseMatrix
-    long numStoredElements() const { return m->nonZeros(); }
+    int64 numStoredElements() const { return m->nonZeros(); }
 
     // Functions from AbstractCompressedSparseMatrix
-    bool isRowMajor() const { return MatrixT::Flags & Eigen::RowMajorBit; }
-    bool isColumnMajor() const { return !isRowMajor(); }
-    long innerSize() const { return m->innerSize(); }
-    long outerSize() const { return m->outerSize(); }
-    bool isFullyCompressed() const { return m->isCompressed(); }
-    int getInnerIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
-    int getOuterIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
-    int getNonZeroCountType() const { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    int8 isRowMajor() const { return MatrixT::Flags & Eigen::RowMajorBit; }
+    int8 isColumnMajor() const { return !isRowMajor(); }
+    int64 innerSize() const { return (int64)m->innerSize(); }
+    int64 outerSize() const { return (int64)m->outerSize(); }
+    int8 isFullyCompressed() const { return m->isCompressed(); }
+    int32 getInnerIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    int32 getOuterIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    int32 getNonZeroCountType() const { return NumericType::From<typename MatrixT::StorageIndex>::value; }
     void const * getInnerIndices() const { return m->innerIndexPtr(); }
     void * getInnerIndices() { return m->innerIndexPtr(); }
     void const * getOuterIndices() const { return m->outerIndexPtr(); }

@@ -115,8 +115,8 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Check if the ball contains an axis-aligned box. */
     bool contains(AxisAlignedBoxN<N, T> const & aab) const
     {
-      // FIXME: Currently works only for N < sizeof(unsigned long)
-      for (unsigned long i = 0; i < (1 << N); ++i)
+      // FIXME: Currently works only for N < sizeof(uintx)
+      for (uintx i = 0; i < (1 << N); ++i)
         if (!contains(aab.getCorner(i)))
           return false;
 

@@ -58,7 +58,7 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
 {
   public:
     /** Constructs an empty texture of the specified format and size. */
-    GLTexture(GLRenderSystem * render_system_, char const * name_, int width_, int height_, int depth_,
+    GLTexture(GLRenderSystem * render_system_, char const * name_, int64 width_, int64 height_, int64 depth_,
               Format const * desired_format, Dimension dimension, Options const & options);
 
     /** Constructs a texture from a pixel buffer. The dimension argument <em>cannot</em> be DIM_CUBE_MAP. */
@@ -77,19 +77,20 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
 
     char const * getName() const { return name.c_str(); }
 
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-    int getDepth() const { return depth; }
+    int64 getWidth() const { return width; }
+    int64 getHeight() const { return height; }
+    int64 getDepth() const { return depth; }
     Format const * getFormat() const { return format; }
     Dimension getDimension() const { return dimension; }
 
     void updateImage(AbstractImage const & image, Face face = Face::POS_X);
-    void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
-                        int src_depth, int dst_x, int dst_y, int dst_z, Face face = Face::POS_X);
+    void updateSubImage(AbstractImage const & image,
+                        int64 src_x, int64 src_y, int64 src_z, int64 src_width, int64 src_height, int64 src_depth,
+                        int64 dst_x, int64 dst_y, int64 dst_z, Face face = Face::POS_X);
 
     void getImage(AbstractImage & image, Face face = Face::POS_X) const;
-    void getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
-                     Face face = Face::POS_X) const;
+    void getSubImage(AbstractImage & image, int64 x, int64 y, int64 z,
+                     int64 subimage_width, int64 subimage_height, int64 subimage_depth, Face face = Face::POS_X) const;
 
     /** Get the OpenGL target to which this texture is bound (e.g. GL_TEXTURE_2D). */
     GLenum getGLTarget() const { return gl_target; }
@@ -118,9 +119,9 @@ class THEA_GL_DLL_LOCAL GLTexture : public Texture
 
     GLRenderSystem * render_system;
     std::string name;
-    int width;
-    int height;
-    int depth;
+    int64 width;
+    int64 height;
+    int64 depth;
     Format const * format;
     Dimension dimension;
     GLenum gl_target;

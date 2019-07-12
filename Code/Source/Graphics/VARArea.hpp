@@ -53,6 +53,8 @@ namespace Graphics {
  * An interface for a Vertex Area Range storage area.
  *
  * @see VAR
+ *
+ * @todo Make this safe for passing across shared library boundaries.
  */
 class THEA_API VARArea : public AbstractNamedObject
 {
@@ -81,22 +83,22 @@ class THEA_API VARArea : public AbstractNamedObject
     virtual void reset() = 0;
 
     /** Get the total capacity of the area in bytes. */
-    virtual long getCapacity() const = 0;
+    virtual int64 getCapacity() const = 0;
 
     /** Get the number of bytes already allocated. */
-    virtual long getAllocatedSize() const = 0;
+    virtual int64 getAllocatedSize() const = 0;
 
     /** Get the number of available bytes. */
-    virtual long getAvailableSize() const { return getCapacity() - getAllocatedSize(); }
+    virtual int64 getAvailableSize() const { return getCapacity() - getAllocatedSize(); }
 
     /** Check if the area is stored in GPU memory or not. */
-    virtual bool inGPUMemory() const = 0;
+    virtual int8 inGPUMemory() const = 0;
 
     /**
      * Create a VAR with a specified capacity in bytes. The VAR must be destroyed with destroyArray(). It will be
      * automatically destroyed when the VARArea is destroyed or reset().
      */
-    virtual VAR * createArray(long num_bytes) = 0;
+    virtual VAR * createArray(int64 num_bytes) = 0;
 
     /** Destroy a VAR. The VAR must have been created with createArray(). */
     virtual void destroyArray(VAR * array) = 0;

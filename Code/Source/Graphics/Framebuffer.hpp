@@ -49,7 +49,11 @@
 namespace Thea {
 namespace Graphics {
 
-/** An interface for a framebuffer. */
+/**
+ * An interface for a framebuffer.
+ *
+ * @todo Make this safe for passing across shared library boundaries.
+ */
 class THEA_API Framebuffer : public AbstractNamedObject
 {
   public:
@@ -90,7 +94,8 @@ class THEA_API Framebuffer : public AbstractNamedObject
      * Attach a render-texture to an attachment point. Specifying a null texture will cause any existing attachment to be
      * removed.
      */
-    virtual void attach(AttachmentPoint ap, Texture * texture, Texture::Face face = Texture::Face::POS_X, int z_offset = 0) = 0;
+    virtual void attach(AttachmentPoint ap, Texture * texture, Texture::Face face = Texture::Face::POS_X,
+                        int64 z_offset = 0) = 0;
 
     /** Detach the current attachment at an attachment point. */
     virtual void detach(AttachmentPoint ap) = 0;
@@ -99,10 +104,10 @@ class THEA_API Framebuffer : public AbstractNamedObject
     virtual void detachAll() = 0;
 
     /** Get the width of the framebuffer in pixels. */
-    virtual int getWidth() const = 0;
+    virtual int64 getWidth() const = 0;
 
     /** Get the height of the framebuffer in pixels. */
-    virtual int getHeight() const = 0;
+    virtual int64 getHeight() const = 0;
 
 }; // class Framebuffer
 

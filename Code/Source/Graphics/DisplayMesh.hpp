@@ -148,7 +148,7 @@ class THEA_API DisplayMeshIndexedVertex
 {
   public:
     /** Constructor. */
-    DisplayMeshIndexedVertex(DisplayMesh * mesh_ = NULL, long index_ = -1) : mesh(mesh_), index(index_) {}
+    DisplayMeshIndexedVertex(DisplayMesh * mesh_ = NULL, intx index_ = -1) : mesh(mesh_), index(index_) {}
 
     /** Check if the vertex reference is valid. */
     operator bool() const { return mesh && index >= 0; }
@@ -160,7 +160,7 @@ class THEA_API DisplayMeshIndexedVertex
     DisplayMesh * getMesh() { return mesh; }
 
     /** Get the index of the vertex in the parent mesh. */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Get a direct (pointer-based) reference to the vertex in the parent mesh. */
     DisplayMeshVertex getVertex();
@@ -203,7 +203,7 @@ class THEA_API DisplayMeshIndexedVertex
 
   private:
     DisplayMesh * mesh;
-    long index;
+    intx index;
 
 }; // class DisplayMeshIndexedVertex
 
@@ -218,7 +218,7 @@ class THEA_API DisplayMeshFace
     DisplayMeshFace() : mesh(NULL), num_vertices(0), starting_index(-1), num_primitives(0) {}
 
     /** Constructor. */
-    DisplayMeshFace(DisplayMesh * mesh_, int num_vertices_, bool is_triangles_, long starting_index_, int num_primitives_)
+    DisplayMeshFace(DisplayMesh * mesh_, int num_vertices_, bool is_triangles_, intx starting_index_, int num_primitives_)
     : mesh(mesh_), num_vertices(num_vertices_), is_triangles(is_triangles_), starting_index(starting_index_),
       num_primitives(num_primitives_)
     {
@@ -235,7 +235,7 @@ class THEA_API DisplayMeshFace
     operator bool() const { return mesh && starting_index >= 0; }
 
     /** Get the number of vertices of the face. */
-    long numVertices() const { return num_vertices; }
+    intx numVertices() const { return num_vertices; }
 
     /** Check if the face is a single triangle. */
     bool isTriangle() const { return num_vertices == 3; }
@@ -256,16 +256,16 @@ class THEA_API DisplayMeshFace
     int numQuads() const { return num_primitives; }
 
     /** Get the index of the first triangle of the face. */
-    long getFirstTriangle() const { return is_triangles ? starting_index : -1; }
+    intx getFirstTriangle() const { return is_triangles ? starting_index : -1; }
 
     /** Get the index of the first quad of the face. */
-    long getFirstQuad() const { return is_triangles ? -1 : starting_index; }
+    intx getFirstQuad() const { return is_triangles ? -1 : starting_index; }
 
   private:
     DisplayMesh * mesh;
     int num_vertices;
     bool is_triangles;
-    long starting_index;
+    intx starting_index;
     int num_primitives;
 
 }; // class DisplayMeshFace
@@ -289,12 +289,12 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     typedef DisplayMeshIndexedVertex IndexedVertex;  ///< A reference to a vertex's properties via its index.
     typedef DisplayMeshFace Face;  ///< A convenience wrapper for accessing a face's properties.
 
-    typedef std::array<long, 3> IndexTriple;  ///< Vertex indices of a single triangle.
-    typedef std::array<long, 4> IndexQuad;    ///< Vertex indices of a single quad.
+    typedef std::array<intx, 3> IndexTriple;  ///< Vertex indices of a single triangle.
+    typedef std::array<intx, 4> IndexQuad;    ///< Vertex indices of a single quad.
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
-    typedef long  VertexHandle;       ///< Handle to a mesh vertex.
-    typedef long  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
+    typedef intx  VertexHandle;       ///< Handle to a mesh vertex.
+    typedef intx  VertexConstHandle;  ///< Handle to an immutable mesh vertex.
     typedef Face  FaceHandle;         ///< Handle to a mesh face.
     typedef Face  FaceConstHandle;    ///< Handle to an immutable mesh face.
 
@@ -313,9 +313,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     IndexArray edges;  ///< Edge indices (in pairs).
 
     // Element source indices (typically from source files)
-    Array<long> vertex_source_indices;
-    Array<long> tri_source_face_indices;
-    Array<long> quad_source_face_indices;
+    Array<intx> vertex_source_indices;
+    Array<intx> tri_source_face_indices;
+    Array<intx> quad_source_face_indices;
 
     bool valid_bounds;  ///< Is the bounding box valid?
     AxisAlignedBox3 bounds;  ///< Bounding box.
@@ -380,13 +380,13 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      * Get a structure referencing the position, normal, color and texture coordinates of a single vertex. This may be used to
      * access and modify the properties of a vertex.
      */
-    Vertex getVertex(long i);
+    Vertex getVertex(intx i);
 
     /**
      * Get a structure referencing the position, normal, color and texture coordinates of a single vertex, via its index. This
      * may be used to access and modify the properties of a vertex.
      */
-    IndexedVertex getIndexedVertex(long i) { return IndexedVertex(this, i); }
+    IndexedVertex getIndexedVertex(intx i) { return IndexedVertex(this, i); }
 
     /** Get the vertex indices of the triangular faces. Each successive triplet defines a triangle. */
     IndexArray const & getTriangleIndices() const { return tris; }
@@ -398,32 +398,32 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      * Get a structure referencing the three indices of a single triangle. This is a convenience function -- the same
      * information can be obtained from getTriangleIndices().
      */
-    IndexTriple getTriangle(long tri_index) const;
+    IndexTriple getTriangle(intx tri_index) const;
 
     /**
      * Get a structure referencing the four indices of a single quad. This is a convenience function -- the same information can
      * be obtained from getQuadIndices().
      */
-    IndexQuad getQuad(long quad_index) const;
+    IndexQuad getQuad(intx quad_index) const;
 
     /** Get the source index of a given vertex. This is typically the index of the vertex in the source mesh file. */
-    long getVertexSourceIndex(long i) const
+    intx getVertexSourceIndex(intx i) const
     {
-      return i >= 0 && i < (long)vertex_source_indices.size() ? vertex_source_indices[(size_t)i] : -1;
+      return i >= 0 && i < (intx)vertex_source_indices.size() ? vertex_source_indices[(size_t)i] : -1;
     }
 
     /**
      * Get the index of the source face of a given triangle. This is typically the index of the face in the source mesh file.
      */
-    long getTriangleSourceFaceIndex(long i) const
+    intx getTriangleSourceFaceIndex(intx i) const
     {
-      return i >= 0 && i < (long)tri_source_face_indices.size() ? tri_source_face_indices[(size_t)i] : -1;
+      return i >= 0 && i < (intx)tri_source_face_indices.size() ? tri_source_face_indices[(size_t)i] : -1;
     }
 
     /** Get the index of the source face of a given quad. This is typically the index of the face in the source mesh file. */
-    long getQuadSourceFaceIndex(long i) const
+    intx getQuadSourceFaceIndex(intx i) const
     {
-      return i >= 0 && i < (long)quad_source_face_indices.size() ? quad_source_face_indices[(size_t)i] : -1;
+      return i >= 0 && i < (intx)quad_source_face_indices.size() ? quad_source_face_indices[(size_t)i] : -1;
     }
 
     /** Deletes all data in the mesh. */
@@ -433,16 +433,16 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     bool isEmpty() const { return vertices.empty() && tris.empty() && quads.empty(); }
 
     /** Get the number of vertices. */
-    long numVertices() const { return (long)vertices.size(); };
+    intx numVertices() const { return (intx)vertices.size(); };
 
     /** Get the number of triangular faces. */
-    long numTriangles() const { return (long)(tris.size() / 3); };
+    intx numTriangles() const { return (intx)(tris.size() / 3); };
 
     /** Get the number of quadrilateral faces. */
-    long numQuads() const { return (long)(quads.size() / 4); };
+    intx numQuads() const { return (intx)(quads.size() / 4); };
 
     /** Get the number of faces. */
-    long numFaces() const { return numTriangles() + numQuads(); };
+    intx numFaces() const { return numTriangles() + numQuads(); };
 
     /** Check if the vertices have attached normal information. */
     bool hasNormals() const { return !normals.empty(); }
@@ -482,7 +482,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      * @return The index of the new vertex in the mesh (distinct from the source index input to this function). Indices are
      *   guaranteed to be sequentially generated, starting from 0.
      */
-    virtual long addVertex(Vector3 const & point, long source_index = -1, Vector3 const * normal = NULL,
+    virtual intx addVertex(Vector3 const & point, intx source_index = -1, Vector3 const * normal = NULL,
                            ColorRGBA const * color = NULL, Vector2 const * texcoord = NULL);
 
     /**
@@ -492,7 +492,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      * @return The index of the new triangle in the triangle list, computed as numTriangles() BEFORE the addition, or -1 on
      *   failure.
      */
-    virtual long addTriangle(long vi0, long vi1, long vi2, long source_face_index = -1);
+    virtual intx addTriangle(intx vi0, intx vi1, intx vi2, intx source_face_index = -1);
 
     /**
      * Add a quadrilateral face to the mesh, specified by four vertex indices and an optional source face index (typically the
@@ -500,7 +500,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @return The index of the new quad in the quad list, computed as numQuads() BEFORE the addition, or -1 on failure.
      */
-    virtual long addQuad(long vi0, long vi1, long vi2, long vi3, long source_face_index = -1);
+    virtual intx addQuad(intx vi0, intx vi1, intx vi2, intx vi3, intx source_face_index = -1);
 
     /**
      * Add a polygonal face to the mesh, specified as a sequence of vertex indices and an optional source face index (typically
@@ -510,7 +510,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @return A reference to the newly added face, which is invalid on failure.
      */
-    virtual Face addFace(int num_vertices, long const * face_vertex_indices_, long source_face_index = -1);
+    virtual Face addFace(int num_vertices, intx const * face_vertex_indices_, intx source_face_index = -1);
 
     /**
      * Add a polygonal face to the mesh, specified as a sequence of vertex indices obtained by dereferencing [vbegin, vend), and
@@ -520,11 +520,11 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @return A reference to the newly added face, which is invalid on failure.
      */
-    template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end, long source_face_index = -1)
+    template <typename IndexIterator> Face addFace(IndexIterator vi_begin, IndexIterator vi_end, intx source_face_index = -1)
     {
       face_vertex_indices.clear();
       for (IndexIterator vi = vi_begin; vi != vi_end; ++vi)
-        face_vertex_indices.push_back((long)*vi);
+        face_vertex_indices.push_back((intx)*vi);
 
       return addFace((int)face_vertex_indices.size(), &face_vertex_indices[0], source_face_index);
     }
@@ -538,7 +538,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @see addTriangle()
      */
-    virtual void removeTriangle(long tri_index);
+    virtual void removeTriangle(intx tri_index);
 
     /**
      * Remove a set of consecutive triangles from the triangle list. Takes time linear in the size of the triangle list, since
@@ -550,7 +550,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @see addTriangle()
      */
-    virtual void removeTriangles(long begin, long num_triangles);
+    virtual void removeTriangles(intx begin, intx num_triangles);
 
     /**
      * Remove a quad from the quad list. Takes time linear in the size of the quad list, since the underlying storage is an
@@ -561,7 +561,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @see addQuad()
      */
-    virtual void removeQuad(long quad_index);
+    virtual void removeQuad(intx quad_index);
 
     /**
      * Remove a set of consecutive quads from the quad list. Takes time linear in the size of the quad list, since the
@@ -573,15 +573,15 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      *
      * @see addQuad()
      */
-    virtual void removeQuads(long begin, long num_quads);
+    virtual void removeQuads(intx begin, intx num_quads);
 
     /** Remove a face from the mesh, using a face reference returned by addFace(). */
     virtual void removeFace(Face const & face);
 
     /** Set the position of a mesh vertex. */
-    virtual void setVertex(long vertex_index, Vector3 const & position)
+    virtual void setVertex(intx vertex_index, Vector3 const & position)
     {
-      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)vertices.size(),
+      alwaysAssertM(vertex_index >= 0 && vertex_index < (intx)vertices.size(),
                     getNameStr() + ": Vertex index out of bounds");
 
       vertices[(size_t)vertex_index] = position;
@@ -590,9 +590,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     }
 
     /** Set the normal of a mesh vertex. */
-    virtual void setNormal(long vertex_index, Vector3 const & normal)
+    virtual void setNormal(intx vertex_index, Vector3 const & normal)
     {
-      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)normals.size(),
+      alwaysAssertM(vertex_index >= 0 && vertex_index < (intx)normals.size(),
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated normal field");
 
       normals[(size_t)vertex_index] = normal;
@@ -600,9 +600,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     }
 
     /** Set the color of a mesh vertex. */
-    virtual void setColor(long vertex_index, ColorRGBA const & color)
+    virtual void setColor(intx vertex_index, ColorRGBA const & color)
     {
-      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)colors.size(),
+      alwaysAssertM(vertex_index >= 0 && vertex_index < (intx)colors.size(),
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated color field");
 
       colors[(size_t)vertex_index] = color;
@@ -610,9 +610,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     }
 
     /** Set the texture coordinates of a mesh vertex. */
-    virtual void setTexCoord(long vertex_index, Vector2 const & texcoord)
+    virtual void setTexCoord(intx vertex_index, Vector2 const & texcoord)
     {
-      alwaysAssertM(vertex_index >= 0 && vertex_index < (long)texcoords.size(),
+      alwaysAssertM(vertex_index >= 0 && vertex_index < (intx)texcoords.size(),
                     getNameStr()
                   + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
 
@@ -689,8 +689,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
     void updateEdges();
 
     // Temporary storage for triangulating polygons with more than 4 vertices
-    Array<long> face_vertex_indices;
-    Array<long> triangulated_indices;
+    Array<intx> face_vertex_indices;
+    Array<intx> triangulated_indices;
 
 }; // class DisplayMesh
 

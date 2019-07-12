@@ -119,13 +119,13 @@ class THEA_API DynLib : public virtual NamedObject
     void releaseRef();
 
     /** Get the number of references to the library. */
-    long getRefCount() const;
+    intx getRefCount() const;
 
     /** Get any library error. */
     std::string dynlibError() const;
 
     THEA_DYNLIB_HANDLE h_inst;  ///< Handle to the loaded library.
-    long ref_count;             ///< Number of clients using the library.
+    intx ref_count;             ///< Number of clients using the library.
 
 }; // class DynLib
 

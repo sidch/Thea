@@ -65,16 +65,16 @@ class THEA_API LogisticRegression
     THEA_DEF_POINTER_TYPES(LogisticRegression, std::shared_ptr, std::weak_ptr)
 
     /** Constructor. Sets the number of dimensions of the problem domain (i.e. of the vector <b>x</b>). */
-    LogisticRegression(long ndims_);
+    LogisticRegression(intx ndims_);
 
     /** Destructor. */
     ~LogisticRegression();
 
     /** Get the number of dimensions of the problem domain. */
-    long dims() const { return ndims; }
+    intx dims() const { return ndims; }
 
     /** Get the number of observations. */
-    long numObservations() const { return (long)llsq_consts.size(); }
+    intx numObservations() const { return (intx)llsq_consts.size(); }
 
     /**
      * Add a data point to constrain the curve. This corresponds to a pair of observed values of <b>x</b> and <em>y</em>.
@@ -112,7 +112,7 @@ class THEA_API LogisticRegression
     VectorXd const & getSolution() const { return solution; }
 
   private:
-    long ndims;                     ///< The number of dimensions of the problem, i.e. the size of the solution vector x.
+    intx ndims;                     ///< The number of dimensions of the problem, i.e. the size of the solution vector x.
     Array<double> llsq_coeffs;  ///< Scratch space for passing coefficients. Has (dims() + 1) * llsq_consts.size() entries.
     Array<double> llsq_consts;  ///< Scratch space for passing constants.
     bool has_solution;              ///< Was the logistic regression problem successfully solved by solve()?

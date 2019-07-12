@@ -152,7 +152,7 @@ theaGLErrorString(GLuint error)
   { \
     err_string = theaGLErrorString(err_code); \
     throw Error(Thea::format("%s:%ld: OpenGL error: %s", \
-                Thea::FilePath::objectName(__FILE__).c_str(), (long)__LINE__, err_string)); \
+                Thea::FilePath::objectName(__FILE__).c_str(), (intx)__LINE__, err_string)); \
   } \
 }
 

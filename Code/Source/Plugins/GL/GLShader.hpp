@@ -71,15 +71,15 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
 
     char const * getName() const { return name.c_str(); }
 
-    bool isComplete() const { return complete; }
+    int8 isComplete() const { return complete; }
 
     void attachModuleFromFile(ModuleType type, char const * path);
     void attachModuleFromString(ModuleType type, char const * source);
 
-    bool hasUniform(char const * uniform_name) const { return uniforms.find(uniform_name) != uniforms.end(); }
+    int8 hasUniform(char const * uniform_name) const { return uniforms.find(uniform_name) != uniforms.end(); }
 
-    void setUniform(char const * uniform_name, float value);
-    void setUniform(char const * uniform_name, int value);
+    void setUniform(char const * uniform_name, float32 value);
+    void setUniform(char const * uniform_name, int32 value);
     void setUniform(char const * uniform_name, Vector2 const & value);
     void setUniform(char const * uniform_name, Vector3 const & value);
     void setUniform(char const * uniform_name, Vector4 const & value);
@@ -94,21 +94,21 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     void setUniform(char const * uniform_name, Matrix4 const & value);
     void setUniform(char const * uniform_name, Texture * value);
 
-    void setUniform(char const * uniform_name, long num_values, float const * values);
-    void setUniform(char const * uniform_name, long num_values, int const * values);
-    void setUniform(char const * uniform_name, long num_values, Vector2 const * values);
-    void setUniform(char const * uniform_name, long num_values, Vector3 const * values);
-    void setUniform(char const * uniform_name, long num_values, Vector4 const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorL8 const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorL const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorRGB8 const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorRGB const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorRGBA8 const * values);
-    void setUniform(char const * uniform_name, long num_values, ColorRGBA const * values);
-    void setUniform(char const * uniform_name, long num_values, Matrix2 const * values);
-    void setUniform(char const * uniform_name, long num_values, Matrix3 const * values);
-    void setUniform(char const * uniform_name, long num_values, Matrix4 const * values);
-    void setUniform(char const * uniform_name, long num_values, Texture * const * values);
+    void setUniform(char const * uniform_name, int64 num_values, float32 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, int32 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Vector2 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Vector3 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Vector4 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorL8 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorL const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorRGB8 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorRGB const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorRGBA8 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, ColorRGBA const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Matrix2 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Matrix3 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Matrix4 const * values);
+    void setUniform(char const * uniform_name, int64 num_values, Texture * const * values);
 
     /** Link the various modules of the shader into a single program. */
     void link();
@@ -123,10 +123,10 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
     /** A value for a uniform variable. */
     struct UniformValue
     {
-      float f_val;
-      int i_val;
-      Array<float> f_array;
-      Array<int> i_array;
+      float64 f_val;
+      int32 i_val;
+      Array<float32> f_array;
+      Array<int32> i_array;
       GLTexture * texture;
     };
 
@@ -136,7 +136,7 @@ class THEA_GL_DLL_LOCAL GLShader : public Shader
       GLenum type;
       GLint size;
       GLint location;
-      int texunit;
+      int32 texunit;
       bool has_value;
       UniformValue value;
       bool requires_rebind;

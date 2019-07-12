@@ -287,7 +287,7 @@ class THEA_API ImplicitSurfaceMesher
           BloomenthalPolygonizer::NORMAL const & bp_n = polygonizer.get_normal(i);
           Vector3 p(bp_p.x, bp_p.y, bp_p.z), n(bp_n.x, bp_n.y, bp_n.z);
 
-          typename Builder::VertexHandle vx = builder.addVertex(p, (long)i, &n);
+          typename Builder::VertexHandle vx = builder.addVertex(p, (intx)i, &n);
           if (!vx)
             throw Error("ImplicitSurfaceMesher: Could not add vertex from Bloomenthal polygonizer to mesh");
 

@@ -99,7 +99,7 @@ class THEA_API KMeans : public Serializable
         Options();
 
         /* Maximum iterations to seek convergence (default value if negative, default -1). */
-        Options & setMaxIterations(long iters) { max_iterations = iters; return *this; }
+        Options & setMaxIterations(intx iters) { max_iterations = iters; return *this; }
 
         /* Maximum time in seconds to seek convergence (default value if negative, default -1). */
         Options & setMaxTime(double seconds) { max_time = seconds; return *this; }
@@ -128,7 +128,7 @@ class THEA_API KMeans : public Serializable
         static Options const & defaults() { static Options const def; return def; }
 
       private:
-        long max_iterations;  ///< Maximum iterations to seek convergence (ignored if negative).
+        intx max_iterations;  ///< Maximum iterations to seek convergence (ignored if negative).
         double max_time;      ///< Maximum time in seconds to seek convergence (ignored if negative).
         Seeding seeding;      ///< How to seed the initial centers.
         bool parallelize;     ///< Accelerate computations by parallelization.
@@ -148,17 +148,17 @@ class THEA_API KMeans : public Serializable
     void setOptions(Options const & options_) { options = options_; }
 
     /** Get the number of clusters (the value of k). */
-    long numClusters() const { return centers.rows(); }
+    intx numClusters() const { return centers.rows(); }
 
     /** Get the size of the feature vector of a point or cluster center. */
-    long numPointFeatures() const { return centers.cols(); }
+    intx numPointFeatures() const { return centers.cols(); }
 
     /**
      * Get the features of a cluster center. The vector has numPointFeatures() elements.
      *
      * @param i The index of the cluster, in the range [0, numClusters() - 1].
      */
-    double const * getClusterCenter(long i) const { return &centers(i, 0); }
+    double const * getClusterCenter(intx i) const { return &centers(i, 0); }
 
     /**
      * Cluster a set of points into \a num_clusters groups, one per row of the input matrix.
@@ -174,18 +174,18 @@ class THEA_API KMeans : public Serializable
      * @return True if the clustering converged, else false.
      */
     template <typename AddressableMatrixT>
-    bool cluster(long num_clusters, AddressableMatrixT const & points, long * labeling = NULL,
+    bool cluster(intx num_clusters, AddressableMatrixT const & points, intx * labeling = NULL,
                  double * squared_distances = NULL,
                  typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
                                                            AddressableMatrixT >::value >::type * dummy = NULL)
     {
-      static long   const DEFAULT_MAX_ITERS = 1000;
+      static intx   const DEFAULT_MAX_ITERS = 1000;
       static double const DEFAULT_MAX_TIME  =   60;  // seconds
 
       alwaysAssertM(num_clusters > 0, "KMeans: Number of clusters must be at least 1");
 
-      long num_points = points.rows();
-      long num_features = points.cols();
+      intx num_points = points.rows();
+      intx num_features = points.cols();
 
       alwaysAssertM(num_points > 0, "KMeans: Number of points must be at least 1");
       alwaysAssertM(num_features > 0, "KMeans: Number of features must be at least 1");
@@ -218,7 +218,7 @@ class THEA_API KMeans : public Serializable
       // Find initial assignment of points to clusters
       //=======================================================================================================================
 
-      Array<long> labeling_local;
+      Array<intx> labeling_local;
       if (!labeling)
       {
         labeling_local.resize((size_t)num_points, -1);
@@ -245,11 +245,11 @@ class THEA_API KMeans : public Serializable
       // Iterate
       //=======================================================================================================================
 
-      long    max_iters  =  (options.max_iterations >= 0 ? options.max_iterations : DEFAULT_MAX_ITERS);
+      intx    max_iters  =  (options.max_iterations >= 0 ? options.max_iterations : DEFAULT_MAX_ITERS);
       double  max_time   =  (options.max_time       >= 0 ? options.max_time       : DEFAULT_MAX_TIME);
 
       bool converged = false;
-      long num_iterations = 0;
+      intx num_iterations = 0;
       double last_time = System::time();
       while (!converged)
       {
@@ -297,9 +297,9 @@ class THEA_API KMeans : public Serializable
      * @return The index of the cluster containing the point, in the range [0, numClusters() - 1], or a negative value if no
      *   such cluster was found.
      */
-    long mapToCluster(double const * point, double * squared_distance = NULL) const
+    intx mapToCluster(double const * point, double * squared_distance = NULL) const
     {
-      long label;
+      intx label;
       double sqdist;
       mapToCluster(numClusters(), point, label, sqdist);
 
@@ -318,7 +318,7 @@ class THEA_API KMeans : public Serializable
      *   each point. Assumed to be preallocated to the number of points. Ignored if null.
      */
     template <typename AddressableMatrixT>
-    void mapToClusters(AddressableMatrixT const & points, long * labeling, double * squared_distances = NULL,
+    void mapToClusters(AddressableMatrixT const & points, intx * labeling, double * squared_distances = NULL,
                        typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
                                                                  AddressableMatrixT >::value >::type * dummy = NULL) const
     {
@@ -339,10 +339,10 @@ class THEA_API KMeans : public Serializable
   private:
     /** Select initial centers by k-means++. */
     template <typename AddressableMatrixT>
-    bool selectInitialCenters(long num_clusters, AddressableMatrixT const & points)
+    bool selectInitialCenters(intx num_clusters, AddressableMatrixT const & points)
     {
-      long num_points = points.rows();
-      long num_features = points.cols();
+      intx num_points = (intx)points.rows();
+      intx num_features = (intx)points.cols();
 
       alwaysAssertM(num_clusters > 0, "KMeans: Must select at least one center");
       alwaysAssertM(num_points >= num_clusters, "KMeans: Cannot select more centers than points");
@@ -361,13 +361,13 @@ class THEA_API KMeans : public Serializable
         centers.fill(0);
 
         // First center is randomly chosen
-        long index = Random::common().integer(0, num_points - 1);
+        intx index = Random::common().integer(0, num_points - 1);
         addPointToCenter(points, index, 0);
 
         // Subsequent centers by k-means++
         Array<double> sqdist((size_t)num_points);
         double start_time = System::time();
-        for (long i = 1; i < num_clusters; ++i)
+        for (intx i = 1; i < num_clusters; ++i)
         {
           mapToClusters(i, points, NULL, &sqdist[0]);
 
@@ -384,7 +384,7 @@ class THEA_API KMeans : public Serializable
             sum_sqdist += sqdist[j];
             if (sum_sqdist >= r)
             {
-              index = (long)j;
+              index = (intx)j;
               break;
             }
           }
@@ -404,14 +404,14 @@ class THEA_API KMeans : public Serializable
         centers.resize(num_clusters, num_features);
         centers.fill(0);
 
-        Array<long> indices((size_t)num_points);
-        for (long i = 0; i < num_points; ++i)
+        Array<intx> indices((size_t)num_points);
+        for (intx i = 0; i < num_points; ++i)
           indices[(size_t)i] = i;
 
         // Select num_clusters random points as initial centers
         Random::common().randomShuffle((int32)num_points, (int32)num_clusters, &indices[0]);
 
-        for (long i = 0; i < num_clusters; ++i)
+        for (intx i = 0; i < num_clusters; ++i)
           addPointToCenter(points, indices[(size_t)i], i);
       }
       else
@@ -428,8 +428,8 @@ class THEA_API KMeans : public Serializable
     {
       public:
         /** Constructor. */
-        ClusterMapper(KMeans const * parent_, long num_clusters_, AddressableMatrixT const * points_, long points_begin_,
-                     long points_end_, long * cluster_indices_, double * cluster_sqdists_)
+        ClusterMapper(KMeans const * parent_, intx num_clusters_, AddressableMatrixT const * points_, intx points_begin_,
+                     intx points_end_, intx * cluster_indices_, double * cluster_sqdists_)
         : parent(parent_), num_clusters(num_clusters_), points(points_), points_begin(points_begin_), points_end(points_end_),
           cluster_indices(cluster_indices_), cluster_sqdists(cluster_sqdists_)
         {}
@@ -437,10 +437,10 @@ class THEA_API KMeans : public Serializable
         /** Main function, called once per thread. */
         void operator()()
         {
-          long index = -1;
+          intx index = -1;
           double sqdist = -1;
           bool changed = false;
-          for (long i = points_begin; i < points_end; ++i)
+          for (intx i = points_begin; i < points_end; ++i)
           {
             parent->mapToCluster(num_clusters, *points, i, index, sqdist);
 
@@ -460,11 +460,11 @@ class THEA_API KMeans : public Serializable
 
       private:
         KMeans const * parent;
-        long num_clusters;
+        intx num_clusters;
         AddressableMatrixT const * points;
-        long points_begin;
-        long points_end;
-        long * cluster_indices;
+        intx points_begin;
+        intx points_end;
+        intx * cluster_indices;
         double * cluster_sqdists;
 
     }; // class ClusterMapper
@@ -478,23 +478,23 @@ class THEA_API KMeans : public Serializable
      *   function, else false.
      */
     template <typename AddressableMatrixT>
-    bool mapToClusters(long num_clusters, AddressableMatrixT const & points, long * cluster_indices,
+    bool mapToClusters(intx num_clusters, AddressableMatrixT const & points, intx * cluster_indices,
                        double * cluster_sqdists = NULL) const
     {
-      long num_points = points.rows();
+      intx num_points = (intx)points.rows();
       unsigned int concurrency = std::thread::hardware_concurrency();
       flag = 0;
 
-      if (options.parallelize && concurrency > 1 && num_points > (long)(2 * concurrency))
+      if (options.parallelize && concurrency > 1 && num_points > (intx)(2 * concurrency))
       {
         ThreadGroup pool;
         double points_per_thread = num_points / (double)concurrency;
 
-        long points_begin = 0;
+        intx points_begin = 0;
         for (unsigned int i = 0; i < concurrency; ++i)
         {
-          long points_end = (i + 1 == concurrency ? num_points
-                                                  : std::min((long)std::ceil(points_begin + points_per_thread), num_points));
+          intx points_end = (i + 1 == concurrency ? num_points
+                                                  : std::min((intx)std::ceil(points_begin + points_per_thread), num_points));
           if (points_begin >= points_end)  // more threads than points
             continue;
 
@@ -521,25 +521,25 @@ class THEA_API KMeans : public Serializable
 
     /** Map a point to its nearest center. */
     template <typename AddressableMatrixT>
-    void mapToCluster(long num_clusters, AddressableMatrixT const & points, long point_index, long & cluster_index,
-                     double & cluster_sqdist) const
+    void mapToCluster(intx num_clusters, AddressableMatrixT const & points, intx point_index, intx & cluster_index,
+                      double & cluster_sqdist) const
     {
       fvec.resize(centers.cols());
-      points.getRow(point_index, fvec.data());
+      points.getRow((int64)point_index, fvec.data());
       mapToCluster(num_clusters, fvec.data(), cluster_index, cluster_sqdist);
     }
 
     /** Map a point to its nearest center. */
-    void mapToCluster(long num_clusters, double const * point, long & cluster_index, double & cluster_sqdist) const
+    void mapToCluster(intx num_clusters, double const * point, intx & cluster_index, double & cluster_sqdist) const
     {
-      long num_features = centers.cols();
+      intx num_features = centers.cols();
       cluster_index = -1;
       cluster_sqdist = -1;
-      for (long i = 0; i < num_clusters; ++i)
+      for (intx i = 0; i < num_clusters; ++i)
       {
         // Compute squared distance to this center
         double sqdist = 0;
-        for (long j = 0; j < num_features; ++j)
+        for (intx j = 0; j < num_features; ++j)
         {
           double diff = point[j] - centers(i, j);
           sqdist += (diff * diff);
@@ -559,18 +559,18 @@ class THEA_API KMeans : public Serializable
      * @return True if points were reassigned to fix empty clusters, else false.
      */
     template <typename AddressableMatrixT>
-    bool updateClusters(AddressableMatrixT const & points, long * cluster_indices, double * cluster_sqdists)
+    bool updateClusters(AddressableMatrixT const & points, intx * cluster_indices, double * cluster_sqdists)
     {
-      long num_clusters = centers.rows();
-      long num_points = points.rows();
-      long num_features = points.cols();
+      intx num_clusters = centers.rows();
+      intx num_points = points.rows();
+      intx num_features = points.cols();
 
       centers.fill(0);
 
-      Array<long> num_assigned((size_t)num_clusters, 0);
-      for (long i = 0; i < num_points; ++i)
+      Array<intx> num_assigned((size_t)num_clusters, 0);
+      for (intx i = 0; i < num_points; ++i)
       {
-        long cc_index = cluster_indices[i];
+        intx cc_index = cluster_indices[i];
 
         addPointToCenter(points, i, cc_index);
         num_assigned[(size_t)cc_index]++;
@@ -585,15 +585,15 @@ class THEA_API KMeans : public Serializable
 
       bool reassigned = false;
 
-      for (long i = 0; i < num_clusters; ++i)
+      for (intx i = 0; i < num_clusters; ++i)
       {
         if (num_assigned[(size_t)i] <= 0)
         {
-          long max_cluster = (long)(std::max_element(num_assigned.begin(), num_assigned.end()) - num_assigned.begin());
+          intx max_cluster = (intx)(std::max_element(num_assigned.begin(), num_assigned.end()) - num_assigned.begin());
           alwaysAssertM(num_assigned[(size_t)max_cluster] > 1, "KMeans: Maximum cluster has < 2 points");
 
-          long farthest = -1;
-          for (long j = 0; j < num_points; ++j)
+          intx farthest = -1;
+          for (intx j = 0; j < num_points; ++j)
             if (cluster_indices[j] == max_cluster && (farthest < 0 || cluster_sqdists[j] > cluster_sqdists[farthest]))
               farthest = j;
 
@@ -613,12 +613,12 @@ class THEA_API KMeans : public Serializable
         }
       }
 
-      for (long i = 0; i < num_clusters; ++i)
+      for (intx i = 0; i < num_clusters; ++i)
       {
-        long n = num_assigned[(size_t)i];
+        intx n = num_assigned[(size_t)i];
         if (n > 0)
         {
-          for (long j = 0; j < num_features; ++j)
+          for (intx j = 0; j < num_features; ++j)
             centers(i, j) /= n;
         }
       }
@@ -628,7 +628,7 @@ class THEA_API KMeans : public Serializable
 
     /** Add the feature vector of a point to the coordinates of a center. */
     template <typename AddressableMatrixT>
-    void addPointToCenter(AddressableMatrixT const & points, long point_index, long cluster_index)
+    void addPointToCenter(AddressableMatrixT const & points, intx point_index, intx cluster_index)
     {
       fvec.resize(centers.cols());
       points.getRow(point_index, fvec.data());
@@ -637,7 +637,7 @@ class THEA_API KMeans : public Serializable
 
     /** Subtract the feature vector of a point from the coordinates of a center. */
     template <typename AddressableMatrixT>
-    void subtractPointFromCenter(AddressableMatrixT const & points, long point_index, long cluster_index)
+    void subtractPointFromCenter(AddressableMatrixT const & points, intx point_index, intx cluster_index)
     {
       fvec.resize(centers.cols());
       points.getRow(point_index, fvec.data());

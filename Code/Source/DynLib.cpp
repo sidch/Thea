@@ -175,7 +175,7 @@ DynLib::releaseRef()
     unload();
 }
 
-long
+intx
 DynLib::getRefCount() const
 {
   return ref_count;

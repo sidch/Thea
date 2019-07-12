@@ -55,13 +55,13 @@ namespace CodecPLYInternal {
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
 {
-  typedef UnorderedMap<typename MeshT::Vertex const *, long> type;
+  typedef UnorderedMap<typename MeshT::Vertex const *, intx> type;
 };
 
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef UnorderedMap<std::pair<MeshT const *, long>, long> type;
+  typedef UnorderedMap<std::pair<MeshT const *, intx>, intx> type;
 };
 
 } // namespace CodecPLYInternal
@@ -155,7 +155,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     struct ElementBlock
     {
       ElementType type;           ///< Type of element.
-      long num_elems;             ///< Number of elements in the block.
+      intx num_elems;             ///< Number of elements in the block.
       Array<Property> props;  ///< Element properties
 
     }; // struct ElementBlock
@@ -250,7 +250,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
                             WriteCallback * callback) const
     {
       output.setEndianness(Endianness::LITTLE);
@@ -268,7 +268,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
       int64 enc_start = output.getPosition();
 
-        long num_vertices = 0, num_faces = 0;
+        intx num_vertices = 0, num_faces = 0;
         getStats(mesh_group, num_vertices, num_faces);
 
         writeDefaultHeader(output, write_opts.binary, num_vertices, num_faces);
@@ -276,7 +276,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
         VertexIndexMap vertex_indices;
         serializeVertices(mesh_group, output, vertex_indices, callback);
 
-        long next_index = 0;
+        intx next_index = 0;
         serializeFaces(mesh_group, vertex_indices, output, callback, next_index);
 
       int64 enc_end = output.getPosition();
@@ -288,7 +288,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
         output.writeUInt32((uint32)(enc_end - enc_start));
       }
 
-      return (long)(enc_end - initial_pos);
+      return (intx)(enc_end - initial_pos);
     }
 
     void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
@@ -475,13 +475,13 @@ class CodecPLY : public CodecPLYBase<MeshT>
       Array<typename Builder::VertexHandle> face;
 
       std::string line;
-      long num_vertices = 0, num_faces = 0;
+      intx num_vertices = 0, num_faces = 0;
       for (size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
         ElementBlock const & block = header.elem_blocks[i];
         checkBlock(block);
 
-        for (long j = 0; j < block.num_elems; ++j)
+        for (intx j = 0; j < block.num_elems; ++j)
         {
           do
           {
@@ -514,7 +514,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
             case ElementType::FACE:
             {
-              long index, num_face_vertices;
+              intx index, num_face_vertices;
               std::istringstream vstr(line);
               if (!(vstr >> num_face_vertices))
                 throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
@@ -524,7 +524,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
                 face.resize(num_face_vertices);
 
                 bool skip = false;
-                for (long v = 0; v < num_face_vertices && !skip; ++v)
+                for (intx v = 0; v < num_face_vertices && !skip; ++v)
                 {
                   if (!(vstr >> index))
                   {
@@ -537,11 +537,11 @@ class CodecPLY : public CodecPLYBase<MeshT>
                     }
                   }
 
-                  if (index < 0 || index >= (long)vrefs.size())
+                  if (index < 0 || index >= (intx)vrefs.size())
                   {
                     if (read_opts.strict)
                       throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) on line '%s'",
-                                                     index, (long)vrefs.size(), line.c_str()));
+                                                     index, (intx)vrefs.size(), line.c_str()));
                     else
                     {
                       THEA_WARNING << getName() << ": Vertex index " << index << " out of bounds (#vertices = "
@@ -614,7 +614,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     {
       debugAssertM(prop.type == PropertyType::LIST, std::string(getName()) + ": Can't read non-list property as list");
 
-      long num_items = readBinaryNumber<long>(in, prop.count_type);
+      intx num_items = readBinaryNumber<intx>(in, prop.count_type);
       if (num_items < 0)
         throw Error(std::string(getName()) + ": List has negative size");
 
@@ -628,7 +628,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     {
       if (prop.type == PropertyType::LIST)
       {
-        long num_items = readBinaryNumber<long>(in, prop.count_type);
+        intx num_items = readBinaryNumber<intx>(in, prop.count_type);
         if (num_items >= 0)
           in.skip(num_items * (prop.item_type & 0xFF));
       }
@@ -651,13 +651,13 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
       in.setEndianness(header.endianness);
 
-      long num_vertices = 0, num_faces = 0;
+      intx num_vertices = 0, num_faces = 0;
       for (size_t i = 0; i < header.elem_blocks.size(); ++i)
       {
         ElementBlock const & block = header.elem_blocks[i];
         checkBlock(block);
 
-        for (long j = 0; j < block.num_elems; ++j)
+        for (intx j = 0; j < block.num_elems; ++j)
         {
           switch (block.type)
           {
@@ -684,7 +684,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
             case ElementType::FACE:
             {
-              Array<long> face_vertices;
+              Array<intx> face_vertices;
               readBinaryList(in, block.props[0], face_vertices);
 
               if (!face_vertices.empty())
@@ -694,12 +694,12 @@ class CodecPLY : public CodecPLYBase<MeshT>
                 bool skip = false;
                 for (size_t v = 0; v < face_vertices.size() && !skip; ++v)
                 {
-                  long index = face_vertices[v];
-                  if (index < 0 || index >= (long)vrefs.size())
+                  intx index = face_vertices[v];
+                  if (index < 0 || index >= (intx)vrefs.size())
                   {
                     if (read_opts.strict)
                       throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) in face %ld",
-                                                     index, (long)vrefs.size(), num_faces));
+                                                     index, (intx)vrefs.size(), num_faces));
                     else
                     {
                       THEA_WARNING << getName() << ": Skipping face, vertex index " << index << " out of bounds (#vertices = "
@@ -752,14 +752,14 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
     /** Count the number of vertices and faces in a mesh. */
     template <typename _MeshT>
-    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces)
+    static void getStats(_MeshT const & mesh, intx & num_vertices, intx & num_faces)
     {
       num_vertices += mesh.numVertices();
       num_faces += mesh.numFaces();
     }
 
     /** Count the number of vertices and faces in a mesh group (increments parameters). */
-    static void getStats(MeshGroup const & mesh_group, long & num_vertices, long & num_faces)
+    static void getStats(MeshGroup const & mesh_group, intx & num_vertices, intx & num_faces)
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
         getStats(**mi, num_vertices, num_faces);
@@ -775,7 +775,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     }
 
     /** Write the default header of a PLY file. */
-    void writeDefaultHeader(BinaryOutputStream & out, bool binary, long num_vertices, long num_faces) const
+    void writeDefaultHeader(BinaryOutputStream & out, bool binary, intx num_vertices, intx num_faces) const
     {
       writeString("ply\n", out);
 
@@ -814,7 +814,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
       {
         if (write_opts.binary)
@@ -837,7 +837,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
       {
         typename Mesh::Vertex const * vx = *vi;
@@ -862,9 +862,9 @@ class CodecPLY : public CodecPLYBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
+      typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
 
       for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
@@ -879,14 +879,14 @@ class CodecPLY : public CodecPLYBase<MeshT>
         else
           writeString(format("%f %f %f\n", v.x(), v.y(), v.z()), output);
 
-        vertex_indices[DisplayMeshVRef(&mesh, (long)i)] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index, (long)i);
+        vertex_indices[DisplayMeshVRef(&mesh, (intx)i)] = vertex_index;
+        if (callback) callback->vertexWritten(&mesh, vertex_index, (intx)i);
       }
     }
 
     /** Write out all the faces from a mesh group. */
     void serializeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index) const
+                        WriteCallback * callback, intx & next_index) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
@@ -902,7 +902,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     /** Write out all the faces from a general mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -943,7 +943,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     /** Write out all the faces from a DCEL mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -994,10 +994,10 @@ class CodecPLY : public CodecPLYBase<MeshT>
     /** Write out all the faces from a display mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
+      typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
@@ -1011,7 +1011,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
             output.writeInt32((int32)degree);
             for (size_t j = 0; j < degree; ++j)
             {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
+              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               output.writeInt32((int32)ii->second);
@@ -1023,7 +1023,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
             for (size_t j = 0; j < degree; ++j)
             {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
+              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               os << ' ' << ii->second;
@@ -1035,7 +1035,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
           if (callback)
           {
-            typename Mesh::Face face(const_cast<Mesh *>(&mesh), degree, (type == 0), (long)i, 1);
+            typename Mesh::Face face(const_cast<Mesh *>(&mesh), degree, (type == 0), (intx)i, 1);
             callback->faceWritten(&mesh, next_index++, face);
           }
         }

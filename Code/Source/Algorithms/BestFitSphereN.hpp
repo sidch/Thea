@@ -108,7 +108,7 @@ class /* THEA_API */ BestFitSphereN
         double r = mb.radius();
         double const * mbc = mb.center_begin();
         VectorT c;
-        for (long i = 0; i < N; ++i)
+        for (intx i = 0; i < N; ++i)
           c[i] = mbc[i];
 
         ball = BallT(c, r);

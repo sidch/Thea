@@ -164,7 +164,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
                             WriteCallback * callback) const
     {
       throw Error(std::string(getName()) + ": Not implemented");
@@ -263,11 +263,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
     {
       for (Lib3dsMesh * m = meshes; m; m = m->next)
       {
-        long num_vertices = (long)m->points;
+        intx num_vertices = (intx)m->points;
         if (num_vertices <= 0 && read_opts.skip_empty_meshes)
           continue;
 
-        long num_faces = (long)m->faces;
+        intx num_faces = (intx)m->faces;
         if (read_opts.verbose)
         {
           THEA_CONSOLE << getName() << ": Mesh " << m->name << " has " << num_vertices << " vertices and " << num_faces
@@ -304,8 +304,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
         {
           Vector3 vertex(m->pointL[i].pos[0], m->pointL[i].pos[1], m->pointL[i].pos[2]);
 
-          long vindex = (read_opts.store_vertex_indices ? vertex_count : -1);
-          if (!read_opts.ignore_texcoords && (long)i < (long)m->texels)
+          intx vindex = (read_opts.store_vertex_indices ? vertex_count : -1);
+          if (!read_opts.ignore_texcoords && (intx)i < (intx)m->texels)
           {
             Vector2 texcoord(m->texelL[i][0], m->texelL[i][1]);
             vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex)
@@ -323,12 +323,12 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
         // Read list of faces
         typename Builder::VertexHandle face[3];
-        long indices[3];
-        for (long i = 0; i < num_faces; ++i)
+        intx indices[3];
+        for (intx i = 0; i < num_faces; ++i)
         {
-          indices[0] = (long)m->faceL[i].points[0];
-          indices[1] = (long)m->faceL[i].points[1];
-          indices[2] = (long)m->faceL[i].points[2];
+          indices[0] = (intx)m->faceL[i].points[0];
+          indices[1] = (intx)m->faceL[i].points[1];
+          indices[2] = (intx)m->faceL[i].points[2];
 
           if (indices[0] < 0 || indices[0] >= num_vertices
            || indices[1] < 0 || indices[1] >= num_vertices
@@ -408,7 +408,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
     }
 
     /** Seek in an input stream. */
-    static long seekInput(void * self, long offset, Lib3dsIoSeek origin)
+    static intx seekInput(void * self, intx offset, Lib3dsIoSeek origin)
     {
       if (!self) return 0;
       BinaryInputStream & in = *static_cast<BinaryInputStream *>(self);
@@ -432,7 +432,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
     }
 
     /** Seek in an output stream. */
-    static long seekOutput(void * self, long offset, Lib3dsIoSeek origin)
+    static intx seekOutput(void * self, intx offset, Lib3dsIoSeek origin)
     {
       if (!self) return 0;
       BinaryOutputStream & out = *static_cast<BinaryOutputStream *>(self);
@@ -456,15 +456,15 @@ class Codec3DS : public Codec3DSBase<MeshT>
     }
 
     /** Get current position in an input stream. */
-    static long tellInput(void * self)
+    static intx tellInput(void * self)
     {
-      return self ? (long)static_cast<BinaryInputStream *>(self)->getPosition() : -1;
+      return self ? (intx)static_cast<BinaryInputStream *>(self)->getPosition() : -1;
     }
 
     /** Get current position in an output stream. */
-    static long tellOutput(void * self)
+    static intx tellOutput(void * self)
     {
-      return self ? (long)static_cast<BinaryOutputStream *>(self)->getPosition() : -1;
+      return self ? (intx)static_cast<BinaryOutputStream *>(self)->getPosition() : -1;
     }
 
     /** Read bytes from an input stream. */
@@ -521,8 +521,8 @@ class Codec3DS : public Codec3DSBase<MeshT>
     ReadOptions read_opts;
     WriteOptions write_opts;
 
-    mutable long vertex_count;
-    mutable long face_count;
+    mutable intx vertex_count;
+    mutable intx face_count;
 
     friend struct ::Lib3dsIo;
 

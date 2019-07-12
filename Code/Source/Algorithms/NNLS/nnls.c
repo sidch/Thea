@@ -29,9 +29,9 @@ typedef int integer;
 typedef double doublereal;
 
 /* The following subroutine was added after the f2c translation */
-double d_sign(double *a, double *b)
+doublereal d_sign(doublereal *a, doublereal *b)
 {
-  double x;
+  doublereal x;
   x = (*a >= 0 ? *a : - *a);
   return( *b >= 0 ? x : -x);
 }
@@ -755,7 +755,7 @@ doublereal *x, *y;
 
 
 /* The following subroutine was added after the f2c translation */
-int nnls_c(double* a, const int* mda, const int* m, const int* n, double* b,
+int nnls_c(double* a, int* mda, int* m, int* n, double* b,
            double* x, double* rnorm, double* w, double* zz, int* index,
            int* mode)
 {

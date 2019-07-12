@@ -197,10 +197,10 @@ class /* THEA_API */ GeneralMeshVertex
     }
 
     /** Get the index of the vertex, typically in the source file (or negative if unindexed). */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Set the index of the vertex, typically from the source file (or negative if unindexed). */
-    void setIndex(long index_) { index = index_; }
+    void setIndex(intx index_) { index = index_; }
 
     /** Check if the vertex has a precomputed normal. */
     bool hasPrecomputedNormal() const { return has_precomputed_normal; }
@@ -393,7 +393,7 @@ class /* THEA_API */ GeneralMeshVertex
 
     EdgeList edges;
     FaceList faces;
-    long index;
+    intx index;
     bool has_precomputed_normal;
     float normal_normalization_factor;
     uint32 packing_index;

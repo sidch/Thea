@@ -58,24 +58,24 @@ class /* THEA_API */ RayStructureIntersectionN : public RayIntersectionN<N, T>
   private:
     typedef RayIntersectionN<N, T> BaseT;
 
-    long element_index;
+    intx element_index;
 
   public:
     /** Constructor. */
-    RayStructureIntersectionN(Real time_ = -1, typename BaseT::VectorT const * normal_ = NULL, long element_index_ = -1)
+    RayStructureIntersectionN(Real time_ = -1, typename BaseT::VectorT const * normal_ = NULL, intx element_index_ = -1)
     : BaseT(time_, normal_), element_index(element_index_)
     {}
 
     /** Constructor. */
-    RayStructureIntersectionN(BaseT const & isec, long element_index_ = -1)
+    RayStructureIntersectionN(BaseT const & isec, intx element_index_ = -1)
     : BaseT(isec), element_index(element_index_)
     {}
 
     /** Get the index of the intersected element. */
-    long getElementIndex() const { return element_index; }
+    intx getElementIndex() const { return element_index; }
 
     /** Set the index of the intersected element. */
-    void setElementIndex(long element_index_) { element_index = element_index_; }
+    void setElementIndex(intx element_index_) { element_index = element_index_; }
 
 }; // class RayStructureIntersectionN
 

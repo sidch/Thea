@@ -117,7 +117,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonRefe
     template <typename InputIterator> static VectorT compute(InputIterator begin, InputIterator end)
     {
       VectorT sum_points = VectorT::Zero();
-      long num_points = 0;
+      intx num_points = 0;
       for (InputIterator i = begin; i != end; ++i, ++num_points)
         sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*i);
 

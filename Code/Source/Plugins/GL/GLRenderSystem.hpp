@@ -74,7 +74,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     Shader * createShader(char const * name_);
     void destroyShader(Shader * shader);
 
-    Texture * createTexture(char const * name_, int width, int height, int depth,
+    Texture * createTexture(char const * name_, int64 width, int64 height, int64 depth,
                             Texture::Format const * desired_format, Texture::Dimension dimension = Texture::Dimension::DIM_2D,
                             Texture::Options const & options = Texture::Options::defaults());
 
@@ -89,7 +89,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
 
     void destroyTexture(Texture * texture);
 
-    VARArea * createVARArea(char const * name_, long num_bytes, VARArea::Usage usage, bool gpu_memory = true);
+    VARArea * createVARArea(char const * name_, int64 num_bytes, VARArea::Usage usage, int8 gpu_memory = true);
     void destroyVARArea(VARArea * area);
 
     void pushFramebuffer();
@@ -105,7 +105,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     void popShader();
 
     void pushTextures();
-    void setTexture(int texunit, Texture * texture);
+    void setTexture(int32 texunit, Texture * texture);
     void popTextures();
 
     MatrixMode getMatrixMode() const;
@@ -122,37 +122,37 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     void beginIndexedPrimitives();
     void setVertexArray(VAR const * vertices);
     void setColorArray(VAR const * colors);
-    void setTexCoordArray(int texunit, VAR const * texcoords);
+    void setTexCoordArray(int32 texunit, VAR const * texcoords);
     void setNormalArray(VAR const * normals);
     void setIndexArray(VAR const * indices);
-    void sendIndices(Primitive primitive, long num_indices, uint8 const * indices);
-    void sendIndices(Primitive primitive, long num_indices, uint16 const * indices);
-    void sendIndices(Primitive primitive, long num_indices, uint32 const * indices);
-    void sendSequentialIndices(Primitive primitive, int first_index, int num_indices);
-    void sendIndicesFromArray(Primitive primitive, long offset, long num_indices);
+    void sendIndices(Primitive primitive, int64 num_indices, uint8 const * indices);
+    void sendIndices(Primitive primitive, int64 num_indices, uint16 const * indices);
+    void sendIndices(Primitive primitive, int64 num_indices, uint32 const * indices);
+    void sendSequentialIndices(Primitive primitive, int32 first_index, int32 num_indices);
+    void sendIndicesFromArray(Primitive primitive, int64 offset, int64 num_indices);
     void endIndexedPrimitives();
 
     void beginPrimitive(Primitive primitive);
     void sendVertex(Vector2 const & vertex);
-    void sendVertex(float x, float y);
-    void sendVertex(double x, double y);
+    void sendVertex(float32 x, float32 y);
+    void sendVertex(float64 x, float64 y);
     void sendVertex(Vector3 const & vertex);
-    void sendVertex(float x, float y, float z);
-    void sendVertex(double x, double y, double z);
+    void sendVertex(float32 x, float32 y, float32 z);
+    void sendVertex(float64 x, float64 y, float64 z);
     void sendVertex(Vector4 const & vertex);
-    void sendVertex(float x, float y, float z, float w);
-    void sendVertex(double x, double y, double z, double w);
+    void sendVertex(float32 x, float32 y, float32 z, float32 w);
+    void sendVertex(float64 x, float64 y, float64 z, float64 w);
     void sendNormal(Vector3 const & normal);
-    void sendNormal(float x, float y, float z);
-    void sendNormal(double x, double y, double z);
-    void sendTexCoord(int texunit, float texcoord);
-    void sendTexCoord(int texunit, double texcoord);
-    void sendTexCoord(int texunit, Vector2 const & texcoord);
-    void sendTexCoord(int texunit, float x, float y);
-    void sendTexCoord(int texunit, double x, double y);
-    void sendTexCoord(int texunit, Vector3 const & texcoord);
-    void sendTexCoord(int texunit, float x, float y, float z);
-    void sendTexCoord(int texunit, double x, double y, double z);
+    void sendNormal(float32 x, float32 y, float32 z);
+    void sendNormal(float64 x, float64 y, float64 z);
+    void sendTexCoord(int32 texunit, float32 texcoord);
+    void sendTexCoord(int32 texunit, float64 texcoord);
+    void sendTexCoord(int32 texunit, Vector2 const & texcoord);
+    void sendTexCoord(int32 texunit, float32 x, float32 y);
+    void sendTexCoord(int32 texunit, float64 x, float64 y);
+    void sendTexCoord(int32 texunit, Vector3 const & texcoord);
+    void sendTexCoord(int32 texunit, float32 x, float32 y, float32 z);
+    void sendTexCoord(int32 texunit, float64 x, float64 y, float64 z);
     void endPrimitive();
 
     void pushState();
@@ -160,21 +160,21 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     void pushDepthFlags();
     void pushStencilFlags();
     void pushShapeFlags();
-    void setColorWrite(bool red, bool green, bool blue, bool alpha);
-    void setDepthWrite(bool value);
+    void setColorWrite(int8 red, int8 green, int8 blue, int8 alpha);
+    void setDepthWrite(int8 value);
     void setStencilWrite(uint32 mask);
     void setColor(ColorRGB const & value);
     void setColor(ColorRGBA const & value);
     void setColorClearValue(ColorRGB const & value);
     void setColorClearValue(ColorRGBA const & value);
     void setDepthClearValue(Real value);
-    void setStencilClearValue(int value);
+    void setStencilClearValue(int32 value);
     void clear();
-    void clear(bool color, bool depth, bool stencil);
+    void clear(int8 color, int8 depth, int8 stencil);
     void setDepthTest(DepthTest test);
     void setCullFace(CullFace cull);
-    void setPolygonOffset(bool enable, Real offset = 1);
-    void setPointSize(Real size = 1);
+    void setPolygonOffset(int8 enable, float64 offset = 1);
+    void setPointSize(float64 size = 1);
     void popColorFlags();
     void popDepthFlags();
     void popStencilFlags();

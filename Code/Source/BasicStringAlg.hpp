@@ -70,11 +70,11 @@ extern THEA_API char const * NEWLINE;
  *
  * @see findLastSlash, isSlash
  */
-inline long
-findFirstSlash(std::string const & f, long start = 0)
+inline intx
+findFirstSlash(std::string const & f, intx start = 0)
 {
   size_t pos = f.find_first_of("/\\", (size_t)start);
-  return (pos == std::string::npos ? -1 : (long)pos);
+  return (pos == std::string::npos ? -1 : (intx)pos);
 }
 
 /**
@@ -85,14 +85,14 @@ findFirstSlash(std::string const & f, long start = 0)
  *
  * @see findFirstSlash, isSlash
  */
-inline long
-findLastSlash(std::string const & f, long start = -1)
+inline intx
+findLastSlash(std::string const & f, intx start = -1)
 {
   if (start == -1)
-    start = (long)f.length() - 1;
+    start = (intx)f.length() - 1;
 
   size_t pos = f.find_last_of("/\\", (size_t)start);
-  return (pos == std::string::npos ? -1 : (long)pos);
+  return (pos == std::string::npos ? -1 : (intx)pos);
 }
 
 /** Check if the test string begins with the pattern string. */
@@ -106,7 +106,7 @@ THEA_API bool endsWith(std::string const & test, std::string const & pattern);
  * space before the column limit). Platform specific newlines are inserted to wrap, or a specific "newline" character may be
  * specified.
  */
-THEA_API std::string wordWrap(std::string const & input, long num_cols, char const * newline = NEWLINE);
+THEA_API std::string wordWrap(std::string const & input, intx num_cols, char const * newline = NEWLINE);
 
 /** Get the uppercase version of a string. */
 THEA_API std::string toUpper(std::string const & s);

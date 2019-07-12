@@ -52,12 +52,12 @@ namespace Algorithms {
 namespace CSPARSELinearSolverInternal {
 
 static bool
-indicesToInt(int type, long n, void const * begin, Array<int> & out)
+indicesToInt(int32 type, int64 n, void const * begin, Array<int32> & out)
 {
 #define THEA_CSPARSE_CONVERT_AND_PUSH(numtype) \
   { \
     out.resize((size_t)n); \
-    for (long i = 0; i < n; ++i) out[(size_t)i] = ((numtype const *)begin)[i]; \
+    for (intx i = 0; i < n; ++i) out[(size_t)i] = ((numtype const *)begin)[i]; \
   }
 
   switch (type)
@@ -82,7 +82,7 @@ indicesToInt(int type, long n, void const * begin, Array<int> & out)
 }
 
 // Return value: 1: symmetric, 2: upper-triangular, 3: lower-triangular, 0: other
-int
+int32
 isSymmetric(cs * A)
 {
   if (A->m != A->n)
@@ -94,9 +94,9 @@ isSymmetric(cs * A)
   // Checking for upper or lower triangular is fast
   bool is_upper = true;
   bool is_lower = true;
-  for (int j = 0 ; j < A->n; ++j)
+  for (int32 j = 0 ; j < A->n; ++j)
   {
-    for (int p = A->p[j]; p < A->p[j + 1]; ++p)
+    for (int32 p = A->p[j]; p < A->p[j + 1]; ++p)
     {
       if (A->i[p] > j) is_upper = false;
       if (A->i[p] < j) is_lower = false;
@@ -107,12 +107,12 @@ isSymmetric(cs * A)
   if (is_lower) return 3;
 
   // Checking for symmetric is relatively slower since we compute the transpose first
-  static double const EPSILON = 1.0e-200;
+  static float64 const EPSILON = 1.0e-200;
   cs * At = cs_transpose(A, 1);
   bool is_sym = true;
 
   // First check that all the column pointers are the same
-  for (int j = 0 ; j < A->n; ++j)
+  for (int32 j = 0 ; j < A->n; ++j)
     if (A->p[j] != At->p[j])
     {
       is_sym = false;
@@ -122,8 +122,8 @@ isSymmetric(cs * A)
   // Now check that all the row indices are the same
   if (is_sym)
   {
-    int nnz = A->p[A->n];
-    for (int p = 0; p < nnz; ++p)
+    int32 nnz = A->p[A->n];
+    for (int32 p = 0; p < nnz; ++p)
       if (A->i[p] != At->i[p])
       {
         is_sym = false;
@@ -134,8 +134,8 @@ isSymmetric(cs * A)
   // Finally check that all the values are the same (floating point comparisons so most expensive)
   if (is_sym)
   {
-    int nnz = A->p[A->n];
-    for (int p = 0; p < nnz; ++p)
+    int32 nnz = A->p[A->n];
+    for (int32 p = 0; p < nnz; ++p)
       if (std::fabs(A->x[p] - At->x[p]) > EPSILON)
       {
         is_sym = false;
@@ -150,8 +150,8 @@ isSymmetric(cs * A)
 }
 
 // Returns true for off-diagonal entries.
-int
-dropDiag(int i, int j, double aij, void * other)
+int32
+dropDiag(int32 i, int32 j, float64 aij, void * other)
 {
   return (i != j);
 }
@@ -176,8 +176,8 @@ CSPARSELinearSolver::CSPARSELinearSolver(std::string const & name_)
 CSPARSELinearSolver::~CSPARSELinearSolver()
 {}
 
-bool
-CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, AbstractOptions const * options)
+int8
+CSPARSELinearSolver::solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options)
 {
   using namespace CSPARSELinearSolverInternal;
 
@@ -201,7 +201,7 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
       alwaysAssertM(method == "QR" || Math::isSquare(a),
                     std::string(getName()) + ": Coefficient matrix for method '" + method + "' must be square");
 
-      AbstractCompressedSparseMatrix<double> const & sm = *a.asSparse()->asCompressed();
+      AbstractCompressedSparseMatrix<float64> const & sm = *a.asSparse()->asCompressed();
 
       // Convert the coefficient matrix to CSPARSE format
       alwaysAssertM(sm.isColumnMajor(),
@@ -209,13 +209,13 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
       alwaysAssertM(sm.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
 
       // TODO: avoid the copy when the input indices are actually ints
-      Array<int> irow;
+      Array<int32> irow;
       indicesToInt(sm.getInnerIndexType(), sm.numStoredElements(), sm.getInnerIndices(), irow);
 
-      Array<int> pcol;
+      Array<int32> pcol;
       indicesToInt(sm.getOuterIndexType(), sm.outerSize(), sm.getOuterIndices(), pcol);
 
-      int nnz = (int)sm.numStoredElements();
+      int32 nnz = (int32)sm.numStoredElements();
       alwaysAssertM(nnz == pcol[pcol.size() - 1],
                     std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
 
@@ -226,12 +226,12 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
       C.n = sm.cols();
       C.p = &pcol[0];
       C.i = irow.empty() ? NULL : &irow[0];
-      C.x = const_cast<double *>(sm.getValues());
+      C.x = const_cast<float64 *>(sm.getValues());
       C.nz = -1;
 
       // Check if the matrix is symmetric, and if necessary symmetrize it if is triangular
       cs * Cp = &C;
-      int sym = isSymmetric(&C);
+      int32 sym = isSymmetric(&C);
       if (sym == 2 || sym == 3)
       {
         if (options && options->getInteger("symmetrize-triangular", 0) != 0)
@@ -246,7 +246,7 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
       if (solution.size() > C.m)  // underdetermined system
         solution.tail(solution.size() - C.m).setZero();
 
-      int ok = 0;
+      int32 ok = 0;
       try
       {
         if (method == "CHOLESKY")
@@ -271,8 +271,8 @@ CSPARSELinearSolver::solve(AbstractMatrix<double> const & a, double const * b, A
         {
           THEA_DEBUG << getName() << ": Trying to solve linear system by LU factorization";
 
-          static double const DEFAULT_TOLERANCE = 1e-10;
-          double tol = options ? options->getFloat("tol", DEFAULT_TOLERANCE) : DEFAULT_TOLERANCE;
+          static float64 const DEFAULT_TOLERANCE = 1e-10;
+          float64 tol = options ? options->getFloat("tol", DEFAULT_TOLERANCE) : DEFAULT_TOLERANCE;
           ok = cs_lusol(Cp, solution.data(), 1, tol);
         }
         else

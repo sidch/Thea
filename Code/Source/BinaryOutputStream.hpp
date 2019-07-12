@@ -288,7 +288,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
       reserveBytes(n);
 
       debugAssertM(m_pos >= 0, getNameStr() + ": Invalid write position");
-      debugAssertM(m_bufferLen >= n, getNameStr() + format(": Could not reserve space to write %ld bytes", (long)n));
+      debugAssertM(m_bufferLen >= n, getNameStr() + format(": Could not reserve space to write %ld bytes", (intx)n));
 
       std::memcpy(m_buffer + m_pos, b, n);
       m_pos += n;

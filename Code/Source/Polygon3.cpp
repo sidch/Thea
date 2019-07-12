@@ -110,7 +110,7 @@ Polygon3::addVertex(Vector3 const & p)
 }
 
 void
-Polygon3::addVertex(Vector3 const & p, long index)
+Polygon3::addVertex(Vector3 const & p, intx index)
 {
   // update bounding box...
   bounds.merge(p);
@@ -119,14 +119,14 @@ Polygon3::addVertex(Vector3 const & p, long index)
   if (index > max_index) max_index = index;
 }
 
-long
+intx
 Polygon3::numVertices() const
 {
-  return (long)vertices.size();
+  return (intx)vertices.size();
 }
 
 Polygon3::IndexedVertex const &
-Polygon3::getVertex(long poly_index) const
+Polygon3::getVertex(intx poly_index) const
 {
   debugAssertM(poly_index >= 0 && poly_index < numVertices(), "Polygon3: Vertex index out of bounds");
 
@@ -202,8 +202,8 @@ Polygon3::snip(size_t u, size_t v, size_t w, size_t n, Array<size_t> const & ind
 //     v[7] = (-13.7199, 4.45725, -6.75059)
 //
 //   Instead, we will project onto the plane of the polygon.
-long
-Polygon3::triangulate(Array<long> & tri_indices, Real epsilon) const
+intx
+Polygon3::triangulate(Array<intx> & tri_indices, Real epsilon) const
 {
   if (epsilon < 0)
     epsilon = Math::eps<Real>();
@@ -297,7 +297,7 @@ Polygon3::triangulate(Array<long> & tri_indices, Real epsilon) const
     }
   }
 
-  return (long)tri_indices.size() / 3;
+  return (intx)tri_indices.size() / 3;
 }
 
 Real

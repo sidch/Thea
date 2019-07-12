@@ -64,7 +64,7 @@ class THEA_API Image : public AbstractImage, public Serializable
     Image();
 
     /** Construct an uninitialized image of the specified type and pixel dimensions, which must have valid non-zero values. */
-    Image(Type type_, int width_, int height_, int depth_ = 1);
+    Image(Type type_, int64 width_, int64 height_, int64 depth_ = 1);
 
     /**
      * Construct an image by deserializing it from an input stream.
@@ -89,13 +89,14 @@ class THEA_API Image : public AbstractImage, public Serializable
     /* Assignment operator. */
     Image & operator=(Image const & src);
 
-    bool isValid() const;
+    // Abstract interface functions
+    int8 isValid() const;
     void clear();
-    void resize(int type, int width_, int height_, int depth_ = 1);
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-    int getDepth() const { return depth; }
-    int getType() const { return (int)type; }
+    void resize(int64 type, int64 width_, int64 height_, int64 depth_ = 1);
+    int64 getWidth() const { return width; }
+    int64 getHeight() const { return height; }
+    int64 getDepth() const { return depth; }
+    int32 getType() const { return (int)type; }
 
     /**
      * Get the number of channels per pixel. For example: 1 for luminance, 3 for RGB, 4 for RGBA. A complex number corresponds
@@ -154,12 +155,13 @@ class THEA_API Image : public AbstractImage, public Serializable
      */
     bool hasByteAlignedChannels() const { return has_byte_aligned_channels; }
 
+    // Abstract interface functions
     void const * getData() const;
     void * getData();
-    void const * getScanLine(int row, int z = 0) const;
-    void * getScanLine(int row, int z = 0);
-    int getScanWidth() const;
-    int getRowAlignment() const;
+    void const * getScanLine(int64 row, int64 z = 0) const;
+    void * getScanLine(int64 row, int64 z = 0);
+    int64 getScanWidth() const;
+    int32 getRowAlignment() const;
 
     /**
      * Get the value of a channel of a particular pixel, normalized to the range [0, 1]. The following caveats should be
@@ -193,7 +195,7 @@ class THEA_API Image : public AbstractImage, public Serializable
     bool convert(Type dst_type, Image & dst) const;
 
     /** Rescale the image to a new width and height. */
-    bool rescale(int new_width, int new_height, int new_depth = 1, Filter filter = Filter::AUTO);
+    bool rescale(int64 new_width, int64 new_height, int64 new_depth = 1, Filter filter = Filter::AUTO);
 
     /**
      * {@inheritDoc}
@@ -242,9 +244,9 @@ class THEA_API Image : public AbstractImage, public Serializable
 
     // Image parameters
     Type type;
-    int width;
-    int height;
-    int depth;
+    int64 width;
+    int64 height;
+    int64 depth;
 
     // Image data
     fipImage * fip_img;
@@ -270,7 +272,7 @@ class THEA_API ImageCodec : public Codec
      *
      * @return The number of bytes written (this will include the information field if it was written)
      */
-    virtual long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const = 0;
+    virtual intx serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const = 0;
 
     /**
      * Deserialize an image from a binary input stream. If the <code>read_prefixed_info</code> parameter is true, extra
@@ -285,7 +287,7 @@ class THEA_API ImageCodec : public Codec
 #define THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                 \
     public:                                                                                                                   \
       char const * getName() const { static char const * my_name = desc; return my_name; }                                    \
-      long serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                          \
+      intx serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                          \
       void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;
 
 #define THEA_DEF_IMAGE_CODEC(name, desc)                                                                                      \

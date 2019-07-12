@@ -85,7 +85,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     }
 
     /** Get an axis of the frame. */
-    VectorT getAxis(long i) const { return this->getRotation().col(i); }
+    VectorT getAxis(intx i) const { return this->getRotation().col(i); }
 
     /** Get the inverse transform. */
     CoordinateFrameT inverse() const

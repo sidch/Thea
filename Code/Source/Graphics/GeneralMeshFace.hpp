@@ -304,10 +304,10 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     bool isQuad() const { return vertices.size() == 4; }
 
     /** Get the index of the face, typically in the source file (or negative if unindexed). */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Set the index of the face, typically from the source file (or negative if unindexed). */
-    void setIndex(long index_) { index = index_; }
+    void setIndex(intx index_) { index = index_; }
 
     /** Reverse the order in which vertices and edges wind around the face. The face normal is <b>not</b> modified. */
     void reverseWinding()
@@ -377,7 +377,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       VertexConstIterator last  =  vi++;
       Vector3 u = 0.5 * ((*last)->getPosition() + (*vi)->getPosition()) - p;
 
-      long count = 1;  // first halfedge is obviously intersected, since we generated the ray through its midpoint
+      intx count = 1;  // first halfedge is obviously intersected, since we generated the ray through its midpoint
       for ( ; last != verticesEnd(); ++vi)
       {
         if (vi == verticesEnd()) vi = verticesBegin();
@@ -516,7 +516,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
 
     VertexList vertices;
     EdgeList edges;
-    long index;
+    intx index;
     bool marked;
 
 }; // class GeneralMeshFace

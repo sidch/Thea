@@ -66,7 +66,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -78,7 +78,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used to define the extents of the spin image. If <= 0, the bounding
      *   sphere diameter will be used.
      */
-    SpinImage(long num_samples, Vector3 const * positions, Vector3 const & normals, Real normalization_scale = -1)
+    SpinImage(intx num_samples, Vector3 const * positions, Vector3 const & normals, Real normalization_scale = -1)
     : BaseT(num_samples, positions, normals, normalization_scale)
     {}
 
@@ -92,7 +92,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      *   sphere diameter will be used.
      */
     template <typename MeshT>
-    SpinImage(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    SpinImage(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -106,7 +106,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      *   sphere diameter will be used.
      */
     template <typename MeshT>
-    SpinImage(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    SpinImage(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -137,7 +137,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      */
     void compute(Vector3 const & position, int num_radial_bins, int num_height_bins, MatrixX<double> & spin_image) const
     {
-      long nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
+      intx nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
                                                 : this->getInternalKDTree()->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
@@ -175,8 +175,8 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
       spin_image.setZero();
 
       Vector3 axis = normal.normalized();
-      long n = this->numSamples();
-      for (long i = 0; i < n; ++i)
+      intx n = this->numSamples();
+      for (intx i = 0; i < n; ++i)
       {
         Vector3 offset = this->getSamplePosition(i) - position;
         Real height = offset.dot(axis);

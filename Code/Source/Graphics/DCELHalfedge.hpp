@@ -71,7 +71,7 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
     typedef DCELVertex<VertexAttribute, HalfedgeAttribute, FaceAttribute> Vertex;  ///< Vertex of the mesh.
 
     /** Default constructor. */
-    DCELHalfedge(long index_ = -1) : index(index_), twin_he(NULL), next_he(NULL), face(NULL), origin(NULL), bits(0) {}
+    DCELHalfedge(intx index_ = -1) : index(index_), twin_he(NULL), next_he(NULL), face(NULL), origin(NULL), bits(0) {}
 
     /** Get the vertex from which this halfedge originates. */
     Vertex const * getOrigin() const
@@ -177,7 +177,7 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
   private:
     template <typename _VertexAttribute, typename _HalfedgeAttribute, typename _FaceAttribute> friend class DCELMesh;
 
-    long index;
+    intx index;
     DCELHalfedge * twin_he;
     DCELHalfedge * next_he;
     Face * face;

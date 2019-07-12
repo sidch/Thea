@@ -54,18 +54,18 @@ class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public AddressableMatrix<NEWMAT:
   public:
     OPTPPSymMatWrapper(NEWMAT::SymmetricMatrix * m_) : m(m_) {}
 
-    long rows() const { return m->Nrows(); }
-    long cols() const { return m->Ncols(); }
+    intx rows() const { return m->Nrows(); }
+    intx cols() const { return m->Ncols(); }
 
-    NEWMAT::Real const & get(long row, long col) const
+    NEWMAT::Real const & get(intx row, intx col) const
     {
       // For const matrices newmat returns by value, so we const-cast it get a reference
       return const_cast<NEWMAT::SymmetricMatrix *>(m)->element((int)row, (int)col);
     }
 
-    NEWMAT::Real & getMutable(long row, long col) { return m->element((int)row, (int)col); }
+    NEWMAT::Real & getMutable(intx row, intx col) { return m->element((int)row, (int)col); }
 
-    void set(long row, long col, NEWMAT::Real const & value) { m->element((int)row, (int)col) = value; }
+    void set(intx row, intx col, NEWMAT::Real const & value) { m->element((int)row, (int)col) = value; }
 
     void fill(NEWMAT::Real const & value) { *m = value; }
 

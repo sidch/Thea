@@ -87,16 +87,16 @@ class THEA_API HoughForest : public Serializable
         virtual ~TrainingData() {}
 
         /** Get the number of training examples. */
-        virtual long numExamples() const = 0;
+        virtual intx numExamples() const = 0;
 
         /** Get the number of possible class labels (some of which may be absent in the training data). */
-        virtual long numClasses() const = 0;
+        virtual intx numClasses() const = 0;
 
         /** Get the number of features per example. */
-        virtual long numFeatures() const = 0;
+        virtual intx numFeatures() const = 0;
 
         /** Get the number of parameters (dimensions) of the Hough space for a particular class. */
-        virtual long numVoteParameters(long class_index) const = 0;
+        virtual intx numVoteParameters(intx class_index) const = 0;
 
         /**
          * Get the values of a particular feature for all training examples. \a feature_index must be in the range
@@ -105,7 +105,7 @@ class THEA_API HoughForest : public Serializable
          * @param feature_index The index of the requested feature.
          * @param values Used to return the feature values (assumed to be pre-allocated to \a num_selected_examples elements).
          */
-        virtual void getFeatures(long feature_index, double * values) const = 0;
+        virtual void getFeatures(intx feature_index, double * values) const = 0;
 
         /**
          * Get the values of a particular feature for a subset of training examples. \a feature_index must be in the range
@@ -116,7 +116,7 @@ class THEA_API HoughForest : public Serializable
          * @param selected_examples The indices of the selected subset.
          * @param values Used to return the feature values (assumed to be pre-allocated to \a num_selected_examples elements).
          */
-        virtual void getFeatures(long feature_index, long num_selected_examples, long const * selected_examples,
+        virtual void getFeatures(intx feature_index, intx num_selected_examples, intx const * selected_examples,
                                  double * values) const = 0;
 
         /**
@@ -124,7 +124,7 @@ class THEA_API HoughForest : public Serializable
          *
          * @param classes Used to return the classes (assumed to be pre-allocated to \a num_selected_examples elements).
          */
-        virtual void getClasses(long * classes) const = 0;
+        virtual void getClasses(intx * classes) const = 0;
 
         /**
          * Get the classes of a subset of training examples.
@@ -133,7 +133,7 @@ class THEA_API HoughForest : public Serializable
          * @param selected_examples The indices of the selected subset.
          * @param classes Used to return the classes (assumed to be pre-allocated to \a num_selected_examples elements).
          */
-        virtual void getClasses(long num_selected_examples, long const * selected_examples, long * classes) const = 0;
+        virtual void getClasses(intx num_selected_examples, intx const * selected_examples, intx * classes) const = 0;
 
         /**
          * Get the parameters of a Hough vote by a particular example for its parent object.
@@ -142,7 +142,7 @@ class THEA_API HoughForest : public Serializable
          * @param params Used to return the parameters of the Hough vote, assumed to be preallocated to the appropriate number
          *   of dimensions (see numVoteParameters()).
          */
-        virtual void getSelfVote(long example_index, double * params) const = 0;
+        virtual void getSelfVote(intx example_index, double * params) const = 0;
 
     }; // class TrainingData
 
@@ -157,22 +157,22 @@ class THEA_API HoughForest : public Serializable
         Options();
 
         /** Set the maximum depth of the tree (default -1). */
-        Options & setMaxDepth(long value) { max_depth = value; return *this; }
+        Options & setMaxDepth(intx value) { max_depth = value; return *this; }
 
         /**
          * Set the maximum number of elements in a leaf node of the tree, unless the maximum depth has been reached (default
          * -1).
          */
-        Options & setMaxLeafElements(long value) { max_leaf_elements = value; return *this; }
+        Options & setMaxLeafElements(intx value) { max_leaf_elements = value; return *this; }
 
         /** Set the maximum number of features to consider for splitting per iteration (default -1). */
-        Options & setMaxCandidateFeatures(long value) { max_candidate_features = value; return *this; }
+        Options & setMaxCandidateFeatures(intx value) { max_candidate_features = value; return *this; }
 
         /** Set the number of times the set of features is expanded to find a split (default -1). */
-        Options & setNumFeatureExpansions(long value) { num_feature_expansions = value; return *this; }
+        Options & setNumFeatureExpansions(intx value) { num_feature_expansions = value; return *this; }
 
         /** Set the maximum number of randomly selected thresholds to consider for splitting along a feature (default -1). */
-        Options & setMaxCandidateThresholds(long value) { max_candidate_thresholds = value; return *this; }
+        Options & setMaxCandidateThresholds(intx value) { max_candidate_thresholds = value; return *this; }
 
         /**
          * Set the minimum class uncertainty required to split a node by class uncertainty (default -1). A different way of
@@ -217,11 +217,11 @@ class THEA_API HoughForest : public Serializable
         static Options const & defaults() { static Options const def; return def; }
 
       private:
-        long max_depth;                   ///< Maximum depth of tree.
-        long max_leaf_elements;           ///< Maximum number of elements in leaf node, unless the maximum depth is reached.
-        long max_candidate_features;      ///< Maximum number of features to consider for splitting per iteration.
-        long num_feature_expansions;      ///< Number of times the set of features is expanded to find a split.
-        long max_candidate_thresholds;    ///< Maximum number of randomly selected thresholds for splitting along a feature.
+        intx max_depth;                   ///< Maximum depth of tree.
+        intx max_leaf_elements;           ///< Maximum number of elements in leaf node, unless the maximum depth is reached.
+        intx max_candidate_features;      ///< Maximum number of features to consider for splitting per iteration.
+        intx num_feature_expansions;      ///< Number of times the set of features is expanded to find a split.
+        intx max_candidate_thresholds;    ///< Maximum number of randomly selected thresholds for splitting along a feature.
         double min_class_uncertainty;     ///< Minimum class uncertainty required to split a node by class uncertainty.
         double max_dominant_fraction;     ///< Maximum fraction of elements covered by a single class for valid splitting.
         bool probabilistic_sampling;      ///< Use probabilistic sampling?
@@ -248,8 +248,8 @@ class THEA_API HoughForest : public Serializable
          *   Negative if unknown.
          * @param features_ [Optional] Features of the (training or estimated) point used to compute the vote. Null if unknown.
          */
-        Vote(long target_class_, long num_params_, double const * params_, double weight_, long index_ = -1,
-             long num_features_ = -1, double const * features_ = NULL)
+        Vote(intx target_class_, intx num_params_, double const * params_, double weight_, intx index_ = -1,
+             intx num_features_ = -1, double const * features_ = NULL)
         : target_class(target_class_),
           num_params(num_params_),
           params(params_),
@@ -260,10 +260,10 @@ class THEA_API HoughForest : public Serializable
         {}
 
         /** Get the ID of the class for which this vote is being cast. */
-        long getTargetClassID() const { return target_class; }
+        intx getTargetClassID() const { return target_class; }
 
         /** Get the number of parameters defining the vote (dimension of Hough space). */
-        long numParameters() const { return num_params; }
+        intx numParameters() const { return num_params; }
 
         /** Get the parameters defining the vote. */
         double const * getParameters() const { return params; }
@@ -272,21 +272,21 @@ class THEA_API HoughForest : public Serializable
         double getWeight() const { return weight; }
 
         /* Get the index of the closest training example used to compute the vote. Negative if unknown. */
-        long getTrainingExampleIndex() const { return index; }
+        intx getTrainingExampleIndex() const { return index; }
 
         /** Get the number of features of the (training or estimated) point used to compute the vote. Negative if unknown. */
-        long numVotingFeatures() const { return num_features; }
+        intx numVotingFeatures() const { return num_features; }
 
         /** Get the features of the (training or estimated) point used to compute the vote. Null if unknown. */
         double const * getVotingFeatures() const { return features; }
 
       private:
-        long target_class;  ///< Class for which this vote is being cast.
-        long num_params;  ///< Number of parameters defining the vote (dimension of Hough space).
+        intx target_class;  ///< Class for which this vote is being cast.
+        intx num_params;  ///< Number of parameters defining the vote (dimension of Hough space).
         double const * params;  ///< Parameters defining the vote.
         double weight;  ///< Weight assigned to the vote.
-        long index;  ///< The index of the closest training example used to compute the vote.
-        long num_features;  ///< Number of features of the (training or estimated) point used to compute the vote.
+        intx index;  ///< The index of the closest training example used to compute the vote.
+        intx num_features;  ///< Number of features of the (training or estimated) point used to compute the vote.
         double const * features;  ///< Features of the closest training example used to compute the vote.
 
     }; // class Vote
@@ -317,7 +317,7 @@ class THEA_API HoughForest : public Serializable
      * @param num_vote_params_ Number of parameters (dimensions) of Hough space per class.
      * @param options_ Additional options controlling the behaviour of the forest.
      */
-    HoughForest(long num_classes_, long num_features_, long const * num_vote_params_,
+    HoughForest(intx num_classes_, intx num_features_, intx const * num_vote_params_,
                 Options const & options_ = Options::defaults());
 
     /** Construct a Hough forest by loading it from a file. */
@@ -330,16 +330,16 @@ class THEA_API HoughForest : public Serializable
     void clear();
 
     /** Get the number of classes into which objects may fall. The classes are numbered 0 to numClasses() - 1. */
-    long numClasses() const { return num_classes; }
+    intx numClasses() const { return num_classes; }
 
     /** Get the number of features for an object. */
-    long numFeatures() const { return num_features; }
+    intx numFeatures() const { return num_features; }
 
     /** Get the number of parameters (dimensions) of the Hough voting space for a given class. */
-    long numVoteParameters(long class_index) const { return num_vote_params[(size_t)class_index]; }
+    intx numVoteParameters(intx class_index) const { return num_vote_params[(size_t)class_index]; }
 
     /** Get the number of trees in the forest. */
-    long numTrees() const { return (long)trees.size(); }
+    intx numTrees() const { return (intx)trees.size(); }
 
     /** Get the current options for the Hough forest. */
     Options const & getOptions() const { return options; }
@@ -350,7 +350,7 @@ class THEA_API HoughForest : public Serializable
      * @param num_trees Number of trees in the forest.
      * @param training_data_ Data used for training the forest.
      */
-    void train(long num_trees, TrainingData const & training_data_);
+    void train(intx num_trees, TrainingData const & training_data_);
 
     /**
      * Sample the Hough votes for a class from a point with a given set of features.
@@ -362,7 +362,7 @@ class THEA_API HoughForest : public Serializable
      *
      * @return The number of votes actually cast (usually == \a num_votes unless something goes horribly wrong).
      */
-    long voteSelf(long query_class, double const * features, long num_votes, VoteCallback & callback) const;
+    intx voteSelf(intx query_class, double const * features, intx num_votes, VoteCallback & callback) const;
 
     /** Load the forest from a disk file. */
     bool load(std::string const & path);
@@ -393,20 +393,20 @@ class THEA_API HoughForest : public Serializable
     void autoSelectUnspecifiedOptions(Options & options_, TrainingData const * training_data_) const;
 
     /** Cast a single vote for the parameters of a point's parent object by looking up an example in training data. */
-    void singleSelfVoteByLookup(long index, double weight, VoteCallback & callback) const;
+    void singleSelfVoteByLookup(intx index, double weight, VoteCallback & callback) const;
 
     /** Create a locally cached copy of the training data, as a lookup table for voting. */
     void cacheTrainingData(TrainingData const & training_data);
 
-    long num_classes;                 ///< Number of object classes.
-    long num_features;                ///< Number of features per object.
-    Array<long> num_vote_params;  ///< Number of Hough parameters per class.
-    long max_vote_params;             ///< Maximum number of Hough parameters for any class.
+    intx num_classes;                 ///< Number of object classes.
+    intx num_features;                ///< Number of features per object.
+    Array<intx> num_vote_params;  ///< Number of Hough parameters per class.
+    intx max_vote_params;             ///< Maximum number of Hough parameters for any class.
     Options options;                  ///< Additional options.
 
     Array<TreePtr> trees;  ///< Set of Hough trees in the forest.
 
-    Array<long> all_classes;  ///< Cached copy of all class labels in training data.
+    Array<intx> all_classes;  ///< Cached copy of all class labels in training data.
     RowMajMatrix all_features;    ///< Cached copy of all features in training data.
     RowMajMatrix all_self_votes;  ///< Cached copy of all Hough self-votes in training data.
 

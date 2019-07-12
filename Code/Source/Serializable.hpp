@@ -65,7 +65,7 @@ class THEA_API Codec : public AbstractNamedObject
      * Implicitly convert to an integer value for use in switch statements etc. This value will be common to all instances of
      * the codec class
      */
-    operator long() const { return reinterpret_cast<long>(&typeid(*this)); }
+    operator intx() const { return reinterpret_cast<intx>(&typeid(*this)); }
 };
 
 /** Write the name of the object to an output stream. */

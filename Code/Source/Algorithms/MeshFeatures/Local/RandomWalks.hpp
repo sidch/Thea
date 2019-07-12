@@ -64,7 +64,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
-    static long const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
+    static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
     /**
@@ -75,7 +75,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
      * @param num_samples The number of samples to compute on the shape.
      */
     template <typename MeshT>
-    RandomWalks(MeshT const & mesh, long num_samples = -1)
+    RandomWalks(MeshT const & mesh, intx num_samples = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples))
     {}
 
@@ -87,7 +87,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
      * @param num_samples The number of samples to compute on the shape.
      */
     template <typename MeshT>
-    RandomWalks(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1)
+    RandomWalks(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples))
     {}
 
@@ -110,15 +110,15 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
      * @param features Used to return the point features. Should be preallocated to \a num_steps * 3 entries.
      * @param num_walks The number of random walks over which to take averages.
      */
-    void compute(Vector3 const & position, long num_steps, double * features, long num_walks = -1) const
+    void compute(Vector3 const & position, intx num_steps, double * features, intx num_walks = -1) const
     {
-      static long const DEFAULT_NUM_WALKS = 1000;
+      static intx const DEFAULT_NUM_WALKS = 1000;
 
       if (num_walks < 0)
         num_walks = DEFAULT_NUM_WALKS;
 
       // Zero out all features initially
-      for (long i = 0; i < num_steps; ++i)
+      for (intx i = 0; i < num_steps; ++i)
       {
         features[3 * i    ] = 0.0;
         features[3 * i + 1] = 0.0;
@@ -126,7 +126,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
       }
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
-      long seed_index = -1;
+      intx seed_index = -1;
       if (this->hasExternalKDTree())
         seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
       else
@@ -134,17 +134,17 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
 
       alwaysAssertM(seed_index >= 0, "RandomWalks: Seed sample for random walks not found");
 
-      Array<long> counts((size_t)num_steps, 0);
-      for (long i = 0; i < num_walks; ++i)
+      Array<intx> counts((size_t)num_steps, 0);
+      for (intx i = 0; i < num_walks; ++i)
       {
-        long walk_steps = walk(seed_index, num_steps, features);
-        for (long j = 0; j < walk_steps; ++j)
+        intx walk_steps = walk(seed_index, num_steps, features);
+        for (intx j = 0; j < walk_steps; ++j)
           counts[(size_t)j]++;
       }
 
-      for (long i = 0; i < num_steps; ++i)
+      for (intx i = 0; i < num_steps; ++i)
       {
-        long count = counts[(size_t)i];
+        intx count = counts[(size_t)i];
         features[3 * i    ] = (features[3 * i    ] / count - position[0]);
         features[3 * i + 1] = (features[3 * i + 1] / count - position[1]);
         features[3 * i + 2] = (features[3 * i + 2] / count - position[2]);
@@ -156,7 +156,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
      * Do a random walk upto \a num_steps steps, and return the number of steps actually taken (= \a num_steps except in corner
      * cases).
      */
-    long walk(long seed_index, long num_steps, double * features) const
+    intx walk(intx seed_index, intx num_steps, double * features) const
     {
       typedef SampleGraph::SurfaceSample::NeighborSet NeighborSet;
 
@@ -166,14 +166,14 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
 
       SampleGraph::SurfaceSample * sample = const_cast<SampleGraph::SurfaceSample *>(&graph->getSample(seed_index));
 
-      long base_index = 0;
-      for (long i = 0; i < num_steps; ++i, base_index += 3)
+      intx base_index = 0;
+      for (intx i = 0; i < num_steps; ++i, base_index += 3)
       {
         NeighborSet const & nbrs = sample->getNeighbors();
         if (nbrs.isEmpty())
           return i;
 
-        long next_index = Random::common().integer(0, nbrs.size() - 1);
+        intx next_index = Random::common().integer(0, nbrs.size() - 1);
         sample = nbrs[next_index].getSample();
 
         Vector3 const & p = sample->getPosition();

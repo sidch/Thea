@@ -108,7 +108,7 @@ struct PointTraitsN<MyCustomPoint, 3, Real>
 
 // This function is called by the kd-tree for every point encountered in a range. The args are the index of the point (in the
 // array returned by kdtree.getElements()) and a reference to the point itself (as cached by the kd-tree).
-bool printPoint(long index, MyCustomPoint & np)
+bool printPoint(intx index, MyCustomPoint & np)
 {
   cout << "  Found point '" << np.name << "' at position " << np.position.transpose() << endl;
   return false;  // the range query stops when this function returns true -- here we don't want that to happen
@@ -169,7 +169,7 @@ testPointKDTree()
 
   // Yet another way of writing a range query, that returns the indices of all the elements in the ball. This might also be
   // slower because of memory allocation by push_back in vector.
-  vector<long> indices_of_elems_in_range;
+  vector<intx> indices_of_elems_in_range;
   kdtree.rangeQueryIndices<IntersectionTester>(ball, indices_of_elems_in_range);
   cout << "\nRange query returned " << elems_in_range.size() << " indices (with possible duplications)" << endl;
 
@@ -190,7 +190,7 @@ testPointKDTree()
   Vector3 query(0.5f, 0.5f, 0.5f);
   double dist_bound = 0.25;  // we'll limit the search to all points within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the returned point
-  long nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist);
+  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist);
   if (nn_index >= 0)
     cout << "\nThe point nearest the query " << query.transpose() << " is " << kdtree.getElements()[nn_index].name
          << " at distance " << dist << endl;
@@ -203,11 +203,11 @@ testPointKDTree()
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
   BoundedSortedArrayN<3, KDTree::NeighborPair> nbrs;
-  long num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound);
+  intx num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound);
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.transpose() << ':' << endl;
-    for (long i = 0; i < nbrs.size(); ++i)
+    for (intx i = 0; i < nbrs.size(); ++i)
     {
       cout << "  " << kdtree.getElements()[nbrs[i].getTargetIndex()].name << " at distance "
            << nbrs[i].getDistance<MetricL2>() << endl;
@@ -258,7 +258,7 @@ testPointKDTree()
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " pairs of nearest neighbors (max 3) found for query point set:" << endl;
-    for (long i = 0; i < nbrs.size(); ++i)
+    for (intx i = 0; i < nbrs.size(); ++i)
     {
       cout << "  (" << new_kdtree.getElements()[nbrs[i].getQueryIndex()].name << ' ' << nbrs[i].getQueryPoint() << ", "
                     << kdtree.getElements()[nbrs[i].getTargetIndex()].name << ' ' << nbrs[i].getTargetPoint()
@@ -319,7 +319,7 @@ testTriangleKDTree()
   double dist_bound = 0.25;  // we'll limit the search to all triangles within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the nearest triangle
   Vector3 closest_point;  // this will contain the closest point on the nearest triangle
-  long nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist, &closest_point);
+  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist, &closest_point);
   if (nn_index >= 0)
     cout << "\nThe triangle nearest the query " << query.transpose() << " is "
          << kdtree.getElements()[nn_index].getVertices().name

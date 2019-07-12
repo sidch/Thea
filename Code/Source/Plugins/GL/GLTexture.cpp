@@ -76,7 +76,7 @@ GLTexture::toGLCubeMapFace(Texture::Face face)
 }
 
 static void
-GLTexture__setDefaultUnpackingOptions(int row_alignment)
+GLTexture__setDefaultUnpackingOptions(int64 row_alignment)
 {
   debugAssertM(row_alignment >= 1, "GLTexture: Row alignment must be positive");
 
@@ -90,7 +90,7 @@ GLTexture__setDefaultUnpackingOptions(int row_alignment)
 }
 
 static void
-GLTexture__setDefaultPackingOptions(int row_alignment)
+GLTexture__setDefaultPackingOptions(int64 row_alignment)
 {
   debugAssertM(row_alignment >= 1, "GLTexture: Row alignment must be positive");
 
@@ -103,7 +103,7 @@ GLTexture__setDefaultPackingOptions(int row_alignment)
   glPixelStorei(GL_PACK_ALIGNMENT, row_alignment);
 }
 
-GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, int width_, int height_, int depth_,
+GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, int64 width_, int64 height_, int64 depth_,
                      Format const * desired_format, Dimension dimension_, Options const & options)
 : render_system(render_system_), name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
 {
@@ -232,13 +232,13 @@ GLTexture::glTexImage(void const * bytes, Format const * bytes_format, Face face
   switch (gl_target)
   {
     case GL_TEXTURE_1D:
-      glTexImage1D(gl_target, 0, format->openGLFormat, width, 0, bytes_format->openGLBaseFormat, bytes_format->openGLDataFormat,
-                   bytes);
+      glTexImage1D(gl_target, 0, format->openGLFormat, (GLsizei)width, 0, bytes_format->openGLBaseFormat,
+                   bytes_format->openGLDataFormat, bytes);
       break;
 
     case GL_TEXTURE_2D:
     case GL_TEXTURE_RECTANGLE_ARB:
-      glTexImage2D(gl_target, 0, format->openGLFormat, width, height, 0, bytes_format->openGLBaseFormat,
+      glTexImage2D(gl_target, 0, format->openGLFormat, (GLsizei)width, (GLsizei)height, 0, bytes_format->openGLBaseFormat,
                    bytes_format->openGLDataFormat, bytes);
       break;
 
@@ -248,13 +248,13 @@ GLTexture::glTexImage(void const * bytes, Format const * bytes_format, Face face
 #else
       glTexImage3DEXT
 #endif
-        (gl_target, 0, format->openGLFormat, width, height, depth, 0, bytes_format->openGLBaseFormat,
+        (gl_target, 0, format->openGLFormat, (GLsizei)width, (GLsizei)height, (GLsizei)depth, 0, bytes_format->openGLBaseFormat,
          bytes_format->openGLDataFormat, bytes);
       break;
 
     default:  // GL_TEXTURE_CUBE_MAP_ARB
-      glTexImage2D(toGLCubeMapFace(face), 0, format->openGLFormat, width, height, 0, bytes_format->openGLBaseFormat,
-                   bytes_format->openGLDataFormat, bytes);
+      glTexImage2D(toGLCubeMapFace(face), 0, format->openGLFormat, (GLsizei)width, (GLsizei)height, 0,
+                   bytes_format->openGLBaseFormat, bytes_format->openGLDataFormat, bytes);
   }
   THEA_CHECK_GL_OK
 }
@@ -330,7 +330,7 @@ GLTexture::setOptions(Options const & options)
 
   THEA_CHECK_GL_OK
 
-  bool has_mipmaps = (options.interpolateMode == InterpolateMode::NEAREST_MIPMAP
+  int8 has_mipmaps = (options.interpolateMode == InterpolateMode::NEAREST_MIPMAP
                    || options.interpolateMode == InterpolateMode::BILINEAR_MIPMAP
                    || options.interpolateMode == InterpolateMode::TRILINEAR);
 
@@ -440,8 +440,8 @@ GLTexture::_updateImage(AbstractImage const & image, Face face, Options const * 
 }
 
 void
-GLTexture::updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
-                          int src_depth, int dst_x, int dst_y, int dst_z, Face face)
+GLTexture::updateSubImage(AbstractImage const & image, int64 src_x, int64 src_y, int64 src_z, int64 src_width, int64 src_height,
+                          int64 src_depth, int64 dst_x, int64 dst_y, int64 dst_z, Face face)
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot update texture from invalid image");
@@ -526,7 +526,7 @@ GLTexture::getImage(AbstractImage & image, Face face) const
 }
 
 void
-GLTexture::getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height, int subimage_depth,
+GLTexture::getSubImage(AbstractImage & image, int64 x, int64 y, int64 z, int64 subimage_width, int64 subimage_height, int64 subimage_depth,
                        Face face) const
 {
   // Until GL gets a GetTexSubImage function...

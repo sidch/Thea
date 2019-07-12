@@ -64,26 +64,26 @@ class /* THEA_API */ AbstractAddressableMatrix : public virtual AbstractMatrix<T
      * virtual function overhead. Use this function only in generic algorithms that need polymorphic access to matrices without
      * using templates, or when accessing matrices across shared library boundaries.
      */
-    virtual T const & at(long row, long col) const = 0;
+    virtual T const & at(int64 row, int64 col) const = 0;
 
     /**
      * Get an element that can be directly modified. Most derived/underlying classes define operator() to access an element
      * quicker, without the virtual function overhead. Use this function only in generic algorithms that need polymorphic access
      * to matrices without using templates, or when accessing matrices across shared library boundaries.
      */
-    virtual T & at(long row, long col) = 0;
+    virtual T & at(int64 row, int64 col) = 0;
 
     /** Get a row of the matrix. \a values must be preallocated with cols() elements. */
-    virtual void getRow(long row, T * values) const = 0;
+    virtual void getRow(int64 row, T * values) const = 0;
 
     /** Set a row of the matrix. \a values must contain cols() elements. */
-    virtual void setRow(long row, T const * values) = 0;
+    virtual void setRow(int64 row, T const * values) = 0;
 
     /** Get a column of the matrix. \a values must be preallocated with rows() elements. */
-    virtual void getColumn(long col, T * values) const = 0;
+    virtual void getColumn(int64 col, T * values) const = 0;
 
     /** Set a column of the matrix. \a values must contain rows() elements. */
-    virtual void setColumn(long col, T const * values) = 0;
+    virtual void setColumn(int64 col, T const * values) = 0;
 
     /**
      * If the matrix is stored as a dense array, get a pointer to a derived interface supporting dense-specific access. Else,

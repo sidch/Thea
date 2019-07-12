@@ -169,7 +169,7 @@ class ShapeDiameter
      */
     double compute(Vector3 const & position, bool only_hit_interior_surfaces = true) const
     {
-      long nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
+      intx nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
                                      : kdtree->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {

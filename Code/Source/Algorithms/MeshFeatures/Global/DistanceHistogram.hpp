@@ -60,8 +60,8 @@ class DistanceHistogram
     typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
 
   private:
-    static long const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to initially sample from the shape.
-    static long const DEFAULT_APPROX_NUM_PAIRS = 500 * 500;  /**< Default (approximate) number of point pairs to use for the
+    static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to initially sample from the shape.
+    static intx const DEFAULT_APPROX_NUM_PAIRS = 500 * 500;  /**< Default (approximate) number of point pairs to use for the
                                                                   histogram. */
 
   public:
@@ -75,7 +75,7 @@ class DistanceHistogram
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    DistanceHistogram(MeshT const & mesh, long num_samples = -1, Real normalization_scale = -1)
+    DistanceHistogram(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : ldh(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -89,7 +89,7 @@ class DistanceHistogram
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    DistanceHistogram(Graphics::MeshGroup<MeshT> const & mesh_group, long num_samples = -1, Real normalization_scale = -1)
+    DistanceHistogram(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : ldh(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -106,10 +106,10 @@ class DistanceHistogram
     {}
 
     /** Get the number of surface samples. */
-    long numSamples() const { return ldh.numSamples(); }
+    intx numSamples() const { return ldh.numSamples(); }
 
     /** Get the position of the surface sample with index \a index. */
-    Vector3 getSamplePosition(long index) const { return ldh.getSamplePosition(index); }
+    Vector3 getSamplePosition(intx index) const { return ldh.getSamplePosition(index); }
 
     /**
      * Compute the histogram of distances between sample points on the shape. The histogram bins uniformly subdivide the range
@@ -131,8 +131,8 @@ class DistanceHistogram
      */
     void compute(Histogram & histogram, DistanceType dist_type, Real max_distance = -1, Real pair_reduction_ratio = -1) const
     {
-      long num_samples = ldh.numSamples();
-      long num_distinct_unordered = (num_samples - 1) * num_samples;
+      intx num_samples = ldh.numSamples();
+      intx num_distinct_unordered = (num_samples - 1) * num_samples;
 
       if (pair_reduction_ratio < 0)
         pair_reduction_ratio = (Real)std::min(0.5, 1000000.0 / num_distinct_unordered);  // don't count (x, x)
@@ -140,7 +140,7 @@ class DistanceHistogram
       histogram.setZero();  // don't bother setting the range
 
       Real local_reduction_ratio = std::sqrt(pair_reduction_ratio);
-      long num_queries = Math::clamp((long)std::ceil(local_reduction_ratio * num_samples), 0, num_samples - 1);
+      intx num_queries = Math::clamp((intx)std::ceil(local_reduction_ratio * num_samples), 0, num_samples - 1);
       if (num_queries <= 0)
         return;
 

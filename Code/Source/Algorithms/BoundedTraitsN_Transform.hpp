@@ -73,14 +73,14 @@ class /* THEA_API */ BoundedTraitsN< TransformedObject<ObjectT, TransformT>, N, 
       return bounds.getCenter();
     }
 
-    static ScalarT getHigh(TO const & t, long coord)
+    static ScalarT getHigh(TO const & t, intx coord)
     {
       AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);
       return bounds.getHigh()[coord];
     }
 
-    static ScalarT getLow(TO const & t, long coord)
+    static ScalarT getLow(TO const & t, intx coord)
     {
       AxisAlignedBoxN<N, ScalarT> bounds;
       getBounds(t, bounds);

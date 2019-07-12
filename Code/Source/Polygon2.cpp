@@ -74,19 +74,19 @@ Polygon2::addVertex(Vector2 const & p)
 }
 
 void
-Polygon2::addVertex(Vector2 const & p, long index)
+Polygon2::addVertex(Vector2 const & p, intx index)
 {
   impl->addVertex(Vector3(p[0], p[1], 0), index);
 }
 
-long
+intx
 Polygon2::numVertices() const
 {
   return impl->numVertices();
 }
 
 Polygon2::IndexedVertex
-Polygon2::getVertex(long poly_index) const
+Polygon2::getVertex(intx poly_index) const
 {
   Polygon3::IndexedVertex const & vx3 = impl->getVertex(poly_index);
   return IndexedVertex(vx3.position.head<2>(), vx3.index);
@@ -98,14 +98,14 @@ Polygon2::clear()
   impl->clear();
 }
 
-long
-Polygon2::triangulate(Array<long> & tri_indices) const
+intx
+Polygon2::triangulate(Array<intx> & tri_indices) const
 {
   return impl->triangulate(tri_indices);
 }
 
-long
-Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indices,
+intx
+Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indices,
                               Array<bool> * tri_vert_is_boundary,TriangulationOptions const & options) const
 {
   struct triangulateio in, out;
@@ -199,7 +199,7 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indi
 
   tri_indices.resize(3 * (size_t)out.numberoftriangles);
   for (size_t i = 0; i < tri_indices.size(); ++i)
-    tri_indices[i] = (long)out.trianglelist[i];
+    tri_indices[i] = (intx)out.trianglelist[i];
 
   if (tri_vert_is_boundary)
   {
@@ -213,7 +213,7 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<long> & tri_indi
   trifree(out.pointmarkerlist);
   trifree(out.trianglelist);
 
-  return (long)tri_indices.size() / 3;
+  return (intx)tri_indices.size() / 3;
 }
 
 Real

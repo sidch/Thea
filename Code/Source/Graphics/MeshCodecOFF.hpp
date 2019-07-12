@@ -55,13 +55,13 @@ namespace CodecOFFInternal {
 template <typename MeshT, typename Enable = void>
 struct VertexIndexMap
 {
-  typedef UnorderedMap<typename MeshT::Vertex const *, long> type;
+  typedef UnorderedMap<typename MeshT::Vertex const *, intx> type;
 };
 
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef UnorderedMap<std::pair<MeshT const *, long>, long> type;
+  typedef UnorderedMap<std::pair<MeshT const *, intx>, intx> type;
 };
 
 } // namespace CodecOFFInternal
@@ -153,7 +153,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    long serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
+    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
                             WriteCallback * callback) const
     {
       output.setEndianness(Endianness::LITTLE);
@@ -171,7 +171,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       int64 enc_start = output.getPosition();
 
-        long num_vertices = 0, num_faces = 0;
+        intx num_vertices = 0, num_faces = 0;
         getStats(mesh_group, num_vertices, num_faces);
 
         VertexIndexMap vertex_indices;
@@ -191,7 +191,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
         serializeVertices(mesh_group, output, vertex_indices, callback);
 
-        long next_index = 0;
+        intx next_index = 0;
         serializeFaces(mesh_group, vertex_indices, output, callback, next_index);
 
       int64 enc_end = output.getPosition();
@@ -203,7 +203,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
         output.writeUInt32((uint32)(enc_end - enc_start));
       }
 
-      return (long)(enc_end - initial_pos);
+      return (intx)(enc_end - initial_pos);
     }
 
     void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
@@ -257,7 +257,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       }
 
       std::istringstream counts(line);
-      long num_vertices, num_faces, num_edges;
+      intx num_vertices, num_faces, num_edges;
       if (!(counts >> num_vertices >> num_faces >> num_edges))
         throw Error(std::string(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
 
@@ -279,7 +279,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       // Read list of vertices
       double x, y, z;
-      for (long v = 0; v < num_vertices; ++v)
+      for (intx v = 0; v < num_vertices; ++v)
       {
         std::string line = trimWhitespace(in.readLine());
         while (line.empty() || line[0] == '#')
@@ -303,9 +303,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
       }
 
       // Read list of faces
-      long index;
-      long num_face_vertices;
-      for (long f = 0; f < num_faces; ++f)
+      intx index;
+      intx num_face_vertices;
+      for (intx f = 0; f < num_faces; ++f)
       {
         std::string line = trimWhitespace(in.readLine());
         while (line.empty() || line[0] == '#')
@@ -325,7 +325,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           face.resize(num_face_vertices);
 
           bool skip = false;
-          for (long v = 0; v < num_face_vertices && !skip; ++v)
+          for (intx v = 0; v < num_face_vertices && !skip; ++v)
           {
             if (!(vstr >> index))
             {
@@ -338,11 +338,11 @@ class CodecOFF : public CodecOFFBase<MeshT>
               }
             }
 
-            if (index < 0 || index >= (long)vrefs.size())
+            if (index < 0 || index >= (intx)vrefs.size())
             {
               if (read_opts.strict)
                 throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) on line '%s'",
-                                               index, (long)vrefs.size(), line.c_str()));
+                                               index, (intx)vrefs.size(), line.c_str()));
               else
               {
                 THEA_WARNING << getName() << ": Skipping face, vertex index " << index << " out of bounds (#vertices = "
@@ -385,9 +385,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
     {
       in.setEndianness(Endianness::BIG);  // binary OFF uses big-endian
 
-      long num_vertices = (long)in.readInt32();
-      long num_faces = (long)in.readInt32();
-      long num_edges = (long)in.readInt32();
+      intx num_vertices = (intx)in.readInt32();
+      intx num_faces = (intx)in.readInt32();
+      intx num_edges = (intx)in.readInt32();
 
       THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
                    << " edges";
@@ -407,7 +407,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
       // Read list of vertices
       Vector3 vertex;
-      for (long v = 0; v < num_vertices; ++v)
+      for (intx v = 0; v < num_vertices; ++v)
       {
         vertex[0] = (Real)in.readFloat32();
         vertex[1] = (Real)in.readFloat32();
@@ -421,7 +421,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
       }
 
       // Read list of faces
-      for (long f = 0; f < num_faces; ++f)
+      for (intx f = 0; f < num_faces; ++f)
       {
         int num_face_vertices = (int)in.readInt32();
         if (num_face_vertices > 0)
@@ -437,12 +437,12 @@ class CodecOFF : public CodecOFFBase<MeshT>
               continue;
             }
 
-            long index = (long)in.readInt32();
-            if (index < 0 || index >= (long)vrefs.size())
+            intx index = (intx)in.readInt32();
+            if (index < 0 || index >= (intx)vrefs.size())
             {
               if (read_opts.strict)
                 throw Error(getName() + format(": Vertex index %ld out of bounds (#vertices = %ld) in face %ld",
-                                               index, (long)vrefs.size(), f));
+                                               index, (intx)vrefs.size(), f));
               else
               {
                 THEA_WARNING << getName() << ": Skipping face " << f << ", vertex index " << index
@@ -486,14 +486,14 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
     /** Count the number of vertices and faces in a mesh (increments parameters). */
     template <typename _MeshT>
-    static void getStats(_MeshT const & mesh, long & num_vertices, long & num_faces)
+    static void getStats(_MeshT const & mesh, intx & num_vertices, intx & num_faces)
     {
       num_vertices += mesh.numVertices();
       num_faces += mesh.numFaces();
     }
 
     /** Count the number of vertices and faces in a mesh group (increments parameters). */
-    static void getStats(MeshGroup const & mesh_group, long & num_vertices, long & num_faces)
+    static void getStats(MeshGroup const & mesh_group, intx & num_vertices, intx & num_faces)
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
         getStats(**mi, num_vertices, num_faces);
@@ -529,7 +529,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
       {
         if (write_opts.binary)
@@ -552,7 +552,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
       {
         typename Mesh::Vertex const * vx = *vi;
@@ -577,9 +577,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
                            WriteCallback * callback,
                            typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
+      typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
-      long vertex_index = (long)vertex_indices.size();
+      intx vertex_index = (intx)vertex_indices.size();
 
       for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
@@ -594,14 +594,14 @@ class CodecOFF : public CodecOFFBase<MeshT>
         else
           writeString(format("%f %f %f\n", v.x(), v.y(), v.z()), output);
 
-        vertex_indices[DisplayMeshVRef(&mesh, (long)i)] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index, (long)i);
+        vertex_indices[DisplayMeshVRef(&mesh, (intx)i)] = vertex_index;
+        if (callback) callback->vertexWritten(&mesh, vertex_index, (intx)i);
       }
     }
 
     /** Write out all the faces from a mesh group. */
     void serializeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index) const
+                        WriteCallback * callback, intx & next_index) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
@@ -617,7 +617,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Write out all the faces from a general mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -660,7 +660,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Write out all the faces from a DCEL mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -713,10 +713,10 @@ class CodecOFF : public CodecOFFBase<MeshT>
     /** Write out all the faces from a display mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, long & next_index,
+                        WriteCallback * callback, intx & next_index,
                         typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
-      typedef std::pair<_MeshT const *, long> DisplayMeshVRef;
+      typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 
       for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
       {
@@ -730,7 +730,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             output.writeInt32((int32)degree);
             for (size_t j = 0; j < degree; ++j)
             {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
+              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               output.writeInt32((int32)ii->second);
@@ -744,7 +744,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
             for (size_t j = 0; j < degree; ++j)
             {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (long)indices[i + j]));
+              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
               alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
               os << ' ' << ii->second;
@@ -756,7 +756,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
           if (callback)
           {
-            typename Mesh::Face face(const_cast<Mesh *>(&mesh), degree, (type == 0), (long)i, 1);
+            typename Mesh::Face face(const_cast<Mesh *>(&mesh), degree, (type == 0), (intx)i, 1);
             callback->faceWritten(&mesh, next_index++, face);
           }
         }

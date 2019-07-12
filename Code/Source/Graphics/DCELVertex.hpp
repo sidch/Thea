@@ -154,10 +154,10 @@ class /* THEA_API */ DCELVertex
     }
 
     /** Get the index of the vertex, typically in the source file (or negative if unindexed). */
-    long getIndex() const { return index; }
+    intx getIndex() const { return index; }
 
     /** Set the index of the vertex, typically from the source file (or negative if unindexed). */
-    void setIndex(long index_) { index = index_; }
+    void setIndex(intx index_) { index = index_; }
 
   private:
     template <typename V, typename H, typename F> friend class DCELMesh;
@@ -199,7 +199,7 @@ class /* THEA_API */ DCELVertex
     void setPackingIndex(uint32 packing_index_) { packing_index = packing_index_; }
 
     Halfedge * leaving;
-    long index;
+    intx index;
     bool has_precomputed_normal;
     float normal_normalization_factor;
     uint32 packing_index;

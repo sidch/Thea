@@ -51,7 +51,7 @@ namespace GeodesicSphere3Internal {
 typedef std::pair<size_t, size_t> IndexPair;
 typedef UnorderedMap<IndexPair, size_t> MidpointMap;
 
-long
+intx
 midpoint(size_t i, size_t j, Array<Vector3> & vertices, MidpointMap & midpoints)
 {
   IndexPair edge = (i < j ? IndexPair(i, j) : IndexPair(j, i));
@@ -69,16 +69,16 @@ midpoint(size_t i, size_t j, Array<Vector3> & vertices, MidpointMap & midpoints)
 }
 
 void
-geodesicSphereSubdivide(long depth, size_t i0, size_t i1, size_t i2,
-                        Array<Vector3> & vertices, Array<long> * triangles, MidpointMap & midpoints)
+geodesicSphereSubdivide(intx depth, size_t i0, size_t i1, size_t i2,
+                        Array<Vector3> & vertices, Array<intx> * triangles, MidpointMap & midpoints)
 {
   if (depth <= 0)
   {
     if (triangles)
     {
-      triangles->push_back((long)i0);
-      triangles->push_back((long)i1);
-      triangles->push_back((long)i2);
+      triangles->push_back((intx)i0);
+      triangles->push_back((intx)i1);
+      triangles->push_back((intx)i2);
     }
 
     return;
@@ -97,7 +97,7 @@ geodesicSphereSubdivide(long depth, size_t i0, size_t i1, size_t i2,
 } // namespace GeodesicSphere3Internal
 
 bool
-GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long> * triangles)
+GeodesicSphere3::compute(intx num_subdivs, Array<Vector3> & vertices, Array<intx> * triangles)
 {
   // http://www.opengl.org.ru/docs/pg/0208.html
 
@@ -137,9 +137,9 @@ GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long
     triangles->resize(20 * 3);
     for (size_t i = 0; i < 20; ++i)
     {
-      (*triangles)[3 * i    ] = (long)ICO_TRIS[i][0];
-      (*triangles)[3 * i + 1] = (long)ICO_TRIS[i][1];
-      (*triangles)[3 * i + 2] = (long)ICO_TRIS[i][2];
+      (*triangles)[3 * i    ] = (intx)ICO_TRIS[i][0];
+      (*triangles)[3 * i + 1] = (intx)ICO_TRIS[i][1];
+      (*triangles)[3 * i + 2] = (intx)ICO_TRIS[i][2];
     }
   }
 
@@ -160,8 +160,8 @@ GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long
 }
 
 bool
-GeodesicSphere3::compute(long num_subdivs, Array<Vector3> & vertices, Array<long> const & old_triangles,
-                         Array<long> * new_triangles)
+GeodesicSphere3::compute(intx num_subdivs, Array<Vector3> & vertices, Array<intx> const & old_triangles,
+                         Array<intx> * new_triangles)
 {
   if (num_subdivs < 0)
   {

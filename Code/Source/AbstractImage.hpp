@@ -63,10 +63,10 @@ class THEA_API AbstractImage
      */
     struct THEA_API Channel
     {
-      static int const RED;    ///< Index of red channel
-      static int const GREEN;  ///< Index of green channel
-      static int const BLUE;   ///< Index of blue channel
-      static int const ALPHA;  ///< Index of alpha channel
+      static int32 const RED;    ///< Index of red channel
+      static int32 const GREEN;  ///< Index of green channel
+      static int32 const BLUE;   ///< Index of blue channel
+      static int32 const ALPHA;  ///< Index of alpha channel
     };
 
     /**
@@ -159,7 +159,7 @@ class THEA_API AbstractImage
      * Check if the image has been allocated non-zero memory space (hence has valid type and dimensions) or not. An image
      * created by the default constructor is invalid and must be further initialized using deserialize() or a similar function.
      */
-    virtual bool isValid() const = 0;
+    virtual int8 isValid() const = 0;
 
     /**
      * Destroy all image data, resetting the image to an invalid state.
@@ -172,19 +172,19 @@ class THEA_API AbstractImage
      * Resize the image, changing its type and dimensions. All previous image data is discarded. \a type should be one of the
      * Type values.
      */
-    virtual void resize(int type, int width, int height, int depth = 1) = 0;
+    virtual void resize(int64 type, int64 width, int64 height, int64 depth = 1) = 0;
 
     /** Get the width of the image in pixels. */
-    virtual int getWidth() const = 0;
+    virtual int64 getWidth() const = 0;
 
     /** Get the height of the image in pixels. */
-    virtual int getHeight() const = 0;
+    virtual int64 getHeight() const = 0;
 
     /** Get the depth of the image in pixels. */
-    virtual int getDepth() const { return 1; }
+    virtual int64 getDepth() const { return 1; }
 
-    /** Get the type of the image pixels. */
-    virtual int getType() const = 0;
+    /** Get the type of the image pixels, corresponding to one of the values of the Type enum class. */
+    virtual int32 getType() const = 0;
 
     /** Get a pointer to the image data. */
     virtual void const * getData() const = 0;
@@ -193,19 +193,22 @@ class THEA_API AbstractImage
     virtual void * getData() = 0;
 
     /** Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. */
-    virtual void const * getScanLine(int row, int z = 0) const = 0;
+    virtual void const * getScanLine(int64 row, int64 z = 0) const = 0;
 
     /** Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. */
-    virtual void * getScanLine(int row, int z = 0) = 0;
+    virtual void * getScanLine(int64 row, int64 z = 0) = 0;
 
     /**
      * Get the number of bytes consumed by a row of pixels. Rows may be aligned to 32-bit (or other) boundaries for performance
      * reasons, so this is <b>not</b> necessarily equal to the number of pixels in a row times the size of a pixel.
      */
-    virtual int getScanWidth() const = 0;
+    virtual int64 getScanWidth() const = 0;
 
-    /** Get the byte alignment of a pixel row. */
-    virtual int getRowAlignment() const = 0;
+    /**
+     * Get the byte alignment of a pixel row. Each row is padded to take up a number of bytes which is a multiple of the
+     * alignment value.
+     */
+    virtual int32 getRowAlignment() const = 0;
 
 }; // class AbstractImage
 

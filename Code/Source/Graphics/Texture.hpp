@@ -50,7 +50,11 @@
 namespace Thea {
 namespace Graphics {
 
-/** An interface for a texture. */
+/**
+ * An interface for a texture.
+ *
+ * @todo Make this safe for passing across shared library boundaries.
+ */
 class THEA_API Texture : public AbstractNamedObject
 {
   public:
@@ -153,13 +157,13 @@ class THEA_API Texture : public AbstractNamedObject
     virtual ~Texture() {}
 
     /** Get the width of the texture in pixels. */
-    virtual int getWidth() const = 0;
+    virtual int64 getWidth() const = 0;
 
     /** Get the height of the texture in pixels. */
-    virtual int getHeight() const = 0;
+    virtual int64 getHeight() const = 0;
 
     /** Get the depth of the texture in pixels. */
-    virtual int getDepth() const = 0;
+    virtual int64 getDepth() const = 0;
 
     /** Get the storage format of the texture. */
     virtual Format const * getFormat() const = 0;
@@ -171,7 +175,8 @@ class THEA_API Texture : public AbstractNamedObject
     virtual void updateImage(AbstractImage const & image, Face face = Face::POS_X) = 0;
 
     /** Update a part of (a face of) the texture from a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void updateSubImage(AbstractImage const & image, int dst_x, int dst_y, int dst_z = 0, Face face = Face::POS_X)
+    virtual void updateSubImage(AbstractImage const & image, int64 dst_x, int64 dst_y, int64 dst_z = 0,
+                                Face face = Face::POS_X)
     {
       updateSubImage(image, 0, 0, 0, image.getWidth(), image.getHeight(), image.getDepth(), dst_x, dst_y, dst_z, face);
     }
@@ -181,15 +186,17 @@ class THEA_API Texture : public AbstractNamedObject
      * (\a src_x, \a src_y, \a src_z) and size \a src_width x \a src_height x \a src_depth is copied to the corresponding block
      * of the texture with corner (\a dst_x, \a dst_y, \a dst_z). The face argument is ignored for non-cube map textures.
      */
-    virtual void updateSubImage(AbstractImage const & image, int src_x, int src_y, int src_z, int src_width, int src_height,
-                                int src_depth, int dst_x, int dst_y, int dst_z, Face face = Face::POS_X) = 0;
+    virtual void updateSubImage(AbstractImage const & image,
+                                int64 src_x, int64 src_y, int64 src_z, int64 src_width, int64 src_height, int64 src_depth,
+                                int64 dst_x, int64 dst_y, int64 dst_z, Face face = Face::POS_X) = 0;
 
     /** Copy (a face of) the texture into a pixel buffer. The face argument is ignored for non-cube map textures. */
     virtual void getImage(AbstractImage & image, Face face = Face::POS_X) const = 0;
 
     /** Copy a part of (a face of) the texture into a pixel buffer. The face argument is ignored for non-cube map textures. */
-    virtual void getSubImage(AbstractImage & image, int x, int y, int z, int subimage_width, int subimage_height,
-                             int subimage_depth, Face face = Face::POS_X) const = 0;
+    virtual void getSubImage(AbstractImage & image, int64 x, int64 y, int64 z,
+                             int64 subimage_width, int64 subimage_height, int64 subimage_depth,
+                             Face face = Face::POS_X) const = 0;
 
 }; // class Texture
 

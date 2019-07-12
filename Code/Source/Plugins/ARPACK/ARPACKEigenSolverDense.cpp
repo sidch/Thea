@@ -45,21 +45,23 @@
 namespace Thea {
 namespace Algorithms {
 
-long
-ARPACKEigenSolver::solveDense(AbstractDenseMatrix<double> const & m, int nev, bool shift_invert, double sigma, char * which,
-                              int ncv, double tol, int maxit, double * resid, bool auto_shift)
+int64
+ARPACKEigenSolver::solveDense(AbstractDenseMatrix<float64> const & m, int32 nev, int8 shift_invert, float64 sigma, char * which,
+                              int32 ncv, float64 tol, int32 maxit, float64 * resid, int8 auto_shift)
 {
   try
   {
     // Create the matrix
-    ARdsNonSymMatrix<double, double> arm(m.rows(), const_cast<double *>(m.data()));
+    ARdsNonSymMatrix<float64, float64> arm(m.rows(), const_cast<float64 *>(m.data()));
 
     // Setup the problem
-    std::shared_ptr< ARdsNonSymStdEig<double> > eig =
-        shift_invert ? std::shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, sigma, which, ncv,
-                                                                                                tol, maxit, resid, auto_shift))
-                     : std::shared_ptr< ARdsNonSymStdEig<double> >(new ARdsNonSymStdEig<double>(nev, arm, which, ncv, tol,
-                                                                                                maxit, resid, auto_shift));
+    std::shared_ptr< ARdsNonSymStdEig<float64> > eig =
+        shift_invert ? std::shared_ptr< ARdsNonSymStdEig<float64> >(new ARdsNonSymStdEig<float64>(
+                                                                            nev, arm, sigma, which, ncv,
+                                                                            tol, maxit, resid, auto_shift))
+                     : std::shared_ptr< ARdsNonSymStdEig<float64> >(new ARdsNonSymStdEig<float64>(
+                                                                            nev, arm, which, ncv, tol,
+                                                                            maxit, resid, auto_shift));
     eig->Trace();
 
     // Find eigenpairs
@@ -74,14 +76,14 @@ ARPACKEigenSolver::solveDense(AbstractDenseMatrix<double> const & m, int nev, bo
       eigenvalues[1][i] = eig->EigenvalueImag((int)i);
 
       eigenvectors[0][i].resize(ndims); eigenvectors[1][i].resize(ndims);
-      for (long j = 0; j < ndims; ++j)
+      for (intx j = 0; j < ndims; ++j)
       {
         eigenvectors[0][i][j] = eig->EigenvectorReal((int)i, (int)j);
         eigenvectors[1][i][j] = eig->EigenvectorImag((int)i, (int)j);
       }
     }
 
-    return (long)nconv;
+    return (int64)nconv;
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s: Error solving dense eigensystem", getName())
 }

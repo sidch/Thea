@@ -310,7 +310,7 @@ ShapeContext::~ShapeContext()
 }
 
 void
-ShapeContext::compute(long num_radial_bins, long num_polar_bins, Array<Real> & values, bool ignore_empty_pixels,
+ShapeContext::compute(intx num_radial_bins, intx num_polar_bins, Array<Real> & values, bool ignore_empty_pixels,
                       Real max_radius) const
 {
   using namespace ShapeContextInternal;
@@ -326,7 +326,7 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, Array<Real> & v
 
   values.resize((size_t)(w * h * num_radial_bins * num_polar_bins));
   Real * entry = &values[0];
-  long entry_size = num_radial_bins * num_polar_bins;
+  intx entry_size = num_radial_bins * num_polar_bins;
 
   Real progress_step = h / 5.0f;
   Real next_progress_milestone = progress_step;
@@ -385,7 +385,7 @@ ShapeContext::compute(long num_radial_bins, long num_polar_bins, Array<Real> & v
 }
 
 void
-ShapeContext::compute(int row, int col, long num_radial_bins, long num_polar_bins, Array<Real> & values, Real max_radius)
+ShapeContext::compute(int row, int col, intx num_radial_bins, intx num_polar_bins, Array<Real> & values, Real max_radius)
 const
 {
   using namespace ShapeContextInternal;

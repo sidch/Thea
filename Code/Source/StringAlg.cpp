@@ -173,10 +173,10 @@ endsWith(std::string const & test, std::string const & pattern)
 {
   if (test.size() >= pattern.size())
   {
-    long te = (long)test.size() - 1;
-    long pe = (long)pattern.size() - 1;
+    intx te = (intx)test.size() - 1;
+    intx pe = (intx)pattern.size() - 1;
 
-    for (long i = (long)pattern.size() - 1; i >= 0; --i)
+    for (intx i = (intx)pattern.size() - 1; i >= 0; --i)
     {
       if (pattern[(size_t)(pe - i)] != test[(size_t)(te - i)])
       {
@@ -193,14 +193,14 @@ endsWith(std::string const & test, std::string const & pattern)
 }
 
 std::string
-wordWrap(std::string const & input, long num_cols, char const * newline)
+wordWrap(std::string const & input, intx num_cols, char const * newline)
 {
   std::ostringstream output;
 
   size_t  c = 0;
-  long    len;
+  intx    len;
   // Don't make lines less than this length
-  long    min_length = num_cols / 4;
+  intx    min_length = num_cols / 4;
   size_t  in_len = input.size();
   bool    first = true;
 
@@ -215,7 +215,7 @@ wordWrap(std::string const & input, long num_cols, char const * newline)
       output << newline;
     }
 
-    if ((long)in_len - (long)c - 1 < num_cols)
+    if ((intx)in_len - (intx)c - 1 < num_cols)
     {
       // The end
       output << input.substr(c, in_len - c);
@@ -269,13 +269,13 @@ toLower(std::string const & s)
   return result;
 }
 
-long
+intx
 stringSplit(std::string const & s, char split_char, Array<std::string> & result, bool skip_empty_fields)
 {
   return stringSplit(s, std::string(1, split_char), result, skip_empty_fields);
 }
 
-long
+intx
 stringSplit(std::string const & s, std::string const & split_chars, Array<std::string> & result, bool skip_empty_fields)
 {
   result.clear();
@@ -300,7 +300,7 @@ stringSplit(std::string const & s, std::string const & split_chars, Array<std::s
   if (!skip_empty_fields || !last.empty())
     result.push_back(last);
 
-  return (long)result.size();
+  return (intx)result.size();
 }
 
 std::string
@@ -314,15 +314,15 @@ trimWhitespace(std::string const & s)
     ++left;
   }
 
-  long right = (long)s.length() - 1;
+  intx right = (intx)s.length() - 1;
 
   // Trim from right
-  while ((right > (long)left) && isWhitespace(s[(size_t)right]))
+  while ((right > (intx)left) && isWhitespace(s[(size_t)right]))
   {
     --right;
   }
 
-  return s.substr(left, (size_t)(right - (long)left + 1));
+  return s.substr(left, (size_t)(right - (intx)left + 1));
 }
 
 // If your platform does not have vsnprintf, you can find a
@@ -347,13 +347,13 @@ std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
   // We draw the line at a 1MB string.
-  long const MAX_SIZE = 1000000;
+  intx const MAX_SIZE = 1000000;
 
   // If the string is less than 161 characters, allocate it on the stack because this saves the malloc/free time.
-  long const BUF_SIZE = 161;
+  intx const BUF_SIZE = 161;
 
   // MSVC does not support va_copy
-  long actual_size = _vscprintf(fmt, arg_ptr) + 1;
+  intx actual_size = _vscprintf(fmt, arg_ptr) + 1;
 
   if (actual_size > BUF_SIZE)
   {
@@ -390,23 +390,23 @@ std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
   // We draw the line at a 1MB string.
-  long const MAX_SIZE = 1000000;
+  intx const MAX_SIZE = 1000000;
 
   // If the string is less than 161 characters,
   // allocate it on the stack because this saves
   // the malloc/free time.
-  long const BUF_SIZE = 161;
+  intx const BUF_SIZE = 161;
   char stack_buffer[BUF_SIZE];
 
   // MSVC6 doesn't support va_copy, however it also seems to compile
   // correctly if we just pass our argument list along.  Note that
   // this whole code block is only compiled if we're on MSVC6 anyway
-  long actual_written = _vsnprintf(stack_buffer, BUF_SIZE, fmt, arg_ptr);
+  intx actual_written = _vsnprintf(stack_buffer, BUF_SIZE, fmt, arg_ptr);
 
   // Not a big enough buffer, BUF_SIZE characters written
   if (actual_written == -1)
   {
-    long heap_size = 512;
+    intx heap_size = 512;
     double pow_size = 1.0;
     char * heap_buffer = (char *)std::malloc(heap_size);
 
@@ -440,12 +440,12 @@ vformat(char const * fmt, va_list arg_ptr)
   // the malloc/free time.  The number 161 is chosen
   // to support two lines of text on an 80 character
   // console (plus the null terminator).
-  long const BUF_SIZE = 161;
+  intx const BUF_SIZE = 161;
   char stack_buffer[BUF_SIZE];
 
   va_list arg_ptr_copy;
   va_copy(arg_ptr_copy, arg_ptr);
-  long num_chars = vsnprintf(stack_buffer, BUF_SIZE, fmt, arg_ptr_copy);
+  intx num_chars = vsnprintf(stack_buffer, BUF_SIZE, fmt, arg_ptr_copy);
   va_end(arg_ptr_copy);
 
   if (num_chars >= BUF_SIZE)
@@ -454,7 +454,7 @@ vformat(char const * fmt, va_list arg_ptr)
     char * heap_buffer = (char *)std::malloc(num_chars + 1);
 
     debugAssertM(heap_buffer, "vformat: Heap buffer allocation failed");
-    long num_chars2 = vsnprintf(heap_buffer, num_chars + 1, fmt, arg_ptr);
+    intx num_chars2 = vsnprintf(heap_buffer, num_chars + 1, fmt, arg_ptr);
     debugAssertM(num_chars2 == num_chars, "vformat: Number of characters written does not match expected value");
     (void)num_chars2;  // avoid unused variable warnings
 

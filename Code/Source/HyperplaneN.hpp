@@ -88,10 +88,10 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     {
       alwaysAssertM(points.size() >= N,
                     format("HyperplaneN: Too few points specified (provided %ld points, hyperplane requires %ld points)",
-                           (long)points.size(), N));
+                           (intx)points.size(), N));
 
       Matrix<N, N, T> a;
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
         a.setRow(i, points[i]);
 
       try
@@ -122,7 +122,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     {
       Vector<N + 1, T> coeffs;
 
-      for (long i = 0; i < N; ++i)
+      for (intx i = 0; i < N; ++i)
         coeffs[i] = normal[i];
 
       coeffs[N] = -dist;

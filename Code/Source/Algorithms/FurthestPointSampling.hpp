@@ -73,7 +73,7 @@ class FurthestPointSampling
      * @return The number of subsampled points. A negative value, or a value less than \a num_desired_points in general,
      *   indicates an error occurred.
      */
-    static long subsample(long num_orig_points, Vector3 const * orig_points, long num_desired_points, long * selected_indices,
+    static intx subsample(intx num_orig_points, Vector3 const * orig_points, intx num_desired_points, intx * selected_indices,
                           DistanceType dist_type = DistanceType::GEODESIC, bool verbose = false);
 
 }; // class FurthestPointSampling

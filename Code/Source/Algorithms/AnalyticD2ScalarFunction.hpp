@@ -61,11 +61,11 @@ class THEA_API AnalyticD2ScalarFunction : public AnalyticD1ScalarFunction
     /** Does the function have a sparse Hessian matrix? */
     virtual bool hasSparseHessian() const = 0;
 
-    /** Compute the Hessian of the function at a given point. */
-    virtual void hessianAt(float const * p, AbstractMatrix<float> & result) const = 0;
+    /** Compute the Hessian of the function at a given point. Returns true on success, false on error. */
+    virtual void hessianAt(float32 const * p, AbstractMatrix<float32> & result) const = 0;
 
-    /** Compute the Hessian of the function at a given point. */
-    virtual void hessianAt(double const * p, AbstractMatrix<double> & result) const = 0;
+    /** Compute the Hessian of the function at a given point. Returns true on success, false on error. */
+    virtual void hessianAt(float64 const * p, AbstractMatrix<float64> & result) const = 0;
 
 }; // class AnalyticD2ScalarFunction
 

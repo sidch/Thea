@@ -347,7 +347,7 @@ class THEA_API IMLSSurface : private Noncopyable
 
     static double const DEFAULT_SMOOTHNESS;
     static double const DEFAULT_ACCURACY;
-    static long   const DEFAULT_MAX_TRIS_PER_LEAF;
+    static intx   const DEFAULT_MAX_TRIS_PER_LEAF;
 
 }; // class IMLSSurface
 
@@ -422,7 +422,7 @@ IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
 
   size_t i0, i1, i2, i3;
   Polygon3 poly;
-  Array<long> tri_indices;
+  Array<intx> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
   {
     if (fi->isTriangle())
@@ -451,10 +451,10 @@ IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
     {
       poly.clear();
       for (typename MeshT::Face::VertexConstIterator vi = fi->verticesBegin(); vi != fi->verticesEnd(); ++vi)
-        poly.addVertex((*vi)->getPosition(), static_cast<long>(vertex_indices[&(**vi)]));
+        poly.addVertex((*vi)->getPosition(), static_cast<intx>(vertex_indices[&(**vi)]));
 
 #ifdef THEA_DEBUG_BUILD
-      long num_tris = poly.triangulate(tri_indices);
+      intx num_tris = poly.triangulate(tri_indices);
       debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris),
                    "IMLSSurface: MeshT face triangulation error");
 #else
@@ -493,7 +493,7 @@ IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
 
   size_t i0, i1, i2, i3;
   Polygon3 poly;
-  Array<long> tri_indices;
+  Array<intx> tri_indices;
   for (typename MeshT::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
   {
     if (fi->isTriangle())
@@ -524,13 +524,13 @@ IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
       typename MeshT::Halfedge const * he = fi->getHalfedge();
       do
       {
-        poly.addVertex(he->getOrigin()->getPosition(), static_cast<long>(vertex_indices[he->getOrigin()]));
+        poly.addVertex(he->getOrigin()->getPosition(), static_cast<intx>(vertex_indices[he->getOrigin()]));
         he = he->next();
 
       } while (he != fi->getHalfedge());
 
 #ifdef THEA_DEBUG_BUILD
-      long num_tris = poly.triangulate(tri_indices);
+      intx num_tris = poly.triangulate(tri_indices);
       debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris), "IMLSSurface: Mesh face triangulation error");
 #else
       poly.triangulate(tri_indices);

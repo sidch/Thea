@@ -47,7 +47,7 @@ namespace Thea {
 namespace Graphics {
 namespace GL {
 
-GLVARArea::GLVARArea(GLRenderSystem * render_system_, char const * name_, long capacity_, Usage usage, bool gpu_memory_)
+GLVARArea::GLVARArea(GLRenderSystem * render_system_, char const * name_, int64 capacity_, Usage usage, int8 gpu_memory_)
 : render_system(render_system_), name(name_), capacity(capacity_), gpu_memory(gpu_memory_), generation(0), allocated_size(0)
 {
   if (gpu_memory && !THEA_GL_SUPPORTS(ARB_vertex_buffer_object))
@@ -130,7 +130,7 @@ GLVARArea::reset()
 }
 
 VAR *
-GLVARArea::createArray(long num_bytes)
+GLVARArea::createArray(int64 num_bytes)
 {
   VAR * v = new GLVAR(this, num_bytes);
   if (v) vars.insert(v);
