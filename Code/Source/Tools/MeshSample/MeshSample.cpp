@@ -18,7 +18,7 @@ using namespace Graphics;
 
 struct IndexAttribute
 {
-  long index;
+  intx index;
 
   IndexAttribute() : index(-1) {}
   void draw(RenderSystem &render_system, RenderOptions const &options) const {}
@@ -48,12 +48,12 @@ usage(int argc, char * argv[])
 
 struct ReadCallback : public MeshCodec<Mesh>::ReadCallback
 {
-  void vertexRead(Mesh * mesh, long index, Mesh::VertexHandle vertex)
+  void vertexRead(Mesh * mesh, intx index, Mesh::VertexHandle vertex)
   {
     vertex->attr().index = index;
   }
 
-  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
+  void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face)
   {
     face->attr().index = index;
   }
@@ -61,7 +61,7 @@ struct ReadCallback : public MeshCodec<Mesh>::ReadCallback
 
 struct VertexCollector
 {
-  VertexCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<long> * indices_)
+  VertexCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<intx> * indices_)
   : positions(positions_), normals(normals_), indices(indices_) {}
 
   bool operator()(Mesh const & mesh)
@@ -78,12 +78,12 @@ struct VertexCollector
 
   Array<Vector3> * positions;
   Array<Vector3> * normals;
-  Array<long> * indices;
+  Array<intx> * indices;
 };
 
 struct FaceCenterCollector
 {
-  FaceCenterCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<long> * indices_)
+  FaceCenterCollector(Array<Vector3> * positions_, Array<Vector3> * normals_, Array<intx> * indices_)
   : positions(positions_), normals(normals_), indices(indices_) {}
 
   bool operator()(Mesh const & mesh)
@@ -100,11 +100,11 @@ struct FaceCenterCollector
 
   Array<Vector3> * positions;
   Array<Vector3> * normals;
-  Array<long> * indices;
+  Array<intx> * indices;
 };
 
 bool
-loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_labels)
+loadLabels_Lab(string const & path, Array<string> & labels, Array<intx> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -116,11 +116,11 @@ loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_l
   labels.clear();
   face_labels.clear();
 
-  typedef map<string, long> LabelIndexMap;
+  typedef map<string, intx> LabelIndexMap;
   LabelIndexMap labmap;
 
   string line;
-  long label_index;
+  intx label_index;
   while (getline(in, line))
   {
     string label = trimWhitespace(line);
@@ -130,7 +130,7 @@ loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_l
     LabelIndexMap::const_iterator existing = labmap.find(label);
     if (existing == labmap.end())
     {
-      label_index = (long)labmap.size();
+      label_index = (intx)labmap.size();
       labmap[label] = label_index;
     }
     else
@@ -143,7 +143,7 @@ loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_l
     }
 
     istringstream line_in(line);
-    long face_index;
+    intx face_index;
     while (line_in >> face_index)
     {
       if (face_index < 1)
@@ -152,7 +152,7 @@ loadLabels_Lab(string const & path, Array<string> & labels, Array<long> & face_l
         return false;
       }
 
-      if (face_index > (long)face_labels.size())
+      if (face_index > (intx)face_labels.size())
       {
         face_labels.reserve((size_t)(2 * face_index));
         face_labels.resize((size_t)face_index, -1);
@@ -175,8 +175,8 @@ struct FaceToMeshMapper
   {
     for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     {
-      long face_index = fi->attr().index;
-      if (face_index >= (long)mapping.size())
+      intx face_index = fi->attr().index;
+      if (face_index >= (intx)mapping.size())
       {
         mapping.reserve((size_t)(2 * (face_index + 1)));
         mapping.resize((size_t)(face_index + 1), NULL);
@@ -192,7 +192,7 @@ struct FaceToMeshMapper
 };
 
 bool
-loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Array<long> & face_labels)
+loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Array<intx> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -204,7 +204,7 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
   labels.clear();
   face_labels.clear();
 
-  typedef map<string, long> LabelIndexMap;
+  typedef map<string, intx> LabelIndexMap;
   LabelIndexMap labmap;
 
   FaceToMeshMapper f2m;
@@ -212,7 +212,7 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
   face_labels.resize(f2m.mapping.size(), -1);
 
   string line;
-  long label_index;
+  intx label_index;
   while (getline(in, line))
   {
     string label = trimWhitespace(line);
@@ -222,7 +222,7 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
     LabelIndexMap::const_iterator existing = labmap.find(label);
     if (existing == labmap.end())
     {
-      label_index = (long)labmap.size();
+      label_index = (intx)labmap.size();
       labmap[label] = label_index;
     }
     else
@@ -235,10 +235,10 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
     }
 
     istringstream line_in(line);
-    long face_index;
+    intx face_index;
     while (line_in >> face_index)
     {
-      if (face_index < 0 || face_index >= (long)face_labels.size())
+      if (face_index < 0 || face_index >= (intx)face_labels.size())
       {
         THEA_ERROR << "Face index out of bounds: " << face_index;
         return false;
@@ -258,7 +258,7 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
 }
 
 bool
-loadLabels_FaceLabels(string const & path, Array<string> & labels, Array<long> & face_labels)
+loadLabels_FaceLabels(string const & path, Array<string> & labels, Array<intx> & face_labels)
 {
   ifstream in(path.c_str());
   if (!in)
@@ -270,18 +270,18 @@ loadLabels_FaceLabels(string const & path, Array<string> & labels, Array<long> &
   labels.clear();
   face_labels.clear();
 
-  typedef map<string, long> LabelIndexMap;
+  typedef map<string, intx> LabelIndexMap;
   LabelIndexMap labmap;
 
   string line;
-  long label_index;
+  intx label_index;
   while (getline(in, line))
   {
     string label = trimWhitespace(line);
     LabelIndexMap::const_iterator existing = labmap.find(label);
     if (existing == labmap.end())
     {
-      label_index = (long)labmap.size();
+      label_index = (intx)labmap.size();
       labmap[label] = label_index;
     }
     else
@@ -298,7 +298,7 @@ loadLabels_FaceLabels(string const & path, Array<string> & labels, Array<long> &
 }
 
 bool
-loadLabels(string const & path, MG const & mg, Array<string> & labels, Array<long> & face_labels)
+loadLabels(string const & path, MG const & mg, Array<string> & labels, Array<intx> & face_labels)
 {
   string ext = toLower(FilePath::extension(path));
   if (ext == "lab")
@@ -461,11 +461,11 @@ main(int argc, char * argv[])
       if (!loadSamples(presampled_path, orig_pos, orig_lines))
         return -1;
 
-      Array<long> selected;
+      Array<intx> selected;
       if (!orig_pos.empty())
       {
         selected.resize((size_t)num_samples);
-        if (FurthestPointSampling::subsample((long)orig_pos.size(), &orig_pos[0], num_samples, &selected[0],
+        if (FurthestPointSampling::subsample((intx)orig_pos.size(), &orig_pos[0], num_samples, &selected[0],
                                              DistanceType::GEODESIC, /* verbose = */ true) < num_samples)
           return -1;
       }
@@ -498,7 +498,7 @@ main(int argc, char * argv[])
       mg.load(mesh_path, read_codecs, &read_callback);
 
       Array<string> labels;
-      Array<long> face_labels;
+      Array<intx> face_labels;
       bool output_labels = (!vertex_samples && !labels_path.empty());
       if (output_labels)
       {
@@ -508,7 +508,7 @@ main(int argc, char * argv[])
 
       Array<Vector3> positions;
       Array<Vector3> normals;
-      Array<long> indices;
+      Array<intx> indices;
 
       bool need_face_ids = (output_ids || output_labels);
       bool do_random_sampling = true;
@@ -591,7 +591,7 @@ main(int argc, char * argv[])
 
         if (output_labels)
         {
-          long label_index = (indices[i] < 0 || indices[i] >= (long)face_labels.size()
+          intx label_index = (indices[i] < 0 || indices[i] >= (intx)face_labels.size()
                             ? -1 : face_labels[(size_t)indices[i]]);
           out << " \"" << (label_index < 0 ? "" : labels[(size_t)label_index]) << '"';
         }

@@ -197,9 +197,9 @@ class Graph
         EdgeConstIterator outgoingEdgesEnd() const { return outgoing_edges.end(); }
         EdgeIterator outgoingEdgesEnd() { return outgoing_edges.end(); }
 
-        unsigned long numIncomingEdges() const { return (unsigned long)incoming_edges.size(); }
-        unsigned long numOutgoingEdges() const { return (unsigned long)outgoing_edges.size(); }
-        unsigned long numEdges() const { return (unsigned long)(incoming_edges.size() + outgoing_edges.size()); }
+        unsigned intx numIncomingEdges() const { return (unsigned intx)incoming_edges.size(); }
+        unsigned intx numOutgoingEdges() const { return (unsigned intx)outgoing_edges.size(); }
+        unsigned intx numEdges() const { return (unsigned intx)(incoming_edges.size() + outgoing_edges.size()); }
 
     }; // class Vertex
 
@@ -243,8 +243,8 @@ class Graph
     EdgeConstIterator edgesEnd() const { return edges.end(); }
     EdgeIterator edgesEnd() { return edges.end(); }
 
-    unsigned long numVertices() const { return (unsigned long)vertices.size(); }
-    unsigned long numEdges() const { return (unsigned long)edges.size(); }
+    unsigned intx numVertices() const { return (unsigned intx)vertices.size(); }
+    unsigned intx numEdges() const { return (unsigned intx)edges.size(); }
 
     VertexIterator addVertex(VertexAttribute const & attrib)
     {

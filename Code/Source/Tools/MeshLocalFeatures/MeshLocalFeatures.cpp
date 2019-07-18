@@ -6,6 +6,7 @@
 #include "../../Algorithms/MeshFeatures/Local/RandomWalks.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/MeshFeatures/Local/SpinImage.hpp"
+#include "../../Algorithms/MeshFeatures/Local/Visibility.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshKDTree.hpp"
@@ -77,20 +78,21 @@ double meshScale(MG & mg, MeshScaleType mesh_scale_type);
 bool computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
                 Array<double> & values);
 bool computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
-                                long num_samples, double nbd_radius, Array<double> & values);
-bool computeAverageDistances(MG const & mg, Array<Vector3> const & positions, long num_samples, DistanceType dist_type,
+                                intx num_samples, double nbd_radius, Array<double> & values);
+bool computeAverageDistances(MG const & mg, Array<Vector3> const & positions, intx num_samples, DistanceType dist_type,
                              double max_distance, Array<double> & values);
-bool computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_bins,
+bool computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
                                     MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeLocalPCA(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+bool computeLocalPCA(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
                      Array<double> & values);
-bool computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius,
+bool computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
                            Array<double> & values);
-bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samples, int num_radial_bins,
+bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num_samples, int num_radial_bins,
                        int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeRandomWalks(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+bool computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_steps, intx num_walks,
                         MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
+bool computeVisibilities(KDTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -201,7 +203,7 @@ main(int argc, char * argv[])
     }
 
     string line;
-    long line_num = 0;
+    intx line_num = 0;
     while (getline(in, line))
     {
       line_num++;
@@ -238,7 +240,7 @@ main(int argc, char * argv[])
   for (size_t i = 0; i < pts.size(); ++i)
   {
     Vector3 cp = Vector3::Zero();
-    long elem = kdtree.closestElement<MetricL2>(pts[i], -1, NULL, &cp);
+    intx elem = kdtree.closestElement<MetricL2>(pts[i], -1, NULL, &cp);
     if (elem < 0)
     {
       THEA_ERROR << "Could not find nearest neighbor of query point " << pts[i] << " on mesh";
@@ -357,13 +359,13 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      alwaysAssertM(values.rows() == (long)positions.size(), "Number of distance histograms doesn't match number of points");
+      alwaysAssertM(values.rows() == (intx)positions.size(), "Number of distance histograms doesn't match number of points");
       alwaysAssertM(positions.empty() || values.cols() == num_bins,
                     "Number of distance histogram bins doesn't match input parameter");
 
       for (size_t j = 0; j < positions.size(); ++j)
       {
-        double const * row_start = &values((long)j, 0);
+        double const * row_start = &values((intx)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_bins);
       }
     }
@@ -499,14 +501,14 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      alwaysAssertM(values.rows() == (long)positions.size(), "Number of spin images doesn't match number of points");
+      alwaysAssertM(values.rows() == (intx)positions.size(), "Number of spin images doesn't match number of points");
       alwaysAssertM(positions.empty() || values.cols() == num_radial_bins * num_height_bins,
                     "Number of spin image bins doesn't match input parameter");
 
-      long num_features = num_radial_bins * num_height_bins;
+      intx num_features = num_radial_bins * num_height_bins;
       for (size_t j = 0; j < positions.size(); ++j)
       {
-        double const * row_start = &values((long)j, 0);
+        double const * row_start = &values((intx)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_features);
       }
     }
@@ -542,17 +544,39 @@ main(int argc, char * argv[])
         return -1;
       }
 
-      alwaysAssertM(values.rows() == (long)positions.size(),
+      alwaysAssertM(values.rows() == (intx)positions.size(),
                     "Number of random walk descriptors doesn't match number of points");
       alwaysAssertM(positions.empty() || values.cols() == 3 * num_steps,
                     "Length of random walk descriptor != 3 * number of steps");
 
-      long num_features = values.cols();
+      intx num_features = values.cols();
       for (size_t j = 0; j < positions.size(); ++j)
       {
-        double const * row_start = &values((long)j, 0);
+        double const * row_start = &values((intx)j, 0);
         features[j].insert(features[j].end(), row_start, row_start + num_features);
       }
+    }
+    //=========================================================================================================================
+    // Visibility
+    //=========================================================================================================================
+    else if (beginsWith(feat, "--vis"))
+    {
+      long num_rays;
+      int num_params = sscanf(feat.c_str(), "--vis=%ld", &num_rays);
+      if (num_params < 1)
+      {
+        THEA_WARNING << "Number of rays not specified for visibility, using default value";
+        num_rays = -1;
+      }
+
+      Array<double> values;
+      if (!computeVisibilities(kdtree, positions, num_rays, values))
+        return -1;
+
+      alwaysAssertM(values.size() == positions.size(), "Number of visibility values doesn't match number of points");
+
+      for (size_t j = 0; j < positions.size(); ++j)
+        features[j].push_back(values[j]);
     }
     else
     {
@@ -656,6 +680,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "        --rndwalk=<#steps>[,<#walks>[,<#samples>]]";
   THEA_CONSOLE << "        --sdf";
   THEA_CONSOLE << "        --spin=<#radial-bins>,<#height-bins>[,<#samples>]";
+  THEA_CONSOLE << "        --vis[=<num-rays>]";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "    The following options may also be specified:";
   THEA_CONSOLE << "        --abs (uses the absolute value of every feature)";
@@ -744,7 +769,7 @@ computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector
 
 bool
 computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
-                           long num_samples, double nbd_radius, Array<double> & values)
+                           intx num_samples, double nbd_radius, Array<double> & values)
 {
   THEA_CONSOLE << "Computing projected curvatures";
 
@@ -760,7 +785,7 @@ computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Arra
 }
 
 bool
-computeAverageDistances(MG const & mg, Array<Vector3> const & positions, long num_samples, DistanceType dist_type,
+computeAverageDistances(MG const & mg, Array<Vector3> const & positions, intx num_samples, DistanceType dist_type,
                         double max_distance, Array<double> & values)
 {
   THEA_CONSOLE << "Computing average " << dist_type.toString() << " distances";
@@ -777,7 +802,7 @@ computeAverageDistances(MG const & mg, Array<Vector3> const & positions, long nu
 }
 
 bool
-computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_bins,
+computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_bins,
                                DistanceType dist_type, double max_distance, double reduction_ratio,
                                MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
@@ -789,12 +814,12 @@ computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, 
     return false;
   }
 
-  values.resize((long)positions.size(), num_bins);
+  values.resize((intx)positions.size(), num_bins);
   MeshFeatures::Local::LocalDistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
 
   for (size_t i = 0; i < positions.size(); ++i)
   {
-    Histogram histogram(num_bins, &values((long)i, 0));
+    Histogram histogram(num_bins, &values((intx)i, 0));
     dh.compute(positions[i], histogram, dist_type, (Real)max_distance, (Real)reduction_ratio);
     histogram.normalize();
   }
@@ -805,7 +830,7 @@ computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, 
 }
 
 bool
-computeLocalPCA(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius, bool pca_full,
+computeLocalPCA(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
                 Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA features";
@@ -838,7 +863,7 @@ computeLocalPCA(MG const & mg, Array<Vector3> const & positions, long num_sample
 }
 
 bool
-computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, long num_samples, double nbd_radius,
+computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
                       Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA ratios";
@@ -867,13 +892,13 @@ computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, long num_
 }
 
 bool
-computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samples, int num_radial_bins,
+computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num_samples, int num_radial_bins,
                   int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing spin images";
 
-  long num_features = num_radial_bins * num_height_bins;
-  values.resize((long)positions.size(), num_features);
+  intx num_features = num_radial_bins * num_height_bins;
+  values.resize((intx)positions.size(), num_features);
 
   MeshFeatures::Local::SpinImage<> spin_image(mg, num_samples, (Real)mesh_scale);
 
@@ -884,7 +909,7 @@ computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samp
     int j = 0;
     for (int r = 0; r < num_radial_bins; ++r)
       for (int h = 0; h < num_height_bins; ++h, ++j)
-        values((long)i, j) = f(r, h);
+        values((intx)i, j) = f(r, h);
   }
 
   THEA_CONSOLE << "  -- done";
@@ -893,16 +918,32 @@ computeSpinImages(MG const & mg, Array<Vector3> const & positions, long num_samp
 }
 
 bool
-computeRandomWalks(MG const & mg, Array<Vector3> const & positions, long num_samples, long num_steps, long num_walks,
+computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_steps, intx num_walks,
                    MatrixX<double, MatrixLayout::ROW_MAJOR> & values)
 {
   THEA_CONSOLE << "Computing random walks";
 
-  values.resize((long)positions.size(), 3 * (size_t)num_steps);
+  values.resize((intx)positions.size(), 3 * (size_t)num_steps);
   MeshFeatures::Local::RandomWalks<> rw(mg, num_samples);
 
   for (size_t i = 0; i < positions.size(); ++i)
-    rw.compute(positions[i], num_steps, &values((long)i, 0), num_walks);
+    rw.compute(positions[i], num_steps, &values((intx)i, 0), num_walks);
+
+  THEA_CONSOLE << "  -- done";
+
+  return true;
+}
+
+bool
+computeVisibilities(KDTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values)
+{
+  THEA_CONSOLE << "Computing external visibilities";
+
+  values.resize(positions.size());
+  MeshFeatures::Local::Visibility<Mesh> vis(&kdtree);
+
+  for (size_t i = 0; i < positions.size(); ++i)
+    values[i] = vis.compute(positions[i], num_rays);
 
   THEA_CONSOLE << "  -- done";
 

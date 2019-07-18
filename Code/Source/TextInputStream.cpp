@@ -127,9 +127,9 @@ TextInputStream::parseNumber(std::string const & _string)
       (_string[1] == 'x'))
   {
     // Hex
-    uint32 i;
+    unsigned int i;
     std::sscanf(_string.c_str(), "%x", &i);
-    n = i;
+    n = (double)i;
   }
   else
   {

@@ -84,7 +84,7 @@ segmentSDF(int argc, char * argv[])
 
   string inpath = argv[1];
   string outpath = argv[2];
-  long approx_num_samples = 5000;
+  intx approx_num_samples = 5000;
   if (argc > 3)
   {
     approx_num_samples = atoi(argv[3]);
@@ -106,18 +106,18 @@ segmentSDF(int argc, char * argv[])
 
   // Compute samples
   double total_area = 0;
-  for (long i = 0; i < kdtree.numElements(); ++i)
+  for (intx i = 0; i < kdtree.numElements(); ++i)
     total_area += kdtree.getElements()[(size_t)i].getArea();
 
   double density = approx_num_samples / total_area;
 
   Array<Vector3> positions, normals;
-  for (long i = 0; i < kdtree.numElements(); ++i)
+  for (intx i = 0; i < kdtree.numElements(); ++i)
   {
     KDTree::Element const & elem = kdtree.getElements()[(size_t)i];
     double num_samples = density * elem.getArea();
     double rem = num_samples;
-    for (long j = 1; j < num_samples; ++j)
+    for (intx j = 1; j < num_samples; ++j)
     {
       positions.push_back(elem.randomPoint());
       normals.push_back(elem.getNormal());
@@ -416,29 +416,29 @@ countSDFModes(Array<Real> const & sdf_values)
   sort(modes.begin(), modes.end());
 
   // Create a union-find structure that starts with a set for every sample and finishes with a set for every cluster
-  LabelUnionFind uf((long)modes.size());
+  LabelUnionFind uf((intx)modes.size());
 
   // Combine all means that are within a small threshold of each other
   static double const THRESHOLD_SCALE = 1.3;
-  static long const MAX_CLUSTERS = 10;
-  static long const REQUIRED_DIFF = 3;
-  static long const QUICK_STOP = 5;
+  static intx const MAX_CLUSTERS = 10;
+  static intx const REQUIRED_DIFF = 3;
+  static intx const QUICK_STOP = 5;
   static unsigned int MAX_ITERS = 100;
   double merge_threshold = 0.001 * bandwidth;
 
-  long last_num_sets = uf.numSets();
-  long last_diff = numeric_limits<long>::max() / 4;
+  intx last_num_sets = uf.numSets();
+  intx last_diff = numeric_limits<intx>::max() / 4;
   for (unsigned int iter = 1; iter <= MAX_ITERS; ++iter)
   {
     for (size_t i = 1; i < modes.size(); ++i)
       if (fabs(modes[i].value - modes[i - 1].value) < merge_threshold)
       {
-        uf.merge((long)i, (long)i - 1);  // indices are into modes array
+        uf.merge((intx)i, (intx)i - 1);  // indices are into modes array
       }
 
     THEA_CONSOLE << uf.numSets() << " clusters identified after merge pass " << iter << " with threshold " << merge_threshold;
 
-    long diff = max(last_num_sets - uf.numSets(), 1L);
+    intx diff = max(last_num_sets - uf.numSets(), 1L);
     if (uf.numSets() <= MAX_CLUSTERS)
     {
       // If there are too few sets, or we just made a large jump to enter the allowed region, or there is a sharp drop in the
@@ -510,7 +510,7 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
     return 0;
 
   double sum_distances = 0;
-  long num_points = 0;
+  intx num_points = 0;
   for (size_t i = 0; i < positions.size(); ++i)
   {
     Ray3 hull_ray(*positions[i], *normals[i]);
@@ -568,7 +568,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
         size_t nnbrs = 0;
         for (size_t j = 0; j < cj->second.positions.size(); ++j)
         {
-          long nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j], INTERSECTION_THRESHOLD);
+          intx nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j], INTERSECTION_THRESHOLD);
           if (nn_index >= 0)
           {
             if (++nnbrs >= min(min(ci->second.positions.size(), cj->second.positions.size()), NNBRS_THRESHOLD))

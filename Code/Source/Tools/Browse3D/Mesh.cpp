@@ -49,7 +49,7 @@ Mesh::IndexVertexMap Mesh::index_to_vertex;
 Mesh::IndexFaceMap Mesh::index_to_face;
 
 MeshGroup *
-Mesh::getAncestor(long generations) const
+Mesh::getAncestor(intx generations) const
 {
   if (generations < 1)
   {
@@ -129,7 +129,7 @@ Mesh::updateFeatures() const
 namespace MeshInternal {
 
 bool
-areSimilarFeatureVectors(Array<double> const & f0, long nv0, Array<double> const & f1, long nv1)
+areSimilarFeatureVectors(Array<double> const & f0, intx nv0, Array<double> const & f1, intx nv1)
 {
   if (nv0 != nv1)
     return false;
@@ -154,7 +154,7 @@ areSimilarFeatureVectors(Array<double> const & f0, long nv0, Array<double> const
 }
 
 void
-countVertices(MeshGroup const & mg, long & num_vertices)
+countVertices(MeshGroup const & mg, intx & num_vertices)
 {
   for (MeshGroup::MeshConstIterator mi = mg.meshesBegin(); mi != mg.meshesEnd(); ++mi)
     num_vertices += (*mi)->numVertices();
@@ -202,7 +202,7 @@ isSimilarTo(MeshGroup const & lhs, MeshGroup const & rhs)
   if (&lhs == &rhs)
     return true;
 
-  long nv0 = 0, nv1 = 0;
+  intx nv0 = 0, nv1 = 0;
   countVertices(lhs, nv0);
   countVertices(rhs, nv1);
 
@@ -221,8 +221,8 @@ isSimilarTo(Mesh const & lhs, MeshGroup const & rhs)
 {
   using namespace MeshInternal;
 
-  long nv0 = lhs.numVertices();
-  long nv1 = 0;
+  intx nv0 = lhs.numVertices();
+  intx nv1 = 0;
   countVertices(rhs, nv1);
 
   if (nv0 != nv1)

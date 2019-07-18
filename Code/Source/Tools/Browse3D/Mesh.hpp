@@ -94,8 +94,8 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
 {
   private:
     typedef Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribute, FaceAttribute> BaseType;
-    typedef UnorderedMap<long, Vertex *> IndexVertexMap;
-    typedef UnorderedMap<long, Face *> IndexFaceMap;
+    typedef UnorderedMap<intx, Vertex *> IndexVertexMap;
+    typedef UnorderedMap<intx, Face *> IndexFaceMap;
 
   public:
     THEA_DEF_POINTER_TYPES(Mesh, std::shared_ptr, std::weak_ptr)
@@ -105,7 +105,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
 
-    Vertex * addVertex(Vector3 const & point, long index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
                        Vector2 const * texcoord = NULL)
     {
       Vertex * vertex = BaseType::addVertex(point, index, normal, color, texcoord);
@@ -120,7 +120,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     }
 
     template <typename VertexInputIterator>
-    Face * addFace(VertexInputIterator vi_begin, VertexInputIterator vi_end, long index = -1)
+    Face * addFace(VertexInputIterator vi_begin, VertexInputIterator vi_end, intx index = -1)
     {
       Face * face = BaseType::addFace(vi_begin, vi_end, index);
 
@@ -138,7 +138,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
       index_to_vertex.clear();
     }
 
-    static Vertex * mapIndexToVertex(long index)
+    static Vertex * mapIndexToVertex(intx index)
     {
       IndexVertexMap::const_iterator existing = index_to_vertex.find(index);
       return existing == index_to_vertex.end() ? NULL : existing->second;
@@ -149,7 +149,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
       index_to_face.clear();
     }
 
-    static Face * mapIndexToFace(long index)
+    static Face * mapIndexToFace(intx index)
     {
       IndexFaceMap::const_iterator existing = index_to_face.find(index);
       return existing == index_to_face.end() ? NULL : existing->second;
@@ -159,7 +159,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     MeshGroup * getParent() const { return parent; }
 
     // Ancestor at generations = 1 is the parent. If the hierarchy is not deep enough, returns the root.
-    MeshGroup * getAncestor(long generations) const;
+    MeshGroup * getAncestor(intx generations) const;
     bool hasAncestor(MeshGroup const * anc) const;
 
     Array<double> const & getFeatures() const { updateFeatures(); return features; }

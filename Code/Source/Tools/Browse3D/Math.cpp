@@ -463,7 +463,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
 }
 
 int
-kdtreeDepth(long num_elems, int max_elems_in_leaf)
+kdtreeDepth(intx num_elems, int max_elems_in_leaf)
 {
   alwaysAssertM(num_elems >= 0, "Can't compute kd-tree depth for negative number of elements");
   alwaysAssertM(max_elems_in_leaf > 0, "Can't compute kd-tree depth for non-positive number of elements at leaf");

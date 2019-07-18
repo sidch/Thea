@@ -41,7 +41,7 @@ splitMesh(MG::Ptr mg)
     has_new = true;
     for (size_t j = 0; j < cc.size(); ++j)
     {
-      Mesh::Ptr m(new Mesh(format("%s/%ld", (*mi)->getName(), (long)j)));
+      Mesh::Ptr m(new Mesh(format("%s/%ld", (*mi)->getName(), (intx)j)));
       VertexMap vmap;
       Array<Mesh::Vertex *> new_face_vertices;
       Mesh::Vertex * new_vertex = NULL;
@@ -167,7 +167,7 @@ main(int argc, char * argv[])
     Axis rescale_axis = X_AXIS;
     Real rescale_len = 1;
 
-    long num_mg = 0;
+    intx num_mg = 0;
     for (int i = 1; i < argc - 1; ++i)
     {
       std::string arg = argv[i];

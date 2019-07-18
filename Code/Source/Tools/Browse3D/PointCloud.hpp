@@ -135,7 +135,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     Array< Array<Real> > features;
 
     bool has_graph;
-    Array< Array<long> > graph;
+    Array< Array<intx> > graph;
 
     int changed_buffers;           ///< A bitwise OR of the flags of the buffers that have changed.
     Graphics::VARArea * var_area;  ///< GPU buffer area.

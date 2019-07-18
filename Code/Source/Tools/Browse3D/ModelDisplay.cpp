@@ -351,9 +351,9 @@ ModelDisplay::paintGL(wxPaintEvent & event)
 
   model->draw(rs, render_opts);
 
-  long num_overlays = app().getMainWindow()->numOverlays();
+  intx num_overlays = app().getMainWindow()->numOverlays();
   Model const * const * overlays = app().getMainWindow()->getOverlays();
-  for (long i = 0; i < num_overlays; ++i)
+  for (intx i = 0; i < num_overlays; ++i)
     overlays[i]->draw(rs, render_opts);
 
   if (!app().options().no_axes)

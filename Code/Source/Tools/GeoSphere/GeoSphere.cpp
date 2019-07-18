@@ -35,7 +35,7 @@ main(int argc, char * argv[])
   string out_path = argv[2];
 
   Array<Vector3> vertices;
-  Array<long> triangles;
+  Array<intx> triangles;
   if (!GeodesicSphere3::compute(num_subdivs, vertices, &triangles))
     return -1;
 

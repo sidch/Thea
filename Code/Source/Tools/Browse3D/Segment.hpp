@@ -67,7 +67,7 @@ class Segment
     void setLabel(std::string const & label_) { label = label_; }
 
     /** Get the number of meshes in the segment. */
-    long numMeshes() const { return (long)meshes.size(); }
+    intx numMeshes() const { return (intx)meshes.size(); }
 
     /** Get the set of meshes. */
     MeshSet const & getMeshes() const { return meshes; }
@@ -76,7 +76,7 @@ class Segment
     void addMesh(Mesh * mesh) { meshes.insert(mesh); }
 
     /** Remove a mesh from the segment. */
-    void removeMesh(Mesh const * mesh, long depth_promotion = 0);
+    void removeMesh(Mesh const * mesh, intx depth_promotion = 0);
 
     /** Add a mesh group to the segment. */
     void addMeshGroup(MeshGroup * mg);
@@ -85,10 +85,10 @@ class Segment
     void removeMeshGroup(MeshGroup const * mg);
 
     /** Check if the (possibly hierarchically expanded) segment contains a given mesh. */
-    bool hasMesh(Mesh const * mesh, long depth_promotion = 0) const;
+    bool hasMesh(Mesh const * mesh, intx depth_promotion = 0) const;
 
     /** Get the minimum depth (from the root) of a mesh in the segment. */
-    long minDepth() const;
+    intx minDepth() const;
 
     /** Clear the segment. */
     void clear() { meshes.clear(); }

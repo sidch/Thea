@@ -155,7 +155,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
         has_graph = false;
       }
 
-      long max_nbrs;
+      intx max_nbrs;
       if (has_graph)
       {
         std::istringstream line_in(line);
@@ -178,8 +178,8 @@ PointCloud::load(std::string const & path, std::string const & features_path)
           }
 
           std::istringstream line_in(line);
-          long num_nbrs;
-          if (!(line_in >> num_nbrs) || num_nbrs < 0 || num_nbrs > max_nbrs || num_nbrs >= (long)points.size())
+          intx num_nbrs;
+          if (!(line_in >> num_nbrs) || num_nbrs < 0 || num_nbrs > max_nbrs || num_nbrs >= (intx)points.size())
           {
             THEA_WARNING << getName() << ": Error reading valid number of neighbors of point " << i << " from '" << graph_path
                          << '\'';
@@ -191,7 +191,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
 
           for (size_t j = 0; j < graph[i].size(); ++j)
           {
-            if (!(line_in >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (long)points.size())
+            if (!(line_in >> graph[i][j]) || graph[i][j] < 0 || graph[i][j] >= (intx)points.size())
             {
               THEA_WARNING << getName() << ": Error reading valid neighbor" << j << " of point " << i << " from '" << graph_path
                            << '\'';
@@ -219,7 +219,7 @@ PointCloud::load(std::string const & path, std::string const & features_path)
 namespace PointCloudInternal {
 
 bool
-readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > & features, bool has_point_prefix)
+readFeaturesTXT(std::string const & path, intx num_points, Array< Array<Real> > & features, bool has_point_prefix)
 {
   std::ifstream in(path.c_str());
   if (!in)
@@ -232,7 +232,7 @@ readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > 
   Vector3 p;
   double f;
 
-  for (long i = 0; i < num_points; ++i)
+  for (intx i = 0; i < num_points; ++i)
   {
     if (!std::getline(in, line))
       throw Error(format("TXT: Could not read feature for point %ld", i) + " from '" + path + '\'');
@@ -248,7 +248,7 @@ readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > 
     {
       while (line_in >> f)
       {
-        features.push_back(Array<Real>((long)num_points));
+        features.push_back(Array<Real>((intx)num_points));
         features.back()[0] = (Real)f;
       }
     }
@@ -257,7 +257,7 @@ readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > 
       for (size_t j = 1; j < features.size(); ++j)
       {
         if (!(line_in >> f))
-          throw Error(format("TXT: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
+          throw Error(format("TXT: Could not read feature %ld for point %ld", (intx)j, i) + " from '" + path + '\'');
 
         features[j][(size_t)i] = (Real)f;
       }
@@ -268,7 +268,7 @@ readFeaturesTXT(std::string const & path, long num_points, Array< Array<Real> > 
 }
 
 bool
-readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> > & features)
+readFeaturesARFF(std::string const & path, intx num_points, Array< Array<Real> > & features)
 {
   std::ifstream in(path.c_str());
   if (!in)
@@ -277,7 +277,7 @@ readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> >
   features.clear();
 
   std::string line;
-  long num_features = 0;
+  intx num_features = 0;
   while (std::getline(in, line))
   {
     line = trimWhitespace(line);
@@ -316,7 +316,7 @@ readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> >
 
   Array<std::string> fields;
   double f;
-  for (long i = 0; i < num_points; ++i)
+  for (intx i = 0; i < num_points; ++i)
   {
     do
     {
@@ -327,7 +327,7 @@ readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> >
     } while (line.empty());
 
     stringSplit(line, ',', fields);
-    if ((long)fields.size() < num_features)
+    if ((intx)fields.size() < num_features)
     {
       THEA_ERROR << "ARFF: Point " << i << " does not have enough features (" << path << ')';
       return false;
@@ -337,7 +337,7 @@ readFeaturesARFF(std::string const & path, long num_points, Array< Array<Real> >
     {
       std::istringstream field_in(fields[j]);
       if (!(field_in >> f))
-        throw Error(format("ARFF: Could not read feature %ld for point %ld", (long)j, i) + " from '" + path + '\'');
+        throw Error(format("ARFF: Could not read feature %ld for point %ld", (intx)j, i) + " from '" + path + '\'');
 
       features[j][(size_t)i] = (Real)f;
     }
@@ -357,11 +357,11 @@ PointCloud::loadFeatures(std::string const & filename_)
     std::string filename_lc = toLower(filename_);
     bool status = true;
     if (endsWith(filename_lc, ".arff"))
-      status = PointCloudInternal::readFeaturesARFF(filename_, (long)points.size(), features);
+      status = PointCloudInternal::readFeaturesARFF(filename_, (intx)points.size(), features);
     else if (endsWith(filename_lc, ".features") || endsWith(filename_lc, ".feat"))
-      status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, true);
+      status = PointCloudInternal::readFeaturesTXT(filename_, (intx)points.size(), features, true);
     else
-      status = PointCloudInternal::readFeaturesTXT(filename_, (long)points.size(), features, false);
+      status = PointCloudInternal::readFeaturesTXT(filename_, (intx)points.size(), features, false);
 
     if (!status)
       return false;
@@ -532,7 +532,7 @@ ColorRGBA
 PointCloud::getColor(size_t point_index) const
 {
   alwaysAssertM(point_index >= 0 && point_index < points.size(),
-                format("%s: Index %ld out of bounds", getName(), (long)point_index));
+                format("%s: Index %ld out of bounds", getName(), (intx)point_index));
 
   if (!colors.empty())
   {
@@ -593,14 +593,14 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
   bool has_colors = (!features.empty() || has_normals || app().options().fancy_colors);
 
   static int const PADDING = 32;
-  long vertex_bytes  =  3 * 4 * (long)points.size() + PADDING;  // 3 * float
-  long color_bytes   =  has_colors ?  4 * 4 * (long)points.size() + PADDING : 0;  // 4 * float
+  intx vertex_bytes  =  3 * 4 * (intx)points.size() + PADDING;  // 3 * float
+  intx color_bytes   =  has_colors ?  4 * 4 * (intx)points.size() + PADDING : 0;  // 4 * float
 
-  long num_bytes = vertex_bytes + color_bytes + PADDING;
+  intx num_bytes = vertex_bytes + color_bytes + PADDING;
 
   if (var_area)
   {
-    if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (long)(1.5 * num_bytes))
+    if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
     {
       render_system.destroyVARArea(var_area);
 
@@ -628,7 +628,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     for (size_t i = 0; i < points.size(); ++i)
       vbuf[i] = points[i].p;
 
-    vertices_var->updateVectors(0, (long)vbuf.size(), &vbuf[0]);
+    vertices_var->updateVectors(0, (intx)vbuf.size(), &vbuf[0]);
   }
 
   if (has_colors)
@@ -640,7 +640,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
     for (size_t i = 0; i < points.size(); ++i)
       cbuf[i] = getColor(i);
 
-    colors_var->updateColors(0, (long)cbuf.size(), &cbuf[0]);
+    colors_var->updateColors(0, (intx)cbuf.size(), &cbuf[0]);
   }
 
   changed_buffers = 0;
@@ -689,7 +689,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions
         render_system.pushShapeFlags();
         render_system.setPointSize(2 * app().options().point_scale);
 
-          render_system.sendSequentialIndices(Graphics::RenderSystem::Primitive::POINTS, 0, (long)points.size());
+          render_system.sendSequentialIndices(Graphics::RenderSystem::Primitive::POINTS, 0, (intx)points.size());
 
         render_system.popShapeFlags();
 

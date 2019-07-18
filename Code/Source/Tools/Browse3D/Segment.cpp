@@ -46,7 +46,7 @@ namespace Browse3D {
 
 
 void
-Segment::removeMesh(Mesh const * mesh, long depth_promotion)
+Segment::removeMesh(Mesh const * mesh, intx depth_promotion)
 {
   if (!mesh)
     return;
@@ -107,7 +107,7 @@ Segment::removeMeshGroup(MeshGroup const * mg)
 }
 
 bool
-Segment::hasMesh(Mesh const * mesh, long depth_promotion) const
+Segment::hasMesh(Mesh const * mesh, intx depth_promotion) const
 {
   if (!mesh)
     return false;
@@ -126,17 +126,17 @@ Segment::hasMesh(Mesh const * mesh, long depth_promotion) const
   return false;
 }
 
-long
+intx
 Segment::minDepth() const
 {
-  long min_depth = 0;
+  intx min_depth = 0;
   for (MeshSet::const_iterator mi = meshes.begin(); mi != meshes.end(); ++mi)
   {
     MeshGroup const * p = (*mi)->getParent();
     if (!p)
       continue;
 
-    long d = p->getDepth() + 1;  // mesh is one level below parent
+    intx d = p->getDepth() + 1;  // mesh is one level below parent
     if (min_depth <= 0 || d < min_depth)
       min_depth = d;
   }

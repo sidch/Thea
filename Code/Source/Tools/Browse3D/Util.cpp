@@ -375,10 +375,10 @@ numPaletteColors()
 }
 
 ColorRGB const &
-getPaletteColor(long i)
+getPaletteColor(intx i)
 {
-  long n = numPaletteColors();
-  long index;
+  intx n = numPaletteColors();
+  intx index;
   if (i < 0)
     index = (n - ((-i) % n)) % n;
   else

@@ -89,13 +89,13 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     {
       Sample() {}
 
-      Sample(Mesh * mesh_, long face_index_, Vector3 const & position_, std::string const & type_ = "",
+      Sample(Mesh * mesh_, intx face_index_, Vector3 const & position_, std::string const & type_ = "",
              std::string const & label_ = "")
       : mesh(mesh_), face_index(face_index_), position(position_), type(type_), label(label_)
       {}
 
       Mesh * mesh;
-      long face_index;
+      intx face_index;
       Vector3 position;
       std::string type;
       std::string label;
@@ -186,7 +186,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
      * @return The index of the kd-tree triangle containing the closest point, if one is found within the distance bound, else
      *   a negative number.
      */
-    long closestPoint(Vector3 const & query, Real distance_bound = -1, Real * min_dist = NULL, Vector3 * closest_pt = NULL,
+    intx closestPoint(Vector3 const & query, Real distance_bound = -1, Real * min_dist = NULL, Vector3 * closest_pt = NULL,
                       Vector3 * closest_pt_normal = NULL, bool accelerate_with_vertices = true) const;
 
     /**
@@ -217,7 +217,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     //========================================================================================================================
 
     /** Get the number of sample points. */
-    long numSamples() const { return (long)samples.size(); }
+    intx numSamples() const { return (intx)samples.size(); }
 
     /** Get the set of sample points. */
     Array<Sample> const & getSamples() const { return samples; }
@@ -229,10 +229,10 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     bool addPickedSample(std::string const & label, bool snap_to_vertex);
 
     /** Remove a sample. */
-    void removeSample(long index);
+    void removeSample(intx index);
 
     /** Select a particular sample. */
-    void selectSample(long index);
+    void selectSample(intx index);
 
     /** Load samples from a file. */
     bool loadSamples(std::string const & path_);
@@ -259,7 +259,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     Real togglePickMesh(Ray3 const & ray, bool extend_to_similar = false);
 
     /** Expand/contract the selection by \a offset steps in the mesh group hierarchy. */
-    void promotePickedSegment(long offset = 1);
+    void promotePickedSegment(intx offset = 1);
 
     /** Check if a mesh is currently selected by picking. */
     bool isPicked(Mesh const * mesh) const { return picked_segment.hasMesh(mesh); }
@@ -268,7 +268,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     void invalidatePickedSegment() { picked_segment.clear(); }
 
     /** Get the number of labeled segments. */
-    long numSegments() const { return (long)segments.size(); }
+    intx numSegments() const { return (intx)segments.size(); }
 
     /** Get the set of labeled segments. */
     Array<Segment> const & getSegments() const { return segments; }
@@ -280,7 +280,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     bool addPickedSegment(std::string const & label);
 
     /** Remove a segment from the list of labeled segments. */
-    void removeSegment(long index);
+    void removeSegment(intx index);
 
     /** Get the segment containing a given mesh, or null if there is no such segment. */
     Segment const * getSegment(Mesh const * mesh, int * index = NULL) const
@@ -290,7 +290,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     Segment * getSegment(Mesh const * mesh, int * index = NULL);
 
     /** Select a particular segment. */
-    void selectSegment(long index);
+    void selectSegment(intx index);
 
     /** Load labeled segments from a file. */
     bool loadSegments(std::string const & path_);
@@ -411,12 +411,12 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     Array<Sample> samples;
     bool valid_pick;
     Sample picked_sample;
-    long selected_sample;
+    intx selected_sample;
 
     Array<Segment> segments;
     Segment picked_segment;
-    long segment_depth_promotion;
-    long selected_segment;
+    intx segment_depth_promotion;
+    intx selected_segment;
 
     mutable bool valid_kdtree;
     mutable KDTree * kdtree;

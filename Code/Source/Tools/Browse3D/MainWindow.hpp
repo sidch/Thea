@@ -131,7 +131,7 @@ class MainWindow : public wxFrame
     Model * getModel() { return model; }
 
     /** Get the number of overlay models. */
-    long numOverlays() const { return (long)overlays.size(); }
+    intx numOverlays() const { return (intx)overlays.size(); }
 
     /** Get the set of overlay models. */
     Model const * const * getOverlays() const { return overlays.empty() ? NULL : &overlays[0]; }

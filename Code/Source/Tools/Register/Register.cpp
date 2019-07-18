@@ -214,7 +214,7 @@ findNeighbors(SampleArray const & samples, KDTree const & kdtree, NeighborSets &
 
     for (int j = 0; j < init_nbrs.size() && nbrs[i].size() < MAX_NBRS; ++j)
     {
-      long tgt_index = init_nbrs[j].getTargetIndex();
+      intx tgt_index = init_nbrs[j].getTargetIndex();
       if (tgt_index < 0)
         continue;
 
@@ -261,7 +261,7 @@ updateOffsets(SampleArray const & src_samples, KDTree const & tgt_kdtree, Offset
 
     NNFilter filter(src_samples[i].n, src_samples[i].label);
     const_cast<KDTree &>(tgt_kdtree).pushFilter(&filter);
-      long nn_index = tgt_kdtree.closestElement<MetricL2>(offset_p);
+      intx nn_index = tgt_kdtree.closestElement<MetricL2>(offset_p);
     const_cast<KDTree &>(tgt_kdtree).popFilter();
 
     if (nn_index >= 0)
@@ -403,7 +403,7 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
   for (size_t i = 0; i < selected_samples.size(); ++i)
   {
     size_t index = selected_samples[i];
-    long src_id = uf.getObjectID(index);
+    intx src_id = uf.getObjectID(index);
     for (int j = 0; j < nbrs[index].size(); ++j)
       uf.merge(src_id, uf.getObjectID(nbrs[index][j]));
   }
@@ -475,7 +475,7 @@ findConnectedComponents(Array<size_t> const & selected_samples, NeighborSets con
   for (size_t i = 0; i < selected_samples.size(); ++i)
   {
     size_t index = selected_samples[i];
-    long src_id = uf.getObjectID(index);
+    intx src_id = uf.getObjectID(index);
     for (int j = 0; j < nbrs[index].size(); ++j)
       uf.merge(src_id, uf.getObjectID(nbrs[index][j]));
   }
@@ -483,7 +483,7 @@ findConnectedComponents(Array<size_t> const & selected_samples, NeighborSets con
 
 void
 computeComponentProperties(SampleArray const & all_samples, Array<size_t> const & selected_samples,
-                           UnionFind<size_t> const & uf, Array<long> & cc_reps, Array<long> & cc_counts,
+                           UnionFind<size_t> const & uf, Array<intx> & cc_reps, Array<intx> & cc_counts,
                            Array<AxisAlignedBox3> & cc_bounds)
 {
   size_t ncc = (size_t)uf.numSets();
@@ -491,12 +491,12 @@ computeComponentProperties(SampleArray const & all_samples, Array<size_t> const 
   cc_counts.resize(ncc); fill(cc_counts.begin(), cc_counts.end(), 0);
   cc_bounds.resize(ncc); fill(cc_bounds.begin(), cc_bounds.end(), AxisAlignedBox3());
 
-  typedef UnorderedMap<long, size_t> RepSetMap;  // maps from ID of set's representative sample to set ID
+  typedef UnorderedMap<intx, size_t> RepSetMap;  // maps from ID of set's representative sample to set ID
   RepSetMap set_ids;
 
   for (size_t i = 0; i < selected_samples.size(); ++i)
   {
-    long rep_id = uf.find(uf.getObjectID(selected_samples[i]));
+    intx rep_id = uf.find(uf.getObjectID(selected_samples[i]));
     RepSetMap::const_iterator existing = set_ids.find(rep_id);
     size_t set_id;
     if (existing == set_ids.end())
@@ -529,12 +529,12 @@ sortIndices(Array<T> const & values, Array<size_t> & sorted_indices, bool descen
 
 void
 deactivateSmallComponents(Array<size_t> const & selected_samples, UnionFind<size_t> const & uf,
-                          long num_active_sets, Array<long> const & cc_reps, Array<size_t> const & cc_sorted,
+                          intx num_active_sets, Array<intx> const & cc_reps, Array<size_t> const & cc_sorted,
                           SampleArray & all_samples)
 {
   for (size_t i = 0; i < selected_samples.size(); ++i)
   {
-    long rep = uf.find(uf.getObjectID(selected_samples[i]));
+    intx rep = uf.find(uf.getObjectID(selected_samples[i]));
     for (size_t j = (size_t)num_active_sets; j < cc_sorted.size(); ++j)
       if (rep == cc_reps[cc_sorted[j]])
       {
@@ -600,8 +600,8 @@ initOffsetsForLabel(int32 selected_label,
     // Map connected components to each other
     //=========================================================================================================================
 
-    Array<long> cc_reps1, cc_reps2;
-    Array<long> cc_counts1, cc_counts2;
+    Array<intx> cc_reps1, cc_reps2;
+    Array<intx> cc_counts1, cc_counts2;
     Array<AxisAlignedBox3> cc_bounds1, cc_bounds2;
     computeComponentProperties(samples1, selected_samples1, uf1, cc_reps1, cc_counts1, cc_bounds1);
     computeComponentProperties(samples2, selected_samples2, uf2, cc_reps2, cc_counts2, cc_bounds2);
@@ -696,7 +696,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
   Array<size_t> salient_indices1, salient_indices2;
   for (size_t i = 0; i < salient1.size(); ++i)
   {
-    long nn_index = kdtree1.closestElement<MetricL2>(salient1[i]);
+    intx nn_index = kdtree1.closestElement<MetricL2>(salient1[i]);
     if (nn_index < 0)
     {
       THEA_ERROR << "Could not map salient1[" << i << "] to a corresponding sample";
@@ -707,7 +707,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
 
   for (size_t i = 0; i < salient2.size(); ++i)
   {
-    long nn_index = kdtree2.closestElement<MetricL2>(salient2[i]);
+    intx nn_index = kdtree2.closestElement<MetricL2>(salient2[i]);
     if (nn_index < 0)
     {
       THEA_ERROR << "Could not map salient2[" << i << "] to a corresponding sample";
@@ -758,7 +758,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
       {
         NNFilter filter(samples1[i].n, samples1[i].label);
         offset_kdtree2.pushFilter(&filter);
-          long nn_index = offset_kdtree2.closestElement<MetricL2>(samples1[i].p);
+          intx nn_index = offset_kdtree2.closestElement<MetricL2>(samples1[i].p);
         offset_kdtree2.popFilter();
 
         if (nn_index >= 0)
@@ -808,7 +808,7 @@ main(int argc, char * argv[])
   string samples_path2;
   string offsets_path1;
   string salient_path1, salient_path2;
-  long max_salient = -1;
+  intx max_salient = -1;
   Array<string> salient_exclude_prefixes;  // all salient points with tags with these prefixes will be ignored
 
   int positional = 0;
@@ -933,7 +933,7 @@ main(int argc, char * argv[])
 
     for (size_t i = 0; i < salient_lines1.size(); ++i)
     {
-      if (max_salient >= 0 && (long)salient1.size() >= max_salient) break;
+      if (max_salient >= 0 && (intx)salient1.size() >= max_salient) break;
 
       if (salient_lines1[i].empty())
         continue;
@@ -1127,7 +1127,7 @@ main(int argc, char * argv[])
     KDTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
     kdtree2.enableNearestNeighborAcceleration();
 
-    long num_matched = 0;
+    intx num_matched = 0;
     for (size_t i = 0; i < samples1.size(); ++i)
     {
       Vector3 p1 = samples1[i].p;
@@ -1135,7 +1135,7 @@ main(int argc, char * argv[])
       Vector3 deformed_p1 = p1 + offsets1[i].d();
       NNFilterLabelOnly filter(samples1[i].label);
       kdtree2.pushFilter(&filter);
-        long nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
+        intx nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
       kdtree2.popFilter();
 
       if (nn_index < 0)

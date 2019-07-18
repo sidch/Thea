@@ -19,7 +19,7 @@ using namespace Graphics;
 
 typedef AffineTransformN<3, double> AffineTransform3d;
 
-long num_mesh_samples = 5000;
+intx num_mesh_samples = 5000;
 bool normalize_scales = false;
 bool do_initial_placement = false;
 Vector3d initial_from_position(0, 0, 0);
@@ -102,7 +102,7 @@ loadPoints(string const & points_path, Array<Vector3d> & points)
       return false;
     }
 
-    long nv, nf, ne;
+    intx nv, nf, ne;
     if (!(in >> nv >> nf >> ne))
     {
       THEA_ERROR << "Could not read vertex/face/edge counts from " << points_path;
@@ -122,7 +122,7 @@ loadPoints(string const & points_path, Array<Vector3d> & points)
 
     points.resize((size_t)nv);
 
-    for (long i = 0; i < nv; ++i)
+    for (intx i = 0; i < nv; ++i)
       if (!(in >> points[i][0] >> points[i][1] >> points[i][2]))
       {
         THEA_ERROR << "Could not read vertex " << i << " from " << points_path;
@@ -259,7 +259,7 @@ normalization(Array<Vector3d> const & from_pts, Array<Vector3d> const & to_pts, 
 }
 
 double
-normalizeError(double err, double scale, long num_points)
+normalizeError(double err, double scale, intx num_points)
 {
   if (normalize_scales && scale > 0)
     return err / (4 * scale * scale * num_points);  // normalized scale makes average distance from centroid == 0.5
@@ -363,8 +363,8 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
               for (size_t i = 0; i < from_pts.size(); ++i)
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
-              AffineTransform3d icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
-              rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
+              AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              rot_error = normalizeError(rot_error, to_scale, (intx)from_pts.size());
               if (first || rot_error < error)
               {
                 error = rot_error;
@@ -409,8 +409,8 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         for (size_t i = 0; i < from_pts.size(); ++i)
           rot_from_pts[i] = rot_tr * from_pts[i];
 
-        AffineTransform3d icp_tr = icp.align((long)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
-        rot_error = normalizeError(rot_error, to_scale, (long)from_pts.size());
+        AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+        rot_error = normalizeError(rot_error, to_scale, (intx)from_pts.size());
         if (first || rot_error < error)
         {
           error = rot_error;
@@ -433,10 +433,10 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      tr = icp.align((long)from_pts.size(), &from_pts[0], to_kdtree, &error);
+      tr = icp.align((intx)from_pts.size(), &from_pts[0], to_kdtree, &error);
       tr = tr * init_tr;
 
-      error = normalizeError(error, to_scale, (long)from_pts.size());
+      error = normalizeError(error, to_scale, (intx)from_pts.size());
     }
   }
 

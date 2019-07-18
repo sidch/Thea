@@ -138,7 +138,7 @@ struct ReadCallback : public MG::ReadCallback
 {
   ReadCallback(LabelArray & labels_) : labels(labels_) {}
 
-  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
+  void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face)
   {
     string mesh_name = mesh->getName();
     if (mesh_name.empty())
@@ -166,10 +166,10 @@ struct WriteCallback : public MG::WriteCallback
 {
   WriteCallback(LabelArray const & labels_) : labels(labels_), faces_per_label(labels_.size()) {}
 
-  void faceWritten(Mesh const * mesh, long index, Mesh::FaceConstHandle face)
+  void faceWritten(Mesh const * mesh, intx index, Mesh::FaceConstHandle face)
   {
-    long lab = face->attr().label_index;
-    alwaysAssertM(lab < (long)labels.size(), "Face label index out of bounds");
+    intx lab = face->attr().label_index;
+    alwaysAssertM(lab < (intx)labels.size(), "Face label index out of bounds");
 
     if (lab < 0)
       unlabeled_faces.push_back(index);
@@ -178,8 +178,8 @@ struct WriteCallback : public MG::WriteCallback
   }
 
   LabelArray const & labels;
-  Array< Array<long> > faces_per_label;
-  Array<long> unlabeled_faces;
+  Array< Array<intx> > faces_per_label;
+  Array<intx> unlabeled_faces;
 
 }; // struct WriteCallback
 
@@ -612,7 +612,7 @@ flatten(MG & mesh_group)
 bool
 delDanglers(Mesh & mesh)
 {
-  long nv = mesh.numVertices(), ne = mesh.numEdges(), nf = mesh.numFaces();
+  intx nv = mesh.numVertices(), ne = mesh.numEdges(), nf = mesh.numFaces();
 
   mesh.removeDanglers();
 
@@ -670,7 +670,7 @@ struct DupFaceDeleter
   bool operator()(Mesh & mesh)
   {
     FaceSet seqs;
-    long num_deleted = 0;
+    intx num_deleted = 0;
 
     for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); )
     {
@@ -714,7 +714,7 @@ zipper(Mesh & mesh)
       THEA_CONSOLE << "Using default zipper tolerance: " << zipper_tolerance;
   }
 
-  long nv = mesh.numVertices(), ne = mesh.numEdges(), nf = mesh.numFaces();
+  intx nv = mesh.numVertices(), ne = mesh.numEdges(), nf = mesh.numFaces();
 
   mesh.sealSeams((Real)scaledTolerance(mesh, zipper_tolerance));
 
@@ -741,7 +741,7 @@ vWeld(Mesh & mesh)
       THEA_CONSOLE << "Using default vertex welding tolerance: " << v_weld_tolerance;
   }
 
-  long nv = mesh.numVertices();
+  intx nv = mesh.numVertices();
 
   VertexWelder welder((Real)scaledTolerance(mesh, v_weld_tolerance));
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
@@ -863,7 +863,7 @@ tJuncts(Mesh & mesh)
   if (t_juncts_iters <= 0)
     t_juncts_iters = 3;
 
-  long num_fixed = 0;
+  intx num_fixed = 0;
   for (int n = 0; n < t_juncts_iters; ++n)
   {
     for (size_t i = 0; i < boundary_segs.size(); ++i)
@@ -872,7 +872,7 @@ tJuncts(Mesh & mesh)
 
       VertexFilter filter(edge);
       kdtree.pushFilter(&filter);
-        long index = kdtree.closestElement<MetricL2>(boundary_segs[i], 2 * tol);  // add 2 for a little safety margin
+        intx index = kdtree.closestElement<MetricL2>(boundary_segs[i], 2 * tol);  // add 2 for a little safety margin
       kdtree.popFilter();
 
       if (index < 0)
@@ -961,14 +961,14 @@ bool
 orient(Mesh & mesh)
 {
   Array< Array<Mesh::Face *> > cc;
-  long num_cc = ConnectedComponents::findEdgeConnected(mesh, cc);
+  intx num_cc = ConnectedComponents::findEdgeConnected(mesh, cc);
 
   enum { NOT_VISITED, VISITED };
 
   for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     fi->attr().flag = NOT_VISITED;
 
-  long num_flipped = 0;
+  intx num_flipped = 0;
   for (size_t i = 0; i < cc.size(); ++i)
   {
     if (cc.empty())  // shouldn't happen, but check just in case
@@ -1080,7 +1080,7 @@ struct SDFOrienter
 
   bool operator()(Mesh & mesh)
   {
-    long num_flipped = 0;
+    intx num_flipped = 0;
     for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     {
       if (fi->numVertices() < 3)
@@ -1173,7 +1173,7 @@ orientMajority(Mesh & mesh)
   for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     heap.insert(&(*fi));
 
-  long num_flipped = false;
+  intx num_flipped = false;
   while (!heap.empty())
   {
     Mesh::Face * face = *heap.begin();
@@ -1402,18 +1402,18 @@ orientVisibility(MG & mesh_group)
 bool
 triangulate(Mesh & mesh)
 {
-  long before_num_faces = mesh.numFaces();
+  intx before_num_faces = mesh.numFaces();
 
   Real tol = (triangulate_tolerance < 0 ? 1.0e-6f : (Real)triangulate_tolerance);
   Real epsilon = max(tol * mesh.getBounds().getExtent().norm(), tol);
-  long num_triangulated_faces = mesh.triangulate(epsilon);
+  intx num_triangulated_faces = mesh.triangulate(epsilon);
   if (num_triangulated_faces < 0)
     return true;  // error, stop recursion through mesh group
 
   if (num_triangulated_faces == 0)  // already triangulated
     return false;
 
-  long after_num_faces = mesh.numFaces();
+  intx after_num_faces = mesh.numFaces();
 
   THEA_CONSOLE << "Mesh " << mesh.getName() << ": " << num_triangulated_faces << " face(s) triangulated with "
                << (after_num_faces - before_num_faces + num_triangulated_faces) << " triangles";
@@ -1433,14 +1433,14 @@ triangulate(Mesh & mesh)
 bool
 checkProblems(Mesh & mesh)
 {
-  long num_faces_with_repeated_vertices = 0;
-  long num_faces_with_repeated_edges = 0;
+  intx num_faces_with_repeated_vertices = 0;
+  intx num_faces_with_repeated_edges = 0;
 
-  long num_edges_with_repeated_vertices = 0;
-  long num_edges_with_repeated_faces = 0;
+  intx num_edges_with_repeated_vertices = 0;
+  intx num_edges_with_repeated_faces = 0;
 
-  long num_vertices_with_repeated_edges = 0;
-  long num_vertices_with_repeated_faces = 0;
+  intx num_vertices_with_repeated_edges = 0;
+  intx num_vertices_with_repeated_faces = 0;
 
   for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
   {

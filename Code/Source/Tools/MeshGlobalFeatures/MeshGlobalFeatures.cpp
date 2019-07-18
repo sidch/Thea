@@ -58,11 +58,11 @@ int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
 bool computeBounds(MG & mg, Array<double> & values);
 bool computeExtent(MG & mg, Array<double> & values);
-bool computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
+bool computeDistanceHistogram(MG const & mg, intx num_bins, intx num_samples, DistanceType dist_type, double max_distance,
                               double reduction_ratio, Array<double> & values);
-bool computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio,
+bool computeCurvatureHistogram(MG const & mg, intx num_bins, intx num_samples, double reduction_ratio,
                                Array<double> & values);
-bool computeSDFHistogram(MG const & mg, long num_bins, long num_samples, Array<double> & values);
+bool computeSDFHistogram(MG const & mg, intx num_bins, intx num_samples, Array<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -183,7 +183,7 @@ main(int argc, char * argv[])
       long num_bins, num_samples;
       double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--ch=%ld,%ld,%lf", &num_bins, &num_samples, &reduction_ratio);
+      int num_params = sscanf(feat.c_str(), "--ch=%ld,%ld,%lf", &num_bins, &num_samples, &reduction_ratio);
       if (num_params < 1)
       {
         THEA_ERROR << "Couldn't parse curvature histogram parameters";
@@ -221,8 +221,8 @@ main(int argc, char * argv[])
       double max_distance;
       double reduction_ratio;
 
-      long num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
-                               dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
+      int num_params = sscanf(feat.c_str(), "--dh=%256[^,],%ld,%ld,%lf,%lf",
+                              dist_str, &num_bins, &num_samples, &max_distance, &reduction_ratio);
       if (num_params < 2)
       {
         THEA_ERROR << "Couldn't parse distance histogram parameters";
@@ -269,7 +269,7 @@ main(int argc, char * argv[])
     {
       long num_bins, num_samples;
 
-      long num_params = sscanf(feat.c_str(), "--sdf=%ld,%ld", &num_bins, &num_samples);
+      int num_params = sscanf(feat.c_str(), "--sdf=%ld,%ld", &num_bins, &num_samples);
       if (num_params < 1)
       {
         THEA_ERROR << "Couldn't parse SDF histogram parameters";
@@ -467,7 +467,7 @@ computeExtent(MG & mg, Array<double> & values)
 }
 
 bool
-computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, DistanceType dist_type, double max_distance,
+computeDistanceHistogram(MG const & mg, intx num_bins, intx num_samples, DistanceType dist_type, double max_distance,
                          double reduction_ratio, Array<double> & values)
 {
   THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histogram";
@@ -486,7 +486,7 @@ computeDistanceHistogram(MG const & mg, long num_bins, long num_samples, Distanc
 }
 
 bool
-computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double reduction_ratio, Array<double> & values)
+computeCurvatureHistogram(MG const & mg, intx num_bins, intx num_samples, double reduction_ratio, Array<double> & values)
 {
   THEA_CONSOLE << "Computing curvature histogram";
 
@@ -501,13 +501,13 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
   if (reduction_ratio < 0)
     reduction_ratio = 5000.0 / num_samples;
 
-  long num_queries = Math::clamp((long)std::ceil(reduction_ratio * num_samples), 0L, num_samples - 1);
+  intx num_queries = Math::clamp((intx)std::ceil(reduction_ratio * num_samples), 0L, num_samples - 1);
   Array<int32> query_indices((size_t)num_queries);
   Random::common().sortedIntegers(0, (int32)num_samples - 1, (int32)num_queries, &query_indices[0]);
 
   for (size_t i = 0; i < query_indices.size(); ++i)
   {
-    long index = query_indices[i];
+    intx index = query_indices[i];
     Vector3 p = projcurv.getSamplePosition(index);
     Vector3 n = projcurv.getSampleNormal(index);
 
@@ -526,7 +526,7 @@ computeCurvatureHistogram(MG const & mg, long num_bins, long num_samples, double
 }
 
 bool
-computeSDFHistogram(MG const & mg, long num_bins, long num_samples, Array<double> & values)
+computeSDFHistogram(MG const & mg, intx num_bins, intx num_samples, Array<double> & values)
 {
   THEA_CONSOLE << "Computing SDF histogram";
 
@@ -542,7 +542,7 @@ computeSDFHistogram(MG const & mg, long num_bins, long num_samples, Array<double
   Array<Vector3> positions, normals;
   sampler.sampleEvenlyByArea(num_samples, positions, &normals);
 
-  for (long i = 0; i < num_samples; ++i)
+  for (intx i = 0; i < num_samples; ++i)
   {
     Vector3 p = positions[(size_t)i];
     Vector3 n = normals[(size_t)i];

@@ -50,21 +50,21 @@ struct MeshTransformer
 
 struct DistanceCallback
 {
-  DistanceCallback(long n) : m(n, n), current_source(-1) { m.fill(-1); }
+  DistanceCallback(intx n) : m(n, n), current_source(-1) { m.fill(-1); }
 
   bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
   {
     if (!vertex)
       return false;
 
-    long i = vertex->getIndex();
+    intx i = vertex->getIndex();
     m(current_source, i) = m(i, current_source) = distance;
 
     return false;
   }
 
   MatrixX<double> m;
-  long current_source;
+  intx current_source;
 };
 
 int
@@ -166,20 +166,20 @@ main(int argc, char * argv[])
     }
 
     SampleGraph::SampleArray const & samples = graph.getSamples();
-    DistanceCallback distance_callback((long)samples.size());
+    DistanceCallback distance_callback((intx)samples.size());
     ShortestPaths<SampleGraph> shortest_paths;
 
     distance_callback.m(0, 0) = 0;
     for (size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
     {
-      distance_callback.current_source = (long)i;
+      distance_callback.current_source = (intx)i;
       shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]), &distance_callback);
     }
 
     ofstream d_out(FilePath::changeExtension(out_path, "dist").c_str());
-    for (long r = 0; r < distance_callback.m.rows(); ++r)
+    for (intx r = 0; r < distance_callback.m.rows(); ++r)
     {
-      for (long c = 0; c < distance_callback.m.cols(); ++c)
+      for (intx c = 0; c < distance_callback.m.cols(); ++c)
       {
         if (c > 0) d_out << ' ';
         d_out << distance_callback.m(r, c);
@@ -272,7 +272,7 @@ main(int argc, char * argv[])
 
         for (size_t i = 0; i < sample_positions.size(); ++i)
         {
-          long elem = kdtree.closestElement<MetricL2>(sample_positions[i]);
+          intx elem = kdtree.closestElement<MetricL2>(sample_positions[i]);
           if (elem < 0)
           {
             THEA_ERROR << "Could not find nearest neighbor of sample " << i << " on mesh";
@@ -288,13 +288,13 @@ main(int argc, char * argv[])
       }
 
       // Augment the number of samples if necessary
-      if ((long)sample_positions.size() < min_samples)
+      if ((intx)sample_positions.size() < min_samples)
       {
         dense_positions.clear();
         dense_normals.clear();
 
         MeshSampler<Mesh> sampler(mg);
-        sampler.sampleEvenlyByArea((long)(min_samples - sample_positions.size()), dense_positions,
+        sampler.sampleEvenlyByArea((intx)(min_samples - sample_positions.size()), dense_positions,
                                    (consistent_normals ? &dense_normals : NULL));
 
         if (!dense_positions.empty())
@@ -324,8 +324,8 @@ main(int argc, char * argv[])
   SampleGraph::Options opts;
   opts.setMaxDegree(max_nbrs);
   SampleGraph graph(opts);
-  graph.setSamples((long)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : NULL));
-  graph.setOversampling((long)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : NULL));
+  graph.setSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : NULL));
+  graph.setOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : NULL));
   graph.init(reachability && !kdtree.isEmpty() ? &kdtree : NULL);
 
   THEA_CONSOLE << "Computed sample graph";
@@ -366,7 +366,7 @@ loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vecto
   if (endsWith(path_lc, ".pts"))
   {
     string line;
-    long line_num = 0;
+    intx line_num = 0;
     while (getline(in, line))
     {
       line_num++;
@@ -414,7 +414,7 @@ loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vecto
       return PARSE_ERROR;
     }
 
-    long nv, nf, ne;
+    intx nv, nf, ne;
     if (!(in >> nv >> nf >> ne))
     {
       THEA_ERROR << "Could not read element counts from OFF file " << samples_path;
@@ -423,7 +423,7 @@ loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vecto
 
     if (nf == 0)
     {
-      for (long i = 0; i < nv; ++i)
+      for (intx i = 0; i < nv; ++i)
       {
         if (!(in >> p[0] >> p[1] >> p[2]))
         {

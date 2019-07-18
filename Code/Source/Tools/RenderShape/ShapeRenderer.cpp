@@ -37,7 +37,7 @@ using namespace Graphics;
 
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef std::pair<Mesh const *, long> FaceRef;
+typedef std::pair<Mesh const *, intx> FaceRef;
 typedef UnorderedMap<FaceRef, uint32> FaceIndexMap;
 
 struct View
@@ -133,8 +133,8 @@ class ShapeRendererImpl
     bool loadFeatures(Model & model);
     bool renderModel(Model const & model, ColorRGBA const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
-    ColorRGBA getPaletteColor(long n) const;
-    ColorRGBA getLabelColor(long label) const;
+    ColorRGBA getPaletteColor(intx n) const;
+    ColorRGBA getLabelColor(intx label) const;
 
     friend struct FaceColorizer;
 
@@ -274,7 +274,7 @@ labelHash(string const & label)
 }
 
 ColorRGBA
-ShapeRendererImpl::getPaletteColor(long n) const
+ShapeRendererImpl::getPaletteColor(intx n) const
 {
   static ColorRGBA PALETTE[] = {
     ColorRGBA::fromARGB(0xFFFF66FF),
@@ -303,12 +303,12 @@ ShapeRendererImpl::getPaletteColor(long n) const
     ColorRGBA::fromARGB(0xFFA0A0A0),
   };
 
-  static long const PALETTE_SIZE = (long)(sizeof(PALETTE) / sizeof(ColorRGBA));
+  static intx const PALETTE_SIZE = (intx)(sizeof(PALETTE) / sizeof(ColorRGBA));
   return PALETTE[abs((n % (PALETTE_SIZE + palette_shift)) % PALETTE_SIZE)];
 }
 
 ColorRGBA
-ShapeRendererImpl::getLabelColor(long label) const
+ShapeRendererImpl::getLabelColor(intx label) const
 {
   return getPaletteColor(label);
 }
@@ -435,7 +435,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           for (size_t i = 0; i < overlay_models.size(); ++i)
           {
             Model const & overlay = *overlay_models[i];
-            ColorRGBA overlay_color = getPaletteColor((long)i - 1);
+            ColorRGBA overlay_color = getPaletteColor((intx)i - 1);
             overlay_color.a() = (!color_by_id && !overlay.is_point_cloud ? 0.5f : 1.0f);
 
             render_system->setPolygonOffset(true, -1.0f);  // make sure overlays appear on top of primary shape
@@ -467,7 +467,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         if (views.size() > 1)
         {
           path = FilePath::concat(FilePath::parent(path),
-                                  FilePath::baseName(path) + format("_%06ld.", (long)v) + FilePath::completeExtension(path));
+                                  FilePath::baseName(path) + format("_%06ld.", (intx)v) + FilePath::completeExtension(path));
         }
 
         image.save(path);
@@ -484,7 +484,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
             return -1;
           }
 
-          string suffix = (views.size() > 1 ? format("_%06ld.tif", (long)v) : ".tif");
+          string suffix = (views.size() > 1 ? format("_%06ld.tif", (intx)v) : ".tif");
           string depth_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_depth" + suffix);
 
           depth_image.save(depth_path);
@@ -492,7 +492,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
       render_system->popFramebuffer();
     }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (long)v)
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (intx)v)
   }
 
   render_system->destroyTexture(tex3d);
@@ -555,7 +555,7 @@ bool
 ShapeRendererImpl::parseTransform(string const & s, Matrix4 & m)
 {
   Array<string> fields;
-  long nfields = stringSplit(trimWhitespace(s), ",;:[({<>})] \t\n\r\f", fields, true);
+  intx nfields = stringSplit(trimWhitespace(s), ",;:[({<>})] \t\n\r\f", fields, true);
   if (nfields != 12 && nfields != 16)
   {
     THEA_ERROR << "Could not read row-major comma-separated matrix from '" << s << '\'';
@@ -1210,12 +1210,12 @@ struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
 
   MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
 
-  void faceRead(Mesh * mesh, long index, Mesh::FaceHandle face)
+  void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face)
   {
     if (face.hasTriangles())
     {
-      long base_tri = face.getFirstTriangle();
-      for (long i = 0; i < face.numTriangles(); ++i)
+      intx base_tri = face.getFirstTriangle();
+      for (intx i = 0; i < face.numTriangles(); ++i)
       {
         FaceRef ref(mesh, base_tri + i);
         tri_ids[ref] = (uint32)index;
@@ -1226,8 +1226,8 @@ struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
 
     if (face.hasQuads())
     {
-      long base_quad = face.getFirstQuad();
-      for (long i = 0; i < face.numQuads(); ++i)
+      intx base_quad = face.getFirstQuad();
+      for (intx i = 0; i < face.numQuads(); ++i)
       {
         FaceRef ref(mesh, base_quad + i);
         quad_ids[ref] = (uint32)index;
@@ -1302,10 +1302,10 @@ struct FaceColorizer
     ColorRGBA8 color;
     for (size_t i = 0; i < tris.size(); i += 3)
     {
-      FaceRef face(&mesh, (long)i / 3);
+      FaceRef face(&mesh, (intx)i / 3);
       FaceIndexMap::const_iterator existing = tri_ids.find(face);
       if (existing == tri_ids.end())
-        throw Error(format("Could not find index of triangle %ld in mesh '%s'", (long)i / 3, mesh.getName()));
+        throw Error(format("Could not find index of triangle %ld in mesh '%s'", (intx)i / 3, mesh.getName()));
 
       uint32 id = existing->second;
       if (labels)
@@ -1318,18 +1318,18 @@ struct FaceColorizer
       else
         color = indexToColor(id, false);
 
-      mesh.setColor((long)tris[i    ], color);
-      mesh.setColor((long)tris[i + 1], color);
-      mesh.setColor((long)tris[i + 2], color);
+      mesh.setColor((intx)tris[i    ], color);
+      mesh.setColor((intx)tris[i + 1], color);
+      mesh.setColor((intx)tris[i + 2], color);
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
     for (size_t i = 0; i < quads.size(); i += 4)
     {
-      FaceRef face(&mesh, (long)i / 4);
+      FaceRef face(&mesh, (intx)i / 4);
       FaceIndexMap::const_iterator existing = quad_ids.find(face);
       if (existing == quad_ids.end())
-        throw Error(format("Could not find index of quad %ld in mesh '%s'", (long)i / 4, mesh.getName()));
+        throw Error(format("Could not find index of quad %ld in mesh '%s'", (intx)i / 4, mesh.getName()));
 
       uint32 id = existing->second;
       if (labels)
@@ -1342,10 +1342,10 @@ struct FaceColorizer
       else
         color = indexToColor(id, false);
 
-      mesh.setColor((long)quads[i    ], color);
-      mesh.setColor((long)quads[i + 1], color);
-      mesh.setColor((long)quads[i + 2], color);
-      mesh.setColor((long)quads[i + 3], color);
+      mesh.setColor((intx)quads[i    ], color);
+      mesh.setColor((intx)quads[i + 1], color);
+      mesh.setColor((intx)quads[i + 2], color);
+      mesh.setColor((intx)quads[i + 3], color);
     }
 
     return false;
@@ -1405,7 +1405,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
         label_index = existing->second;
 
       istringstream line_in(line);
-      long index;
+      intx index;
       while (line_in >> index)
       {
         index--;  // first face has index 1 in this format
@@ -1415,7 +1415,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
           return false;
         }
 
-        if (index >= (long)labels.size())
+        if (index >= (intx)labels.size())
           labels.resize((size_t)(2 * (index + 1)), -1);
 
         labels[(size_t)index] = label_index;
@@ -1482,7 +1482,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
         label_index = existing->second;
 
       istringstream line_in(line);
-      long rep_index;
+      intx rep_index;
       while (line_in >> rep_index)
       {
         if (rep_index < 0)
@@ -1619,7 +1619,7 @@ struct VertexColorizer
     for (size_t i = 0; i < vertices.size(); ++i)
     {
       nbrs.clear();
-      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
+      intx num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
       if (num_nbrs <= 0)
         num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs);
 
@@ -1631,19 +1631,19 @@ struct VertexColorizer
         {
           double dist = nbrs[j].getDistance<MetricL2>();
           double weight = Math::fastMinusExp(dist * dist / scale2);
-          long nn_index = nbrs[j].getTargetIndex();
+          intx nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
                                     (feat_vals1 ? &feat_vals1[nn_index] : NULL),
                                     (feat_vals2 ? &feat_vals2[nn_index] : NULL));
         }
 
-        mesh.setColor((long)i, sum_weights > 0 ? c / sum_weights : c);
+        mesh.setColor((intx)i, sum_weights > 0 ? c / sum_weights : c);
       }
       else
       {
         THEA_WARNING << "No nearest neighbor found!";
-        mesh.setColor((long)i, ColorRGB(1, 1, 1));
+        mesh.setColor((intx)i, ColorRGB(1, 1, 1));
       }
     }
 
@@ -1822,18 +1822,18 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     for (size_t i = 0; i < tris.size(); i += 3)
     {
-      mesh.setColor((long)tris[i    ], color);
-      mesh.setColor((long)tris[i + 1], color);
-      mesh.setColor((long)tris[i + 2], color);
+      mesh.setColor((intx)tris[i    ], color);
+      mesh.setColor((intx)tris[i + 1], color);
+      mesh.setColor((intx)tris[i + 2], color);
     }
 
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
     for (size_t i = 0; i < quads.size(); i += 4)
     {
-      mesh.setColor((long)quads[i    ], color);
-      mesh.setColor((long)quads[i + 1], color);
-      mesh.setColor((long)quads[i + 2], color);
-      mesh.setColor((long)quads[i + 3], color);
+      mesh.setColor((intx)quads[i    ], color);
+      mesh.setColor((intx)quads[i + 1], color);
+      mesh.setColor((intx)quads[i + 2], color);
+      mesh.setColor((intx)quads[i + 3], color);
     }
   }
 
@@ -1914,8 +1914,8 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       MeshSampler<Mesh> sampler(model.mesh_group);
 
       double out_scale = min(out_width, out_height);
-      long max_samples = (long)ceil(10 * out_scale);
-      long npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
+      intx max_samples = (intx)ceil(10 * out_scale);
+      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
 

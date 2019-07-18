@@ -12,7 +12,7 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-bool computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, Array<Real> & values);
+bool computeShapeContext(Image const & image, intx num_radial_bins, intx num_polar_bins, Array<Real> & values);
 
 int
 main(int argc, char * argv[])
@@ -97,7 +97,7 @@ main(int argc, char * argv[])
                     "Number of shape contexts don't match number of pixels");
 
       Real const * entry = &values[0];
-      long entry_size = num_radial_bins * num_polar_bins;
+      intx entry_size = num_radial_bins * num_polar_bins;
       for (size_t j = 0; j < features.size(); ++j, entry += entry_size)
         features[j].insert(features[j].end(), entry, entry + entry_size);
     }
@@ -129,7 +129,7 @@ main(int argc, char * argv[])
     return -1;
   }
 
-  long num_written = 0;
+  intx num_written = 0;
   for (int i = 0; i < height; ++i)
   {
     for (int j = 0; j < width; ++j)
@@ -164,7 +164,7 @@ main(int argc, char * argv[])
 }
 
 bool
-computeShapeContext(Image const & image, long num_radial_bins, long num_polar_bins, Array<Real> & values)
+computeShapeContext(Image const & image, intx num_radial_bins, intx num_polar_bins, Array<Real> & values)
 {
   THEA_CONSOLE << "Computing shape contexts";
 

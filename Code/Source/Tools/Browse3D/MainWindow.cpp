@@ -326,7 +326,7 @@ MainWindow::init()
       if (loaded)
       {
         overlay->setTransform(app().options().overlay_transforms[i]);
-        overlay->setColor(getPaletteColor((long)i));
+        overlay->setColor(getPaletteColor((intx)i));
         overlays.push_back(overlay);
       }
       else
@@ -429,18 +429,18 @@ getFeaturePatterns(Array<std::string> & patterns)
   patterns.push_back("*.features.*");
 }
 
-long
+intx
 fileIndex(Array<std::string> const & files, std::string const & file, Array<std::string> const * patterns = NULL)
 {
   std::string fname = FilePath::objectName(file);
   for (size_t i = 0; i < files.size(); ++i)
     if (fname == FilePath::objectName(files[i]))
-      return (long)i;
+      return (intx)i;
 
   return -1;
 }
 
-long
+intx
 fileIndex(std::string const & dir, std::string const & file, Array<std::string> & files,
           Array<std::string> const * patterns = NULL)
 {
@@ -469,11 +469,11 @@ MainWindow::loadPreviousModel(wxEvent & event)
   getMeshPatterns(patterns);
 
   Array<std::string> files;
-  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  intx index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
   if (files.empty())
     return;
 
-  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (intx)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -493,18 +493,18 @@ MainWindow::loadNextModel(wxEvent & event)
   getMeshPatterns(patterns);
 
   Array<std::string> files;
-  long index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
+  intx index = fileIndex(FilePath::parent(FileSystem::resolve(model->getPath())), model->getPath(), files, &patterns);
   if (files.empty())
     return;
 
-  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (intx)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
   clearOverlays();
 
-  if (index == (long)files.size() - 1)
+  if (index == (intx)files.size() - 1)
     model->load(files[0]);
   else
     model->load(files[index + 1]);
@@ -517,11 +517,11 @@ MainWindow::loadPreviousFeatures(wxEvent & event)
   getFeaturePatterns(patterns);
 
   Array<std::string> files;
-  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
+  intx index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (files.empty())
     return;
 
-  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (intx)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
@@ -541,16 +541,16 @@ MainWindow::loadNextFeatures(wxEvent & event)
   getFeaturePatterns(patterns);
 
   Array<std::string> files;
-  long index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
+  intx index = fileIndex(app().options().features, model->getFeaturesPath(), files, &patterns);
   if (files.empty())
     return;
 
-  if (index < 0 || index >= (long)files.size())  // maybe the file was deleted recently?
+  if (index < 0 || index >= (intx)files.size())  // maybe the file was deleted recently?
     index = 0;
   else if (files.size() == 1)
     return;
 
-  if (index == (long)files.size() - 1)
+  if (index == (intx)files.size() - 1)
     model->loadFeatures(files[0]);
   else
     model->loadFeatures(files[index + 1]);

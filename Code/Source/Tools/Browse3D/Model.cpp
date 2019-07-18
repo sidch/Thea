@@ -397,7 +397,7 @@ Model::rayIntersection(Ray3 const & ray, Real max_time) const
   return getKDTree().rayStructureIntersection<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
-long
+intx
 Model::closestPoint(Vector3 const & query, Real distance_bound, Real * min_dist, Vector3 * closest_pt,
                     Vector3 * closest_pt_normal, bool accelerate_with_vertices) const
 {
@@ -410,14 +410,14 @@ Model::closestPoint(Vector3 const & query, Real distance_bound, Real * min_dist,
       // Tighten the bound as much as we can with a fast initial query on the set of vertices
       updateVertexKDTree();
       double fast_distance_bound = 0;
-      long vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, &fast_distance_bound);
+      intx vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, &fast_distance_bound);
       if (vertex_index >= 0)
         distance_bound = (Real)fast_distance_bound;
     }
 
     updateKDTree();
     double d = 0;
-    long index = kdtree->closestElement<MetricL2>(query, distance_bound, &d, closest_pt);
+    intx index = kdtree->closestElement<MetricL2>(query, distance_bound, &d, closest_pt);
     if (index >= 0)
     {
       if (min_dist) *min_dist = (Real)d;
@@ -433,7 +433,7 @@ Real
 Model::pick(Ray3 const & ray)
 {
   RayStructureIntersection3 isec = rayIntersection(ray);
-  long index = -1;
+  intx index = -1;
   Real t = -1;
   if (isec.isValid())
   {
@@ -564,9 +564,9 @@ Model::addPickedSample(std::string const & label, bool snap_to_vertex)
 }
 
 void
-Model::removeSample(long index)
+Model::removeSample(intx index)
 {
-  if (index >= 0 && index < (long)samples.size())
+  if (index >= 0 && index < (intx)samples.size())
   {
     samples.erase(samples.begin() + index);
     saveSamples(getSamplesPath());
@@ -576,7 +576,7 @@ Model::removeSample(long index)
 }
 
 void
-Model::selectSample(long index)
+Model::selectSample(intx index)
 {
   selected_sample = index;
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
@@ -600,19 +600,19 @@ Model::loadSamples(std::string const & path_)
       throw Error("Couldn't read first line");
 
     std::istringstream header_iss(line);
-    long n;
+    intx n;
     header_iss >> n;
     if (n < 0 || !header_iss)
       throw Error("Couldn't read valid number of samples");
 
     std::string type, label;
-    long face_index;
+    intx face_index;
     double bary[3], coords[3];
     Vector3 pos;
 
     samples.resize((size_t)n);
 
-    for (long i = 0; i < n; ++i)
+    for (intx i = 0; i < n; ++i)
     {
       if (!getNextNonBlankLine(in, line))
         throw Error("Couldn't read line");
@@ -833,14 +833,14 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
 }
 
 void
-Model::promotePickedSegment(long offset)
+Model::promotePickedSegment(intx offset)
 {
   segment_depth_promotion += offset;
 
   if (segment_depth_promotion < 0)
     segment_depth_promotion = 0;
 
-  long min_depth = picked_segment.minDepth();
+  intx min_depth = picked_segment.minDepth();
   if (min_depth >= 0 && segment_depth_promotion >= min_depth)
     segment_depth_promotion = std::max(min_depth - 1, 0L);
 
@@ -879,9 +879,9 @@ Model::addPickedSegment(std::string const & label)
 }
 
 void
-Model::removeSegment(long index)
+Model::removeSegment(intx index)
 {
-  if (index >= 0 && index < (long)segments.size())
+  if (index >= 0 && index < (intx)segments.size())
   {
     segments.erase(segments.begin() + index);
     saveSegments(getSegmentsPath());
@@ -905,7 +905,7 @@ Model::getSegment(Mesh const * mesh, int * index)
 }
 
 void
-Model::selectSegment(long index)
+Model::selectSegment(intx index)
 {
   selected_segment = index;
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
@@ -937,7 +937,7 @@ Model::loadSegments(std::string const & path_)
         throw Error("Couldn't read list of representative faces");
 
       std::istringstream iss(line);
-      long face_index = -1;
+      intx face_index = -1;
       while (iss >> face_index)
       {
         Mesh::Face const * face = Mesh::mapIndexToFace(face_index);
@@ -981,7 +981,7 @@ Model::saveSegments(std::string const & path_) const
       if (!mesh || mesh->numFaces() <= 0)
         continue;
 
-      long face_index = mesh->facesBegin()->getIndex();  // the first face
+      intx face_index = mesh->facesBegin()->getIndex();  // the first face
 
       if (mj != meshes.begin())
         out << ' ';
@@ -1042,7 +1042,7 @@ struct VertexFeatureVisitor
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
       nbrs.clear();
-      long num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
+      intx num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
       if (num_nbrs <= 0)
         num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
 
@@ -1054,7 +1054,7 @@ struct VertexFeatureVisitor
         {
           double dist = nbrs[j].getDistance<Algorithms::MetricL2>();
           double weight = Math::fastMinusExp(dist * dist / scale2);
-          long nn_index = nbrs[j].getTargetIndex();
+          intx nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
                                     (feat_vals1 ? &feat_vals1[nn_index] : NULL),
@@ -1236,8 +1236,8 @@ class FaceLabeler
     {
       for (Mesh::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
-        long index = fi->getIndex();
-        if (index < 0 || index >= (long)elem_colors.size())
+        intx index = fi->getIndex();
+        if (index < 0 || index >= (intx)elem_colors.size())
           throw Error("Face index out of range of face labels array");
 
         fi->attr().setColor(elem_colors[(size_t)index]);
@@ -1276,7 +1276,7 @@ Model::loadElementLabels(std::string const & path_)
 
     // Check if this is an integer, if so, use as is.
     char * next;
-    long n = strtol(line.c_str(), &next, 10);
+    intx n = strtol(line.c_str(), &next, 10);
     if (*next != 0)  // could not parse to end of string, not an integer
       elem_colors.push_back(getLabelColor(line));
     else
@@ -1561,7 +1561,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
       {
         render_system.setColor(getLabelColor(samples[i].label));
 
-        if ((long)i == selected_sample)
+        if ((intx)i == selected_sample)
           drawSphere(render_system, samples[i].position, 3 * sample_radius);
         else
           drawSphere(render_system, samples[i].position, sample_radius);
