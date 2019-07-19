@@ -92,6 +92,8 @@ class ShapeRendererImpl
     Vector3 view_up;
     float point_size;
     bool color_by_id;
+    bool color_by_leaf;
+    bool color_by_leafname;
     bool color_by_label;
     bool color_by_features;
     bool show_edges;
@@ -213,6 +215,8 @@ ShapeRendererImpl::resetArgs()
   view_up = Vector3(0, 1, 0);
   point_size = 1.0f;
   color_by_id = false;
+  color_by_leaf = false;
+  color_by_leafname = false;
   color_by_label = false;
   color_by_features = false;
   show_edges = false;
@@ -526,8 +530,10 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         or file containing one of the above per line)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -p <pixels>           (size of points in pixels -- can be fractional)";
-  THEA_CONSOLE << "  -c <argb>             (shape color, or 'id' to color faces by face ID and";
-  THEA_CONSOLE << "                         points by point ID)";
+  THEA_CONSOLE << "  -c <argb>             (shape color; or 'id' to color faces by face ID and";
+  THEA_CONSOLE << "                         points by point ID; or 'leaf' to assign a random";
+  THEA_CONSOLE << "                         color to each leaf submesh; or 'leafname' to derive";
+  THEA_CONSOLE << "                         the leaf submesh color from its name)";
   THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
@@ -959,11 +965,19 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         {
           if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
 
-          if (toLower(trimWhitespace(*argv)) == "id")
+          color_by_id = false;
+          color_by_leaf = false;
+          color_by_leafname = false;
+
+          string arg_lc = toLower(trimWhitespace(*argv));
+          if (arg_lc == "id")
             color_by_id = true;
+          else if (arg_lc == "leaf")
+            color_by_leaf = true;
+          else if (arg_lc == "leafname")
+            color_by_leafname = true;
           else
           {
-            color_by_id = false;
             if (!parseColor(*argv, primary_color))
               return false;
           }
@@ -1284,13 +1298,14 @@ indexToColor(uint32 index, bool is_point)
 struct FaceColorizer
 {
   ShapeRendererImpl const * parent;
-  FaceIndexMap const & tri_ids;
-  FaceIndexMap const & quad_ids;
+  FaceIndexMap const * tri_ids;
+  FaceIndexMap const * quad_ids;
   Array<int> const * labels;
 
-  FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const & tri_ids_, FaceIndexMap const & quad_ids_,
+  FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const * tri_ids_, FaceIndexMap const * quad_ids_,
                 Array<int> const * labels_ = NULL)
-  : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_) {}
+  : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_)
+  {}
 
   bool operator()(Mesh & mesh)
   {
@@ -1298,25 +1313,35 @@ struct FaceColorizer
     if (labels) mesh.computeAveragedVertexNormals();
     mesh.addColors();
 
-    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     ColorRGBA8 color;
+    if (parent->color_by_leaf)
+      color = parent->getPaletteColor(Random::common().integer());
+    else if (parent->color_by_leafname)
+      color = parent->getLabelColor((intx)labelHash(mesh.getName()));
+    else
+      alwaysAssertM(tri_ids && quad_ids, "FaceColorizer: Triangle and quad ID maps must both be non-null");
+
+    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     for (size_t i = 0; i < tris.size(); i += 3)
     {
-      FaceRef face(&mesh, (intx)i / 3);
-      FaceIndexMap::const_iterator existing = tri_ids.find(face);
-      if (existing == tri_ids.end())
-        throw Error(format("Could not find index of triangle %ld in mesh '%s'", (intx)i / 3, mesh.getName()));
-
-      uint32 id = existing->second;
-      if (labels)
+      if (!parent->color_by_leaf && !parent->color_by_leafname)
       {
-        if ((size_t)id >= labels->size())
-          color = ColorRGBA8(255, 0, 0, 255);
+        FaceRef face(&mesh, (intx)i / 3);
+        FaceIndexMap::const_iterator existing = tri_ids->find(face);
+        if (existing == tri_ids->end())
+          throw Error(format("Could not find index of triangle %ld in mesh '%s'", (intx)i / 3, mesh.getName()));
+
+        uint32 id = existing->second;
+        if (labels)
+        {
+          if ((size_t)id >= labels->size())
+            color = ColorRGBA8(255, 0, 0, 255);
+          else
+            color = parent->getLabelColor((*labels)[(size_t)id]);
+        }
         else
-          color = parent->getLabelColor((*labels)[(size_t)id]);
+          color = indexToColor(id, false);
       }
-      else
-        color = indexToColor(id, false);
 
       mesh.setColor((intx)tris[i    ], color);
       mesh.setColor((intx)tris[i + 1], color);
@@ -1326,21 +1351,24 @@ struct FaceColorizer
     Mesh::IndexArray const & quads = mesh.getQuadIndices();
     for (size_t i = 0; i < quads.size(); i += 4)
     {
-      FaceRef face(&mesh, (intx)i / 4);
-      FaceIndexMap::const_iterator existing = quad_ids.find(face);
-      if (existing == quad_ids.end())
-        throw Error(format("Could not find index of quad %ld in mesh '%s'", (intx)i / 4, mesh.getName()));
-
-      uint32 id = existing->second;
-      if (labels)
+      if (!parent->color_by_leaf && !parent->color_by_leafname)
       {
-        if ((size_t)id >= labels->size())
-          color = ColorRGBA8(255, 0, 0, 255);
+        FaceRef face(&mesh, (intx)i / 4);
+        FaceIndexMap::const_iterator existing = quad_ids->find(face);
+        if (existing == quad_ids->end())
+          throw Error(format("Could not find index of quad %ld in mesh '%s'", (intx)i / 4, mesh.getName()));
+
+        uint32 id = existing->second;
+        if (labels)
+        {
+          if ((size_t)id >= labels->size())
+            color = ColorRGBA8(255, 0, 0, 255);
+          else
+            color = parent->getLabelColor((*labels)[(size_t)id]);
+        }
         else
-          color = parent->getLabelColor((*labels)[(size_t)id]);
+          color = indexToColor(id, false);
       }
-      else
-        color = indexToColor(id, false);
 
       mesh.setColor((intx)quads[i    ], color);
       mesh.setColor((intx)quads[i + 1], color);
@@ -1564,7 +1592,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
   else
   {
     alwaysAssertM(tri_ids && quad_ids, "Face IDs necessary for coloring by label");
-    FaceColorizer label_colorizer(this, *tri_ids, *quad_ids, &labels);
+    FaceColorizer label_colorizer(this, tri_ids, quad_ids, &labels);
     model.mesh_group.forEachMeshUntil(&label_colorizer);
   }
 
@@ -1926,10 +1954,10 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     {
       bool needs_normals = true;
 
-      if (color_by_id)
+      if (color_by_id || color_by_leaf || color_by_leafname)
       {
-        FaceColorizer id_colorizer(this, tri_ids, quad_ids);
-        model.mesh_group.forEachMeshUntil(&id_colorizer);
+        FaceColorizer colorizer(this, &tri_ids, &quad_ids);
+        model.mesh_group.forEachMeshUntil(&colorizer);
         needs_normals = false;
       }
       else if (color_by_label)
@@ -2384,7 +2412,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     }
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_id || color_by_label || color_by_features || !selected_mesh.empty())
+    if (color_by_id || color_by_leaf || color_by_leafname || color_by_label || color_by_features || !selected_mesh.empty())
       opts.useVertexData() = true;
 
     if (show_edges)
