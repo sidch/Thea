@@ -80,7 +80,7 @@ To generate HTML documentation for the API, run [Doxygen](http://www.doxygen.org
 
 This is probably the best place to start looking at the toolkit.
 
-Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs (for `VectorN<3, Real>` and `MatrixMN<3, 3, Real>` respectively) and don't show up in the Class Index. To see them, go to Namespaces --> Namespace Members --> Typedefs.
+Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs (for `Eigen::Matrix<Real, 3, 1, ...>` and `Eigen::Matrix<Real, 4, 4, ...>` respectively) and don't show up in the Class Index. Some will show up in Namespaces --> Namespace Members --> Typedefs. For others, you will have to look at the source code. Documenting all of these properly is work-in-progress.) 
 
 ## Using the library
 
