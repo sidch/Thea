@@ -100,6 +100,7 @@ IF(UseFilesMatching)  # CMake 2.6 and above
           REGEX "Tools$" EXCLUDE
           PATTERN "CVS" EXCLUDE
           PATTERN ".svn" EXCLUDE
+          PATTERN ".git" EXCLUDE
           PATTERN "*.hpp"
           PATTERN "*.h"
           PATTERN "BuildFlags.txt")
@@ -111,6 +112,7 @@ ELSE()
           REGEX "Tools$" EXCLUDE
           PATTERN "CVS" EXCLUDE
           PATTERN ".svn" EXCLUDE
+          PATTERN ".git" EXCLUDE
           PATTERN "*.cpp" EXCLUDE
           PATTERN "*.c" EXCLUDE)
 ENDIF()
