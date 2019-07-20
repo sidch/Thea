@@ -123,7 +123,7 @@ class Visibility
     /**
      * Compute the external visibility of a query point on the shape.
      *
-     * @param p The position of the query point.
+     * @param position The position of the query point.
      * @param num_rays The number of rays to sample randomly from a sphere (negative for default).
      *
      * @return The fraction of rays from the query point that do not intersect the shape again.

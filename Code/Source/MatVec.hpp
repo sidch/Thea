@@ -158,12 +158,11 @@ using MatrixX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Options, MaxRow
  */
 template <int Size, typename T = Real,
           int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Size,
-          int MaxColsAtCompileTime = 1>
+          int MaxRowsAtCompileTime = Size>
 using Vector = Eigen::Matrix<T, Size, 1,
                              Options | ((Options & Eigen::DontAlign) == 0 && Size == Eigen::Dynamic
                                       ? Eigen::AutoAlign : Eigen::DontAlign),
-                             MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+                             MaxRowsAtCompileTime, 1>;
 
 /**
  * General 1D dense column vector template with dynamic resizing, alias for <code>Eigen::Matrix<T, Eigen::Dynamic, 1,...></code>
@@ -171,9 +170,8 @@ using Vector = Eigen::Matrix<T, Size, 1,
  */
 template <typename T = Real,
           int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Eigen::Dynamic,
-          int MaxColsAtCompileTime = 1>
-using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+          int MaxRowsAtCompileTime = Eigen::Dynamic>
+using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1, Options, MaxRowsAtCompileTime, 1>;
 
 /**
  * General 1D dense row vector template, alias for <code>Eigen::Matrix<T, 1, Size,...></code>, with a custom alignment
@@ -191,12 +189,11 @@ using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1, Options, MaxRowsAtCompileTim
  */
 template <int Size, typename T = Real,
           int Options = MatrixLayout::ROW_MAJOR,
-          int MaxRowsAtCompileTime = 1,
           int MaxColsAtCompileTime = Size>
 using RowVector = Eigen::Matrix<T, 1, Size,
                                 Options | ((Options & Eigen::DontAlign) == 0 && Size == Eigen::Dynamic
                                          ? Eigen::AutoAlign : Eigen::DontAlign),
-                                MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+                                1, MaxColsAtCompileTime>;
 
 /**
  * General 1D dense row vector template with dynamic resizing, alias for <code>Eigen::Matrix<T, 1, Eigen::Dynamic,...></code>
@@ -204,9 +201,8 @@ using RowVector = Eigen::Matrix<T, 1, Size,
  */
 template <typename T = Real,
           int Options = MatrixLayout::ROW_MAJOR,
-          int MaxRowsAtCompileTime = 1,
           int MaxColsAtCompileTime = Eigen::Dynamic>
-using RowVectorX = Eigen::Matrix<T, 1, Eigen::Dynamic, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>;
+using RowVectorX = Eigen::Matrix<T, 1, Eigen::Dynamic, Options, 1, MaxColsAtCompileTime>;
 
 //=============================================================================================================================
 // Typedef Eigen::Map wrappers for interpreting raw data as common Eigen types.
@@ -269,15 +265,83 @@ THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cf)
 THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(cd)
 THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(i)
 
-typedef Eigen::Map< MatrixX<>    >  MatrixXMap;
-typedef Eigen::Map< VectorX<>    >  VectorXMap;
-typedef Eigen::Map< RowVectorX<> >  RowVectorXMap;
-
-typedef Eigen::Map< MatrixX<>    const >  MatrixXConstMap;
-typedef Eigen::Map< VectorX<>    const >  VectorXConstMap;
-typedef Eigen::Map< RowVectorX<> const >  RowVectorXConstMap;
-
 #undef THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS
+
+/** Alias for Eigen::Map< Matrix<...> >. */
+template <int Rows, int Cols, typename T = Real,
+          int Options = DEFAULT_MATRIX_LAYOUT,
+          int MaxRowsAtCompileTime = Rows,
+          int MaxColsAtCompileTime = Cols>
+using MatrixMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> >;
+
+/** Alias for Eigen::Map< Matrix<...> const >. */
+template <int Rows, int Cols, typename T = Real,
+          int Options = DEFAULT_MATRIX_LAYOUT,
+          int MaxRowsAtCompileTime = Rows,
+          int MaxColsAtCompileTime = Cols>
+using MatrixConstMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const >;
+
+/** Alias for Eigen::Map< Vector<...> >. */
+template <int Size, typename T = Real,
+          int Options = MatrixLayout::COLUMN_MAJOR,
+          int MaxRowsAtCompileTime = Size>
+using VectorMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime> >;
+
+/** Alias for Eigen::Map< Vector<...> const >. */
+template <int Size, typename T = Real,
+          int Options = MatrixLayout::COLUMN_MAJOR,
+          int MaxRowsAtCompileTime = Size>
+using VectorConstMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime> const >;
+
+/** Alias for Eigen::Map< RowVector<...> >. */
+template <int Size, typename T = Real,
+          int Options = MatrixLayout::ROW_MAJOR,
+          int MaxColsAtCompileTime = Size>
+using RowVectorMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime> >;
+
+/** Alias for Eigen::Map< RowVector<...> const >. */
+template <int Size, typename T = Real,
+          int Options = MatrixLayout::ROW_MAJOR,
+          int MaxColsAtCompileTime = Size>
+using RowVectorConstMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime> const >;
+
+/** Alias for Eigen::Map< MatrixX<...> >. */
+template <typename T = Real,
+          int Options = DEFAULT_MATRIX_LAYOUT,
+          int MaxRowsAtCompileTime = Eigen::Dynamic,
+          int MaxColsAtCompileTime = Eigen::Dynamic>
+using MatrixXMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> >;
+
+/** Alias for Eigen::Map< MatrixX<...> const >. */
+template <typename T = Real,
+          int Options = DEFAULT_MATRIX_LAYOUT,
+          int MaxRowsAtCompileTime = Eigen::Dynamic,
+          int MaxColsAtCompileTime = Eigen::Dynamic>
+using MatrixXConstMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const >;
+
+/** Alias for Eigen::Map< VectorX<...> >. */
+template <typename T = Real,
+          int Options = MatrixLayout::COLUMN_MAJOR,
+          int MaxRowsAtCompileTime = Eigen::Dynamic>
+using VectorXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> >;
+
+/** Alias for Eigen::Map< VectorX<...> const >. */
+template <typename T = Real,
+          int Options = MatrixLayout::COLUMN_MAJOR,
+          int MaxRowsAtCompileTime = Eigen::Dynamic>
+using VectorConstXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> const >;
+
+/** Alias for Eigen::Map< RowVectorX<...> >. */
+template <typename T = Real,
+          int Options = MatrixLayout::ROW_MAJOR,
+          int MaxColsAtCompileTime = Eigen::Dynamic>
+using RowVectorXMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> >;
+
+/** Alias for Eigen::Map< RowVectorX<...> const >. */
+template <typename T = Real,
+          int Options = MatrixLayout::ROW_MAJOR,
+          int MaxColsAtCompileTime = Eigen::Dynamic>
+using RowVectorXConstMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> const >;
 
 } // namespace Thea
 
