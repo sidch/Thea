@@ -164,6 +164,7 @@ class THEA_API RenderOptions : public AbstractRenderOptions
       return *this;
     }
 
+    /** Get the default set of options. */
     static RenderOptions const & defaults() { static RenderOptions def; return def; }
 
     int8 sendColors() const { return send_colors; }
