@@ -85,7 +85,7 @@ class Impl
       v_axis = v_axis_.normalized();
       tangent_plane = Plane3::fromPointAndNormal(origin, u_axis.cross(v_axis));
       radius = radius_;
-      blend_bandwidth_squared = (options.getBlendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
+      blend_bandwidth_squared = (options.blendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
 
       geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, this, radius);
     }
@@ -141,7 +141,7 @@ class Impl
         Vector3 sum_p = pred_data.uv_transform * p;
         Real sum_weights = 1;
 
-        if (options.getBlendUpwind())
+        if (options.blendUpwind())
         {
           // Blend in the positions of nearby upwind points (the predecessor's visited neighbors) to make the estimate a bit
           // more robust
@@ -169,7 +169,7 @@ class Impl
         curr_data.uv = Vector2(offset.dot(u_axis), offset.dot(v_axis));
         curr_data.pred_data = &pred_data;  // hopefully the map class guarantees this will be preserved
 
-        params[vertex->getIndex()] = (options.getNormalize() ? curr_data.uv / radius : curr_data.uv);
+        params[vertex->getIndex()] = (options.normalize() ? curr_data.uv / radius : curr_data.uv);
 
         // THEA_CONSOLE << "Assigned params " << curr_data.uv;
       }
@@ -180,7 +180,7 @@ class Impl
         curr_data.uv = Vector2(offset.dot(u_axis), offset.dot(v_axis));
         curr_data.pred_data = NULL;
 
-        params[vertex->getIndex()] = (options.getNormalize() ? curr_data.uv / radius : curr_data.uv);
+        params[vertex->getIndex()] = (options.normalize() ? curr_data.uv / radius : curr_data.uv);
 
         // THEA_CONSOLE << "Assigned params " << curr_data.uv << " (no pred)";
       }

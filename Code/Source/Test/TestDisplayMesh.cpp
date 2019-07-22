@@ -362,6 +362,4 @@ init()
   glEnable(GL_LIGHT0);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_NORMALIZE);
-
-  mg.uploadToGraphicsSystem(*render_system);
 }

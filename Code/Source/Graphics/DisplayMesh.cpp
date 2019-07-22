@@ -728,7 +728,7 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
 }
 
 void
-DisplayMesh::draw(RenderSystem & render_system, RenderOptions const & options) const
+DisplayMesh::draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
 {
   if (options.drawEdges() && !wireframe_enabled)
     throw Error(getNameStr() + ": Can't draw mesh edges when wireframe mode is disabled");
@@ -786,7 +786,7 @@ DisplayMesh::draw(RenderSystem & render_system, RenderOptions const & options) c
         render_system.setColorArray(NULL);
         render_system.setTexCoordArray(0, NULL);
         render_system.setNormalArray(NULL);
-        render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
+        render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
         render_system.setTexture(0, NULL);
 
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY

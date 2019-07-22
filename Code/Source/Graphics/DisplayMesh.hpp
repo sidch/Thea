@@ -44,11 +44,11 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../NamedObject.hpp"
 #include "IncrementalDisplayMeshBuilder.hpp"
-#include "DefaultMeshCodecs.hpp"
-#include "DrawableObject.hpp"
+#include "Drawable.hpp"
 #include <array>
 
 namespace Thea {
@@ -271,7 +271,7 @@ class THEA_API DisplayMeshFace
 }; // class DisplayMeshFace
 
 /** A class for storing meshes for display, without detailed topology information. */
-class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
+class THEA_API DisplayMesh : public virtual NamedObject, public Drawable
 {
   public:
     THEA_DEF_POINTER_TYPES(DisplayMesh, std::shared_ptr, std::weak_ptr)
@@ -443,6 +443,19 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
 
     /** Get the number of faces. */
     intx numFaces() const { return numTriangles() + numQuads(); };
+
+    /** Recompute and cache the bounding box for the mesh. Make sure this has been called before calling getBounds(). */
+    void updateBounds();
+
+    /**
+     * Get the cached bounding box of the mesh. Will be out-of-date unless updateBounds() has been called after all
+     * modifications.
+     */
+    AxisAlignedBox3 const & getBounds() const
+    {
+      const_cast<DisplayMesh *>(this)->updateBounds();
+      return bounds;
+    }
 
     /** Check if the vertices have attached normal information. */
     bool hasNormals() const { return !normals.empty(); }
@@ -659,17 +672,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
      */
     bool wireframeIsEnabled() const { return wireframe_enabled; }
 
-    void uploadToGraphicsSystem(RenderSystem & render_system);
-
-    void draw(RenderSystem & render_system, RenderOptions const & options = RenderOptions::defaults()) const;
-
-    void updateBounds();
-
-    AxisAlignedBox3 const & getBounds() const
-    {
-      const_cast<DisplayMesh *>(this)->updateBounds();
-      return bounds;
-    }
+    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const;
 
   protected:
     /** Invalidate part or all of the current GPU data for the mesh. */
@@ -680,6 +683,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public DrawableObject
 
     /** Clear the set of changed buffers. */
     void allGPUBuffersAreValid() { changed_buffers = 0; }
+
+    /** Upload GPU resources to the graphics system. */
+    void uploadToGraphicsSystem(RenderSystem & render_system);
 
     /** Invalidate the current bounding box of the mesh. */
     void invalidateBounds() { valid_bounds = false; }

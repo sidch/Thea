@@ -355,10 +355,8 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     /** Set the default color of the model. */
     void setColor(ColorRGBA const & color_) { color = color_; }
 
-    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
-
     void draw(Graphics::RenderSystem & render_system,
-              Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+              Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
     //========================================================================================================================
     // GUI callbacks
@@ -393,7 +391,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
 
     /** Draw the mesh group colored by segment. */
     void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
-                                Graphics::RenderOptions const & options) const;
+                                Graphics::AbstractRenderOptions const & options) const;
 
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;

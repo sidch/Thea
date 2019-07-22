@@ -93,8 +93,8 @@ class THEA_API ColorRGBA
     /** Construct a color from a 4-vector. */
     explicit ColorRGBA(Vector4 const & v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
 
-    /** Construct a color from three components in an array. */
-    explicit ColorRGBA(Real v[4]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+    /** Construct a color from four components in an array. */
+    explicit ColorRGBA(Real const * v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
 
     /** Copy constructor. */
     ColorRGBA(ColorRGBA const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; c[3] = other.c[3]; }
@@ -131,6 +131,12 @@ class THEA_API ColorRGBA
 
     /** Get the red, green and blue channels as a ColorRGB. */
     ColorRGB rgb() const { return ColorRGB(c[0], c[1], c[2]); }
+
+    /** Get the address of the array storing color channel values in RGBA order. */
+    Real const * data() const { return c; }
+
+    /** Get the address of the array storing color channel values in RGBA order. */
+    Real * data() { return c; }
 
     /** Array-style channel access. */
     template <typename IntegerT> Real const & operator[](IntegerT channel) const

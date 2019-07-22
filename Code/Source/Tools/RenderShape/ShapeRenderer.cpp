@@ -2413,15 +2413,12 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 
     RenderOptions opts = RenderOptions::defaults();
     if (color_by_id || color_by_leaf || color_by_leafname || color_by_label || color_by_features || !selected_mesh.empty())
-      opts.useVertexData() = true;
+      opts.setUseVertexData(true);
 
     if (show_edges)
-    {
-      opts.drawEdges() = true;
-      opts.edgeColor() = edge_color;
-    }
+      opts.setDrawEdges(true).setEdgeColor(edge_color.data());
     else
-      opts.drawEdges() = false;
+      opts.setDrawEdges(false);
 
     if (has_transparency && !color_by_id)
     {

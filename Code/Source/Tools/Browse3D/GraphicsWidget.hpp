@@ -43,7 +43,8 @@
 #define __Browse3D_GraphicsWidget_hpp__
 
 #include "Common.hpp"
-#include "../../Graphics/DrawableObject.hpp"
+#include "../../AxisAlignedBox3.hpp"
+#include "../../Graphics/Drawable.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -56,19 +57,16 @@ class Shader;
 namespace Browse3D {
 
 /** A drawable widget. */
-class GraphicsWidget : public Graphics::DrawableObject
+class GraphicsWidget : public Graphics::Drawable
 {
   public:
     THEA_DEF_POINTER_TYPES(GraphicsWidget, std::shared_ptr, std::weak_ptr)
 
     /** Get the bounding box of the model. */
-    AxisAlignedBox3 const & getBounds() const { static AxisAlignedBox3 const dummy; return dummy; }
+    virtual AxisAlignedBox3 const & getBounds() const { static AxisAlignedBox3 const dummy; return dummy; }
 
     /** Update the bounding box of the part. */
-    void updateBounds() {}
-
-    /** Upload any data needed to draw the part to the GPU. */
-    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system) {}
+    virtual void updateBounds() {}
 
     /** Select a Phong shader for rendering. */
     static void setPhongShader(Graphics::RenderSystem & render_system);

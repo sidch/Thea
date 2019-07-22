@@ -55,7 +55,7 @@ struct FaceAttribute
 
   FaceAttribute() : label_index(-1), flag(0) {}
 
-  void draw(RenderSystem & render_system, RenderOptions const & options) const {}  // noop
+  void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const {}  // noop
 };
 
 typedef GeneralMesh< Graphics::NullAttribute,  // vertex attribute

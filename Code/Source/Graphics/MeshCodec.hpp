@@ -113,18 +113,18 @@ class MeshCodec : public Codec
                                                                                                                               \
       char const * getName() const { return _getName(); }                                                                     \
       char const * getMagic() const { return _getMagic(); }                                                                   \
-      Array<std::string> const & getExtensions() const { return _getExtensions(); }                                       \
+      Array<std::string> const & getExtensions() const { return _getExtensions(); }                                           \
                                                                                                                               \
     protected:                                                                                                                \
       static char const * _getName() { static std::string const name_ = desc + std::string(" codec"); return name_.c_str(); } \
       static char const * _getMagic() { static char const * magic_ = magic; return magic_; }                                  \
-      static Array<std::string> const & _getExtensions()                                                                  \
-      { static Array<std::string> const exts_ = initExts(); return exts_; }                                               \
+      static Array<std::string> const & _getExtensions()                                                                      \
+      { static Array<std::string> const exts_ = initExts(); return exts_; }                                                   \
                                                                                                                               \
     private:                                                                                                                  \
-      static Array<std::string> initExts()                                                                                \
+      static Array<std::string> initExts()                                                                                    \
       {                                                                                                                       \
-        Array<std::string> e;                                                                                             \
+        Array<std::string> e;                                                                                                 \
         std::string const s[] = { __VA_ARGS__ };                                                                              \
         for (size_t i = 0; i < sizeof(s) / sizeof(std::string); ++i)                                                          \
           e.push_back(s[i]);                                                                                                  \

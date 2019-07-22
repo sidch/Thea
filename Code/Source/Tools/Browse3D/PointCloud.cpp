@@ -647,7 +647,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 }
 
 void
-PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
 {
   if (isEmpty())
     return;

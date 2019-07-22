@@ -39,11 +39,10 @@
 //
 //============================================================================
 
-#ifndef __Thea_Graphics_DrawableObject_hpp__
-#define __Thea_Graphics_DrawableObject_hpp__
+#ifndef __Thea_Graphics_Drawable_hpp__
+#define __Thea_Graphics_Drawable_hpp__
 
 #include "../Common.hpp"
-#include "../AxisAlignedBox3.hpp"
 #include "RenderOptions.hpp"
 #include "RenderSystem.hpp"
 
@@ -52,39 +51,28 @@ namespace Thea {
 /** %Graphics functionality. */
 namespace Graphics {
 
-/** An object that can be displayed onscreen. */
-class THEA_API DrawableObject
+/** Abstract base class for objects that can be displayed onscreen. */
+class THEA_API Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(DrawableObject, std::shared_ptr, std::weak_ptr)
+    THEA_DEF_POINTER_TYPES(Drawable, std::shared_ptr, std::weak_ptr)
 
     /** Destructor. */
-    virtual ~DrawableObject() {}
-
-    /** Upload GPU resources to the graphics system. */
-    virtual void uploadToGraphicsSystem(RenderSystem & render_system) = 0;
+    virtual ~Drawable() = 0;
 
     /** Draw the object using the specified options via the specified rendering system. */
-    virtual void draw(RenderSystem & render_system, RenderOptions const & options = RenderOptions::defaults()) const = 0;
+    virtual void draw(RenderSystem & render_system,
+                      AbstractRenderOptions const & options = RenderOptions::defaults()) const = 0;
 
-    /**
-     * Recompute and cache the bounding box for the object. Use this function for objects where the recomputation takes
-     * non-trivial time, so that subsequent calls to getBounds() are efficient (and accurate as long as the object does not
-     * change).
-     */
-    virtual void updateBounds() = 0;
+}; // class Drawable
 
-    /**
-     * Get the bounding box for the object. This should return quickly, using a cached value computed by updateBounds() if
-     * necessary.
-     */
-    virtual AxisAlignedBox3 const & getBounds() const = 0;
-
-}; // class DrawableObject
+// Pure virtual destructor should have a body
+// http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
+inline Drawable::~Drawable() {}
 
 } // namespace Graphics
 } // namespace Thea
 
-THEA_DECL_EXTERN_SMART_POINTERS(Thea::Graphics::DrawableObject)
+THEA_DECL_EXTERN_SMART_POINTERS(Thea::Graphics::Drawable)
 
 #endif

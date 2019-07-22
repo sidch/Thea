@@ -45,6 +45,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../Math.hpp"
 #include "../NamedObject.hpp"
@@ -55,8 +56,7 @@
 #include "DCELHalfedge.hpp"
 #include "GraphicsAttributes.hpp"
 #include "IncrementalDCELMeshBuilder.hpp"
-#include "DefaultMeshCodecs.hpp"
-#include "DrawableObject.hpp"
+#include "Drawable.hpp"
 #include <limits>
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -85,7 +85,7 @@ namespace Graphics {
 template < typename VertexAttribute    =  Graphics::NullAttribute,
            typename HalfedgeAttribute  =  Graphics::NullAttribute,
            typename FaceAttribute      =  Graphics::NullAttribute >
-class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObject
+class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 {
   public:
     THEA_DEF_POINTER_TYPES(DCELMesh, std::shared_ptr, std::weak_ptr)
@@ -351,6 +351,20 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
 
       return rval;
     }
+
+    /** Recompute and cache the bounding box for the mesh. Make sure this has been called before calling getBounds(). */
+    void updateBounds()
+    {
+      bounds = AxisAlignedBox3();
+      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+        bounds.merge((*vi)->getPosition());
+    }
+
+    /**
+     * Get the cached bounding box of the mesh. Will be out-of-date unless updateBounds() has been called after all
+     * modifications.
+     */
+    AxisAlignedBox3 const & getBounds() const { return bounds; }
 
     /** Do the mesh vertices have attached colors? */
     bool hasVertexColors() const { return HasColor<Vertex>::value; }
@@ -669,24 +683,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
      */
     bool wireframeIsGPUBuffered() const { return buffered_wireframe; }
 
-    void uploadToGraphicsSystem(RenderSystem & render_system);
-
-    void draw(RenderSystem & render_system, RenderOptions const & options = RenderOptions::defaults()) const
+    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
     {
       if (buffered_rendering)
         drawBuffered(render_system, options);
       else
         drawImmediate(render_system, options);
     }
-
-    void updateBounds()
-    {
-      bounds = AxisAlignedBox3();
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
-        bounds.merge((*vi)->getPosition());
-    }
-
-    AxisAlignedBox3 const & getBounds() const { return bounds; }
 
   private:
     /** Set vertex color. */
@@ -1217,13 +1220,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     }
 
     /** Draw the mesh in immediate rendering mode. */
-    void drawImmediate(RenderSystem & render_system, RenderOptions const & options) const;
+    void drawImmediate(RenderSystem & render_system, AbstractRenderOptions const & options) const;
 
     /**
      * Utility function to draw a face. Must be enclosed in the appropriate
      * RenderSystem::beginPrimitive()/RenderSystem::endPrimitive() block.
      */
-    void drawFace(Face const & face, RenderSystem & render_system, RenderOptions const & options) const
+    void drawFace(Face const & face, RenderSystem & render_system, AbstractRenderOptions const & options) const
     {
       if (!options.useVertexNormals() && options.sendNormals())
         face.drawNormal(render_system, options);
@@ -1256,8 +1259,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public DrawableObjec
     /** Clear the set of changed buffers. */
     void allGPUBuffersAreValid() { changed_buffers = 0; }
 
+    /** Upload GPU resources to the graphics system. */
+    void uploadToGraphicsSystem(RenderSystem & render_system);
+
     /** Draw the mesh in GPU-buffered rendering mode. */
-    void drawBuffered(RenderSystem & render_system, RenderOptions const & options) const;
+    void drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
     void packVertexPositions()
@@ -1584,7 +1590,7 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
 
 template <typename V, typename E, typename F>
 inline void
-DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, RenderOptions const & options) const
+DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const
 {
   if (options.drawEdges() && !buffered_wireframe)
     throw Error(getNameStr() + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
@@ -1667,7 +1673,7 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, RenderOptions cons
         render_system.setColorArray(NULL);
         render_system.setTexCoordArray(0, NULL);
         render_system.setNormalArray(NULL);
-        render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
+        render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
 
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
         if (!edges.empty())
@@ -1689,7 +1695,7 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, RenderOptions cons
 
 template <typename V, typename E, typename F>
 inline void
-DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, RenderOptions const & options) const
+DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, AbstractRenderOptions const & options) const
 {
   // Three separate passes over the faces is probably faster (TODO: profile) than using Primitive::POLYGON for each face
 
@@ -1732,7 +1738,7 @@ DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, RenderOptions con
     render_system.pushColorFlags();
 
       render_system.setShader(NULL);
-      render_system.setColor(options.edgeColor());  // set default edge color
+      render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
 
       render_system.beginPrimitive(RenderSystem::Primitive::LINES);
         for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)

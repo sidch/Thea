@@ -103,10 +103,8 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
 
     void updateBounds();
 
-    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
-
     void draw(Graphics::RenderSystem & render_system,
-              Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+              Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
   private:
     /** Invalidate the bounding box of the point cloud. */
@@ -120,10 +118,13 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
 
     /** Reconstruct an approximate surface from the point cloud. */
     void reconstructSurface(Graphics::RenderSystem & render_system,
-                            Graphics::RenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+                            Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
 
     /** Get the color of a point. */
     ColorRGBA getColor(size_t point_index) const;
+
+    /** Upload graphics buffers etc to GPU. */
+    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
 
     Array<Point> points;
 

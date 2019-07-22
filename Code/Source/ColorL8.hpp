@@ -97,6 +97,12 @@ class THEA_API ColorL8
     /** The value of the color. */
     uint8 & value() { return val; }
 
+    /** Get the address of the color value. */
+    uint8 const * data() const { return &val; }
+
+    /** Get the address of the color value. */
+    uint8 * data() { return &val; }
+
     /** Array-style channel access. */
     template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
     {

@@ -57,7 +57,7 @@ class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
   public:
     VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
 
-    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+    void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
     {
       if (options.sendColors() && options.useVertexData())
         Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
@@ -75,7 +75,7 @@ class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
   public:
     FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
 
-    void draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+    void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
     {
       if (options.sendColors() && !options.useVertexData())
         Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);

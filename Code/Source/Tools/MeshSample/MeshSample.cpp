@@ -21,7 +21,7 @@ struct IndexAttribute
   intx index;
 
   IndexAttribute() : index(-1) {}
-  void draw(RenderSystem &render_system, RenderOptions const &options) const {}
+  void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const {}
 };
 
 typedef GeneralMesh<IndexAttribute, Graphics::NullAttribute, IndexAttribute> Mesh;

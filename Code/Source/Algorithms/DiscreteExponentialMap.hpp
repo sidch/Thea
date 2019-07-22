@@ -76,23 +76,23 @@ class DiscreteExponentialMap : private Noncopyable
         Options & setBlendUpwind(bool blend_upwind_) { blend_upwind = blend_upwind_; return *this; }
 
         /** Check if the predecessor's parameters should be computed as a weighted average of nearby points or not. */
-        bool getBlendUpwind() const { return blend_upwind; }
+        bool blendUpwind() const { return blend_upwind; }
 
         /** Select if parameters should be normalized to [-1, 1] or not. */
-        Options & setNormalize(bool normalize_) { normalize = normalize_; return *this; }
+        Options & setNormalize(bool normalize_) { do_normalize = normalize_; return *this; }
 
         /** Check if parameters should be normalized to [-1, 1] or not. */
-        bool getNormalize() const { return normalize; }
+        bool normalize() const { return do_normalize; }
 
         /** Construct with default values. */
-        Options() : blend_upwind(true), normalize(true) {}
+        Options() : blend_upwind(true), do_normalize(true) {}
 
         /** Get a set of options with default values. */
         static Options const & defaults() { static Options const def; return def; }
 
       private:
         bool blend_upwind;  ///< Compute predecessor's parameters as a weighted average of nearby points.
-        bool normalize;  ///< Normalize parameters to [-1, 1].
+        bool do_normalize;  ///< Normalize parameters to [-1, 1].
 
     }; // class Options
 

@@ -1411,22 +1411,11 @@ Model::updateBounds()
 }
 
 void
-Model::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
-{
-  if (mesh_group)
-    mesh_group->uploadToGraphicsSystem(render_system);
-
-  if (point_cloud)
-    point_cloud->uploadToGraphicsSystem(render_system);
-}
-
-void
 Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
-                              Graphics::RenderOptions const & options) const
+                              Graphics::AbstractRenderOptions const & options) const
 {
-  Graphics::RenderOptions ro = options;  // make a copy and tweak it
-
-  ro.overrideEdgeColor() = true;
+  Graphics::RenderOptions ro(options);  // make a copy and tweak it
+  ro.setOverrideEdgeColor(true);
 
   for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi, ++node_index)
   {
@@ -1439,23 +1428,23 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
     {
       if (seg_index >= 0 && seg_index == selected_segment)
       {
-        ro.edgeColor() = ColorRGBA(1, 0, 0, 1);
-        ro.drawEdges() = true;
+        ColorRGBA edge_color(1, 0, 0, 1);
+        ro.setEdgeColor(edge_color.data()).setDrawEdges(true);
       }
       else
-        ro.drawEdges() = false;
+        ro.setDrawEdges(false);
 
       render_system.setColor(getLabelColor(seg->getLabel()));
     }
     else if (picked_segment.hasMesh(mesh, segment_depth_promotion))
     {
-      ro.drawEdges() = false;
+      ro.setDrawEdges(false);
       render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR);
     }
     else
     {
-      ro.drawEdges() = true;
-      ro.edgeColor() = getPaletteColor(node_index);
+      ColorRGBA edge_color = getPaletteColor(node_index);
+      ro.setDrawEdges(true).setEdgeColor(edge_color.data());
       render_system.setColor(color);
     }
 
@@ -1526,12 +1515,10 @@ struct DrawVertexNormals
 } // namespace ModelInternal
 
 void
-Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions const & options) const
+Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
 {
   if (isEmpty())
     return;
-
-  const_cast<Model *>(this)->uploadToGraphicsSystem(render_system);
 
   GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
 
@@ -1582,15 +1569,9 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::RenderOptions cons
         Graphics::RenderOptions ro = options;  // make a copy
 
         if (has_features)
-        {
-          ro.sendColors() = true;
-          ro.useVertexData() = true;
-        }
+          ro.setSendColors(true).setUseVertexData(true);
         else if (has_elem_labels)
-        {
-          ro.sendColors() = true;
-          ro.useVertexData() = false;
-        }
+          ro.setSendColors(true).setUseVertexData(false);
 
         bool smooth_shading = (ro.useVertexNormals() && ro.useVertexData());
 

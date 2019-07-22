@@ -43,19 +43,20 @@
 #define __Thea_Graphics_MeshGroup_hpp__
 
 #include "../Common.hpp"
+#include "../AxisAlignedBox3.hpp"
 #include "../FilePath.hpp"
 #include "../NamedObject.hpp"
 #include "../Serializable.hpp"
 #include "../Set.hpp"
-#include "DrawableObject.hpp"
-#include "MeshCodec.hpp"
+#include "Drawable.hpp"
+#include "DefaultMeshCodecs.hpp"
 
 namespace Thea {
 namespace Graphics {
 
 /** A collection of meshes and subgroups. */
 template <typename MeshT>
-class MeshGroup : public virtual NamedObject, public DrawableObject, public Serializable
+class MeshGroup : public virtual NamedObject, public Drawable, public Serializable
 {
   public:
     THEA_DEF_POINTER_TYPES(MeshGroup, std::shared_ptr, std::weak_ptr)
@@ -280,24 +281,7 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
       return false;
     }
 
-    void uploadToGraphicsSystem(RenderSystem & render_system)
-    {
-      for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
-        if (*mi) (*mi)->uploadToGraphicsSystem(render_system);
-
-      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
-        if (*ci) (*ci)->uploadToGraphicsSystem(render_system);
-    }
-
-    void draw(RenderSystem & render_system, RenderOptions const & options = RenderOptions::defaults()) const
-    {
-      for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
-        if (*mi) (*mi)->draw(render_system, options);
-
-      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
-        if (*ci) (*ci)->draw(render_system, options);
-    }
-
+    /** Recompute and cache the bounding box for the mesh group. Make sure this has been called before calling getBounds(). */
     void updateBounds()
     {
       bounds = AxisAlignedBox3();
@@ -319,7 +303,20 @@ class MeshGroup : public virtual NamedObject, public DrawableObject, public Seri
         }
     }
 
+    /**
+     * Get the cached bounding box of the mesh group. Will be out-of-date unless updateBounds() has been called after all
+     * modifications.
+     */
     AxisAlignedBox3 const & getBounds() const { return bounds; }
+
+    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
+    {
+      for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+        if (*mi) (*mi)->draw(render_system, options);
+
+      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
+        if (*ci) (*ci)->draw(render_system, options);
+    }
 
     using Serializable::serialize;    // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
     using Serializable::deserialize;  // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any

@@ -113,14 +113,16 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
 
   context = new wxGLContext(this);
 
-  render_opts.sendNormals() = true;
-  render_opts.sendColors() = false;
-  render_opts.sendTexCoords() = false;
-  render_opts.useVertexNormals() = true;
-  render_opts.useVertexData() = true;
-  render_opts.drawEdges() = true;
-  render_opts.overrideEdgeColor() = true;
-  render_opts.edgeColor() = ColorRGB(0.15f, 0.25f, 0.5f);
+  static ColorRGBA const DEFAULT_EDGE_COLOR(0.15f, 0.25f, 0.5f, 1.0f);
+  render_opts.setSendNormals(true)
+             .setSendColors(false)
+             .setSendTexCoords(false)
+             .setUseVertexNormals(true)
+             .setUseVertexData(true)
+             .setDrawFaces(true)
+             .setDrawEdges(true)
+             .setOverrideEdgeColor(true)
+             .setEdgeColor(DEFAULT_EDGE_COLOR.data());
 
   Bind(wxEVT_PAINT, &ModelDisplay::paintGL, this);
   Bind(wxEVT_SIZE, &ModelDisplay::resize, this);
@@ -249,8 +251,7 @@ ModelDisplay::modelNeedsRedraw(wxEvent & event)
 void
 ModelDisplay::renderShaded(wxEvent & event)
 {
-  render_opts.drawFaces() = true;
-  render_opts.drawEdges() = false;
+  render_opts.setDrawFaces(true).setDrawEdges(false);
   Refresh();
 
   THEA_CONSOLE << "Rendering shaded faces";
@@ -259,8 +260,7 @@ ModelDisplay::renderShaded(wxEvent & event)
 void
 ModelDisplay::renderWireframe(wxEvent & event)
 {
-  render_opts.drawFaces() = false;
-  render_opts.drawEdges() = true;
+  render_opts.setDrawFaces(false).setDrawEdges(true);
   Refresh();
 
   THEA_CONSOLE << "Rendering wireframe";
@@ -269,8 +269,7 @@ ModelDisplay::renderWireframe(wxEvent & event)
 void
 ModelDisplay::renderShadedWireframe(wxEvent & event)
 {
-  render_opts.drawFaces() = true;
-  render_opts.drawEdges() = true;
+  render_opts.setDrawFaces(true).setDrawEdges(true);
   Refresh();
 
   THEA_CONSOLE << "Rendering shaded faces with wireframe edges";
@@ -305,7 +304,7 @@ ModelDisplay::setFlatShading(bool value)
 {
   if (!render_opts.useVertexNormals() != value)
   {
-    render_opts.useVertexNormals() = !value;
+    render_opts.setUseVertexNormals(!value);
     Refresh();
 
     THEA_CONSOLE << "Flat shading = " << value;

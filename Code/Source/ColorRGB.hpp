@@ -94,7 +94,7 @@ class THEA_API ColorRGB
     explicit ColorRGB(Vector3 const & v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
 
     /** Construct a color from three components in an array. */
-    explicit ColorRGB(Real v[3]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
+    explicit ColorRGB(Real const * v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; }
 
     /** Initialize from a 32-bit RGBA color. For conversion from a consistent source type. */
     ColorRGB(ColorRGBA const & other);
@@ -146,6 +146,12 @@ class THEA_API ColorRGB
 
     /** A reference to the blue channel. */
     Real & b() { return c[2]; }
+
+    /** Get the address of the array storing color channel values in RGB order. */
+    Real const * data() const { return c; }
+
+    /** Get the address of the array storing color channel values in RGB order. */
+    Real * data() { return c; }
 
     /** Array-style channel access. */
     template <typename IntegerT> Real const & operator[](IntegerT channel) const

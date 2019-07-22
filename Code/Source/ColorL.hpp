@@ -97,6 +97,12 @@ class THEA_API ColorL
     /** The value of the color. */
     Real & value() { return val; }
 
+    /** Get the address of the color value. */
+    Real const * data() const { return &val; }
+
+    /** Get the address of the color value. */
+    Real * data() { return &val; }
+
     /** Array-style channel access. */
     template <typename IntegerT> Real const & operator[](IntegerT channel) const
     {

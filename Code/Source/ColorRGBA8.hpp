@@ -86,8 +86,8 @@ class THEA_API ColorRGBA8
     /** Construct from an RGB color and an alpha component. */
     ColorRGBA8(ColorRGB8 const & rgb_, uint8 a_ = 255) { c[0] = rgb_.r(); c[1] = rgb_.g(); c[2] = rgb_.b(); c[3] = a_; }
 
-    /** Construct a color from three components in an array. */
-    explicit ColorRGBA8(uint8 v[4]) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
+    /** Construct a color from four components in an array. */
+    explicit ColorRGBA8(uint8 const * v) { c[0] = v[0]; c[1] = v[1]; c[2] = v[2]; c[3] = v[3]; }
 
     /** Copy constructor. */
     ColorRGBA8(ColorRGBA8 const & other) { c[0] = other.c[0]; c[1] = other.c[1]; c[2] = other.c[2]; c[3] = other.c[3]; }
@@ -124,6 +124,12 @@ class THEA_API ColorRGBA8
 
     /** Get the red, green and blue channels as a ColorRGB8. */
     ColorRGB8 rgb() const { return ColorRGB8(c[0], c[1], c[2]); }
+
+    /** Get the address of the array storing color channel values in RGBA order. */
+    uint8 const * data() const { return c; }
+
+    /** Get the address of the array storing color channel values in RGBA order. */
+    uint8 * data() { return c; }
 
     /** Array-style channel access. */
     template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
