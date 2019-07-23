@@ -51,7 +51,7 @@ namespace Algorithms {
 class THEA_API AnalyticD1ScalarFunction : public virtual ScalarFunction
 {
   public:
-    THEA_DEF_POINTER_TYPES(AnalyticD1ScalarFunction, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AnalyticD1ScalarFunction)
 
     /** Compute the gradient of the function at a given point. Returns true on success, false on error. */
     virtual bool gradientAt(float32 const * p, float32 * result) const = 0;

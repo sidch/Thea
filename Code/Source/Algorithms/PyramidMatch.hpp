@@ -66,7 +66,7 @@ void smoothIncrement3D(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, in
 class THEA_API Pyramid1D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid1D, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Pyramid1D)
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
     template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, NULL, false); }
@@ -160,7 +160,7 @@ class THEA_API Pyramid1D : public Serializable
 class THEA_API Pyramid2D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid2D, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Pyramid2D)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. The input array is assumed to
@@ -299,7 +299,7 @@ class THEA_API Pyramid2D : public Serializable
 class THEA_API Pyramid3D : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Pyramid3D, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Pyramid3D)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 3D array by recursive downsampling. The input array is assumed to

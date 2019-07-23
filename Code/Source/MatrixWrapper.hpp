@@ -62,7 +62,7 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
     typedef AbstractDenseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type
 
   public:
-    THEA_DEF_POINTER_TYPES(MatrixWrapper, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(MatrixWrapper)
 
     typedef MatrixT WrappedMatrix;  ///< The wrapped matrix type.
     using typename BaseT::Value;

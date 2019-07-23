@@ -67,7 +67,7 @@ class THEA_API Clustering
 #endif
 
   public:
-    THEA_DEF_POINTER_TYPES(Clustering, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Clustering)
 
     /** Flat clustering methods (enum class). */
     struct THEA_API FlatMethod

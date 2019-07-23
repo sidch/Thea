@@ -58,7 +58,7 @@ class IncrementalMeshBuilder
     typedef int FaceHandle;  // dummy
 
   public:
-    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(IncrementalMeshBuilder)
 
     typedef MeshT Mesh;  ///< Type of mesh being built.
 

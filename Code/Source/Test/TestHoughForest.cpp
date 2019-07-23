@@ -81,7 +81,7 @@ class ExampleSet: public HoughForest::TrainingData
     typedef UnorderedMap<intx, intx> IDMap;
 
   public:
-    THEA_DEF_POINTER_TYPES(ExampleSet, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ExampleSet)
 
     /** Constructor. */
     ExampleSet(intx num_classes_ = 0) : num_classes(num_classes_) {}

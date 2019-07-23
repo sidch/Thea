@@ -62,7 +62,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
   public:
     typedef Vector<N, T> VectorT;
 
-    THEA_DEF_POINTER_TYPES(BallN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BallN)
 
     /** Default constructor. Does not initialize anything. */
     BallN() {}

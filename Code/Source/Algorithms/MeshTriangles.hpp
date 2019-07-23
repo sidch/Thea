@@ -477,7 +477,7 @@ template <typename MeshT>
 class MeshTriangles
 {
   public:
-    THEA_DEF_POINTER_TYPES(MeshTriangles, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(MeshTriangles)
 
     typedef MeshT Mesh;                           ///< The mesh type.
     typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.

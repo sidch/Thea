@@ -93,7 +93,7 @@ template <int N, typename T = Real>
 class /* THEA_API */ RayIntersectableN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayIntersectableN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(RayIntersectableN)
 
     /** Destructor. */
     virtual ~RayIntersectableN() {}

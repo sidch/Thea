@@ -67,7 +67,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     typedef typename RigidTransformT::VectorT  VectorT;
     typedef typename RigidTransformT::MatrixT  MatrixT;
 
-    THEA_DEF_POINTER_TYPES(CoordinateFrameT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(CoordinateFrameT)
 
     /** Default constructor. Constructs the identity frame. */
     CoordinateFrameNBase() {}

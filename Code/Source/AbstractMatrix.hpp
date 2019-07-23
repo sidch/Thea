@@ -55,7 +55,7 @@ template <typename T>
 class /* THEA_API */ AbstractMatrix
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AbstractMatrix)
 
     typedef T Value;       ///< Type of values stored in the matrix.
     typedef T value_type;  ///< Type of values stored in the matrix (STL convention).

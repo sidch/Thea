@@ -63,7 +63,7 @@ template <typename PositionT>
 struct PositionAttribute
 {
   public:
-    THEA_DEF_POINTER_TYPES(PositionAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(PositionAttribute)
 
     typedef PositionT Position;  ///< The point type.
 
@@ -96,7 +96,7 @@ template <typename NormalT>
 struct NormalAttribute
 {
   public:
-    THEA_DEF_POINTER_TYPES(NormalAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(NormalAttribute)
 
     typedef NormalT Normal;  ///< The normal type.
 
@@ -134,7 +134,7 @@ template <typename ColorT>
 struct ColorAttribute
 {
   public:
-    THEA_DEF_POINTER_TYPES(ColorAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ColorAttribute)
 
     typedef ColorT Color;  ///< The color type.
 
@@ -172,7 +172,7 @@ template <typename TexCoordT>
 struct TexCoordAttribute
 {
   public:
-    THEA_DEF_POINTER_TYPES(TexCoordAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(TexCoordAttribute)
 
     typedef TexCoordT TexCoord;  ///< The texture coordinate type.
 
@@ -218,7 +218,7 @@ struct NormalColorAttribute : public NormalAttribute<NormalT>, public ColorAttri
     typedef ColorAttribute<ColorT>    ColorBaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(NormalColorAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(NormalColorAttribute)
 
     typedef typename NormalBaseT::Normal  Normal; ///< The normal type.
     typedef typename ColorBaseT::Color    Color;  ///< The color type.
@@ -248,7 +248,7 @@ struct NormalTexCoordAttribute : public NormalAttribute<NormalT>, public TexCoor
     typedef TexCoordAttribute<TexCoordT>  TexCoordBaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(NormalTexCoordAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(NormalTexCoordAttribute)
 
     typedef typename NormalBaseT  ::Normal    Normal;    ///< The normal type.
     typedef typename TexCoordBaseT::TexCoord  TexCoord;  ///< The texture coordinate type.
@@ -278,7 +278,7 @@ struct ColorTexCoordAttribute : public ColorAttribute<ColorT>, public TexCoordAt
     typedef TexCoordAttribute<TexCoordT>  TexCoordBaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(ColorTexCoordAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ColorTexCoordAttribute)
 
     typedef typename ColorBaseT  ::Color      Color;    ///< The normal type.
     typedef typename TexCoordBaseT::TexCoord  TexCoord;  ///< The texture coordinate type.
@@ -310,7 +310,7 @@ struct NormalColorTexCoordAttribute
     typedef TexCoordAttribute<TexCoordT>  TexCoordBaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(NormalColorTexCoordAttribute, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(NormalColorTexCoordAttribute)
 
     typedef NormalT    Normal;    ///< The normal type.
     typedef ColorT     Color;     ///< The color type.

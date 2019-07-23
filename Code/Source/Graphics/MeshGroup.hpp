@@ -49,7 +49,7 @@
 #include "../Serializable.hpp"
 #include "../Set.hpp"
 #include "Drawable.hpp"
-#include "DefaultMeshCodecs.hpp"
+#include "MeshCodec.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -59,7 +59,7 @@ template <typename MeshT>
 class MeshGroup : public virtual NamedObject, public Drawable, public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(MeshGroup, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(MeshGroup)
 
     typedef MeshT Mesh;  ///< The type of mesh in the group.
     typedef std::shared_ptr<Mesh> MeshPtr;  ///< A shared pointer to a mesh.

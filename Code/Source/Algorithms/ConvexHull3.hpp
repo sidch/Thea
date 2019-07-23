@@ -56,7 +56,7 @@ class THEA_API ConvexHull3
   private:
 
   public:
-    THEA_DEF_POINTER_TYPES(ConvexHull3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ConvexHull3)
 
     /** %Options for computing convex hulls. */
     struct THEA_API Options

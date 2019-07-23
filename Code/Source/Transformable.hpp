@@ -51,7 +51,7 @@ template <typename TransformT>
 class /* THEA_API */ Transformable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Transformable, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Transformable)
 
     typedef TransformT Transform;  ///< The type of transformation.
 

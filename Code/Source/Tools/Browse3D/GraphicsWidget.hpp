@@ -60,7 +60,7 @@ namespace Browse3D {
 class GraphicsWidget : public Graphics::Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(GraphicsWidget, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(GraphicsWidget)
 
     /** Get the bounding box of the model. */
     virtual AxisAlignedBox3 const & getBounds() const { static AxisAlignedBox3 const dummy; return dummy; }

@@ -68,7 +68,7 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     typedef HyperplaneN<N, T>  HyperplaneT;  ///< N-dimensional hyperplane.
     typedef Vector<N, T>       VectorT;      ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(HyperplaneT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(HyperplaneT)
 
     /** Default constructor. */
     HyperplaneNBase() : normal(VectorT::Zero()), dist(0) {}

@@ -54,9 +54,10 @@
 #include "DCELFace.hpp"
 #include "DCELVertex.hpp"
 #include "DCELHalfedge.hpp"
+#include "DefaultMeshCodecs.hpp"
+#include "Drawable.hpp"
 #include "GraphicsAttributes.hpp"
 #include "IncrementalDCELMeshBuilder.hpp"
-#include "Drawable.hpp"
 #include <limits>
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -88,7 +89,7 @@ template < typename VertexAttribute    =  Graphics::NullAttribute,
 class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(DCELMesh, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(DCELMesh)
 
     /** Mesh type tag. */
     struct DCEL_MESH_TAG {};

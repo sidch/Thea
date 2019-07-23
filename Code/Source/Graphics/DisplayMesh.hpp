@@ -47,8 +47,9 @@
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../NamedObject.hpp"
-#include "IncrementalDisplayMeshBuilder.hpp"
+#include "DefaultMeshCodecs.hpp"
 #include "Drawable.hpp"
+#include "IncrementalDisplayMeshBuilder.hpp"
 #include <array>
 
 namespace Thea {
@@ -274,7 +275,7 @@ class THEA_API DisplayMeshFace
 class THEA_API DisplayMesh : public virtual NamedObject, public Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(DisplayMesh, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(DisplayMesh)
 
     /** Mesh type tag. */
     struct DISPLAY_MESH_TAG {};

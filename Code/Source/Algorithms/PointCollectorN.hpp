@@ -89,7 +89,7 @@ template <typename CollectionT, int N, typename ScalarT = Real>
 class /* THEA_API */ PointCollectorN
 {
   public:
-    THEA_DEF_POINTER_TYPES(PointCollectorN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(PointCollectorN)
 
     typedef Vector<N, ScalarT> Point;  ///< The point type.
     typedef CollectionT Collection;  ///< The collection type.

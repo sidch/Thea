@@ -58,7 +58,7 @@ namespace Thea {
 class THEA_API Image : public AbstractImage, public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Image, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Image)
 
     /** Construct an empty image with no initial data. */
     Image();

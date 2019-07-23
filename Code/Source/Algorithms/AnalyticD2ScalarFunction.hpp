@@ -56,7 +56,7 @@ namespace Algorithms {
 class THEA_API AnalyticD2ScalarFunction : public AnalyticD1ScalarFunction
 {
   public:
-    THEA_DEF_POINTER_TYPES(AnalyticD2ScalarFunction, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AnalyticD2ScalarFunction)
 
     /** Does the function have a sparse Hessian matrix? */
     virtual bool hasSparseHessian() const = 0;

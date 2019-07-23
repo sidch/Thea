@@ -58,7 +58,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     typedef AxisAlignedBoxN<N, T>   AxisAlignedBoxT;   ///< N-dimensional axis-aligned box.
     typedef CoordinateFrameN<N, T>  CoordinateFrameT;  ///< N-dimensional coordinate frame.
 
-    THEA_DEF_POINTER_TYPES(BoxN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BoxN)
 
     /** Default constructor. Creates a null box. */
     BoxN() {}

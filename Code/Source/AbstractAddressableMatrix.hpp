@@ -57,7 +57,7 @@ template <typename T>
 class /* THEA_API */ AbstractAddressableMatrix : public virtual AbstractMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractAddressableMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AbstractAddressableMatrix)
 
     /**
      * Get a read-only element. Most derived/underlying classes define operator() to access an element quicker, without the

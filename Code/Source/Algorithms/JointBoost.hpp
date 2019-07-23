@@ -69,13 +69,13 @@ typedef boost::dynamic_bitset<> SharingSet;
 class THEA_API JointBoost
 {
   public:
-    THEA_DEF_POINTER_TYPES(JointBoost, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(JointBoost)
 
     /** Interface for accessing training data. */
     class THEA_API TrainingData
     {
       public:
-        THEA_DEF_POINTER_TYPES(TrainingData, std::shared_ptr, std::weak_ptr)
+        THEA_DECL_SMART_POINTERS(TrainingData)
 
         /** Destructor. */
         virtual ~TrainingData() {}
@@ -255,7 +255,7 @@ class THEA_API JointBoost
     /** Decision stump (weak learner). */
     struct SharedStump
     {
-      THEA_DEF_POINTER_TYPES(SharedStump, std::shared_ptr, std::weak_ptr)
+      THEA_DECL_SMART_POINTERS(SharedStump)
 
       intx f;               ///< The index of the feature for this stump.
       SharingSet n;         ///< Indices of positive classes for this stump.

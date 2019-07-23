@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API ApproximateConvexPointDecomposition
 {
   public:
-    THEA_DEF_POINTER_TYPES(ApproximateConvexPointDecomposition, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ApproximateConvexPointDecomposition)
 
     /** Add a point to the cloud to be decomposed. */
     void addPoint(Vector3 const & p) { points.push_back(p); }

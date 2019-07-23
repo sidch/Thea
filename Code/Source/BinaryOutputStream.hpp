@@ -156,7 +156,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     bool operator==(BinaryOutputStream const &);
 
   public:
-    THEA_DEF_POINTER_TYPES(BinaryOutputStream, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BinaryOutputStream)
 
     /** Construct a stream that writes to an (expanding, contiguous) memory buffer. */
     explicit BinaryOutputStream(Endianness endian = Endianness::LITTLE);

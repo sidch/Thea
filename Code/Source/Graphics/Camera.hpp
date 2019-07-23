@@ -62,7 +62,7 @@ namespace Graphics {
 class THEA_API Camera : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Camera, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Camera)
 
     /** Type of projection used by the camera (enum class). */
     struct THEA_API ProjectionType

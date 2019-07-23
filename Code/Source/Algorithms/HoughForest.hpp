@@ -75,13 +75,13 @@ class HoughTree;
 class THEA_API HoughForest : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(HoughForest, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(HoughForest)
 
     /** Interface for accessing training data. */
     class TrainingData
     {
       public:
-        THEA_DEF_POINTER_TYPES(TrainingData, std::shared_ptr, std::weak_ptr)
+        THEA_DECL_SMART_POINTERS(TrainingData)
 
         /** Destructor. */
         virtual ~TrainingData() {}

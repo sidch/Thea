@@ -55,7 +55,7 @@ namespace Algorithms {
 class ScalarConstraint
 {
   public:
-    THEA_DEF_POINTER_TYPES(ScalarConstraint, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ScalarConstraint)
 
     /** Get the function. */
     virtual ScalarFunction const & getFunction() const = 0;

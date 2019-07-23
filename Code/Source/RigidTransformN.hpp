@@ -70,7 +70,7 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
     typedef Vector<N, T>            VectorT;           ///< N-dimensional vector.
     typedef Matrix<N, N, T>         MatrixT;           ///< NxN matrix.
 
-    THEA_DEF_POINTER_TYPES(RigidTransformT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(RigidTransformT)
 
   public:
     /** Default constructor. Constructs the identity transform. */

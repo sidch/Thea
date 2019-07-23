@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API BestFitBox3
 {
   public:
-    THEA_DEF_POINTER_TYPES(BestFitBox3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BestFitBox3)
 
     /** Constructor. */
     BestFitBox3();

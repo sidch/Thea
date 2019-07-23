@@ -56,7 +56,7 @@ template <typename T>
 class /* THEA_API */ AbstractCompressedSparseMatrix : public virtual AbstractSparseMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractCompressedSparseMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AbstractCompressedSparseMatrix)
 
     /** Is the matrix stored in compressed row format? */
     virtual int8 isRowMajor() const = 0;

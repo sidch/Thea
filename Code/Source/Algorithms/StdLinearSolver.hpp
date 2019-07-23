@@ -64,7 +64,7 @@ namespace StdLinearSolverInternal { class StdLinearSolverImpl; }
 class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(StdLinearSolver, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(StdLinearSolver)
 
     /** The constraints to be imposed on the solution (enum class). */
     struct THEA_API Constraint

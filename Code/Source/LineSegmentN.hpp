@@ -75,7 +75,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     typedef LineSegmentN<N, T>  LineSegmentT;  ///< N-dimensional straight line.
     typedef Vector<N, T>        VectorT;       ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(LineSegmentT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(LineSegmentT)
 
     /** Default constructor, does not initialize the segment. */
     LineSegmentNBase() {}

@@ -58,7 +58,7 @@ template <typename MeshT>
 class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsDCELMesh<MeshT>::value >::type>
 {
   public:
-    THEA_DEF_POINTER_TYPES(IncrementalMeshBuilder, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(IncrementalMeshBuilder)
 
     typedef MeshT                         Mesh;          ///< Type of mesh being built.
     typedef typename MeshT::VertexHandle  VertexHandle;  ///< Handle to a mesh vertex.

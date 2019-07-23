@@ -55,7 +55,7 @@ namespace Algorithms {
 class THEA_API BagOfWords : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(BagOfWords, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BagOfWords)
 
     /** Options for building the model. */
     typedef KMeans::Options Options;

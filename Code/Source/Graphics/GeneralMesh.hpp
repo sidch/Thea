@@ -50,12 +50,13 @@
 #include "../NamedObject.hpp"
 #include "../Polygon3.hpp"
 #include "../UnorderedMap.hpp"
+#include "DefaultMeshCodecs.hpp"
+#include "Drawable.hpp"
 #include "GeneralMeshFace.hpp"
 #include "GeneralMeshVertex.hpp"
 #include "GeneralMeshEdge.hpp"
 #include "GraphicsAttributes.hpp"
 #include "IncrementalGeneralMeshBuilder.hpp"
-#include "Drawable.hpp"
 #include "EdgeWelder.hpp"
 #include <type_traits>
 
@@ -80,7 +81,7 @@ template < typename VertexAttributeT               =  Graphics::NullAttribute,
 class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(GeneralMesh, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(GeneralMesh)
 
     /** Mesh type tag. */
     struct GENERAL_MESH_TAG {};

@@ -120,7 +120,7 @@ class PointTraitsN<Polygon3Internal::IndexedVertex, 3>
 class THEA_API Polygon3
 {
   public:
-    THEA_DEF_POINTER_TYPES(Polygon3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Polygon3)
 
     typedef Polygon3Internal::IndexedVertex IndexedVertex;  ///< A vertex plus an index.
 

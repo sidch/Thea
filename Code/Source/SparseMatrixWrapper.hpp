@@ -62,7 +62,7 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     typedef AbstractCompressedSparseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type.
 
   public:
-    THEA_DEF_POINTER_TYPES(SparseMatrixWrapper, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(SparseMatrixWrapper)
 
     typedef MatrixT WrappedMatrix;  ///< The wrapped matrix type.
     using typename BaseT::Value;

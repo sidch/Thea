@@ -53,7 +53,7 @@ template <int N, typename T = Real>
 class /* THEA_API */ RayN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(RayN)
 
     typedef Vector<N, T> VectorT;  ///< N-dimensional vector.
 

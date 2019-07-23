@@ -60,7 +60,7 @@ template <int N, typename T = Real>
 class /* THEA_API */ ProximityQueryStructureN
 {
   public:
-    THEA_DEF_POINTER_TYPES(ProximityQueryStructureN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ProximityQueryStructureN)
 
     typedef Vector<N, T> VectorT;  ///< N-dimensional vector.
 

@@ -72,7 +72,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     };
 
   public:
-    THEA_DEF_POINTER_TYPES(PointCloud, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(PointCloud)
 
     /** Constructor. */
     PointCloud(std::string const & path = "", std::string const & features_path = "");

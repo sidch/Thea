@@ -62,7 +62,7 @@ class StdLinearSolver;
 class THEA_API LogisticRegression
 {
   public:
-    THEA_DEF_POINTER_TYPES(LogisticRegression, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(LogisticRegression)
 
     /** Constructor. Sets the number of dimensions of the problem domain (i.e. of the vector <b>x</b>). */
     LogisticRegression(intx ndims_);

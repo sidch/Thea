@@ -66,7 +66,7 @@ class /* THEA_DLL_LOCAL */ LineNBase
     typedef LineN<N, T>   LineT;    ///< N-dimensional straight line.
     typedef Vector<N, T>  VectorT;  ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(LineT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(LineT)
 
     /** Construct a line from a point on it, and the direction vector of the line (need not be a unit vector). */
     static LineT fromPointAndDirection(VectorT const & point_, VectorT const & direction_)

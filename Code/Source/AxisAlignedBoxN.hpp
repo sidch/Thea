@@ -71,7 +71,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     typedef AxisAlignedBoxN<N, T>  AxisAlignedBoxT;  ///< N-dimensional axis-aligned box.
     typedef Vector<N, T>           VectorT;          ///< N-dimensional vector.
 
-    THEA_DEF_POINTER_TYPES(AxisAlignedBoxT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AxisAlignedBoxT)
 
     /**
      * Default constructor, creates a null box.

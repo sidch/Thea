@@ -652,7 +652,7 @@ class THEA_API Triangle3<TriangleLocalVertexTriple3> : public Triangle3Base<Tria
     typedef Triangle3Base<TriangleLocalVertexTriple3> BaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(Triangle3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Triangle3)
 
     /** Default constructor. Does not initialize anything. */
     Triangle3() {}
@@ -706,7 +706,7 @@ class /* THEA_API */ Triangle3 : public Triangle3Base<VertexTripleT>
     typedef Triangle3Base<VertexTripleT> BaseT;
 
   public:
-    THEA_DEF_POINTER_TYPES(Triangle3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Triangle3)
 
     /** Default constructor. Does not initialize anything. */
     Triangle3() {}

@@ -54,7 +54,7 @@ template <typename T>
 class /* THEA_API */ AbstractSparseMatrix : public virtual AbstractMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractSparseMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AbstractSparseMatrix)
 
     /**
      * Get the number of entries actually stored in the matrix. These are often called "non-zeros", though they may actually

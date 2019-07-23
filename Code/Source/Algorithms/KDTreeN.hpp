@@ -363,7 +363,7 @@ class /* THEA_API */ KDTreeN
     };
 
   public:
-    THEA_DEF_POINTER_TYPES(KDTreeN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(KDTreeN)
 
     typedef T                                    Element;        ///< Type of elements in the kd-tree.
     typedef T                                    value_type;     ///< Type of elements in the kd-tree (STL convention).

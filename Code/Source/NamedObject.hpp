@@ -76,7 +76,7 @@ class THEA_API AbstractNamedObject
 class THEA_API NamedObject : public virtual AbstractNamedObject
 {
   public:
-    THEA_DEF_POINTER_TYPES(NamedObject, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(NamedObject)
 
     /** Destructor. */
     virtual ~NamedObject() = 0;

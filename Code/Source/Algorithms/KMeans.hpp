@@ -65,7 +65,7 @@ namespace Algorithms {
 class THEA_API KMeans : public Serializable
 {
   public:
-    THEA_DEF_POINTER_TYPES(KMeans, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(KMeans)
 
     /** How to seed the initial centers (enum class). */
     class THEA_API Seeding

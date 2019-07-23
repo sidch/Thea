@@ -54,7 +54,7 @@ class AnalyticD1ScalarFunction;
 class THEA_API ScalarFunction
 {
   public:
-    THEA_DEF_POINTER_TYPES(ScalarFunction, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ScalarFunction)
 
     /** Destructor. */
     virtual ~ScalarFunction() {}

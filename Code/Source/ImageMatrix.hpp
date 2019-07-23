@@ -59,7 +59,7 @@ template <typename T>
 class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(ImageMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(ImageMatrix)
 
     using typename AbstractAddressableMatrix<T>::Value;       // == T
     using typename AbstractAddressableMatrix<T>::value_type;  // == T

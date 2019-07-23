@@ -55,7 +55,7 @@ namespace Graphics {
 class THEA_API Drawable
 {
   public:
-    THEA_DEF_POINTER_TYPES(Drawable, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(Drawable)
 
     /** Destructor. */
     virtual ~Drawable() = 0;

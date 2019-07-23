@@ -53,7 +53,7 @@ namespace Algorithms {
 class THEA_API BestFitEllipsoid3
 {
   public:
-    THEA_DEF_POINTER_TYPES(BestFitEllipsoid3, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BestFitEllipsoid3)
 
     /**
      * Constructor. The optional argument (which may be ignored by the implementation) controls the approximation ratio

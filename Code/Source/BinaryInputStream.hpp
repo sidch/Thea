@@ -143,7 +143,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     bool operator==(BinaryInputStream const &) const;
 
   public:
-    THEA_DEF_POINTER_TYPES(BinaryInputStream, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BinaryInputStream)
 
     /** Constant to use with the copy_memory option (evaluates to false). */
     static bool const NO_COPY;

@@ -56,7 +56,7 @@ template <typename T>
 class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMatrix<T>
 {
   public:
-    THEA_DEF_POINTER_TYPES(AbstractDenseMatrix, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AbstractDenseMatrix)
 
     /** Is the matrix stored in row-major format? */
     virtual int8 isRowMajor() const = 0;

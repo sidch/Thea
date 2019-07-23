@@ -58,7 +58,7 @@ class /* THEA_API */ BestFitSphereN
     typedef Vector<N, double> PointT;  ///< The N-dimensional vector type used to internally represent points.
 
   public:
-    THEA_DEF_POINTER_TYPES(BestFitSphereN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(BestFitSphereN)
 
     typedef BallN <N, T> BallT;    ///< An N-dimensional ball.
     typedef Vector<N, T> VectorT;  ///< An N-dimensional vector.

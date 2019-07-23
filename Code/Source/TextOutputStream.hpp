@@ -213,7 +213,7 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
     bool _commit(bool flush, bool force);
 
   public:
-    THEA_DEF_POINTER_TYPES(TextOutputStream, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(TextOutputStream)
 
     /**
      * Construct a stream that writes to a file. Use "<memory>" as the path if you're going to commit to memory -- this has the

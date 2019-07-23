@@ -87,7 +87,7 @@ template <int N, typename T = Real>
 class /* THEA_API */ RayQueryStructureN
 {
   public:
-    THEA_DEF_POINTER_TYPES(RayQueryStructureN, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(RayQueryStructureN)
 
     typedef RayN<N, T> RayT;
     typedef RayStructureIntersectionN<N, T> RayStructureIntersectionT;

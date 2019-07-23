@@ -67,7 +67,7 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     typedef Vector<N, T>            VectorT;           ///< N-dimensional vector.
     typedef Matrix<N, N, T>         MatrixT;           ///< NxN matrix.
 
-    THEA_DEF_POINTER_TYPES(AffineTransformT, std::shared_ptr, std::weak_ptr)
+    THEA_DECL_SMART_POINTERS(AffineTransformT)
 
     /** Default constructor. Does not initialize anything. */
     AffineTransformNBase() {}
