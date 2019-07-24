@@ -130,6 +130,12 @@ class THEA_API FilePath
      */
     static std::string changeCompleteExtension(std::string const & path, std::string const & new_ext);
 
+    /** Returns true if a path uniquely identifies a file or directory. */
+    static bool isAbsolute(std::string const & path);
+
+    /** Returns true if a path does not uniquely identify a file or directory. */
+    static bool isRelative(std::string const & path);
+
 }; // class FilePath
 
 } // namespace Thea

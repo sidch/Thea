@@ -126,4 +126,16 @@ FilePath::changeCompleteExtension(std::string const & path, std::string const & 
   return concat(parent(path), baseName(path) + '.' + new_ext);
 }
 
+bool
+FilePath::isAbsolute(std::string const & path)
+{
+  return boost::filesystem::path(path).is_absolute();
+}
+
+bool
+FilePath::isRelative(std::string const & path)
+{
+  return boost::filesystem::path(path).is_relative();
+}
+
 } // namespace Thea
