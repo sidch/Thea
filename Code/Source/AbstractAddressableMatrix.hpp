@@ -71,7 +71,7 @@ class /* THEA_API */ AbstractAddressableMatrix : public virtual AbstractMatrix<T
      * quicker, without the virtual function overhead. Use this function only in generic algorithms that need polymorphic access
      * to matrices without using templates, or when accessing matrices across shared library boundaries.
      */
-    virtual T & at(int64 row, int64 col) = 0;
+    virtual T & mutableAt(int64 row, int64 col) = 0;
 
     /** Get a row of the matrix. \a values must be preallocated with cols() elements. */
     virtual void getRow(int64 row, T * values) const = 0;

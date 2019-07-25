@@ -64,7 +64,7 @@ class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizer : public NumericalOptimizer
     OPTPPNumericalOptimizer(std::string const & name_);
 
     /**
-     * {@inheritDoc}
+     * @copydoc NumericalOptimizer::minimize()
      *
      * Valid options for the OPT++ backend are:
      * - <b>method</b>: Solution method to use

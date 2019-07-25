@@ -163,8 +163,8 @@ class THEA_API LaplaceBeltrami
 
             j = indices[vj];
             x = 4 * (cot_a_ij + cot_b_ij);
-            result.at(i, j) += x;
-            result.at(i, i) -= x;
+            result.mutableAt(i, j) += x;
+            result.mutableAt(i, i) -= x;
 
             ej_prev = ej;
             ej      = ej_next;
@@ -180,10 +180,10 @@ class THEA_API LaplaceBeltrami
             for (typename MeshT::Vertex::EdgeConstIterator ei = vi->edgesBegin(); ei != vi->edgesEnd(); ++ei)
             {
               j = indices[(*ei)->getOtherEndpoint(&(*vi))];
-              result.at(i, j) /= denom;
+              result.mutableAt(i, j) /= denom;
             }
 
-            result.at(i, i) /= denom;
+            result.mutableAt(i, i) /= denom;
           }
         }
       }
@@ -235,8 +235,8 @@ class THEA_API LaplaceBeltrami
 
             j = indices[vj];
             x = 4 * (cot_a_ij + cot_b_ij);
-            result.at(i, j) += x;
-            result.at(i, i) -= x;
+            result.mutableAt(i, j) += x;
+            result.mutableAt(i, i) -= x;
 
             he_j_prev = he_j;
             he_j      = he_j_next;
@@ -248,12 +248,12 @@ class THEA_API LaplaceBeltrami
           do
           {
             j = indices[he_j->getEnd()];
-            result.at(i, j) /= denom;
+            result.mutableAt(i, j) /= denom;
             he_j = he_j->nextAroundOrigin();
 
           } while (he_j != vi->getHalfedge());
 
-          result.at(i, i) /= denom;
+          result.mutableAt(i, i) /= denom;
         }
       }
     }

@@ -109,7 +109,7 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
 
     // Functions from AbstractAddressableMatrix
     Value const & at(int64 row, int64 col) const { return (*m)(row, col); }
-    Value & at(int64 row, int64 col) { return (*m)(row, col); }
+    Value & mutableAt(int64 row, int64 col) { return (*m)(row, col); }
 
     // Functions from AbstractDenseMatrix
     int8 isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }

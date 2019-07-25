@@ -15,9 +15,16 @@ using namespace Thea;
 #endif
 
 #include "../Algorithms/LaplaceBeltrami.hpp"
+#include "../Algorithms/EigenSolver.hpp"
 #include "../Graphics/MeshGroup.hpp"
-#include "../MatrixWrapper.hpp"
+#include "../Application.hpp"
+#include "../FilePath.hpp"
+#include "../MappedMatrix.hpp"
 #include "../MatVec.hpp"
+#include "../Options.hpp"
+#include "../Plugin.hpp"
+#include "../SparseMatrixWrapper.hpp"
+#include "../SparseMatVec.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -26,6 +33,12 @@ using namespace Thea;
 using namespace std;
 using namespace Algorithms;
 using namespace Graphics;
+
+#ifdef THEA_DEBUG_BUILD
+  static std::string const arpack_plugin = "libTheaPluginARPACKd";
+#else
+  static std::string const arpack_plugin = "libTheaPluginARPACK";
+#endif
 
 void testLB(int argc, char * argv[]);
 
@@ -42,34 +55,64 @@ main(int argc, char * argv[])
   return 0;
 }
 
-void
-testLB(int argc, char * argv[])
+Mesh::Ptr
+loadMesh(std::string const & path)
 {
-  if (argc < 2)
-  {
-    cerr << "Usage: " << argv[0] << " <mesh>" << endl;
-    return;
-  }
+  Array< MeshCodec<Mesh>::Ptr > codecs {
+    std::make_shared< CodecOBJ<Mesh> >(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true)),
+    std::make_shared< Codec3DS<Mesh> >(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true))
+  };
 
-  string model_path = argv[1];
-  MeshGroup<Mesh> mesh_group("Manifold");
-
-  CodecOBJ<Mesh> const codec_obj(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
-  Codec3DS<Mesh> const codec_3ds(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true));
-
-  if (endsWith(toLower(model_path), "obj"))
-    mesh_group.load(model_path, codec_obj);
-  else if (endsWith(toLower(model_path), "3ds"))
-    mesh_group.load(model_path, codec_3ds);
-  else
-    mesh_group.load(model_path);
+  MeshGroup<Mesh> mesh_group;
+  mesh_group.load(path, codecs);
 
   if (mesh_group.numMeshes() <= 0)
     throw Error("Mesh group is empty");
 
   Mesh::Ptr mesh = *mesh_group.meshesBegin();
-  MatrixX<> lb;  // TODO: use a sparse mapped matrix
-  MatrixWrapper< MatrixX<> > wrapper(&lb);
-  LaplaceBeltrami::compute(*mesh, LaplaceBeltrami::Method::XU_2006, wrapper);
-  cout << lb;
+  mesh->setName(FilePath::baseName(path));
+  return mesh;
+}
+
+void
+testLB(int argc, char * argv[])
+{
+  if (argc < 3)
+  {
+    cerr << "Usage: " << argv[0] << " <mesh> <num_eigs>" << endl;
+    return;
+  }
+
+  string model_path = argv[1];
+  intx num_eigs = std::atoi(argv[2]);
+
+  Mesh::Ptr mesh = loadMesh(model_path);
+  intx n = mesh->numVertices();
+
+  MappedMatrix<float64> lb;
+  LaplaceBeltrami::compute(*mesh, LaplaceBeltrami::Method::XU_2006, lb);
+
+  SparseColumnMatrix<float64> sparse_lb(n, n);
+  sparse_lb.setFromTriplets(lb.tripletsBegin(), lb.tripletsEnd());
+
+  Plugin * plugin = Application::getPluginManager().load(arpack_plugin);
+  plugin->startup();
+  Algorithms::EigenSolverFactory * factory = Application::getEigenSolverManager().getFactory("ARPACK");
+  Algorithms::EigenSolver * eig = factory->createEigenSolver("My ARPACK eigensolver");
+
+  intx num_ret = eig->solve(SparseMatrixWrapper< SparseColumnMatrix<float64> >(&sparse_lb),
+                            /* compute_eigenvectors = */ true,
+                            /* num_requested_eigenpairs = */ num_eigs);
+
+  float64 eigval_re, eigval_im;
+  float64 const * eigvec_re, * eigvec_im;
+  for (intx i = 0; i < num_ret; ++i)
+  {
+    eig->getEigenvalue(i, eigval_re, eigval_im);
+    eig->getEigenvector(i, eigvec_re, eigvec_im);
+
+    THEA_CONSOLE << "eig[" << i << "] = ((" << eigval_re << ", " << eigval_im << "), "
+                 << "(re: " << toString(VectorXdConstMap(eigvec_re, n))
+                 << ", im: " << toString(VectorXdConstMap(eigvec_im, n)) << "))";
+  }
 }

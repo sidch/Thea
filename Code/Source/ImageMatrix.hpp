@@ -89,9 +89,9 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     }
 
     Value const & at(int64 row, int64 col) const { return ((Value const *)image->getScanLine(row))[col]; }
-    Value & at(int64 row, int64 col) { return ((Value *)image->getScanLine(row))[col]; }
+    Value & mutableAt(int64 row, int64 col) { return ((Value *)image->getScanLine(row))[col]; }
 
-    // TODO: These could perhaps be made faster by avoiding at()
+    // TODO: These could perhaps be made faster by avoiding at() or mutableAt()
     void getRow(int64 row, Value * values) const
     {
       for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
@@ -101,7 +101,7 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     void setRow(int64 row, Value const * values)
     {
       for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
-        at(row, c) = values[c];
+        mutableAt(row, c) = values[c];
     }
 
     void getColumn(int64 col, Value * values) const
@@ -113,7 +113,7 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     void setColumn(int64 col, Value const * values)
     {
       for (intx r = 0, nrows = (intx)rows(); r < nrows; ++r)
-        at(r, col) = values[r];
+        mutableAt(r, col) = values[r];
     }
 
     // Type-casting functions

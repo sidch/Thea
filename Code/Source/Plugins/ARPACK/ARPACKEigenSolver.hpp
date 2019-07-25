@@ -67,7 +67,7 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver, public virtu
     ~ARPACKEigenSolver();
 
     /**
-     * {@inheritDoc}
+     * @copydoc EigenSolver::solve()
      *
      * Valid options for the ARPACK backend, where n is the size of the operator matrix, are:
      * - <b>which</b>: Part of eigenvalue spectrum to be returned

@@ -323,7 +323,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
                                       // case the behavior appears to be as expected with this line.
 
     /**
-     * {@inheritDoc}
+     * @copydoc Serializable::serialize()
      *
      * The serialized mesh group is prefixed with a header indicating the type and size of the encoding.
      */
@@ -333,7 +333,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     }
 
     /**
-     * {@inheritDoc}
+     * Write the mesh group to an output stream, with a callback function called after every element is written.
      *
      * The serialized mesh group is prefixed with a header indicating the type and size of the encoding.
      */
@@ -355,7 +355,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     }
 
     /**
-     * {@inheritDoc}
+     * @copydoc Serializable::deserialize()
      *
      * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
      */
@@ -365,7 +365,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     }
 
     /**
-     * Read the mesh group from an input stream.
+     * Read the mesh group from an input stream, with a callback function called after every element is read.
      *
      * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
      */

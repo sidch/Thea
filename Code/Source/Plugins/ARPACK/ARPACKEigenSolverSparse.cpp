@@ -103,11 +103,12 @@ ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<float64> const & m
     ARPACKEigenSolverInternal::indicesToInt(m.getInnerIndexType(), m.numStoredElements(), m.getInnerIndices(), irow);
 
     Array<int32> pcol;
-    ARPACKEigenSolverInternal::indicesToInt(m.getOuterIndexType(), m.outerSize(), m.getOuterIndices(), pcol);
+    ARPACKEigenSolverInternal::indicesToInt(m.getOuterIndexType(), m.outerSize() + 1, m.getOuterIndices(), pcol);
 
     int32 nnz = (int32)m.numStoredElements();
     alwaysAssertM(nnz == pcol[pcol.size() - 1],
-                  std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
+                  format("%s: (n + 1)th entry of pcol array should be number of non-zeros %ld, but is %ld",
+                         getName(), (long)nnz, (long)pcol[pcol.size() - 1]));
 
     ARluNonSymMatrix<float64, float64> arm(m.rows(), nnz, const_cast<float64 *>(m.getValues()),
                                          (irow.empty() ? NULL : &irow[0]), &pcol[0]);

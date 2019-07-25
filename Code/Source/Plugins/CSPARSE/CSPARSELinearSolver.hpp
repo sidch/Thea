@@ -69,7 +69,7 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver, public v
     ~CSPARSELinearSolver();
 
     /**
-     * {@inheritDoc}
+     * @copydoc LinearSolver::solve()
      *
      * Valid options for the CSPARSE backend are:
      * - <b>method</b>: Solution method to use

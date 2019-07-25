@@ -76,7 +76,8 @@ class /* THEA_API */ AbstractMatrix
     virtual int8 isResizable() const = 0;
 
     /**
-     * Resize the matrix to new dimensions.
+     * Resize the matrix to new dimensions, if isResizable() returns true. Existing entries will in general <b>not</b> be
+     * preserved in the resized matrix.
      *
      * @return True if the matrix was successfully resized, else false.
      */
@@ -86,8 +87,8 @@ class /* THEA_API */ AbstractMatrix
      * If the matrix elements are addressable by (row, col) pairs, get a pointer to a derived interface supporting such access.
      * Else, return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractAddressableMatrix<T> const * asAddressable() const = 0;
 
@@ -95,8 +96,8 @@ class /* THEA_API */ AbstractMatrix
      * If the matrix elements are addressable by (row, col) pairs, get a pointer to a derived interface supporting such access.
      * Else, return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractAddressableMatrix<T> * asAddressable() = 0;
 
@@ -104,8 +105,8 @@ class /* THEA_API */ AbstractMatrix
      * If the matrix elements are addressable by (row, col) pairs, get a pointer to a derived interface supporting such access.
      * Else, return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractSparseMatrix<T> const * asSparse() const = 0;
 
@@ -113,8 +114,8 @@ class /* THEA_API */ AbstractMatrix
      * If the matrix is sparse, get a pointer to a derived interface giving sparse-specific access. Else, return null. Note that
      * a sparse matrix can still be addressable, e.g. if it is stored as a map of <code>(row, col) --> value</code> pairs.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractSparseMatrix<T> * asSparse() = 0;
 

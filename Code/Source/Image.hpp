@@ -198,14 +198,14 @@ class THEA_API Image : public AbstractImage, public Serializable
     bool rescale(int64 new_width, int64 new_height, int64 new_depth = 1, Filter filter = Filter::AUTO);
 
     /**
-     * {@inheritDoc}
+     * @copydoc Serializable::serialize()
      *
      * The serialized image is prefixed with a header indicating its encoded size.
      */
     void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
 
     /**
-     * {@inheritDoc}
+     * @copydoc Serializable::deserialize()
      *
      * The image <b>must</b> have been serialized using the layout specified in serialize().
      */
