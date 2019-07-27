@@ -78,13 +78,13 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Construct a scaling transform. */
     static AffineTransformT scaling(VectorT const & s)
     {
-      return AffineTransformT(MatrixT(s.asDiagonal()), VectorT::Zero());
+      return AffineTransformT(Math::scaling(s), VectorT::Zero());
     }
 
     /** Construct a uniform scaling transform. */
     static AffineTransformT scaling(T const & s)
     {
-      return scaling(VectorT::Constant(s));
+      return AffineTransformT(Math::scaling<N>(s), VectorT::Zero());;
     }
 
     /** Construct a translation. */

@@ -145,8 +145,8 @@ maxAbsAxis(Eigen::MatrixBase<Derived> const & v)
  */
 template <typename T, int N, int O1, int R1, int C1, int O2, int R2, int C2>
 Eigen::Matrix<T, N - 1, 1, O2, R2, C2>
-hmul(Eigen::MatrixBase< Eigen::Matrix<T, N,     N, O1, R1, C1> > const & m,
-     Eigen::MatrixBase< Eigen::Matrix<T, N - 1, 1, O2, R2, C2> > const & v)
+hmul(Eigen::Matrix<T, N,     N, O1, R1, C1> const & m,
+     Eigen::Matrix<T, N - 1, 1, O2, R2, C2> const & v)
 {
   return (m * v.homogeneous()).hnormalized();
 }
@@ -157,7 +157,7 @@ hmul(Eigen::MatrixBase< Eigen::Matrix<T, N,     N, O1, R1, C1> > const & m,
  */
 template <typename T>
 Vector<2, T>
-orthogonalVector(Eigen::MatrixBase< Vector<2, T> > const & v)
+orthogonalVector(Vector<2, T> const & v)
 {
   return Vector<2, T>(v[1], -v[0]);
 }
@@ -169,7 +169,7 @@ orthogonalVector(Eigen::MatrixBase< Vector<2, T> > const & v)
  */
 template <typename T>
 Vector<2, T>
-orthogonalDirection(Eigen::MatrixBase< Vector<2, T> > const & v)
+orthogonalDirection(Vector<2, T> const & v)
 {
   return orthogonalVector(v).normalized();
 }
@@ -177,7 +177,7 @@ orthogonalDirection(Eigen::MatrixBase< Vector<2, T> > const & v)
 /** Given a 3D vector, get an arbitrary unit vector perpendicular to it. */
 template <typename T>
 Vector<3, T>
-orthogonalDirection(Eigen::MatrixBase< Vector<3, T> > const & v)
+orthogonalDirection(Vector<3, T> const & v)
 {
   if (maxAbsAxis(v) == 0)
     return Vector<3, T>(v[1], -v[0], 0).normalized();
@@ -192,7 +192,7 @@ orthogonalDirection(Eigen::MatrixBase< Vector<3, T> > const & v)
  */
 template <typename T>
 Matrix<3, 3, T>
-orthonormalBasis(Eigen::MatrixBase< Vector<3, T> > const & w)
+orthonormalBasis(Vector<3, T> const & w)
 {
   Vector<3, T>  wnrm = w.normalized();
   Vector<3, T>  u = orthogonalDirection(w);
@@ -201,6 +201,27 @@ orthonormalBasis(Eigen::MatrixBase< Vector<3, T> > const & w)
   Matrix<3, 3, T> m;
   m << u, v, wnrm;
   return m;
+}
+
+/**
+ * Matrix to scale a point by the corresponding scaling parameter along each dimension.
+ *
+ * @param s The vector of scaling factors per dimension.
+ */
+template <int N, typename T>
+Matrix<N, N, T>
+scaling(Vector<N, T> const & s)
+{
+  return Matrix<N, N, T>(s.asDiagonal());
+}
+
+/** Matrix to uniformaly scale a point by a scaling factor \a s. */
+template <int N, typename T>
+Matrix<N, N, T>
+scaling(T const & s)
+{
+  Vector<N, T> v; v.fill(s);
+  return scaling(v);
 }
 
 /** Matrix to rotate a 2D vector about the origin by an angle (in radians). */
@@ -219,7 +240,7 @@ rotation(T const & radians)
 /** Rotate around the given 3D axis (need not be a unit vector) by a given angle. */
 template <typename T>
 Matrix<3, 3, T>
-rotationAxisAngle(Eigen::MatrixBase< Vector<3, T> > const & axis, Real radians)
+rotationAxisAngle(Vector<3, T> const & axis, Real radians)
 {
   Vector<3, T> uaxis = axis.normalized();
 
@@ -438,9 +459,7 @@ rotationQuat(T const & x, T const & y, T const & z, T const & w)
  */
 template <typename T>
 Matrix<3, 3, T>
-rotationArc(Eigen::MatrixBase< Vector<3, T> > const & start_dir,
-            Eigen::MatrixBase< Vector<3, T> > const & end_dir,
-            bool normalize_dirs = true)
+rotationArc(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool normalize_dirs = true)
 {
   // From John Ratcliff's Code Suppository.
   //
@@ -568,7 +587,7 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
  */
 template <typename T>
 int
-eigenSolve(Eigen::MatrixBase< Matrix<2, 2, T> > const & m, T * eigenvalues, Vector<2, T> * eigenvectors, T const & tol = -1)
+eigenSolve(Matrix<2, 2, T> const & m, T * eigenvalues, Vector<2, T> * eigenvectors, T const & tol = -1)
 {
   T a = m(0, 0), b = m(0, 1);
   T c = m(1, 0), d = m(1, 1);
