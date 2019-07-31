@@ -77,9 +77,9 @@ ARPACKEigenSolver::solve(AbstractMatrix<float64> const & m, int8 compute_eigenve
     num_requested_eigenpairs = ndims;
 
   char     const * DEFAULT_WHICH = "LM";
-  int32    const   DEFAULT_NCV = 0;
+  int32    const   DEFAULT_NCV = std::min(2 * num_requested_eigenpairs + 1, ndims - 1);
   float64  const   DEFAULT_TOL = std::max(1e-7, 5e-9 * ndims);
-  int32    const   DEFAULT_MAXIT = 100;
+  int32    const   DEFAULT_MAXIT = 100 * num_requested_eigenpairs;
   int32    const   DEFAULT_SIGMA = 0;
 
   std::string which_s = options ? options->getString("which", DEFAULT_WHICH) : DEFAULT_WHICH;
