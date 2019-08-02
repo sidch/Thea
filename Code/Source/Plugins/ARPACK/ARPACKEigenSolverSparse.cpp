@@ -43,7 +43,7 @@
 #include "../../Array.hpp"
 
 #ifdef THEA_HAVE_SUPERLU
-#  include <arlsnsym.h>
+#  include "arpackpp/arlsnsym.h"
 #endif
 
 namespace Thea {

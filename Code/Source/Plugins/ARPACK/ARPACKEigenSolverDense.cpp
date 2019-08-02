@@ -40,7 +40,7 @@
 //============================================================================
 
 #include "ARPACKEigenSolver.hpp"
-#include <ardsnsym.h>
+#include "arpackpp/ardsnsym.h"
 
 namespace Thea {
 namespace Algorithms {

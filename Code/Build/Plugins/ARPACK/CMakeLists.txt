@@ -21,18 +21,8 @@ ELSE()
 ENDIF()
 FIND_PACKAGE(ARPACK)
 
-# Dependency: ARPACK++
+# If we can't find ARPACK, don't build this plugin
 IF(ARPACK_FOUND)
-  IF(EXISTS ${THEA_DEPS_ROOT}/installed-arpack++)
-    SET(ARPACKPP_ROOT ${THEA_DEPS_ROOT}/installed-arpack++)
-  ELSE()
-    SET(ARPACKPP_ROOT ${THEA_DEPS_ROOT})
-  ENDIF()
-  FIND_PACKAGE(ARPACKPP)
-ENDIF(ARPACK_FOUND)
-
-# If we can't find ARPACK or ARPACK++, don't build this plugin
-IF(ARPACK_FOUND AND ARPACKPP_FOUND)
 
 # Dependency: SuperLU (optional)
 IF(EXISTS ${THEA_DEPS_ROOT}/installed-superlu)
@@ -56,8 +46,10 @@ IF(THEA_DLL)
   ADD_DEFINITIONS(-DTHEA_DLL -DTHEA_DLL_IMPORTS)
 ENDIF()
 
-# Include directories
-INCLUDE_DIRECTORIES(BEFORE ${ARPACKPP_INCLUDE_DIRS})
+# ARPACK++ throws a bunch of harmless (?) warnings which are easier to ignore than to fix
+IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-overloaded-virtual")
+ENDIF()
 
 # Source file lists
 FILE(GLOB TheaPluginARPACKSources ${SourceRoot}/Plugins/ARPACK/*.cpp)
@@ -91,8 +83,8 @@ SET_TARGET_PROPERTIES(TheaPluginARPACK
 INSTALL(TARGETS TheaPluginARPACK DESTINATION lib)
 INSTALL(TARGETS TheaPluginARPACK DESTINATION share/Thea/Build/Output/lib)  # for tools to use
 
-ELSE(ARPACK_FOUND AND ARPACKPP_FOUND)
+ELSE(ARPACK_FOUND)
 
-MESSAGE(STATUS "ARPACK/ARPACK++ not found: ARPACK plugin will not be built")
+MESSAGE(STATUS "ARPACK not found: ARPACK plugin will not be built")
 
-ENDIF(ARPACK_FOUND AND ARPACKPP_FOUND)
+ENDIF(ARPACK_FOUND)
