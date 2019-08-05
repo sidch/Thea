@@ -329,7 +329,7 @@ using VectorXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> >;
 template <typename T = Real,
           int Options = MatrixLayout::COLUMN_MAJOR,
           int MaxRowsAtCompileTime = Eigen::Dynamic>
-using VectorConstXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> const >;
+using VectorXConstMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> const >;
 
 /** Alias for Eigen::Map< RowVectorX<...> >. */
 template <typename T = Real,
