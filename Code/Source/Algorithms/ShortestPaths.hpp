@@ -240,7 +240,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
   {
     for (typename DistanceMap::const_iterator di = src_region->begin(); di != src_region->end(); ++di)
     {
-      alwaysAssertM(di->second >= 0, "ShortestPaths: Dijkstra's algorithm requires non-negative distances")
+      alwaysAssertM(di->second >= 0, "ShortestPaths: Dijkstra's algorithm requires non-negative distances");
     }
   }
 

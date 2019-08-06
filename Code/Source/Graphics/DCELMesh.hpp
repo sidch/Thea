@@ -477,7 +477,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
      */
     Vertex * splitEdge(Halfedge * edge, Real frac)
     {
-      alwaysAssertM(frac >= 0 && frac <= 1, getNameStr() + ": Edge split fraction should be between 0 and 1")
+      alwaysAssertM(frac >= 0 && frac <= 1, getNameStr() + ": Edge split fraction should be between 0 and 1");
       if (edge)
       {
         THEA_ERROR << getName() << "Can't split null edge";

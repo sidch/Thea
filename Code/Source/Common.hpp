@@ -64,29 +64,6 @@
 #  define THEA_HAVE_CXA_DEMANGLE
 #endif
 
-#undef debugAssertM
-#ifdef THEA_DEBUG_BUILD
-#  define debugAssertM(test, msg)                                                                                             \
-   {                                                                                                                          \
-     if (!(test))                                                                                                             \
-     {                                                                                                                        \
-       std::cerr << "!!! Debug-mode assertion failed !!!: " << (msg) << std::endl;                                            \
-       throw Thea::FatalError(msg);                                                                                           \
-     }                                                                                                                        \
-   }
-#else
-#  define debugAssertM(test, msg) {}
-#endif
-
-#define alwaysAssertM(test, msg)                                                                                              \
-   {                                                                                                                          \
-     if (!(test))                                                                                                             \
-     {                                                                                                                        \
-       std::cerr << "!!! Assertion failed !!!: " << (msg) << std::endl;                                                       \
-       throw Thea::FatalError(msg);                                                                                           \
-     }                                                                                                                        \
-   }
-
 // Visual Studio requires templates instantiations to be explicitly imported from DLL's to avoid conflicts like
 // http://www.codesynthesis.com/~boris/blog/2010/01/18/dll-export-cxx-templates/
 #ifdef _MSC_VER
@@ -95,6 +72,32 @@
 
 /** Root namespace for the %Thea library. */
 namespace Thea {
+
+/** Check if a test condition is true, and immediately abort the program with an error code if not, in debug mode only. */
+template <typename CondT, typename MessageT>
+inline void
+debugAssertM(CondT const & test, MessageT const & msg)
+{
+#ifdef THEA_DEBUG_BUILD
+  if (!test)
+  {
+    std::cerr << "!!! Debug-mode assertion failed !!! " << msg << std::endl;
+    std::exit(-1);
+  }
+#endif
+}
+
+/** Check if a test condition is true, and immediately abort the program with an error code if not. */
+template <typename CondT, typename MessageT>
+inline void
+alwaysAssertM(CondT const & test, MessageT const & msg)
+{
+  if (!test)
+  {
+    std::cerr << "!!! Assertion failed !!! " << msg << std::endl;
+    std::exit(-1);
+  }
+}
 
 // No longer required, we have static_assert since switching to C++11.
 // /**
