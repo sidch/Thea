@@ -171,7 +171,7 @@ class THEA_API Random
     /** Generate 3D unit vectors uniformly distributed on the hemisphere about the z-axis. */
     virtual void hemi(Real & x, Real & y, Real & z);
 
-    /** Generate 3D unit vectors uniformly distributed on the sphere. */
+    /** Generate 3D unit vectors uniformly distributed on the sphere. For the n-D case, see unitVector(). */
     virtual void sphere(Real & x, Real & y, Real & z);
 
     /**
