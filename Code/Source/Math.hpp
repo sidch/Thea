@@ -212,7 +212,7 @@ template <typename T>
 T
 eps()
 {
-  static T const FUZZY_EPSILON = (sizeof(T) == sizeof(float) ? static_cast<T>(1.0e-6) : static_cast<T>(1.0e-30));
+  static T const FUZZY_EPSILON = (sizeof(T) == sizeof(float32) ? static_cast<T>(1.0e-6) : static_cast<T>(1.0e-30));
   return FUZZY_EPSILON;
 }
 

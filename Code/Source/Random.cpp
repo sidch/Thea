@@ -178,13 +178,9 @@ Random::integer(int32 low, int32 high)
 
   // There is a *very small* chance of generating a number larger than high.
   if (r > high)
-  {
     return high;
-  }
   else
-  {
     return r;
-  }
 }
 
 Real
@@ -204,7 +200,7 @@ Random::gaussian(Real mean, Real stddev)
   while (w > 1.0f);
 
   // Transform to gassian distribution. Multiply by the variance \a sigma (stddev^2) and add the \a mean.
-  return x2 * (Real)Math::square(stddev) * std::sqrt((-2.0f * std::log(w) ) / w) + mean;
+  return x2 * (Real)Math::square(stddev) * std::sqrt((-2.0f * std::log(w)) / w) + mean;
 }
 
 void
@@ -278,6 +274,37 @@ Random::sphere(Real & x, Real & y, Real & z)
   Real s = 2 * std::sqrt(1 - m2);  // this factor ensures x^2 + y^2 + z^2 = 1
   x *= s;
   y *= s;
+}
+
+void
+Random::unitVector(intx n, Real * v)
+{
+  // The implementation follows https://mc-stan.org/docs/2_18/reference-manual/unit-vector-section.html and uses the following
+  // result of Marsaglia [1972]: if n coordinates are independently sampled from n 1-D standard normal distributions, and the
+  // resulting vector normalized by dividing by its length, then the unit vector so generated is distributed uniformly on the
+  // (n - 1)-sphere.
+
+  alwaysAssertM(n >= 1, "Random: Invalid dimensions for sampling unit vectors");
+
+  while (true)  // can theoretically go into a long loop but the chances of even two iterations are vanishingly small
+  {
+    Real sqlen = 0;
+    for (intx i = 0; i < n; ++i)
+    {
+      Real c = gaussian(0, 1);
+      v[i] = c;
+      sqlen += (c * c);
+    }
+
+    if (sqlen > Math::square(Math::eps<Real>()))
+    {
+      Real len = std::sqrt(sqlen);
+      for (intx i = 0; i < n; ++i)
+        v[i] /= len;
+
+      break;
+    }
+  }
 }
 
 void

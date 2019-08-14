@@ -171,8 +171,18 @@ class THEA_API Random
     /** Generate 3D unit vectors uniformly distributed on the hemisphere about the z-axis. */
     virtual void hemi(Real & x, Real & y, Real & z);
 
-    /** Generate 3D unit vectors uniformly distributed on the sphere */
+    /** Generate 3D unit vectors uniformly distributed on the sphere. */
     virtual void sphere(Real & x, Real & y, Real & z);
+
+    /**
+     * Generate n-D unit vectors uniformly distributed on the (n - 1)-dimensional sphere.
+     *
+     * @param n The dimension of the latent space.
+     * @param v Used to return the sampled unit vector. Must have at (at least) \a n allocated entries.
+     *
+     * @note sphere() samples the same distribution in 3 dimensions.
+     */
+    virtual void unitVector(intx n, Real * v);
 
     /**
      * Get \a m distinct random integers in [\a lo, \a hi] (endpoints inclusive). Slow if the range is very large, and possibly
