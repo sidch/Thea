@@ -458,7 +458,11 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         render_system->popDepthFlags();
 
         // Grab and save the rendered image
-        Image image(Image::Type::RGB_8U, buffer_width, buffer_height);
+        //
+        // We have to explicitly pick a 24-bit (instead of 32-bit) buffer when no background transparency is used, else the
+        // FreeImage JPEG codec (and who knows what other codecs) can't save it.
+        Image image((background_color.a() <= 0.9999f ? Image::Type::RGBA_8U : Image::Type::RGB_8U),
+                    buffer_width, buffer_height);
         color_tex->getImage(image);
 
         if (antialiasing_level > 1 && !image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))

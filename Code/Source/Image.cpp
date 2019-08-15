@@ -249,7 +249,8 @@ intx                                                                            
 codec::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const                               \
 {                                                                                                                             \
   fipMemoryIO mem;                                                                                                            \
-  const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags);                                        \
+  if (const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags) != TRUE)                            \
+    throw Error("Could not save image to memory stream");                                                                     \
                                                                                                                               \
   BYTE * data;                                                                                                                \
   DWORD size_in_bytes;                                                                                                        \
