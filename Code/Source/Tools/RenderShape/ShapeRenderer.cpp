@@ -659,13 +659,13 @@ ShapeRendererImpl::parseViewContinuous(string const & s, View & view, bool silen
 
   view.dir.normalize();
 
-  if (num_params == 6)
+  if (num_params >= 6)
   {
     view.has_eye = true;
     view.eye = Vector3(ex, ey, ez);
   }
 
-  if (num_params == 9)
+  if (num_params >= 9)
   {
     view.up = Vector3(ux, uy, uz);
 
@@ -2114,6 +2114,10 @@ Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int wi
   CoordinateFrame3 cframe = CoordinateFrame3::fromViewFrame(eye, eye + dir, up);
 
   // Projection
+  Real center_distance = std::max((bsphere.getCenter() - eye).dot(dir), (Real)0);
+  Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
+  Real far_dist  = center_distance + 2 * diameter;
+
   static Real const HALF_WIDTH = 0.5;
   Real hw = 0, hh = 0;
   if (height > width)
@@ -2128,10 +2132,6 @@ Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int wi
     hw = aspect_ratio * HALF_WIDTH;
     hh = HALF_WIDTH;
   }
-
-  Real center_distance = std::max((bsphere.getCenter() - eye).dot(dir), (Real)0);
-  Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
-  Real far_dist  = center_distance + 2 * diameter;
 
   hw = (hw / zoom) * (0.5f * near_dist);
   hh = (hh / zoom) * (0.5f * near_dist);
