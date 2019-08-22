@@ -52,12 +52,13 @@ struct View
 
 struct Model
 {
-  Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false) {}
+  Model(bool convert_to_points_ = false) : convert_to_points(convert_to_points_), is_point_cloud(false), max_id(-1) {}
   Camera fitCamera(Matrix4 const & transform, View const & view, Real zoom, int width, int height);
 
   bool convert_to_points;
   MG mesh_group;
   bool is_point_cloud;
+  intx max_id;
   Array<Vector3> points;
   Array<ColorRGBA> point_colors;
 };
@@ -114,7 +115,9 @@ class ShapeRendererImpl
     int antialiasing_level;
     PointUsage show_points;
     bool flat;
+    bool save_color;
     bool save_depth;
+    bool save_hitcounts;
     bool print_camera;
     int palette_shift;
 
@@ -237,7 +240,9 @@ ShapeRendererImpl::resetArgs()
   antialiasing_level = 1;
   show_points = POINTS_NONE;
   flat = false;
+  save_color = true;
   save_depth = false;
+  save_hitcounts = false;
   print_camera = false;
   palette_shift = 0;
 }
@@ -400,6 +405,10 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     overlay_models.push_back(overlay_model);
   }
 
+  Array<intx> hitcounts;
+  if (save_hitcounts)
+    hitcounts.resize((size_t)(model.max_id + 1), 0);
+
   // Do the rendering
   for (size_t v = 0; v < views.size(); ++v)
   {
@@ -465,20 +474,46 @@ ShapeRendererImpl::exec(int argc, char ** argv)
                     buffer_width, buffer_height);
         color_tex->getImage(image);
 
-        if (antialiasing_level > 1 && !image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
+        if (save_hitcounts)
         {
-          THEA_ERROR << "Could not rescale image to output dimensions";
-          return -1;
+          // We know image type is RGBA_8U because background alpha is set to zero when saving hitcounts
+
+          for (intx r = 0; r < image.getHeight(); ++r)
+          {
+            uint8 const * pixel = (uint8 const *)image.getScanLine(r);
+            for (intx c = 0; c < image.getWidth(); ++c, pixel += 4)
+            {
+              if (pixel[Image::Channel::ALPHA] != 0xFF) continue;  // background
+
+              size_t index = (size_t)((((uint32)pixel[Image::Channel::BLUE] << 16)
+                                     | ((uint32)pixel[Image::Channel::GREEN] << 8)
+                                     |  (uint32)pixel[Image::Channel::RED])
+                                    & 0x7FFFFF);
+              if (index > hitcounts.size()) continue;  // shouldn't happen if all went ok, but check this anyway
+
+              hitcounts[index]++;
+            }
+          }
         }
 
-        string path = out_path;
-        if (views.size() > 1)
+        // Grab and save the color image
+        if (save_color)
         {
-          path = FilePath::concat(FilePath::parent(path),
-                                  FilePath::baseName(path) + format("_%06ld.", (intx)v) + FilePath::completeExtension(path));
-        }
+          if (antialiasing_level > 1 && !image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
+          {
+            THEA_ERROR << "Could not rescale image to output dimensions";
+            return -1;
+          }
 
-        image.save(path);
+          string path = out_path;
+          if (views.size() > 1)
+          {
+            path = FilePath::concat(FilePath::parent(path),
+                                    FilePath::baseName(path) + format("_%06ld.", (intx)v) + FilePath::completeExtension(path));
+          }
+
+          image.save(path);
+        }
 
         // Grab and save the depth image
         if (save_depth)
@@ -506,6 +541,14 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   render_system->destroyTexture(tex3d);
   render_system->destroyTexture(matcap_tex);
 
+  if (save_hitcounts)
+  {
+    string hitcount_path = FilePath::changeCompleteExtension(out_path, "hitcount");
+    ofstream out(hitcount_path, ios::binary);
+    for (size_t i = 0; i < hitcounts.size(); ++i)
+      out << hitcounts[i] << '\n';
+  }
+
   THEA_CONSOLE << "Rendered " << views.size() << " view(s) of the shape";
 
   return 0;
@@ -522,7 +565,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -o <overlay-shape>    (may be mesh or point set)";
   THEA_CONSOLE << "  -s <scope>            (show 'none' | 'primary' | 'overlay' | 'all' shapes";
-  THEA_CONSOLE << "                         as points)";
+  THEA_CONSOLE << "                         as points, sampled if necessary)";
   THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
   THEA_CONSOLE << "                         applied to all subsequent shapes)";
   THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
@@ -538,6 +581,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         points by point ID; or 'leaf' to assign a random";
   THEA_CONSOLE << "                         color to each leaf submesh; or 'leafname' to derive";
   THEA_CONSOLE << "                         the leaf submesh color from its name)";
+  THEA_CONSOLE << "  -i <shift>            (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
@@ -554,8 +598,11 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         high quality)";
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
+  THEA_CONSOLE << "  -n                    (also save a text file with extension \".hitcount\"";
+  THEA_CONSOLE << "                         containing the number of pixels rendered per";
+  THEA_CONSOLE << "                         face/point)";
+  THEA_CONSOLE << "  -x                    (suppress color image output)";
   THEA_CONSOLE << "  -w cam                (print the camera parameters)";
-  THEA_CONSOLE << "  -i <shift>            (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "";
 
   return false;
@@ -1115,6 +1162,18 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           break;
         }
 
+        case 'n':
+        {
+          save_hitcounts = true;
+          break;
+        }
+
+        case 'x':
+        {
+          save_color = false;
+          break;
+        }
+
         case 'w':
         {
           if (argc < 1) { THEA_ERROR << "-w: Field to write not specified"; return false; }
@@ -1218,6 +1277,16 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
     views.push_back(view);
   }
 
+  if (save_hitcounts)
+  {
+    if (!color_by_id) { THEA_ERROR << "Saving hitcounts requires coloring elements by id"; return false; }
+    if (antialiasing_level > 1) { THEA_ERROR << "Saving hitcounts requires no antialiasing"; return false; }
+    if (model_paths.size() > 1) { THEA_ERROR << "Saving hitcounts requires no overlay models"; return false; }
+
+    THEA_WARNING << "Background alpha overridden to zero to accurately measure hitcounts";
+    background_color.a() = 0;
+  }
+
   return true;
 }
 
@@ -1225,8 +1294,9 @@ struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
 {
   FaceIndexMap & tri_ids;
   FaceIndexMap & quad_ids;
+  intx max_id;
 
-  MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_) {}
+  MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_), max_id(-1) {}
 
   void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face)
   {
@@ -1253,6 +1323,8 @@ struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
         // THEA_CONSOLE << ref.first->getName() << ": Quad " << ref.second << " has id " << index;
       }
     }
+
+    max_id = std::max(max_id, index);
   }
 };
 
@@ -1917,6 +1989,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     }
 
     model.is_point_cloud = true;
+    model.max_id = (intx)model.points.size() - 1;
 
     if (color_by_label)
     {
@@ -1928,6 +2001,12 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       if (!loadFeatures(model))
         return false;
     }
+    else if (color_by_id)
+    {
+      model.point_colors.resize(model.points.size());
+      for (size_t i = 0; i < model.points.size(); ++i)
+        model.point_colors[i] = indexToColor((uint32)i, true);
+    }
 
     THEA_CONSOLE << "Read " << model.points.size() << " points from '" << path << '\'';
   }
@@ -1938,21 +2017,39 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     {
       MeshReadCallback callback(tri_ids, quad_ids);
       model.mesh_group.load(path, Codec_AUTO(), &callback);
+      model.max_id = callback.max_id;
     }
     THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
 
     if (model.convert_to_points)
     {
+      typedef MeshSampler<Mesh>::Triangle MeshTriangle;
       MeshSampler<Mesh> sampler(model.mesh_group);
+ 	  Array<MeshTriangle const *> sampled_tris;
 
       double out_scale = min(out_width, out_height);
       intx max_samples = (intx)ceil(10 * out_scale);
-      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points);
+      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points, NULL, (color_by_id ? &sampled_tris : NULL));
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
 
       model.mesh_group.clear();
       model.is_point_cloud = true;
+
+      if (color_by_id)
+      {
+        alwaysAssertM(sampled_tris.size() == model.points.size(), "Number of source triangles != number of sampled points");
+
+        model.point_colors.resize(model.points.size());
+        for (size_t i = 0; i < model.points.size(); ++i)
+        {
+          MeshTriangle::VertexTriple const & tverts = sampled_tris[i]->getVertices();
+          FaceRef fref(tverts.getMesh(), tverts.getMeshFaceIndex());
+          intx face_id = (tverts.getMeshFaceType() == MeshTriangle::VertexTriple::FaceType::TRIANGLE
+                       ? tri_ids.find(fref)->second : quad_ids.find(fref)->second);
+          model.point_colors[i] = indexToColor((uint32)face_id, true);
+        }
+      }
     }
     else
     {
