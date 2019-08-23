@@ -687,7 +687,8 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
         if (colors_var) render_system.setColorArray(colors_var);
 
         render_system.pushShapeFlags();
-        render_system.setPointSize(2 * app().options().point_scale);
+          render_system.setPointSmooth(true);
+          render_system.setPointSize(2 * app().options().point_scale);
 
           render_system.sendSequentialIndices(Graphics::RenderSystem::Primitive::POINTS, 0, (intx)points.size());
 

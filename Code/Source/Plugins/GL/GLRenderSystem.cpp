@@ -1041,9 +1041,44 @@ GLRenderSystem::setPolygonOffset(int8 enable, float64 offset)
 }
 
 void
+GLRenderSystem::setPolygonSmooth(int8 enable)
+{
+  if (enable)
+    glEnable(GL_POLYGON_SMOOTH);
+  else
+  {
+    glDisable(GL_POLYGON_SMOOTH);
+    glDisable(GL_MULTISAMPLE);
+  }
+}
+
+void
+GLRenderSystem::setLineSmooth(int8 enable)
+{
+  if (enable)
+    glEnable(GL_LINE_SMOOTH);
+  else
+  {
+    glDisable(GL_LINE_SMOOTH);
+    glDisable(GL_MULTISAMPLE);
+  }
+}
+
+void
+GLRenderSystem::setPointSmooth(int8 enable)
+{
+  if (enable)
+    glEnable(GL_POINT_SMOOTH);
+  else
+  {
+    glDisable(GL_POINT_SMOOTH);
+    glDisable(GL_MULTISAMPLE);
+  }
+}
+
+void
 GLRenderSystem::setPointSize(float64 size)
 {
-  glEnable(GL_POINT_SMOOTH);
   glPointSize((GLfloat)size);
 }
 

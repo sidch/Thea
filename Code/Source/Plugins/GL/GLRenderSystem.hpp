@@ -174,6 +174,9 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
     void setDepthTest(DepthTest test);
     void setCullFace(CullFace cull);
     void setPolygonOffset(int8 enable, float64 offset = 1);
+    void setPolygonSmooth(int8 enable);
+    void setLineSmooth(int8 enable);
+    void setPointSmooth(int8 enable);
     void setPointSize(float64 size = 1);
     void popColorFlags();
     void popDepthFlags();

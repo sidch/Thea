@@ -371,6 +371,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
+  // Load matcap material, if any
   matcap_tex = NULL;
   if (!matcap_path.empty())
   {
@@ -382,6 +383,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create matcap texture")
   }
 
+  // Load 3D texture, if any
   tex3d = NULL;
   if (!tex3d_path.empty())
   {
@@ -393,6 +395,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 3D texture")
   }
 
+  // Load overlay models
   typedef std::shared_ptr<Model> ModelPtr;
   Array<ModelPtr> overlay_models;
   for (size_t i = 1; i < model_paths.size(); ++i)
@@ -405,6 +408,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     overlay_models.push_back(overlay_model);
   }
 
+  // Set up accumulator to count number of pixels rendered per face/point
   Array<intx> hitcounts;
   if (save_hitcounts)
     hitcounts.resize((size_t)(model.max_id + 1), 0);
@@ -489,7 +493,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
                                      | ((uint32)pixel[Image::Channel::GREEN] << 8)
                                      |  (uint32)pixel[Image::Channel::RED])
                                     & 0x7FFFFF);
-              if (index > hitcounts.size()) continue;  // shouldn't happen if all went ok, but check this anyway
+              alwaysAssertM(index < hitcounts.size(), "Rendered face index out of bounds");
 
               hitcounts[index]++;
             }
@@ -2424,8 +2428,13 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 
   render_system->setColor(color);
 
+  render_system->setPolygonSmooth(!color_by_id);
+  render_system->setLineSmooth(!color_by_id);
+  render_system->setPointSmooth(!color_by_id);
+  if (color_by_id) glDisable(GL_BLEND);
+
   bool has_transparency = (color.a() < 1);
-  if (has_transparency)
+  if (!color_by_id && has_transparency)
   {
     // Enable alpha-blending
     glEnable(GL_BLEND);

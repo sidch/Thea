@@ -484,6 +484,15 @@ class THEA_API RenderSystem : public AbstractNamedObject
      */
     virtual void setPolygonOffset(int8 enable, float64 offset = 1) = 0;
 
+    /** Set smoothing of rasterized polygons on/off. */
+    virtual void setPolygonSmooth(int8 enable) = 0;
+
+    /** Set smoothing of rasterized lines on/off. */
+    virtual void setLineSmooth(int8 enable) = 0;
+
+    /** Set smoothing of rasterized points on/off. */
+    virtual void setPointSmooth(int8 enable) = 0;
+
     /** Set the size (diameter) of rasterized points. This may be ignored if shaders are being used. */
     virtual void setPointSize(float64 size = 1) = 0;
 
