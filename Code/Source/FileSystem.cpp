@@ -43,6 +43,7 @@
 #include "StringAlg.hpp"
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/version.hpp>
 #include <cstdio>
 
 namespace Thea {
