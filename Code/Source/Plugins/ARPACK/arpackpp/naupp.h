@@ -17,11 +17,10 @@
 #ifndef NAUPP_H
 #define NAUPP_H
 
-#include <string>
 #include "arch.h"
 #include "arpackf.h"
 
-inline void naupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void naupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   double& tol, double resid[], ARint ncv, double V[],
                   ARint ldv, ARint iparam[], ARint ipntr[], double workd[],
                   double workl[], ARint lworkl, ARint& info)
@@ -303,13 +302,13 @@ inline void naupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(dnaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(dnaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1], &workl[1],
                   &lworkl, &info);
 
 } // naupp (double).
 
-inline void naupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void naupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   float& tol, float resid[], ARint ncv, float V[],
                   ARint ldv, ARint iparam[], ARint ipntr[], float workd[],
                   float workl[], ARint lworkl, ARint& info)
@@ -323,7 +322,7 @@ inline void naupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(snaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(snaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1], &workl[1],
                   &lworkl, &info);
 

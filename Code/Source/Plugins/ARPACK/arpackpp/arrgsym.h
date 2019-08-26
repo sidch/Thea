@@ -18,7 +18,7 @@
 #define ARRGSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arrssym.h"
 #include "arrgeig.h"
@@ -73,13 +73,13 @@ class ARrcSymGenEig:
   ARrcSymGenEig() { InvertMode = 'S'; }
   // Short constructor that does almost nothing.
 
-  ARrcSymGenEig(int np, int nevp, const std::string& whichp = "LM",
+  ARrcSymGenEig(int np, int nevp, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARrcSymGenEig(char invertmodep, int np, int nevp, ARFLOAT sigmap,
-                const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
                 int maxitp = 0, ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift-and-invert, buckling and Cayley modes).
 
@@ -162,7 +162,7 @@ void ARrcSymGenEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 {
 
   InvertMode = 'S';
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // SetShiftInvertMode.
 
@@ -173,7 +173,7 @@ void ARrcSymGenEig<ARFLOAT>::SetBucklingMode(ARFLOAT sigmap)
 {
 
   InvertMode = 'B';
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // SetBucklingMode.
 
@@ -184,14 +184,14 @@ void ARrcSymGenEig<ARFLOAT>::SetCayleyMode(ARFLOAT sigmap)
 {
 
   InvertMode = 'C';
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // SetCayleyMode.
 
 
 template<class ARFLOAT>
 inline ARrcSymGenEig<ARFLOAT>::
-ARrcSymGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+ARrcSymGenEig(int np, int nevp, const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -206,13 +206,13 @@ ARrcSymGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT tol
 template<class ARFLOAT>
 inline ARrcSymGenEig<ARFLOAT>::
 ARrcSymGenEig(char InvertModep, int np, int nevp,
-              ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+              ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   InvertMode = CheckInvertMode(InvertModep); // InvertMode = 'S', 'B', 'C'.
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
   this->DefineParameters(np, nevp, whichp, ncvp, tolp, maxitp, residp, ishiftp);
 
 } // Long constructor (shift-and-invert, buckling and Cayley modes).

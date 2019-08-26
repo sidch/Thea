@@ -66,13 +66,13 @@ class ARdsNonSymPencil
 
   void MultInvAsBv(ARFLOAT* v, ARFLOAT* w);
 
-  void DefineMatrices(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  void DefineMatrices(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                       ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
 
   ARdsNonSymPencil() { part = 'N'; }
   // Short constructor that does nothing.
 
-  ARdsNonSymPencil(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  ARdsNonSymPencil(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                    ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
   // Long constructor.
 
@@ -148,7 +148,7 @@ void ARdsNonSymPencil<ARTYPE, ARFLOAT>::FactorAsB(ARTYPE sigma)
 
   // Subtracting sigma*B from A and storing the result on AsB.
 
-  ::copy(A->m*A->n, A->A, 1, AsB.Ainv, 1); 
+  ::copy(A->m*A->n, A->A, 1, AsB.Ainv, 1);
   axpy(A->m*A->n, -sigma, B->A, 1, AsB.Ainv, 1);
 
   // Decomposing AsB.
@@ -193,7 +193,7 @@ FactorAsB(ARFLOAT sigmaR, ARFLOAT sigmaI, char partp)
 
   // Reserving memory for some vectors used in matrix decomposition.
 
-  AsBc.CreateStructure(); 
+  AsBc.CreateStructure();
 
   // Subtracting sigma*B from A and storing the result on AsBc.
 
@@ -282,7 +282,7 @@ void ARdsNonSymPencil<ARTYPE, ARFLOAT>::MultInvAsBv(ARFLOAT* v, ARFLOAT* w)
 
 template<class ARTYPE, class ARFLOAT>
 inline void ARdsNonSymPencil<ARTYPE, ARFLOAT>::
-DefineMatrices(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+DefineMatrices(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
@@ -299,11 +299,11 @@ DefineMatrices(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
 
 template<class ARTYPE, class ARFLOAT>
 inline ARdsNonSymPencil<ARTYPE, ARFLOAT>::
-ARdsNonSymPencil(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+ARdsNonSymPencil(ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                  ARdsNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

@@ -129,7 +129,7 @@ This is the ARPACK++ include directory.
                         csp_defs.h and zsp_defs.h header files.
       arlsupm.h         Unaltered copy of supermatrix.h header file.
       arlnames.h        Unaltered copy of Cnames.h header file.
-      arlutil.h         Unaltered copy of util.h, superlu_enum_consts.h.
+      arlutil.h         Unaltered copy of util.h header file.
       arlcomp.h         Unaltered copy of dcomplex.h and scomplex.h.
 
 

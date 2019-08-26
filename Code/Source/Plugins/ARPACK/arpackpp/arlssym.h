@@ -20,7 +20,7 @@
 #define ARLSSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arssym.h"
 #include "arlsmat.h"
@@ -58,13 +58,13 @@ class ARluSymStdEig:
   // Short constructor.
 
   ARluSymStdEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-                const std::string& whichp = "LM", int ncvp = 0,
+                const char* whichp = "LM", int ncvp = 0,
                 ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARluSymStdEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-                ARFLOAT sigma, const std::string& whichp = "LM", int ncvp = 0,
+                ARFLOAT sigma, const char* whichp = "LM", int ncvp = 0,
                 ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -136,7 +136,7 @@ inline void ARluSymStdEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 template<class ARFLOAT>
 inline ARluSymStdEig<ARFLOAT>::
 ARluSymStdEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-              const std::string& whichp, int ncvp, ARFLOAT tolp,
+              const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 {
 
@@ -150,14 +150,14 @@ ARluSymStdEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
 template<class ARFLOAT>
 inline ARluSymStdEig<ARFLOAT>::
 ARluSymStdEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-              ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+              ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   this->DefineParameters(A.ncols(), nevp, &A, &ARluSymMatrix<ARFLOAT>::MultInvv,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // Long constructor (shift and invert mode).
 

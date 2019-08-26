@@ -194,12 +194,12 @@ class ARrcNonSymStdEig: public virtual ARrcStdEig<ARFLOAT, ARFLOAT> {
   ARrcNonSymStdEig() { }
   // Short constructor.
 
-  ARrcNonSymStdEig(int np, int nevp, const std::string& whichp = "LM", int ncvp = 0,
+  ARrcNonSymStdEig(int np, int nevp, const char* whichp = "LM", int ncvp = 0,
                    ARFLOAT tolp = 0.0, int maxitp = 0, ARFLOAT* residp = NULL,
                    bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARrcNonSymStdEig(int np, int nevp, ARFLOAT sigma, const std::string& whichp = "LM",
+  ARrcNonSymStdEig(int np, int nevp, ARFLOAT sigma, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -463,7 +463,7 @@ EigenValVectors(ARFLOAT* &EigVecp, ARFLOAT* &EigValRp,
 
   if (this->ValuesOK) {               // Eigenvalues are already available .
     this->nconv = Eigenvalues(EigValRp, EigValIp, false);
-    this->nconv = this->Eigenvectors(EigVecp, ischur);
+    this->nconv = Eigenvectors(EigVecp, ischur);
   }
   else {                        // Eigenvalues ans vectors are not available.
     if (this->newVec) {
@@ -818,7 +818,7 @@ inline vector<ARFLOAT>* ARrcNonSymStdEig<ARFLOAT>::StlEigenvectorImag(int i)
 
 template<class ARFLOAT>
 inline ARrcNonSymStdEig<ARFLOAT>::
-ARrcNonSymStdEig(int np, int nevp, const std::string& whichp, int ncvp,
+ARrcNonSymStdEig(int np, int nevp, const char* whichp, int ncvp,
                  ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -831,7 +831,7 @@ ARrcNonSymStdEig(int np, int nevp, const std::string& whichp, int ncvp,
 
 template<class ARFLOAT>
 inline ARrcNonSymStdEig<ARFLOAT>::
-ARrcNonSymStdEig(int np, int nevp, ARFLOAT sigmap, const std::string& whichp, int ncvp,
+ARrcNonSymStdEig(int np, int nevp, ARFLOAT sigmap, const char* whichp, int ncvp,
                  ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {

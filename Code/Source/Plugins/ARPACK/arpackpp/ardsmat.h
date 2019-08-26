@@ -44,7 +44,7 @@ class ARdsSymMatrix: public ARMatrix<ARTYPE> {
   ARTYPE*  A;
   ARTYPE*  Ainv;
 
-  void ClearMem(); 
+  void ClearMem();
 
   virtual void Copy(const ARdsSymMatrix& other);
 
@@ -53,7 +53,7 @@ class ARdsSymMatrix: public ARMatrix<ARTYPE> {
   void CreateStructure();
 
   void ThrowError();
-  
+
  public:
 
   bool IsFactored() { return factored; }
@@ -92,11 +92,11 @@ class ARdsSymMatrix: public ARMatrix<ARTYPE> {
 
 template<class ARTYPE>
 inline void ARdsSymMatrix<ARTYPE>::ClearMem()
-{ 
+{
 
   if (factored) {
     delete[] Ainv;
-    delete[] ipiv; 
+    delete[] ipiv;
     Ainv = NULL;
     ipiv = NULL;
   }
@@ -259,26 +259,26 @@ void ARdsSymMatrix<ARTYPE>::MultMv(ARTYPE* v, ARTYPE* w)
     throw ArpackError(ArpackError::DATA_UNDEFINED, "ARdsSymMatrix::MultMv");
   }
 
-  // Determining w = M.v (unfortunately, the BLAS does not 
+  // Determining w = M.v (unfortunately, the BLAS does not
   // have a routine that works with packed matrices).
 
   for (i=0; i<this->n; i++) w[i] = zero;
 
   if (uplo=='L') {
- 
+
     for (i=0, j=0; i<this->n; j+=(this->n-(i++))) {
       w[i] += dot(this->n-i, &A[j], 1, &v[i], 1);
       axpy(this->n-i-1, v[i], &A[j+1], 1, &w[i+1], 1);
     }
- 
-  }  
+
+  }
   else { // uplo = 'U'
 
     for (i=0, j=0; i<this->n; j+=(++i)) {
       w[i] += dot(i+1, &A[j], 1, v, 1);
       axpy(i, v[i], &A[j], 1, w, 1);
     }
-   
+
   }
 
 } // MultMv.
@@ -324,7 +324,7 @@ DefineMatrix(int np, ARTYPE* Ap, char uplop)
   this->defined   = true;
   Ainv      = NULL;
   ipiv      = NULL;
-  info      = 0; 
+  info      = 0;
 
 } // DefineMatrix.
 
@@ -335,7 +335,7 @@ ARdsSymMatrix(int np, ARTYPE* Ap, char uplop) : ARMatrix<ARTYPE>(np)
 {
 
   factored = false;
-  DefineMatrix(np, Ap, uplop);
+  this->DefineMatrix(np, Ap, uplop);
 
 } // Long constructor.
 

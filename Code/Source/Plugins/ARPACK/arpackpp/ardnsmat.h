@@ -21,7 +21,7 @@
 #define ARDNSMAT_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "armat.h"
 #include "arerror.h"
@@ -46,14 +46,14 @@ class ARdsNonSymMatrix: public ARMatrix<ARTYPE> {
   ARTYPE*             Ainv;
   ARdfMatrix<ARTYPE>  mat;
 
-  void ClearMem(); 
+  void ClearMem();
 
   virtual void Copy(const ARdsNonSymMatrix& other);
 
   void CreateStructure();
 
   void ThrowError();
-  
+
  public:
 
   bool IsFactored() { return factored; }
@@ -87,7 +87,7 @@ class ARdsNonSymMatrix: public ARMatrix<ARTYPE> {
   ARdsNonSymMatrix(int mp, int np, ARTYPE* Ap);
   // Long constructor (rectangular matrix).
 
-  ARdsNonSymMatrix(const std::string& file, int blksizep = 0);
+  ARdsNonSymMatrix(char* file, int blksizep = 0);
   // Long constructor (Matrix stored in a file).
 
   ARdsNonSymMatrix(const ARdsNonSymMatrix& other) { Copy(other); }
@@ -108,11 +108,11 @@ class ARdsNonSymMatrix: public ARMatrix<ARTYPE> {
 
 template<class ARTYPE, class ARFLOAT>
 inline void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::ClearMem()
-{ 
+{
 
   if (factored) {
     delete[] Ainv;
-    delete[] ipiv; 
+    delete[] ipiv;
     Ainv = NULL;
     ipiv = NULL;
   }
@@ -288,14 +288,14 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMv(ARTYPE* v, ARTYPE* w)
 
   if (mat.IsOutOfCore()) {
 
-    if (this->m>this->n) { 
+    if (this->m>this->n) {
 
       // Matrix is "tall".
 
       mat.Rewind();
       for (i=0; i<mat.NBlocks(); i++) {
         mat.ReadBlock();
-        gemv("N", mat.RowsInMemory(), this->n, one, mat.Entries(), 
+        gemv(APP_C_STR("N"), mat.RowsInMemory(), this->n, one, mat.Entries(),
              mat.RowsInMemory(), v, 1, zero, &w[mat.FirstIndex()], 1);
       }
 
@@ -309,9 +309,9 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMv(ARTYPE* v, ARTYPE* w)
       for (i=0; i<this->m; i++) w[i] = zero;
       for (i=0; i<mat.NBlocks(); i++) {
         mat.ReadBlock();
-        gemv("N", this->m, mat.ColsInMemory(), one, mat.Entries(), 
+        gemv(APP_C_STR("N"), this->m, mat.ColsInMemory(), one, mat.Entries(),
              this->m, &v[mat.FirstIndex()], 1, zero, t, 1);
-        axpy(this->m, one, t, 1, w, 1); 
+        axpy(this->m, one, t, 1, w, 1);
       }
       delete[] t;
 
@@ -320,7 +320,7 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMv(ARTYPE* v, ARTYPE* w)
   }
   else {
 
-    gemv("N", this->m, this->n, one, A, this->m, v, 1, zero, w, 1);
+    gemv(APP_C_STR("N"), this->m, this->n, one, A, this->m, v, 1, zero, w, 1);
 
   }
 
@@ -333,8 +333,8 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
 
   int     i;
   ARTYPE* t;
-  ARTYPE  one;   
-  ARTYPE  zero; 
+  ARTYPE  one;
+  ARTYPE  zero;
 
   one  = (ARTYPE)0 + 1.0;
   zero = (ARTYPE)0;
@@ -349,14 +349,14 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
 
   if (mat.IsOutOfCore()) {
 
-    if (this->m<=this->n) { 
+    if (this->m<=this->n) {
 
       // Matrix is "fat".
 
       mat.Rewind();
       for (i=0; i<mat.NBlocks(); i++) {
         mat.ReadBlock();
-        gemv("T", this->m, mat.ColsInMemory(), one, mat.Entries(), 
+        gemv(APP_C_STR("T"), this->m, mat.ColsInMemory(), one, mat.Entries(),
              this->m, v, 1, zero, &w[mat.FirstIndex()], 1);
       }
 
@@ -370,9 +370,9 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
       for (i=0; i<this->m; i++) w[i] = zero;
       for (i=0; i<mat.NBlocks(); i++) {
         mat.ReadBlock();
-        gemv("T", mat.RowsInMemory(), this->n, one, mat.Entries(), 
+        gemv(APP_C_STR("T"), mat.RowsInMemory(), this->n, one, mat.Entries(),
              mat.RowsInMemory(), &v[mat.FirstIndex()], 1, zero, t, 1);
-        axpy(mat.RowsInMemory(), one, t, 1, w, 1); 
+        axpy(mat.RowsInMemory(), one, t, 1, w, 1);
       }
       delete[] t;
 
@@ -381,7 +381,7 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
   }
   else {
 
-    gemv("T", this->m, this->n, one, A, this->m, v, 1, zero, w, 1);
+    gemv(APP_C_STR("T"), this->m, this->n, one, A, this->m, v, 1, zero, w, 1);
 
   }
 
@@ -395,8 +395,8 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtMv(ARTYPE* v, ARTYPE* w)
 
   int    i;
   ARTYPE *t, *s;
-  ARTYPE one;   
-  ARTYPE zero; 
+  ARTYPE one;
+  ARTYPE zero;
 
   one  = (ARTYPE)0 + 1.0;
   zero = (ARTYPE)0;
@@ -412,11 +412,11 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMtMv(ARTYPE* v, ARTYPE* w)
     for (i=0; i<this->n; i++) w[i] = zero;
     for (i=0; i<mat.NBlocks(); i++) {
       mat.ReadBlock();
-      gemv("N", mat.RowsInMemory(), this->n, one, mat.Entries(), 
+      gemv(APP_C_STR("N"), mat.RowsInMemory(), this->n, one, mat.Entries(),
            mat.RowsInMemory(), v, 1, zero, t, 1);
-      gemv("T", mat.RowsInMemory(), this->n, one, mat.Entries(), 
+      gemv(APP_C_STR("T"), mat.RowsInMemory(), this->n, one, mat.Entries(),
            mat.RowsInMemory(), t, 1, zero, s, 1);
-      axpy(this->n, one, s, 1, w, 1); 
+      axpy(this->n, one, s, 1, w, 1);
 
     }
 
@@ -445,8 +445,8 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMMtv(ARTYPE* v, ARTYPE* w)
 
   int    i;
   ARTYPE *t, *s;
-  ARTYPE one;   
-  ARTYPE zero; 
+  ARTYPE one;
+  ARTYPE zero;
 
   one  = (ARTYPE)0 + 1.0;
   zero = (ARTYPE)0;
@@ -462,11 +462,11 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultMMtv(ARTYPE* v, ARTYPE* w)
     for (i=0; i<this->m; i++) w[i] = zero;
     for (i=0; i<mat.NBlocks(); i++) {
       mat.ReadBlock();
-      gemv("T", this->m, mat.ColsInMemory(), one, mat.Entries(), 
+      gemv(APP_C_STR("T"), this->m, mat.ColsInMemory(), one, mat.Entries(),
            this->m, v, 1, zero, t, 1);
-      gemv("N", this->m, mat.ColsInMemory(), one, mat.Entries(), 
+      gemv(APP_C_STR("N"), this->m, mat.ColsInMemory(), one, mat.Entries(),
            this->m, t, 1, zero, s, 1);
-      axpy(this->m, one, s, 1, w, 1); 
+      axpy(this->m, one, s, 1, w, 1);
 
     }
 
@@ -515,7 +515,7 @@ void ARdsNonSymMatrix<ARTYPE, ARFLOAT>::MultInvv(ARTYPE* v, ARTYPE* w)
 
   // Solving A.w = v (or AsI.w = v).
 
-  getrs("N", this->n, 1, Ainv, this->m, ipiv, w, this->m, info);
+  getrs(APP_C_STR("N"), this->n, 1, Ainv, this->m, ipiv, w, this->m, info);
 
   // Handling errors.
 
@@ -537,7 +537,7 @@ DefineMatrix(int np, ARTYPE* Ap)
   this->defined   = true;
   Ainv      = NULL;
   ipiv      = NULL;
-  info      = 0; 
+  info      = 0;
 
 } // DefineMatrix (square).
 
@@ -566,7 +566,7 @@ ARdsNonSymMatrix(int np, ARTYPE* Ap) : ARMatrix<ARTYPE>(np)
 {
 
   factored = false;
-  DefineMatrix(np, Ap);
+  this->DefineMatrix(np, Ap);
 
 } // Long constructor (square matrix).
 
@@ -577,13 +577,13 @@ ARdsNonSymMatrix(int mp, int np, ARTYPE* Ap) : ARMatrix<ARTYPE>(mp, np)
 {
 
   factored = false;
-  DefineMatrix(mp, np, Ap);
+  this->DefineMatrix(mp, np, Ap);
 
 } // Long constructor (rectangular matrix).
 
 
 template<class ARTYPE, class ARFLOAT>
-ARdsNonSymMatrix<ARTYPE, ARFLOAT>::ARdsNonSymMatrix(const std::string& file, int blksizep)
+ARdsNonSymMatrix<ARTYPE, ARFLOAT>::ARdsNonSymMatrix(char* file, int blksizep)
 {
 
   factored = false;
@@ -596,10 +596,10 @@ ARdsNonSymMatrix<ARTYPE, ARFLOAT>::ARdsNonSymMatrix(const std::string& file, int
   }
 
   if (mat.NCols() == mat.NRows()) {
-    DefineMatrix(mat.NCols(), (ARTYPE*)mat.Entries());
+    this->DefineMatrix(mat.NCols(), (ARTYPE*)mat.Entries());
   }
-  else {                             
-    DefineMatrix(mat.NRows(), mat.NCols(), (ARTYPE*)mat.Entries());
+  else {
+    this->DefineMatrix(mat.NRows(), mat.NCols(), (ARTYPE*)mat.Entries());
   }
 
 } // Long constructor (Matrix stored in a file).

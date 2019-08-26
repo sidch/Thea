@@ -18,7 +18,7 @@
 #define ARRSCOMP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arerror.h"
 #include "debug.h"
@@ -56,10 +56,10 @@ class ARrcCompStdEig: virtual public ARrcStdEig<ARFLOAT, arcomplex<ARFLOAT> > {
   void Trace(const int digit = -5, const int getv0 = 0, const int aupd = 1,
              const int aup2 = 0,  const int aitr = 0,  const int eigt = 0,
              const int apps = 0,  const int gets = 0,  const int eupd = 0)
-  { 
-    cTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd); 
+  {
+    cTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd);
   }
-  // Turns on trace mode. 
+  // Turns on trace mode.
 
 
  // b.2) Functions that perform all calculations in one step.
@@ -69,7 +69,7 @@ class ARrcCompStdEig: virtual public ARrcStdEig<ARFLOAT, arcomplex<ARFLOAT> > {
   // Overrides array EigValp with the eigenvalues of the problem.
   // Also calculates eigenvectors and Schur vectors if requested.
 
-  int EigenValVectors(arcomplex<ARFLOAT>* &EigVecp, 
+  int EigenValVectors(arcomplex<ARFLOAT>* &EigVecp,
                       arcomplex<ARFLOAT>* &EigValp, bool ischur = false);
   // Overrides array EigVecp sequentially with the eigenvectors of the
   // given eigen-problem. Also stores the eigenvalues in EigValp.
@@ -105,13 +105,13 @@ class ARrcCompStdEig: virtual public ARrcStdEig<ARFLOAT, arcomplex<ARFLOAT> > {
   ARrcCompStdEig() { }
   // Short constructor.
 
-  ARrcCompStdEig(int np, int nevp, const std::string& whichp = "LM",
+  ARrcCompStdEig(int np, int nevp, const char* whichp = "LM",
                  int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARrcCompStdEig(int np, int nevp, arcomplex<ARFLOAT> sigma,
-                 const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                 const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
                  int maxitp = 0, arcomplex<ARFLOAT>* residp = NULL,
                  bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -217,7 +217,7 @@ EigenValVectors(arcomplex<ARFLOAT>* &EigVecp, arcomplex<ARFLOAT>* &EigValp,
 
   if (this->ValuesOK) {                  // Eigenvalues are already available.
     this->nconv = Eigenvalues(EigValp, false);
-    this->nconv = this->Eigenvectors(EigVecp, ischur);
+    this->nconv = Eigenvectors(EigVecp, ischur);
   }
   else {                           // Eigenvalues and vectors are not available.
     if (this->newVec) {
@@ -227,7 +227,7 @@ EigenValVectors(arcomplex<ARFLOAT>* &EigVecp, arcomplex<ARFLOAT>* &EigValp,
     if (this->newVal) {
       delete[] this->EigValR;
       this->newVal = false;
-    }  
+    }
     try {
       if (EigVecp == NULL) EigVecp = new arcomplex<ARFLOAT>[this->ValSize()*this->n];
       if (EigValp == NULL) EigValp = new arcomplex<ARFLOAT>[this->ValSize()];
@@ -332,7 +332,7 @@ StlEigenvector(int i)
 
 template<class ARFLOAT>
 inline ARrcCompStdEig<ARFLOAT>::
-ARrcCompStdEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+ARrcCompStdEig(int np, int nevp, const char* whichp, int ncvp, ARFLOAT tolp,
                int maxitp, arcomplex<ARFLOAT>* residp, bool ishiftp)
 
 {
@@ -346,7 +346,7 @@ ARrcCompStdEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT to
 template<class ARFLOAT>
 inline ARrcCompStdEig<ARFLOAT>::
 ARrcCompStdEig(int np, int nevp, arcomplex<ARFLOAT> sigmap,
-               const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+               const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
                arcomplex<ARFLOAT>* residp, bool ishiftp)
 
 {

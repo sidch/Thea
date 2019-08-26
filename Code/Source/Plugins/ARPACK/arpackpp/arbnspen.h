@@ -42,10 +42,10 @@ class ARbdNonSymPencil
 
   int min(int a, int b) { return (a<b)?a:b; }
 
-  void ComplexCopy(int n, ARFLOAT dx[], int incx, 
+  void ComplexCopy(int n, ARFLOAT dx[], int incx,
                    arcomplex<ARFLOAT> dy[], int incy);
 
-  void ComplexAxpy(int n, arcomplex<ARFLOAT> da, ARTYPE dx[], 
+  void ComplexAxpy(int n, arcomplex<ARFLOAT> da, ARTYPE dx[],
                    int incx, arcomplex<ARFLOAT> dy[], int incy);
 
   virtual void Copy(const ARbdNonSymPencil& other);
@@ -82,13 +82,13 @@ class ARbdNonSymPencil
 
   void MultInvAsBv(ARFLOAT* v, ARFLOAT* w);
 
-  void DefineMatrices(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  void DefineMatrices(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                       ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
 
   ARbdNonSymPencil() { part = 'N'; }
   // Short constructor that does nothing.
 
-  ARbdNonSymPencil(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  ARbdNonSymPencil(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                    ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
   // Long constructor.
 
@@ -174,7 +174,7 @@ void ARbdNonSymPencil<ARTYPE, ARFLOAT>::SubtractAsB(ARTYPE sigma)
       copy(AsB.n, &B->A[i], incb, &AsB.Ainv[AsB.ndiagL+i], AsB.lda);
       scal(AsB.n, negsig, &AsB.Ainv[AsB.ndiagL+i], AsB.lda);
     }
-  } 
+  }
 
   // Subtracting sigma*B from A.
 
@@ -184,7 +184,7 @@ void ARbdNonSymPencil<ARTYPE, ARFLOAT>::SubtractAsB(ARTYPE sigma)
   begAsB = AsB.ndiagL+AsB.ndiagU-minU;
 
   for (i = 0; i < minL+minU+1; i++) {
-    axpy(AsB.n, -sigma, &B->A[begB+i], incb, &AsB.Ainv[begAsB+i], AsB.lda);  
+    axpy(AsB.n, -sigma, &B->A[begB+i], incb, &AsB.Ainv[begAsB+i], AsB.lda);
   }
 
   // Transferring part of B (*(-sigma)) if AsB.ndiagL > A->ndiagL.
@@ -196,7 +196,7 @@ void ARbdNonSymPencil<ARTYPE, ARFLOAT>::SubtractAsB(ARTYPE sigma)
       copy(AsB.n, &B->A[begB+i], incb, &AsB.Ainv[begAsB+i], AsB.lda);
       scal(AsB.n, negsig, &AsB.Ainv[begAsB+i], AsB.lda);
     }
-  } 
+  }
 
 } // SubtractAsB (ARTYPE shift).
 
@@ -229,7 +229,7 @@ SubtractAsB(ARFLOAT sigmaR, ARFLOAT sigmaI)
                   &AsBc.Ainv[AsBc.ndiagL+i], AsBc.lda);
       scal(AsBc.n, -sigma, &AsBc.Ainv[AsBc.ndiagL+i], AsBc.lda);
     }
-  } 
+  }
 
   // Subtracting sigma*B from A.
 
@@ -239,8 +239,8 @@ SubtractAsB(ARFLOAT sigmaR, ARFLOAT sigmaI)
   begAsB = AsBc.ndiagL+AsBc.ndiagU-minU;
 
   for (i = 0; i < minL+minU+1; i++) {
-    ComplexAxpy(AsBc.n, -sigma, &B->A[begB+i], incb, 
-                &AsBc.Ainv[begAsB+i], AsBc.lda);  
+    ComplexAxpy(AsBc.n, -sigma, &B->A[begB+i], incb,
+                &AsBc.Ainv[begAsB+i], AsBc.lda);
   }
 
   // Transferring part of B (*(-sigma)) if AsBc.ndiagL > A->ndiagL.
@@ -296,7 +296,7 @@ void ARbdNonSymPencil<ARTYPE, ARFLOAT>::FactorAsB(ARTYPE sigma)
 
   // Reserving memory for some vectors used in matrix decomposition.
 
-  AsB.CreateStructure(); 
+  AsB.CreateStructure();
 
   // Subtracting sigma*B from A and storing the result on AsB.
 
@@ -354,7 +354,7 @@ FactorAsB(ARFLOAT sigmaR, ARFLOAT sigmaI, char partp)
 
   // Decomposing AsBc.
 
-  gbtrf(AsBc.n, AsBc.n, AsBc.ndiagL, AsBc.ndiagU, 
+  gbtrf(AsBc.n, AsBc.n, AsBc.ndiagL, AsBc.ndiagU,
         AsBc.Ainv, AsBc.lda, AsBc.ipiv, AsBc.info);
 
   // Handling errors.
@@ -433,7 +433,7 @@ void ARbdNonSymPencil<ARTYPE, ARFLOAT>::MultInvAsBv(ARFLOAT* v, ARFLOAT* w)
 
 template<class ARTYPE, class ARFLOAT>
 inline void ARbdNonSymPencil<ARTYPE, ARFLOAT>::
-DefineMatrices(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+DefineMatrices(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
@@ -445,11 +445,11 @@ DefineMatrices(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
 
 template<class ARTYPE, class ARFLOAT>
 inline ARbdNonSymPencil<ARTYPE, ARFLOAT>::
-ARbdNonSymPencil(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+ARbdNonSymPencil(ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                  ARbdNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

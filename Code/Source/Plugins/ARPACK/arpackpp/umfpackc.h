@@ -2,16 +2,9 @@
    ARPACK++ v1.2 2/20/2000
    c++ interface to ARPACK code.
 
-   MODULE UMFPACKc.h.
-   Interface to UMFPACK routines.
+   MODULE umfpackc.h.
+   Interface to UMFPACK FORTRAN routines.
 
-   Author of this class:
-      Martin Reuter
-      Date 2/28/2013
-      
-   Arpack++ Author:
-      Francisco Gomes
-      
    ARPACK Authors
       Richard Lehoucq
       Danny Sorensen
@@ -21,196 +14,229 @@
       Houston, Texas
 */
 
+#include "arch.h"
+#include "umfpackf.h"
+
 #ifndef UMFPACKC_H
 #define UMFPACKC_H
 
-#ifdef __cplusplus
-extern "C" {
+
+void AfterUm21i(int keep[], int icntl[], bool simest, bool reducible) 
+
+// A function that changes some components of icntl and keep vectors. 
+
+{
+
+  icntl[2]  = 0;              // icntl(3)=0 to avoid printing umfpack messages.
+  icntl[3]  = (int)reducible; // icntl(4)=1 if matrix must be permuted to
+                              // block triangular form.
+  icntl[5]  = (int)simest;    // icntl(6)=1 if matrix is structurally symmetric
+
+  // Parameters defined in arch.h file.
+
+  if (UICNTL5 != 0) icntl[4] = UICNTL5; // # cols examined during pivot search.
+  if (UICNTL7 != 0) icntl[6] = UICNTL7; // block size for the blas.
+  if (UKEEP7  != 0)  keep[6] = UKEEP7;  // dense columns absolute threshold.
+  if (UKEEP8  != 0)  keep[7] = UKEEP8;  // dense columns relative threshold.
+
+} // AfterUm21i.
+
+
+// UM21I
+
+inline void um21i(ARint keep[], float cntl[], ARint icntl[],
+                  double threshold = 0.1, bool simest = false, 
+                  bool reducible = true) 
+
+// An extended version of UMFPACK's ums21i.
+
+{
+
+  // Calling the FORTRAN function.
+
+  F77NAME(ums21i)(keep, cntl, icntl);
+
+  // Changing cntl vector.
+
+  cntl[0] = (float)threshold;                // relative pivot tolerance.
+  if (UCNTL2 != 0) cntl[1] = (float)UCNTL2;  // amalgamation parameter.
+
+  // Changing keep and icntl.
+
+  AfterUm21i(keep, icntl, simest, reducible);
+
+} // um21i (float)
+
+inline void um21i(ARint keep[], double cntl[], ARint icntl[],
+                  double threshold = 0.1, bool simest = false, 
+                  bool reducible = true) 
+
+// An extended version of UMFPACK's umd21i.
+
+{
+
+  // Calling the FORTRAN function.
+
+  F77NAME(umd21i)(keep, cntl, icntl);
+
+  // Changing cntl vector.
+
+  cntl[0] = threshold;                       // relative pivot tolerance.
+  if (UCNTL2 != 0) cntl[1] = (double)UCNTL2; // amalgamation parameter.
+
+  // Changing keep and icntl.
+
+  AfterUm21i(keep, icntl, simest, reducible);
+
+} // um21i (double)
+
+#ifdef ARCOMP_H
+
+inline void um21i(ARint keep[], arcomplex<float> cntl[], ARint icntl[],
+                  double threshold = 0.1, bool simest = false, 
+                  bool reducible = true) 
+
+// Another extended version of UMFPACK's ums21i (for complex problems).
+
+{
+
+  // Calling the FORTRAN function.
+
+  float* fcntl = (float*)cntl;
+  F77NAME(ums21i)(keep, fcntl, icntl);
+
+  // Changing cntl vector.
+
+  fcntl[0] = (float)threshold;               // relative pivot tolerance.
+  if (UCNTL2 != 0) fcntl[1] = (float)UCNTL2; // amalgamation parameter.
+
+  // Changing keep and icntl.
+
+  AfterUm21i(keep, icntl, simest, reducible);
+
+} // um21i (arcomplex<float>)
+
+inline void um21i(ARint keep[], arcomplex<double> cntl[], ARint icntl[],
+                  double threshold = 0.1, bool simest = false, 
+                  bool reducible = true) 
+
+// Another extended version of UMFPACK's umd21i (for complex problems).
+
+{
+
+  // Calling the FORTRAN function.
+
+  double* fcntl = (double*)cntl;
+  F77NAME(umd21i)(keep, fcntl, icntl);
+
+  // Changing cntl vector.
+
+  fcntl[0] = threshold;                       // relative pivot tolerance.
+  if (UCNTL2 != 0) fcntl[1] = (double)UCNTL2; // amalgamation parameter.
+
+  // Changing keep and icntl.
+
+  AfterUm21i(keep, icntl, simest, reducible);
+
+} // um21i (arcomplex<double>)
+
 #endif
 
-#define UMFPACK_INFO 90
-#define UMFPACK_CONTROL 20
-#define UMFPACK_OK (0)
-#define UMFPACK_A	(0)	/* Ax=b    */
-#define UMFPACK_PRL 0			/* print level */
 
-void umfpack_di_defaults
-(
-    double Control [UMFPACK_CONTROL]
-) ;
+// UM2FA
 
+inline void um2fa(const ARint &n, const ARint &ne, const ARint &job,
+                  const ARlogical &transa, const ARint &lvalue,
+                  const ARint &lindex, float value[], ARint index[],
+                  ARint keep[], const float cntl[], 
+                  const ARint icntl[], ARint info[], float rinfo[]) {
+  F77NAME(ums2fa)(&n, &ne, &job, &transa, &lvalue, &lindex, 
+                  value, index, keep, cntl, icntl, info, rinfo);
+} // um2fa (float)
 
-int umfpack_di_symbolic
-(
-    int n_row,
-    int n_col,
-    const int Ap [ ],
-    const int Ai [ ],
-    const double Ax [ ],
-    void **Symbolic,
-    const double Control [UMFPACK_CONTROL],
-    double Info [UMFPACK_INFO]
-) ;
+inline void um2fa(const ARint &n, const ARint &ne, const ARint &job,
+                  const ARlogical &transa, const ARint &lvalue,
+                  const ARint &lindex, double value[], ARint index[],
+                  ARint keep[], const double cntl[], 
+                  const ARint icntl[], ARint info[], double rinfo[]) {
+  F77NAME(umd2fa)(&n, &ne, &job, &transa, &lvalue, &lindex, 
+                  value, index, keep, cntl, icntl, info, rinfo);
+} // um2fa (double)
 
-int umfpack_di_numeric
-(
-    const int Ap [ ],
-    const int Ai [ ],
-    const double Ax [ ],
-    void *Symbolic,
-    void **Numeric,
-    const double Control [UMFPACK_CONTROL],
-    double Info [UMFPACK_INFO]
-) ;
+#ifdef ARCOMP_H
 
-void umfpack_di_free_symbolic
-(
-    void **Symbolic
-) ;
+inline void um2fa(const ARint &n, const ARint &ne, const ARint &job,
+                  const ARlogical &transa, const ARint &lvalue,
+                  const ARint &lindex, arcomplex<float> value[], 
+                  ARint index[], ARint keep[], 
+                  const arcomplex<float> cntl[], const ARint icntl[], 
+                  ARint info[], arcomplex<float> rinfo[]) {
+  F77NAME(umc2fa)(&n, &ne, &job, &transa, &lvalue, &lindex, value, index, 
+                  keep, (float*)cntl, icntl, info, (float*)rinfo);
+} // um2fa (arcomplex<float>)
 
-void umfpack_di_free_numeric
-(
-    void **Numeric
-) ;
+inline void um2fa(const ARint &n, const ARint &ne, const ARint &job,
+                  const ARlogical &transa, const ARint &lvalue,
+                  const ARint &lindex, arcomplex<double> value[], 
+                  ARint index[], ARint keep[], 
+                  const arcomplex<double> cntl[], const ARint icntl[], 
+                  ARint info[], arcomplex<double> rinfo[]) {
+  F77NAME(umz2fa)(&n, &ne, &job, &transa, &lvalue, &lindex, value, index, 
+                  keep, (double*)cntl, icntl, info, (double*)rinfo);
+} // um2fa (arcomplex<double>)
 
-int umfpack_di_triplet_to_col
-(
-    int n_row,
-    int n_col,
-    int nz,
-    const int Ti [ ],
-    const int Tj [ ],
-    const double Tx [ ],
-    int Ap [ ],
-    int Ai [ ],
-    double Ax [ ],
-    int Map [ ]
-) ;
-
-int umfpack_di_solve
-(
-    int sys,
-    const int Ap [ ],
-    const int Ai [ ],
-    const double Ax [ ],
-    double X [ ],
-    const double B [ ],
-    void *Numeric,
-    const double Control [UMFPACK_CONTROL],
-    double Info [UMFPACK_INFO]
-) ;
-
-int umfpack_di_report_matrix
-(
-    int n_row,
-    int n_col,
-    const int Ap [ ],
-    const int Ai [ ],
-    const double Ax [ ],
-    int col_form,
-    const double Control [UMFPACK_CONTROL]
-) ;
-
-#ifdef __cplusplus
-  }
 #endif
 
-//#include "umfpack.h"
-#include <fstream>
 
-inline void Write_Triplet_Matrix(const std::string & fname, int * tripi,
-                                 int * tripj, double* tripx, unsigned int nnz)
-{
-  std::ofstream myfile; 
-  myfile.open ( fname.c_str() );
-	myfile.precision(20);
-  for (unsigned int i=0;i<nnz;i++)
-  {
-    myfile << tripi[i]+1 << " " << tripj[i]+1 << " " << tripx[i] << std::endl;
-  }
-  myfile.close();
-}
+// UM2SO
 
-/*inline void Write_Cholmod_Sparse_Matrix(const std::string & fname,
-                             cholmod_sparse* A, cholmod_common *c)
-{
-  std::ofstream myfile; 
-  myfile.open ( fname.c_str() );
-  cholmod_triplet * T = cholmod_sparse_to_triplet(A,c);
-  //std::cout << " [ " << std::endl;
-	myfile.precision(20);
-  for (unsigned int i=0;i<T->nnz;i++)
-  {
-    myfile << ((int*)T->i)[i]+1 << " " << ((int*)T->j)[i]+1 << " " << ((double*)T->x)[i] << std::endl;
-  }
-  //std::cout << " ] " << std::endl;
-  myfile.close();
-  
-  cholmod_free_triplet(&T,c);
+inline void um2so(const ARint &n, const ARint &job, 
+                  const ARlogical &transc, const ARint &lvalue, 
+                  const ARint &lindex, float value[], ARint index[],
+                  const ARint keep[], const float b[], float x[], 
+                  float w[], const float cntl[], const ARint icntl[], 
+                  ARint info[], float rinfo[]) {
+  F77NAME(ums2so)(&n, &job, &transc, &lvalue, &lindex, value,
+                  index, keep, b, x, w, cntl, icntl, info, rinfo);
+} // um2so (float)
 
-}
+inline void um2so(const ARint &n, const ARint &job, 
+                  const ARlogical &transc, const ARint &lvalue, 
+                  const ARint &lindex, double value[], ARint index[],
+                  const ARint keep[], const double b[], double x[], 
+                  double w[], const double cntl[], const ARint icntl[], 
+                  ARint info[], double rinfo[]) {
+  F77NAME(umd2so)(&n, &job, &transc, &lvalue, &lindex, value,
+                  index, keep, b, x, w, cntl, icntl, info, rinfo);
+} // um2so (double)
 
-// Create_Cholmod_Sparse_Matrix 
-inline cholmod_sparse* Create_Cholmod_Sparse_Matrix(int m, int n, int nnz,
-      double* a, int* irow, int* pcol, char uplo, cholmod_common *c)
-{
-  
-  cholmod_sparse* A = new cholmod_sparse;
-  A->nrow = m;
-  A->ncol = n;
-  A->nzmax = nnz;
-  A->p = pcol;
-  A->i = irow;
-  A->nz = NULL;
-  A->x = a;
-  A->z = NULL;
-  if (uplo == 'L') A->stype = -1;
-  else A->stype = 1;
-  A->itype = CHOLMOD_INT;
-  A->xtype = CHOLMOD_REAL; // real
-  A->dtype = CHOLMOD_DOUBLE; // double
-  A->sorted = 0;
-  A->packed = 1;
+#ifdef ARCOMP_H
 
-  return A;  
-  
-  
+inline void um2so(const ARint &n, const ARint &job, 
+                  const ARlogical &transc, const ARint &lvalue, 
+                  const ARint &lindex, arcomplex<float> value[], 
+                  ARint index[], const ARint keep[], const 
+                  arcomplex<float> b[], arcomplex<float> x[], 
+                  arcomplex<float> w[], const arcomplex<float> cntl[], 
+                  const ARint icntl[], ARint info[], 
+                  arcomplex<float> rinfo[]) {
+  F77NAME(umc2so)(&n, &job, &transc, &lvalue, &lindex, value, index, keep,
+                  b, x, w, (float*)cntl, icntl, info, (float*)rinfo);
+} // um2so (arcomplex<float>)
 
-  
-} // Create_Cholmod_Sparse_Matrix (double).
+inline void um2so(const ARint &n, const ARint &job, 
+                  const ARlogical &transc, const ARint &lvalue, 
+                  const ARint &lindex, arcomplex<double> value[], 
+                  ARint index[], const ARint keep[], 
+                  const arcomplex<double> b[], arcomplex<double> x[], 
+                  arcomplex<double> w[], const arcomplex<double> cntl[], 
+                  const ARint icntl[], ARint info[], 
+                  arcomplex<double> rinfo[]) {
+  F77NAME(umz2so)(&n, &job, &transc, &lvalue, &lindex, value, index, keep,
+                  b, x, w, (double*)cntl, icntl, info, (double*)rinfo);
+} // um2so (arcomplex<double>)
 
-// Create_Cholmod_Dense_Matrix (from Triplet)
-inline cholmod_dense* Create_Cholmod_Dense_Matrix(int m, int n,
-                                  double* a, cholmod_common *c)
-{
+#endif
 
-
-  cholmod_dense* A = new cholmod_dense;
-  A->nrow = m;
-  A->ncol = n;
-  A->nzmax = m*n;
-  A->d = m;
-  A->x = a;
-  A->z = NULL;
-  A->xtype = CHOLMOD_REAL; // real
-  A->dtype = CHOLMOD_DOUBLE; // double
-
-//  cholmod_dense* As = cholmod_copy_dense(A,c);
-  
-  return A;
-  
-} // Create_Cholmod_Dense_Matrix (double).
-
-// Create_Cholmod_Dense_Matrix (from Triplet)
-inline void Get_Cholmod_Dense_Data(cholmod_dense* A, int n, double* a)
-{
-  memcpy(a,A->x,n*sizeof(double));
-  
-//  for (int i = 0;i<n;i++)
-//    a[i] = ((double*)A->x)[i];
-  
-} // Create_Cholmod_Dense_Matrix (double).
-
-*/
 
 #endif // UMFPACKC_H

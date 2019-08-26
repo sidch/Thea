@@ -18,7 +18,7 @@
 #define ARRGNSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arrsnsym.h"
 #include "arrgeig.h"
@@ -67,7 +67,7 @@ class ARrcNonSymGenEig:
   virtual void SetShiftInvertMode(ARFLOAT sigmaRp);
   // Turns the problem to real shift-and-invert mode with sigmaRp as shift.
 
-  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp, 
+  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp,
                                    ARFLOAT sigmaIp);
   // Turns the problem to complex shift-and-invert mode with shift
   // defined by sigmaRp and sigmaIp.
@@ -78,21 +78,21 @@ class ARrcNonSymGenEig:
   ARrcNonSymGenEig() { part = 'R'; }
   // Short constructor that does almost nothing.
 
-  ARrcNonSymGenEig(int np, int nevp, const std::string& whichp = "LM",
+  ARrcNonSymGenEig(int np, int nevp, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARrcNonSymGenEig(int np, int nevp, ARFLOAT sigmap,
-                   const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
-                   int maxitp = 0, ARFLOAT* residp = NULL, 
+                   const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                   int maxitp = 0, ARFLOAT* residp = NULL,
                    bool ishiftp = true);
   // Long constructor (real shift and invert mode).
 
   ARrcNonSymGenEig(int np, int nevp,
                    char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp,
-                   const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
-                   int maxitp = 0, ARFLOAT* residp = NULL, 
+                   const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                   int maxitp = 0, ARFLOAT* residp = NULL,
                    bool ishiftp = true);
   // Long constructor (complex shift and invert mode).
 
@@ -171,7 +171,7 @@ SetShiftInvertMode(ARFLOAT sigmaRp)
 {
 
   part = 'R';
-  ChangeShift(sigmaRp);
+  this->ChangeShift(sigmaRp);
 
 } // SetShiftInvertMode.
 
@@ -182,14 +182,14 @@ SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 {
 
   part   = CheckPart(partp);
-  ChangeShift(sigmaRp, sigmaIp);
+  this->ChangeShift(sigmaRp, sigmaIp);
 
 } // SetComplexShiftMode.
 
 
 template<class ARFLOAT>
 inline ARrcNonSymGenEig<ARFLOAT>::
-ARrcNonSymGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+ARrcNonSymGenEig(int np, int nevp, const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 {
 
@@ -202,7 +202,7 @@ ARrcNonSymGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT 
 
 template<class ARFLOAT>
 inline ARrcNonSymGenEig<ARFLOAT>::
-ARrcNonSymGenEig(int np, int nevp, ARFLOAT sigmap, const std::string& whichp, int ncvp,
+ARrcNonSymGenEig(int np, int nevp, ARFLOAT sigmap, const char* whichp, int ncvp,
                  ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 {
 
@@ -216,7 +216,7 @@ ARrcNonSymGenEig(int np, int nevp, ARFLOAT sigmap, const std::string& whichp, in
 template<class ARFLOAT>
 inline ARrcNonSymGenEig<ARFLOAT>::
 ARrcNonSymGenEig(int np, int nevp, char partp, ARFLOAT sigmaRp,
-                 ARFLOAT sigmaIp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+                 ARFLOAT sigmaIp, const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 {
 

@@ -18,13 +18,13 @@
 #define SEUPP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arpackf.h"
 
 inline void seupp(bool rvec, char HowMny, double d[], double Z[],
                   ARint ldz, double sigma, char bmat, ARint n,
-                  const std::string& which, ARint nev, double tol, double resid[],
+                  char* which, ARint nev, double tol, double resid[],
                   ARint ncv, double V[], ARint ldv, ARint iparam[],
                   ARint ipntr[], double workd[], double workl[],
                   ARint lworkl, ARint& info)
@@ -147,7 +147,7 @@ inline void seupp(bool rvec, char HowMny, double d[], double Z[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(dseupd)(&irvec, &HowMny, iselect, d, iZ, &ldz, &sigma, &bmat,
-                  &n, which.c_str(), &nev, &tol, resid, &ncv, &V[1], &ldv, &iparam[1],
+                  &n, which, &nev, &tol, resid, &ncv, &V[1], &ldv, &iparam[1],
                   &ipntr[1], &workd[1], &workl[1], &lworkl, &info );
 
   delete[] iselect;
@@ -156,7 +156,7 @@ inline void seupp(bool rvec, char HowMny, double d[], double Z[],
 
 inline void seupp(bool rvec, char HowMny, float d[], float Z[],
                   ARint ldz, float sigma, char bmat, ARint n,
-                  const std::string& which, ARint nev, float tol, float resid[],
+                  char* which, ARint nev, float tol, float resid[],
                   ARint ncv, float V[], ARint ldv, ARint iparam[],
                   ARint ipntr[], float workd[], float workl[],
                   ARint lworkl, ARint& info)
@@ -179,7 +179,7 @@ inline void seupp(bool rvec, char HowMny, float d[], float Z[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(sseupd)(&irvec, &HowMny, iselect, d, iZ, &ldz, &sigma, &bmat,
-                  &n, which.c_str(), &nev, &tol, resid, &ncv, &V[1], &ldv, &iparam[1],
+                  &n, which, &nev, &tol, resid, &ncv, &V[1], &ldv, &iparam[1],
                   &ipntr[1], &workd[1], &workl[1], &lworkl, &info );
 
   delete[] iselect;

@@ -3,7 +3,7 @@
    c++ interface to ARPACK code.
 
    MODULE ARBSSym.h.
-   Arpack++ class ARluSymStdEig definition
+   Arpack++ class ARbdSymStdEig definition
    (band matrix version).
 
    ARPACK Authors
@@ -19,14 +19,13 @@
 #define ARBSSYM_H
 
 #include <cstddef>
-#include <string>
 #include "arch.h"
 #include "arssym.h"
 #include "arbsmat.h"
 
 
 template<class ARFLOAT>
-class ARluSymStdEig:
+class ARbdSymStdEig:
   public virtual ARSymStdEig<ARFLOAT, ARbdSymMatrix<ARFLOAT> > {
 
  public:
@@ -43,42 +42,42 @@ class ARluSymStdEig:
 
  // a.2) Constructors and destructor.
 
-  ARluSymStdEig() { }
+  ARbdSymStdEig() { }
   // Short constructor.
 
-  ARluSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
-                const std::string& whichp = "LM", int ncvp = 0,
+  ARbdSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
+                const char* whichp = "LM", int ncvp = 0,
                 ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARluSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
-                ARFLOAT sigma, const std::string& whichp = "LM", int ncvp = 0,
+  ARbdSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
+                ARFLOAT sigma, const char* whichp = "LM", int ncvp = 0,
                 ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
 
-  ARluSymStdEig(const ARluSymStdEig& other) { Copy(other); }
+  ARbdSymStdEig(const ARbdSymStdEig& other) { Copy(other); }
   // Copy constructor.
 
-  virtual ~ARluSymStdEig() { }
+  virtual ~ARbdSymStdEig() { }
   // Destructor.
 
  // b) Operators.
 
-  ARluSymStdEig& operator=(const ARluSymStdEig& other);
+  ARbdSymStdEig& operator=(const ARbdSymStdEig& other);
   // Assignment operator.
 
-}; // class ARluSymStdEig.
+}; // class ARbdSymStdEig.
 
 
 // ------------------------------------------------------------------------ //
-// ARluSymStdEig member functions definition.                               //
+// ARbdSymStdEig member functions definition.                               //
 // ------------------------------------------------------------------------ //
 
 
 template<class ARFLOAT>
-inline void ARluSymStdEig<ARFLOAT>::
+inline void ARbdSymStdEig<ARFLOAT>::
 ChangeShift(ARFLOAT sigmaRp)
 {
 
@@ -94,7 +93,7 @@ ChangeShift(ARFLOAT sigmaRp)
 
 
 template<class ARFLOAT>
-inline void ARluSymStdEig<ARFLOAT>::SetRegularMode()
+inline void ARbdSymStdEig<ARFLOAT>::SetRegularMode()
 {
 
   ARStdEig<ARFLOAT, ARFLOAT, ARbdSymMatrix<ARFLOAT> >::
@@ -104,7 +103,7 @@ inline void ARluSymStdEig<ARFLOAT>::SetRegularMode()
 
 
 template<class ARFLOAT>
-inline void ARluSymStdEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
+inline void ARbdSymStdEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 {
 
   ARStdEig<ARFLOAT, ARFLOAT, ARbdSymMatrix<ARFLOAT> >::
@@ -114,9 +113,9 @@ inline void ARluSymStdEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 
 
 template<class ARFLOAT>
-inline ARluSymStdEig<ARFLOAT>::
-ARluSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
-              const std::string& whichp, int ncvp, ARFLOAT tolp,
+inline ARbdSymStdEig<ARFLOAT>::
+ARbdSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
+              const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 {
 
@@ -128,23 +127,23 @@ ARluSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-inline ARluSymStdEig<ARFLOAT>::
-ARluSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
-              ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+inline ARbdSymStdEig<ARFLOAT>::
+ARbdSymStdEig(int nevp, ARbdSymMatrix<ARFLOAT>& A,
+              ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   this->DefineParameters(A.ncols(), nevp, &A, &ARbdSymMatrix<ARFLOAT>::MultInvv,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // Long constructor (shift and invert mode).
 
 
 template<class ARFLOAT>
-ARluSymStdEig<ARFLOAT>& ARluSymStdEig<ARFLOAT>::
-operator=(const ARluSymStdEig<ARFLOAT>& other)
+ARbdSymStdEig<ARFLOAT>& ARbdSymStdEig<ARFLOAT>::
+operator=(const ARbdSymStdEig<ARFLOAT>& other)
 {
 
   if (this != &other) { // Stroustrup suggestion.

@@ -3,7 +3,7 @@
    c++ interface to ARPACK code.
 
    MODULE ARUGNSym.h.
-   Arpack++ class ARluNonSymGenEig definition
+   Arpack++ class ARumNonSymGenEig definition
    (umfpack version).
 
    ARPACK Authors
@@ -19,7 +19,7 @@
 #define ARUGNSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arunsmat.h"
 #include "arunspen.h"
@@ -27,7 +27,7 @@
 
 
 template<class ARFLOAT>
-class ARluNonSymGenEig:
+class ARumNonSymGenEig:
   public virtual ARNonSymGenEig<ARFLOAT, ARumNonSymPencil<ARFLOAT, ARFLOAT>,
                                 ARumNonSymPencil<ARFLOAT, ARFLOAT> > {
 
@@ -39,7 +39,7 @@ class ARluNonSymGenEig:
 
  // b) Protected functions:
 
-  virtual void Copy(const ARluNonSymGenEig& other);
+  virtual void Copy(const ARumNonSymGenEig& other);
   // Makes a deep copy of "other" over "this" object.
   // Old values are not deleted (this function is to be used
   // by the copy constructor and the assignment operator only).
@@ -57,56 +57,56 @@ class ARluNonSymGenEig:
 
   virtual void SetShiftInvertMode(ARFLOAT sigmap);
 
-  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp, 
+  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp,
                                    ARFLOAT sigmaIp);
 
  // c.2) Constructors and destructor.
 
-  ARluNonSymGenEig() { }
+  ARumNonSymGenEig() { }
   // Short constructor.
 
-  ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                   ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, const std::string& whichp = "LM",
+  ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+                   ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+  ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                    ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, ARFLOAT sigma,
-                   const std::string& whichp = "LM", int ncvp = 0,
+                   const char* whichp = "LM", int ncvp = 0,
                    ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (real shift and invert mode).
 
-  ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+  ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                    ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, char partp,
-                   ARFLOAT sigmaRp, ARFLOAT sigmaIp, const std::string& whichp = "LM",
+                   ARFLOAT sigmaRp, ARFLOAT sigmaIp, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (complex shift and invert mode).
 
-  ARluNonSymGenEig(const ARluNonSymGenEig& other) { Copy(other); }
+  ARumNonSymGenEig(const ARumNonSymGenEig& other) { Copy(other); }
   // Copy constructor.
 
-  virtual ~ARluNonSymGenEig() { }
+  virtual ~ARumNonSymGenEig() { }
   // Destructor.
 
  // d) Operators.
 
-  ARluNonSymGenEig& operator=(const ARluNonSymGenEig& other);
+  ARumNonSymGenEig& operator=(const ARumNonSymGenEig& other);
   // Assignment operator.
 
-}; // class ARluNonSymGenEig.
+}; // class ARumNonSymGenEig.
 
 
 // ------------------------------------------------------------------------ //
-// ARluNonSymGenEig member functions definition.                            //
+// ARumNonSymGenEig member functions definition.                            //
 // ------------------------------------------------------------------------ //
 
 
 template<class ARFLOAT>
-inline void ARluNonSymGenEig<ARFLOAT>::
-Copy(const ARluNonSymGenEig<ARFLOAT>& other)
+inline void ARumNonSymGenEig<ARFLOAT>::
+Copy(const ARumNonSymGenEig<ARFLOAT>& other)
 {
 
   ARNonSymGenEig<ARFLOAT, ARumNonSymPencil<ARFLOAT, ARFLOAT>,
@@ -120,7 +120,7 @@ Copy(const ARluNonSymGenEig<ARFLOAT>& other)
 
 
 template<class ARFLOAT>
-inline void ARluNonSymGenEig<ARFLOAT>::
+inline void ARumNonSymGenEig<ARFLOAT>::
 ChangeShift(ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 {
 
@@ -136,7 +136,7 @@ ChangeShift(ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 
 
 template<class ARFLOAT>
-inline void ARluNonSymGenEig<ARFLOAT>::SetRegularMode()
+inline void ARumNonSymGenEig<ARFLOAT>::SetRegularMode()
 {
 
   ARStdEig<ARFLOAT, ARFLOAT, ARumNonSymPencil<ARFLOAT, ARFLOAT> >::
@@ -146,7 +146,7 @@ inline void ARluNonSymGenEig<ARFLOAT>::SetRegularMode()
 
 
 template<class ARFLOAT>
-inline void ARluNonSymGenEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
+inline void ARumNonSymGenEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 {
 
   ARNonSymGenEig<ARFLOAT, ARumNonSymPencil<ARFLOAT, ARFLOAT>,
@@ -158,30 +158,30 @@ inline void ARluNonSymGenEig<ARFLOAT>::SetShiftInvertMode(ARFLOAT sigmap)
 
 
 template<class ARFLOAT>
-inline void ARluNonSymGenEig<ARFLOAT>::
+inline void ARumNonSymGenEig<ARFLOAT>::
 SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 {
 
   ARNonSymGenEig<ARFLOAT, ARumNonSymPencil<ARFLOAT, ARFLOAT>,
                  ARumNonSymPencil<ARFLOAT, ARFLOAT> >::
-    SetComplexShiftMode(partp, sigmaRp, sigmaIp, &Pencil, 
-                        &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv, 
+    SetComplexShiftMode(partp, sigmaRp, sigmaIp, &Pencil,
+                        &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv,
                         &Pencil, &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultAv);
 
 } // SetComplexShiftMode.
 
 
 template<class ARFLOAT>
-inline ARluNonSymGenEig<ARFLOAT>::
-ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                 ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, const std::string& whichp, int ncvp,
+inline ARumNonSymGenEig<ARFLOAT>::
+ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+                 ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, const char* whichp, int ncvp,
                  ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   Pencil.DefineMatrices(A, B);
   this->NoShift();
-  DefineParameters(A.ncols(), nevp, &Pencil,
+  this->DefineParameters(A.ncols(), nevp, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultInvBAv, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultBv, whichp,
                    ncvp, tolp, maxitp, residp, ishiftp);
@@ -190,16 +190,16 @@ ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-inline ARluNonSymGenEig<ARFLOAT>::
-ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+inline ARumNonSymGenEig<ARFLOAT>::
+ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                  ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, ARFLOAT sigmap,
-                 const std::string& whichp, int ncvp, ARFLOAT tolp,
+                 const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   Pencil.DefineMatrices(A, B);
-  DefineParameters(A.ncols(), nevp, &Pencil,
+  this->DefineParameters(A.ncols(), nevp, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultBv, whichp,
                    ncvp, tolp, maxitp, residp, ishiftp);
@@ -209,17 +209,17 @@ ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-inline ARluNonSymGenEig<ARFLOAT>::
-ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                 ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B, 
+inline ARumNonSymGenEig<ARFLOAT>::
+ARumNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
+                 ARumNonSymMatrix<ARFLOAT, ARFLOAT>& B,
                  char partp, ARFLOAT sigmaRp,
-                 ARFLOAT sigmaIp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+                 ARFLOAT sigmaIp, const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
 
   Pencil.DefineMatrices(A, B);
-  DefineParameters(A.ncols(), nevp, &Pencil,
+  this->DefineParameters(A.ncols(), nevp, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv, &Pencil,
                    &ARumNonSymPencil<ARFLOAT, ARFLOAT>::MultBv, whichp,
                    ncvp, tolp, maxitp, residp, ishiftp);
@@ -229,8 +229,8 @@ ARluNonSymGenEig(int nevp, ARumNonSymMatrix<ARFLOAT, ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-ARluNonSymGenEig<ARFLOAT>& ARluNonSymGenEig<ARFLOAT>::
-operator=(const ARluNonSymGenEig<ARFLOAT>& other)
+ARumNonSymGenEig<ARFLOAT>& ARumNonSymGenEig<ARFLOAT>::
+operator=(const ARumNonSymGenEig<ARFLOAT>& other)
 {
 
   if (this != &other) { // Stroustrup suggestion.

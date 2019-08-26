@@ -45,7 +45,7 @@ class ARbdSymMatrix: public ARMatrix<ARTYPE> {
   ARTYPE*  A;
   ARTYPE*  Ainv;
 
-  void ClearMem(); 
+  void ClearMem();
 
   virtual void Copy(const ARbdSymMatrix& other);
 
@@ -56,7 +56,7 @@ class ARbdSymMatrix: public ARMatrix<ARTYPE> {
   void CreateStructure();
 
   void ThrowError();
-  
+
  public:
 
   bool IsFactored() { return factored; }
@@ -95,11 +95,11 @@ class ARbdSymMatrix: public ARMatrix<ARTYPE> {
 
 template<class ARTYPE>
 inline void ARbdSymMatrix<ARTYPE>::ClearMem()
-{ 
+{
 
   if (factored) {
     delete[] Ainv;
-    delete[] ipiv; 
+    delete[] ipiv;
     Ainv = NULL;
     ipiv = NULL;
   }
@@ -144,7 +144,7 @@ void ARbdSymMatrix<ARTYPE>::ExpandA()
 {
 
   int i;
- 
+
   if (uplo == 'U') {
 
     // Copying the main diagonal of A to Ainv.
@@ -155,7 +155,7 @@ void ARbdSymMatrix<ARTYPE>::ExpandA()
 
     for (i = 0; i < nsdiag; i++) {
       copy(this->n, &A[i], nsdiag+1, &Ainv[nsdiag+i], lda);
-      copy(this->n-nsdiag+i, &A[i+(nsdiag-i)*(nsdiag+1)], nsdiag+1, 
+      copy(this->n-nsdiag+i, &A[i+(nsdiag-i)*(nsdiag+1)], nsdiag+1,
            &Ainv[3*nsdiag-i], lda);
     }
 
@@ -188,7 +188,7 @@ void ARbdSymMatrix<ARTYPE>::SubtractAsI(ARTYPE sigma)
 
   // Subtracting sigma from diagonal elements.
 
-  for (int i=(2*nsdiag); i<(lda*this->n); i+=lda) Ainv[i] -= sigma; 
+  for (int i=(2*nsdiag); i<(lda*this->n); i+=lda) Ainv[i] -= sigma;
 
 } // SubtractAsI.
 
@@ -319,7 +319,7 @@ void ARbdSymMatrix<ARTYPE>::MultInvv(ARTYPE* v, ARTYPE* w)
 
   // Solving A.w = v (or AsI.w = v).
 
-  gbtrs("N", this->n, nsdiag, nsdiag, 1, Ainv, lda, ipiv, w, this->m, info);
+  gbtrs(APP_C_STR("N"), this->n, nsdiag, nsdiag, 1, Ainv, lda, ipiv, w, this->m, info);
 
   // Handling errors.
 
@@ -344,19 +344,19 @@ DefineMatrix(int np, int nsdiagp, ARTYPE* Ap, char uplop)
   this->defined   = true;
   Ainv      = NULL;
   ipiv      = NULL;
-  info      = 0; 
+  info      = 0;
 
 } // DefineMatrix.
 
 
 template<class ARTYPE>
 inline ARbdSymMatrix<ARTYPE>::
-ARbdSymMatrix(int np, int nsdiagp, 
+ARbdSymMatrix(int np, int nsdiagp,
               ARTYPE* Ap, char uplop) : ARMatrix<ARTYPE>(np)
 {
 
   factored = false;
-  DefineMatrix(np, nsdiagp, Ap, uplop);
+  this->DefineMatrix(np, nsdiagp, Ap, uplop);
 
 } // Long constructor.
 

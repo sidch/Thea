@@ -20,7 +20,7 @@
 #define ARGEIG_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arerror.h"
 #include "arrgeig.h"
@@ -63,8 +63,8 @@ class ARGenEig:
  // d.1) Function that stores user defined parameters.
 
   virtual void DefineParameters(int np, int nevp, ARFOP* objOPp,
-                                TypeOPx MultOPxp, ARFB* objBp, 
-                                TypeBx MultBxp, const std::string& whichp="LM", 
+                                TypeOPx MultOPxp, ARFB* objBp,
+                                TypeBx MultBxp, const char* whichp="LM",
                                 int ncvp=0, ARFLOAT tolp=0.0,
                                 int maxitp=0, ARTYPE* residp=NULL,
                                 bool ishiftp=true);
@@ -123,8 +123,8 @@ template<class ARFLOAT, class ARTYPE, class ARFOP, class ARFB>
 void ARGenEig<ARFLOAT, ARTYPE, ARFOP, ARFB>::
 DefineParameters(int np, int nevp, ARFOP* objOPp,
                  void (ARFOP::* MultOPxp)(ARTYPE[], ARTYPE[]), ARFB* objBp,
-                 void (ARFB::* MultBxp)(ARTYPE[], ARTYPE[]), const std::string& whichp,
-                 int ncvp, ARFLOAT tolp, int maxitp, ARTYPE* residp, 
+                 void (ARFB::* MultBxp)(ARTYPE[], ARTYPE[]), const char* whichp,
+                 int ncvp, ARFLOAT tolp, int maxitp, ARTYPE* residp,
                  bool ishiftp)
 
 {
@@ -137,7 +137,7 @@ DefineParameters(int np, int nevp, ARFOP* objOPp,
   // Setting common eigen-problem parameters.
 
   ARStdEig<ARFLOAT, ARTYPE, ARFOP>::
-    DefineParameters(np, nevp, objOPp, MultOPxp, whichp,
+    this->DefineParameters(np, nevp, objOPp, MultOPxp, whichp,
                      ncvp, tolp, maxitp, residp, ishiftp);
 
 } // DefineParameters.

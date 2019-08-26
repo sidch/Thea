@@ -58,7 +58,7 @@ class ARStdEig: virtual public ARrcStdEig<ARFLOAT, ARTYPE> {
  // d.1) Function that stores user defined parameters.
 
   virtual void DefineParameters(int np, int nevp, ARFOP* objOPp,
-                                TypeOPx MultOPxp, const std::string& whichp="LM",
+                                TypeOPx MultOPxp, const char* whichp="LM",
                                 int ncvp=0, ARFLOAT tolp=0.0, int maxitp=0,
                                 ARTYPE* residp=NULL, bool ishiftp=true);
   // Set values of problem parameters (also called by constructors).
@@ -130,7 +130,7 @@ Copy(const ARStdEig<ARFLOAT, ARTYPE, ARFOP>& other)
 template<class ARFLOAT, class ARTYPE, class ARFOP>
 void ARStdEig<ARFLOAT, ARTYPE, ARFOP>::
 DefineParameters(int np, int nevp, ARFOP* objOPp,
-                 void (ARFOP::* MultOPxp)(ARTYPE[], ARTYPE[]), const std::string& whichp,
+                 void (ARFOP::* MultOPxp)(ARTYPE[], ARTYPE[]), const char* whichp,
                  int ncvp, ARFLOAT tolp, int maxitp, ARTYPE* residp,
                  bool ishiftp)
 

@@ -34,7 +34,7 @@ extern "C"
 
 // double precision symmetric routines.
 
-  void F77NAME(dsaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(dsaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, double *tol, double *resid,
                        ARint *ncv, double *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, double *workd,
@@ -43,7 +43,7 @@ extern "C"
   void F77NAME(dseupd)(ARlogical *rvec, char *HowMny, ARlogical *select,
                        double *d, double *Z, ARint *ldz,
                        double *sigma, char *bmat, ARint *n,
-                       const char *which, ARint *nev, double *tol,
+                       char *which, ARint *nev, double *tol,
                        double *resid, ARint *ncv, double *V,
                        ARint *ldv, ARint *iparam, ARint *ipntr,
                        double *workd, double *workl,
@@ -51,7 +51,7 @@ extern "C"
 
 // double precision nonsymmetric routines.
 
-  void F77NAME(dnaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(dnaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, double *tol, double *resid,
                        ARint *ncv, double *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, double *workd,
@@ -61,7 +61,7 @@ extern "C"
                        double *dr, double *di, double *Z,
                        ARint *ldz, double *sigmar,
                        double *sigmai, double *workev,
-                       char *bmat, ARint *n, const char *which,
+                       char *bmat, ARint *n, char *which,
                        ARint *nev, double *tol, double *resid,
                        ARint *ncv, double *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr,
@@ -70,7 +70,7 @@ extern "C"
 
 // single precision symmetric routines.
 
-  void F77NAME(ssaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(ssaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, float *tol, float *resid,
                        ARint *ncv, float *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, float *workd,
@@ -79,7 +79,7 @@ extern "C"
   void F77NAME(sseupd)(ARlogical *rvec, char *HowMny, ARlogical *select,
                        float *d, float *Z, ARint *ldz,
                        float *sigma, char *bmat, ARint *n,
-                       const char *which, ARint *nev, float *tol,
+                       char *which, ARint *nev, float *tol,
                        float *resid, ARint *ncv, float *V,
                        ARint *ldv, ARint *iparam, ARint *ipntr,
                        float *workd, float *workl,
@@ -87,7 +87,7 @@ extern "C"
 
 // single precision nonsymmetric routines.
 
-  void F77NAME(snaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(snaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, float *tol, float *resid,
                        ARint *ncv, float *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, float *workd,
@@ -97,7 +97,7 @@ extern "C"
                        float *dr, float *di, float *Z,
                        ARint *ldz, float *sigmar,
                        float *sigmai, float *workev, char *bmat,
-                       ARint *n, const char *which, ARint *nev,
+                       ARint *n, char *which, ARint *nev,
                        float *tol, float *resid, ARint *ncv,
                        float *V, ARint *ldv, ARint *iparam,
                        ARint *ipntr, float *workd, float *workl,
@@ -107,7 +107,7 @@ extern "C"
 
 // single precision complex routines.
 
-  void F77NAME(cnaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(cnaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, float *tol, arcomplex<float> *resid,
                        ARint *ncv, arcomplex<float> *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, arcomplex<float> *workd,
@@ -117,7 +117,7 @@ extern "C"
   void F77NAME(cneupd)(ARlogical *rvec, char *HowMny, ARlogical *select,
                        arcomplex<float> *d, arcomplex<float> *Z, ARint *ldz,
                        arcomplex<float> *sigma, arcomplex<float> *workev,
-                       char *bmat, ARint *n, const char *which, ARint *nev,
+                       char *bmat, ARint *n, char *which, ARint *nev,
                        float *tol, arcomplex<float> *resid, ARint *ncv,
                        arcomplex<float> *V, ARint *ldv, ARint *iparam,
                        ARint *ipntr, arcomplex<float> *workd,
@@ -126,7 +126,7 @@ extern "C"
 
 // double precision complex routines.
 
-  void F77NAME(znaupd)(ARint *ido, char *bmat, ARint *n, const char *which,
+  void F77NAME(znaupd)(ARint *ido, char *bmat, ARint *n, char *which,
                        ARint *nev, double *tol, arcomplex<double> *resid,
                        ARint *ncv, arcomplex<double> *V, ARint *ldv,
                        ARint *iparam, ARint *ipntr, arcomplex<double> *workd,
@@ -136,7 +136,7 @@ extern "C"
   void F77NAME(zneupd)(ARlogical *rvec, char *HowMny, ARlogical *select,
                        arcomplex<double> *d, arcomplex<double> *Z, ARint *ldz,
                        arcomplex<double> *sigma, arcomplex<double> *workev,
-                       char *bmat, ARint *n, const char *which, ARint *nev,
+                       char *bmat, ARint *n, char *which, ARint *nev,
                        double *tol, arcomplex<double> *resid, ARint *ncv,
                        arcomplex<double> *V, ARint *ldv, ARint *iparam,
                        ARint *ipntr, arcomplex<double> *workd,

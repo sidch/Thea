@@ -106,7 +106,7 @@ void ARdsSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
 
   if (A->uplo == B->uplo) {
 
-    axpy(sizeA, -sigma, B->A, 1, AsB.Ainv, 1); 
+    axpy(sizeA, -sigma, B->A, 1, AsB.Ainv, 1);
 
   }
   else if (A->uplo == 'L') { // B->uplo == 'U'
@@ -129,7 +129,7 @@ void ARdsSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
     }
 
   }
-    
+
 } // SubtractAsB (ARTYPE shift).
 
 
@@ -162,7 +162,7 @@ void ARdsSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
   // Reserving memory for some vectors used in matrix decomposition.
 
-  AsB.CreateStructure(); 
+  AsB.CreateStructure();
 
   // Subtracting sigma*B from A and storing the result on AsB.
 
@@ -216,7 +216,7 @@ ARdsSymPencil(ARdsSymMatrix<ARTYPE>& Ap, ARdsSymMatrix<ARTYPE>& Bp)
 {
 
   AsB.factored  = false;
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

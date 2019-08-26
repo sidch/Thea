@@ -43,7 +43,6 @@ class ARluSymPencil
   ARluSymMatrix<ARTYPE>* B;
   SuperMatrix            L;
   SuperMatrix            U;
-  SuperLUStat_t stat;
 
   virtual void Copy(const ARluSymPencil& other);
 
@@ -54,7 +53,7 @@ class ARluSymPencil
 
   void ExpandAsB(int n, NCformat& AsB);
 
-  void SubtractAsB(int n, ARTYPE sigma, NCformat& A, 
+  void SubtractAsB(int n, ARTYPE sigma, NCformat& A,
                    NCformat& B, NCformat& AsB);
 
  public:
@@ -106,10 +105,10 @@ Copy(const ARluSymPencil<ARTYPE>& other)
   A        = other.A;
   B        = other.B;
 
-  // Throwing the original factorization away (this procedure 
+  // Throwing the original factorization away (this procedure
   // is really awkward, but it is necessary because there
-  // is no copy function for matrices L and U in the SuperLU 
-  // library and it is not a good idea to do this kind of deep 
+  // is no copy function for matrices L and U in the SuperLU
+  // library and it is not a good idea to do this kind of deep
   // copy here).
 
   if (factored) {
@@ -127,7 +126,7 @@ void ARluSymPencil<ARTYPE>::ClearMem()
   if (factored) {
     Destroy_SuperNode_Matrix(&L);
     Destroy_CompCol_Matrix(&U);
-    StatFree(&stat);
+    StatFree();
     delete[] permc;
     delete[] permr;
     permc = NULL;
@@ -200,7 +199,7 @@ void ARluSymPencil<ARTYPE>::ExpandAsB(int n, NCformat& AsB)
   ARTYPE *val;
 
   // simplifying the notation.
-  
+
   val = (ARTYPE*)AsB.nzval;
   ind = AsB.rowind;
   col = AsB.colptr;
@@ -219,7 +218,7 @@ void ARluSymPencil<ARTYPE>::ExpandAsB(int n, NCformat& AsB)
     for (i=0; i!=n; i++) {
       k = pcol[i+1];
       if ((k!=pcol[i])&&(ind[k-1]==i)) k--;
-      for (j=pcol[i]; j<k; j++) pos[ind[j]]++;        
+      for (j=pcol[i]; j<k; j++) pos[ind[j]]++;
     }
 
   }
@@ -228,16 +227,16 @@ void ARluSymPencil<ARTYPE>::ExpandAsB(int n, NCformat& AsB)
     for (i=0; i!=n; i++) {
       k = pcol[i];
       if ((k!=pcol[i+1])&&(ind[k]==i)) k++;
-      for (j=k; j<pcol[i+1]; j++) pos[ind[j]]++;        
+      for (j=k; j<pcol[i+1]; j++) pos[ind[j]]++;
     }
 
-  }  
+  }
 
   // Summing up index elements.
 
   for (i=0; i<n; i++) pos[i+1] += pos[i];
   for (i=n; i>0; i--) col[i] += pos[i-1];
-    
+
   // Expanding A.
 
   if (uplo == 'U') {
@@ -281,11 +280,11 @@ void ARluSymPencil<ARTYPE>::ExpandAsB(int n, NCformat& AsB)
 
   }
 
-  AsB.nnz = col[n]; 
+  AsB.nnz = col[n];
 
   //  Deleting temporary vectors.
 
-  delete[] pcol;  
+  delete[] pcol;
   delete[] pos;
 
 } // ExpandAsB.
@@ -323,9 +322,9 @@ SubtractAsB(int n, ARTYPE sigma, NCformat& matA, NCformat& matB, NCformat& AsB)
   for (i=0; i!=n; i++) {
     bcol = matB.colptr[i];
     acol = matA.colptr[i];
-    SparseSaxpy(-sigma, &bnzval[bcol], &matB.rowind[bcol], 
-                matB.colptr[i+1]-bcol, &anzval[acol], &matA.rowind[acol], 
-                matA.colptr[i+1]-acol, &asbnzval[asbcol], 
+    SparseSaxpy(-sigma, &bnzval[bcol], &matB.rowind[bcol],
+                matB.colptr[i+1]-bcol, &anzval[acol], &matA.rowind[acol],
+                matA.colptr[i+1]-acol, &asbnzval[asbcol],
                 &AsB.rowind[asbcol], scol);
     asbcol += scol;
     AsB.colptr[i+1] = asbcol;
@@ -337,116 +336,6 @@ SubtractAsB(int n, ARTYPE sigma, NCformat& matA, NCformat& matB, NCformat& AsB)
 
 } // SubtractAsB.
 
-
-// template<class ARTYPE>
-// void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
-// {
-// 
-//   // Quitting the function if A and B were not defined.
-// 
-//   if (!(A->IsDefined()&&B->IsDefined())) {
-//     throw ArpackError(ArpackError::DATA_UNDEFINED,
-//                       "ARluSymPencil::FactorAsB");
-//   }
-// 
-//   // Quitting the function if A and B are not square.
-// 
-//   if ((A->nrows() != A->ncols()) || (B->nrows() != B->ncols())) {
-//     throw ArpackError(ArpackError::NOT_SQUARE_MATRIX,
-//                       "ARluSymPencil::FactorAsB");
-//   }
-// 
-//   // Defining local variables.
-// 
-//   int         nnzi, info;
-//   int*        etree;
-//   int*        irowi;
-//   int*        pcoli;
-//   ARTYPE*     asb;
-//   SuperMatrix AsB;
-//   SuperMatrix AC;
-//   NCformat*   Astore;
-//   NCformat*   Bstore;
-//   NCformat*   AsBstore;
-// 
-//   // Deleting old versions of L, U, perm_r and perm_c.
-// 
-//   ClearMem();
-// 
-//   // Setting default values for gstrf parameters.
-// 
-//   ARTYPE drop_tol = (ARTYPE)0;
-//   int  panel_size = sp_ienv(1);
-//   int  relax      = sp_ienv(2);
-// 
-//   // Defining A and B format.
-// 
-//   Astore = (NCformat*)A->A.Store;
-//   Bstore = (NCformat*)B->A.Store;
-// 
-//   // Creating a temporary matrix AsB.
-// 
-//   nnzi  = (Astore->nnz+Bstore->nnz)*2;
-//   irowi = new int[nnzi];
-//   pcoli = new int[A->ncols()+1];
-//   asb   = new ARTYPE[nnzi];
-//   Create_CompCol_Matrix(&AsB, A->nrows(), A->ncols(), nnzi, asb,
-//                         irowi, pcoli, NC, GE);
-// 
-//   // Subtracting sigma*B from A and storing the result on AsB.
-// 
-//   AsBstore = (NCformat*)AsB.Store;
-//   SubtractAsB(A->ncols(), sigma, *Astore, *Bstore, *AsBstore);
-// 
-//   // Reserving memory for some vectors used in matrix decomposition.
-// 
-//   etree = new int[A->ncols()];
-//   if (permc == NULL) permc = new int[A->ncols()];
-//   if (permr == NULL) permr = new int[A->ncols()];
-// 
-//   // Defining LUStat.
-// 
-//   StatInit(panel_size, relax);
-// 
-//   // Defining the column permutation of matrix AsB
-//   // (using minimum degree ordering on AsB'*AsB).
-// 
-//   get_perm_c(A->order, &AsB, permc);
-// 
-//   // Permuting columns of AsB and
-//   // creating the elimination tree of AsB'*AsB.
-// 
-//   sp_preorder("N", &AsB, permc, etree, &AC);
-// 
-//   // Decomposing AsB.
-// 
-//   gstrf("N",&AC, A->threshold, drop_tol, relax, panel_size, etree,
-//         NULL, 0, permr, permc, &L, &U, &info);
-// 
-//   // Deleting AC, AsB and etree.
-// 
-//   Destroy_CompCol_Permuted(&AC);
-//   Destroy_CompCol_Matrix(&AsB);
-//   delete[] etree;
-// 
-//   factored = (info == 0);
-// 
-//   // Handling errors.
-// 
-//   if (info < 0)  {              // Illegal argument.
-//     throw ArpackError(ArpackError::PARAMETER_ERROR,
-//                       "ARluSymPencil::FactorAsB");
-//   }
-//   else if (info > A->ncols()) {  // Memory is not sufficient.
-//     throw ArpackError(ArpackError::MEMORY_OVERFLOW,
-//                       "ARluSymPencil::FactorAsB");
-//   }
-//   else if (info > 0) {          // Matrix is singular.
-//     throw ArpackError(ArpackError::MATRIX_IS_SINGULAR,
-//                       "ARluSymPencil::FactorAsB");
-//   }
-// 
-// } // FactorAsB.
 
 template<class ARTYPE>
 void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
@@ -485,27 +374,9 @@ void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
   // Setting default values for gstrf parameters.
 
+  ARTYPE drop_tol = (ARTYPE)0;
   int  panel_size = sp_ienv(1);
   int  relax      = sp_ienv(2);
-  superlu_options_t options;
-  /* Set the default input options:
-  options.Fact = DOFACT;
-  options.Equil = YES;
-  options.ColPerm = COLAMD;
-  options.DiagPivotThresh = 1.0;
-  options.Trans = NOTRANS;
-  options.IterRefine = NOREFINE;
-  options.SymmetricMode = NO;
-  options.PivotGrowth = NO;
-  options.ConditionNumber = NO;
-  options.PrintStat = YES;
-  */
-  set_default_options(&options);
-
-  /* Now we modify the default options to use the symmetric mode. */
-  options.SymmetricMode = YES;
-  options.ColPerm = MMD_AT_PLUS_A;
-  options.DiagPivotThresh = A->threshold;
 
   // Defining A and B format.
 
@@ -519,7 +390,7 @@ void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
   pcoli = new int[A->ncols()+1];
   asb   = new ARTYPE[nnzi];
   Create_CompCol_Matrix(&AsB, A->nrows(), A->ncols(), nnzi, asb,
-                        irowi, pcoli, SLU_NC, SLU_GE);
+                        irowi, pcoli, NC, GE);
 
   // Subtracting sigma*B from A and storing the result on AsB.
 
@@ -534,9 +405,7 @@ void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
   // Defining LUStat.
 
-//  StatInit(panel_size, relax);
-    SuperLUStat_t stat;
-    StatInit(&stat);
+  StatInit(panel_size, relax);
 
   // Defining the column permutation of matrix AsB
   // (using minimum degree ordering on AsB'*AsB).
@@ -546,14 +415,12 @@ void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
   // Permuting columns of AsB and
   // creating the elimination tree of AsB'*AsB.
 
-  sp_preorder(&options, &AsB, permc, etree, &AC);
+  sp_preorder(APP_C_STR("N"), &AsB, permc, etree, &AC);
 
   // Decomposing AsB.
 
-//  gstrf("N",&AC, A->threshold, drop_tol, relax, panel_size, etree,
-//        NULL, 0, permr, permc, &L, &U, &info);
-  gstrf(&options, &AC, relax, panel_size, etree,
-        NULL, 0, permc, permr, &L, &U, &stat, &info);
+  gstrf(APP_C_STR("N"),&AC, A->threshold, drop_tol, relax, panel_size, etree,
+        NULL, 0, permr, permc, &L, &U, &info);
 
   // Deleting AC, AsB and etree.
 
@@ -580,9 +447,11 @@ void ARluSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
 } // FactorAsB.
 
+
 template<class ARTYPE>
 void ARluSymPencil<ARTYPE>::MultInvBAv(ARTYPE* v, ARTYPE* w)
 {
+
   if (!B->IsFactored()) B->FactorA();
 
   A->MultMv(v, w);
@@ -609,12 +478,8 @@ void ARluSymPencil<ARTYPE>::MultInvAsBv(ARTYPE* v, ARTYPE* w)
   SuperMatrix RHS;
 
   copy(A->nrows(), v, 1, w, 1);
-  Create_Dense_Matrix(&RHS, A->nrows(), 1, w, A->nrows(), SLU_DN, SLU_GE);
-//  gstrs("N", &L, &U, permr, permc, &RHS, &info);
-  trans_t trans = NOTRANS;
-  StatInit(&stat);
-
-  gstrs(trans, &L, &U, permc, permr, &RHS, &stat, &info);
+  Create_Dense_Matrix(&RHS, A->nrows(), 1, w, A->nrows(), DN, GE);
+  gstrs(APP_C_STR("N"), &L, &U, permr, permc, &RHS, &info);
 
   Destroy_SuperMatrix_Store(&RHS); // delete RHS.Store;
 
@@ -642,9 +507,9 @@ DefineMatrices(ARluSymMatrix<ARTYPE>& Ap, ARluSymMatrix<ARTYPE>& Bp)
 template<class ARTYPE>
 inline ARluSymPencil<ARTYPE>::ARluSymPencil()
 {
-  
-  factored = false; 
-  part     = 'N'; 
+
+  factored = false;
+  part     = 'N';
   permr    = NULL;
   permc    = NULL;
 
@@ -657,7 +522,7 @@ ARluSymPencil(ARluSymMatrix<ARTYPE>& Ap, ARluSymMatrix<ARTYPE>& Bp)
 {
 
   factored = false;
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

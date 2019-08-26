@@ -18,7 +18,7 @@
 #define ARGNSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "blas1c.h"
 #include "lapackc.h"
@@ -69,9 +69,9 @@ class ARNonSymGenEig:
                                   void (ARFOP::* MultOPxp)(ARFLOAT[],ARFLOAT[]));
   // Turns the problem to real shift-and-invert mode with sigmaRp as shift.
 
-  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp, 
-                                   ARFLOAT sigmaIp, ARFOP* objOPp, 
-                                   void (ARFOP::* MultOPxp)(ARFLOAT[],ARFLOAT[]), 
+  virtual void SetComplexShiftMode(char partp, ARFLOAT sigmaRp,
+                                   ARFLOAT sigmaIp, ARFOP* objOPp,
+                                   void (ARFOP::* MultOPxp)(ARFLOAT[],ARFLOAT[]),
                                    ARFB* objAp,
                                    void (ARFB::* MultAxp)(ARFLOAT[],ARFLOAT[]));
   // Turns the problem to complex shift-and-invert mode with shift
@@ -101,14 +101,14 @@ class ARNonSymGenEig:
   ARNonSymGenEig(int np, int nevp, ARFOP* objOPp,
                  void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                  ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-                 const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                 const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
                  int maxitp = 0, ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARNonSymGenEig(int np, int nevp, ARFOP* objOPp,
                  void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                  ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-                 ARFLOAT sigmap, const std::string& whichp = "LM", int ncvp = 0,
+                 ARFLOAT sigmap, const char* whichp = "LM", int ncvp = 0,
                  ARFLOAT tolp = 0.0, int maxitp = 0, ARFLOAT* residp = NULL,
                  bool ishiftp = true);
   // Long constructor (real shift and invert mode).
@@ -117,7 +117,7 @@ class ARNonSymGenEig:
                  void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), ARFB* objAp,
                  void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]), ARFB* objBp,
                  void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]), char partp,
-                 ARFLOAT sigmaRp, ARFLOAT sigmaIp, const std::string& whichp = "LM",
+                 ARFLOAT sigmaRp, ARFLOAT sigmaIp, const char* whichp = "LM",
                  int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                  ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (complex shift and invert mode).
@@ -239,8 +239,8 @@ SetShiftInvertMode(ARFLOAT sigmaRp, ARFOP* objOPp,
 
 template<class ARFLOAT, class ARFOP, class ARFB>
 inline void ARNonSymGenEig<ARFLOAT, ARFOP, ARFB>::
-SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp, 
-                    ARFOP* objOPp, 
+SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp,
+                    ARFOP* objOPp,
                     void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                     ARFB* objAp, void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]))
 {
@@ -293,7 +293,7 @@ inline ARNonSymGenEig<ARFLOAT, ARFOP, ARFB>::
 ARNonSymGenEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-               const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+               const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
                ARFLOAT* residp, bool ishiftp)
 
 {
@@ -311,7 +311,7 @@ inline ARNonSymGenEig<ARFLOAT, ARFOP, ARFB>::
 ARNonSymGenEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-               ARFLOAT sigmap, const std::string& whichp, int ncvp,
+               ARFLOAT sigmap, const char* whichp, int ncvp,
                ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -331,7 +331,7 @@ ARNonSymGenEig(int np, int nevp, ARFOP* objOPp,
                ARFB* objAp, void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]),
                ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
                char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp,
-               const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+               const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
                ARFLOAT* residp, bool ishiftp)
 
 {

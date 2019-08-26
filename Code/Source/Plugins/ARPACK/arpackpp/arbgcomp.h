@@ -3,7 +3,7 @@
    c++ interface to ARPACK code.
 
    MODULE ARBGComp.h.
-   Arpack++ class ARluCompGenEig definition
+   Arpack++ class ARbdCompGenEig definition
    (band matrix version).
 
    ARPACK Authors
@@ -19,7 +19,6 @@
 #define ARBGCOMP_H
 
 #include <cstddef>
-#include <string>
 #include "arch.h"
 #include "arbnsmat.h"
 #include "arbnspen.h"
@@ -28,7 +27,7 @@
 
 
 template<class ARFLOAT>
-class ARluCompGenEig:
+class ARbdCompGenEig:
   public virtual
     ARCompGenEig<ARFLOAT, ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT >,
                  ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT > > {
@@ -41,7 +40,7 @@ class ARluCompGenEig:
 
  // b) Protected functions:
 
-  virtual void Copy(const ARluCompGenEig& other);
+  virtual void Copy(const ARbdCompGenEig& other);
   // Makes a deep copy of "other" over "this" object.
   // Old values are not deleted (this function is to be used
   // by the copy constructor and the assignment operator only).
@@ -61,44 +60,44 @@ class ARluCompGenEig:
 
  // c.2) Constructors and destructor.
 
-  ARluCompGenEig() { }
+  ARbdCompGenEig() { }
   // Short constructor.
 
-  ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
+  ARbdCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
                  ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& B,
-                 const std::string& whichp = "LM", int ncvp = 0,
+                 const char* whichp = "LM", int ncvp = 0,
                  ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
+  ARbdCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
                  ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& B,
-                 arcomplex<ARFLOAT> sigma, const std::string& whichp = "LM",
+                 arcomplex<ARFLOAT> sigma, const char* whichp = "LM",
                  int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
 
-  ARluCompGenEig(const ARluCompGenEig& other) { Copy(other); }
+  ARbdCompGenEig(const ARbdCompGenEig& other) { Copy(other); }
   // Copy constructor.
 
-  virtual ~ARluCompGenEig() { }
+  virtual ~ARbdCompGenEig() { }
 
  // d) Operators.
 
-  ARluCompGenEig& operator=(const ARluCompGenEig& other);
+  ARbdCompGenEig& operator=(const ARbdCompGenEig& other);
   // Assignment operator.
 
-}; // class ARluCompGenEig.
+}; // class ARbdCompGenEig.
 
 
 // ------------------------------------------------------------------------ //
-// ARluCompGenEig member functions definition.                              //
+// ARbdCompGenEig member functions definition.                              //
 // ------------------------------------------------------------------------ //
 
 
 template<class ARFLOAT>
-inline void ARluCompGenEig<ARFLOAT>::
-Copy(const ARluCompGenEig<ARFLOAT>& other)
+inline void ARbdCompGenEig<ARFLOAT>::
+Copy(const ARbdCompGenEig<ARFLOAT>& other)
 {
 
   ARCompGenEig<ARFLOAT, ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT >,
@@ -111,7 +110,7 @@ Copy(const ARluCompGenEig<ARFLOAT>& other)
 
 
 template<class ARFLOAT>
-inline void ARluCompGenEig<ARFLOAT>::
+inline void ARbdCompGenEig<ARFLOAT>::
 ChangeShift(arcomplex<ARFLOAT> sigmaRp)
 {
 
@@ -122,7 +121,7 @@ ChangeShift(arcomplex<ARFLOAT> sigmaRp)
 
 
 template<class ARFLOAT>
-inline void ARluCompGenEig<ARFLOAT>::SetRegularMode()
+inline void ARbdCompGenEig<ARFLOAT>::SetRegularMode()
 {
 
   ARStdEig<ARFLOAT, arcomplex<ARFLOAT>,
@@ -134,7 +133,7 @@ inline void ARluCompGenEig<ARFLOAT>::SetRegularMode()
 
 
 template<class ARFLOAT>
-inline void ARluCompGenEig<ARFLOAT>::
+inline void ARbdCompGenEig<ARFLOAT>::
 SetShiftInvertMode(arcomplex<ARFLOAT> sigmap)
 {
 
@@ -147,9 +146,9 @@ SetShiftInvertMode(arcomplex<ARFLOAT> sigmap)
 
 
 template<class ARFLOAT>
-inline ARluCompGenEig<ARFLOAT>::
-ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
-               ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& B, const std::string& whichp,
+inline ARbdCompGenEig<ARFLOAT>::
+ARbdCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
+               ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& B, const char* whichp,
                int ncvp, ARFLOAT tolp, int maxitp,
                arcomplex<ARFLOAT>* residp, bool ishiftp)
 
@@ -159,7 +158,7 @@ ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
   this->NoShift();
   this->DefineParameters(A.ncols(), nevp, &Pencil,
                    &ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT>::MultInvBAv,
-                   &Pencil, 
+                   &Pencil,
                    &ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT>::MultBv,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
 
@@ -167,10 +166,10 @@ ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-inline ARluCompGenEig<ARFLOAT>::
-ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
+inline ARbdCompGenEig<ARFLOAT>::
+ARbdCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
                ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& B,
-               arcomplex<ARFLOAT> sigmap, const std::string& whichp, int ncvp,
+               arcomplex<ARFLOAT> sigmap, const char* whichp, int ncvp,
                ARFLOAT tolp, int maxitp, arcomplex<ARFLOAT>* residp,
                bool ishiftp)
 
@@ -179,8 +178,8 @@ ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
   Pencil.DefineMatrices(A, B);
   this->DefineParameters(A.ncols(), nevp, &Pencil,
                    &ARbdNonSymPencil<arcomplex<ARFLOAT>, ARFLOAT>::MultInvAsBv,
-                   &Pencil, 
-                   &ARbdNonSymPencil<arcomplex<ARFLOAT>,ARFLOAT>::MultBv, 
+                   &Pencil,
+                   &ARbdNonSymPencil<arcomplex<ARFLOAT>,ARFLOAT>::MultBv,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
   SetShiftInvertMode(sigmap);
 
@@ -188,8 +187,8 @@ ARluCompGenEig(int nevp, ARbdNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-ARluCompGenEig<ARFLOAT>& ARluCompGenEig<ARFLOAT>::
-operator=(const ARluCompGenEig<ARFLOAT>& other)
+ARbdCompGenEig<ARFLOAT>& ARbdCompGenEig<ARFLOAT>::
+operator=(const ARbdCompGenEig<ARFLOAT>& other)
 {
 
   if (this != &other) { // Stroustrup suggestion.

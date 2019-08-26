@@ -83,13 +83,13 @@ class ARumNonSymPencil
 
   void MultInvAsBv(ARFLOAT* v, ARFLOAT* w);
 
-  void DefineMatrices(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  void DefineMatrices(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                       ARumNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
 
   ARumNonSymPencil() { part = 'N'; }
   // Short constructor that does nothing.
 
-  ARumNonSymPencil(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+  ARumNonSymPencil(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                    ARumNonSymMatrix<ARTYPE, ARFLOAT>& Bp);
   // Long constructor.
 
@@ -183,7 +183,7 @@ SparseSaxpy(ARTYPE a, ARTYPE x[], int xind[], int nx, ARTYPE y[],
 template<class ARTYPE, class ARFLOAT>
 void ARumNonSymPencil<ARTYPE, ARFLOAT>::
 SparseSaxpy(arcomplex<ARFLOAT> a, ARFLOAT x[], int xind[], int nx,
-            ARFLOAT y[], int yind[], int ny, 
+            ARFLOAT y[], int yind[], int ny,
             arcomplex<ARFLOAT> z[], int zind[], int& nz)
 // A strongly sequential (and inefficient) sparse saxpy algorithm.
 {
@@ -260,7 +260,7 @@ void ARumNonSymPencil<ARTYPE, ARFLOAT>::SubtractAsB(ARTYPE sigma)
     AsB.index[i+1] = asbcol;
   }
 
-  AsB.nnz = asbcol; 
+  AsB.nnz = asbcol;
 
   // Adding one to all elements of vector index
   // because the decomposition function was written in FORTRAN.
@@ -329,9 +329,9 @@ void ARumNonSymPencil<ARTYPE, ARFLOAT>::FactorAsB(ARTYPE sigma)
   if (!AsB.IsDefined()) {
 
     int fillin = A->fillin > B->fillin ? A->fillin : B->fillin;
-    AsB.DefineMatrix(A->ncols(), A->nzeros(), A->a, A->irow, 
-                     A->pcol, A->threshold, fillin, 
-                     (A->IsSymmetric() && B->IsSymmetric()), 
+    AsB.DefineMatrix(A->ncols(), A->nzeros(), A->a, A->irow,
+                     A->pcol, A->threshold, fillin,
+                     (A->IsSymmetric() && B->IsSymmetric()),
                      A->icntl[3], false);
     AsB.nnz = A->nzeros()+B->nzeros(); // temporary value.
 
@@ -386,8 +386,8 @@ FactorAsB(ARFLOAT sigmaR, ARFLOAT sigmaI, char partp)
     part        = partp;
     int  fillin = A->fillin > B->fillin ? A->fillin : B->fillin;
     AsBc.DefineMatrix(A->ncols(), A->nzeros(), 0, 0,
-                      A->pcol, A->threshold, fillin, 
-                      (A->IsSymmetric() && B->IsSymmetric()), 
+                      A->pcol, A->threshold, fillin,
+                      (A->IsSymmetric() && B->IsSymmetric()),
                       A->icntl[3], false);
     AsBc.nnz    = A->nzeros()+B->nzeros(); // temporary value.
 
@@ -404,7 +404,7 @@ FactorAsB(ARFLOAT sigmaR, ARFLOAT sigmaI, char partp)
   // Decomposing AsB.
 
   um2fa(AsBc.n, AsBc.index[AsBc.n], 0, false, AsBc.lvalue, AsBc.lindex,
-        AsBc.value, AsBc.index, AsBc.keep, AsBc.cntl, AsBc.icntl, 
+        AsBc.value, AsBc.index, AsBc.keep, AsBc.cntl, AsBc.icntl,
         AsBc.info, AsBc.rinfo);
 
   // Handling errors.
@@ -485,7 +485,7 @@ void ARumNonSymPencil<ARTYPE, ARFLOAT>::MultInvAsBv(ARFLOAT* v, ARFLOAT* w)
 
 template<class ARTYPE, class ARFLOAT>
 inline void ARumNonSymPencil<ARTYPE, ARFLOAT>::
-DefineMatrices(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+DefineMatrices(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                ARumNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
@@ -502,11 +502,11 @@ DefineMatrices(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
 
 template<class ARTYPE, class ARFLOAT>
 inline ARumNonSymPencil<ARTYPE, ARFLOAT>::
-ARumNonSymPencil(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap, 
+ARumNonSymPencil(ARumNonSymMatrix<ARTYPE, ARFLOAT>& Ap,
                  ARumNonSymMatrix<ARTYPE, ARFLOAT>& Bp)
 {
 
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

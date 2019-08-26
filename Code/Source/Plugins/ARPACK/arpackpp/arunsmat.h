@@ -21,7 +21,7 @@
 #define ARUNSMAT_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "armat.h"
 #include "arhbmat.h"
@@ -116,7 +116,7 @@ class ARumNonSymMatrix: public ARMatrix<ARTYPE> {
                    int* irowp, int* pcolp);
   // Long constructor (rectangular matrix).
 
-  ARumNonSymMatrix(const std::string& name, double thresholdp = 0.1,
+  ARumNonSymMatrix(char* name, double thresholdp = 0.1,
                    int fillinp = 9, bool simest = false,
                    bool reducible = true, bool check = true);
   // Long constructor (Harwell-Boeing file).
@@ -158,7 +158,7 @@ bool ARumNonSymMatrix<ARTYPE, ARFLOAT>::DataOK()
       if ((irow[j]<0)||(irow[k]>=this->n)) return false;
       while ((j!=k)&&(irow[j]<irow[j+1])) j++;
       if (j!=k) return false;
-    }  
+    }
   }
 
   return true;
@@ -225,7 +225,7 @@ Copy(const ARumNonSymMatrix<ARTYPE, ARFLOAT>& other)
 
   for (i=0; i<lindex; i++) index[i] = other.index[i];
   copy(lvalue, other.value, 1, value, 1);
-  
+
 } // Copy.
 
 
@@ -351,7 +351,7 @@ void ARumNonSymMatrix<ARTYPE, ARFLOAT>::FactorA()
 
   // Decomposing A.
 
-  um2fa(this->n, nnz, 0, false, lvalue, lindex, value, 
+  um2fa(this->n, nnz, 0, false, lvalue, lindex, value,
         index, keep, cntl, icntl, info, rinfo);
 
   // Handling errors.
@@ -583,7 +583,7 @@ ARumNonSymMatrix(int np, int nnzp, ARTYPE* ap, int* irowp,
 {
 
   factored = false;
-  DefineMatrix(np, nnzp, ap, irowp, pcolp, thresholdp,
+  this->DefineMatrix(np, nnzp, ap, irowp, pcolp, thresholdp,
                fillinp, simest, reducible, check);
 
 } // Long constructor (square matrix).
@@ -596,14 +596,14 @@ ARumNonSymMatrix(int mp, int np, int nnzp, ARTYPE* ap,
 {
 
   factored = false;
-  DefineMatrix(mp, np, nnzp, ap, irowp, pcolp);
+  this->DefineMatrix(mp, np, nnzp, ap, irowp, pcolp);
 
 } // Long constructor (rectangular matrix).
 
 
 template<class ARTYPE, class ARFLOAT>
 ARumNonSymMatrix<ARTYPE, ARFLOAT>::
-ARumNonSymMatrix(const std::string& name, double thresholdp, int fillinp,
+ARumNonSymMatrix(char* name, double thresholdp, int fillinp,
                  bool simest, bool reducible, bool check)
 {
 
@@ -617,12 +617,12 @@ ARumNonSymMatrix(const std::string& name, double thresholdp, int fillinp,
   }
 
   if (mat.NCols()==mat.NRows()) {
-    DefineMatrix(mat.NCols(), mat.NonZeros(), (ARTYPE*)mat.Entries(),
+    this->DefineMatrix(mat.NCols(), mat.NonZeros(), (ARTYPE*)mat.Entries(),
                  mat.RowInd(), mat.ColPtr(), thresholdp,
                  fillinp, simest, reducible, check);
   }
   else {
-    DefineMatrix(mat.NRows(), mat.NCols(), mat.NonZeros(),
+    this->DefineMatrix(mat.NRows(), mat.NCols(), mat.NonZeros(),
                  (ARTYPE*)mat.Entries(), mat.RowInd(), mat.ColPtr());
   }
 

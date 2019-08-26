@@ -18,7 +18,6 @@
 #define ARRSSYM_H
 
 #include <cstddef>
-#include <string>
 #include "arch.h"
 #include "arerror.h"
 #include "debug.h"
@@ -51,7 +50,7 @@ class ARrcSymStdEig: public virtual ARrcStdEig<ARFLOAT, ARFLOAT> {
 
  // a.3) Functions that check user defined parameters.
 
-  std::string CheckWhich(const std::string& whichp);
+  char* CheckWhich(char* whichp);
   // Determines if the value of variable "which" is valid.
 
 
@@ -63,11 +62,11 @@ class ARrcSymStdEig: public virtual ARrcStdEig<ARFLOAT, ARFLOAT> {
 
   void Trace(const int digit = -5, const int getv0 = 0, const int aupd = 1,
              const int aup2 = 0,  const int aitr = 0,  const int eigt = 0,
-             const int apps = 0,  const int gets = 0,  const int eupd = 0) 
-  { 
+             const int apps = 0,  const int gets = 0,  const int eupd = 0)
+  {
     sTraceOn(digit, getv0, aupd, aup2, aitr, eigt, apps, gets, eupd);
   }
-  // Turns on trace mode. 
+  // Turns on trace mode.
 
 
  // b.2) Functions that permit step by step execution of ARPACK.
@@ -90,7 +89,7 @@ class ARrcSymStdEig: public virtual ARrcStdEig<ARFLOAT, ARFLOAT> {
   // Overrides array EigValp with the eigenvalues of the problem.
   // Also calculates eigenvectors and Schur vectors if requested.
 
-  int EigenValVectors(ARFLOAT* &EigVecp, ARFLOAT* &EigValp, 
+  int EigenValVectors(ARFLOAT* &EigVecp, ARFLOAT* &EigValp,
                       bool ischur = false);
   // Overrides array EigVecp sequentially with the eigenvectors of the
   // given eigen-problem. Also stores the eigenvalues in EigValp.
@@ -125,12 +124,12 @@ class ARrcSymStdEig: public virtual ARrcStdEig<ARFLOAT, ARFLOAT> {
   ARrcSymStdEig() { }
   // Short constructor.
 
-  ARrcSymStdEig(int np, int nevp, const std::string& whichp = "LM", int ncvp = 0,
+  ARrcSymStdEig(int np, int nevp, const char* whichp = "LM", int ncvp = 0,
                 ARFLOAT tolp = 0.0, int maxitp = 0, ARFLOAT* residp = NULL,
                 bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARrcSymStdEig(int np, int nevp, ARFLOAT sigmap, const std::string& whichp = "LM",
+  ARrcSymStdEig(int np, int nevp, ARFLOAT sigmap, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -188,7 +187,7 @@ inline void ARrcSymStdEig<ARFLOAT>::Eupp()
 
 
 template<class ARFLOAT>
-std::string ARrcSymStdEig<ARFLOAT>::CheckWhich(const std::string& whichp)
+char* ARrcSymStdEig<ARFLOAT>::CheckWhich(char* whichp)
 {
 
   switch (whichp[0]) {
@@ -272,7 +271,7 @@ EigenValVectors(ARFLOAT* &EigVecp, ARFLOAT* &EigValp, bool ischur)
 
   if (this->ValuesOK) {                  // Eigenvalues are already available .
     this->nconv = Eigenvalues(EigValp, false);
-    this->nconv = this->Eigenvectors(EigVecp, ischur);
+    this->nconv = Eigenvectors(EigVecp, ischur);
   }
   else {                           // Eigenvalues and vectors are not available.
     try {
@@ -381,7 +380,7 @@ inline vector<ARFLOAT>* ARrcSymStdEig<ARFLOAT>::StlEigenvector(int i)
 
 template<class ARFLOAT>
 inline ARrcSymStdEig<ARFLOAT>::
-ARrcSymStdEig(int np, int nevp, const std::string& whichp, int ncvp,
+ARrcSymStdEig(int np, int nevp, const char* whichp, int ncvp,
               ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -394,7 +393,7 @@ ARrcSymStdEig(int np, int nevp, const std::string& whichp, int ncvp,
 
 template<class ARFLOAT>
 inline ARrcSymStdEig<ARFLOAT>::
-ARrcSymStdEig(int np, int nevp, ARFLOAT sigmap, const std::string& whichp,
+ARrcSymStdEig(int np, int nevp, ARFLOAT sigmap, const char* whichp,
               int ncvp, ARFLOAT tolp, int maxitp, ARFLOAT* residp,
               bool ishiftp)
 

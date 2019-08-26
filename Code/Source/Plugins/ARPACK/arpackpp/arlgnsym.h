@@ -19,7 +19,7 @@
 #define ARLGNSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arlnsmat.h"
 #include "arlnspen.h"
@@ -65,21 +65,21 @@ class ARluNonSymGenEig:
   // Short constructor.
 
   ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                   ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, const std::string& whichp = "LM",
+                   ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                    ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, ARFLOAT sigma,
-                   const std::string& whichp = "LM", int ncvp = 0,
+                   const char* whichp = "LM", int ncvp = 0,
                    ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (real shift and invert mode).
 
   ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                    ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, char partp,
-                   ARFLOAT sigmaRp, ARFLOAT sigmaIp, const std::string& whichp = "LM",
+                   ARFLOAT sigmaRp, ARFLOAT sigmaIp, const char* whichp = "LM",
                    int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                    ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (complex shift and invert mode).
@@ -171,8 +171,8 @@ SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 
   ARNonSymGenEig<ARFLOAT, ARluNonSymPencil<ARFLOAT, ARFLOAT>,
                  ARluNonSymPencil<ARFLOAT, ARFLOAT> >::
-    SetComplexShiftMode(partp, sigmaRp, sigmaIp, &Pencil, 
-                        &ARluNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv, 
+    SetComplexShiftMode(partp, sigmaRp, sigmaIp, &Pencil,
+                        &ARluNonSymPencil<ARFLOAT, ARFLOAT>::MultInvAsBv,
                         &Pencil, &ARluNonSymPencil<ARFLOAT, ARFLOAT>::MultAv);
 
 } // SetComplexShiftMode.
@@ -181,7 +181,7 @@ SetComplexShiftMode(char partp, ARFLOAT sigmaRp, ARFLOAT sigmaIp)
 template<class ARFLOAT>
 inline ARluNonSymGenEig<ARFLOAT>::
 ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                 ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, const std::string& whichp, int ncvp,
+                 ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, const char* whichp, int ncvp,
                  ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -200,7 +200,7 @@ template<class ARFLOAT>
 inline ARluNonSymGenEig<ARFLOAT>::
 ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
                  ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, ARFLOAT sigmap,
-                 const std::string& whichp, int ncvp, ARFLOAT tolp,
+                 const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -218,9 +218,9 @@ ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
 template<class ARFLOAT>
 inline ARluNonSymGenEig<ARFLOAT>::
 ARluNonSymGenEig(int nevp, ARluNonSymMatrix<ARFLOAT, ARFLOAT>& A,
-                 ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B, 
+                 ARluNonSymMatrix<ARFLOAT, ARFLOAT>& B,
                  char partp, ARFLOAT sigmaRp,
-                 ARFLOAT sigmaIp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+                 ARFLOAT sigmaIp, const char* whichp, int ncvp, ARFLOAT tolp,
                  int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {

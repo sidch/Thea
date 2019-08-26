@@ -46,7 +46,7 @@ class ARbdNonSymMatrix: public ARMatrix<ARTYPE> {
   ARTYPE*  A;
   ARTYPE*  Ainv;
 
-  void ClearMem(); 
+  void ClearMem();
 
   virtual void Copy(const ARbdNonSymMatrix& other);
 
@@ -57,7 +57,7 @@ class ARbdNonSymMatrix: public ARMatrix<ARTYPE> {
   void CreateStructure();
 
   void ThrowError();
-  
+
  public:
 
   bool IsFactored() { return factored; }
@@ -104,11 +104,11 @@ class ARbdNonSymMatrix: public ARMatrix<ARTYPE> {
 
 template<class ARTYPE, class ARFLOAT>
 inline void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::ClearMem()
-{ 
+{
 
   if (factored) {
     delete[] Ainv;
-    delete[] ipiv; 
+    delete[] ipiv;
     Ainv = NULL;
     ipiv = NULL;
   }
@@ -153,7 +153,7 @@ void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::ExpandA()
 {
 
   int i, inca;
- 
+
   // Copying A to Ainv.
 
   inca = ndiagL+ndiagU+1;
@@ -174,7 +174,7 @@ void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::SubtractAsI(ARTYPE sigma)
 
   // Subtracting sigma from diagonal elements.
 
-  for (int i=(ndiagL+ndiagU); i<(lda* this->n); i+=lda) Ainv[i] -= sigma; 
+  for (int i=(ndiagL+ndiagU); i<(lda* this->n); i+=lda) Ainv[i] -= sigma;
 
 } // SubtractAsI.
 
@@ -287,7 +287,7 @@ void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::MultMv(ARTYPE* v, ARTYPE* w)
 
   // Determining w = M.v.
 
-  gbmv("N",  this->m,  this->n, ndiagL, ndiagU, one, A,
+  gbmv(APP_C_STR("N"),  this->m,  this->n, ndiagL, ndiagU, one, A,
        ndiagL+ndiagU+1, v, 1, zero, w, 1);
 
 } // MultMv.
@@ -297,8 +297,8 @@ template<class ARTYPE, class ARFLOAT>
 void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
 {
 
-  ARTYPE  one;   
-  ARTYPE  zero; 
+  ARTYPE  one;
+  ARTYPE  zero;
 
   one  = (ARTYPE)0 + 1.0;
   zero = (ARTYPE)0;
@@ -312,7 +312,7 @@ void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::MultMtv(ARTYPE* v, ARTYPE* w)
   // Determining w = M'.v.
 
   gbmv("T",  this->m,  this->n, ndiagL, ndiagU, one, A,
-       ndiagL+ndiagU+1, v, 1, zero, w, 1);   
+       ndiagL+ndiagU+1, v, 1, zero, w, 1);
 
 } // MultMtv.
 
@@ -372,7 +372,7 @@ void ARbdNonSymMatrix<ARTYPE, ARFLOAT>::MultInvv(ARTYPE* v, ARTYPE* w)
 
   // Solving A.w = v (or AsI.w = v).
 
-  gbtrs("N",  this->n, ndiagL, ndiagU, 1, Ainv, lda, ipiv, w,  this->m, info);
+  gbtrs(APP_C_STR("N"),  this->n, ndiagL, ndiagU, 1, Ainv, lda, ipiv, w,  this->m, info);
 
   // Handling errors.
 
@@ -397,19 +397,19 @@ DefineMatrix(int np, int ndiagLp, int ndiagUp, ARTYPE* Ap)
    this->defined   = true;
   Ainv      = NULL;
   ipiv      = NULL;
-  info      = 0; 
+  info      = 0;
 
 } // DefineMatrix.
 
 
 template<class ARTYPE, class ARFLOAT>
 inline ARbdNonSymMatrix<ARTYPE, ARFLOAT>::
-ARbdNonSymMatrix(int np, int ndiagLp, 
+ARbdNonSymMatrix(int np, int ndiagLp,
                  int ndiagUp, ARTYPE* Ap) : ARMatrix<ARTYPE>(np)
 {
 
   factored = false;
-  DefineMatrix(np, ndiagLp, ndiagUp, Ap);
+  this->DefineMatrix(np, ndiagLp, ndiagUp, Ap);
 
 } // Long constructor.
 

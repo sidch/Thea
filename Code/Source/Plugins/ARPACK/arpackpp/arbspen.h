@@ -117,7 +117,7 @@ void ARbdSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
 
     for (i = 0; i < ndA; i++) {
       copy(n, &A->A[i], ndA+1, &AsB.Ainv[2*ndAsB-ndA+i], lda);
-      copy(n-ndA+i, &A->A[i+(ndA-i)*(ndA+1)], ndA+1, 
+      copy(n-ndA+i, &A->A[i+(ndA-i)*(ndA+1)], ndA+1,
            &AsB.Ainv[2*ndAsB+ndA-i], lda);
     }
 
@@ -147,7 +147,7 @@ void ARbdSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
         copy(n, &B->A[i], ndB+1, &AsB.Ainv[ndAsB+i], lda);
         scal(n, negsig, &AsB.Ainv[ndAsB+i], lda);
         copy(n-ndAsB+i, &AsB.Ainv[ndAsB+i+(ndAsB-i)*lda], lda,
-             &AsB.Ainv[lda-i-1], lda);  
+             &AsB.Ainv[lda-i-1], lda);
       }
 
     }
@@ -156,13 +156,13 @@ void ARbdSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
       for (i = ndA+1; i <= ndAsB; i++) {
         copy(n, &B->A[i], ndB+1, &AsB.Ainv[2*ndAsB+i], lda);
         scal(n, negsig, &AsB.Ainv[2*ndAsB+i], lda);
-        copy(n-i, &AsB.Ainv[2*ndAsB+i], lda, 
+        copy(n-i, &AsB.Ainv[2*ndAsB+i], lda,
              &AsB.Ainv[2*ndAsB-i+i*lda], lda);
       }
 
     }
 
-  } 
+  }
 
   // Subtracting sigma*B from A.
 
@@ -177,10 +177,10 @@ void ARbdSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
     // Subtracting the superdiagonals.
 
     for (i = 0; i < minD; i++) {
-      axpy(n, negsig, &B->A[ndB-minD+i], ndB+1, 
+      axpy(n, negsig, &B->A[ndB-minD+i], ndB+1,
            &AsB.Ainv[2*ndAsB-minD+i], lda);
       copy(n-minD+i, &AsB.Ainv[2*ndAsB-minD+i+(minD-i)*lda], lda,
-           &AsB.Ainv[2*ndAsB+minD-i], lda);  
+           &AsB.Ainv[2*ndAsB+minD-i], lda);
     }
 
   }
@@ -194,10 +194,10 @@ void ARbdSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
 
     for (i = 1; i <= minD; i++) {
       axpy(n, negsig, &B->A[i], ndB+1, &AsB.Ainv[2*ndAsB+i], lda);
-      copy(n-i, &AsB.Ainv[2*ndAsB+i], lda, 
+      copy(n-i, &AsB.Ainv[2*ndAsB+i], lda,
            &AsB.Ainv[2*ndAsB-i+i*lda], lda);
     }
-   
+
   }
 
 } // SubtractAsB (ARTYPE shift).
@@ -232,7 +232,7 @@ void ARbdSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
   // Reserving memory for some vectors used in matrix decomposition.
 
-  AsB.CreateStructure(); 
+  AsB.CreateStructure();
 
   // Subtracting sigma*B from A and storing the result on AsB.
 
@@ -240,7 +240,7 @@ void ARbdSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
 
   // Decomposing AsB.
 
-  gbtrf(AsB.n, AsB.n, AsB.nsdiag, AsB.nsdiag, 
+  gbtrf(AsB.n, AsB.n, AsB.nsdiag, AsB.nsdiag,
         AsB.Ainv, AsB.lda, AsB.ipiv, AsB.info);
 
   // Handling errors.
@@ -282,7 +282,7 @@ ARbdSymPencil(ARbdSymMatrix<ARTYPE>& Ap, ARbdSymMatrix<ARTYPE>& Bp)
 {
 
   AsB.factored  = false;
-  DefineMatrices(Ap, Bp);
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

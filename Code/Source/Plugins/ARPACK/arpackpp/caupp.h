@@ -17,11 +17,10 @@
 #ifndef CAUPP_H
 #define CAUPP_H
 
-#include <string>
 #include "arch.h"
 #include "arpackf.h"
 
-inline void caupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void caupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   double& tol, arcomplex<double> resid[], ARint ncv,
                   arcomplex<double> V[], ARint ldv, ARint iparam[], 
                   ARint ipntr[], arcomplex<double> workd[], 
@@ -286,13 +285,13 @@ inline void caupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(znaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(znaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1],
                   &workl[1], &lworkl, &rwork[1], &info);
 
 } // caupp (arcomplex<double>).
 
-inline void caupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void caupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   float& tol, arcomplex<float> resid[], ARint ncv,
                   arcomplex<float> V[], ARint ldv, ARint iparam[], 
                   ARint ipntr[], arcomplex<float> workd[], 
@@ -308,7 +307,7 @@ inline void caupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(cnaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(cnaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1],
                   &workl[1], &lworkl, &rwork[1], &info);
 

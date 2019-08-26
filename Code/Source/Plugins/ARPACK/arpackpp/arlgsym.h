@@ -20,7 +20,7 @@
 #define ARLGSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arlsmat.h"
 #include "arlspen.h"
@@ -68,13 +68,13 @@ class ARluSymGenEig:
   // Short constructor.
 
   ARluSymGenEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-                ARluSymMatrix<ARFLOAT>& B, const std::string& whichp = "LM",
+                ARluSymMatrix<ARFLOAT>& B, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARluSymGenEig(char InvertModep, int nevp, ARluSymMatrix<ARFLOAT>& A,
-                ARluSymMatrix<ARFLOAT>& B, ARFLOAT sigma, const std::string& whichp = "LM",
+                ARluSymMatrix<ARFLOAT>& B, ARFLOAT sigma, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert, buckling and Cayley modes).
@@ -141,7 +141,7 @@ SetShiftInvertMode(ARFLOAT sigmap)
 
   ARSymGenEig<ARFLOAT, ARluSymPencil<ARFLOAT>, ARluSymPencil<ARFLOAT> >::
     SetShiftInvertMode(sigmap, &Pencil, &ARluSymPencil<ARFLOAT>::MultInvAsBv);
-  this->ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultBv);
+  ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultBv);
 
 } // SetShiftInvertMode.
 
@@ -153,7 +153,7 @@ SetBucklingMode(ARFLOAT sigmap)
 
   ARSymGenEig<ARFLOAT, ARluSymPencil<ARFLOAT>, ARluSymPencil<ARFLOAT> >::
     SetBucklingMode(sigmap, &Pencil, &ARluSymPencil<ARFLOAT>::MultInvAsBv);
-  this->ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultAv);
+  ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultAv);
 
 } // SetBucklingMode.
 
@@ -166,7 +166,7 @@ SetCayleyMode(ARFLOAT sigmap)
   ARSymGenEig<ARFLOAT, ARluSymPencil<ARFLOAT>, ARluSymPencil<ARFLOAT> >::
     SetCayleyMode(sigmap, &Pencil, &ARluSymPencil<ARFLOAT>::MultInvAsBv,
                   &Pencil, &ARluSymPencil<ARFLOAT>::MultAv);
-  this->ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultBv);
+  ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultBv);
 
 } // SetCayleyMode.
 
@@ -174,7 +174,7 @@ SetCayleyMode(ARFLOAT sigmap)
 template<class ARFLOAT>
 inline ARluSymGenEig<ARFLOAT>::
 ARluSymGenEig(int nevp, ARluSymMatrix<ARFLOAT>& A,
-              ARluSymMatrix<ARFLOAT>& B, const std::string& whichp, int ncvp,
+              ARluSymMatrix<ARFLOAT>& B, const char* whichp, int ncvp,
               ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -194,7 +194,7 @@ template<class ARFLOAT>
 inline ARluSymGenEig<ARFLOAT>::
 ARluSymGenEig(char InvertModep, int nevp, ARluSymMatrix<ARFLOAT>& A,
               ARluSymMatrix<ARFLOAT>& B, ARFLOAT sigmap,
-              const std::string& whichp, int ncvp, ARFLOAT tolp,
+              const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -207,9 +207,9 @@ ARluSymGenEig(char InvertModep, int nevp, ARluSymMatrix<ARFLOAT>& A,
   this->InvertMode = this->CheckInvertMode(InvertModep);
   switch (this->InvertMode) {
   case 'B':  // Buckling mode.
-    this->ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultAv);
+    ChangeMultBx(&Pencil, &ARluSymPencil<ARFLOAT>::MultAv);
   case 'S':  // Shift and invert mode.
-    ChangeShift(sigmap);
+    this->ChangeShift(sigmap);
     break;
   case 'C':  // Cayley mode.
     SetCayleyMode(sigmap);

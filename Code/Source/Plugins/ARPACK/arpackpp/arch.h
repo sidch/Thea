@@ -20,7 +20,7 @@
 #define ARCH_H
 
 // ARPACK++ arcomplex type definition.
-// If you are not using g++ (or CC) and also are not intending 
+// If you are not using g++ (or CC) and also are not intending
 // use complex variables, comment out the following line.
 
 #include "arcomp.h"
@@ -32,7 +32,7 @@
 #include <vector>
 
 // If your STL vector class defines a variable other than
-// __SGI_STL_VECTOR_H, please change this variable name 
+// __SGI_STL_VECTOR_H, please change this variable name
 // in the ifdef command below.
 
 #ifdef __SGI_STL_VECTOR_H
@@ -42,8 +42,8 @@
 // UMFPACK parameters.
 // These parameters are used by UMFPACK library functions. Normally
 // they are not modified by the user. To use the default value, set
-// the parameter to zero. For a complete description of all UMFPACK 
-// parameters, see the library documentation. 
+// the parameter to zero. For a complete description of all UMFPACK
+// parameters, see the library documentation.
 
 #define UICNTL7 0 // icntl(7). Block size for the blas (machine-dependent).
 #define UICNTL5 0 // icntl(5). Number of columns to examine during pivot search.
@@ -63,7 +63,7 @@
 #if  defined(RIOS) && !defined(CLAPACK)
 #define F77NAME(x) x
 #else
-// #include <generic.h> 
+// #include <generic.h>
 // #define F77NAME(x) name2(x,_)
 #define F77NAME(x) x ## _
 #endif
@@ -91,5 +91,8 @@ typedef int ARlogical;
 
 #endif
 
+// SC: Squash "deprecated conversion from string constant to char*" warnings
+#include <string>
+#define APP_C_STR( text ) (const_cast<char *>(std::string( text ).c_str()))
 
 #endif // ARCH_H

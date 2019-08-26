@@ -18,13 +18,13 @@
 #define CEUPP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arpackf.h"
 
 inline void ceupp(bool rvec, char HowMny, arcomplex<double> d[],
                   arcomplex<double> Z[], ARint ldz, arcomplex<double> sigma,
-                  arcomplex<double> workev[], char bmat, ARint n, const std::string& which,
+                  arcomplex<double> workev[], char bmat, ARint n, char* which,
                   ARint nev, double tol, arcomplex<double> resid[], ARint ncv,
                   arcomplex<double> V[], ARint ldv, ARint iparam[], 
                   ARint ipntr[], arcomplex<double> workd[], 
@@ -178,7 +178,7 @@ inline void ceupp(bool rvec, char HowMny, arcomplex<double> d[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(zneupd)(&irvec, &HowMny, iselect, d, iZ, &ldz, &sigma,
-                  &workev[1], &bmat, &n, which.c_str(), &nev, &tol, resid,
+                  &workev[1], &bmat, &n, which, &nev, &tol, resid,
                   &ncv, &V[1], &ldv, &iparam[1], &ipntr[1],
                   &workd[1], &workl[1], &lworkl, &rwork[1], &info);
 
@@ -188,7 +188,7 @@ inline void ceupp(bool rvec, char HowMny, arcomplex<double> d[],
 
 inline void ceupp(bool rvec, char HowMny, arcomplex<float> d[],
                   arcomplex<float> Z[], ARint ldz, arcomplex<float> sigma,
-                  arcomplex<float> workev[], char bmat, ARint n, const std::string& which,
+                  arcomplex<float> workev[], char bmat, ARint n, char* which,
                   ARint nev, float tol, arcomplex<float> resid[], ARint ncv,
                   arcomplex<float> V[], ARint ldv, ARint iparam[], 
                   ARint ipntr[], arcomplex<float> workd[], 
@@ -213,7 +213,7 @@ inline void ceupp(bool rvec, char HowMny, arcomplex<float> d[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(cneupd)(&irvec, &HowMny, iselect, d, iZ, &ldz, &sigma,
-                  &workev[1], &bmat, &n, which.c_str(), &nev, &tol, resid,
+                  &workev[1], &bmat, &n, which, &nev, &tol, resid,
                   &ncv, &V[1], &ldv, &iparam[1], &ipntr[1],
                   &workd[1], &workl[1], &lworkl, &rwork[1], &info);
 

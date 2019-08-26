@@ -139,6 +139,7 @@ EXCLUDE               += ../Source/Algorithms/BloomenthalPolygonizer/
 EXCLUDE               += ../Source/Algorithms/fibheap/
 EXCLUDE               += ../Source/Algorithms/miniball/
 EXCLUDE               += ../Source/Algorithms/ShapeFeatures/LFD/
+EXCLUDE               += ../Source/Plugins/ARPACK/arpackpp/
 EXCLUDE               += ../Source/Plugins/GL/glew.c
 EXCLUDE               += ../Source/Plugins/GL/glew.h
 EXCLUDE               += ../Source/Plugins/GL/wglew.h

@@ -14,7 +14,6 @@
  * and Lawrence Berkeley National Lab.
  * November 15, 1997
  *
- * </pre>
  */
 #ifndef __SUPERLU_DCOMPLEX /* allow multiple inclusions */
 #define __SUPERLU_DCOMPLEX
@@ -30,19 +29,19 @@ typedef struct { double r, i; } ldcomplex;
 
 /* Macro definitions */
 
-/*! \brief Complex Addition c = a + b */
+/* Complex Addition c = a + b */
 #define z_add(c, a, b) { (c)->r = (a)->r + (b)->r; \
 			 (c)->i = (a)->i + (b)->i; }
 
-/*! \brief Complex Subtraction c = a - b */
+/* Complex Subtraction c = a - b */
 #define z_sub(c, a, b) { (c)->r = (a)->r - (b)->r; \
 			 (c)->i = (a)->i - (b)->i; }
 
-/*! \brief Complex-Double Multiplication */
+/* Complex-Double Multiplication */
 #define zd_mult(c, a, b) { (c)->r = (a)->r * (b); \
                            (c)->i = (a)->i * (b); }
 
-/*! \brief Complex-Complex Multiplication */
+/* Complex-Complex Multiplication */
 #define zz_mult(c, a, b) { \
 	double cr, ci; \
     	cr = (a)->r * (b)->r - (a)->i * (b)->i; \
@@ -51,12 +50,7 @@ typedef struct { double r, i; } ldcomplex;
     	(c)->i = ci; \
     }
 
-#define zz_conj(a, b) { \
-        (a)->r = (b)->r; \
-        (a)->i = -((b)->i); \
-    }
-
-/*! \brief Complex equality testing */
+/* Complex equality testing */
 #define z_eq(a, b)  ( (a)->r == (b)->r && (a)->i == (b)->i )
 
 
@@ -71,8 +65,6 @@ double z_abs1(ldcomplex *);    /* approximate */
 void z_exp(ldcomplex *, ldcomplex *);
 void d_cnjg(ldcomplex *r, ldcomplex *z);
 double d_imag(ldcomplex *);
-ldcomplex z_sgn(ldcomplex *);
-ldcomplex z_sqrt(ldcomplex *);
 
 
 #ifdef __cplusplus
@@ -98,19 +90,19 @@ typedef struct { float r, i; } lscomplex;
 
 /* Macro definitions */
 
-/*! \brief Complex Addition c = a + b */
+/* Complex Addition c = a + b */
 #define c_add(c, a, b) { (c)->r = (a)->r + (b)->r; \
 			 (c)->i = (a)->i + (b)->i; }
 
-/*! \brief Complex Subtraction c = a - b */
+/* Complex Subtraction c = a - b */
 #define c_sub(c, a, b) { (c)->r = (a)->r - (b)->r; \
 			 (c)->i = (a)->i - (b)->i; }
 
-/*! \brief Complex-Double Multiplication */
+/* Complex-Double Multiplication */
 #define cs_mult(c, a, b) { (c)->r = (a)->r * (b); \
                            (c)->i = (a)->i * (b); }
 
-/*! \brief Complex-Complex Multiplication */
+/* Complex-Complex Multiplication */
 #define cc_mult(c, a, b) { \
 	float cr, ci; \
     	cr = (a)->r * (b)->r - (a)->i * (b)->i; \
@@ -119,12 +111,7 @@ typedef struct { float r, i; } lscomplex;
     	(c)->i = ci; \
     }
 
-#define cc_conj(a, b) { \
-        (a)->r = (b)->r; \
-        (a)->i = -((b)->i); \
-    }
-
-/*! \brief Complex equality testing */
+/* Complex equality testing */
 #define c_eq(a, b)  ( (a)->r == (b)->r && (a)->i == (b)->i )
 
 
@@ -139,8 +126,6 @@ double c_abs1(lscomplex *);    /* approximate */
 void c_exp(lscomplex *, lscomplex *);
 void r_cnjg(lscomplex *, lscomplex *);
 double r_imag(lscomplex *);
-lscomplex c_sgn(lscomplex *);
-lscomplex c_sqrt(lscomplex *);
 
 
 #ifdef __cplusplus

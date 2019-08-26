@@ -31,15 +31,13 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <string>
 
-//#include "arch.h"
+#include "arch.h"
 
-template< typename T >
-struct ArpackError_static
-{
-  public:
-  
+class ArpackError {
+
+ public:
+
   enum ErrorCode {  // Listing all kinds of errors.
 
     // Innocuous error type.
@@ -101,7 +99,7 @@ struct ArpackError_static
 
     // Errors in matrix files.
 
-    CANNOT_OPEN_FILE    = -551, 
+    CANNOT_OPEN_FILE    = -551,
     WRONG_MATRIX_TYPE   = -552,
     WRONG_DATA_TYPE     = -553,
     RHS_IGNORED         = -554,
@@ -125,43 +123,36 @@ struct ArpackError_static
 
   };
 
- protected:
-
-  static ErrorCode code;
-
-};
-// trick to initialize static member code, which is allowed in template
-
-template< typename T >
-enum ArpackError_static<T>::ErrorCode ArpackError_static<T>::code = NO_ERRORS;
-// "code" initialization.
-
-class ArpackError: public ArpackError_static<void> {
-
  private:
 
-  static void Print(const std::string& where, const std::string& message);
+  static ErrorCode & code()
+  {
+    static ErrorCode c;
+    return c;
+  }
+
+  static void Print(const char* where, const char* message);
   // Writes error messages on cerr stream.
 
  public:
 
-  static void Set(ErrorCode error, const std::string& where="AREigenProblem");
+  static void Set(ErrorCode error, const char* where="AREigenProblem");
   // Set error code and write error messages.
 
-  static int Status() { return (int) code; }
+  static int Status() { return (int) code(); }
   // Returns current value of error code.
 
-  ArpackError(ErrorCode error, const std::string& where="AREigenProblem") {
+  ArpackError(ErrorCode error, const char* where="AREigenProblem") {
     Set(error,where);
   }
   // Constructor that set error code.
 
-  ArpackError() { code = NO_ERRORS; };
+  ArpackError() { code() = NO_ERRORS; };
   // Constructor that does nothing.
 
 };
 
-inline void ArpackError::Print(const std::string& where, const std::string& message)
+inline void ArpackError::Print(const char* where, const char* message)
 {
 
 #ifndef ARPACK_SILENT_MODE
@@ -171,11 +162,11 @@ inline void ArpackError::Print(const std::string& where, const std::string& mess
 
 } // Print
 
-inline void ArpackError::Set(ErrorCode error, const std::string& where)
+inline void ArpackError::Set(ErrorCode error, const char* where)
 {
 
-  code = error;
-  switch (code) {
+  code() = error;
+  switch (code()) {
   case NO_ERRORS          :
     return;
   case NOT_IMPLEMENTED    :
@@ -341,8 +332,5 @@ inline void ArpackError::Set(ErrorCode error, const std::string& where)
   }
 
 } // Set.
-
-//ArpackError::ErrorCode ArpackError::code = NO_ERRORS;
-// "code" initialization.
 
 #endif // ARERROR_H

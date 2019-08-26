@@ -17,11 +17,10 @@
 #ifndef SAUPP_H
 #define SAUPP_H
 
-#include <string>
 #include "arch.h"
 #include "arpackf.h"
 
-inline void saupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void saupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   double& tol, double resid[], ARint ncv, double V[],
                   ARint ldv, ARint iparam[], ARint ipntr[], double workd[],
                   double workl[], ARint lworkl, ARint& info)
@@ -291,13 +290,13 @@ inline void saupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(dsaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(dsaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1], &workl[1],
                   &lworkl, &info);
 
 } // saupp (double).
 
-inline void saupp(ARint& ido, char bmat, ARint n, const std::string& which, ARint nev,
+inline void saupp(ARint& ido, char bmat, ARint n, char* which, ARint nev,
                   float& tol, float resid[], ARint ncv, float V[],
                   ARint ldv, ARint iparam[], ARint ipntr[], float workd[],
                   float workl[], ARint lworkl, ARint& info)
@@ -311,7 +310,7 @@ inline void saupp(ARint& ido, char bmat, ARint n, const std::string& which, ARin
 
 {
 
-  F77NAME(ssaupd)(&ido, &bmat, &n, which.c_str(), &nev, &tol, resid, &ncv,
+  F77NAME(ssaupd)(&ido, &bmat, &n, which, &nev, &tol, resid, &ncv,
                   &V[1], &ldv, &iparam[1], &ipntr[1], &workd[1], &workl[1],
                   &lworkl, &info);
 

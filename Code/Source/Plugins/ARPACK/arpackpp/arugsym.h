@@ -3,7 +3,7 @@
    c++ interface to ARPACK code.
 
    MODULE ARUGSym.h.
-   Arpack++ class ARluSymGenEig definition
+   Arpack++ class ARumSymGenEig definition
    (UMFPACK version).
 
    ARPACK Authors
@@ -20,7 +20,7 @@
 #define ARUGSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arusmat.h"
 #include "aruspen.h"
@@ -28,7 +28,7 @@
 
 
 template<class ARFLOAT>
-class ARluSymGenEig:
+class ARumSymGenEig:
   public virtual ARSymGenEig<ARFLOAT, ARumSymPencil<ARFLOAT>,
                              ARumSymPencil<ARFLOAT> > {
 
@@ -40,7 +40,7 @@ class ARluSymGenEig:
 
  // b) Protected functions:
 
-  virtual void Copy(const ARluSymGenEig& other);
+  virtual void Copy(const ARumSymGenEig& other);
   // Makes a deep copy of "other" over "this" object.
   // Old values are not deleted (this function is to be used
   // by the copy constructor and the assignment operator only).
@@ -64,43 +64,43 @@ class ARluSymGenEig:
 
  // c.2) Constructors and destructor.
 
-  ARluSymGenEig() { }
+  ARumSymGenEig() { }
   // Short constructor.
 
-  ARluSymGenEig(int nevp, ARumSymMatrix<ARFLOAT>& A,
-                ARumSymMatrix<ARFLOAT>& B, const std::string& whichp = "LM",
+  ARumSymGenEig(int nevp, ARumSymMatrix<ARFLOAT>& A,
+                ARumSymMatrix<ARFLOAT>& B, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
-  ARluSymGenEig(char InvertModep, int nevp, ARumSymMatrix<ARFLOAT>& A,
-                ARumSymMatrix<ARFLOAT>& B, ARFLOAT sigma, const std::string& whichp = "LM", 
+  ARumSymGenEig(char InvertModep, int nevp, ARumSymMatrix<ARFLOAT>& A,
+                ARumSymMatrix<ARFLOAT>& B, ARFLOAT sigma, const char* whichp = "LM",
                 int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                 ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert, buckling and Cayley modes).
 
-  ARluSymGenEig(const ARluSymGenEig& other) { Copy(other); }
+  ARumSymGenEig(const ARumSymGenEig& other) { Copy(other); }
   // Copy constructor.
 
-  virtual ~ARluSymGenEig() { }
+  virtual ~ARumSymGenEig() { }
   // Destructor.
 
  // d) Operators.
 
-  ARluSymGenEig& operator=(const ARluSymGenEig& other);
+  ARumSymGenEig& operator=(const ARumSymGenEig& other);
   // Assignment operator.
 
-}; // class ARluSymGenEig.
+}; // class ARumSymGenEig.
 
 
 // ------------------------------------------------------------------------ //
-// ARluSymGenEig member functions definition.                               //
+// ARumSymGenEig member functions definition.                               //
 // ------------------------------------------------------------------------ //
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::
-Copy(const ARluSymGenEig<ARFLOAT>& other)
+inline void ARumSymGenEig<ARFLOAT>::
+Copy(const ARumSymGenEig<ARFLOAT>& other)
 {
 
   ARSymGenEig<ARFLOAT, ARumSymPencil<ARFLOAT>,
@@ -114,7 +114,7 @@ Copy(const ARluSymGenEig<ARFLOAT>& other)
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::ChangeShift(ARFLOAT sigmap)
+inline void ARumSymGenEig<ARFLOAT>::ChangeShift(ARFLOAT sigmap)
 {
 
   this->objOP->FactorAsB(sigmap);
@@ -124,7 +124,7 @@ inline void ARluSymGenEig<ARFLOAT>::ChangeShift(ARFLOAT sigmap)
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::SetRegularMode()
+inline void ARumSymGenEig<ARFLOAT>::SetRegularMode()
 {
 
   ARStdEig<ARFLOAT, ARFLOAT, ARumSymPencil<ARFLOAT> >::
@@ -134,46 +134,46 @@ inline void ARluSymGenEig<ARFLOAT>::SetRegularMode()
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::
+inline void ARumSymGenEig<ARFLOAT>::
 SetShiftInvertMode(ARFLOAT sigmap)
 {
 
   ARSymGenEig<ARFLOAT, ARumSymPencil<ARFLOAT>, ARumSymPencil<ARFLOAT> >::
     SetShiftInvertMode(sigmap, &Pencil, &ARumSymPencil<ARFLOAT>::MultInvAsBv);
-  this->ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultBv);
+  ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultBv);
 
 } // SetShiftInvertMode.
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::
+inline void ARumSymGenEig<ARFLOAT>::
 SetBucklingMode(ARFLOAT sigmap)
 {
 
   ARSymGenEig<ARFLOAT, ARumSymPencil<ARFLOAT>, ARumSymPencil<ARFLOAT> >::
     SetBucklingMode(sigmap, &Pencil, &ARumSymPencil<ARFLOAT>::MultInvAsBv);
-  this->ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultAv);
+  ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultAv);
 
 } // SetBucklingMode.
 
 
 template<class ARFLOAT>
-inline void ARluSymGenEig<ARFLOAT>::
+inline void ARumSymGenEig<ARFLOAT>::
 SetCayleyMode(ARFLOAT sigmap)
 {
 
   ARSymGenEig<ARFLOAT, ARumSymPencil<ARFLOAT>, ARumSymPencil<ARFLOAT> >::
     SetCayleyMode(sigmap, &Pencil, &ARumSymPencil<ARFLOAT>::MultInvAsBv,
                   &Pencil, &ARumSymPencil<ARFLOAT>::MultAv);
-  this->ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultBv);
+  ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultBv);
 
 } // SetCayleyMode.
 
 
 template<class ARFLOAT>
-inline ARluSymGenEig<ARFLOAT>::
-ARluSymGenEig(int nevp, ARumSymMatrix<ARFLOAT>& A,
-              ARumSymMatrix<ARFLOAT>& B, const std::string& whichp, int ncvp,
+inline ARumSymGenEig<ARFLOAT>::
+ARumSymGenEig(int nevp, ARumSymMatrix<ARFLOAT>& A,
+              ARumSymMatrix<ARFLOAT>& B, const char* whichp, int ncvp,
               ARFLOAT tolp, int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -190,10 +190,10 @@ ARluSymGenEig(int nevp, ARumSymMatrix<ARFLOAT>& A,
 
 
 template<class ARFLOAT>
-inline ARluSymGenEig<ARFLOAT>::
-ARluSymGenEig(char InvertModep, int nevp, ARumSymMatrix<ARFLOAT>& A,
+inline ARumSymGenEig<ARFLOAT>::
+ARumSymGenEig(char InvertModep, int nevp, ARumSymMatrix<ARFLOAT>& A,
               ARumSymMatrix<ARFLOAT>& B, ARFLOAT sigmap,
-              const std::string& whichp, int ncvp, ARFLOAT tolp,
+              const char* whichp, int ncvp, ARFLOAT tolp,
               int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -206,20 +206,20 @@ ARluSymGenEig(char InvertModep, int nevp, ARumSymMatrix<ARFLOAT>& A,
   this->InvertMode = this->CheckInvertMode(InvertModep);
   switch (this->InvertMode) {
   case 'B':  // Buckling mode.
-    this->ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultAv);
+    ChangeMultBx(&Pencil, &ARumSymPencil<ARFLOAT>::MultAv);
   case 'S':  // Shift and invert mode.
     this->ChangeShift(sigmap);
-    break;  
+    break;
   case 'C':  // Cayley mode.
-    this->SetCayleyMode(sigmap);
+    SetCayleyMode(sigmap);
   }
 
 } // Long constructor (shift and invert, buckling and Cayley modes).
 
 
 template<class ARFLOAT>
-ARluSymGenEig<ARFLOAT>& ARluSymGenEig<ARFLOAT>::
-operator=(const ARluSymGenEig<ARFLOAT>& other)
+ARumSymGenEig<ARFLOAT>& ARumSymGenEig<ARFLOAT>::
+operator=(const ARumSymGenEig<ARFLOAT>& other)
 {
 
   if (this != &other) { // Stroustrup suggestion.

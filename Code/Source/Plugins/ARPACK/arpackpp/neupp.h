@@ -18,14 +18,14 @@
 #define NEUPP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arpackf.h"
 
 inline void neupp(bool rvec, char HowMny, double dr[],
                   double di[], double Z[], ARint ldz, double sigmar,
                   double sigmai, double workv[], char bmat, ARint n,
-                  const std::string& which, ARint nev, double tol, double resid[],
+                  char* which, ARint nev, double tol, double resid[],
                   ARint ncv, double V[], ARint ldv, ARint iparam[],
                   ARint ipntr[], double workd[], double workl[],
                   ARint lworkl, ARint& info)
@@ -224,7 +224,7 @@ inline void neupp(bool rvec, char HowMny, double dr[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(dneupd)(&irvec, &HowMny, iselect, dr, di, iZ, &ldz, &sigmar,
-                  &sigmai, &workv[1], &bmat, &n, which.c_str(), &nev, &tol,
+                  &sigmai, &workv[1], &bmat, &n, which, &nev, &tol,
                   resid, &ncv, &V[1], &ldv, &iparam[1], &ipntr[1],
                   &workd[1], &workl[1], &lworkl, &info);
 
@@ -235,7 +235,7 @@ inline void neupp(bool rvec, char HowMny, double dr[],
 inline void neupp(bool rvec, char HowMny, float dr[],
                   float di[], float Z[], ARint ldz, float sigmar,
                   float sigmai, float workv[], char bmat, ARint n,
-                  const std::string& which, ARint nev, float tol, float resid[],
+                  char* which, ARint nev, float tol, float resid[],
                   ARint ncv, float V[], ARint ldv, ARint iparam[],
                   ARint ipntr[], float workd[], float workl[],
                   ARint lworkl, ARint& info)
@@ -258,7 +258,7 @@ inline void neupp(bool rvec, char HowMny, float dr[],
   iZ = (Z == NULL) ? &V[1] : Z;
 
   F77NAME(sneupd)(&irvec, &HowMny, iselect, dr, di, iZ, &ldz, &sigmar,
-                  &sigmai, &workv[1], &bmat, &n, which.c_str(), &nev, &tol,
+                  &sigmai, &workv[1], &bmat, &n, which, &nev, &tol,
                   resid, &ncv, &V[1], &ldv, &iparam[1], &ipntr[1],
                   &workd[1], &workl[1], &lworkl, &info );
 

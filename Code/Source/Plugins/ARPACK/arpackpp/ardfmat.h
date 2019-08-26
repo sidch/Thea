@@ -24,7 +24,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-#include <string>
 #include "arch.h"
 #include "arerror.h"
 
@@ -36,7 +35,7 @@ class ARdfMatrix {
 
   // const int linelength = 256;
 
-  std::string   datafile;  // Filename.
+  char*    datafile;  // Filename.
   std::ifstream file;      // File handler.
   int      m;         // Number of rows.
   int      n;         // Number of columns.
@@ -74,7 +73,7 @@ class ARdfMatrix {
 
   bool IsRowOrdered() const { return roword; }
 
-  std::string Filename() const { return datafile; }
+  char* Filename() const { return datafile; }
 
   void Rewind();
 
@@ -97,14 +96,14 @@ class ARdfMatrix {
   void ReadBlock();
   // Function that reads a block of blksize rows/columns of the matrix.
 
-  void Define(const std::string& filename, int blksizep = 0);
+  void Define(char* filename, int blksizep = 0);
   // Function that reads the matrix dimension. Define also read all
   // of the matrix elements when blocksize = 0.
   
   ARdfMatrix();
   // Short constructor.
 
-  ARdfMatrix(const std::string& filename, int blksizep = 0);
+  ARdfMatrix(char* filename, int blksizep = 0);
   // Long constructor.
 
   ~ARdfMatrix();
@@ -326,7 +325,7 @@ void ARdfMatrix<ARTYPE>::ReadBlock()
 
 
 template<class ARTYPE>
-void ARdfMatrix<ARTYPE>::Define(const std::string& filename, int blksizep)
+void ARdfMatrix<ARTYPE>::Define(char* filename, int blksizep)
 {
 
   // Declaring variables.
@@ -337,7 +336,7 @@ void ARdfMatrix<ARTYPE>::Define(const std::string& filename, int blksizep)
   // Opening the file.
 
   datafile = filename;
-  file.open(datafile.c_str());
+  file.open(datafile);
   
   if (!file) {
     throw ArpackError(ArpackError::CANNOT_OPEN_FILE, "ARdfMatrix");
@@ -431,7 +430,7 @@ ARdfMatrix<ARTYPE>::ARdfMatrix()
 
 
 template<class ARTYPE>
-ARdfMatrix<ARTYPE>::ARdfMatrix(const std::string& filename, int blksizep) 
+ARdfMatrix<ARTYPE>::ARdfMatrix(char* filename, int blksizep) 
 { 
 
   val = NULL;

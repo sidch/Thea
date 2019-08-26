@@ -5,14 +5,6 @@
    MODULE ARUSPen.h.
    Arpack++ class ARumSymPencil definition.
 
-   Modified to work with Umfpack v5.??
-      Martin Reuter
-      Date 02/28/2013
-
-   Arpack++ Author:
-      Francisco Gomes
-      
-
    ARPACK Authors
       Richard Lehoucq
       Danny Sorensen
@@ -25,11 +17,11 @@
 #ifndef ARUSPEN_H
 #define ARUSPEN_H
 
-//#include "arch.h"
-//#include "arerror.h"
-//#include "lapackc.h"
-#include "arusmat.h"
+#include "arch.h"
+#include "arerror.h"
 #include "blas1c.h"
+#include "lapackc.h"
+#include "arusmat.h"
 
 
 template<class ARTYPE>
@@ -40,25 +32,20 @@ class ARumSymPencil
 
   ARumSymMatrix<ARTYPE>* A;
   ARumSymMatrix<ARTYPE>* B;
-  //ARumSymMatrix<ARTYPE> AsB;
-  void*   Numeric;
-  int*    Ap;
-  int*    Ai;
-  ARTYPE* Ax; 
+  ARumSymMatrix<ARTYPE> AsB;
 
   virtual void Copy(const ARumSymPencil& other);
 
-//  void SparseSaxpy(ARTYPE a, ARTYPE x[], int xind[], int nx, ARTYPE y[],
-//                   int yind[], int ny, ARTYPE z[], int zind[], int& nz);
+  void SparseSaxpy(ARTYPE a, ARTYPE x[], int xind[], int nx, ARTYPE y[],
+                   int yind[], int ny, ARTYPE z[], int zind[], int& nz);
 
-  void ExpandAsB(ARTYPE sigma);
+  void ExpandAsB();
 
-//  void SubtractAsB(ARTYPE sigma);
-  void ClearMem();
+  void SubtractAsB(ARTYPE sigma);
 
  public:
 
-  bool IsFactored() { return (Numeric != NULL); }
+  bool IsFactored() { return AsB.IsFactored(); }
 
   void FactorAsB(ARTYPE sigma);
 
@@ -68,13 +55,11 @@ class ARumSymPencil
 
   void MultInvBAv(ARTYPE* v, ARTYPE* w);
 
-  //void MultInvAsBv(ARTYPE* v, ARTYPE* w) { AsB.MultInvv(v,w); }
-  void MultInvAsBv(ARTYPE* v, ARTYPE* w);
+  void MultInvAsBv(ARTYPE* v, ARTYPE* w) { AsB.MultInvv(v,w); }
 
   void DefineMatrices(ARumSymMatrix<ARTYPE>& Ap, ARumSymMatrix<ARTYPE>& Bp);
 
-  //ARumSymPencil() { AsB.factored = false; }
-  ARumSymPencil() { Numeric = NULL; Ap = NULL; Ai = NULL; Ax = NULL; }
+  ARumSymPencil() { AsB.factored = false; }
   // Short constructor that does nothing.
 
   ARumSymPencil(ARumSymMatrix<ARTYPE>& Ap, ARumSymMatrix<ARTYPE>& Bp);
@@ -97,33 +82,17 @@ class ARumSymPencil
 
 
 template<class ARTYPE>
-inline void ARumSymPencil<ARTYPE>::ClearMem()
-{
-
-  if (Numeric) umfpack_di_free_numeric (&Numeric);
-  if (Ai) delete [] Ai;
-  Ai = NULL;
-  if (Ap) delete [] Ap;
-  Ap = NULL;
-  if (Ax) delete [] Ax;
-  Ax = NULL;
-
-} // ClearMem.
-
-
-
-template<class ARTYPE>
 inline void ARumSymPencil<ARTYPE>::Copy(const ARumSymPencil<ARTYPE>& other)
 {
-  ClearMem();
+
   A        = other.A;
   B        = other.B;
-//  AsB      = other.AsB;
+  AsB      = other.AsB;
 
 } // Copy.
 
 
-/*template<class ARTYPE>
+template<class ARTYPE>
 void ARumSymPencil<ARTYPE>::
 SparseSaxpy(ARTYPE a, ARTYPE x[], int xind[], int nx, ARTYPE y[],
             int yind[], int ny, ARTYPE z[], int zind[], int& nz)
@@ -203,7 +172,7 @@ void ARumSymPencil<ARTYPE>::ExpandAsB()
     for (i=0; i!=n; i++) {
       k = pcol[i+1];
       if ((k!=pcol[i])&&(irow[k-1]==i)) k--;
-      for (j=pcol[i]; j<k; j++) pos[irow[j]]++;        
+      for (j=pcol[i]; j<k; j++) pos[irow[j]]++;
     }
 
   }
@@ -212,16 +181,16 @@ void ARumSymPencil<ARTYPE>::ExpandAsB()
     for (i=0; i!=n; i++) {
       k = pcol[i];
       if ((k!=pcol[i+1])&&(irow[k]==i)) k++;
-      for (j=k; j<pcol[i+1]; j++) pos[irow[j]]++;        
+      for (j=k; j<pcol[i+1]; j++) pos[irow[j]]++;
     }
 
-  }  
+  }
 
   // Summing up index elements.
 
   for (i=0; i<n; i++) pos[i+1] += pos[i];
   for (i=n; i>0; i--) index[i] += pos[i-1];
-    
+
   // Expanding A.
 
   if (AsB.uplo == 'U') {
@@ -265,11 +234,11 @@ void ARumSymPencil<ARTYPE>::ExpandAsB()
 
   }
 
-  AsB.nnz = index[n]; 
+  AsB.nnz = index[n];
 
   //  Deleting temporary vectors.
 
-  delete[] pcol;  
+  delete[] pcol;
   delete[] pos;
 
 } // ExpandAsB.
@@ -313,97 +282,8 @@ void ARumSymPencil<ARTYPE>::SubtractAsB(ARTYPE sigma)
 
   for (i=0; i<=AsB.n+AsB.nnz; i++) AsB.index[i]++;
 
-} // SubtractAsB. */
+} // SubtractAsB.
 
-
-template<class ARTYPE>
-void ARumSymPencil<ARTYPE>::ExpandAsB(ARTYPE sigma)
-{
-std::cout <<"ARumSymPencil::ExpandAsB(" << sigma << ") ..." << std::flush; 
-
-  ClearMem();
- 
-  int mynnz = 2*A->nnz+2*B->nnz;
-  if (sigma == 0.0)
-    mynnz = 2*A->nnz;
-  
-  // create triples (i,j,value)
-  int * tripi = new int[mynnz];
-  int * tripj = new int[mynnz];
-  ARTYPE* tripx = new ARTYPE[mynnz];
-  if (tripi == NULL || tripj == NULL || tripx ==NULL)
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::ExpandAsB out of memory (1)");
-  
-  int count = 0;
-  int i,j;
-  for (i=0; i < A->n; i++)
-  {
-    // create triplets from A
-    for (j=A->pcol[i]; j<(A->pcol[i+1]); j++)
-    {
-      tripi[count] = i;
-      tripj[count] = A->irow[j];
-      tripx[count] = A->a[j];
-      count++;
-      if (i != A->irow[j]) // not on diag
-      {
-        tripj[count] = i;
-        tripi[count] = A->irow[j];
-        tripx[count] = A->a[j];
-        count++;
-      }
-    }
-  
-   if (sigma != 0.0)
-   {
-    // create triplets from -sigma B
-    for (j=B->pcol[i]; j<(B->pcol[i+1]); j++)
-    {
-      tripi[count] = i;
-      tripj[count] = B->irow[j];
-      tripx[count] = -sigma * B->a[j];
-      count++;
-      if (i != B->irow[j]) // not on diag
-      {
-        tripj[count] = i;
-        tripi[count] = B->irow[j];
-        tripx[count] = tripx[count-1];
-        count++;
-      }
-    }
-    }
-
-  }
-
-  //Write_Triplet_Matrix("A-aruspen.asc",tripi,tripj,tripx,count);
-
-  std::cout<< " ( N = " << A->n << "  NNZ = " << count << " )" << std::flush;
-  //std::cout<< " size double " << sizeof(double) << "  size ARTYPE " << sizeof(ARTYPE) << std::endl;
-  // convert triples (A-sigma B) to Ax Ap Ai
-  Ap = new int[A->n + 1];
-  Ai = new int[count];
-  Ax = new ARTYPE[count];
-  if (!Ap || !Ai || !Ax )
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::ExpandAsB out of memory (2)");
-  
-  int status = umfpack_di_triplet_to_col (A->n, A->n, count, tripi, tripj, tripx, Ap, Ai, Ax,  (int *)NULL) ;
-  if (status != UMFPACK_OK)
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::ExpandAsB triplet to col");
-
-  // cleanup
-  delete [] tripi;
-  delete [] tripj;
-  delete [] tripx;
-
-  //std::cout << std::endl << std::endl;
-  //double Control [UMFPACK_CONTROL];
-  //Control [UMFPACK_PRL] = 3;
-  //status = umfpack_di_report_matrix(A->n, A->n,Ap, Ai, Ax,0,Control);
-  //std::cout << " status: " << status << std::endl;
-  //std::cout << std::endl << std::endl;
-
-  std::cout <<" done!" << std::endl; 
-}
 
 template<class ARTYPE>
 void ARumSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
@@ -416,45 +296,33 @@ void ARumSymPencil<ARTYPE>::FactorAsB(ARTYPE sigma)
                       "ARumSymPencil::FactorAsB");
   }
 
+  // Defining matrix AsB.
 
-  // Subtracting sigma*B from A and storing the result 
-  ExpandAsB(sigma);
-
-  // Decomposing AsB.
-  double Info [UMFPACK_INFO], Control [UMFPACK_CONTROL];
-  umfpack_di_defaults (Control) ;
-  //std::cout <<" loaded defaults" << std::endl;
-  void *Symbolic ;
-  int status = umfpack_di_symbolic (A->n, A->n, Ap, Ai, Ax, &Symbolic, Control, Info) ;
-  std::cout << " symbolic status: " << status << std::endl;
-  if (status != UMFPACK_OK)
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::FactorAsB symbolic");
-  status =  umfpack_di_numeric (Ap, Ai, Ax, Symbolic, &Numeric, Control, Info) ;
-  std::cout << " numeric status: " << status << std::endl;
-  if (status == 1)
-  {
-    std::cout << " WARNING: MATRIX IS SINGULAR " << std::endl;
-    //throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::FactorAsB numeric (matrix singular)");    
+  if (!AsB.IsDefined()) {
+    int fillin = A->fillin > B->fillin ? A->fillin : B->fillin;
+    AsB.DefineMatrix(A->ncols(), A->nzeros(), A->a, A->irow,
+                     A->pcol, 'L', A->threshold, fillin, A->icntl[3]);
+    AsB.nnz = A->nzeros()+B->nzeros(); // temporary value.
   }
-  if (status < UMFPACK_OK)
-  {
-    std::cout << " ERROR CODE: " << status << std::endl;
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::FactorAsB numeric");
-  }
-  umfpack_di_free_symbolic (&Symbolic) ;
 
-//exit(0);
+  // Reserving memory for some vectors used in matrix decomposition.
+
+  AsB.CreateStructure();
+
+  // Subtracting sigma*B from A and storing the result on AsB.
+
+  SubtractAsB(sigma);
 
   // Decomposing AsB.
 
-  //um2fa(AsB.n, AsB.index[AsB.n], 0, false, AsB.lvalue, AsB.lindex, AsB.value,
- //       AsB.index, AsB.keep, AsB.cntl, AsB.icntl, AsB.info, AsB.rinfo);
+  um2fa(AsB.n, AsB.index[AsB.n], 0, false, AsB.lvalue, AsB.lindex, AsB.value,
+        AsB.index, AsB.keep, AsB.cntl, AsB.icntl, AsB.info, AsB.rinfo);
 
   // Handling errors.
 
- // AsB.ThrowError();
+  AsB.ThrowError();
 
- // AsB.factored = true;
+  AsB.factored = true;
 
 } // FactorAsB (ARTYPE shift).
 
@@ -471,29 +339,6 @@ void ARumSymPencil<ARTYPE>::MultInvBAv(ARTYPE* v, ARTYPE* w)
 
 } // MultInvBAv.
 
-template<class ARTYPE>
-void ARumSymPencil<ARTYPE>::MultInvAsBv(ARTYPE* v, ARTYPE* w)
-{
-  if (!Numeric) {
-    throw ArpackError(ArpackError::NOT_FACTORED_MATRIX,
-                      "ARchSymPencil::MultInvAsBv");
-  }
-
-  // Solving A.w = v (or AsI.w = v).
-   int status = umfpack_di_solve (UMFPACK_A, Ap, Ai, Ax, w, v, Numeric, NULL, NULL) ;
-  if (status == 1)
-  {
-    std::cout << " WARNING: MATRIX IS SINGULAR " << std::endl;
-    //throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::FactorAsB numeric (matrix singular)");    
-  }
-  if (status < UMFPACK_OK)
-  {
-    std::cout << " ERROR CODE: " << status << std::endl;
-    throw ArpackError(ArpackError::PARAMETER_ERROR, "ARumSymPencil::MultInvAsBv");
- 
-  }
-
-} // MultInvAsBv
 
 template<class ARTYPE>
 inline void ARumSymPencil<ARTYPE>::
@@ -515,14 +360,9 @@ template<class ARTYPE>
 inline ARumSymPencil<ARTYPE>::
 ARumSymPencil(ARumSymMatrix<ARTYPE>& Ap, ARumSymMatrix<ARTYPE>& Bp)
 {
-  Numeric = NULL;
-  Ap = NULL;
-  Ai = NULL;
-  Ax = NULL;
 
-  //AsB.factored  = false;
-  DefineMatrices(Ap, Bp);
-  
+  AsB.factored  = false;
+  this->DefineMatrices(Ap, Bp);
 
 } // Long constructor.
 

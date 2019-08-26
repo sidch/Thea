@@ -18,7 +18,7 @@
 #define ARRGCOMP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arrscomp.h"
 #include "arrgeig.h"
@@ -35,13 +35,13 @@ class ARrcCompGenEig:
   ARrcCompGenEig() { }
   // Short constructor (Does nothing but calling base classes constructors).
 
-  ARrcCompGenEig(int np, int nevp, const std::string& whichp = "LM",
+  ARrcCompGenEig(int np, int nevp, const char* whichp = "LM",
                  int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARrcCompGenEig(int np, int nevp, arcomplex<ARFLOAT> sigmap,
-                 const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                 const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
                  int maxitp = 0, arcomplex<ARFLOAT>* residp = NULL,
                  bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -67,7 +67,7 @@ class ARrcCompGenEig:
 
 template<class ARFLOAT>
 inline ARrcCompGenEig<ARFLOAT>::
-ARrcCompGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT tolp,
+ARrcCompGenEig(int np, int nevp, const char* whichp, int ncvp, ARFLOAT tolp,
                int maxitp, arcomplex<ARFLOAT>* residp, bool ishiftp)
 
 {
@@ -80,7 +80,7 @@ ARrcCompGenEig(int np, int nevp, const std::string& whichp, int ncvp, ARFLOAT to
 
 template<class ARFLOAT>
 inline ARrcCompGenEig<ARFLOAT>::
-ARrcCompGenEig(int np, int nevp, arcomplex<ARFLOAT> sigmap, const std::string& whichp,
+ARrcCompGenEig(int np, int nevp, arcomplex<ARFLOAT> sigmap, const char* whichp,
                int ncvp, ARFLOAT tolp, int maxitp, arcomplex<ARFLOAT>* residp,
                bool ishiftp)
 

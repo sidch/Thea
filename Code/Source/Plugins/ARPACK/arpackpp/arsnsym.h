@@ -18,7 +18,7 @@
 #define ARSNSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arseig.h"
 #include "arrsnsym.h"
@@ -38,13 +38,13 @@ class ARNonSymStdEig:
 
   ARNonSymStdEig(int np, int nevp, ARFOP* objOPp,
                  void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
-                 const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+                 const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
                  int maxitp = 0, ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARNonSymStdEig(int np, int nevp, ARFOP* objOPp,
                  void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
-                 ARFLOAT sigma, const std::string& whichp = "LM", int ncvp = 0,
+                 ARFLOAT sigma, const char* whichp = "LM", int ncvp = 0,
                  ARFLOAT tolp = 0.0, int maxitp = 0, ARFLOAT* residp = NULL,
                  bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -72,7 +72,7 @@ template<class ARFLOAT, class ARFOP>
 inline ARNonSymStdEig<ARFLOAT, ARFOP>::
 ARNonSymStdEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
-               const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+               const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
                ARFLOAT* residp, bool ishiftp)
 
 {
@@ -88,7 +88,7 @@ template<class ARFLOAT, class ARFOP>
 inline ARNonSymStdEig<ARFLOAT, ARFOP>::
 ARNonSymStdEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
-               ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+               ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
                int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {

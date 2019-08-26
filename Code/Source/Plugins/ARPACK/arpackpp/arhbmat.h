@@ -24,7 +24,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <cstring>
-#include <string>
+
 #include "arch.h"
 #include "arerror.h"
 
@@ -34,16 +34,16 @@ class ARhbMatrix {
 
  private:
 
-  std::string datafile;    // Filename.
-  std::string title;       // Title.
-  std::string name;        // Name.
-  std::string type;        // Matrix type.
-  int         m;           // Number of rows.
-  int         n;           // Number of columns.
-  int         nnz;         // Number of nonzero variables.
-  ARINT*      irow;        // Row indices.
-  ARINT*      pcol;        // Column pointers.
-  ARTYPE*     val;         // Numerical values of matrix entries.
+  char*   datafile;        // Filename.
+  char    title[73];       // Title.
+  char    name[9];         // Name.
+  char    type[4];         // Matrix type.
+  int     m;               // Number of rows.
+  int     n;               // Number of columns.
+  int     nnz;             // Number of nonzero variables.
+  ARINT*  irow;            // Row indices.
+  ARINT*  pcol;            // Column pointers.
+  ARTYPE* val;             // Numerical values of matrix entries.
 
   void ConvertDouble(char* num);
 
@@ -63,25 +63,25 @@ class ARhbMatrix {
 
   bool IsDefined() { return (m!=0); }
   
-  bool IsReal() { return (type.size() > 0 && type[0]=='R'); }
+  bool IsReal() { return (type[0]=='R'); }
 
-  bool IsComplex() { return (type.size() > 0 && type[0]=='C'); }
+  bool IsComplex() { return (type[0]=='C'); }
 
-  bool IsSymmetric() { return (type.size() > 1 && type[1]=='S'); }
+  bool IsSymmetric() { return (type[1]=='S'); }
 
-  bool IsUnsymmetric() { return (type.size() > 1 && type[1]=='U'); }
+  bool IsUnsymmetric() { return (type[1]=='U'); }
 
-  bool IsHermitian() { return (type.size() > 1 && type[1]=='H'); }
+  bool IsHermitian() { return (type[1]=='H'); }
 
-  bool IsSkewSymmetric() { return (type.size() > 1 && type[1]=='Z'); }
+  bool IsSkewSymmetric() { return (type[1]=='Z'); }
 
-  const std::string& Filename() { return datafile; }
+  char* Filename() { return datafile; }
 
-  const std::string& Title() { return title; }
+  char* Title() { return title; }
 
-  const std::string& Name() { return name; }
+  char* Name() { return name; }
 
-  const std::string& Type() { return type; }
+  char* Type() { return type; }
 
   int NRows() { return m; }
 
@@ -95,13 +95,13 @@ class ARhbMatrix {
 
   ARTYPE* Entries() { return val; }
 
-  void Define(const std::string& filename);
+  void Define(char* filename);
   // Function that reads the matrix file. 
 
   ARhbMatrix();
   // Short constructor.
 
-  ARhbMatrix(const std::string& filename) { Define(filename); }
+  ARhbMatrix(char* filename) { Define(filename); }
   // Long constructor.
 
   ~ARhbMatrix();
@@ -253,7 +253,7 @@ void ARhbMatrix<ARINT, ARTYPE>::ReadFormat(std::ifstream& file, int& n, int& fmt
 
 
 template<class ARINT, class ARTYPE>
-void ARhbMatrix<ARINT, ARTYPE>::Define(const std::string& filename)
+void ARhbMatrix<ARINT, ARTYPE>::Define(char* filename)
 {
 
   // Declaring variables.
@@ -263,15 +263,12 @@ void ARhbMatrix<ARINT, ARTYPE>::Define(const std::string& filename)
   int    npcol, fpcol, nirow, firow, nval, fval;
   char   c;
   char   num[81];
-  char   titlechar[73];
-  char   namechar[9];
-  char   typechar[4];
   ARTYPE value;
 
   // Opening file.
 
   datafile = filename;
-  std::ifstream file(datafile.c_str());
+  std::ifstream file(datafile);
   
   if (!file) {
     throw ArpackError(ArpackError::CANNOT_OPEN_FILE, "ARhbMatrix");
@@ -279,10 +276,8 @@ void ARhbMatrix<ARINT, ARTYPE>::Define(const std::string& filename)
 
   // Reading the first line.
 
-  file.get((char*)titlechar,73,'\n');
-  title = std::string(titlechar);
-  file.get((char*)namechar,9,'\n');
-  name = std::string(namechar);
+  file.get((char*)title,73,'\n');
+  file.get((char*)name,9,'\n');
   do file.get(c); while (c!='\n'); 
 
   // Reading the second line.
@@ -296,12 +291,11 @@ void ARhbMatrix<ARINT, ARTYPE>::Define(const std::string& filename)
 
   // Reading the third line.
 
-  file.get((char*)typechar,4,'\n');
-  type = std::string(typechar);
+  file.get((char*)type,4,'\n');
   file >> m >> n >> nnz;
   do file.get(c); while (c!='\n'); 
 
-  if ( (type.size()<3) || ((type[0] != 'R') && (type[0] != 'C')) || (type[2] != 'A')) {
+  if (((type[0] != 'R') && (type[0] != 'C')) || (type[2] != 'A')) {
     throw ArpackError(ArpackError::WRONG_MATRIX_TYPE, "ARhbMatrix");
   }
   else if ((m < 1) || (n < 1) || (nnz < 1)) {

@@ -21,7 +21,7 @@
 #define ARLNSMAT_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "armat.h"
 #include "arhbmat.h"
@@ -54,7 +54,6 @@ class ARluNonSymMatrix: public ARMatrix<ARTYPE> {
   SuperMatrix L;
   SuperMatrix U;
   ARhbMatrix<int, ARTYPE> mat;
-  SuperLUStat_t stat;
 
   bool DataOK();
 
@@ -103,7 +102,7 @@ class ARluNonSymMatrix: public ARMatrix<ARTYPE> {
   ARluNonSymMatrix(int mp, int np, int nnzp, ARTYPE* ap, int* irowp,int* pcolp);
   // Long constructor (rectangular matrix).
 
-  ARluNonSymMatrix(const std::string& name, double thresholdp = 0.1, 
+  ARluNonSymMatrix(char* name, double thresholdp = 0.1,
                    int orderp = 1, bool check = true);
   // Long constructor (Harwell-Boeing file).
 
@@ -169,18 +168,18 @@ Copy(const ARluNonSymMatrix<ARTYPE, ARFLOAT>& other)
   // Copying user-defined parameters.
 
   if (other.n == other.m) {
-    DefineMatrix(other.n, other.nnz, other.a, other.irow,
+    this->DefineMatrix(other.n, other.nnz, other.a, other.irow,
                  other.pcol, other.threshold, other.order);
   }
   else {
-    DefineMatrix(other.m, other.n, other.nnz, 
+    this->DefineMatrix(other.m, other.n, other.nnz,
                  other.a, other.irow, other.pcol);
   }
 
-  // Throwing the original factorization away (this procedure 
+  // Throwing the original factorization away (this procedure
   // is really awkward, but it is necessary because there
-  // is no copy function for matrices L and U in the SuperLU 
-  // library and it is not a good idea to do this kind of deep 
+  // is no copy function for matrices L and U in the SuperLU
+  // library and it is not a good idea to do this kind of deep
   // copy here).
 
   if (factored) {
@@ -198,7 +197,7 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::ClearMem()
   if (factored) {
     Destroy_SuperNode_Matrix(&L);
     Destroy_CompCol_Matrix(&U);
-    StatFree(&stat);
+    StatFree();
   }
   if (this->defined) {
     Destroy_SuperMatrix_Store(&A); // delete A.Store;
@@ -295,33 +294,18 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorA()
   }
 
   // Deleting previous versions of L and U.
-  
+
   if (factored) {
     Destroy_SuperNode_Matrix(&L);
     Destroy_CompCol_Matrix(&U);
-    StatFree(&stat);
+    StatFree();
   }
 
   // Setting default values for gstrf parameters.
 
-  int    panel_size = sp_ienv(1);
-  int    relax      = sp_ienv(2);
-  superlu_options_t options;
-
-  /* Set the default input options:
-  options.Fact = DOFACT;
-  options.Equil = YES;
-  options.ColPerm = COLAMD;
-  options.DiagPivotThresh = 1.0;
-  options.Trans = NOTRANS;
-  options.IterRefine = NOREFINE;
-  options.SymmetricMode = NO;
-  options.PivotGrowth = NO;
-  options.ConditionNumber = NO;
-  options.PrintStat = YES;
-  */
-  set_default_options(&options);
-  options.DiagPivotThresh = threshold;
+  double drop_tol        = 0.0;
+  int    panel_size      = sp_ienv(1);
+  int    relax           = sp_ienv(2);
 
   // Reserving memory for etree (used in matrix decomposition).
 
@@ -329,8 +313,7 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorA()
 
   // Defining LUStat.
 
-  //StatInit(panel_size, relax);
-  StatInit(&stat);
+  StatInit(panel_size, relax);
 
   // Defining the column permutation of matrix A
   // (using minimum degree ordering on A'*A).
@@ -340,15 +323,12 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorA()
   // Permuting columns of A and
   // creating the elimination tree of A'*A.
 
-//  sp_preorder("N", &A, permc, etree, &AC);
-  sp_preorder(&options, &A, permc, etree, &AC);
+  sp_preorder(APP_C_STR("N"), &A, permc, etree, &AC);
 
   // Decomposing A.
 
-//  gstrf("N",&AC, threshold, drop_tol, relax, panel_size, etree,
-//        NULL, 0, permr, permc, &L, &U, &info);
-  gstrf(&options,&AC, relax, panel_size, etree,
-        NULL, 0, permc, permr, &L, &U, &stat, &info);
+  gstrf(APP_C_STR("N"),&AC, threshold, drop_tol, relax, panel_size, etree,
+        NULL, 0, permr, permc, &L, &U, &info);
 
   // Deleting AC and etree.
 
@@ -406,40 +386,25 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorAsI(ARTYPE sigma)
   NCformat*   AsIstore;
 
   // Deleting previous versions of L and U.
-  
+
   if (factored) {
     Destroy_SuperNode_Matrix(&L);
     Destroy_CompCol_Matrix(&U);
-    StatFree(&stat);
+    StatFree();
   }
 
   // Setting default values for gstrf parameters.
 
-  int    panel_size = sp_ienv(1);
-  int    relax      = sp_ienv(2);
-  superlu_options_t options;
-
-  /* Set the default input options:
-  options.Fact = DOFACT;
-  options.Equil = YES;
-  options.ColPerm = COLAMD;
-  options.DiagPivotThresh = 1.0;
-  options.Trans = NOTRANS;
-  options.IterRefine = NOREFINE;
-  options.SymmetricMode = NO;
-  options.PivotGrowth = NO;
-  options.ConditionNumber = NO;
-  options.PrintStat = YES;
-  */
-  set_default_options(&options);
-  options.DiagPivotThresh = threshold;
+  double drop_tol        = 0.0;
+  int    panel_size      = sp_ienv(1);
+  int    relax           = sp_ienv(2);
 
   // Creating a temporary matrix AsI.
 
-  irowi = (int*)SUPERLU_MALLOC(sizeof(int) * (nnz+this->n));
-  pcoli = (int*)SUPERLU_MALLOC(sizeof(int) * (this->n+1));
-  asi   = (ARTYPE*)SUPERLU_MALLOC(sizeof(ARTYPE) * (nnz+this->n));
-  Create_CompCol_Matrix(&AsI, this->n,  this->n, nnz, asi, irowi, pcoli, SLU_NC, SLU_GE);
+  irowi = new int[nnz+this->n];
+  pcoli = new int[this->n+1];
+  asi   = new ARTYPE[nnz+this->n];
+  Create_CompCol_Matrix(&AsI, this->n,  this->n, nnz, asi, irowi, pcoli, NC, GE);
 
   // Subtracting sigma*I from A and storing the result on AsI.
 
@@ -453,8 +418,7 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorAsI(ARTYPE sigma)
 
   // Defining LUStat.
 
-  //StatInit(panel_size, relax);
-  StatInit(&stat);
+  StatInit(panel_size, relax);
 
   // Defining the column permutation of matrix AsI
   // (using minimum degree ordering on AsI'*AsI).
@@ -464,15 +428,12 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::FactorAsI(ARTYPE sigma)
   // Permuting columns of AsI and
   // creating the elimination tree of AsI'*AsI.
 
-  //sp_preorder("N", &AsI, permc, etree, &AC);
-  sp_preorder(&options, &AsI, permc, etree, &AC);
+  sp_preorder(APP_C_STR("N"), &AsI, permc, etree, &AC);
 
   // Decomposing AsI.
 
-//  gstrf("N",&AC, threshold, drop_tol, relax, panel_size, etree,
-//        NULL, 0, permr, permc, &L, &U, &info);
-  gstrf(&options,&AC, relax, panel_size, etree,
-        NULL, 0, permc, permr, &L, &U, &stat, &info);
+  gstrf(APP_C_STR("N"),&AC, threshold, drop_tol, relax, panel_size, etree,
+        NULL, 0, permr, permc, &L, &U, &info);
 
   // Deleting AC, AsI and etree.
 
@@ -608,11 +569,8 @@ void ARluNonSymMatrix<ARTYPE, ARFLOAT>::MultInvv(ARTYPE* v, ARTYPE* w)
   SuperMatrix B;
 
   if (&v != &w) copy(this->n, v, 1, w, 1);
-  Create_Dense_Matrix(&B, this->n, 1, w, this->n, SLU_DN, SLU_GE);
-//  gstrs("N", &L, &U, permr, permc, &B, &info);
-  StatInit(&stat);
-  trans_t trans = NOTRANS;
-  gstrs(trans, &L, &U, permc, permr, &B, &stat, &info);
+  Create_Dense_Matrix(&B, this->n, 1, w, this->n, DN, GE);
+  gstrs(APP_C_STR("N"), &L, &U, permr, permc, &B, &info);
   Destroy_SuperMatrix_Store(&B); // delete B.Store;
 
 } // MultInvv.
@@ -643,7 +601,7 @@ DefineMatrix(int np, int nnzp, ARTYPE* ap, int* irowp, int* pcolp,
 
   // Creating SuperMatrix A.
 
-  Create_CompCol_Matrix(&A, this->n, this->n, nnz, a, irow, pcol, SLU_NC, SLU_GE);
+  Create_CompCol_Matrix(&A, this->n, this->n, nnz, a, irow, pcol, NC, GE);
 
   // Reserving memory for vectors used in matrix decomposition.
 
@@ -676,9 +634,9 @@ DefineMatrix(int mp, int np, int nnzp, ARTYPE* ap, int* irowp, int* pcolp)
 
 template<class ARTYPE, class ARFLOAT>
 inline ARluNonSymMatrix<ARTYPE, ARFLOAT>::ARluNonSymMatrix(): ARMatrix<ARTYPE>()
-{ 
+{
 
-  factored = false;  
+  factored = false;
   permc    = NULL;
   permr    = NULL;
 
@@ -693,7 +651,7 @@ ARluNonSymMatrix(int np, int nnzp, ARTYPE* ap, int* irowp,
 {
 
   factored = false;
-  DefineMatrix(np, nnzp, ap, irowp, pcolp, thresholdp, orderp, check);
+  this->DefineMatrix(np, nnzp, ap, irowp, pcolp, thresholdp, orderp, check);
 
 } // Long constructor (square matrix).
 
@@ -705,14 +663,14 @@ ARluNonSymMatrix(int mp, int np, int nnzp, ARTYPE* ap,
 {
 
   factored = false;
-  DefineMatrix(mp, np, nnzp, ap, irowp, pcolp);
+  this->DefineMatrix(mp, np, nnzp, ap, irowp, pcolp);
 
 } // Long constructor (retangular matrix).
 
 
 template<class ARTYPE, class ARFLOAT>
 ARluNonSymMatrix<ARTYPE, ARFLOAT>::
-ARluNonSymMatrix(const std::string& file, double thresholdp, int orderp, bool check)
+ARluNonSymMatrix(char* file, double thresholdp, int orderp, bool check)
 {
 
   factored = false;
@@ -725,11 +683,11 @@ ARluNonSymMatrix(const std::string& file, double thresholdp, int orderp, bool ch
   }
 
   if (mat.NCols()==mat.NRows()) {
-    DefineMatrix(mat.NCols(), mat.NonZeros(), (ARTYPE*)mat.Entries(),
+    this->DefineMatrix(mat.NCols(), mat.NonZeros(), (ARTYPE*)mat.Entries(),
                  mat.RowInd(), mat.ColPtr(), thresholdp, orderp, check);
   }
-  else {                             
-    DefineMatrix(mat.NRows(), mat.NCols(), mat.NonZeros(),
+  else {
+    this->DefineMatrix(mat.NRows(), mat.NCols(), mat.NonZeros(),
                  (ARTYPE*)mat.Entries(), mat.RowInd(), mat.ColPtr());
   }
 

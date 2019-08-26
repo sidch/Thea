@@ -55,11 +55,11 @@ ARPACKEigenSolver::solveDense(AbstractDenseMatrix<float64> const & m, int32 nev,
     ARdsNonSymMatrix<float64, float64> arm(m.rows(), const_cast<float64 *>(m.data()));
 
     // Setup the problem
-    std::shared_ptr< ARluNonSymStdEig<float64> > eig =
-        shift_invert ? std::shared_ptr< ARluNonSymStdEig<float64> >(new ARluNonSymStdEig<float64>(
+    std::shared_ptr< ARdsNonSymStdEig<float64> > eig =
+        shift_invert ? std::shared_ptr< ARdsNonSymStdEig<float64> >(new ARdsNonSymStdEig<float64>(
                                                                             nev, arm, sigma, which, ncv,
                                                                             tol, maxit, resid, auto_shift))
-                     : std::shared_ptr< ARluNonSymStdEig<float64> >(new ARluNonSymStdEig<float64>(
+                     : std::shared_ptr< ARdsNonSymStdEig<float64> >(new ARdsNonSymStdEig<float64>(
                                                                             nev, arm, which, ncv, tol,
                                                                             maxit, resid, auto_shift));
     eig->Trace();

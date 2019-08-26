@@ -19,7 +19,7 @@
 #define ARLSCOMP_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arscomp.h"
 #include "arlnsmat.h"
@@ -28,7 +28,7 @@
 
 template<class ARFLOAT>
 class ARluCompStdEig:
-  public virtual ARCompStdEig<ARFLOAT, 
+  public virtual ARCompStdEig<ARFLOAT,
                               ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT> > {
 
  protected:
@@ -59,13 +59,13 @@ class ARluCompStdEig:
   // Short constructor.
 
   ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
-                 const std::string& whichp = "LM", int ncvp = 0,
+                 const char* whichp = "LM", int ncvp = 0,
                  ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
-                 arcomplex<ARFLOAT> sigma, const std::string& whichp = "LM",
+                 arcomplex<ARFLOAT> sigma, const char* whichp = "LM",
                  int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                  arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -95,7 +95,7 @@ inline void ARluCompStdEig<ARFLOAT>::
 Copy(const ARluCompStdEig<ARFLOAT>& other)
 {
 
-  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>, 
+  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>,
            ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT> >::
     Copy(other);
   if (this->mode > 2) this->objOP->FactorAsI(this->sigmaR);
@@ -117,9 +117,9 @@ template<class ARFLOAT>
 inline void ARluCompStdEig<ARFLOAT>::SetRegularMode()
 {
 
-  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>, 
+  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>,
            ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT> >::
-    SetRegularMode(this->objOP, 
+    SetRegularMode(this->objOP,
                    &ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>::MultMv);
 
 } // SetRegularMode.
@@ -130,7 +130,7 @@ inline void ARluCompStdEig<ARFLOAT>::
 SetShiftInvertMode(arcomplex<ARFLOAT> sigmap)
 {
 
-  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>, 
+  ARStdEig<ARFLOAT, arcomplex<ARFLOAT>,
            ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT> >::
     SetShiftInvertMode(sigmap, this->objOP,
                        &ARluNonSymMatrix<arcomplex<ARFLOAT>,ARFLOAT>::MultInvv);
@@ -141,7 +141,7 @@ SetShiftInvertMode(arcomplex<ARFLOAT> sigmap)
 template<class ARFLOAT>
 inline ARluCompStdEig<ARFLOAT>::
 ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
-               const std::string& whichp, int ncvp, ARFLOAT tolp,
+               const char* whichp, int ncvp, ARFLOAT tolp,
                int maxitp, arcomplex<ARFLOAT>* residp, bool ishiftp)
 
 {
@@ -157,7 +157,7 @@ ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
 template<class ARFLOAT>
 inline ARluCompStdEig<ARFLOAT>::
 ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
-               arcomplex<ARFLOAT> sigmap, const std::string& whichp, int ncvp,
+               arcomplex<ARFLOAT> sigmap, const char* whichp, int ncvp,
                ARFLOAT tolp, int maxitp, arcomplex<ARFLOAT>* residp,
                bool ishiftp)
 
@@ -166,7 +166,7 @@ ARluCompStdEig(int nevp, ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>& A,
   this->DefineParameters(A.ncols(), nevp, &A,
                    &ARluNonSymMatrix<arcomplex<ARFLOAT>, ARFLOAT>::MultInvv,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
-  ChangeShift(sigmap);
+  this->ChangeShift(sigmap);
 
 } // Long constructor (shift and invert mode).
 

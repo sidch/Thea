@@ -37,14 +37,14 @@ class ARCompStdEig:
 
   ARCompStdEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(arcomplex<ARFLOAT>[],arcomplex<ARFLOAT>[]),
-               const std::string& whichp = "LM", int ncvp = 0,
+               const char* whichp = "LM", int ncvp = 0,
                ARFLOAT tolp = 0.0, int maxitp = 0,
                arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARCompStdEig(int np, int nevp, ARFOP* objOPp,
                void (ARFOP::* MultOPxp)(arcomplex<ARFLOAT>[],arcomplex<ARFLOAT>[]),
-               arcomplex<ARFLOAT> sigma,  const std::string& whichp = "LM",
+               arcomplex<ARFLOAT> sigma,  const char* whichp = "LM",
                int ncvp = 0, ARFLOAT tolp = 0.0, int maxitp = 0,
                arcomplex<ARFLOAT>* residp = NULL, bool ishiftp = true);
   // Long constructor (shift and invert mode).
@@ -72,7 +72,7 @@ template<class ARFLOAT, class ARFOP>
 inline ARCompStdEig<ARFLOAT, ARFOP>::
 ARCompStdEig(int np, int nevp, ARFOP* objOPp,
              void (ARFOP::* MultOPxp)(arcomplex<ARFLOAT>[],arcomplex<ARFLOAT>[]),
-             const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+             const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
              arcomplex<ARFLOAT>* residp, bool ishiftp)
 
 {
@@ -88,7 +88,7 @@ template<class ARFLOAT, class ARFOP>
 inline ARCompStdEig<ARFLOAT, ARFOP>::
 ARCompStdEig(int np, int nevp, ARFOP* objOPp,
              void (ARFOP::* MultOPxp)(arcomplex<ARFLOAT>[],arcomplex<ARFLOAT>[]),
-             arcomplex<ARFLOAT> sigmap, const std::string& whichp, int ncvp,
+             arcomplex<ARFLOAT> sigmap, const char* whichp, int ncvp,
              ARFLOAT tolp, int maxitp, arcomplex<ARFLOAT>* residp,
              bool ishiftp)
 

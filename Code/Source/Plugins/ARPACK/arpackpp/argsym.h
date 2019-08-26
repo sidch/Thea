@@ -18,7 +18,7 @@
 #define ARGSYM_H
 
 #include <cstddef>
-#include <string>
+
 #include "arch.h"
 #include "arssym.h"
 #include "arrgsym.h"
@@ -67,7 +67,7 @@ class ARSymGenEig:
   // Turns problem to buckling mode with shift defined by sigmap.
 
   void SetCayleyMode(ARFLOAT sigmap, ARFOP* objOPp,
-                     void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), 
+                     void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
                      ARFB* objAp, void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]));
   // Turns problem to Cayley mode with shift defined by sigmap.
 
@@ -86,14 +86,14 @@ class ARSymGenEig:
   ARSymGenEig(int np, int nevp, ARFOP* objOPp,
               void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), ARFB* objBp,
               void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-              const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+              const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
               int maxitp = 0, ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (regular mode).
 
   ARSymGenEig(char invertmodep, int np, int nevp, ARFOP* objOPp,
               void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
               ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-              ARFLOAT sigmap, const std::string& whichp = "LM", int ncvp = 0,
+              ARFLOAT sigmap, const char* whichp = "LM", int ncvp = 0,
               ARFLOAT tolp = 0.0, int maxitp = 0, ARFLOAT* residp = NULL,
               bool ishiftp = true);
   // Long constructor (shift-and-invert and buckling mode).
@@ -102,7 +102,7 @@ class ARSymGenEig:
               void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), ARFB* objAp,
               void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]), ARFB* objBp,
               void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]), ARFLOAT sigmap,
-              const std::string& whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
+              const char* whichp = "LM", int ncvp = 0, ARFLOAT tolp = 0.0,
               int maxitp = 0, ARFLOAT* residp = NULL, bool ishiftp = true);
   // Long constructor (cayley mode).
 
@@ -154,7 +154,7 @@ SetShiftInvertMode(ARFLOAT sigmap, ARFOP* objOPp,
 
 template<class ARFLOAT, class ARFOP, class ARFB>
 void ARSymGenEig<ARFLOAT, ARFOP, ARFB>::
-SetBucklingMode(ARFLOAT sigmap, ARFOP* objOPp, 
+SetBucklingMode(ARFLOAT sigmap, ARFOP* objOPp,
                 void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]))
 
 {
@@ -169,8 +169,8 @@ SetBucklingMode(ARFLOAT sigmap, ARFOP* objOPp,
 
 template<class ARFLOAT, class ARFOP, class ARFB>
 void ARSymGenEig<ARFLOAT, ARFOP, ARFB>::
-SetCayleyMode(ARFLOAT sigmap, ARFOP* objOPp, 
-              void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), ARFB* objAp, 
+SetCayleyMode(ARFLOAT sigmap, ARFOP* objOPp,
+              void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]), ARFB* objAp,
               void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]))
 
 {
@@ -247,7 +247,7 @@ int ARSymGenEig<ARFLOAT, ARFOP, ARFB>::FindArnoldiBasis()
     }
 
     delete[] temp;
-   
+
     return this->nconv;
   }
 
@@ -259,12 +259,12 @@ inline ARSymGenEig<ARFLOAT, ARFOP, ARFB>::
 ARSymGenEig(int np, int nevp, ARFOP* objOPp,
             void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
             ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-            const std::string& whichp, int ncvp, ARFLOAT tolp, int maxitp,
+            const char* whichp, int ncvp, ARFLOAT tolp, int maxitp,
             ARFLOAT* residp, bool ishiftp)
 
 {
 
-  this->InvertMode = 'S';   
+  this->InvertMode = 'S';
   this->NoShift();
   this->DefineParameters(np, nevp, objOPp, MultOPxp, objBp, MultBxp,
                    whichp, ncvp, tolp, maxitp, residp, ishiftp);
@@ -277,7 +277,7 @@ inline ARSymGenEig<ARFLOAT, ARFOP, ARFB>::
 ARSymGenEig(char InvertModep, int np, int nevp, ARFOP* objOPp,
             void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
             ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-            ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+            ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
             int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
@@ -296,7 +296,7 @@ ARSymGenEig(int np, int nevp, ARFOP* objOPp,
             void (ARFOP::* MultOPxp)(ARFLOAT[], ARFLOAT[]),
             ARFB* objAp, void (ARFB::* MultAxp)(ARFLOAT[], ARFLOAT[]),
             ARFB* objBp, void (ARFB::* MultBxp)(ARFLOAT[], ARFLOAT[]),
-            ARFLOAT sigmap, const std::string& whichp, int ncvp, ARFLOAT tolp,
+            ARFLOAT sigmap, const char* whichp, int ncvp, ARFLOAT tolp,
             int maxitp, ARFLOAT* residp, bool ishiftp)
 
 {
