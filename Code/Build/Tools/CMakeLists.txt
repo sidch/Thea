@@ -40,6 +40,13 @@ ELSE()
   FIND_PACKAGE(OpenGL)
 ENDIF()
 
+IF(OPENGL_FOUND)
+  ADD_DEFINITIONS(-DGLEW_STATIC)
+
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENGL_CFLAGS}")
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPENGL_CFLAGS}")
+ENDIF()
+
 # Dependency: wxWidgets
 FIND_PACKAGE(wxWidgets COMPONENTS core base gl)
 IF(wxWidgets_FOUND)
@@ -81,7 +88,8 @@ SET(TheaAllTools )
 IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   # Source file lists
   FILE(GLOB Browse3DSources
-       ${SourceRoot}/Tools/Browse3D/*.cpp)
+       ${SourceRoot}/Tools/Browse3D/*.cpp
+       ${SourceRoot}/Plugins/GL/glew.c)
 
   # Libraries to link to
   SET(Browse3DLibraries
@@ -90,6 +98,11 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
       ${OPENGL_LIBRARIES}
       ${Thea_DEPS_LIBRARIES})
 
+  # Additional platform-specific libraries
+  IF(WIN32)
+    SET(Browse3DLibraries ${Browse3DLibraries} "version.lib")
+  ENDIF()
+
   # Build products
   ADD_EXECUTABLE(Browse3D ${Browse3DSources})
 
@@ -97,7 +110,7 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   TARGET_LINK_LIBRARIES(Browse3D ${Browse3DLibraries})
 
   # Linker flags
-  SET_TARGET_PROPERTIES(Browse3D PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+  SET_TARGET_PROPERTIES(Browse3D PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}")
 
   # Fix library install names on OS X
   IF(APPLE)
@@ -389,13 +402,19 @@ SET(TheaAllTools ${TheaAllTools} Register)
 
 # Source file lists
 FILE(GLOB RenderShapeSources
-     ${SourceRoot}/Tools/RenderShape/*.cpp)
+     ${SourceRoot}/Tools/RenderShape/*.cpp
+     ${SourceRoot}/Plugins/GL/glew.c)
 
 # Libraries to link to
 SET(RenderShapeLibraries
     Thea
     ${OPENGL_LIBRARIES}
     ${Thea_DEPS_LIBRARIES})
+
+# Additional platform-specific libraries
+IF(WIN32)
+  SET(RenderShapeLibraries ${RenderShapeLibraries} "version.lib")
+ENDIF()
 
 # Build products
 ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
@@ -404,7 +423,7 @@ ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
 TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}")
 
 # Fix library install names on OS X
 IF(APPLE)
