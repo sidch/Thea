@@ -2428,7 +2428,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 
   render_system->setColor(color);
 
-  render_system->setPolygonSmooth(!color_by_id);
+  // render_system->setPolygonSmooth(!color_by_id);  // this causes OSMesa to draw thin transparent lines between polys when the
+                                                     // background has alpha < 1
   render_system->setLineSmooth(!color_by_id);
   render_system->setPointSmooth(!color_by_id);
   if (color_by_id) glDisable(GL_BLEND);
