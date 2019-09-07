@@ -15,7 +15,13 @@ INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 # Dependency: OpenGL
 IF(WITH_OSMESA)
+  IF(EXISTS ${THEA_DEPS_ROOT}/installed-osmesa)
+    SET(OSMesa_ROOT ${THEA_DEPS_ROOT}/installed-osmesa)
+  ELSE()
+    SET(OSMesa_ROOT ${THEA_DEPS_ROOT})
+  ENDIF()
   FIND_PACKAGE(OSMesa REQUIRED)
+
   IF(OSMesa_FOUND AND OSMesa_GLU_FOUND)
     SET(OPENGL_FOUND TRUE)
     SET(OPENGL_GLU_FOUND TRUE)
