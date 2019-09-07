@@ -2428,19 +2428,19 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
 
   render_system->setColor(color);
 
-  // render_system->setPolygonSmooth(!color_by_id);  // this causes OSMesa to draw thin transparent lines between polys when the
-                                                     // background has alpha < 1
-  render_system->setLineSmooth(!color_by_id);
-  render_system->setPointSmooth(!color_by_id);
-  if (color_by_id) glDisable(GL_BLEND);
+  render_system->setPolygonSmooth(false);  // smoothing causes blending halos around primitives with OSMesa
+  render_system->setLineSmooth(false);
+  render_system->setPointSmooth(!color_by_id);  // this also can cause blending halos, but no other way to get circular points
 
-  bool has_transparency = (color.a() < 1);
-  if (!color_by_id && has_transparency)
+  bool has_transparency = (color.a() <= 0.9999f || background_color.a() <= 0.9999f);
+  if (has_transparency && !color_by_id)
   {
     // Enable alpha-blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   }
+  else
+    glDisable(GL_BLEND);
 
   if (model.is_point_cloud)
   {

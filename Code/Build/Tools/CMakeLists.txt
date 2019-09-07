@@ -110,7 +110,10 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   TARGET_LINK_LIBRARIES(Browse3D ${Browse3DLibraries})
 
   # Linker flags
-  SET_TARGET_PROPERTIES(Browse3D PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}")
+  SET_TARGET_PROPERTIES(Browse3D
+                          PROPERTIES
+                            LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}"
+                            INSTALL_RPATH_USE_LINK_PATH TRUE)
 
   # Fix library install names on OS X
   IF(APPLE)
@@ -142,7 +145,10 @@ ADD_EXECUTABLE(GeoSphere ${GeoSphereSources})
 TARGET_LINK_LIBRARIES(GeoSphere ${GeoSphereLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(GeoSphere PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(GeoSphere
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -174,7 +180,10 @@ IF(OPENCL_FOUND)
   TARGET_LINK_LIBRARIES(gip ${GIPLibraries})
 
   # Linker flags
-  SET_TARGET_PROPERTIES(gip PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+  SET_TARGET_PROPERTIES(gip
+                          PROPERTIES
+                            LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                            INSTALL_RPATH_USE_LINK_PATH TRUE)
 
   # Fix library install names on OS X
   IF(APPLE)
@@ -206,7 +215,10 @@ ADD_EXECUTABLE(ImageFeatures ${ImageFeaturesSources})
 TARGET_LINK_LIBRARIES(ImageFeatures ${ImageFeaturesLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(ImageFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(ImageFeatures
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -236,7 +248,10 @@ ADD_EXECUTABLE(MeshConv ${MeshConvSources})
 TARGET_LINK_LIBRARIES(MeshConv ${MeshConvLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(MeshConv PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(MeshConv
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -266,7 +281,10 @@ ADD_EXECUTABLE(MeshGlobalFeatures ${MeshGlobalFeaturesSources})
 TARGET_LINK_LIBRARIES(MeshGlobalFeatures ${MeshGlobalFeaturesLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(MeshGlobalFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(MeshGlobalFeatures
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -296,7 +314,10 @@ ADD_EXECUTABLE(MeshLocalFeatures ${MeshLocalFeaturesSources})
 TARGET_LINK_LIBRARIES(MeshLocalFeatures ${MeshLocalFeaturesLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(MeshLocalFeatures PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(MeshLocalFeatures
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -326,7 +347,10 @@ ADD_EXECUTABLE(MeshFix ${MeshFixSources})
 TARGET_LINK_LIBRARIES(MeshFix ${MeshFixLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(MeshFix PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(MeshFix
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -356,7 +380,10 @@ ADD_EXECUTABLE(MeshSample ${MeshSampleSources})
 TARGET_LINK_LIBRARIES(MeshSample ${MeshSampleLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(MeshSample PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(MeshSample
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -386,7 +413,10 @@ ADD_EXECUTABLE(Register ${RegisterSources})
 TARGET_LINK_LIBRARIES(Register ${RegisterLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(Register PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(Register
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -423,7 +453,10 @@ ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
 TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(RenderShape PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}")
+SET_TARGET_PROPERTIES(RenderShape
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -453,7 +486,10 @@ ADD_EXECUTABLE(SampleGraph ${SampleGraphSources})
 TARGET_LINK_LIBRARIES(SampleGraph ${SampleGraphLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(SampleGraph PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(SampleGraph
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -485,7 +521,10 @@ ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
 TARGET_LINK_LIBRARIES(SegmentSDF ${SegmentSDFLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(SegmentSDF PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(SegmentSDF
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
@@ -517,7 +556,10 @@ ADD_EXECUTABLE(ShapeAlign ${ShapeAlignSources})
 TARGET_LINK_LIBRARIES(ShapeAlign ${ShapeAlignLibraries})
 
 # Linker flags
-SET_TARGET_PROPERTIES(ShapeAlign PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+SET_TARGET_PROPERTIES(ShapeAlign
+                        PROPERTIES
+                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                          INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Fix library install names on OS X
 IF(APPLE)
