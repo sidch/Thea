@@ -30,7 +30,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Installing the dependencies
 
-*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
+*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). (A couple of classes also depend on [CGAL](https://www.cgal.org), but these are optional -- if CGAL is not found on the system, these classes will be omitted from the build.) A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
 
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell
@@ -73,13 +73,17 @@ to render the teapot to an image file.
 
 To build with OSMesa instead of the system OpenGL driver, add `-DWITH_OSMESA=true` to the CMake line above. The *RenderShape* tool will then use OSMesa. To run some test scripts (several probably out of date), run `make test` after building. To omit building the tests altogether, pass `-DWITH_TESTS=false` to CMake. To change the build type (by default `Release`), set `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`.
 
+***
+**C++ versions**: Thea itself follows the C++11 standard. However, other packages it depends on may enforce more recent standards: e.g. CGAL has recently moved to C++14 by default. Hence, the build script detects the latest standard (upto C++17) supported by the compiler and uses that to build. To force the compiler to operate in strict C++11 mode, pass `-DFORCE_CXX11=true` to CMake.
+***
+
 ## Documentation
 
 To generate HTML documentation for the API, run [Doxygen](http://www.doxygen.org) in the `Thea/Code/Documentation` folder. Then, open `html/index.html` in a browser.
 
 This is probably the best place to start looking at the toolkit.
 
-Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs (for `Eigen::Matrix<Real, 3, 1, ...>` and `Eigen::Matrix<Real, 4, 4, ...>` respectively) and don't show up in the Class Index. Some will show up in Namespaces --> Namespace Members --> Typedefs. For others, you will have to look at the source code. Documenting all of these properly is work-in-progress.) 
+Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs (for `Eigen::Matrix<Real, 3, 1, ...>` and `Eigen::Matrix<Real, 4, 4, ...>` respectively) and don't show up in the Class Index. Some will show up in Namespaces --> Namespace Members --> Typedefs. For others, you will have to look at the source code. Documenting all of these properly is work-in-progress.)
 
 ## Using the library
 

@@ -6,7 +6,7 @@
 #
 #===============================================================================================================================
 
-PROJECT(Thea)
+PROJECT(TheaLib CXX C)
 
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../.. ABSOLUTE)

@@ -6,7 +6,7 @@
 #
 #===============================================================================================================================
 
-PROJECT(TheaPluginARPACK)
+PROJECT(TheaPluginARPACK CXX C)
 
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../../.. ABSOLUTE)
