@@ -81,6 +81,7 @@ class ShapeRendererImpl
     static Shader * mesh_shader;
     static Shader * face_id_shader;
     static Texture * matcap_tex;
+    static Texture * tex2d;
     static Texture * tex3d;
 
     Array<string> model_paths;
@@ -103,6 +104,8 @@ class ShapeRendererImpl
     Array<int> labels;
     string features_path;
     bool accentuate_features;
+    bool color_by_tex2d;
+    string tex2d_path;
     bool color_by_tex3d;
     string tex3d_path;
     string selected_mesh;
@@ -181,6 +184,7 @@ Shader * ShapeRendererImpl::point_shader = NULL;
 Shader * ShapeRendererImpl::mesh_shader = NULL;
 Shader * ShapeRendererImpl::face_id_shader = NULL;
 Texture * ShapeRendererImpl::matcap_tex = NULL;
+Texture * ShapeRendererImpl::tex2d = NULL;
 Texture * ShapeRendererImpl::tex3d = NULL;
 
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
@@ -228,6 +232,8 @@ ShapeRendererImpl::resetArgs()
   labels.clear();
   features_path = "";
   accentuate_features = false;
+  color_by_tex2d = false;
+  tex2d_path = "";
   color_by_tex3d = false;
   tex3d_path = "";
   selected_mesh = "";
@@ -381,6 +387,18 @@ ShapeRendererImpl::exec(int argc, char ** argv)
       matcap_tex = render_system->createTexture("Matcap", matcap_img);
     }
     THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create matcap texture")
+  }
+
+  // Load 2D texture, if any
+  tex2d = NULL;
+  if (!tex2d_path.empty())
+  {
+    try
+    {
+      Image tex2d_img(tex2d_path);
+      tex2d = render_system->createTexture("Texture2D", tex2d_img, Texture::Format::AUTO(), Texture::Dimension::DIM_2D);
+    }
+    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 2D texture")
   }
 
   // Load 3D texture, if any
@@ -543,6 +561,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
 
   render_system->destroyTexture(tex3d);
+  render_system->destroyTexture(tex2d);
   render_system->destroyTexture(matcap_tex);
 
   if (save_hitcounts)
@@ -589,6 +608,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
+  THEA_CONSOLE << "  -2 <path>             (color mesh by a 2D texture)";
   THEA_CONSOLE << "  -3 <path>             (color mesh by a 3D texture)";
   THEA_CONSOLE << "  -e                    (accentuate features)";
   THEA_CONSOLE << "  -m <name>             (render submesh with the given name as white, the";
@@ -1076,9 +1096,19 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           break;
         }
 
+        case '2':
+        {
+          if (argc < 1) { THEA_ERROR << "-2: 2D texture image not specified"; return false; }
+
+          color_by_tex2d = true;
+          tex2d_path = *argv;
+
+          argv++; argc--; break;
+        }
+
         case '3':
         {
-          if (argc < 1) { THEA_ERROR << "-3: Texture image not specified"; return false; }
+          if (argc < 1) { THEA_ERROR << "-3: 3D texture image not specified"; return false; }
 
           color_by_tex3d = true;
           tex3d_path = *argv;
@@ -1253,9 +1283,9 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   }
 
   // If no primary color was explicitly specified, set it to white by default if we're also going to multiply it by the matcap
-  // or 3D texture color. The assumption is that the latter colors should be presented accurately unless the user explicitly
+  // or 2D/3D texture color. The assumption is that the latter colors should be presented accurately unless the user explicitly
   // modulates them by an additional color.
-  if (!explicit_primary_color && (!matcap_path.empty() || color_by_tex3d))
+  if (!explicit_primary_color && (!matcap_path.empty() || color_by_tex2d || color_by_tex3d))
     primary_color = ColorRGBA(1, 1, 1, 1);
 
   if (views.empty())
@@ -2273,8 +2303,8 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex = NULL, Texture * tex3d = NULL,
-               AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex = NULL, Texture * tex2d = NULL,
+               Texture * tex3d = NULL, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2289,6 +2319,8 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
 "\n"
 "  gl_FrontColor = gl_Color;\n"
 "  gl_BackColor = gl_Color;\n"
+"\n"
+"  gl_TexCoord[0] = gl_MultiTexCoord0;\n"
 "}\n";
 
   static string const FRAGMENT_SHADER_HEADER_1 =
@@ -2305,6 +2337,9 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   static string const FRAGMENT_SHADER_HEADER_MATCAP =
 "uniform sampler2D matcap_tex;\n";
 
+  static string const FRAGMENT_SHADER_HEADER_TEX2D =
+"uniform sampler2D tex2d;\n";
+
   static string const FRAGMENT_SHADER_HEADER_TEX3D =
 "uniform sampler3D tex3d;\n"
 "uniform vec3 bbox_lo;\n"
@@ -2315,6 +2350,10 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
 "{\n"
 "  vec3 N = normalize(normal);\n"
 "  vec4 color = gl_Color;\n";
+
+  static string const FRAGMENT_SHADER_BODY_TEX2D =
+"  vec4 tex2d_color = texture2D(tex2d, gl_TexCoord[0].st);\n"
+"  color = vec4(color.rgb * tex2d_color.rgb, tex2d_color.a);\n";
 
   static string const FRAGMENT_SHADER_BODY_TEX3D =
 "  vec3 tex3d_p = (src_pos - bbox_lo) / (bbox_hi - bbox_lo);\n"
@@ -2341,9 +2380,11 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   else
     fragment_shader += FRAGMENT_SHADER_HEADER_PHONG;
 
+  if (tex2d) fragment_shader += FRAGMENT_SHADER_HEADER_TEX2D;
   if (tex3d) fragment_shader += FRAGMENT_SHADER_HEADER_TEX3D;
 
   fragment_shader += FRAGMENT_SHADER_BODY_1;
+  if (tex2d) fragment_shader += FRAGMENT_SHADER_BODY_TEX2D;
   if (tex3d) fragment_shader += FRAGMENT_SHADER_BODY_TEX3D;
   if (matcap_tex)
     fragment_shader += FRAGMENT_SHADER_BODY_MATCAP;
@@ -2368,6 +2409,9 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
     shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
     shader.setUniform("material", material);
   }
+
+  if (tex2d)
+    shader.setUniform("tex2d", tex2d);
 
   if (tex3d)
   {
@@ -2432,7 +2476,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
   render_system->setLineSmooth(false);
   render_system->setPointSmooth(!color_by_id);  // this also can cause blending halos, but no other way to get circular points
 
-  bool has_transparency = (color.a() <= 0.9999f || background_color.a() <= 0.9999f);
+  bool has_transparency = (color.a() <= 0.9999f || background_color.a() <= 0.9999f || color_by_tex2d);
   if (has_transparency && !color_by_id)
   {
     // Enable alpha-blending
@@ -2512,7 +2556,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, matcap_tex, tex3d, model.mesh_group.getBounds()))
+        if (!initMeshShader(*mesh_shader, material, matcap_tex, tex2d, tex3d, model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
@@ -2523,8 +2567,10 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     }
 
     RenderOptions opts = RenderOptions::defaults();
-    if (color_by_id || color_by_leaf || color_by_leafname || color_by_label || color_by_features || !selected_mesh.empty())
-      opts.setUseVertexData(true);
+    opts.setUseVertexData(true);
+    opts.setSendNormals(true);
+    opts.setSendColors(true);
+    opts.setSendTexCoords((bool)tex2d);
 
     if (show_edges)
       opts.setDrawEdges(true).setEdgeColor(edge_color.data());
