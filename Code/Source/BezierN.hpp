@@ -72,6 +72,8 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     typedef SplineN<N, T> BaseT;  ///< Base curve type.
 
   public:
+    THEA_DECL_SMART_POINTERS(BezierN)
+
     typedef typename BaseT::VectorT VectorT;  ///< N-dimensional vector type.
 
     /**
@@ -106,7 +108,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       this->setChanged(true);
     }
 
-    bool hasDeriv(intx deriv_order) const { return (deriv_order >= 0 && deriv_order <= 3); }
+    bool hasDeriv(intx deriv_order) const { return (deriv_order >= 0); }
 
   private:
     mutable Array<VectorT>   ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
@@ -171,7 +173,9 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     VectorT eval(T const & t, intx deriv_order) const
     {
       alwaysAssertM(t >= -0.00001 && t <= 1.00001, format("BezierN: Curve parameter %lf out of range", static_cast<double>(t)));
-      alwaysAssertM(deriv_order >= 0 && deriv_order <= 3, format("BezierN: Invalid derivative order %ld", deriv_order));
+      alwaysAssertM(deriv_order >= 0, format("BezierN: Invalid derivative order %ld", deriv_order));
+
+      if (deriv_order > 3) return VectorT::Zero();
 
       update();
 

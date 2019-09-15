@@ -52,19 +52,31 @@
 
 namespace Thea {
 
-/** A parametric curve segment in N-dimensional space. */
-template <int N, typename T = Real>
-class /* THEA_API */ ParametricCurveN
+// Forward declarations
+template <int N, typename T> class ParametricCurveN;
+
+namespace Internal {
+
+/**
+ * <b>[Internal]</b> Base class for parametric curve segment in N-dimensional space.
+ *
+ * @note This class is <b>INTERNAL</b>! Don't use it directly.
+ */
+template <int N, typename T>
+class /* THEA_DLL_LOCAL */ ParametricCurveNBase
 {
   public:
-    typedef Vector<N, T> VectorT;  ///< N-dimensional vector type.
+    typedef ParametricCurveN<N, T>  ParametricCurveT;  ///< Parametric curve segment in N dimensions.
+    typedef Vector<N, T>            VectorT;           ///< N-dimensional vector type.
+
+    THEA_DECL_SMART_POINTERS(ParametricCurveT)
 
     /** Constructor, sets parameter limits. */
-    ParametricCurveN(T const & min_param_ = 0, T const & max_param_ = 1)
+    ParametricCurveNBase(T const & min_param_ = 0, T const & max_param_ = 1)
     : min_param(min_param_), max_param(max_param_) {}
 
     /** Destructor. */
-    virtual ~ParametricCurveN() = 0;
+    virtual ~ParametricCurveNBase() = 0;
 
     /** Get the minimum possible parameter value for the segment, which is the value at the beginning of the curve. */
     T const & minParam() const { return min_param; }
@@ -85,8 +97,9 @@ class /* THEA_API */ ParametricCurveN
     }
 
     /**
-     * Check if the curve's getDeriv() function supports evaluating derivatives of a given order (1 for first derivative, 2 for
-     * second, and so on).
+     * Check if the curve's getDeriv() function supports evaluating derivatives upto and including a given order (1 for first
+     * derivative, 2 for second, and so on). Note that if the function returns false for some \a deriv_order, then it must also
+     * return false for all higher orders.
      */
     virtual bool hasDeriv(intx deriv_order) const = 0;
 
@@ -97,6 +110,61 @@ class /* THEA_API */ ParametricCurveN
     VectorT getDeriv(T const & t, intx deriv_order = 1) const
     {
       return eval(t, deriv_order);
+    }
+
+    /**
+     * Get the unit tangent vector (first Frenet vector) to the curve at parameter value \a t. This requires the first
+     * derivative, and the return value is zero if hasDeriv(1) returns false.
+     */
+    VectorT getTangent(T const & t) const
+    {
+      if (!hasDeriv(1)) return VectorT::zero();
+
+      return eval(t, 1).normalize();
+    }
+
+    /**
+     * Get the unit normal vector (second Frenet vector) to the curve at parameter value \a t. This requires the second
+     * derivative, and the return value is zero if hasDeriv(2) returns false.
+     */
+    VectorT getNormal(T const & t) const
+    {
+      if (!hasDeriv(2)) return VectorT::zero();
+
+      VectorT d1 = eval(t, 1);
+      T d1_sqlen = d1.squaredNorm();
+      if (Math::fuzzyEq(d1_sqlen, static_cast<T>(0)))
+        return VectorT::Zero();
+
+      VectorT d2 = eval(t, 2);
+      return (d2 - (d2.dot(d1) / d1_sqlen) * d1).normalize();  // sqrt in normalizing d1 avoided because of repeated d1
+    }
+
+    /**
+     * Get the Frenet vector of the curve at parameter value \a t, for a given order. The first Frenet vector is the unit
+     * tangent vector returned by getTangent(), the second is the unit normal vector returned by getNormal(), the third the unit
+     * binormal, and so on.
+     */
+    VectorT getFrenetVector(T const & t, intx deriv_order) const
+    {
+      alwaysAssertM(deriv_order > 0, format("ParametricCurveN: Frenet vector of order %ld does not exist", (long)deriv_order));
+
+      if (!hasDeriv(deriv_order)) return VectorT::Zero();
+
+      if (deriv_order == 1) return getTangent(t);
+      if (deriv_order == 2) return getNormal(t);
+
+      // TODO: Is there a faster alternative to this recursion? Probably not very important since the recursion is unlikely to
+      // go more than 2 or 3 levels.
+      VectorT d = eval(t, deriv_order);
+      VectorT f = d;
+      for (intx i = 1; i < deriv_order; ++i)
+      {
+        VectorT g = getFrenetVector(t, i);
+        f -= d.dot(g) * g;
+      }
+
+      return f.normalize();
     }
 
     /**
@@ -113,7 +181,7 @@ class /* THEA_API */ ParametricCurveN
     virtual void getEvenlySpacedPoints(intx num_points, VectorT * pts_begin = NULL, T * params_begin = NULL,
                                        intx num_arc_samples = -1) const
     {
-      alwaysAssertM(num_points >= 2, "ParametricCurveN: At least two evenly-spaced points must be sampled");
+      alwaysAssertM(num_points >= 2, "ParametricCurveNBase: At least two evenly-spaced points must be sampled");
 
       if (num_arc_samples < 0)
       {
@@ -121,7 +189,7 @@ class /* THEA_API */ ParametricCurveN
         num_arc_samples = curve_complexity * 50;
       }
 
-      alwaysAssertM(num_arc_samples >= 2, "ParametricCurveN: At least two samples must be used to approximate arc lengths");
+      alwaysAssertM(num_arc_samples >= 2, "ParametricCurveNBase: At least two samples must be used to approximate arc lengths");
 
       // Generate num_points samples with uniform parameter spacing
       Array<VectorT> arc_samples((size_t)num_arc_samples);
@@ -228,15 +296,48 @@ class /* THEA_API */ ParametricCurveN
     T min_param;  ///< The parameter value of the beginning of the curve.
     T max_param;  ///< The parameter value of the end of the curve.
 
-}; // class ParametricCurveN
+}; // class ParametricCurveNBase
 
 template <int N, typename T>
-ParametricCurveN<N, T>::~ParametricCurveN()
+ParametricCurveNBase<N, T>::~ParametricCurveNBase()
 {
   // Pure virtual destructor should have a body
   // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
 }
 
+} // namespace Internal
+
+/** A parametric curve segment in N-dimensional space. */
+template <int N, typename T = Real>
+class /* THEA_API */ ParametricCurveN : public Internal::ParametricCurveNBase<N, T>
+{
+  private:
+    typedef Internal::ParametricCurveNBase<N, T> BaseT;
+
+  public:
+    typedef typename BaseT::VectorT VectorT;
+
+    /** Constructor, sets parameter limits. */
+    ParametricCurveN(T const & min_param_ = 0, T const & max_param_ = 1) : BaseT(min_param_, max_param_) {}
+
+    /** Destructor. */
+    virtual ~ParametricCurveN() = 0;
+
+    /**
+     * Get the unit binormal vector (third Frenet vector) to the curve at parameter value \a t. This requires the third
+     * derivative, and the return value is zero if hasDeriv(3) returns false.
+     *
+     * @note This function has an optimized implementation in 3 dimensions, where only the second derivative is required since
+     *   the binormal can be computed as the cross-product of the unit tangent and normal vectors.
+     */
+    VectorT getBinormal(T const & t) const { return BaseT::getFrenetVector(t, 3); }
+
+}; // class ParametricCurveN
+
+template <int N, typename T> ParametricCurveN<N, T>::~ParametricCurveN() {}  // pure virtual destructor should have body
+
 } // namespace Thea
+
+#include "ParametricCurve3.hpp"
 
 #endif

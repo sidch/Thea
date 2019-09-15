@@ -76,6 +76,8 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
     typedef ParametricCurveN<N, T> BaseT;  ///< Base curve type.
 
   public:
+    THEA_DECL_SMART_POINTERS(SplineN)
+
     typedef typename BaseT::VectorT VectorT;  ///< N-dimensional vector type.
 
     /** Constructor, sets parameter limits. */
