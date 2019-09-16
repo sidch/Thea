@@ -65,7 +65,8 @@ class /* THEA_API */ ParametricCurveN<3, T> : public Internal::ParametricCurveNB
 
     /**
      * Get the unit binormal vector (third Frenet vector) to the curve at parameter value \a t. This requires the second
-     * derivative (dimensions > 3 require the third derivative), and the return value is zero if hasDeriv(2) returns false.
+     * derivative (dimensions > 3 require the third derivative), and the return value is zero if hasDeriv(2) returns false (or
+     * N < 3, in which case the binormal is undefined).
      */
     VectorT getBinormal(T const & t) const
     {
@@ -73,7 +74,7 @@ class /* THEA_API */ ParametricCurveN<3, T> : public Internal::ParametricCurveNB
 
       VectorT d1 = this->eval(t, 1);
       T d1_sqlen = d1.squaredNorm();
-      if (Math::fuzzyEq(d1_sqlen, static_cast<T>(0)))
+      if (Math::fuzzyEq(d1_sqlen, static_cast<T>(0), Math::square(Math::eps<T>())))
         return VectorT::Zero();
 
       VectorT d2 = this->eval(t, 2);

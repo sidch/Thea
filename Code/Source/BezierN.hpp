@@ -175,14 +175,14 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       alwaysAssertM(t >= -0.00001 && t <= 1.00001, format("BezierN: Curve parameter %lf out of range", static_cast<double>(t)));
       alwaysAssertM(deriv_order >= 0, format("BezierN: Invalid derivative order %ld", deriv_order));
 
-      if (deriv_order > 3) return VectorT::Zero();
+      intx order = getOrder();
+      if (deriv_order > order) return VectorT::Zero();
 
       update();
 
       T omt = 1 - t;
       VectorT result = omt * ctrl[deriv_order][0];
 
-      intx order = getOrder();
       T tpow = t;
       intx isup = order - deriv_order;
       for (intx i = 1; i < isup; ++i)

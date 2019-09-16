@@ -114,48 +114,55 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
 
     /**
      * Get the unit tangent vector (first Frenet vector) to the curve at parameter value \a t. This requires the first
-     * derivative, and the return value is zero if hasDeriv(1) returns false.
+     * derivative, and the return value is zero if hasDeriv(1) returns false (or N < 1, in which case the tangent is undefined).
      */
     VectorT getTangent(T const & t) const
     {
-      if (!hasDeriv(1)) return VectorT::Zero();
+      if (N < 1 || !hasDeriv(1)) return VectorT::Zero();
 
       return eval(t, 1).normalized();
     }
 
     /**
      * Get the unit normal vector (second Frenet vector) to the curve at parameter value \a t. This requires the second
-     * derivative, and the return value is zero if hasDeriv(2) returns false.
+     * derivative, and the return value is zero if hasDeriv(2) returns false (or N < 2, in which case the normal is undefined).
      */
     VectorT getNormal(T const & t) const
     {
-      if (!hasDeriv(2)) return VectorT::Zero();
+      if (N < 2 || !hasDeriv(2)) return VectorT::Zero();
 
       VectorT d1 = eval(t, 1);
-      T d1_sqlen = d1.squaredNorm();
-      if (Math::fuzzyEq(d1_sqlen, static_cast<T>(0)))
-        return VectorT::Zero();
-
       VectorT d2 = eval(t, 2);
-      return (d2 - (d2.dot(d1) / d1_sqlen) * d1).normalized();  // sqrt in normalizing d1 avoided because of repeated d1
+
+      T d1_sqlen = d1.squaredNorm();
+      if (!Math::fuzzyEq(d1_sqlen, static_cast<T>(0), Math::square(Math::eps<T>())))
+        d2 -= (d2.dot(d1) / d1_sqlen) * d1;  // sqrt in normalizing d1 avoided because of repeated d1
+
+      return d2.normalized();
     }
 
     /**
      * Get the Frenet vector of the curve at parameter value \a t, for a given order. The first Frenet vector is the unit
      * tangent vector returned by getTangent(), the second is the unit normal vector returned by getNormal(), the third the unit
-     * binormal, and so on.
+     * binormal, and so on. The return value is zero if hasDeriv(deriv_order) returns false (or \a deriv_order > N, in which
+     * case the Frenet vector is undefined).
+     *
+     * @warning This function is currently strongly susceptible to numerical error, when the <i>unnormalized</i> Frenet vector
+     *   of any order (upto \a deriv_order) has length nearly zero, but normalization rescales it to unit length. Use
+     *   higher-order Frenet vectors with caution.
      */
     VectorT getFrenetVector(T const & t, intx deriv_order) const
     {
       alwaysAssertM(deriv_order > 0, format("ParametricCurveN: Frenet vector of order %ld does not exist", (long)deriv_order));
 
-      if (!hasDeriv(deriv_order)) return VectorT::Zero();
+      if (deriv_order > N || !hasDeriv(deriv_order)) return VectorT::Zero();
 
       if (deriv_order == 1) return getTangent(t);
       if (deriv_order == 2) return getNormal(t);
+      if (deriv_order == 3) return static_cast<ParametricCurveT>(this)->getBinormal(t);
 
-      // TODO: Is there a faster alternative to this recursion? Probably not very important since the recursion is unlikely to
-      // go more than 2 or 3 levels.
+      // TODO: Is there a faster alternative to this recursion? Probably not very important since deriv_order is unlikely to be
+      // more than 2 or 3.
       VectorT d = eval(t, deriv_order);
       VectorT f = d;
       for (intx i = 1; i < deriv_order; ++i)
@@ -325,12 +332,26 @@ class /* THEA_API */ ParametricCurveN : public Internal::ParametricCurveNBase<N,
 
     /**
      * Get the unit binormal vector (third Frenet vector) to the curve at parameter value \a t. This requires the third
-     * derivative, and the return value is zero if hasDeriv(3) returns false.
+     * derivative, and the return value is zero if hasDeriv(3) returns false (or N < 3, in which case the binormal is
+     * undefined).
      *
      * @note This function has an optimized implementation in 3 dimensions, where only the second derivative is required since
      *   the binormal can be computed as the cross-product of the unit tangent and normal vectors.
+     *
+     * @warning This function is currently strongly susceptible to numerical error, when the <i>unnormalized</i>
+     *   tangent/normal/binormal has length nearly zero, but normalization rescales it to unit length. Use with caution.
      */
-    VectorT getBinormal(T const & t) const { return BaseT::getFrenetVector(t, 3); }
+    VectorT getBinormal(T const & t) const
+    {
+      if (N < 3 || !this->hasDeriv(3)) return VectorT::Zero();
+
+      VectorT d1 = this->eval(t, 1).normalized();
+      VectorT d2 = this->eval(t, 2);
+      d2 = (d2 - (d2.dot(d1) * d1)).normalized();
+
+      VectorT d3 = this->eval(t, 3);
+      return (d3 - (d3.dot(d1) * d1) - (d3.dot(d2) * d2)).normalized();
+    }
 
 }; // class ParametricCurveN
 
