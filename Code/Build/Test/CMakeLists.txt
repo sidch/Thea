@@ -108,6 +108,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestBezier
+#===========================================================
+
+# Source file lists
+SET(TheaTestBezierSources
+      ${SourceRoot}/Test/TestBezier.cpp)
+
+# Libraries to link to
+SET(TheaTestBezierLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestBezier ${TheaTestBezierSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestBezier ${TheaTestBezierLibraries})
+SET_TARGET_PROPERTIES(TheaTestBezier PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestBezier "${TheaTestBezierLibraries}")
+ENDIF()
+
+#===========================================================
 # TestCSPARSE
 #===========================================================
 

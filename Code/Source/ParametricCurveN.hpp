@@ -118,9 +118,9 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
      */
     VectorT getTangent(T const & t) const
     {
-      if (!hasDeriv(1)) return VectorT::zero();
+      if (!hasDeriv(1)) return VectorT::Zero();
 
-      return eval(t, 1).normalize();
+      return eval(t, 1).normalized();
     }
 
     /**
@@ -129,7 +129,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
      */
     VectorT getNormal(T const & t) const
     {
-      if (!hasDeriv(2)) return VectorT::zero();
+      if (!hasDeriv(2)) return VectorT::Zero();
 
       VectorT d1 = eval(t, 1);
       T d1_sqlen = d1.squaredNorm();
@@ -137,7 +137,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
         return VectorT::Zero();
 
       VectorT d2 = eval(t, 2);
-      return (d2 - (d2.dot(d1) / d1_sqlen) * d1).normalize();  // sqrt in normalizing d1 avoided because of repeated d1
+      return (d2 - (d2.dot(d1) / d1_sqlen) * d1).normalized();  // sqrt in normalizing d1 avoided because of repeated d1
     }
 
     /**
@@ -164,7 +164,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
         f -= d.dot(g) * g;
       }
 
-      return f.normalize();
+      return f.normalized();
     }
 
     /**
