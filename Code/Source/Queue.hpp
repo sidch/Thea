@@ -43,9 +43,10 @@
 #define __Thea_Queue_hpp__
 
 #include "Platform.hpp"
+#include <deque>
 #include <queue>
 
-/** First-in-first-out queue of objects, guaranteed to be a drop-in replacement for std::queue. */
-#define TheaQueue std::queue
+/** First-in-first-out queue of objects. */
+template < typename T, typename Container = std::deque<T> > using Queue = std::queue<T, Container>;
 
 #endif

@@ -201,9 +201,9 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
 
     }; // struct BufferState
 
-    typedef TheaStack<GLFramebuffer *>  FramebufferStack;
-    typedef TheaStack<BufferState>      BufferStack;
-    typedef TheaStack<GLShader *>       ShaderStack;
+    typedef Stack<GLFramebuffer *>  FramebufferStack;
+    typedef Stack<BufferState>      BufferStack;
+    typedef Stack<GLShader *>       ShaderStack;
 
     typedef UnorderedSet<GLFramebuffer *>  FramebufferSet;
     typedef UnorderedSet<GLTexture *>      TextureSet;

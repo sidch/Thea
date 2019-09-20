@@ -45,7 +45,7 @@
 #include "Platform.hpp"
 #include <deque>
 
-/** Double-ended queue, guaranteed to be a drop-in replacement for std::deque. */
-#define TheaDeque std::deque
+/** Double-ended queue. */
+template < typename T, typename Alloc = std::allocator<T> > using Deque = std::deque<T, Alloc>;
 
 #endif

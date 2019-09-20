@@ -43,9 +43,10 @@
 #define __Thea_Stack_hpp__
 
 #include "Platform.hpp"
+#include <deque>
 #include <stack>
 
-/** Last-in-first-out stack of objects, guaranteed to be a drop-in replacement for std::stack. */
-#define TheaStack std::stack
+/** Last-in-first-out stack of objects. */
+template < typename T, typename Container = std::deque<T> > using Stack = std::stack<T, Container>;
 
 #endif

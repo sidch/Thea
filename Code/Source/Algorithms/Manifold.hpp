@@ -107,7 +107,7 @@ class THEA_API Manifold
         }
 
       // Queue the set of vertices
-      TheaStack<size_t> vertex_stack;
+      Stack<size_t> vertex_stack;
       for (intx i = (intx)nv - 1; i >= 0; --i)
         vertex_stack.push((size_t)i);
 
