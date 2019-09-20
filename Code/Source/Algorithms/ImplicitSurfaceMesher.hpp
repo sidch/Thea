@@ -201,7 +201,7 @@ class THEA_API ImplicitSurfaceMesher
      * @param surface_functor The function whose zero level set defines the surface.
      * @param bounding_ball Bounds the surface.
      * @param pt_near_surface A point on or near the zero level set.
-     * @param options Options controlling mesh generation.
+     * @param options %Options controlling mesh generation.
      * @param result The output mesh will be stored here (any prior data will <b>not</b> be removed from the mesh).
      */
     template <typename FunctorT, typename MeshT>
@@ -231,7 +231,7 @@ class THEA_API ImplicitSurfaceMesher
      *
      * @param surface_functor The function whose zero level set defines the surface.
      * @param bounding_ball Bounds the surface. The functor <em>must</em> evaluate to a negative value at its center.
-     * @param options Options controlling mesh generation.
+     * @param options %Options controlling mesh generation.
      * @param result The output mesh will be stored here (any prior data will <b>not</b> be removed from the mesh).
      */
     template <typename FunctorT, typename MeshT>

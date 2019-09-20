@@ -118,6 +118,7 @@ class ShapeRendererImpl
     int antialiasing_level;
     PointUsage show_points;
     bool flat;
+    bool two_sided;
     bool save_color;
     bool save_depth;
     bool save_hitcounts;
@@ -246,6 +247,7 @@ ShapeRendererImpl::resetArgs()
   antialiasing_level = 1;
   show_points = POINTS_NONE;
   flat = false;
+  two_sided = true;
   save_color = true;
   save_depth = false;
   save_hitcounts = false;
@@ -621,6 +623,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -a N                  (enable NxN antialiasing: 2 is normal, 4 is very";
   THEA_CONSOLE << "                         high quality)";
   THEA_CONSOLE << "  -0                    (flat shading)";
+  THEA_CONSOLE << "  -1                    (one-sided lighting)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "  -n                    (also save a text file with extension \".hitcount\"";
   THEA_CONSOLE << "                         containing the number of pixels rendered per";
@@ -1187,6 +1190,12 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         case '0':
         {
           flat = true;
+          break;
+        }
+
+        case '1':
+        {
+          two_sided = false;
           break;
         }
 
@@ -2303,8 +2312,8 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex = NULL, Texture * tex2d = NULL,
-               Texture * tex3d = NULL, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true, Texture * matcap_tex = NULL,
+               Texture * tex2d = NULL, Texture * tex3d = NULL, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2398,7 +2407,7 @@ initMeshShader(Shader & shader, Vector4 const & material, Texture * matcap_tex =
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach mesh shader module")
 
-  shader.setUniform("two_sided", 1.0f);
+  shader.setUniform("two_sided", (two_sided ? 1.0f : 0.0f));
 
   if (matcap_tex)
     shader.setUniform("matcap_tex", matcap_tex);
@@ -2556,7 +2565,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, matcap_tex, tex2d, tex3d, model.mesh_group.getBounds()))
+        if (!initMeshShader(*mesh_shader, material, two_sided, matcap_tex, tex2d, tex3d, model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
