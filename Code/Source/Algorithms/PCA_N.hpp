@@ -61,7 +61,7 @@ class /* THEA_API */ PCA_N
     typedef Vector<N, ScalarT> VectorT;  ///< N-D vector used to represent points and directions.
 
     /**
-     * Compute the PCA axes of a set of N-D objects. InputIterator must dereference to type T.
+     * Compute the PCA axes of a set of N-D objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -74,23 +74,6 @@ class /* THEA_API */ PCA_N
                                                           VectorT * centroid = NULL);
 
 }; // class PCA_N
-
-// Principal component analysis of N-D data passed as pointers
-template <typename T, int N, typename ScalarT>
-class /* THEA_API */ PCA_N<T *, N, ScalarT>
-{
-  public:
-    typedef Vector<N, ScalarT> VectorT;
-
-    template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
-                                                          ScalarT eigenvalues[N], VectorT eigenvectors[N],
-                                                          VectorT * centroid = NULL)
-    {
-      PCA_N<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                    eigenvalues, eigenvectors, centroid);
-    }
-
-}; // class PCA_N<T *>
 
 // Principal component analysis of objects that map to single points in 2-space.
 template <typename T, typename ScalarT>
@@ -111,7 +94,7 @@ class PCA_N<T, 2, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 2>:
       // Construct covariance matrix
       MatrixT cov(0, 0, 0, 0);
       intx n = 0;
-      for (InputIterator i = begin; i != end; ++i, ++n)
+      for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++n)
       {
         VectorT p = PointTraitsN<T, 2, ScalarT>::getPosition(*i) - ctr;
 
@@ -177,7 +160,7 @@ class PCA_N<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>:
       // Construct covariance matrix
       MatrixT cov = MatrixT::Zero();
       intx n = 0;
-      for (InputIterator i = begin; i != end; ++i, ++n)
+      for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++n)
       {
         VectorT p = PointTraitsN<T, 3, ScalarT>::getPosition(*i) - ctr;
 

@@ -81,7 +81,7 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 } // namespace Thea
 
 typedef Array<Sample> SampleArray;
-typedef RefToPtrIterator<Sample const, SampleArray::const_iterator> SamplePtrIterator;
+typedef PtrIterator<SampleArray::const_iterator> SamplePtrIterator;
 typedef KDTreeN<Sample const *, 3> KDTree;
 typedef BoundedArrayN<MAX_NBRS, size_t> NeighborSet;
 typedef Array<NeighborSet> NeighborSets;

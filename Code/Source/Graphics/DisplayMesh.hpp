@@ -64,6 +64,9 @@ class DisplayMesh;
  */
 class THEA_API DisplayMeshVertex
 {
+  public:
+    typedef DisplayMesh Mesh;  ///< Parent mesh class.
+
   private:
     DisplayMesh  *  mesh;
     Vector3      *  point;
@@ -148,6 +151,8 @@ class THEA_API DisplayMeshVertex
 class THEA_API DisplayMeshIndexedVertex
 {
   public:
+    typedef DisplayMesh Mesh;  ///< Parent mesh class.
+
     /** Constructor. */
     DisplayMeshIndexedVertex(DisplayMesh * mesh_ = NULL, intx index_ = -1) : mesh(mesh_), index(index_) {}
 
@@ -215,6 +220,8 @@ class THEA_API DisplayMeshIndexedVertex
 class THEA_API DisplayMeshFace
 {
   public:
+    typedef DisplayMesh Mesh;  ///< Parent mesh class.
+
     /** Default constructor. Creates an invalid face. */
     DisplayMeshFace() : mesh(NULL), num_vertices(0), starting_index(-1), num_primitives(0) {}
 

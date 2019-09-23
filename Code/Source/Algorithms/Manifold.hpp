@@ -253,7 +253,7 @@ class THEA_API Manifold
       return ret;
     }
 
-};  // class Manifold
+}; // class Manifold
 
 } // namespace Algorithms
 } // namespace Thea

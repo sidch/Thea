@@ -165,7 +165,7 @@ struct ColorAttribute
   private:
     Color c;
 
-};  // class ColorAttribute
+}; // class ColorAttribute
 
 /** A utility attribute class that wraps a coordinate for texture unit 0 (a valid argument for RenderSystem::sendTexCoord()). */
 template <typename TexCoordT>

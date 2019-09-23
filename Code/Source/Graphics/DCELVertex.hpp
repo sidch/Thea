@@ -49,8 +49,10 @@
 #include "GraphicsAttributes.hpp"
 
 namespace Thea {
-
 namespace Graphics {
+
+// Forward declarations
+template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELMesh;
 
 /**
  * Vertex of DCELMesh.
@@ -69,6 +71,7 @@ class /* THEA_API */ DCELVertex
   public AttributedObject<VertexAttribute>
 {
   public:
+    typedef DCELMesh    <VertexAttribute, HalfedgeAttribute, FaceAttribute> Mesh;      ///< Parent mesh class.
     typedef DCELHalfedge<VertexAttribute, HalfedgeAttribute, FaceAttribute> Halfedge;  ///< Halfedge of the mesh.
 
   private:

@@ -90,7 +90,7 @@ struct FaceCenterCollector
   {
     for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
     {
-      positions->push_back(CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd()));
+      positions->push_back(CentroidN<Mesh::Vertex, 3>::compute(fi->verticesBegin(), fi->verticesEnd()));
       normals->push_back(fi->getNormal());
       indices->push_back(fi->attr().index);
     }

@@ -60,7 +60,7 @@ class /* THEA_API */ LinearLeastSquares2
 {
   public:
     /**
-     * Linear least-squares fitting of a line to a set of 2D objects. InputIterator must dereference to type T.
+     * Linear least-squares fitting of a line to a set of 2D objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -75,20 +75,6 @@ class /* THEA_API */ LinearLeastSquares2
 
 }; // class LinearLeastSquares2
 
-// Fitting lines to 2D data passed as pointers.
-template <typename T>
-class /* THEA_API */ LinearLeastSquares2<T *>
-{
-  public:
-    template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL)
-    {
-      LinearLeastSquares2<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin),
-                                      PtrToRefIterator<T, InputIterator>(end), line, centroid);
-    }
-
-}; // class LinearLeastSquares2<T *>
-
 // Fitting lines to sets of objects that map to single points in 2-space.
 template <typename T>
 class /* THEA_API */ LinearLeastSquares2<T, typename std::enable_if< IsNonReferencedPointN<T, 2>::value >::type>
@@ -99,7 +85,7 @@ class /* THEA_API */ LinearLeastSquares2<T, typename std::enable_if< IsNonRefere
     {
       Vector2d center = CentroidN<T, 2>::compute(begin, end);
       Matrix2d m = Matrix2d::Zero();
-      for (InputIterator iter = begin; iter != end; ++iter)
+      for (auto iter = makeRefIterator(begin); iter != makeRefIterator(end); ++iter)
       {
         Vector2d diff = Vector2d(PointTraitsN<T, 2>::getPosition(*iter)) - center;
 

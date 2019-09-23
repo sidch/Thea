@@ -253,6 +253,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestIterators
+#===========================================================
+
+# Source file lists
+SET(TheaTestIteratorsSources
+      ${SourceRoot}/Test/TestIterators.cpp)
+
+# Libraries to link to
+SET(TheaTestIteratorsLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestIterators ${TheaTestIteratorsSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestIterators ${TheaTestIteratorsLibraries})
+SET_TARGET_PROPERTIES(TheaTestIterators PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestIterators "${TheaTestIteratorsLibraries}")
+ENDIF()
+
+#===========================================================
 # TestJointBoost
 #===========================================================
 

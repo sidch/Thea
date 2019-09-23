@@ -65,7 +65,7 @@ class /* THEA_API */ SparsePCA_N
     typedef Vector<N, ScalarT> VectorT;  ///< N-dimensional vector class used for positions and directions.
 
     /**
-     * Compute the sparse PCA axes of a set of N-dimensional objects. InputIterator must dereference to type T.
+     * Compute the sparse PCA axes of a set of N-dimensional objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -82,24 +82,6 @@ class /* THEA_API */ SparsePCA_N
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
                                                           VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
                                                           ScalarT eps = -1, intx max_iters = -1);
-
-}; // class SparsePCA_N
-
-// Principal component analysis of 3D data passed as pointers
-template <typename T, int N, typename ScalarT>
-class /* THEA_API */ SparsePCA_N<T *, N, ScalarT>
-{
-  public:
-    typedef Vector<N, ScalarT> VectorT;
-
-    template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
-                                                          VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
-                                                          ScalarT eps = -1, intx max_iters = -1)
-    {
-      return SparsePCA_N<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin),
-                                                 PtrToRefIterator<T, InputIterator>(end),
-                                                 variances, axes, centroid, lambda, eps, max_iters);
-    }
 
 }; // class SparsePCA_N
 
@@ -218,7 +200,7 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
     static ScalarT computeVariance(InputIterator begin, InputIterator end, VectorT const & axis, VectorT const & centroid)
     {
       ScalarT var = 0;
-      for (InputIterator pi = begin; pi != end; ++pi)
+      for (auto pi = makeRefIterator(begin); pi != makeRefIterator(end); ++pi)
         var += Math::square(axis.dot(PointTraitsN<T, N, ScalarT>::getPosition(*pi) - centroid));
 
       return var;

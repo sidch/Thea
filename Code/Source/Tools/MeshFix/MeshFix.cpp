@@ -1324,7 +1324,7 @@ struct VisibilityOrienter
     {
       face_pts.clear();
       {
-        Vector3 c = CentroidN<Mesh::Vertex const *, 3>::compute(fi->verticesBegin(), fi->verticesEnd());
+        Vector3 c = CentroidN<Mesh::Vertex, 3>::compute(fi->verticesBegin(), fi->verticesEnd());
         face_pts.push_back(c);
         for (Mesh::Face::VertexConstIterator fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
           face_pts.push_back((*fvi)->getPosition());

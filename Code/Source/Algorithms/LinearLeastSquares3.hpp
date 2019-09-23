@@ -61,7 +61,7 @@ class /* THEA_API */ LinearLeastSquares3
 {
   public:
     /**
-     * Linear least-squares fitting of a line to a set of 3D objects. InputIterator must dereference to type T.
+     * Linear least-squares fitting of a line to a set of 3D objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -75,7 +75,7 @@ class /* THEA_API */ LinearLeastSquares3
     static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL);
 
     /**
-     * Linear least-squares fitting of a plane to a set of 3D objects. InputIterator must dereference to type T.
+     * Linear least-squares fitting of a plane to a set of 3D objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -87,27 +87,6 @@ class /* THEA_API */ LinearLeastSquares3
      */
     template <typename InputIterator>
     static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL);
-
-}; // class LinearLeastSquares3
-
-// Fitting linear models to 3D data passed as pointers.
-template <typename T>
-class /* THEA_API */ LinearLeastSquares3<T *>
-{
-  public:
-    template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL)
-    {
-      return LinearLeastSquares3<T>::fitLine(PtrToRefIterator<T, InputIterator>(begin),
-                                             PtrToRefIterator<T, InputIterator>(end), line, centroid);
-    }
-
-    template <typename InputIterator>
-    static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL)
-    {
-      return LinearLeastSquares3<T>::fitPlane(PtrToRefIterator<T, InputIterator>(begin),
-                                              PtrToRefIterator<T, InputIterator>(end), plane, centroid);
-    }
 
 }; // class LinearLeastSquares3
 
@@ -123,7 +102,7 @@ class LinearLeastSquares3<T, typename std::enable_if< IsNonReferencedPointN<T, 3
       Matrix3d cov = covMatrix(begin, end, center);
 
       double sum = 0;
-      for (InputIterator iter = begin; iter != end; ++iter)
+      for (auto iter = makeRefIterator(begin); iter != makeRefIterator(end); ++iter)
       {
         Vector3d diff = PointTraitsN<T, 3>::getPosition(*iter).template cast<double>() - center;
         sum += (diff[0] * diff[0] + diff[1] * diff[1] + diff[2] * diff[2]);
@@ -164,7 +143,7 @@ class LinearLeastSquares3<T, typename std::enable_if< IsNonReferencedPointN<T, 3
       centroid = CentroidN<T, 3>::compute(begin, end).template cast<double>();
 
       Matrix3d m = Matrix3d::Zero();
-      for (InputIterator iter = begin; iter != end; ++iter)
+      for (auto iter = makeRefIterator(begin); iter != makeRefIterator(end); ++iter)
       {
         Vector3d diff = PointTraitsN<T, 3>::getPosition(*iter).template cast<double>() - centroid;
         m += diff * diff.transpose();  // outer product

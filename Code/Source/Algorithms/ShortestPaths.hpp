@@ -217,7 +217,7 @@ class /* THEA_API */ ShortestPaths
 
     Scratch scratch;  ///< Scratch space for all vertices.
 
-};  // class ShortestPaths
+}; // class ShortestPaths
 
 template <typename GraphT>
 template <typename CallbackT>

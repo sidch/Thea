@@ -61,7 +61,8 @@ class /* THEA_API */ Symmetry3
 {
   public:
     /**
-     * Find a plane of (global) reflective symmetry of a set of objects.
+     * Find a plane of (global) reflective symmetry of a set of objects. InputIterator must dereference to type T or
+     * pointer-to-T.
      *
      * @param begin The first object.
      * @param end One position beyond the last object.
@@ -76,20 +77,6 @@ class /* THEA_API */ Symmetry3
                             Vector3 const * precomputed_centroid = NULL);
 
 }; // class Symmetry3
-
-// Symmetries of sets of objects passed as pointers.
-template <typename T>
-class /* THEA_API */ Symmetry3<T *>
-{
-  public:
-    template <typename InputIterator>
-    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 const * precomputed_centroid = NULL)
-    {
-      return Symmetry3<T>::findPlane(PtrToRefIterator<T, InputIterator>(begin), PtrToRefIterator<T, InputIterator>(end),
-                                     plane, precomputed_centroid);
-    }
-
-}; // class Symmetry3<T *>
 
 // Symmetries of point clouds.
 template <typename T>
@@ -108,7 +95,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
 
       Vector3 centroid = (precomputed_centroid ? *precomputed_centroid : CentroidN<T, 3>::compute(begin, end));
       Real radius = 0;
-      for (InputIterator pi = begin; pi != end; ++pi)
+      for (auto pi = makeRefIterator(begin); pi != makeRefIterator(end); ++pi)
         radius = std::max(radius, (PointTraitsN<T, 3>::getPosition(*pi) - centroid).squaredNorm());
 
       radius = std::sqrt(radius);
@@ -206,7 +193,7 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
       Vector3 v = basis.col(1);
 
       intx total_count[2] = { 0, 0 };
-      for (InputIterator pi = begin; pi != end; ++pi)
+      for (auto pi = makeRefIterator(begin); pi != makeRefIterator(end); ++pi)
       {
         Vector3 p = PointTraitsN<T, 3>::getPosition(*pi) - centroid;
         Real pu = 0.5f * (p.dot(u) / radius + 1);

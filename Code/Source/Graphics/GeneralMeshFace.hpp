@@ -52,6 +52,9 @@ namespace Graphics {
 
 // Forward declarations
 template <typename VertexAttributeT, typename EdgeAttributeT, typename FaceAttributeT, template <typename T> class AllocatorT>
+class GeneralMesh;
+
+template <typename VertexAttributeT, typename EdgeAttributeT, typename FaceAttributeT, template <typename T> class AllocatorT>
 class GeneralMeshVertex;
 
 template <typename VertexAttributeT, typename EdgeAttributeT, typename FaceAttributeT, template <typename T> class AllocatorT>
@@ -62,6 +65,7 @@ template <typename VertexAttributeT, typename EdgeAttributeT, typename FaceAttri
 class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public AttributedObject<FaceAttributeT>
 {
   public:
+    typedef GeneralMesh      <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Mesh;    ///< Parent mesh class.
     typedef GeneralMeshVertex<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Vertex;  ///< Vertex of the mesh.
     typedef GeneralMeshEdge  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Edge;    ///< Edge of the mesh.
 

@@ -206,7 +206,7 @@ class THEA_GL_DLL_LOCAL GLCaps
     static bool bug_mipmapGeneration;
     static bool bug_slowVBO;
 
-};  // class GLCaps
+}; // class GLCaps
 
 } // namespace GL
 } // namespace Graphics

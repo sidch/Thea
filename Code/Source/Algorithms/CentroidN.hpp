@@ -59,7 +59,7 @@ class /* THEA_API */ CentroidN
     typedef Vector<N, ScalarT> VectorT;  ///< N-D vector used to represent points.
 
     /**
-     * Unweighted centroid of a set of N-D objects. InputIterator must dereference to type T.
+     * Unweighted centroid of a set of N-D objects. InputIterator must dereference to type T or pointer-to-T.
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
@@ -69,8 +69,8 @@ class /* THEA_API */ CentroidN
     template <typename InputIterator> static VectorT compute(InputIterator begin, InputIterator end);
 
     /**
-     * Weighted centroid of a set of N-D objects. ObjectInputIterator must dereference to type T and WeightInputIterator to a
-     * scalar type. The objects and weights sequences must correspond.
+     * Weighted centroid of a set of N-D objects. ObjectInputIterator must dereference to type T or pointer-to-T, and
+     * WeightInputIterator to a scalar type. The objects and weights sequences must correspond.
      *
      * @param objects_begin The first object in the set.
      * @param objects_end One position beyond the last object in the set.
@@ -84,29 +84,6 @@ class /* THEA_API */ CentroidN
 
 }; // class CentroidN
 
-// Centroid of objects passed as pointers.
-template <typename T, int N, typename ScalarT>
-class /* THEA_API */ CentroidN<T *, N, ScalarT>
-{
-  public:
-    typedef Vector<N, ScalarT> VectorT;
-
-    template <typename InputIterator> static VectorT compute(InputIterator begin, InputIterator end)
-    {
-      return CentroidN<T, N, ScalarT>::compute(PtrToRefIterator<T, InputIterator>(begin),
-                                               PtrToRefIterator<T, InputIterator>(end));
-    }
-
-    template <typename ObjectInputIterator, typename WeightInputIterator>
-    static VectorT compute(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
-                           WeightInputIterator weights_begin)
-    {
-      return CentroidN<T, N, ScalarT>::compute(PtrToRefIterator<T, ObjectInputIterator>(objects_begin),
-                                               PtrToRefIterator<T, ObjectInputIterator>(objects_end), weights_begin);
-    }
-
-}; // class CentroidN<T *>
-
 // Centroid of objects that map to single points in N-space.
 template <typename T, int N, typename ScalarT>
 class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, N>::value >::type>
@@ -118,7 +95,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonRefe
     {
       VectorT sum_points = VectorT::Zero();
       intx num_points = 0;
-      for (InputIterator i = begin; i != end; ++i, ++num_points)
+      for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++num_points)
         sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*i);
 
       if (num_points > 0)
@@ -134,7 +111,7 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonRefe
       VectorT sum_points = VectorT::Zero();
       double sum_weights = 0;
       WeightInputIterator wi = weights_begin;
-      for (ObjectInputIterator pi = objects_begin; pi != objects_end; ++pi, ++wi)
+      for (auto pi = makeRefIterator(objects_begin); pi != makeRefIterator(objects_end); ++pi, ++wi)
       {
         sum_points += PointTraitsN<T, N, ScalarT>::getPosition(*pi);
         sum_weights += static_cast<double>(*wi);

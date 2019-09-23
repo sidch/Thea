@@ -50,6 +50,7 @@ namespace Thea {
 namespace Graphics {
 
 // Forward declarations
+template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELMesh;
 template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELFace;
 template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELVertex;
 
@@ -67,6 +68,7 @@ template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAtt
 class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
 {
   public:
+    typedef DCELMesh  <VertexAttribute, HalfedgeAttribute, FaceAttribute> Mesh;    ///< Parent mesh class.
     typedef DCELFace  <VertexAttribute, HalfedgeAttribute, FaceAttribute> Face;    ///< Face of the mesh.
     typedef DCELVertex<VertexAttribute, HalfedgeAttribute, FaceAttribute> Vertex;  ///< Vertex of the mesh.
 

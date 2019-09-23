@@ -202,7 +202,7 @@ class THEA_API ConnectedComponents
         faces.push_back(*fi);
     }
 
-};  // class ConnectedComponents
+}; // class ConnectedComponents
 
 } // namespace Algorithms
 } // namespace Thea

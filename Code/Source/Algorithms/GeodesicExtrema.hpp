@@ -84,6 +84,7 @@ class /* THEA_API */ GeodesicExtrema
      */
     intx getExtrema(Graph const & graph, double min_prominence, intx max_results, Array<VertexConstHandle> & extrema)
     {
+      // TODO
     }
 
   private:
