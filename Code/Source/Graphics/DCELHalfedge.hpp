@@ -376,7 +376,7 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
       return FaceConstIterator(const_cast<DCELHalfedge *>(this)->facesBegin());
     }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the bidirectional edge (this edge plus its twin). */
     FaceIterator facesBegin()
     {
       if (face) return FaceIterator(this);
@@ -384,13 +384,19 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
       else return FaceIterator();
     }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /**
+     * Get an iterator pointing to one position beyond the last face incident on the bidirectional edge (this edge plus its
+     * twin).
+     */
     FaceConstIterator facesEnd() const
     {
       return FaceConstIterator(const_cast<DCELHalfedge *>(this)->facesEnd());
     }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /**
+     * Get an iterator pointing to one position beyond the last face incident on the bidirectional edge (this edge plus its
+     * twin).
+     */
     FaceIterator facesEnd()
     {
       if (face) return FaceIterator(this, false);

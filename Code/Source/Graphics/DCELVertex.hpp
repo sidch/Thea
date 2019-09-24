@@ -166,28 +166,28 @@ class /* THEA_API */ DCELVertex
     /** Get a canonical halfedge leaving this vertex, or null if the vertex is isolated. */
     Halfedge * getHalfedge() { return leaving; }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeConstIterator edgesBegin() const { return EdgeConstIterator(leaving); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeIterator edgesBegin() { return EdgeIterator(leaving); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to the position beyond the last edge incident on the vertex. */
     EdgeConstIterator edgesEnd() const { return EdgeConstIterator(leaving, false); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to the position beyond the last edge incident on the vertex. */
     EdgeIterator edgesEnd() { return EdgeIterator(leaving, false); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the vertex. */
     FaceConstIterator facesBegin() const { return FaceConstIterator(leaving); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the vertex. */
     FaceIterator facesBegin() { return FaceIterator(leaving); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to the position beyond the last face incident on the vertex. */
     FaceConstIterator facesEnd() const { return FaceConstIterator(leaving, false); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to the position beyond the last face incident on the vertex. */
     FaceIterator facesEnd() { return FaceIterator(leaving, false); }
 
     /** Check if the vertex lies on a mesh boundary. */

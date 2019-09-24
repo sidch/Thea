@@ -239,52 +239,52 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       return NULL;
     }
 
-    /** Get an iterator pointing to the first vertex. */
+    /** Get an iterator pointing to the first vertex of the face. */
     VertexConstIterator verticesBegin() const { return vertices.begin(); }
 
-    /** Get an iterator pointing to the first vertex. */
+    /** Get an iterator pointing to the first vertex of the face. */
     VertexIterator verticesBegin() { return vertices.begin(); }
 
-    /** Get an iterator pointing to the position beyond the last vertex. */
+    /** Get an iterator pointing to one position beyond the last vertex of the face. */
     VertexConstIterator verticesEnd() const { return vertices.end(); }
 
-    /** Get an iterator pointing to the position beyond the last vertex. */
+    /** Get an iterator pointing to one position beyond the last vertex of the face. */
     VertexIterator verticesEnd() { return vertices.end(); }
 
-    /** Get a reverse iterator pointing to the last vertex. */
+    /** Get a reverse iterator pointing to the last vertex of the face. */
     VertexConstReverseIterator verticesReverseBegin() const { return vertices.rbegin(); }
 
-    /** Get a reverse iterator pointing to the last vertex. */
+    /** Get a reverse iterator pointing to the last vertex of the face. */
     VertexReverseIterator verticesReverseBegin() { return vertices.rbegin(); }
 
-    /** Get a reverse iterator pointing to the position before the first vertex. */
+    /** Get a reverse iterator pointing to the position before the first vertex of the face. */
     VertexConstReverseIterator verticesReverseEnd() const { return vertices.rend(); }
 
-    /** Get a reverse iterator pointing to the position before the first vertex. */
+    /** Get a reverse iterator pointing to the position before the first vertex of the face. */
     VertexReverseIterator verticesReverseEnd() { return vertices.rend(); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge of the face. */
     EdgeConstIterator edgesBegin() const { return edges.begin(); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge of the face. */
     EdgeIterator edgesBegin() { return edges.begin(); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to one position beyond the last edge of the face. */
     EdgeConstIterator edgesEnd() const { return edges.end(); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to one position beyond the last edge of the face. */
     EdgeIterator edgesEnd() { return edges.end(); }
 
-    /** Get a reverse iterator pointing to the last edge. */
+    /** Get a reverse iterator pointing to the last edge of the face. */
     EdgeConstReverseIterator edgesReverseBegin() const { return edges.rbegin(); }
 
-    /** Get a reverse iterator pointing to the last edge. */
+    /** Get a reverse iterator pointing to the last edge of the face. */
     EdgeReverseIterator edgesReverseBegin() { return edges.rbegin(); }
 
-    /** Get a reverse iterator pointing to the position before the first edge. */
+    /** Get a reverse iterator pointing to the position before the first edge of the face. */
     EdgeConstReverseIterator edgesReverseEnd() const { return edges.rend(); }
 
-    /** Get a reverse iterator pointing to the position before the first edge. */
+    /** Get a reverse iterator pointing to the position before the first edge of the face. */
     EdgeReverseIterator edgesReverseEnd() { return edges.rend(); }
 
     /** Get the number of vertices of the face. */

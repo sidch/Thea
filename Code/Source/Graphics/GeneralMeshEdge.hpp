@@ -204,16 +204,16 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Get the number of faces incident on the edge. */
     intx numFaces() const { return (intx)faces.size(); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the edge. */
     FaceConstIterator facesBegin() const { return faces.begin(); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the edge. */
     FaceIterator facesBegin() { return faces.begin(); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to one position beyond the last face incident on the edge. */
     FaceConstIterator facesEnd() const { return faces.end(); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to one position beyond the last face incident on the edge. */
     FaceIterator facesEnd() { return faces.end(); }
 
     /** Check if this is a boundary edge, i.e. if it is adjacent to at most one face. */

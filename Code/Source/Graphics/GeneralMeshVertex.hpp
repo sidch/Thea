@@ -165,28 +165,28 @@ class /* THEA_API */ GeneralMeshVertex
       return false;
     }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeConstIterator edgesBegin() const { return edges.begin(); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeIterator edgesBegin() { return edges.begin(); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to one position beyond the last edge incident on the vertex. */
     EdgeConstIterator edgesEnd() const { return edges.end(); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to one position beyond the last edge incident on the vertex. */
     EdgeIterator edgesEnd() { return edges.end(); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the vertex. */
     FaceConstIterator facesBegin() const { return faces.begin(); }
 
-    /** Get an iterator pointing to the first face. */
+    /** Get an iterator pointing to the first face incident on the vertex. */
     FaceIterator facesBegin() { return faces.begin(); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to one position beyond the last face incident on the vertex. */
     FaceConstIterator facesEnd() const { return faces.end(); }
 
-    /** Get an iterator pointing to the position beyond the last face. */
+    /** Get an iterator pointing to one position beyond the last face incident on the vertex. */
     FaceIterator facesEnd() { return faces.end(); }
 
     /** Check if the vertex lies on a mesh boundary. */

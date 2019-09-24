@@ -118,28 +118,28 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
       return halfedge;
     }
 
-    /** Get an iterator pointing to the first vertex. */
+    /** Get an iterator pointing to the first vertex of the face. */
     VertexConstIterator verticesBegin() const { return VertexConstIterator(halfedge); }
 
-    /** Get an iterator pointing to the first vertex. */
+    /** Get an iterator pointing to the first vertex of the face. */
     VertexIterator verticesBegin() { return VertexIterator(halfedge); }
 
-    /** Get an iterator pointing to the position beyond the last vertex. */
+    /** Get an iterator pointing to the position beyond the last vertex of the face. */
     VertexConstIterator verticesEnd() const { return VertexConstIterator(halfedge, false); }
 
-    /** Get an iterator pointing to the position beyond the last vertex. */
+    /** Get an iterator pointing to the position beyond the last vertex of the face. */
     VertexIterator verticesEnd() { return VertexIterator(halfedge, false); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge of the face. */
     EdgeConstIterator edgesBegin() const { return EdgeConstIterator(halfedge); }
 
-    /** Get an iterator pointing to the first edge. */
+    /** Get an iterator pointing to the first edge of the face. */
     EdgeIterator edgesBegin() { return EdgeIterator(halfedge); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to the position beyond the last edge of the face. */
     EdgeConstIterator edgesEnd() const { return EdgeConstIterator(halfedge, false); }
 
-    /** Get an iterator pointing to the position beyond the last edge. */
+    /** Get an iterator pointing to the position beyond the last edge of the face. */
     EdgeIterator edgesEnd() { return EdgeIterator(halfedge, false); }
 
     /** Get the number of edges bordering this face. */
