@@ -610,11 +610,12 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       }
     }
 
-    /** Write out all the vertices from a general mesh and map them to indices. */
+    /** Write out all the vertices from a general mesh or DCEL mesh and map them to indices. */
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                                 || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -628,31 +629,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       {
         for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
           writeString(format("vn %f %f %f\n", vi->getNormal().x(), vi->getNormal().y(), vi->getNormal().z()), output);
-      }
-    }
-
-    /** Write out all the vertices from a DCEL mesh and map them to indices. */
-    template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
-    {
-      intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
-      for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
-      {
-        typename Mesh::Vertex const * vx = *vi;
-        writeString(format("v %f %f %f\n", vx->getPosition().x(), vx->getPosition().y(), vx->getPosition().z()), output);
-        vertex_indices[vx] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index - 1, vx);
-      }
-
-      if (!write_opts.ignore_normals)
-      {
-        for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-        {
-          typename Mesh::Vertex const * vx = *vi;
-          writeString(format("vn %f %f %f\n", vx->getNormal().x(), vx->getNormal().y(), vx->getNormal().z()), output);
-        }
       }
     }
 
@@ -716,11 +692,12 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       }
     }
 
-    /** Write out all the faces from a general mesh. Returns the number of faces written. */
+    /** Write out all the faces from a general or DCEL mesh. Returns the number of faces written. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                              || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -744,48 +721,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           else
             os << ' ' << ii->second;
         }
-
-        os << '\n';
-        writeString(os.str(), output);
-
-        if (callback) callback->faceWritten(&mesh, next_index++, &face);
-      }
-    }
-
-    /** Write out all the faces from a DCEL mesh. Returns the number of faces written. */
-    template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
-    {
-      if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
-        return;
-
-      if (!write_opts.flatten)
-        writeString(std::string("\ng ") + mesh.getName() + '\n', output);
-
-      for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
-      {
-        typename Mesh::Face const & face = **fi;
-        if (face.numVertices() < 3) continue;
-
-        std::ostringstream os; os << 'f';
-
-        typename Mesh::Halfedge const * first_he = face.getHalfedge();
-        typename Mesh::Halfedge const * he = first_he;
-        do
-        {
-          typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-          if (!write_opts.ignore_normals)
-            os << ' ' << ii->second << "//" << ii->second;
-          else
-            os << ' ' << ii->second;
-
-          he = he->next();
-
-        } while (he != first_he);
 
         os << '\n';
         writeString(os.str(), output);

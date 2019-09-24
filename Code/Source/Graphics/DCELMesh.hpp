@@ -44,6 +44,7 @@
 // #define THEA_DCELMESH_VERBOSE
 
 #include "../Common.hpp"
+#include "../Algorithms/IteratorModifiers.hpp"
 #include "../Array.hpp"
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
@@ -96,6 +97,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 
     typedef DCELVertex  <VertexAttribute, HalfedgeAttribute, FaceAttribute>  Vertex;    ///< Vertex of the mesh (3-vector).
     typedef DCELHalfedge<VertexAttribute, HalfedgeAttribute, FaceAttribute>  Halfedge;  ///< Halfedge of the mesh.
+    typedef Halfedge                                                         Edge;      /**< Typedef for interoperability with
+                                                                                             GeneralMesh. */
     typedef DCELFace    <VertexAttribute, HalfedgeAttribute, FaceAttribute>  Face;      ///< Face of the mesh.
 
   private:
@@ -111,61 +114,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     typedef Set<Halfedge *, HalfedgeComparator>  HalfedgeSet;  // store halfedges in sequence so twins are consecutive
     typedef UnorderedSet<Face *>                 FaceSet;
 
-    /** Iterate over edges (every other halfedge). */
-    template <typename BaseIterT>
-    struct EdgeIterTmpl : public BaseIterT
-    {
-      /** Default constructor. */
-      EdgeIterTmpl() {}
-
-      /** General copy constructor. */
-      template <typename T> EdgeIterTmpl(T const & src) : BaseIterT(src) {}
-
-      /** Assignment. Use with caution: \a src must have even index. */
-      EdgeIterTmpl & operator=(BaseIterT const & src) { BaseIterT::operator=(src); }
-
-      /** Pre-increment. */
-      EdgeIterTmpl & operator++()
-      {
-        BaseIterT::operator++();
-        BaseIterT::operator++();
-        return *this;
-      }
-
-      /** Pre-decrement. */
-      EdgeIterTmpl & operator--()
-      {
-        BaseIterT::operator--();
-        BaseIterT::operator--();
-        return *this;
-      }
-
-      /** Post-increment. */
-      EdgeIterTmpl operator++(int)
-      {
-        EdgeIterTmpl ret = *this;
-        BaseIterT::operator++();
-        BaseIterT::operator++();
-        return ret;
-      }
-
-      /** Post-decrement. */
-      EdgeIterTmpl operator--(int)
-      {
-        EdgeIterTmpl ret = *this;
-        BaseIterT::operator--();
-        BaseIterT::operator--();
-        return ret;
-      }
-    };
-
   public:
-    typedef typename VertexSet::iterator          VertexIterator;         ///< Iterator over vertices.
-    typedef typename VertexSet::const_iterator    VertexConstIterator;    ///< Const iterator over vertices.
-    typedef typename HalfedgeSet::iterator        HalfedgeIterator;       ///< Iterator over halfedges.
-    typedef typename HalfedgeSet::const_iterator  HalfedgeConstIterator;  ///< Const iterator over halfedges.
-    typedef typename FaceSet::iterator            FaceIterator;           ///< Iterator over faces.
-    typedef typename FaceSet::const_iterator      FaceConstIterator;      ///< Const iterator over faces.
+    typedef Algorithms::RefIterator<typename VertexSet::iterator>          VertexIterator;         ///< Vertex iterator.
+    typedef Algorithms::RefIterator<typename VertexSet::const_iterator>    VertexConstIterator;    ///< Const vertex iterator.
+    typedef Algorithms::RefIterator<typename HalfedgeSet::iterator>        HalfedgeIterator;       ///< Halfedge iterator.
+    typedef Algorithms::RefIterator<typename HalfedgeSet::const_iterator>  HalfedgeConstIterator;  ///< Const halfedge iterator.
+    typedef Algorithms::RefIterator<typename FaceSet::iterator>            FaceIterator;           ///< Face iterator.
+    typedef Algorithms::RefIterator<typename FaceSet::const_iterator>      FaceConstIterator;      ///< Const face iterator.
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
     typedef Vertex        *  VertexHandle;       ///< Handle to a mesh vertex.
@@ -174,10 +129,10 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     typedef Face   const  *  FaceConstHandle;    ///< Handle to an immutable mesh face.
 
     /** Iterator over edges (alternate halfedges starting from the first). */
-    typedef EdgeIterTmpl<HalfedgeIterator> EdgeIterator;
+    typedef DCELInternal::BidirEdgeIterator<HalfedgeIterator> EdgeIterator;
 
     /** Const iterator over edges (alternate halfedges starting from the first). */
-    typedef EdgeIterTmpl<HalfedgeConstIterator> EdgeConstIterator;
+    typedef DCELInternal::BidirEdgeIterator<HalfedgeConstIterator> EdgeConstIterator;
 
     /** Identifiers for the various buffers (enum class). */
     struct BufferID
@@ -232,29 +187,41 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 
     ~DCELMesh() { clear(); }
 
-    /** Get an iterator pointing to the first vertex. */
-    VertexConstIterator verticesBegin() const { return vertices.begin(); }
+    /**
+     * Make an exact copy of the mesh, optionally returning mapping from source to destination vertices/edges/faces. Previous
+     * data in the maps is <b>not</b> cleared. <b>Currently not implemented.</b>
+     */
+    void copyTo(DCELMesh & dst,
+                UnorderedMap<Vertex const *, Vertex *> * vertex_map = NULL,
+                UnorderedMap<Edge const *, Edge *> * edge_map = NULL,
+                UnorderedMap<Face const *, Face *> * face_map = NULL) const
+    {
+      throw Error("DCELMesh: Copy function not currently implemented");
+    }
 
     /** Get an iterator pointing to the first vertex. */
-    VertexIterator verticesBegin() { return vertices.begin(); }
+    VertexConstIterator verticesBegin() const { return Algorithms::makeRefIterator(vertices.begin()); }
+
+    /** Get an iterator pointing to the first vertex. */
+    VertexIterator verticesBegin() { return Algorithms::makeRefIterator(vertices.begin()); }
 
     /** Get an iterator pointing to the position beyond the last vertex. */
-    VertexConstIterator verticesEnd() const { return vertices.end(); }
+    VertexConstIterator verticesEnd() const { return Algorithms::makeRefIterator(vertices.end()); }
 
     /** Get an iterator pointing to the position beyond the last vertex. */
-    VertexIterator verticesEnd() { return vertices.end(); }
+    VertexIterator verticesEnd() { return Algorithms::makeRefIterator(vertices.end()); }
 
     /** Get an iterator pointing to the first halfedge. */
-    HalfedgeConstIterator halfedgesBegin() const { return halfedges.begin(); }
+    HalfedgeConstIterator halfedgesBegin() const { return Algorithms::makeRefIterator(halfedges.begin()); }
 
     /** Get an iterator pointing to the first halfedge. */
-    HalfedgeIterator halfedgesBegin() { return halfedges.begin(); }
+    HalfedgeIterator halfedgesBegin() { return Algorithms::makeRefIterator(halfedges.begin()); }
 
     /** Get an iterator pointing to the position beyond the last halfedge. */
-    HalfedgeConstIterator halfedgesEnd() const { return halfedges.end(); }
+    HalfedgeConstIterator halfedgesEnd() const { return Algorithms::makeRefIterator(halfedges.end()); }
 
     /** Get an iterator pointing to the position beyond the last halfedge. */
-    HalfedgeIterator halfedgesEnd() { return halfedges.end(); }
+    HalfedgeIterator halfedgesEnd() { return Algorithms::makeRefIterator(halfedges.end()); }
 
     /** Get an iterator pointing to the first edge. */
     EdgeConstIterator edgesBegin() const { return halfedgesBegin(); }
@@ -277,27 +244,27 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     }
 
     /** Get an iterator pointing to the first face. */
-    FaceConstIterator facesBegin() const { return faces.begin(); }
+    FaceConstIterator facesBegin() const { return Algorithms::makeRefIterator(faces.begin()); }
 
     /** Get an iterator pointing to the first face. */
-    FaceIterator facesBegin() { return faces.begin(); }
+    FaceIterator facesBegin() { return Algorithms::makeRefIterator(faces.begin()); }
 
     /** Get an iterator pointing to the position beyond the last face. */
-    FaceConstIterator facesEnd() const { return faces.end(); }
+    FaceConstIterator facesEnd() const { return Algorithms::makeRefIterator(faces.end()); }
 
     /** Get an iterator pointing to the position beyond the last face. */
-    FaceIterator facesEnd() { return faces.end(); }
+    FaceIterator facesEnd() { return Algorithms::makeRefIterator(faces.end()); }
 
     /** Deletes all data in the mesh and resets automatic element indexing. */
     void clear()
     {
-      for (VertexIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         delete *vi;
 
-      for (HalfedgeIterator ei = halfedges.begin(); ei != halfedges.end(); ++ei)
+      for (auto ei = halfedges.begin(); ei != halfedges.end(); ++ei)
         delete *ei;
 
-      for (FaceIterator fi = faces.begin(); fi != faces.end(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
         delete *fi;
 
       vertices.clear();
@@ -335,8 +302,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     intx numTriangles() const
     {
       intx rval = 0;
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
-        if (fi->isTriangle())
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        if ((*fi)->isTriangle())
           rval++;
 
       return rval;
@@ -346,8 +313,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     intx numQuads() const
     {
       intx rval = 0;
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
-        if (fi->isQuad())
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        if ((*fi)->isQuad())
           rval++;
 
       return rval;
@@ -357,7 +324,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     void updateBounds()
     {
       bounds = AxisAlignedBox3();
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         bounds.merge((*vi)->getPosition());
     }
 
@@ -427,7 +394,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       // Read the vertex pointers into an internal array
       if (face_vertices.size() != 256) face_vertices.resize(256);  // default size, should ensure not too many resizes
       size_t num_verts = 0;
-      for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
+      for (auto vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
         debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
 
@@ -546,7 +513,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       intx n = 0;
       do
       {
-        if (!e0->isBoundary() || !e1->isBoundary())
+        if (!e0->isBoundaryHalfedge() || !e1->isBoundaryHalfedge())
         {
           THEA_ERROR << getName() << ": Can't stitch loops with non-boundary edges";
           return false;
@@ -762,14 +729,14 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     {
       if (first)
       {
-        if (first->isBoundary())
+        if (first->isBoundaryHalfedge())
         {
           // All good... keep adding starting here
           return addFace(num_verts, verts, first, origin, false, normal);
         }
         else
         {
-          if (first->twin()->isBoundary())
+          if (first->twin()->isBoundaryHalfedge())
           {
             // Try adding in reverse
             THEA_DEBUG << getName() << ": Trying to add face by reversing the order of vertices";
@@ -846,7 +813,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 
         if (e)  // edge exists, needs to be boundary edge
         {
-          if (!e->isBoundary())
+          if (!e->isBoundaryHalfedge())
           {
             THEA_WARNING << getName() << ": Can't stitch a face to a halfedge that already adjoins a face";
             return NULL;
@@ -866,9 +833,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
           if (prev)
           {
             // Just to be sure, check that prev->next() is a boundary edge
-            debugAssertM(prev->isBoundary(),
+            debugAssertM(prev->isBoundaryHalfedge(),
                          getNameStr() + ": Previous halfedge of new face is not currently on the mesh boundary");
-            debugAssertM(prev->next() && prev->next()->isBoundary(),
+            debugAssertM(prev->next() && prev->next()->isBoundaryHalfedge(),
                          getNameStr()
                        + ": Mesh has internal inconsistency (boundary halfedge not followed by boundary halfedge)");
 
@@ -881,7 +848,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
             Halfedge * e = findPrevAroundVertex(verts[i], verts[next], normal);
             if (e)
             {
-              if (e->twin()->isBoundary())
+              if (e->twin()->isBoundaryHalfedge())
                 edges[i] = e->twin();
               else
               {
@@ -932,7 +899,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 #endif
 
           debugAssertM(e->getOrigin() == vi && e->getEnd() == vnext, getNameStr() + ": Edge has wrong endpoints");
-          debugAssertM(e->isBoundary(),
+          debugAssertM(e->isBoundaryHalfedge(),
                        getNameStr() + ": Can't stitch a face to a halfedge that already adjoins a face");
           new_e = e;
 
@@ -1057,7 +1024,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
           throw Error(getNameStr() + ": Too many halfedges, can't assign indices!");
 
         next_halfedge_index = 0;
-        for (HalfedgeIterator ei = halfedges.begin(); ei != halfedges.end(); ++ei)
+        for (auto ei = halfedges.begin(); ei != halfedges.end(); ++ei)
           (*ei)->index = next_halfedge_index++;
       }
 
@@ -1085,7 +1052,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
         {
           origin_index = last;
 
-          if (e->isBoundary() || e->twin()->isBoundary())
+          if (e->isBoundaryHalfedge() || e->twin()->isBoundaryHalfedge())
             break;
         }
 
@@ -1133,7 +1100,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       edge = (edge - (edge.dot(new_normal) * new_normal));
       do
       {
-        if (e->twin()->isBoundary())
+        if (e->twin()->isBoundaryHalfedge())
         {
           Vector3 test_edge = (e->getEnd()->getPosition() - u->getPosition());
           ang = ccwAngle(edge, test_edge, new_normal);
@@ -1271,7 +1238,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     {
       packed_vertex_positions.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = (*vi)->getPosition();
     }
 
@@ -1280,7 +1247,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     {
       packed_vertex_normals.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = (*vi)->getNormal();
     }
 
@@ -1290,7 +1257,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     {
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRGBA((*vi)->attr().getColor());
     }
 
@@ -1307,7 +1274,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     {
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
     }
 
@@ -1325,11 +1292,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       packed_quads.clear();
 
       uint32 index = 0;
-      for (VertexIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         (*vi)->setPackingIndex(index++);
 
       has_large_polys = false;
-      for (FaceConstIterator fi = faces.begin(); fi != faces.end(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
       {
         Face * face = *fi;
         if (face->isTriangle())
@@ -1358,10 +1325,10 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       {
         packed_edges.resize(halfedges.size());  // i.e. 2 * numEdges()
         size_t i = 0;
-        for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei, i += 2)
+        for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei, i += 2)
         {
-          packed_edges[i    ] = (*ei)->getOrigin()->getPackingIndex();
-          packed_edges[i + 1] = (*ei)->getEnd()->getPackingIndex();
+          packed_edges[i    ] = ei->getOrigin()->getPackingIndex();
+          packed_edges[i + 1] = ei->getEnd()->getPackingIndex();
         }
       }
       else
@@ -1652,7 +1619,7 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, AbstractRenderOpti
         // Finish off with all larger polygons
         if (has_large_polys)
         {
-          for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+          for (auto fi = faces.begin(); fi != faces.end(); ++fi)
             if ((*fi)->numEdges() > 4)
             {
               render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
@@ -1710,18 +1677,18 @@ DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, AbstractRenderOpt
 
     // First try to render as much stuff using triangles as possible
     render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
         if ((*fi)->isTriangle()) drawFace(**fi, render_system, options);
     render_system.endPrimitive();
 
     // Now render all quads
     render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
         if ((*fi)->isQuad()) drawFace(**fi, render_system, options);
     render_system.endPrimitive();
 
     // Finish off with all larger polygons
-    for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+    for (auto fi = faces.begin(); fi != faces.end(); ++fi)
       if ((*fi)->numEdges() > 4)
       {
         render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
@@ -1742,12 +1709,11 @@ DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, AbstractRenderOpt
       render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
 
       render_system.beginPrimitive(RenderSystem::Primitive::LINES);
-        for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
+        for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
         {
-          Halfedge * edge = *ei;
-          edge->attr().draw(render_system, options);
-          render_system.sendVertex(edge->getOrigin()->getPosition());
-          render_system.sendVertex(edge->getEnd()->getPosition());
+          ei->attr().draw(render_system, options);
+          render_system.sendVertex(ei->getOrigin()->getPosition());
+          render_system.sendVertex(ei->getEnd()->getPosition());
         }
       render_system.endPrimitive();
 

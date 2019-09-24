@@ -45,6 +45,7 @@
 #include "../Common.hpp"
 #include "../AttributedObject.hpp"
 #include "GraphicsAttributes.hpp"
+#include <iterator>
 
 namespace Thea {
 namespace Graphics {
@@ -53,6 +54,148 @@ namespace Graphics {
 template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELMesh;
 template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELFace;
 template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAttribute> class DCELVertex;
+
+namespace DCELInternal {
+
+// Iterate over edges in a collection (every other halfedge).
+template <typename BaseIterT>
+struct /** THEA_API */ BidirEdgeIterator : public BaseIterT
+{
+  // Default constructor.
+  BidirEdgeIterator() {}
+
+  // General copy constructor.
+  template <typename T> BidirEdgeIterator(T const & src) : BaseIterT(src) {}
+
+  // Assignment. Use with caution: \a src must have even index.
+  BidirEdgeIterator & operator=(BaseIterT const & src) { BaseIterT::operator=(src); }
+
+  // Pre-increment. */
+  BidirEdgeIterator & operator++()
+  {
+    BaseIterT::operator++();
+    BaseIterT::operator++();
+    return *this;
+  }
+
+  // Pre-decrement.
+  BidirEdgeIterator & operator--()
+  {
+    BaseIterT::operator--();
+    BaseIterT::operator--();
+    return *this;
+  }
+
+  // Post-increment.
+  BidirEdgeIterator operator++(int)
+  {
+    BidirEdgeIterator ret = *this;
+    BaseIterT::operator++();
+    BaseIterT::operator++();
+    return ret;
+  }
+
+  // Post-decrement.
+  BidirEdgeIterator operator--(int)
+  {
+    BidirEdgeIterator ret = *this;
+    BaseIterT::operator--();
+    BaseIterT::operator--();
+    return ret;
+  }
+
+}; // class BidirEdgeIterator
+
+// Iterate over a circular loop of edges, derefencing to some property of the edge accessed by a pointer. EdgeT should be either
+// DCELHalfedge or DCELHalfedge const. This tries to map a circular loop to an iterator with a well-defined begin and end, by
+// keeping track of where the iteration began, and allowing only forward progress. There are clear caveats with this approach
+// but it should fit a majority of use cases. Use with care.
+//
+// DerefFunctorT should be callable with the signature: ValueT * operator()(EdgeT *)
+// IncrementFunctorT should be callable with the signature: void operator()(EdgeT **)
+template <typename EdgeT, typename ValueT, typename DerefFunctorT, typename IncrementFunctorT>
+class /** THEA_API */ FwdIterator
+: public std::iterator<std::forward_iterator_tag, ValueT, std::ptrdiff_t, ValueT *, ValueT &>
+{
+  public:
+    // Constructor.
+    FwdIterator(EdgeT * e_ = NULL, bool first_ = true) : initial(e_), e(e_), first(first_) {}
+
+    // Construct from a compatible iterator, typically a non-const to const conversion. Compatibility is the responsibility of
+    // the caller.
+    template <typename E2, typename V2, typename D2, typename I2> explicit FwdIterator(FwdIterator<E2, V2, D2, I2> const & src)
+    : initial(src.getInitial()), e(src.getCurrent()), first(src.isAtInitial()) {}
+
+    // Assign from a compatible iterator, typically a non-const to const conversion. Compatibility is the responsibility of
+    // the caller.
+    template <typename OtherFwdIteratorT> FwdIterator & operator=(OtherFwdIteratorT const & src)
+    {
+      initial = src.initial;
+      e = src.e;
+      first = src.first;
+
+      return *this;
+    }
+
+    // Equality comparison.
+    bool operator==(FwdIterator const & other)
+    {
+      // True if the current edges match AND (both are null OR neither is at its initial position).
+      return e == other.e && (!e || ((e != initial || !first) && (other.e != other.initial || !other.first)));
+    }
+
+    // Inequality comparison.
+    bool operator!=(FwdIterator const & other) { return !operator==(other); }
+
+    // Dereference.
+    ValueT * operator*() const { return DerefFunctorT()(e); }
+
+    // Arrow operator.
+    ValueT const * const * operator->() const
+    { alwaysAssertM(false, "FwdIterator: Can't call '->' on iterator-over-pointers"); }
+
+    // Pre-increment. */
+    FwdIterator & operator++()
+    {
+      if (e)
+      {
+        IncrementFunctorT()(&e);
+        first = false;
+      }
+
+      return *this;
+    }
+
+    // Post-increment.
+    FwdIterator operator++(int)
+    {
+      FwdIterator ret = *this;
+      if (e)
+      {
+        IncrementFunctorT()(&e);
+        first = false;
+      }
+
+      return ret;
+    }
+
+    // Get the initial edge from which the iterator was created.
+    EdgeT * getInitial() const { return initial; }
+
+    // Get the current edge the iterator is at.
+    EdgeT * getCurrent() const { return e; }
+
+    // Check if the iterator is at the initial position without ever having moved away from it, or not.
+    bool isAtInitial() const { return first; }
+
+  private:
+    EdgeT * initial;  // The edge used to construct the iterator.
+    EdgeT * e;        // The current edge.
+    bool first;       // Is this the the first time we're seeing the edge the iterator was initialized with?
+
+}; // class FwdIterator
+
+} // namespace DCELInternal
 
 /**
  * Halfedge of DCELMesh.
@@ -71,6 +214,20 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
     typedef DCELMesh  <VertexAttribute, HalfedgeAttribute, FaceAttribute> Mesh;    ///< Parent mesh class.
     typedef DCELFace  <VertexAttribute, HalfedgeAttribute, FaceAttribute> Face;    ///< Face of the mesh.
     typedef DCELVertex<VertexAttribute, HalfedgeAttribute, FaceAttribute> Vertex;  ///< Vertex of the mesh.
+
+  private:
+    /** "Dereference" a halfedge to obtain the associated face. */
+    struct FaceDeref { Face * operator()(DCELHalfedge const * e) const { return const_cast<Face *>(e->face); } };
+
+    /** Move to the halfedge that links to the next non-null face associated with this edge. */
+    struct FaceIncrement { void operator()(DCELHalfedge const ** e) const { if ((*e)->twin()->face) *e = (*e)->twin(); } };
+
+  public:
+    /** An iterator over the faces incident on the edge. */
+    typedef DCELInternal::FwdIterator<DCELHalfedge, Face, FaceDeref, FaceIncrement> FaceIterator;
+
+    /** A const iterator over the faces incident on the edge. */
+    typedef DCELInternal::FwdIterator<DCELHalfedge const, Face const, FaceDeref, FaceIncrement> FaceConstIterator;
 
     /** Default constructor. */
     DCELHalfedge(intx index_ = -1) : index(index_), twin_he(NULL), next_he(NULL), face(NULL), origin(NULL), bits(0) {}
@@ -94,6 +251,55 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
 
     /** Get the vertex at which this halfedge ends. */
     Vertex * getEnd() { return twin()->getOrigin(); }
+
+    /** Get an endpoint of the edge. \a i = 0 returns the origin and \a i = 1 the end. */
+    Vertex const * getEndpoint(int i) const
+    {
+      debugAssertM(i == 0 || i == 1, "DCELHalfedge: Invalid endpoint index");
+      return i == 0 ? origin : getEnd();
+    }
+
+    /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */
+    Vertex * getEndpoint(int i)
+    {
+      debugAssertM(i == 0 || i == 1, "DCELHalfedge: Invalid endpoint index");
+      return i == 0 ? origin : getEnd();
+    }
+
+    /**
+     * Given one endpoint of the edge, get the other one. This function assumes the supplied vertex is indeed a valid endpoint
+     * of the edge, and (in release mode) does not check that this is so.
+     */
+    Vertex const * getOtherEndpoint(Vertex const * endpoint) const
+    {
+      debugAssertM(hasEndpoint(endpoint), "DCELHalfedge: Vertex is not an endpoint of the edge");
+      return origin == endpoint ? getEnd() : origin;
+    }
+
+    /**
+     * Given one endpoint of the edge, get the other one. This function assumes the supplied vertex is indeed a valid endpoint
+     * of the edge, and (in release mode) does not check that this is so.
+     */
+    Vertex * getOtherEndpoint(Vertex const * endpoint)
+    {
+      debugAssertM(hasEndpoint(endpoint), "DCELHalfedge: Vertex is not an endpoint of the edge");
+      return origin == endpoint ? getEnd() : origin;
+    }
+
+    /** Get the index (0 or 1) of an endpoint given a pointer to it, or a negative value if the neither endpoint matches. */
+    int getEndpointIndex(Vertex const * endpoint) const
+    {
+      return origin == endpoint ? 0 : (getEnd() == endpoint ? 1 : -1);
+    }
+
+    /** Check if the edge has a given vertex as an endpoint. */
+    bool hasEndpoint(Vertex const * v) const { return origin == v || getEnd() == v; }
+
+    /** Check if the edge is adjacent to a given face. */
+    bool hasIncidentFace(Face const * f) const
+    {
+      return face == f || twin()->face == f;
+    }
 
     /** Get the next halfedge around the face. */
     DCELHalfedge const * next() const
@@ -155,14 +361,45 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
       return rval;
     }
 
+    /** Get the number of faces incident on the edge. */
+    intx numFaces() const { return (face ? 1 : 0) + (twin()->face ? 1 : 0); }
+
     /** Get the face adjoining this halfedge (or null if this is a border halfedge). */
     Face const * getFace() const { return face; }
 
     /** Get the face adjoining this halfedge (or null if this is a border halfedge). */
     Face * getFace() { return face; }
 
+    /** Get an iterator pointing to the first face incident on the bidirectional edge (this edge plus its twin). */
+    FaceConstIterator facesBegin() const
+    {
+      return FaceConstIterator(const_cast<DCELHalfedge *>(this)->facesBegin());
+    }
+
+    /** Get an iterator pointing to the first face. */
+    FaceIterator facesBegin()
+    {
+      if (face) return FaceIterator(this);
+      else if (twin()->face) return FaceIterator(twin());
+      else return FaceIterator();
+    }
+
+    /** Get an iterator pointing to the position beyond the last face. */
+    FaceConstIterator facesEnd() const
+    {
+      return FaceConstIterator(const_cast<DCELHalfedge *>(this)->facesEnd());
+    }
+
+    /** Get an iterator pointing to the position beyond the last face. */
+    FaceIterator facesEnd()
+    {
+      if (face) return FaceIterator(this, false);
+      else if (twin()->face) return FaceIterator(twin(), false);
+      else return FaceIterator();
+    }
+
     /** Check if this is a boundary halfedge, i.e. if its face pointer is null. */
-    bool isBoundary() const { return !face; }
+    bool isBoundaryHalfedge() const { return !face; }
 
     /** Check if this is a boundary edge, i.e. if either this halfedge or its twin has a null face pointer. */
     bool isBoundaryEdge() const { return !face || !twin()->face; }
@@ -185,20 +422,6 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
     Face * face;
     Vertex * origin;
     unsigned char bits;
-
-#if 0
-    /** Check if one or more internal bits are set. */
-    bool areInternalBitsSet(unsigned char mask) const { return ((internal_bits & mask) == mask); };
-
-    /** Set one or more internal bits on or off. */
-    void setInternalBits(unsigned char mask, bool value) const
-    { internal_bits = (value ? (internal_bits | mask) : (internal_bits & ~mask)); };
-
-    /** Set all internal bits to off. */
-    void clearAllInternalBits() const { internal_bits = 0; };
-
-    mutable unsigned char internal_bits;  // only for use by DCELMesh
-#endif
 
 }; // class DCELHalfedge
 

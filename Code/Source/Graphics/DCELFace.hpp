@@ -67,13 +67,40 @@ template <typename VertexAttribute, typename HalfedgeAttribute, typename FaceAtt
 class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public AttributedObject<FaceAttribute>
 {
   public:
-    typedef DCELMesh    <VertexAttribute, HalfedgeAttribute, FaceAttribute> Mesh;      ///< Parent mesh class.
-    typedef DCELHalfedge<VertexAttribute, HalfedgeAttribute, FaceAttribute> Halfedge;  ///< Halfedge of the mesh.
+    typedef DCELMesh    <VertexAttribute, HalfedgeAttribute, FaceAttribute>  Mesh;      ///< Parent mesh class.
+    typedef DCELHalfedge<VertexAttribute, HalfedgeAttribute, FaceAttribute>  Halfedge;  ///< Halfedge of the mesh.
+    typedef Halfedge                                                         Edge;      /**< Typedef for interoperability with
+                                                                                             GeneralMesh. */
+    typedef DCELVertex  <VertexAttribute, HalfedgeAttribute, FaceAttribute>  Vertex;    ///< Vertex of the mesh.
 
   private:
     typedef NormalAttribute<Vector3> NormalBaseType;
 
+    /** "Dereference" a halfedge and return the edge itself. */
+    struct VertexDeref { Vertex * operator()(Halfedge const * e) const { return const_cast<Vertex *>(e->getOrigin()); } };
+
+    /** Move to the halfedge that links to the next non-null face associated with this vertex. */
+    struct VertexIncrement { void operator()(Halfedge const ** e) const { (*e) = (*e)->next(); } };
+
+    /** "Dereference" a halfedge and return the edge itself. */
+    struct EdgeDeref { Edge * operator()(Halfedge const * e) const { return const_cast<Edge *>(e); } };
+
+    /** Move to the halfedge that links to the next non-null face associated with this vertex. */
+    struct EdgeIncrement { void operator()(Halfedge const ** e) const { (*e) = (*e)->next(); } };
+
   public:
+    /** An iterator over the vertices of the face. */
+    typedef DCELInternal::FwdIterator<Halfedge, Vertex, VertexDeref, VertexIncrement> VertexIterator;
+
+    /** A const iterator over the vertices of the face. */
+    typedef DCELInternal::FwdIterator<Halfedge const, Vertex const, VertexDeref, VertexIncrement> VertexConstIterator;
+
+    /** An iterator over the edges of the face. */
+    typedef DCELInternal::FwdIterator<Halfedge, Edge, EdgeDeref, EdgeIncrement> EdgeIterator;
+
+    /** A const iterator over the edges of the face. */
+    typedef DCELInternal::FwdIterator<Halfedge const, Edge const, EdgeDeref, EdgeIncrement> EdgeConstIterator;
+
     /** Default constructor. */
     DCELFace() : halfedge(NULL), index(-1), num_edges(0) {}
 
@@ -90,6 +117,30 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
       debugAssertM(halfedge, "DCELFace: Face has a null boundary");
       return halfedge;
     }
+
+    /** Get an iterator pointing to the first vertex. */
+    VertexConstIterator verticesBegin() const { return VertexConstIterator(halfedge); }
+
+    /** Get an iterator pointing to the first vertex. */
+    VertexIterator verticesBegin() { return VertexIterator(halfedge); }
+
+    /** Get an iterator pointing to the position beyond the last vertex. */
+    VertexConstIterator verticesEnd() const { return VertexConstIterator(halfedge, false); }
+
+    /** Get an iterator pointing to the position beyond the last vertex. */
+    VertexIterator verticesEnd() { return VertexIterator(halfedge, false); }
+
+    /** Get an iterator pointing to the first edge. */
+    EdgeConstIterator edgesBegin() const { return EdgeConstIterator(halfedge); }
+
+    /** Get an iterator pointing to the first edge. */
+    EdgeIterator edgesBegin() { return EdgeIterator(halfedge); }
+
+    /** Get an iterator pointing to the position beyond the last edge. */
+    EdgeConstIterator edgesEnd() const { return EdgeConstIterator(halfedge, false); }
+
+    /** Get an iterator pointing to the position beyond the last edge. */
+    EdgeIterator edgesEnd() { return EdgeIterator(halfedge, false); }
 
     /** Get the number of edges bordering this face. */
     int numEdges() const { return num_edges; }
@@ -186,20 +237,6 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     Halfedge * halfedge;
     intx index;
     int num_edges;
-
-#if 0
-    /** Check if one or more internal bits are set. */
-    bool areInternalBitsSet(unsigned char mask) const { return ((internal_bits & mask) == mask); };
-
-    /** Set one or more internal bits on or off. */
-    void setInternalBits(unsigned char mask, bool value) const
-    { internal_bits = (value ? (internal_bits | mask) : (internal_bits & ~mask)); };
-
-    /** Set all internal bits to off. */
-    void clearAllInternalBits() const { internal_bits = 0; };
-
-    mutable unsigned char internal_bits;  // only for use by DCELMesh
-#endif
 
 }; // class DCELFace
 

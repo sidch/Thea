@@ -382,7 +382,7 @@ typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
 buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
-    addFace<MeshT>(mesh, **fi, tris);
+    addFace<MeshT>(mesh, *fi, tris);
 }
 
 // Add a face of a display mesh to a set of triangles.

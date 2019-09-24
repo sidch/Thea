@@ -748,7 +748,7 @@ vWeld(Mesh & mesh)
   {
     Mesh::Vertex * vx = &(*vi);
 
-    if (v_weld_boundary_only && !vx->isBoundary())
+    if (v_weld_boundary_only && !vx->isBoundaryVertex())
       continue;
 
     Mesh::Vertex * existing = (Mesh::Vertex *)welder.getVertex(vx->getPosition());
@@ -841,7 +841,7 @@ tJuncts(Mesh & mesh)
 
   Array<Mesh::Vertex *> boundary_verts;
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-    if (vi->isBoundary())
+    if (vi->isBoundaryVertex())
       boundary_verts.push_back(&(*vi));
 
   typedef KDTreeN<Mesh::Vertex *, 3> VertexKDTree;
@@ -851,7 +851,7 @@ tJuncts(Mesh & mesh)
   Array<LineSegment3> boundary_segs;
   LineSegment3 seg;
   for (Mesh::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
-    if (ei->isBoundary())
+    if (ei->isBoundaryEdge())
     {
       if (segFromEdge(*ei, tol, seg))
       {

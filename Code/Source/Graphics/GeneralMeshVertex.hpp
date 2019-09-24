@@ -190,12 +190,12 @@ class /* THEA_API */ GeneralMeshVertex
     FaceIterator facesEnd() { return faces.end(); }
 
     /** Check if the vertex lies on a mesh boundary. */
-    bool isBoundary() const
+    bool isBoundaryVertex() const
     {
       if (edges.empty()) return true;
 
       for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
-        if ((*ei)->isBoundary()) return true;
+        if ((*ei)->isBoundaryEdge()) return true;
 
       return false;
     }

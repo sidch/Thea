@@ -461,6 +461,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestParam
+#===========================================================
+
+# Source file lists
+SET(TheaTestParamSources
+      ${SourceRoot}/Test/TestParam.cpp)
+
+# Libraries to link to
+SET(TheaTestParamLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestParam ${TheaTestParamSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestParam ${TheaTestParamLibraries})
+SET_TARGET_PROPERTIES(TheaTestParam PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestParam "${TheaTestParamLibraries}")
+ENDIF()
+
+#===========================================================
 # TestPCA
 #===========================================================
 

@@ -145,6 +145,10 @@ class THEA_API LaplaceBeltrami
 
         if (vx->numEdges() > 0)  // not an isolated vertex
         {
+          // FIXME: Safer and faster to use the fact that faces must be triangles (as cotangent weights are not defined
+          // otherwise), and find the third vertex as in SurfaceParametrization. This also avoids the need for the surface to
+          // be properly oriented.
+
           first_edge = *vx->edgesBegin();
           ej_prev = first_edge;
           ej      = ej_prev->nextAroundEndpoint(vx);

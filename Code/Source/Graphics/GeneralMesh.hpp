@@ -503,7 +503,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       for (EdgeIterator ei = edges.begin(); ei != edges.end(); ++ei)
       {
-        if (!ei->isBoundary())
+        if (!ei->isBoundaryEdge())
           continue;
 
         if (ei->isSelfLoop())
@@ -1286,7 +1286,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       {
         (*vei)->clearAllInternalBits();
 
-        if ((*vei)->isBoundary())
+        if ((*vei)->isBoundaryEdge())
           first_edge = *vei;
       }
 
@@ -1296,9 +1296,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // Start from the edge found above and an incident face, and step around the vertex
       Edge const * edge = first_edge;
-      Face const * face = edge->isBoundary() ? NULL : *edge->facesBegin();  // if we're starting from a boundary edge, the
-                                                                            // initial "face" is the empty space before the
-                                                                            // first edge
+      Face const * face = edge->isBoundaryEdge() ? NULL : *edge->facesBegin();  // if we're starting from a boundary edge, the
+                                                                                // initial "face" is the empty space before the
+                                                                                // first edge
       intx num_visited_edges = 0;
       while (true)
       {

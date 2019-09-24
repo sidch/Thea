@@ -217,7 +217,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     FaceIterator facesEnd() { return faces.end(); }
 
     /** Check if this is a boundary edge, i.e. if it is adjacent to at most one face. */
-    bool isBoundary() const { return numFaces() <= 1; }
+    bool isBoundaryEdge() const { return numFaces() <= 1; }
 
     /** Check if one or more marker bits are set. */
     bool areBitsSet(unsigned char mask) const { return ((bits & mask) == mask); };

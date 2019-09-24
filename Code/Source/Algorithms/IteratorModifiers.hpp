@@ -63,11 +63,18 @@ class RefIterator : public IteratorT
                 typename std::remove_cv< typename std::iterator_traits<IteratorT>::value_type >::type >::type T;
 
   public:
+    typedef T    value_type;  ///< Value type.
+    typedef T *  pointer;     ///< Pointer to value.
+    typedef T &  reference;   ///< Reference to value.
+
     /** Constructor. */
     RefIterator(IteratorT const & ii = IteratorT()) : IteratorT(ii) {}
 
     /** Dereferences the iterator to an object of type T. */
     T & operator*() const { return *(this->IteratorT::operator*()); }
+
+    /** Overloaded arrow operator. */
+    T * operator->() const { return this->IteratorT::operator*(); }
 
 }; // class RefIterator
 
@@ -119,6 +126,7 @@ class RefIterator< T *, typename std::enable_if< ! std::is_pointer< typename std
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
     T & operator*() const { return *ii; }
+    T * operator->() const { return ii; }
     template <typename IntegerT> T & operator[](IntegerT n) { return ii[n]; }
 
   private:
@@ -135,6 +143,7 @@ class RefIterator<T **> : public std::iterator<std::random_access_iterator_tag, 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
     T & operator*() const { return **ii; }
+    T * operator->() const { return *ii; }
     template <typename IntegerT> T & operator[](IntegerT n) { return *ii[n]; }
 
   private:
@@ -153,6 +162,7 @@ class RefIterator<T const * const *>
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
     T const & operator*() const { return **ii; }
+    T const * operator->() const { return *ii; }
     template <typename IntegerT> T const & operator[](IntegerT n) { return *ii[n]; }
 
   private:
@@ -176,11 +186,21 @@ class PtrIterator : public IteratorT
     typedef typename std::remove_cv< typename std::iterator_traits<IteratorT>::value_type >::type T;
 
   public:
+    typedef T const *          value_type;  ///< Value type.
+    typedef T const * const *  pointer;     ///< Pointer to value.
+    typedef T const * const &  reference;   ///< Reference to value.
+
     /** Constructor. */
     PtrIterator(IteratorT const & ii = IteratorT()) : IteratorT(ii) {}
 
     /** Dereferences the iterator to an (immutable) object of type T. */
     T const * operator*() const { return &(this->IteratorT::operator*()); }
+
+    /**
+     * Overloaded arrow operator is <b>DISABLED</b> (throws assertion error) since it cannot be called on an
+     * iterator-over-pointers.
+     */
+    T const * const * operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }
 
 }; // class PtrIterator
 
@@ -226,6 +246,7 @@ class PtrIterator<T **>
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
 
     T * operator*() const { return *ii; }
+    T ** operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }
     template <typename IntegerT> T * operator[](IntegerT n) { return ii[n]; }
 
   private:
@@ -243,6 +264,7 @@ class PtrIterator<T const * const *>
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
 
     T const * operator*() const { return *ii; }
+    T const * const * operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }
     template <typename IntegerT> T const * operator[](IntegerT n) { return ii[n]; }
 
   private:

@@ -173,7 +173,7 @@ class THEA_API ConnectedComponents
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
-        typename MeshT::Halfedge * edge = *ei;
+        typename MeshT::Halfedge * edge = &(*ei);
         if (!edge->isBoundaryEdge())
         {
           intx handle1 = uf.getObjectID(edge->getFace());
@@ -183,23 +183,15 @@ class THEA_API ConnectedComponents
       }
     }
 
-    /** Collect all the faces of a GeneralMesh. */
+    /** Collect all the faces of a GeneralMesh or DCELMesh. */
     template <typename MeshT, typename FaceT>
     static void collectFaces(MeshT & mesh, Array<FaceT *> & faces,
-                             typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
+                             typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value
+                                                   || Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
     {
       faces.clear();
       for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
         faces.push_back(&(*fi));
-    }
-
-    /** Collect all the faces of a DCELMesh. */
-    template <typename MeshT, typename FaceT>
-    static void collectFaces(MeshT & mesh, Array<FaceT *> & faces,
-                             typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
-    {
-      for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)
-        faces.push_back(*fi);
     }
 
 }; // class ConnectedComponents

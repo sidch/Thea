@@ -808,11 +808,12 @@ class CodecPLY : public CodecPLYBase<MeshT>
       }
     }
 
-    /** Write out all the vertices from a general mesh and map them to indices. */
+    /** Write out all the vertices from a general or DCEL mesh and map them to indices. */
     template <typename _MeshT>
     void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                            WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
+                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                                 || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
     {
       intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -828,31 +829,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
         vertex_indices[&(*vi)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, &(*vi));
-      }
-    }
-
-    /** Write out all the vertices from a DCEL mesh and map them to indices. */
-    template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
-    {
-      intx vertex_index = (intx)vertex_indices.size();
-      for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
-      {
-        typename Mesh::Vertex const * vx = *vi;
-
-        if (write_opts.binary)
-        {
-          output.writeFloat32((float32)vx->getPosition().x());
-          output.writeFloat32((float32)vx->getPosition().y());
-          output.writeFloat32((float32)vx->getPosition().z());
-        }
-        else
-          writeString(format("%f %f %f\n", vx->getPosition().x(), vx->getPosition().y(), vx->getPosition().z()), output);
-
-        vertex_indices[vx] = vertex_index;
-        if (callback) callback->vertexWritten(&mesh, vertex_index, vx);
       }
     }
 
@@ -899,11 +875,12 @@ class CodecPLY : public CodecPLYBase<MeshT>
       }
     }
 
-    /** Write out all the faces from a general mesh. */
+    /** Write out all the faces from a general or DCEL mesh. */
     template <typename _MeshT>
     void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                         WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value >::type * dummy = NULL) const
+                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                              || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -931,57 +908,6 @@ class CodecPLY : public CodecPLYBase<MeshT>
 
             os << ' ' << ii->second;
           }
-
-          os << '\n';
-          writeString(os.str(), output);
-        }
-
-        if (callback) callback->faceWritten(&mesh, next_index++, &face);
-      }
-    }
-
-    /** Write out all the faces from a DCEL mesh. */
-    template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
-    {
-      for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
-      {
-        typename Mesh::Face const & face = **fi;
-        if (face.numVertices() < 3) continue;
-
-        if (write_opts.binary)
-        {
-          output.writeInt32((int32)face.numVertices());
-
-          typename Mesh::Halfedge const * first_he = face.getHalfedge();
-          typename Mesh::Halfedge const * he = first_he;
-          do
-          {
-            typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-            output.writeInt32((int32)ii->second);
-            he = he->next();
-
-          } while (he != first_he);
-        }
-        else
-        {
-          std::ostringstream os; os << face.numVertices();
-
-          typename Mesh::Halfedge const * first_he = face.getHalfedge();
-          typename Mesh::Halfedge const * he = first_he;
-          do
-          {
-            typename VertexIndexMap::const_iterator ii = vertex_indices.find(he->getOrigin());
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-            os << ' ' << ii->second;
-            he = he->next();
-
-          } while (he != first_he);
 
           os << '\n';
           writeString(os.str(), output);
