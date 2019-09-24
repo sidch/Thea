@@ -94,10 +94,10 @@ Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs 
 The usual command line to link your program with the library is:
 ```
 c++ -std=c++11 -Wall -g2 -O2 -fno-strict-aliasing \
-    -I"$prefix/include" \
+    -I"$prefix/include" -I"$prefix/include/eigen3" \
     <source-files> \
     -L"$prefix/lib" -lThea \
-    -lboost_filesystem -lboost_system -lboost_thread \
+    -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt \
     -lm \
     [-ldl] [-framework Carbon]
 ```
