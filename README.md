@@ -30,7 +30,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Installing the dependencies
 
-*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). (A couple of classes also depend on [CGAL](https://www.cgal.org), but these are optional -- if CGAL is not found on the system, these classes will be omitted from the build.) A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
+*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org) (3.3 or later), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). (A couple of classes also depend on [CGAL](https://www.cgal.org), but these are optional -- if CGAL is not found on the system, these classes will be omitted from the build.) A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
 
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell

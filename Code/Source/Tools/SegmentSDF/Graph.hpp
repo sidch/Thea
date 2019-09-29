@@ -4,6 +4,8 @@
 #include "../../AttributedObject.hpp"
 #include <set>
 
+namespace Thea {
+
 /** Directed graph. */
 template <typename VertexAttribute, typename EdgeAttribute>
 class Graph
@@ -197,9 +199,9 @@ class Graph
         EdgeConstIterator outgoingEdgesEnd() const { return outgoing_edges.end(); }
         EdgeIterator outgoingEdgesEnd() { return outgoing_edges.end(); }
 
-        unsigned intx numIncomingEdges() const { return (unsigned intx)incoming_edges.size(); }
-        unsigned intx numOutgoingEdges() const { return (unsigned intx)outgoing_edges.size(); }
-        unsigned intx numEdges() const { return (unsigned intx)(incoming_edges.size() + outgoing_edges.size()); }
+        intx numIncomingEdges() const { return (intx)incoming_edges.size(); }
+        intx numOutgoingEdges() const { return (intx)outgoing_edges.size(); }
+        intx numEdges() const { return (intx)(incoming_edges.size() + outgoing_edges.size()); }
 
     }; // class Vertex
 
@@ -243,8 +245,8 @@ class Graph
     EdgeConstIterator edgesEnd() const { return edges.end(); }
     EdgeIterator edgesEnd() { return edges.end(); }
 
-    unsigned intx numVertices() const { return (unsigned intx)vertices.size(); }
-    unsigned intx numEdges() const { return (unsigned intx)edges.size(); }
+    intx numVertices() const { return (intx)vertices.size(); }
+    intx numEdges() const { return (intx)edges.size(); }
 
     VertexIterator addVertex(VertexAttribute const & attrib)
     {
@@ -410,5 +412,7 @@ printGraph(MyGraph const & graph)
     std::cout << "Edge(" << ei->getOrigin()->attr() << ", " << ei->getEnd()->attr() << "): "
               << ei->attr() << std::endl;
 }
+
+} // namespace Thea
 
 #endif

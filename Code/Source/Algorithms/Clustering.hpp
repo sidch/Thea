@@ -42,6 +42,9 @@
 #ifndef __Thea_Algorithms_Clustering_hpp__
 #define __Thea_Algorithms_Clustering_hpp__
 
+// Temporarily disabled until updating to use to Eigen's sparse matrix class
+#if 0
+
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../CompressedSparseMatrix.hpp"
@@ -806,5 +809,7 @@ Clustering::toClutoOptions(FlatOptions const & options, int & simfun, int & grmo
 
 } // namespace Algorithms
 } // namespace Thea
+
+#endif  // if 0
 
 #endif
