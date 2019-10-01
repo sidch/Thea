@@ -50,6 +50,8 @@
 namespace Thea {
 namespace Algorithms {
 namespace MeshFeatures {
+
+/** Namespace for classes that compute global features on a mesh. */
 namespace Global {
 
 /** Compute the histogram of distances between pairs of points on the shape. */
