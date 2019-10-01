@@ -57,8 +57,6 @@
 #endif
 
 namespace Thea {
-
-/** Miscellaneous algorithms. */
 namespace Algorithms {
 
 /** %Clustering methods. */

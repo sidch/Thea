@@ -48,6 +48,8 @@
 #include <type_traits>
 
 namespace Thea {
+
+/** Miscellaneous algorithms. */
 namespace Algorithms {
 
 // Adapted from the Boost type_traits examples.

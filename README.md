@@ -1,6 +1,8 @@
 # Thea
 A toolkit for visual computing with a focus on geometry processing.
 
+Online documentation is available at [http://sidch.github.io/Thea](http://sidch.github.io/Thea).
+
 Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released under the BSD license (see `Thea/Code/Documentation/LICENSE.txt`).
 
 If you find a bug, please let me know promptly. Thank you!
@@ -18,7 +20,7 @@ If you find a bug, please let me know promptly. Thank you!
 * A variety of utility classes for filesystem navigation, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation, bounded/sorted arrays, pseudo-random numbers, mathematics (including algebraic roots of polynomials upto degree 4) etc.
 * Several bundled tools for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*) etc.
 
-__*Thea* is constantly under development and many parts are incomplete. Use at your own risk!__ I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
+**Thea is constantly under development and many parts are incomplete. Use at your own risk!** I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
 
 *Thea* is heavily influenced by, and borrows code from, Morgan McGuire's [G3D](https://casual-effects.com/g3d) library. It started out as an extension of G3D.
 
