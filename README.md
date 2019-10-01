@@ -14,7 +14,7 @@ If you find a bug, please let me know promptly. Thank you!
 * Polygon mesh classes with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and a lightweight one designed only for rendering.
 * General linear algebra via [Eigen](http://eigen.tuxfamily.org), geometric transformations (e.g. rigid transforms), shared-library-safe pure virtual wrappers for matrices, and easy-to-use interfaces to various solver packages (NNLS, CSPARSE, ARPACK).
 * 2, 3 and N-dimensional geometric primitives, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
-* An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, discrete exponential maps, discrete Laplace-Beltrami operators on meshes, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
+* An eclectic collection of algorithms, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, surface parametrization (global and local), discrete Laplace-Beltrami operators, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic image processing (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
 * A plugin architecture and included plugins providing easy interfaces to OpenGL, [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an [OSMesa](https://www.mesa3d.org/osmesa.html) driver to automatically create a headless CPU-only context.
 * A variety of utility classes for filesystem navigation, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation, bounded/sorted arrays, pseudo-random numbers, mathematics (including algebraic roots of polynomials upto degree 4) etc.
@@ -90,7 +90,7 @@ Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs 
 ## Using the library
 
 ***
-**GCC/Clang-specific**: You **MUST** compile with strict aliasing turned OFF. This is achieved with `-fno-strict-aliasing`. I also recommend `-Wall -g2 -O2` (all **W**arnings, debu**G**gable binaries, **O**ptimize for speed). ``-O2`` messes up the debugging a bit so turn it off temporarily if you can't track down your bug.
+**GCC/Clang-specific**: You **MUST** compile with strict aliasing turned OFF. This is achieved with `-fno-strict-aliasing`. I also recommend `-Wall -g2 -O2` (all "W"arnings, debu"g"gable binaries, "O"ptimize for speed). `-O2` messes up the debugging a bit so turn it off temporarily if you can't track down your bug.
 ***
 
 The usual command line to link your program with the library is:
