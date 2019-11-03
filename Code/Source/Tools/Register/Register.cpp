@@ -30,6 +30,7 @@ typedef UnorderedMap<int32, string> IndexLabelMap;
 static int const MAX_NBRS = 8;
 int MAX_ROUNDS = 25;
 int MAX_SMOOTHING_ROUNDS = 3;
+int LAST_SMOOTHING_ROUNDS = 1;
 bool USE_LABELS = false;
 IndexLabelMap LABELS;
 
@@ -773,7 +774,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
       enforceConstraints(samples1, samples2, salient_indices1, salient_indices2, offsets1);
     }
     else
-      smoothOffsets(samples1, nbrs1, offsets1, 1);  // low smoothing on last round
+      smoothOffsets(samples1, nbrs1, offsets1, LAST_SMOOTHING_ROUNDS);
 
     cout << endl;
   }
@@ -789,6 +790,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  [--rounds <num-rounds>]";
   THEA_CONSOLE << "  [--smooth <num-rounds>]";
+  THEA_CONSOLE << "  [--smooth-last <num-rounds>]";
   THEA_CONSOLE << "  [--labels]";
   THEA_CONSOLE << "  [--salient <file1> <file2>]";
   THEA_CONSOLE << "  [--max-salient <num-points>]";
@@ -847,6 +849,21 @@ main(int argc, char * argv[])
         return -1;
       }
     }
+    else if (arg == "--smooth-last")
+    {
+      if (i >= argc - 1)
+      {
+        THEA_ERROR << "--smooth-last requires 1 argument";
+        return -1;
+      }
+
+      LAST_SMOOTHING_ROUNDS = atoi(argv[++i]);
+      if (LAST_SMOOTHING_ROUNDS < 0)
+      {
+        THEA_ERROR << "Invalid number of last-round smoothing iterations: " << LAST_SMOOTHING_ROUNDS;
+        return -1;
+      }
+    }
     else if (arg == "--labels")
     {
       USE_LABELS = true;
@@ -901,6 +918,7 @@ main(int argc, char * argv[])
 
   THEA_CONSOLE << "Max iterations: " << MAX_ROUNDS;
   THEA_CONSOLE << "Max smoothing iterations: " << MAX_SMOOTHING_ROUNDS;
+  THEA_CONSOLE << "Smoothing iterations in last iteration: " << LAST_SMOOTHING_ROUNDS;
   THEA_CONSOLE << "Match labels: " << USE_LABELS;
   THEA_CONSOLE << "Max salient points: " << max_salient;
 
