@@ -234,6 +234,7 @@ MainWindow::init()
 
   ui.point_snap_to_vertex = new wxCheckBox(points_panel, wxID_ANY, "Snap point to vertex");
   points_sizer->Add(ui.point_snap_to_vertex, 0, wxEXPAND | wxTOP, 5);
+
   ui.toolbox->AddPage(points_panel, "Points");
 
   // The main UI is split into two panes
@@ -286,7 +287,7 @@ MainWindow::init()
   ui.points_table->Bind(wxEVT_RIGHT_UP, &MainWindow::selectSample, this);
   ui.points_table->Bind(wxEVT_MIDDLE_UP, &MainWindow::selectSample, this);
 
-  ui.toolbox->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, &MainWindow::refreshDisplay, this);
+  ui.toolbox->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, &MainWindow::toolboxPanelChanged, this);
 
   model->Bind(EVT_MODEL_PATH_CHANGED, &MainWindow::setTitle, this);
   model->Bind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
@@ -726,6 +727,16 @@ MainWindow::setToolboxVisible(bool value)
     ui.main_splitter->SplitVertically(ui.model_display, ui.toolbox, -MIN_SPLIT_SIZE);
   else
     ui.main_splitter->Unsplit(ui.toolbox);
+}
+
+void
+MainWindow::toolboxPanelChanged(wxEvent & event)
+{
+  refreshDisplay();
+
+  // Work around a Mac bug where the second panel remains empty unless Show() is called:
+  // http://wxwidgets.10942.n7.nabble.com/wxCocoa-Notebook-page-disappears-when-listening-to-wxEVT-NOTEBOOK-PAGE-CHANGED-tp89217.html
+  event.Skip();
 }
 
 void

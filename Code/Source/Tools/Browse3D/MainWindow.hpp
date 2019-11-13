@@ -206,6 +206,9 @@ class MainWindow : public wxFrame
     /** Show/hide the toolbox. */
     void setToolboxVisible(wxCommandEvent & event);
 
+    /** Called when the toolbox panel changes. */
+    void toolboxPanelChanged(wxEvent & event = DUMMY_EVENT);
+
     /** Synchronize states of menu and toolbar buttons etc. */
     void updateUI(wxUpdateUIEvent & event);
 
