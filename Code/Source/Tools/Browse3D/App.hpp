@@ -80,8 +80,8 @@ class App : public wxApp
       std::string working_dir;                             ///< The application's initial working directory.
       std::string model;                                   ///< The initial shape to load.
       AffineTransform3 model_transform;                    ///< The transformation of the initial shape.
-      Array<std::string> overlays;                     ///< The initial overlays to load.
-      Array<AffineTransform3> overlay_transforms;      ///< The transforms of the overlays.
+      Array<std::string> overlays;                         ///< The initial overlays to load.
+      Array<AffineTransform3> overlay_transforms;          ///< The transforms of the overlays.
       std::string features;                                ///< Path to directory/file containing features to load.
       std::string elem_labels;                             ///< Path to directory/file containing face/point labels to load.
 
@@ -91,6 +91,7 @@ class App : public wxApp
       bool show_normals;                                    ///< Draw arrows for normals?
       bool show_graph;                                      ///< Show point adjacency graph, if available?
 
+      ColorRGB color;                                       ///< Model color.
       bool bg_plain;                                        ///< Draw the background in a single plain color?
       ColorRGB bg_color;                                    ///< Background color.
       bool two_sided;                                       ///< Use two-sided lighting?

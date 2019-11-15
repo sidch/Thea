@@ -58,10 +58,17 @@ IMPLEMENT_APP(Browse3D::App);
 
 namespace Browse3D {
 
+namespace AppInternal {
+
+static ColorRGBA  const  DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+static Vector4    const  DEFAULT_MATERIAL(0.3f, 0.7f, 0.2f, 25);
+
+} // namespace AppInternal
+
 App::Options::Options()
-: accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false), bg_plain(false),
-  bg_color(ColorRGB::black()), two_sided(true), flat(false), material(0.3f, 0.7f, 0.2f, 25), fancy_points(false),
-  fancy_colors(false), point_scale(1), no_axes(false)
+: accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false),
+  color(AppInternal::DEFAULT_COLOR), bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), flat(false),
+  material(AppInternal::DEFAULT_MATERIAL), fancy_points(false), fancy_colors(false), point_scale(1), no_axes(false)
 {
 }
 
@@ -92,6 +99,7 @@ App::optsToString() const
       << "\n  color-cube = " << opts.color_cube_features
       << "\n  show-normals = " << opts.show_normals
       << "\n  show-graph = " << opts.show_graph
+      << "\n  color = " << opts.color.toString()
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
@@ -210,6 +218,7 @@ App::parseOptions(std::vector<std::string> const & args)
 
   std::string s_model;
   std::vector<std::string> s_overlays;
+  std::string s_color;
   std::string s_bg_color;
   std::string s_material;
 
@@ -229,12 +238,13 @@ App::parseOptions(std::vector<std::string> const & args)
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("normals,n",            "Draw normals as arrows")
           ("graph,g",              "Show point adjacency graph")
-          ("bg",                   po::value<std::string>(&s_bg_color), "Background color")
+          ("color,c",              po::value<std::string>(&s_color), "Model color")
+          ("bg-color,b",           po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
           ("flat,0",               "Flat shade all meshes")
           ("material,k",           po::value<std::string>(&s_material), "Surface material coefficients (ka, kd, ks, ksp)")
           ("fancy-points",         "Draw points as shaded spheres")
-          ("fancy-colors,c",       "Color points by a function of position")
+          ("fancy-colors",         "Color points by a function of position")
           ("point-scale,p",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
           ("no-axes",              "Hide the coordinate axes")
           ("no-shading",           "No shading, just render raw colors")
@@ -326,14 +336,17 @@ App::parseOptions(std::vector<std::string> const & args)
   opts.no_axes              =  (vm.count("no-axes") > 0);
   opts.no_shading           =  (vm.count("no-shading") > 0);
 
+  if (!s_color.empty())
+  {
+    std::stringstream ss; ss << std::hex << s_color;
+    uint32 argb; ss >> argb;
+    opts.color = ColorRGB::fromARGB(argb);
+  }
+
   if (!s_bg_color.empty())
   {
-    std::stringstream ss;
-    ss << std::hex << s_bg_color;
-
-    uint32 argb;
-    ss >> argb;
-
+    std::stringstream ss; ss << std::hex << s_bg_color;
+    uint32 argb; ss >> argb;
     opts.bg_plain = true;
     opts.bg_color = ColorRGB::fromARGB(argb);
   }

@@ -107,7 +107,6 @@ linkMeshesToParent(MeshGroupPtr mesh_group)
     linkMeshesToParent(*ci);
 }
 
-static ColorRGBA const DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
 static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 } // namespace ModelInternal
@@ -115,7 +114,7 @@ static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 Model::Model(std::string const & initial_mesh)
 : has_features(false),
   has_elem_labels(false),
-  color(ModelInternal::DEFAULT_COLOR),
+  color(app().options().color),
   valid_pick(false),
   selected_sample(-1),
   segment_depth_promotion(0),
@@ -1520,7 +1519,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
   if (isEmpty())
     return;
 
-  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 0.8f, 0.7f));
+  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 1, 1));
 
   if (hasTransform())
   {
