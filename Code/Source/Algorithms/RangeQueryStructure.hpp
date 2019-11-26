@@ -90,7 +90,7 @@ class /* THEA_API */ RangeQueryStructure
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
@@ -106,7 +106,7 @@ class /* THEA_API */ RangeQueryStructure
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
