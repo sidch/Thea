@@ -350,8 +350,7 @@ Model::updateVertexKDTree() const
   vertex_kdtree->clear(false);
 
   Array<MeshVertex *> verts;
-  ModelInternal::CollectVerticesFunctor func(&verts);
-  mesh_group->forEachMeshUntil(&func);
+  mesh_group->forEachMeshUntil(ModelInternal::CollectVerticesFunctor(&verts));
   vertex_kdtree->init(verts.begin(), verts.end());
 
   if (hasTransform())
@@ -1215,7 +1214,7 @@ Model::loadFeatures(std::string const & path_)
                                  &feat_vals[0][0],
                                  feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
                                  feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
-    mesh_group->forEachMeshUntil(&visitor);
+    mesh_group->forEachMeshUntil(visitor);
   }
   THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
 
@@ -1286,8 +1285,7 @@ Model::loadElementLabels(std::string const & path_)
   {
     try
     {
-      ModelInternal::FaceLabeler flab(elem_colors);
-      mesh_group->forEachMeshUntil(&flab);
+      mesh_group->forEachMeshUntil(ModelInternal::FaceLabeler(elem_colors));
     }
     THEA_STANDARD_CATCH_BLOCKS(return has_elem_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
   }
@@ -1575,9 +1573,9 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
         bool smooth_shading = (ro.useVertexNormals() && ro.useVertexData());
 
         if (smooth_shading)
-          mesh_group->forEachMeshUntil(&ModelInternal::enableGPURendering);
+          mesh_group->forEachMeshUntil(ModelInternal::enableGPURendering);
         else
-          mesh_group->forEachMeshUntil(&ModelInternal::disableGPURendering);
+          mesh_group->forEachMeshUntil(ModelInternal::disableGPURendering);
 
         mesh_group->draw(render_system, ro);
 
@@ -1589,15 +1587,9 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
           Real normal_scale = 0.025f * getBounds().getExtent().norm();
 
           if (smooth_shading)
-          {
-            ModelInternal::DrawVertexNormals drawer(&render_system, normal_scale);
-            mesh_group->forEachMeshUntil(&drawer);
-          }
+            mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(&render_system, normal_scale));
           else
-          {
-            ModelInternal::DrawFaceNormals drawer(&render_system, normal_scale);
-            mesh_group->forEachMeshUntil(&drawer);
-          }
+            mesh_group->forEachMeshUntil(ModelInternal::DrawFaceNormals(&render_system, normal_scale));
         }
       }
     }

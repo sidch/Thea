@@ -186,7 +186,7 @@ SampleGraph::extractOriginalAdjacencies(Array<SurfaceSample *> & sample_ptrs)
   {
     samples_with_new_nbrs[i] = samples[i];
     DijkstraCallback callback(&samples_with_new_nbrs[i], (intx)samples.size(), options.max_degree);
-    shortest_paths.dijkstraWithCallback(graph, &samples[i], &callback);
+    shortest_paths.dijkstraWithCallback(graph, &samples[i], callback);
   }
 
   for (size_t i = 0; i < samples.size(); ++i)

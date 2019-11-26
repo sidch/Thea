@@ -1712,7 +1712,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
   {
     alwaysAssertM(tri_ids && quad_ids, "Face IDs necessary for coloring by label");
     FaceColorizer label_colorizer(this, tri_ids, quad_ids, &labels);
-    model.mesh_group.forEachMeshUntil(&label_colorizer);
+    model.mesh_group.forEachMeshUntil(label_colorizer);
   }
 
   THEA_CONSOLE << "Read labels from '" << labels_path << '\'';
@@ -1936,7 +1936,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
                             &feat_vals[0][0],
                             feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
                             feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
-    model.mesh_group.forEachMeshUntil(&visitor);
+    model.mesh_group.forEachMeshUntil(visitor);
   }
 
   THEA_CONSOLE << "Read features from '" << features_path << '\'';
@@ -2101,7 +2101,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       if (color_by_id || color_by_leaf || color_by_leafname)
       {
         FaceColorizer colorizer(this, &tri_ids, &quad_ids);
-        model.mesh_group.forEachMeshUntil(&colorizer);
+        model.mesh_group.forEachMeshUntil(colorizer);
         needs_normals = false;
       }
       else if (color_by_label)
@@ -2225,7 +2225,7 @@ modelBSphere(Model const & model, Matrix4 const & transform)
   else
   {
     FarthestPoint fp(center, transform);
-    model.mesh_group.forEachMeshUntil(&fp);
+    model.mesh_group.forEachMeshUntil(std::ref(fp));
     radius = fp.getFarthestDistance();
   }
 

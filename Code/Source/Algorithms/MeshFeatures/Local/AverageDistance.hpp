@@ -50,6 +50,8 @@
 #include "../../SampleGraph.hpp"
 #include "../../ShortestPaths.hpp"
 #include "../../../Ball3.hpp"
+#include "../../../Noncopyable.hpp"
+#include <functional>
 
 namespace Thea {
 namespace Algorithms {
@@ -155,9 +157,9 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
         Ball3 ball(position, max_distance);
 
         if (this->hasExternalKDTree())
-          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
+          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
         else
-          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
+          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
       }
 
       return callback.getAverageDistance() / max_distance;
@@ -196,13 +198,13 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 
       ShortestPaths<SampleGraph> shortest_paths;
       GeodesicCallback callback;
-      shortest_paths.dijkstraWithCallback(*graph, seed_sample, &callback, (process_all ? -1 : max_distance));
+      shortest_paths.dijkstraWithCallback(*graph, seed_sample, std::ref(callback), (process_all ? -1 : max_distance));
 
       return callback.getAverageDistance() / max_distance;
     }
 
     /** Called for each point in the euclidean neighborhood. */
-    struct EuclideanCallback
+    struct EuclideanCallback : public Noncopyable
     {
       EuclideanCallback(Vector3 const & position_) : position(position_), sum_distances(0), num_points(0) {}
 
@@ -227,7 +229,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
     }; // struct EuclideanCallback
 
     /** Called for each point in the geodesic neighborhood. */
-    struct GeodesicCallback
+    struct GeodesicCallback : public Noncopyable
     {
       GeodesicCallback() : sum_distances(0), num_points(0) {}
 

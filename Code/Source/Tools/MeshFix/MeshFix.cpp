@@ -19,6 +19,7 @@
 #include <boost/program_options.hpp>
 #include <algorithm>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <queue>
 #include <set>
@@ -238,67 +239,67 @@ meshFix(int argc, char * argv[])
   if (do_flatten)
   {
     flatten(mg);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_del_danglers)
   {
-    mg.forEachMeshUntil(&delDanglers);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(delDanglers);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_del_dup_faces)
   {
     delDuplicateFaces(mg, del_dup_faces_sorted);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_t_juncts)
   {
-    mg.forEachMeshUntil(&tJuncts);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(tJuncts);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_v_weld)
   {
-    mg.forEachMeshUntil(&vWeld);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(vWeld);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_zipper)
   {
-    mg.forEachMeshUntil(&zipper);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(zipper);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_orient)
   {
-    mg.forEachMeshUntil(&orient);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(orient);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_orient_sdf)
   {
     orientSDF(mg);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_orient_majority)
   {
-    mg.forEachMeshUntil(&orientMajority);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(orientMajority);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_orient_visibility)
   {
     orientVisibility(mg);
-    mg.forEachMeshUntil(&checkProblems);
+    mg.forEachMeshUntil(checkProblems);
   }
 
   if (do_triangulate)
   {
-    if (mg.forEachMeshUntil(&triangulate)) return -1;
-    mg.forEachMeshUntil(&checkProblems);
+    if (mg.forEachMeshUntil(triangulate)) return -1;
+    mg.forEachMeshUntil(checkProblems);
   }
 
   string lc_out = toLower(outfile);
@@ -604,7 +605,7 @@ void
 flatten(MG & mesh_group)
 {
   Flattener flattener;
-  mesh_group.forEachMeshUntil(&flattener);
+  mesh_group.forEachMeshUntil(std::ref(flattener));
   mesh_group.clear();
   mesh_group.addMesh(flattener.flattened);
 }
@@ -700,8 +701,7 @@ struct DupFaceDeleter
 void
 delDuplicateFaces(MG & mesh_group, bool sorted)
 {
-  DupFaceDeleter func(sorted);
-  mesh_group.forEachMeshUntil(&func);
+  mesh_group.forEachMeshUntil(DupFaceDeleter(sorted));
 }
 
 bool
@@ -1129,8 +1129,7 @@ void
 orientSDF(MG & mesh_group)
 {
   Local::ShapeDiameter<Mesh> sdf(mesh_group);
-  SDFOrienter func(&sdf);
-  mesh_group.forEachMeshUntil(&func);
+  mesh_group.forEachMeshUntil(SDFOrienter(&sdf));
 }
 
 struct CountComparator
@@ -1396,7 +1395,7 @@ void
 orientVisibility(MG & mesh_group)
 {
   VisibilityOrienter func(mesh_group, orient_visibility_hi_qual);
-  mesh_group.forEachMeshUntil(&func);
+  mesh_group.forEachMeshUntil(std::ref(func));
 }
 
 bool

@@ -6,6 +6,7 @@
 #include "../../FilePath.hpp"
 #include "../../UnorderedMap.hpp"
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 
 using namespace std;
@@ -89,7 +90,7 @@ struct Transformer
 {
   Transformer(AffineTransform3 const & t) : transform(t) {}
 
-  bool operator()(Mesh & mesh)
+  bool operator()(Mesh & mesh) const
   {
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       vi->setPosition(transform * vi->getPosition());
@@ -106,7 +107,7 @@ centerMesh(MG & mg)
   mg.updateBounds();
   Vector3 c = mg.getBounds().getCenter();
   Transformer tr(AffineTransform3::translation(-c));
-  mg.forEachMeshUntil(&tr);
+  mg.forEachMeshUntil(std::cref(tr));
 
   return true;
 }
@@ -120,7 +121,7 @@ rescaleMesh(MG & mg, Axis axis, Real len)
   {
     Real s = len / ext;
     Transformer tr(AffineTransform3::scaling(s));
-    mg.forEachMeshUntil(&tr);
+    mg.forEachMeshUntil(std::cref(tr));
   }
 
   return true;

@@ -61,8 +61,9 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
   public:
     THEA_DECL_SMART_POINTERS(MeshGroup)
 
-    typedef MeshT Mesh;  ///< The type of mesh in the group.
-    typedef std::shared_ptr<Mesh> MeshPtr;  ///< A shared pointer to a mesh.
+    typedef MeshT Mesh;                                ///< The type of mesh in the group.
+    typedef std::shared_ptr<Mesh> MeshPtr;             ///< A shared pointer to a mesh.
+    typedef std::shared_ptr<Mesh const> MeshConstPtr;  ///< A shared pointer to a const mesh.
 
     /** Interface for callback functions that are called when a vertex or face is deserialized. */
     class ReadCallback
@@ -236,20 +237,25 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * }
      * \endcode
      *
-     * @return True if the functor evaluated to true on any mesh (and hence stopped after processing this mesh), else false.
+     * To pass a functor by reference (e.g. if the functor has modifiable state), wrap it in <tt>std::ref</tt>.
+     *
+     * @return The mesh, if any, for which the functor evaluated to true (and hence processing stopped after this mesh), else a
+     *   null pointer.
      */
-    template <typename MeshFunctorT> bool forEachMeshUntil(MeshFunctorT * functor) const
+    template <typename MeshFunctorT> MeshConstPtr forEachMeshUntil(MeshFunctorT functor) const
     {
       // Need to explicitly const_cast to ensure the functor can't change the meshes
       for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
-        if ((*functor)(const_cast<Mesh const &>(**mi)))
-          return true;
+        if (functor(const_cast<Mesh const &>(**mi)))
+          return *mi;
 
       for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
-        if (const_cast<MeshGroup const &>(**ci).forEachMeshUntil(functor))
-          return true;
+      {
+        auto m = const_cast<MeshGroup const &>(**ci).forEachMeshUntil(functor);
+        if (m) return m;
+      }
 
-      return false;
+      return MeshConstPtr();
     }
 
     /**
@@ -259,26 +265,31 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * The functor should overload the () operator as follows (or be a function pointer with the equivalent signature):
      *
      * \code
-     * bool operator()(Mesh & mesh)
+     * bool operator()(Mesh [const] & mesh)
      * {
      *   // Do something with the mesh
      *   // Return true if we should stop after seeing this mesh, else false
      * }
      * \endcode
      *
-     * @return True if the functor evaluated to true on any mesh (and hence stopped after processing this mesh), else false.
+     * To pass a functor by reference (e.g. if the functor has modifiable state), wrap it in <tt>std::ref</tt>.
+     *
+     * @return The mesh, if any, for which the functor evaluated to true (and hence processing stopped after this mesh), else a
+     *   null pointer.
      */
-    template <typename MeshFunctorT> bool forEachMeshUntil(MeshFunctorT * functor)
+    template <typename MeshFunctorT> MeshPtr forEachMeshUntil(MeshFunctorT functor)
     {
       for (MeshIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
-        if ((*functor)(**mi))
-          return true;
+        if (functor(**mi))
+          return *mi;
 
       for (GroupIterator ci = children.begin(); ci != children.end(); ++ci)
-        if ((*ci)->forEachMeshUntil(functor))
-          return true;
+      {
+        auto m = (*ci)->forEachMeshUntil(functor);
+        if (m) return m;
+      }
 
-      return false;
+      return MeshPtr();
     }
 
     /** Recompute and cache the bounding box for the mesh group. Make sure this has been called before calling getBounds(). */

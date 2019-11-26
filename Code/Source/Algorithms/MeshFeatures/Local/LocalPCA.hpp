@@ -47,6 +47,8 @@
 #include "../../IntersectionTester.hpp"
 #include "../../PCA_N.hpp"
 #include "../../PointTraitsN.hpp"
+#include "../../../Noncopyable.hpp"
+#include <functional>
 
 namespace Thea {
 namespace Algorithms {
@@ -128,16 +130,16 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
       func.reset();
 
       if (this->hasExternalKDTree())
-        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
       else
-        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
 
       return func.getPCAFeatures(eigenvectors);
     }
 
   private:
     /** Aggregates points in the neighborhood and computes PCA features. */
-    struct LocalPCAFunctor
+    struct LocalPCAFunctor : public Noncopyable
     {
       void reset() { nbd_pts.clear(); }
 

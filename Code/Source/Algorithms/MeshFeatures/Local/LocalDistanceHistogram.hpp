@@ -175,9 +175,9 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
         Ball3 ball(position, max_distance);
 
         if (this->hasExternalKDTree())
-          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
+          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, callback);
         else
-          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, &callback);
+          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, callback);
       }
     }
 
@@ -225,7 +225,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
 
       ShortestPaths<SampleGraph> shortest_paths;
       GeodesicCallback callback(histogram, sample_reduction_ratio);
-      shortest_paths.dijkstraWithCallback(*graph, seed_sample, &callback, (process_all ? -1 : max_distance));
+      shortest_paths.dijkstraWithCallback(*graph, seed_sample, callback, (process_all ? -1 : max_distance));
     }
 
     /** Called for each point in the euclidean neighborhood. */

@@ -574,7 +574,7 @@ class SampleGraph : private Noncopyable
         NeighborFunctor<RayQueryStructureT> func(sample, has_normals, surface);
 
         Ball3 nbd(sample->getPosition(), radius);
-        sample_kdtree.processRangeUntil<IntersectionTester>(nbd, &func);
+        sample_kdtree.processRangeUntil<IntersectionTester>(nbd, func);
 
         if (sample->getNeighbors().size() >= min_degree)
           break;

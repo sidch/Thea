@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstdio>
 #include <fstream>
+#include <functional>
 
 using namespace std;
 using namespace Thea;
@@ -208,7 +209,7 @@ loadLabels_Labels(string const & path, MG const & mg, Array<string> & labels, Ar
   LabelIndexMap labmap;
 
   FaceToMeshMapper f2m;
-  mg.forEachMeshUntil(&f2m);
+  mg.forEachMeshUntil(std::ref(f2m));
   face_labels.resize(f2m.mapping.size(), -1);
 
   string line;
@@ -516,14 +517,14 @@ main(int argc, char * argv[])
       if (vertex_samples)
       {
         VertexCollector collector(&positions, &normals, &indices);
-        mg.forEachMeshUntil(&collector);
+        mg.forEachMeshUntil(std::ref(collector));
         do_random_sampling = false;
       }
 
       if (face_samples)
       {
         FaceCenterCollector collector(&positions, &normals, &indices);
-        mg.forEachMeshUntil(&collector);
+        mg.forEachMeshUntil(std::ref(collector));
         do_random_sampling = false;
       }
 

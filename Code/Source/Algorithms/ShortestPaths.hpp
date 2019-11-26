@@ -147,7 +147,7 @@ class /* THEA_API */ ShortestPaths
     {
       result.clear();
       MapCallback callback(result);
-      dijkstraWithCallback(graph, src, &callback, limit, src_region, include_unreachable);
+      dijkstraWithCallback(graph, src, callback, limit, src_region, include_unreachable);
     }
 
     /**
@@ -175,7 +175,8 @@ class /* THEA_API */ ShortestPaths
      * @param src The source vertex from which to measure distances. This vertex is initialized to distance zero and no
      *   predecessor. If \a src_region is non-empty, the \a src argument is ignored,
      * @param callback Called for every visited vertex along with the distance to its shortest path from the source. If the
-     *   function returns true, the search is terminated at this point.
+     *   function returns true, the search is terminated at this point. To pass a callback by reference, wrap it in
+     *   <tt>std::ref</tt>.
      * @param limit If set to a non-negative value, only returns vertices that are closer than this value.
      * @param src_region If non-empty, specifies a set of source vertices and the initial distances
      *   <b>(must be non-negative)</b> to them. In this case the \a src argument is ignored. The predecessor of each such vertex
@@ -184,7 +185,7 @@ class /* THEA_API */ ShortestPaths
      *   distances and without predecessors.
      */
     template <typename CallbackT>
-    void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit = -1,
+    void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT callback, double limit = -1,
                               UnorderedMap<VertexHandle, double> const * src_region = NULL,
                               bool include_unreachable = false);
 
@@ -222,10 +223,10 @@ class /* THEA_API */ ShortestPaths
 template <typename GraphT>
 template <typename CallbackT>
 void
-ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT * callback, double limit,
+ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT callback, double limit,
                                             UnorderedMap<VertexHandle, double> const * src_region, bool include_unreachable)
 {
-  if (graph.numVertices() <= 0 || !callback)
+  if (graph.numVertices() <= 0)
     return;
 
 #ifdef THEA_SHORTEST_PATHS_TIMER
@@ -367,7 +368,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
     if (limit >= 0 && data->dist > limit)  // all remaining distances will be greater than this
       break;
 
-    if ((*callback)(data->vertex, data->dist, data->has_pred, data->pred))
+    if (callback(data->vertex, data->dist, data->has_pred, data->pred))
       break;
   }
 
@@ -379,7 +380,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
       ScratchElement & data = scratch[vertex];  // no new allocs if the element already exists
       if (data.flag != BLACK)
       {
-        if ((*callback)(data.vertex, -1, false, NULL))
+        if (callback(data.vertex, -1, false, VertexHandle()))
           break;
       }
     }

@@ -43,9 +43,11 @@
 #include "FurthestPointSampling.hpp"
 #include "SampleGraph.hpp"
 #include "ShortestPaths.hpp"
+#include "../Noncopyable.hpp"
 #include "../UnorderedMap.hpp"
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <iomanip>
 
 namespace Thea {
@@ -54,7 +56,7 @@ namespace Algorithms {
 namespace FurthestPointSamplingInternal {
 
 // Called during Dijkstra search.
-struct DijkstraCallback
+struct DijkstraCallback : public Noncopyable
 {
   DijkstraCallback() : furthest_sample(NULL) {}
 
@@ -108,7 +110,7 @@ FurthestPointSampling::subsample(intx num_orig_points, Vector3 const * orig_poin
     else
     {
       FurthestPointSamplingInternal::DijkstraCallback callback;
-      shortest_paths.dijkstraWithCallback(graph, NULL, &callback, -1, &src_region, /* include_unreachable = */ true);
+      shortest_paths.dijkstraWithCallback(graph, NULL, std::ref(callback), -1, &src_region, /* include_unreachable = */ true);
       if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
       {
         THEA_ERROR << "FurthestPointSampling: Could not return enough uniformly separated points";

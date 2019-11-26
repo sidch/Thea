@@ -9,8 +9,10 @@
 #include "../../Array.hpp"
 #include "../../FilePath.hpp"
 #include "../../MatVec.hpp"
+#include "../../Noncopyable.hpp"
 #include <cstdio>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -37,7 +39,7 @@ int loadSamples(string const & samples_path, Array<Vector3> & positions, Array<V
 struct MeshTransformer
 {
   MeshTransformer(AffineTransform3 const & tr_) : tr(tr_) {}
-  bool operator()(Mesh & mesh)
+  bool operator()(Mesh & mesh) const
   {
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       vi->setPosition(tr * vi->getPosition());
@@ -48,7 +50,7 @@ struct MeshTransformer
   AffineTransform3 tr;
 };
 
-struct DistanceCallback
+struct DistanceCallback : public Noncopyable
 {
   DistanceCallback(intx n) : m(n, n), current_source(-1) { m.fill(-1); }
 
@@ -173,7 +175,8 @@ main(int argc, char * argv[])
     for (size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
     {
       distance_callback.current_source = (intx)i;
-      shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]), &distance_callback);
+      shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]),
+                                          std::ref(distance_callback));
     }
 
     ofstream d_out(FilePath::changeExtension(out_path, "dist").c_str());
@@ -256,7 +259,7 @@ main(int argc, char * argv[])
                             * AffineTransform3::scaling(scale)
                             * AffineTransform3::translation(-mesh_bounds.getCenter());
         MeshTransformer func(tr);
-        mg.forEachMeshUntil(&func);
+        mg.forEachMeshUntil(std::cref(func));
         mg.updateBounds();
 
         THEA_CONSOLE << "Matched scale of source mesh and original samples";

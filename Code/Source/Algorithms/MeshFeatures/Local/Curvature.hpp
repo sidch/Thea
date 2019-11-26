@@ -47,6 +47,8 @@
 #include "../../IntersectionTester.hpp"
 #include "../../MetricL2.hpp"
 #include "../../PointTraitsN.hpp"
+#include "../../../Noncopyable.hpp"
+#include <functional>
 
 namespace Thea {
 namespace Algorithms {
@@ -152,16 +154,16 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
       Ball3 range(position, nbd_radius);
 
       if (this->hasExternalKDTree())
-        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
       else
-        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, &func);
+        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
 
       return func.getCurvature();
     }
 
   private:
     /** Called for each point in the neighborhood. */
-    struct ProjectedCurvatureFunctor
+    struct ProjectedCurvatureFunctor : public Noncopyable
     {
       ProjectedCurvatureFunctor(Vector3 const & p, Vector3 const & n)
       : position(p), normal(n), num_offsets(0), sum_offsets(Vector3::Zero())

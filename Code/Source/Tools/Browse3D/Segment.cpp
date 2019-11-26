@@ -95,15 +95,13 @@ struct MeshGroupRemover
 void
 Segment::addMeshGroup(MeshGroup * mg)
 {
-  SegmentInternal::MeshGroupAdder adder(*this);
-  if (mg) mg->forEachMeshUntil(&adder);
+  if (mg) mg->forEachMeshUntil(SegmentInternal::MeshGroupAdder(*this));
 }
 
 void
 Segment::removeMeshGroup(MeshGroup const * mg)
 {
-  SegmentInternal::MeshGroupRemover remover(*this);
-  if (mg) mg->forEachMeshUntil(&remover);
+  if (mg) mg->forEachMeshUntil(SegmentInternal::MeshGroupRemover(*this));
 }
 
 bool

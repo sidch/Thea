@@ -46,6 +46,7 @@
 #include "../Map.hpp"
 #include "../Math.hpp"
 #include "../Plane3.hpp"
+#include <functional>
 
 namespace Thea {
 namespace Algorithms {
@@ -87,7 +88,7 @@ class Impl
       radius = radius_;
       blend_bandwidth_squared = (options.blendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
 
-      geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, this, radius);
+      geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, std::ref(*this), radius);
     }
 
     Vector2 getParameters(intx sample_index, bool & has_parameters) const

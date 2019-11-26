@@ -86,17 +86,33 @@ class /* THEA_API */ RangeQueryStructure
      * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
      * (or be a function pointer with the equivalent signature)
      * \code
-     * bool operator()(intx index, T & t)
+     * bool operator()(intx index, T const & t)
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object).
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
      *
-     * @return True if the functor evaluated to true on any object in the range (and hence stopped immediately after processing
-     *   this object), else false.
+     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this object), else a negative value.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
-    bool processRangeUntil(RangeT const & range, FunctorT * functor);
+    intx processRangeUntil(RangeT const & range, FunctorT functor) const;
+
+    /**
+     * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
+     * (or be a function pointer with the equivalent signature)
+     * \code
+     * bool operator()(intx index, T [const] & t)
+     * \endcode
+     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
+     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
+     *
+     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this object), else a negative value.
+     */
+    template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
+    intx processRangeUntil(RangeT const & range, FunctorT functor);
 
 }; // class RangeQueryStructure
 

@@ -951,11 +951,7 @@ class /* THEA_API */ KDTreeN
     void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root)
-      {
-        RangeQueryFunctor functor(result);
-        const_cast<KDTreeN *>(this)->processRangeUntil<IntersectionTesterT>(root, range, &functor);
-      }
+      if (root) const_cast<KDTreeN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryFunctor(result));
     }
 
     /**
@@ -971,36 +967,51 @@ class /* THEA_API */ KDTreeN
     void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root)
-      {
-        RangeQueryIndicesFunctor functor(result);
-        const_cast<KDTreeN *>(this)->processRangeUntil<IntersectionTesterT>(root, range, &functor);
-      }
+      if (root) const_cast<KDTreeN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryIndicesFunctor(result));
     }
 
     /**
      * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
      * (or be a function pointer with the equivalent signature)
      * \code
-     * bool operator()(intx index, T & t)
+     * bool operator()(intx index, T const & t)
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object).
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
      *
      * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
      * AxisAlignedBoxT.
      *
-     * @return True if the functor evaluated to true on any object in the range (and hence stopped immediately after processing
-     *   this object), else false.
+     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this object), else a negative value.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
-    bool processRangeUntil(RangeT const & range, FunctorT * functor)
+    intx processRangeUntil(RangeT const & range, FunctorT functor) const
     {
-      if (!functor)  // no-op
-        return false;
+      return root ? const_cast<KDTreeN *>(this)->processRangeUntil<IntersectionTesterT, T const>(root, range, functor) : -1;
+    }
 
-      return root ? processRangeUntil<IntersectionTesterT>(root, range, functor) : false;
+    /**
+     * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
+     * (or be a function pointer with the equivalent signature)
+     * \code
+     * bool operator()(intx index, T [const] & t)
+     * \endcode
+     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
+     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
+     *
+     * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
+     * AxisAlignedBoxT.
+     *
+     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this object), else a negative value.
+     */
+    template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
+    intx processRangeUntil(RangeT const & range, FunctorT functor)
+    {
+      return root ? processRangeUntil<IntersectionTesterT, T>(root, range, functor) : -1;
     }
 
     template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, Real max_time = -1) const
@@ -1542,18 +1553,28 @@ class /* THEA_API */ KDTreeN
 
   protected:
     /**
-     * Apply a functor to all elements of a subtree within a range, stopping when the functor returns true on any point. The
-     * RangeT class should support containment queries with AxisAlignedBoxT.
+     * Apply a functor to all elements of a subtree within a range, until the functor returns true. The functor should provide
+     * the member function (or be a function pointer with the equivalent signature)
+     * \code
+     * bool operator()(intx index, T & t)
+     * \endcode
+     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
+     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
      *
-     * @return True if the functor evaluated to true on any point in the range, else false.
+     * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
+     * AxisAlignedBoxT.
+     *
+     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this object), else a negative value.
      */
-    template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
-    bool processRangeUntil(Node const * start, RangeT const & range, FunctorT * functor)
+    template <typename IntersectionTesterT, typename FunctorArgT, typename RangeT, typename FunctorT>
+    intx processRangeUntil(Node const * start, RangeT const & range, FunctorT functor)
     {
       // Early exit if the range and node are disjoint
       AxisAlignedBoxT tr_start_bounds = getBoundsWorldSpace(*start);
       if (!IntersectionTesterT::template intersects<N, ScalarT>(range, tr_start_bounds))
-        return false;
+        return -1;
 
       // If the entire node is contained in the range AND there are element references at this node (so it's either a leaf or we
       // have not saved memory by flushing references at internal nodes), then process all these elems.
@@ -1567,8 +1588,8 @@ class /* THEA_API */ KDTreeN
           if (!elementPassesFilters(elem))
             continue;
 
-          if ((*functor)(static_cast<intx>(index), elem))
-            return true;
+          if (functor(static_cast<intx>(index), static_cast<FunctorArgT &>(elem)))
+            return static_cast<intx>(index);
         }
       }
       else if (!start->lo)  // leaf
@@ -1586,17 +1607,18 @@ class /* THEA_API */ KDTreeN
                                 makeTransformedObject(&elem, &TransformableBaseT::getTransform()), range)
                           : IntersectionTesterT::template intersects<N, ScalarT>(elem, range);
           if (intersects)
-            if ((*functor)(static_cast<intx>(index), elem))
-              return true;
+            if (functor(static_cast<intx>(index), static_cast<FunctorArgT &>(elem)))
+              return static_cast<intx>(index);
         }
       }
       else  // not leaf
       {
-        if (processRangeUntil<IntersectionTesterT>(start->lo, range, functor)) return true;
-        if (processRangeUntil<IntersectionTesterT>(start->hi, range, functor)) return true;
+        intx index = processRangeUntil<IntersectionTesterT, FunctorArgT>(start->lo, range, functor);
+        if (index >= 0) return index;
+        return processRangeUntil<IntersectionTesterT, FunctorArgT>(start->hi, range, functor);
       }
 
-      return false;
+      return -1;
     }
 
   private:

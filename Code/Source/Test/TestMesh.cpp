@@ -162,7 +162,7 @@ class BoundaryValuesFunctor
     bool operator()(GM const & mesh)
     {
       for (GM::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-        cout << "imls" << vi->getPosition().transpose() << " = " << imls(vi->getPosition()) << endl;
+        cout << "imls" << toString(vi->getPosition()) << " = " << imls(vi->getPosition()) << endl;
 
       return false;
     }
@@ -193,7 +193,7 @@ testIMLS(int argc, char * argv[])
 // #define EVAL_BOUNDARY
 #ifdef EVAL_BOUNDARY
   BoundaryValuesFunctor bvf(imls);
-  input_mg.forEachMeshUntil(&bvf);
+  input_mg.forEachMeshUntil(bvf);
 #endif
 
 #define VOXELIZE
