@@ -340,6 +340,7 @@ format(char const * fmt, ...)
 }
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1300)
+
 // Both MSVC seems to use the non-standard vsnprintf
 // so we are using vscprintf to determine buffer size, however
 // only MSVC7 and up headers include vscprintf for some reason.
@@ -347,10 +348,10 @@ std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
   // We draw the line at a 1MB string.
-  intx const MAX_SIZE = 1000000;
+  static intx const MAX_SIZE = 1000000;
 
   // If the string is less than 161 characters, allocate it on the stack because this saves the malloc/free time.
-  intx const BUF_SIZE = 161;
+  static intx const BUF_SIZE = 161;
 
   // MSVC does not support va_copy
   intx actual_size = _vscprintf(fmt, arg_ptr) + 1;
@@ -390,12 +391,12 @@ std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
   // We draw the line at a 1MB string.
-  intx const MAX_SIZE = 1000000;
+  static intx const MAX_SIZE = 1000000;
 
   // If the string is less than 161 characters,
   // allocate it on the stack because this saves
   // the malloc/free time.
-  intx const BUF_SIZE = 161;
+  static intx const BUF_SIZE = 161;
   char stack_buffer[BUF_SIZE];
 
   // MSVC6 doesn't support va_copy, however it also seems to compile
@@ -440,7 +441,7 @@ vformat(char const * fmt, va_list arg_ptr)
   // the malloc/free time.  The number 161 is chosen
   // to support two lines of text on an 80 character
   // console (plus the null terminator).
-  intx const BUF_SIZE = 161;
+  static intx const BUF_SIZE = 161;
   char stack_buffer[BUF_SIZE];
 
   va_list arg_ptr_copy;
