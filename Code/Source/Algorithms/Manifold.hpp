@@ -67,8 +67,8 @@ class THEA_API Manifold
                                      Array<intx> & vertex_map, Array<intx> & face_map);
 
     /**
-     * Convert a non-manifold mesh to manifold form. Each vertex with a non-manifold neighbourhood is split up into copies with
-     * manifold neighbourhoods. Note that this function is not guaranteed to work. In particular, it throws an error if any face
+     * Convert a non-manifold mesh to manifold form. Each vertex with a non-manifold neighborhood is split up into copies with
+     * manifold neighborhoods. Note that this function is not guaranteed to work. In particular, it throws an error if any face
      * has a repeated vertex. Such faces are easy to detect and should be removed from the list of input faces before this
      * function is called.
      *
@@ -188,13 +188,13 @@ class THEA_API Manifold
     { return (size_t)*face.rbegin(); }
 
     /**
-     * Get the two neighbouring vertices of a given vertex on the boundary of a face. Throws an error if the face has repeated
+     * Get the two neighboring vertices of a given vertex on the boundary of a face. Throws an error if the face has repeated
      * vertices.
      */
     template <typename FaceT>
-    static bool getNeighbouringVertices(FaceT const & face, size_t vertex, size_t & nbr1, size_t & nbr2)
+    static bool getNeighboringVertices(FaceT const & face, size_t vertex, size_t & nbr1, size_t & nbr2)
     {
-      // Find the neighbours of the vertex in the first face
+      // Find the neighbors of the vertex in the first face
       size_t last_vertex = getLastIndex(face);
       size_t next_vertex;
       bool found = false;
@@ -231,10 +231,10 @@ class THEA_API Manifold
                                   Set<size_t> & shared_edges)
     {
       size_t u1, u2, w1, w2;
-      if (!getNeighbouringVertices(face1, vertex, u1, u2))
+      if (!getNeighboringVertices(face1, vertex, u1, u2))
         throw Error("Manifold: Vertex does not belong to first face");
 
-      if (!getNeighbouringVertices(face2, vertex, w1, w2))
+      if (!getNeighboringVertices(face2, vertex, w1, w2))
         throw Error("Manifold: Vertex does not belong to second face");
 
       bool ret = false;
