@@ -46,9 +46,9 @@
 #include "../Array.hpp"
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
-#include "../NamedObject.hpp"
+#include "../MatrixWrapper.hpp"
+#include "AbstractMesh.hpp"
 #include "DefaultMeshCodecs.hpp"
-#include "Drawable.hpp"
 #include "IncrementalDisplayMeshBuilder.hpp"
 #include <array>
 
@@ -279,7 +279,7 @@ class THEA_API DisplayMeshFace
 }; // class DisplayMeshFace
 
 /** A class for storing meshes for display, without detailed topology information. */
-class THEA_API DisplayMesh : public virtual NamedObject, public Drawable
+class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(DisplayMesh)
@@ -358,6 +358,20 @@ class THEA_API DisplayMesh : public virtual NamedObject, public Drawable
     VAR * texcoords_var;    ///< GPU buffer for texture coordinates.
     VAR * edges_var;        ///< GPU buffer for edges.
 
+    // Map the vertex and index buffers as matrices for the AbstractMesh API
+    typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
+    typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
+    typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
+
+    mutable VertexMatrix    vertex_matrix;  ///< Vertex data as a dense 3xN column-major matrix.
+    mutable TriangleMatrix  tri_matrix;     ///< Triangle indices as a dense 3xN column-major matrix.
+    mutable QuadMatrix      quad_matrix;    ///< Quad indices as a dense 4xN column-major matrix.
+
+    mutable MatrixWrapper<VertexMatrix>    vertex_wrapper;
+    mutable MatrixWrapper<TriangleMatrix>  tri_wrapper;
+    mutable MatrixWrapper<QuadMatrix>      quad_wrapper;
+
+    // Friend classes
     friend class DisplayMeshVertex;
     friend class DisplayMeshIndexedVertex;
     friend class DisplayMeshFace;
@@ -371,6 +385,11 @@ class THEA_API DisplayMesh : public virtual NamedObject, public Drawable
 
     /** Destructor. */
     virtual ~DisplayMesh() {}
+
+    // Abstract mesh interface
+    AbstractDenseMatrix<Real> const * getVertexMatrix() const;
+    AbstractDenseMatrix<uint32> const * getTriangleMatrix() const;
+    AbstractDenseMatrix<uint32> const * getQuadMatrix() const;
 
     /** Get the set of vertex positions. */
     VertexArray const & getVertices() const { return vertices; }

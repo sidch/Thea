@@ -3,19 +3,12 @@
 #define TEST_CONNECTED_COMPONENTS
 #define TEST_MANIFOLD
 #define TEST_IMLS
+#define TEST_ABSTRACT_MESH
 
 #include "../Common.hpp"
-
-#if defined(TEST_GENERAL_MESH) || defined(TEST_CONNECTED_COMPONENTS) || defined(TEST_MANIFOLD) || defined(TEST_IMLS)
-#include "../Graphics/GeneralMesh.hpp"
-typedef Thea::Graphics::GeneralMesh<> GM;
-#endif
-
-#if defined(TEST_DCEL_MESH)
 #include "../Graphics/DCELMesh.hpp"
-typedef Thea::Graphics::DCELMesh<> DM;
-#endif
-
+#include "../Graphics/DisplayMesh.hpp"
+#include "../Graphics/GeneralMesh.hpp"
 #include "../Graphics/MeshType.hpp"
 #include "../Algorithms/ConnectedComponents.hpp"
 #include "../Algorithms/IMLSSurface.hpp"
@@ -35,11 +28,15 @@ using namespace Thea;
 using namespace Algorithms;
 using namespace Graphics;
 
+typedef GeneralMesh<> GM;
+typedef DCELMesh<> DM;
+
 void testMesh(int argc, char * argv[]);
 void testGeneralMesh(int argc, char * argv[]);
 void testDCELMesh(int argc, char * argv[]);
 void testManifold(int argc, char * argv[]);
 void testIMLS(int argc, char * argv[]);
+void testAbstractMesh(int argc, char * argv[]);
 
 string data_dir;
 
@@ -71,6 +68,7 @@ testMesh(int argc, char * argv[])
   testDCELMesh(argc, argv);
   testManifold(argc, argv);
   testIMLS(argc, argv);
+  testAbstractMesh(argc, argv);
 }
 
 void
@@ -303,3 +301,46 @@ testIMLS(int argc, char * argv[])
 
 #endif
 }
+
+#ifdef TEST_ABSTRACT_MESH
+template <typename MeshT>
+void
+saveAbstractMesh(string const & model_path, string const & out_path)
+{
+  MeshGroup<MeshT> in_mg(FilePath::objectName(model_path));
+  in_mg.load(model_path);
+  auto mesh = *in_mg.meshesBegin();
+  auto verts = Math::mapTo< Matrix3X const >(*mesh->getVertexMatrix());
+  auto tris  = Math::mapTo< Matrix<3, Eigen::Dynamic, uint32> const >(*mesh->getTriangleMatrix());
+  auto quads = Math::mapTo< Matrix<4, Eigen::Dynamic, uint32> const >(*mesh->getQuadMatrix());
+
+  THEA_CONSOLE << in_mg.getName() << ": Input mesh has " << mesh->numVertices() << " vertices and " << mesh->numFaces()
+                                  << " faces, of which " << mesh->numTriangles() << " are triangles and " << mesh->numQuads()
+                                  << " are quads";
+  THEA_CONSOLE << in_mg.getName() << ": Abstract mesh verts " << verts.rows() << 'x' << verts.cols()
+                                  << ", tris " << tris.rows() << 'x' << tris.cols()
+                                  << ", quads " << quads.rows() << 'x' << quads.cols();
+
+  auto out_mesh = std::make_shared<DisplayMesh>("Abstract mesh data");
+  for (intx i = 0; i < verts.cols(); ++i) out_mesh->addVertex(verts.col(i));
+  for (intx i = 0; i < tris.cols(); ++i) out_mesh->addTriangle(tris(0, i), tris(1, i), tris(2, i));
+  for (intx i = 0; i < quads.cols(); ++i) out_mesh->addQuad(quads(0, i), quads(1, i), quads(2, i), quads(3, i));
+
+  MeshGroup<DisplayMesh> out_mg("Abstract mesh data");
+  out_mg.addMesh(out_mesh);
+  out_mg.save(out_path);
+}
+#endif
+
+void
+testAbstractMesh(int argc, char * argv[])
+{
+#ifdef TEST_ABSTRACT_MESH
+  string model_path = (argc < 2 ? FilePath::concat(data_dir, "teapot.obj") : argv[1]);
+
+  saveAbstractMesh<GM>         (model_path, "abstract_gen.obj");
+  saveAbstractMesh<DM>         (model_path, "abstract_dcel.obj");
+  saveAbstractMesh<DisplayMesh>(model_path, "abstract_disp.obj");
+#endif
+}
+

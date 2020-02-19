@@ -49,14 +49,15 @@
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../Math.hpp"
+#include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Set.hpp"
 #include "../UnorderedSet.hpp"
+#include "AbstractMesh.hpp"
 #include "DCELFace.hpp"
 #include "DCELVertex.hpp"
 #include "DCELHalfedge.hpp"
 #include "DefaultMeshCodecs.hpp"
-#include "Drawable.hpp"
 #include "GraphicsAttributes.hpp"
 #include "IncrementalDCELMeshBuilder.hpp"
 #include <limits>
@@ -87,7 +88,7 @@ namespace Graphics {
 template < typename VertexAttribute    =  Graphics::NullAttribute,
            typename HalfedgeAttribute  =  Graphics::NullAttribute,
            typename FaceAttribute      =  Graphics::NullAttribute >
-class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
+class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(DCELMesh)
@@ -159,10 +160,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       next_halfedge_index(0),
       max_vertex_index(-1),
       max_face_index(-1),
+      changed_packed(BufferID::ALL),
+      has_large_polys(false),
       buffered_rendering(false),
       buffered_wireframe(false),
       changed_buffers(BufferID::ALL),
-      has_large_polys(false),
       num_tri_indices(0),
       num_quad_indices(0),
       var_area(NULL),
@@ -172,15 +174,20 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       vertex_texcoords_var(NULL),
       tris_var(NULL),
       quads_var(NULL),
-      edges_var(NULL)
+      edges_var(NULL),
+      vertex_matrix(NULL, 3, 0),
+      tri_matrix(NULL, 3, 0),
+      quad_matrix(NULL, 4, 0),
+      vertex_wrapper(&vertex_matrix),
+      tri_wrapper(&tri_matrix),
+      quad_wrapper(&quad_matrix)
     {}
 
     /**
      * Copy constructor. Creates a deep copy of the mesh (including copies of the attributes). <b>Currently not
      * implemented.</b>
      */
-    DCELMesh(DCELMesh const & src)
-    : NamedObject(src), bounds(src.bounds)
+    DCELMesh(DCELMesh const & src) : NamedObject(src)
     {
       throw Error("DCELMesh: Copy constructor not currently implemented");
     }
@@ -197,6 +204,32 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
                 UnorderedMap<Face const *, Face *> * face_map = NULL) const
     {
       throw Error("DCELMesh: Copy function not currently implemented");
+    }
+
+    // Abstract mesh interface
+    AbstractDenseMatrix<Real> const * getVertexMatrix() const
+    {
+      // Assume Vector3 is tightly packed and has no padding
+      packVertexPositions();
+      Vector3 const * buf = (packed_vertex_positions.empty() ? NULL : &packed_vertex_positions[0]);
+      new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
+      return &vertex_wrapper;
+    }
+
+    AbstractDenseMatrix<uint32> const * getTriangleMatrix() const
+    {
+      packTopology();
+      uint32 const * buf = (packed_tris.empty() ? NULL : &packed_tris[0]);
+      new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, num_tri_indices / 3);
+      return &tri_wrapper;
+    }
+
+    AbstractDenseMatrix<uint32> const * getQuadMatrix() const
+    {
+      packTopology();
+      uint32 const * buf = (packed_quads.empty() ? NULL : &packed_quads[0]);
+      new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, num_quad_indices / 4);
+      return &quad_wrapper;
     }
 
     /** Get an iterator pointing to the first vertex. */
@@ -623,7 +656,11 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     }
 
     /** Invalidate part or all of the current GPU data for the mesh. */
-    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL) { changed_buffers |= changed_buffers_; }
+    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL)
+    {
+      changed_buffers |= changed_buffers_;
+      changed_packed  |= changed_buffers_;
+    }
 
     /**
      * Enable/disable drawing the edges of the mesh in GPU-buffered mode. Enabling this function will <b>not</b> draw any edges
@@ -650,6 +687,19 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
      * @see setGPUBufferedWireframe()
      */
     bool wireframeIsGPUBuffered() const { return buffered_wireframe; }
+
+    /**
+     * Pack all mesh data to arrays that can be directly transferred to the GPU. Packed arrays that are already synchronized
+     * with the mesh are not re-packed.
+     */
+    void packArrays() const
+    {
+      packVertexPositions();
+      packVertexNormals();
+      packVertexColors<Vertex>();
+      packVertexTexCoords<Vertex>();
+      packTopology();
+    }
 
     void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
     {
@@ -1221,11 +1271,20 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
       } while (e != first);
     }
 
+    /** Check if a packed array is synchronized with the mesh or not. */
+    bool packedArrayIsValid(BufferID buffer) const { return (changed_packed & (int)buffer) == 0; }
+
+    /** Mark a specific packed array as being synchronized with the mesh. */
+    void setPackedArrayIsValid(BufferID buffer) const { changed_packed &= (~(int)buffer); }
+
+    /** Clear the set of changed packed arrays. */
+    void setAllPackedArraysAreValid() const { changed_packed = 0; }
+
     /** Check if a GPU buffer is synchronized with the mesh or not. */
     bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void allGPUBuffersAreValid() { changed_buffers = 0; }
+    void setAllGPUBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
     void uploadToGraphicsSystem(RenderSystem & render_system);
@@ -1234,60 +1293,86 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     void drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
-    void packVertexPositions()
+    void packVertexPositions() const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_POSITION)) return;
+
       packed_vertex_positions.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = (*vi)->getPosition();
+
+      setPackedArrayIsValid(BufferID::VERTEX_POSITION);
     }
 
     /** Pack vertex positions densely in an array. */
-    void packVertexNormals()
+    void packVertexNormals() const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_NORMAL)) return;
+
       packed_vertex_normals.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = (*vi)->getNormal();
+
+      setPackedArrayIsValid(BufferID::VERTEX_NORMAL);
     }
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL) const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
+
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRGBA((*vi)->attr().getColor());
+
+      setPackedArrayIsValid(BufferID::VERTEX_COLOR);
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL) const
     {
-      packed_vertex_colors.clear();
+      if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
+      {
+        packed_vertex_colors.clear();
+        setPackedArrayIsValid(BufferID::VERTEX_COLOR);
+      }
     }
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL) const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
+
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
+
+      setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
     }
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL) const
     {
-      packed_vertex_texcoords.clear();
+      if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
+      {
+        packed_vertex_texcoords.clear();
+        setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
+      }
     }
 
     /** Pack face and edge indices densely in an array. */
-    void packTopology()
+    void packTopology() const
     {
+      if (packedArrayIsValid(BufferID::TOPOLOGY)) return;
+
       packed_tris.clear();
       packed_quads.clear();
 
@@ -1336,6 +1421,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 
       num_tri_indices   =  (intx)packed_tris.size();
       num_quad_indices  =  (intx)packed_quads.size();
+
+      setPackedArrayIsValid(BufferID::TOPOLOGY);
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
@@ -1354,20 +1441,21 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
 
     AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
-    bool buffered_rendering;  ///< Should the mesh be rendered using GPU buffers?
-    bool buffered_wireframe;  ///< Can edges be drawn in GPU-buffered mode?
-    int changed_buffers;      ///< A bitwise OR of the flags of the buffers that have changed.
-    bool has_large_polys;     ///< Does the mesh have polygons with more than 4 vertices?
+    mutable int changed_packed;    ///< A bitwise OR of the flags of the packed arrays that need to be updated.
+    mutable bool has_large_polys;  ///< Does the mesh have polygons with more than 4 vertices?
+    bool buffered_rendering;       ///< Should the mesh be rendered using GPU buffers?
+    bool buffered_wireframe;       ///< Can edges be drawn in GPU-buffered mode?
+    int changed_buffers;           ///< A bitwise OR of the flags of the buffers that need to be updated.
 
-    PositionArray  packed_vertex_positions;  ///< Array containing packed set of vertex positions.
-    NormalArray    packed_vertex_normals;    ///< Array containing packed set of vertex normals.
-    ColorArray     packed_vertex_colors;     ///< Array containing packed set of vertex colors.
-    TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
-    IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
-    IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
-    IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
-    intx           num_tri_indices;          ///< Number of triangles in the mesh.
-    intx           num_quad_indices;         ///< Number of quads in the mesh.
+    mutable PositionArray  packed_vertex_positions;  ///< Array containing packed set of vertex positions.
+    mutable NormalArray    packed_vertex_normals;    ///< Array containing packed set of vertex normals.
+    mutable ColorArray     packed_vertex_colors;     ///< Array containing packed set of vertex colors.
+    mutable TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
+    mutable IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
+    mutable IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
+    mutable IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
+    mutable intx           num_tri_indices;          ///< Number of triangle indices in the mesh.
+    mutable intx           num_quad_indices;         ///< Number of quad indices in the mesh.
 
     VARArea * var_area;          ///< GPU buffer area.
     VAR * vertex_positions_var;  ///< GPU buffer for vertex positions.
@@ -1379,6 +1467,19 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public Drawable
     VAR * edges_var;             ///< GPU buffer for edges.
 
     mutable Array<Vertex *> face_vertices;  // internal cache for vertex pointers for a face
+
+    // Map the packed vertex and index buffers as matrices for the AbstractMesh API
+    typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
+    typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
+    typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
+
+    mutable VertexMatrix    vertex_matrix;  ///< Vertex data as a dense 3xN column-major matrix.
+    mutable TriangleMatrix  tri_matrix;     ///< Triangle indices as a dense 3xN column-major matrix.
+    mutable QuadMatrix      quad_matrix;    ///< Quad indices as a dense 4xN column-major matrix.
+
+    mutable MatrixWrapper<VertexMatrix>    vertex_wrapper;
+    mutable MatrixWrapper<TriangleMatrix>  tri_wrapper;
+    mutable MatrixWrapper<QuadMatrix>      quad_wrapper;
 };
 
 template <typename V, typename E, typename F>
@@ -1388,7 +1489,7 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
   if (!buffered_rendering || changed_buffers == 0) return;
 
   if (!gpuBufferIsValid(BufferID::TOPOLOGY))
-    changed_buffers = BufferID::ALL;
+    invalidateGPUBuffers(BufferID::ALL);
 
   if (changed_buffers == BufferID::ALL)
   {
@@ -1410,23 +1511,17 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
         var_area = NULL;
       }
 
-      allGPUBuffersAreValid();
+      setAllGPUBuffersAreValid();
       return;
     }
 
+    packArrays();
+
     static int const PADDING = 32;
-
-    packVertexPositions();
-    packVertexNormals();
-    packVertexColors<Vertex>();
-    packVertexTexCoords<Vertex>();
-
     intx vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (intx)packed_vertex_positions.size() + PADDING : 0;
     intx vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (intx)packed_vertex_normals.size()   + PADDING : 0;
     intx vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (intx)packed_vertex_colors.size()    + PADDING : 0;
     intx vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (intx)packed_vertex_texcoords.size() + PADDING : 0;
-
-    packTopology();
 
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
     intx num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
@@ -1528,32 +1623,22 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
   }
   else
   {
+    packArrays();
+
     if (!gpuBufferIsValid(BufferID::VERTEX_POSITION) && !vertices.empty())
-    {
-      packVertexPositions();
       vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_NORMAL) && !vertices.empty())
-    {
-      packVertexNormals();
       vertex_normals_var->updateVectors (0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_COLOR) && hasVertexColors())
-    {
-      packVertexColors<Vertex>();
       vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_TEXCOORD) && hasVertexTexCoords())
-    {
-      packVertexTexCoords<Vertex>();
       vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
-    }
   }
 
-  allGPUBuffersAreValid();
+  setAllGPUBuffersAreValid();
 }
 
 template <typename V, typename E, typename F>

@@ -73,7 +73,7 @@ class RefIterator : public IteratorT
     /** Dereferences the iterator to an object of type T. */
     T & operator*() const { return *(this->IteratorT::operator*()); }
 
-    /** Overloaded arrow operator. */
+    /** Arrow operator. */
     T * operator->() const { return this->IteratorT::operator*(); }
 
 }; // class RefIterator
@@ -196,10 +196,7 @@ class PtrIterator : public IteratorT
     /** Dereferences the iterator to an (immutable) object of type T. */
     T const * operator*() const { return &(this->IteratorT::operator*()); }
 
-    /**
-     * Overloaded arrow operator is <b>DISABLED</b> (throws assertion error) since it cannot be called on an
-     * iterator-over-pointers.
-     */
+    /** Arrow operator is <b>DISABLED</b> (throws assertion error) since it cannot be called on an iterator-over-pointers. */
     T const * const * operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }
 
 }; // class PtrIterator

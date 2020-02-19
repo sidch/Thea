@@ -57,7 +57,13 @@ DisplayMesh::DisplayMesh(std::string const & name)
   quads_var(NULL),
   normals_var(NULL),
   colors_var(NULL),
-  texcoords_var(NULL)
+  texcoords_var(NULL),
+  vertex_matrix(NULL, 3, 0),
+  tri_matrix(NULL, 3, 0),
+  quad_matrix(NULL, 4, 0),
+  vertex_wrapper(&vertex_matrix),
+  tri_wrapper(&tri_matrix),
+  quad_wrapper(&quad_matrix)
 {}
 
 DisplayMesh::DisplayMesh(DisplayMesh const & src)
@@ -78,7 +84,13 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   quads_var(NULL),
   normals_var(NULL),
   colors_var(NULL),
-  texcoords_var(NULL)
+  texcoords_var(NULL),
+  vertex_matrix(NULL, 3, 0),
+  tri_matrix(NULL, 3, 0),
+  quad_matrix(NULL, 4, 0),
+  vertex_wrapper(&vertex_matrix),
+  tri_wrapper(&tri_matrix),
+  quad_wrapper(&quad_matrix)
 {}
 
 void
@@ -103,6 +115,31 @@ DisplayMesh::clear()
   bounds = AxisAlignedBox3();
 
   invalidateGPUBuffers();
+}
+
+AbstractDenseMatrix<Real> const *
+DisplayMesh::getVertexMatrix() const
+{
+  // Assume Vector3 is tightly packed and has no padding
+  Vector3 const * buf = (vertices.empty() ? NULL : &vertices[0]);
+  new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
+  return &vertex_wrapper;
+}
+
+AbstractDenseMatrix<uint32> const *
+DisplayMesh::getTriangleMatrix() const
+{
+  uint32 const * buf = (tris.empty() ? NULL : &tris[0]);
+  new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, numTriangles());
+  return &tri_wrapper;
+}
+
+AbstractDenseMatrix<uint32> const *
+DisplayMesh::getQuadMatrix() const
+{
+  uint32 const * buf = (quads.empty() ? NULL : &quads[0]);
+  new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, numQuads());
+  return &quad_wrapper;
 }
 
 DisplayMesh::Vertex

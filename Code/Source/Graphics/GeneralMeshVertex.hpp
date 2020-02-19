@@ -364,7 +364,7 @@ class /* THEA_API */ GeneralMeshVertex
     uint32 getPackingIndex() const { return packing_index; }
 
     /** Set the index of the vertex in a GPU array. */
-    void setPackingIndex(uint32 packing_index_) { packing_index = packing_index_; }
+    void setPackingIndex(uint32 packing_index_) const { packing_index = packing_index_; }
 
     /** Make an exact copy of the vertex. */
     void copyTo(GeneralMeshVertex & dst,
@@ -400,7 +400,7 @@ class /* THEA_API */ GeneralMeshVertex
     intx index;
     bool has_precomputed_normal;
     float normal_normalization_factor;
-    uint32 packing_index;
+    mutable uint32 packing_index;
     bool marked;
 
 }; // class GeneralMeshVertex

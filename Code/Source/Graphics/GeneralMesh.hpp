@@ -47,11 +47,12 @@
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../List.hpp"
+#include "../MatrixWrapper.hpp"
 #include "../NamedObject.hpp"
 #include "../Polygon3.hpp"
 #include "../UnorderedMap.hpp"
+#include "AbstractMesh.hpp"
 #include "DefaultMeshCodecs.hpp"
-#include "Drawable.hpp"
 #include "GeneralMeshFace.hpp"
 #include "GeneralMeshVertex.hpp"
 #include "GeneralMeshEdge.hpp"
@@ -78,7 +79,7 @@ template < typename VertexAttributeT               =  Graphics::NullAttribute,
            typename EdgeAttributeT                 =  Graphics::NullAttribute,
            typename FaceAttributeT                 =  Graphics::NullAttribute,
            template <typename T> class AllocatorT  =  std::allocator >
-class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
+class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(GeneralMesh)
@@ -138,10 +139,11 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     : NamedObject(name),
       max_vertex_index(-1),
       max_face_index(-1),
+      changed_packed(BufferID::ALL),
+      has_large_polys(false),
       buffered_rendering(false),
       buffered_wireframe(false),
       changed_buffers(BufferID::ALL),
-      has_large_polys(false),
       num_tri_indices(0),
       num_quad_indices(0),
       var_area(NULL),
@@ -151,7 +153,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       vertex_texcoords_var(NULL),
       tris_var(NULL),
       quads_var(NULL),
-      edges_var(NULL)
+      edges_var(NULL),
+      vertex_matrix(NULL, 3, 0),
+      tri_matrix(NULL, 3, 0),
+      quad_matrix(NULL, 4, 0),
+      vertex_wrapper(&vertex_matrix),
+      tri_wrapper(&tri_matrix),
+      quad_wrapper(&quad_matrix)
     {}
 
     /**
@@ -160,64 +168,6 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     GeneralMesh(GeneralMesh const & src) : NamedObject(src)
     {
       throw Error("GeneralMesh: Copy constructor not currently implemented");
-    }
-
-    /** Get an iterator pointing to the first vertex. */
-    VertexConstIterator verticesBegin() const { return vertices.begin(); }
-
-    /** Get an iterator pointing to the first vertex. */
-    VertexIterator verticesBegin() { return vertices.begin(); }
-
-    /** Get an iterator pointing to the position beyond the last vertex. */
-    VertexConstIterator verticesEnd() const { return vertices.end(); }
-
-    /** Get an iterator pointing to the position beyond the last vertex. */
-    VertexIterator verticesEnd() { return vertices.end(); }
-
-    /** Get an iterator pointing to the first edge. */
-    EdgeConstIterator edgesBegin() const { return edges.begin(); }
-
-    /** Get an iterator pointing to the first edge. */
-    EdgeIterator edgesBegin() { return edges.begin(); }
-
-    /** Get an iterator pointing to the position beyond the last edge. */
-    EdgeConstIterator edgesEnd() const { return edges.end(); }
-
-    /** Get an iterator pointing to the position beyond the last edge. */
-    EdgeIterator edgesEnd() { return edges.end(); }
-
-    /** Get an iterator pointing to the first face. */
-    FaceConstIterator facesBegin() const { return faces.begin(); }
-
-    /** Get an iterator pointing to the first face. */
-    FaceIterator facesBegin() { return faces.begin(); }
-
-    /** Get an iterator pointing to the position beyond the last face. */
-    FaceConstIterator facesEnd() const { return faces.end(); }
-
-    /** Get an iterator pointing to the position beyond the last face. */
-    FaceIterator facesEnd() { return faces.end(); }
-
-    /** Deletes all data in the mesh and resets automatic element indexing. */
-    void clear()
-    {
-      vertices.clear();
-      edges.clear();
-      faces.clear();
-      bounds = AxisAlignedBox3();
-      max_vertex_index = -1;
-      max_face_index = -1;
-
-      packed_vertex_positions.clear();
-      packed_vertex_normals.clear();
-      packed_vertex_colors.clear();
-      packed_vertex_texcoords.clear();
-      packed_tris.clear();
-      packed_quads.clear();
-      packed_edges.clear();
-
-      has_large_polys = false;
-      invalidateGPUBuffers();
     }
 
     /**
@@ -302,6 +252,91 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       dst.has_large_polys = has_large_polys;
     }
 
+    // Abstract mesh interface
+    AbstractDenseMatrix<Real> const * getVertexMatrix() const
+    {
+      // Assume Vector3 is tightly packed and has no padding
+      packVertexPositions();
+      Vector3 const * buf = (packed_vertex_positions.empty() ? NULL : &packed_vertex_positions[0]);
+      new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
+      return &vertex_wrapper;
+    }
+
+    AbstractDenseMatrix<uint32> const * getTriangleMatrix() const
+    {
+      packTopology();
+      uint32 const * buf = (packed_tris.empty() ? NULL : &packed_tris[0]);
+      new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, num_tri_indices / 3);
+      return &tri_wrapper;
+    }
+
+    AbstractDenseMatrix<uint32> const * getQuadMatrix() const
+    {
+      packTopology();
+      uint32 const * buf = (packed_quads.empty() ? NULL : &packed_quads[0]);
+      new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, num_quad_indices / 4);
+      return &quad_wrapper;
+    }
+
+    /** Get an iterator pointing to the first vertex. */
+    VertexConstIterator verticesBegin() const { return vertices.begin(); }
+
+    /** Get an iterator pointing to the first vertex. */
+    VertexIterator verticesBegin() { return vertices.begin(); }
+
+    /** Get an iterator pointing to the position beyond the last vertex. */
+    VertexConstIterator verticesEnd() const { return vertices.end(); }
+
+    /** Get an iterator pointing to the position beyond the last vertex. */
+    VertexIterator verticesEnd() { return vertices.end(); }
+
+    /** Get an iterator pointing to the first edge. */
+    EdgeConstIterator edgesBegin() const { return edges.begin(); }
+
+    /** Get an iterator pointing to the first edge. */
+    EdgeIterator edgesBegin() { return edges.begin(); }
+
+    /** Get an iterator pointing to the position beyond the last edge. */
+    EdgeConstIterator edgesEnd() const { return edges.end(); }
+
+    /** Get an iterator pointing to the position beyond the last edge. */
+    EdgeIterator edgesEnd() { return edges.end(); }
+
+    /** Get an iterator pointing to the first face. */
+    FaceConstIterator facesBegin() const { return faces.begin(); }
+
+    /** Get an iterator pointing to the first face. */
+    FaceIterator facesBegin() { return faces.begin(); }
+
+    /** Get an iterator pointing to the position beyond the last face. */
+    FaceConstIterator facesEnd() const { return faces.end(); }
+
+    /** Get an iterator pointing to the position beyond the last face. */
+    FaceIterator facesEnd() { return faces.end(); }
+
+    /** Deletes all data in the mesh and resets automatic element indexing. */
+    void clear()
+    {
+      vertices.clear();
+      edges.clear();
+      faces.clear();
+      bounds = AxisAlignedBox3();
+      max_vertex_index = -1;
+      max_face_index = -1;
+
+      packed_vertex_positions.clear();
+      packed_vertex_normals.clear();
+      packed_vertex_colors.clear();
+      packed_vertex_texcoords.clear();
+      packed_tris.clear();
+      packed_quads.clear();
+      packed_edges.clear();
+
+      has_large_polys = false;
+
+      invalidateGPUBuffers();
+    }
+
     /** True if and only if the mesh contains no objects. */
     bool isEmpty() const { return vertices.empty() && faces.empty() && edges.empty(); }
 
@@ -318,7 +353,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     intx numTriangles() const
     {
       intx rval = 0;
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isTriangle())
           rval++;
 
@@ -329,7 +364,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     intx numQuads() const
     {
       intx rval = 0;
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isQuad())
           rval++;
 
@@ -340,7 +375,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     void updateBounds()
     {
       bounds = AxisAlignedBox3();
-      for (VertexConstIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
+      for (auto vi = verticesBegin(); vi != verticesEnd(); ++vi)
         bounds.merge(vi->getPosition());
     }
 
@@ -432,7 +467,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
      */
     bool removeFace(Face * face)
     {
-      for (FaceIterator fi = faces.begin(); fi != faces.end(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
         if (&(*fi) == face)
           return removeFace(fi);  // invalidates GPU buffers
 
@@ -471,7 +506,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       alwaysAssertM(!require_connected, "GeneralMesh: Testing for connected manifolds not implemented");
 
       // Check that each edge has 2 or (if open surfaces are ok) 1 incident face(s).
-      for (EdgeConstIterator ei = edges.begin(); ei != edges.end(); ++ei)
+      for (auto ei = edges.begin(); ei != edges.end(); ++ei)
       {
         switch (ei->numFaces())
         {
@@ -485,7 +520,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       }
 
       // Now check that each vertex has a manifold neighborhood
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         if (!isManifoldVertex(&(*vi)))
           return false;
 
@@ -501,7 +536,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     {
       EdgeWelder welder(weld_radius);
 
-      for (EdgeIterator ei = edges.begin(); ei != edges.end(); ++ei)
+      for (auto ei = edges.begin(); ei != edges.end(); ++ei)
       {
         if (!ei->isBoundaryEdge())
           continue;
@@ -516,7 +551,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         if (can_seal)
         {
           // We can seal only if the two edges don't share a face
-          for (typename Edge::FaceConstIterator fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
+          for (auto fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
             if (existing->hasIncidentFace(*fi))
             {
               can_seal = false;
@@ -551,7 +586,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       }
       else
       {
-        for (typename Vertex::EdgeIterator ei = old_vertex->edgesBegin(); ei != old_vertex->edgesEnd(); ++ei)
+        for (auto ei = old_vertex->edgesBegin(); ei != old_vertex->edgesEnd(); ++ei)
         {
           (*ei)->replaceVertex(old_vertex, new_vertex);
 
@@ -559,7 +594,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
             new_vertex->addEdge(*ei);
         }
 
-        for (typename Vertex::FaceIterator fi = old_vertex->facesBegin(); fi != old_vertex->facesEnd(); ++fi)
+        for (auto fi = old_vertex->facesBegin(); fi != old_vertex->facesEnd(); ++fi)
         {
           (*fi)->replaceVertex(old_vertex, new_vertex);
 
@@ -600,11 +635,11 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // Remove all references to this edge, and the vertex to remove, from all adjacent faces
       bool preserve_edge = false;
-      for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); )
+      for (auto fi = edge->facesBegin(); fi != edge->facesEnd(); )
       {
         Face * face = *fi;
-        typename Face::EdgeIterator fei = face->edgesBegin();
-        typename Face::VertexIterator fvi = face->verticesBegin();
+        auto fei = face->edgesBegin();
+        auto fvi = face->verticesBegin();
 
         bool preserve_edge_ref_to_face = false;
         while (fei != face->edgesEnd())
@@ -620,7 +655,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
             {
               // We expect the next vertex to be the one to remove. We'll have to advance the vertex iterator, delete the
               // vertex, and then advance the edge iterator as well
-              typename Face::VertexIterator next = fvi; ++next;
+              auto next = fvi; ++next;
               if (next == face->verticesEnd())
                 next = face->verticesBegin();
 
@@ -670,7 +705,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       }
 
       // Update references of elements adjacent to the vertex that's going to be removed
-      for (typename Vertex::EdgeIterator ei = vertex_to_remove->edgesBegin(); ei != vertex_to_remove->edgesEnd(); ++ei)
+      for (auto ei = vertex_to_remove->edgesBegin(); ei != vertex_to_remove->edgesEnd(); ++ei)
       {
         // We do the replacement even for the edge that is getting collapsed, since if a face repeats this edge it is going to
         // be present in the output (as a self-loop)
@@ -681,7 +716,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
           vertex_to_preserve->addEdge(*ei);
       }
 
-      for (typename Vertex::FaceIterator fi = vertex_to_remove->facesBegin(); fi != vertex_to_remove->facesEnd(); ++fi)
+      for (auto fi = vertex_to_remove->facesBegin(); fi != vertex_to_remove->facesEnd(); ++fi)
       {
         (*fi)->replaceVertex(vertex_to_remove, vertex_to_preserve);
 
@@ -724,7 +759,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         return NULL;
       }
 
-      for (typename Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+      for (auto efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
         if ((*efi)->hasVertex(vertex))
         {
           THEA_DEBUG << getName() << ": Can't split edge at vertex on the same face";
@@ -742,7 +777,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       old_e1->removeEdge(edge);
       old_e1->addEdge(new_edge);
 
-      for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
+      for (auto fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
       {
         new_edge->addFace(*fi);
 
@@ -751,12 +786,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       }
 
       // Now everything's ok except except the references in the faces
-      for (typename Edge::FaceIterator fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
+      for (auto fi = edge->facesBegin(); fi != edge->facesEnd(); ++fi)
       {
         Face * face = *fi;
 
-        typename Face::EdgeIterator ei = face->edgesBegin();
-        typename Face::VertexIterator vi = face->verticesBegin();
+        auto ei = face->edgesBegin();
+        auto vi = face->verticesBegin();
 
         while (ei != face->edgesEnd())
         {
@@ -769,12 +804,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
             }
             else  // sequence is [v0, v1], insert after
             {
-              typename Face::EdgeIterator next_ei = ei; ++next_ei;
+              auto next_ei = ei; ++next_ei;
               face->edges.insert(next_ei, new_edge);
             }
 
             // Vertex goes in the middle, i.e. always after the current vertex
-            typename Face::VertexIterator next_vi = vi; ++next_vi;
+            auto next_vi = vi; ++next_vi;
             face->vertices.insert(next_vi, vertex);
 
             break;
@@ -824,18 +859,18 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     void removeDegenerateEdges()
     {
       // Remove self-loops
-      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
+      for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
       {
         if (!ei->isSelfLoop())
           continue;
 
         Edge * edge = &(*ei);
-        for (typename Edge::FaceIterator efi = edge->facesBegin(); efi != edge->facesEnd(); )
+        for (auto efi = edge->facesBegin(); efi != edge->facesEnd(); )
         {
           Face * face = *efi;
 
-          typename Face::EdgeIterator fei = face->edgesBegin();
-          typename Face::VertexIterator fvi = face->verticesBegin();
+          auto fei = face->edgesBegin();
+          auto fvi = face->verticesBegin();
           while (fei != face->edgesEnd())
           {
             if (*fei == edge)
@@ -864,16 +899,16 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all empty faces (fewer than 3 edges) from the mesh. */
     void removeDegenerateFaces()
     {
-      for (FaceIterator fi = faces.begin(); fi != facesEnd(); )
+      for (auto fi = faces.begin(); fi != facesEnd(); )
       {
         if (fi->numVertices() < 3)
         {
           Face * face = &(*fi);
 
-          for (typename Face::VertexIterator vi = face->verticesBegin(); vi != face->verticesEnd(); ++vi)
+          for (auto vi = face->verticesBegin(); vi != face->verticesEnd(); ++vi)
             (*vi)->removeFace(face);
 
-          for (typename Face::EdgeIterator ei = face->edgesBegin(); ei != face->edgesEnd(); ++ei)
+          for (auto ei = face->edgesBegin(); ei != face->edgesEnd(); ++ei)
             (*ei)->removeFace(face);
 
           fi = faces.erase(fi);
@@ -889,7 +924,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all isolated edges (no incident faces) from the mesh. */
     void removeIsolatedEdges()
     {
-      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); )
+      for (auto ei = edgesBegin(); ei != edgesEnd(); )
       {
         if (ei->faces.empty())
         {
@@ -908,7 +943,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all isolated vertices (no incident edges or faces) from the mesh. */
     void removeIsolatedVertices()
     {
-      for (VertexIterator vi = verticesBegin(); vi != verticesEnd(); )
+      for (auto vi = verticesBegin(); vi != verticesEnd(); )
       {
         if (vi->faces.empty() && vi->edges.empty())
           vi = vertices.erase(vi);
@@ -922,7 +957,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all vertices marked for deletion by other operations. */
     void removeMarkedVertices()
     {
-      for (VertexIterator vi = verticesBegin(); vi != verticesEnd(); )
+      for (auto vi = verticesBegin(); vi != verticesEnd(); )
       {
         if (vi->isMarked())
           vi = vertices.erase(vi);
@@ -936,7 +971,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all edges marked for deletion by other operations. */
     void removeMarkedEdges()
     {
-      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); )
+      for (auto ei = edgesBegin(); ei != edgesEnd(); )
       {
         if (ei->isMarked())
           ei = edges.erase(ei);
@@ -950,7 +985,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Remove all faces marked for deletion by other operations. */
     void removeMarkedFaces()
     {
-      for (FaceIterator fi = facesBegin(); fi != facesEnd(); )
+      for (auto fi = facesBegin(); fi != facesEnd(); )
       {
         if (fi->isMarked())
           fi = faces.erase(fi);
@@ -978,7 +1013,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // New faces will be added to the end of the face list, so we can just keep track of when we've processed the original
       // number of faces
-      for (FaceIterator fi = facesBegin(); num_visited_faces < orig_num_faces; ++fi, ++num_visited_faces)
+      for (auto fi = facesBegin(); num_visited_faces < orig_num_faces; ++fi, ++num_visited_faces)
         if (fi->numVertices() > 3)
         {
           intx nt = triangulate(&(*fi), epsilon);
@@ -1014,7 +1049,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         Vertex * face_vertices[4];
         {
           size_t i = 0;
-          for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
+          for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
             face_vertices[i] = *fvi;
         }
 
@@ -1037,7 +1072,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         Polygon3 poly;
         {
           size_t i = 0;
-          for (typename Face::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
+          for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi, ++i)
           {
             face_vertices[i] = *fvi;
             poly.addVertex((*fvi)->getPosition());
@@ -1057,7 +1092,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       if (ntris <= 0)
       {
         Vertex * face_vertices[3];
-        typename Face::VertexConstIterator fvi = face->verticesBegin();
+        auto fvi = face->verticesBegin();
         face_vertices[0] = *(fvi++);
         face_vertices[1] = *(fvi++);
         face_vertices[2] = *(fvi);
@@ -1096,7 +1131,11 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     }
 
     /** Invalidate part or all of the current GPU data for the mesh. */
-    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL) { changed_buffers |= changed_buffers_; }
+    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL)
+    {
+      changed_buffers |= changed_buffers_;
+      changed_packed  |= changed_buffers_;
+    }
 
     /**
      * Enable/disable drawing the edges of the mesh in GPU-buffered mode. Enabling this function will <b>not</b> draw any edges
@@ -1123,6 +1162,19 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
      * @see setGPUBufferedWireframe()
      */
     bool wireframeIsGPUBuffered() const { return buffered_wireframe; }
+
+    /**
+     * Pack all mesh data to arrays that can be directly transferred to the GPU. Packed arrays that are already synchronized
+     * with the mesh are not re-packed.
+     */
+    void packArrays() const
+    {
+      packVertexPositions();
+      packVertexNormals();
+      packVertexColors<Vertex>();
+      packVertexTexCoords<Vertex>();
+      packTopology();
+    }
 
     void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
     {
@@ -1154,7 +1206,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       // Check for errors and compute normal
       size_t num_verts = 0;
       Vector3 v[3];
-      for (VertexInputIterator vi = vbegin; vi != vend; ++vi, ++num_verts)
+      for (auto vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
         debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
         if (num_verts < 3) v[num_verts] = (*vi)->getPosition();
@@ -1170,7 +1222,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // Add the loop of vertices to the face
       VertexInputIterator next = vbegin;
-      for (VertexInputIterator vi = next++ ; vi != vend; ++vi, ++next)
+      for (auto vi = next++ ; vi != vend; ++vi, ++next)
       {
         if (next == vend) next = vbegin;
 
@@ -1193,7 +1245,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // Update the face and vertex normals;
       face->updateNormal();
-      for (typename Face::VertexIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
+      for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
         (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
 
       invalidateGPUBuffers();
@@ -1249,7 +1301,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       *next_face = NULL;
 
       // Find the next face around the vertex
-      for (typename Edge::FaceConstIterator efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
+      for (auto efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
         if (*efi != face)
         {
           *next_face = *efi;
@@ -1261,7 +1313,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         return false;
 
       // Find the next edge around the vertex
-      for (typename Face::EdgeConstIterator fei = (*next_face)->edgesBegin(); fei != (*next_face)->edgesEnd(); ++fei)
+      for (auto fei = (*next_face)->edgesBegin(); fei != (*next_face)->edgesEnd(); ++fei)
         if (*fei != edge && (*fei)->hasEndpoint(vertex))
         {
           *next_edge = *fei;
@@ -1282,7 +1334,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       // Find an edge to start from. If the vertex is a boundary vertex, we *must* start from a boundary edge
       Edge const * first_edge = *vertex->edgesBegin();
-      for (typename Vertex::EdgeConstIterator vei = vertex->edgesBegin(); vei != vertex->edgesEnd(); ++vei)
+      for (auto vei = vertex->edgesBegin(); vei != vertex->edgesEnd(); ++vei)
       {
         (*vei)->clearAllInternalBits();
 
@@ -1365,7 +1417,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         return false;
       }
 
-      for (typename Edge::FaceConstIterator efi = old_edge->facesBegin(); efi != old_edge->facesEnd(); ++efi)
+      for (auto efi = old_edge->facesBegin(); efi != old_edge->facesEnd(); ++efi)
         if (new_edge->hasIncidentFace(*efi))
         {
           THEA_DEBUG << getName() << ": Can't replace an edge with another on the same face";
@@ -1401,7 +1453,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       // Now there is a double edge, which we will remove
       new_v[0]->removeEdge(old_edge);
       new_v[1]->removeEdge(old_edge);
-      for (typename Edge::FaceIterator fi = old_edge->facesBegin(); fi != old_edge->facesEnd(); ++fi)
+      for (auto fi = old_edge->facesBegin(); fi != old_edge->facesEnd(); ++fi)
       {
         (*fi)->replaceEdge(old_edge, new_edge);
         if (!new_edge->hasIncidentFace(*fi))
@@ -1417,21 +1469,21 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     /** Unmark all vertices. */
     void unmarkAllVertices()
     {
-      for (VertexIterator vi = verticesBegin(); vi != verticesEnd(); ++vi)
+      for (auto vi = verticesBegin(); vi != verticesEnd(); ++vi)
         vi->unmark();
     }
 
     /** Unmark all edges. */
     void unmarkAllEdges()
     {
-      for (EdgeIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
+      for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
         ei->unmark();
     }
 
     /** Unmark all faces. */
     void unmarkAllFaces()
     {
-      for (FaceIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         fi->unmark();
     }
 
@@ -1440,10 +1492,10 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     {
       debugAssertM(face, getNameStr() + ": Can't unlink null face");
 
-      for (typename Face::VertexIterator fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
+      for (auto fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
         (*fvi)->removeFace(face);
 
-      for (typename Face::EdgeIterator fei = face->edges.begin(); fei != face->edges.end(); ++fei)
+      for (auto fei = face->edges.begin(); fei != face->edges.end(); ++fei)
         (*fei)->removeFace(face);
 
       invalidateGPUBuffers();
@@ -1494,7 +1546,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       if (!options.useVertexData())
         face.attr().draw(render_system, options);
 
-      for (typename Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
+      for (auto vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
       {
         Vertex const & vertex = **vi;
 
@@ -1508,11 +1560,20 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       }
     }
 
+    /** Check if a packed array is synchronized with the mesh or not. */
+    bool packedArrayIsValid(BufferID buffer) const { return (changed_packed & (int)buffer) == 0; }
+
+    /** Mark a specific packed array as being synchronized with the mesh. */
+    void setPackedArrayIsValid(BufferID buffer) const { changed_packed &= (~(int)buffer); }
+
+    /** Clear the set of changed packed arrays. */
+    void setAllPackedArraysAreValid() const { changed_packed = 0; }
+
     /** Check if a GPU buffer is synchronized with the mesh or not. */
     bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void allGPUBuffersAreValid() { changed_buffers = 0; }
+    void setAllGPUBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
     void uploadToGraphicsSystem(RenderSystem & render_system);
@@ -1521,80 +1582,106 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
     void drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
-    void packVertexPositions()
+    void packVertexPositions() const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_POSITION)) return;
+
       packed_vertex_positions.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = vi->getPosition();
+
+      setPackedArrayIsValid(BufferID::VERTEX_POSITION);
     }
 
     /** Pack vertex positions densely in an array. */
-    void packVertexNormals()
+    void packVertexNormals() const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_NORMAL)) return;
+
       packed_vertex_normals.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = vi->getNormal();
+
+      setPackedArrayIsValid(BufferID::VERTEX_NORMAL);
     }
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL) const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
+
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRGBA(vi->attr().getColor());
+
+      setPackedArrayIsValid(BufferID::VERTEX_COLOR);
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL) const
     {
-      packed_vertex_colors.clear();
+      if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
+      {
+        packed_vertex_colors.clear();
+        setPackedArrayIsValid(BufferID::VERTEX_COLOR);
+      }
     }
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL) const
     {
+      if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
+
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
-      for (VertexConstIterator vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = vi->attr().getTexCoord();
+
+      setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
     }
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL) const
     {
-      packed_vertex_texcoords.clear();
+      if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
+      {
+        packed_vertex_texcoords.clear();
+        setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
+      }
     }
 
     /** Pack face and edge indices densely in an array. */
-    void packTopology()
+    void packTopology() const
     {
+      if (packedArrayIsValid(BufferID::TOPOLOGY)) return;
+
       packed_tris.clear();
       packed_quads.clear();
 
       uint32 packing_index = 0;
-      for (VertexIterator vi = vertices.begin(); vi != vertices.end(); ++vi)
+      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         vi->setPackingIndex(packing_index++);
 
       has_large_polys = false;
-      for (FaceConstIterator fi = faces.begin(); fi != faces.end(); ++fi)
+      for (auto fi = faces.begin(); fi != faces.end(); ++fi)
       {
         if (fi->isTriangle())
         {
-          typename Face::VertexConstIterator vi = fi->verticesBegin();
+          auto vi = fi->verticesBegin();
           packed_tris.push_back((*(vi++))->getPackingIndex());
           packed_tris.push_back((*(vi++))->getPackingIndex());
           packed_tris.push_back((*vi)->getPackingIndex());
         }
         else if (fi->isQuad())
         {
-          typename Face::VertexConstIterator vi = fi->verticesBegin();
+          auto vi = fi->verticesBegin();
           packed_quads.push_back((*(vi++))->getPackingIndex());
           packed_quads.push_back((*(vi++))->getPackingIndex());
           packed_quads.push_back((*(vi++))->getPackingIndex());
@@ -1603,7 +1690,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
         else
         {
           has_large_polys = true;
-          THEA_WARNING << getName() << ": Mesh has polygons with 5 or more vertices. These will not be drawn with GPU buffers.";
+          THEA_DEBUG << getName() << ": Mesh has polygons with 5 or more vertices. These will not be drawn with GPU buffers.";
         }
       }
 
@@ -1611,7 +1698,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
       {
         packed_edges.resize(2 * edges.size());
         size_t i = 0;
-        for (EdgeConstIterator ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
+        for (auto ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
         {
           packed_edges[i    ] = ei->getEndpoint(0)->getPackingIndex();
           packed_edges[i + 1] = ei->getEndpoint(1)->getPackingIndex();
@@ -1622,6 +1709,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
       num_tri_indices   =  (intx)packed_tris.size();
       num_quad_indices  =  (intx)packed_quads.size();
+
+      setPackedArrayIsValid(BufferID::TOPOLOGY);
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
@@ -1639,20 +1728,21 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
     AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
-    bool buffered_rendering;  ///< Should the mesh be rendered using GPU buffers?
-    bool buffered_wireframe;  ///< Can edges be drawn in GPU-buffered mode?
-    int changed_buffers;      ///< A bitwise OR of the flags of the buffers that have changed.
-    bool has_large_polys;     ///< Does the mesh have polygons with more than 4 vertices?
+    mutable int changed_packed;    ///< A bitwise OR of the flags of the packed arrays that need to be updated.
+    mutable bool has_large_polys;  ///< Does the mesh have polygons with more than 4 vertices?
+    bool buffered_rendering;       ///< Should the mesh be rendered using GPU buffers?
+    bool buffered_wireframe;       ///< Can edges be drawn in GPU-buffered mode?
+    int changed_buffers;           ///< A bitwise OR of the flags of the buffers that need to be updated.
 
-    PositionArray  packed_vertex_positions;  ///< Array containing packed set of vertex positions.
-    NormalArray    packed_vertex_normals;    ///< Array containing packed set of vertex normals.
-    ColorArray     packed_vertex_colors;     ///< Array containing packed set of vertex colors.
-    TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
-    IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
-    IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
-    IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
-    intx           num_tri_indices;          ///< Number of triangles in the mesh.
-    intx           num_quad_indices;         ///< Number of quads in the mesh.
+    mutable PositionArray  packed_vertex_positions;  ///< Array containing packed set of vertex positions.
+    mutable NormalArray    packed_vertex_normals;    ///< Array containing packed set of vertex normals.
+    mutable ColorArray     packed_vertex_colors;     ///< Array containing packed set of vertex colors.
+    mutable TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
+    mutable IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
+    mutable IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
+    mutable IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
+    mutable intx           num_tri_indices;          ///< Number of triangle indices in the mesh.
+    mutable intx           num_quad_indices;         ///< Number of quad indices in the mesh.
 
     VARArea * var_area;          ///< GPU buffer area.
     VAR * vertex_positions_var;  ///< GPU buffer for vertex positions.
@@ -1665,6 +1755,19 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public Drawable
 
     mutable Array<Vertex *> face_vertices;  ///< Internal cache of vertex pointers for a face.
 
+    // Map the packed vertex and index buffers as matrices for the AbstractMesh API
+    typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
+    typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
+    typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
+
+    mutable VertexMatrix    vertex_matrix;  ///< Vertex data as a dense 3xN column-major matrix.
+    mutable TriangleMatrix  tri_matrix;     ///< Triangle indices as a dense 3xN column-major matrix.
+    mutable QuadMatrix      quad_matrix;    ///< Quad indices as a dense 4xN column-major matrix.
+
+    mutable MatrixWrapper<VertexMatrix>    vertex_wrapper;
+    mutable MatrixWrapper<TriangleMatrix>  tri_wrapper;
+    mutable MatrixWrapper<QuadMatrix>      quad_wrapper;
+
 }; // class GeneralMesh
 
 template <typename V, typename E, typename F, template <typename T> class A>
@@ -1674,7 +1777,7 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
   if (!buffered_rendering || changed_buffers == 0) return;
 
   if (!gpuBufferIsValid(BufferID::TOPOLOGY))
-    changed_buffers = BufferID::ALL;
+    invalidateGPUBuffers(BufferID::ALL);
 
   if (changed_buffers == BufferID::ALL)
   {
@@ -1696,23 +1799,17 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
         var_area = NULL;
       }
 
-      allGPUBuffersAreValid();
+      setAllGPUBuffersAreValid();
       return;
     }
 
+    packArrays();
+
     static int const PADDING = 32;
-
-    packVertexPositions();
-    packVertexNormals();
-    packVertexColors<Vertex>();
-    packVertexTexCoords<Vertex>();
-
     intx vertex_position_bytes = !packed_vertex_positions.empty() ? 3 * 4 * (intx)packed_vertex_positions.size() + PADDING : 0;
     intx vertex_normal_bytes   = !packed_vertex_normals.empty()   ? 3 * 4 * (intx)packed_vertex_normals.size()   + PADDING : 0;
     intx vertex_color_bytes    = !packed_vertex_colors.empty()    ? 4 * 4 * (intx)packed_vertex_colors.size()    + PADDING : 0;
     intx vertex_texcoord_bytes = !packed_vertex_texcoords.empty() ? 2 * 4 * (intx)packed_vertex_texcoords.size() + PADDING : 0;
-
-    packTopology();
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
     intx num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
@@ -1814,32 +1911,22 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
   }
   else
   {
+    packArrays();
+
     if (!gpuBufferIsValid(BufferID::VERTEX_POSITION) && !vertices.empty())
-    {
-      packVertexPositions();
       vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_NORMAL) && !vertices.empty())
-    {
-      packVertexNormals();
       vertex_normals_var->updateVectors (0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_COLOR) && hasVertexColors())
-    {
-      packVertexColors<Vertex>();
       vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
-    }
 
     if (!gpuBufferIsValid(BufferID::VERTEX_TEXCOORD) && hasVertexTexCoords())
-    {
-      packVertexTexCoords<Vertex>();
       vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
-    }
   }
 
-  allGPUBuffersAreValid();
+  setAllGPUBuffersAreValid();
 }
 
 template <typename V, typename E, typename F, template <typename T> class A>
@@ -1905,7 +1992,7 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
         // Finish off with all larger polygons
         if (has_large_polys)
         {
-          for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+          for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
             if (fi->numEdges() > 4)
             {
               render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
@@ -1963,18 +2050,18 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
 
     // First try to render as much stuff using triangles as possible
     render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isTriangle()) drawFace(*fi, render_system, options);
     render_system.endPrimitive();
 
     // Now render all quads
     render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
-      for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isQuad()) drawFace(*fi, render_system, options);
     render_system.endPrimitive();
 
     // Finish off with all larger polygons
-    for (FaceConstIterator fi = facesBegin(); fi != facesEnd(); ++fi)
+    for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
       if (fi->numEdges() > 4)
       {
         render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
@@ -1995,7 +2082,7 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
       render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
 
       render_system.beginPrimitive(RenderSystem::Primitive::LINES);
-        for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
+        for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
         {
           ei->attr().draw(render_system, options);
           ei->getEndpoint(0)->drawPosition(render_system, options);
