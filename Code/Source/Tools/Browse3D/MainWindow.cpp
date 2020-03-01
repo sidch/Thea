@@ -454,9 +454,8 @@ fileIndex(std::string const & dir, std::string const & file, Array<std::string> 
   else
   {
     std::string pat = (patterns ? stringJoin(*patterns, ' ') : "");
-    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat,
-                                         false /* recursive */,
-                                         true /* ignore_case */) <= 0)
+    if (FileSystem::getDirectoryContents(dir, files, FileSystem::ObjectType::FILE, pat,  // non-recursive by default
+                                         FileSystem::Flags::CASE_INSENSITIVE | FileSystem::Flags::SORTED) <= 0)
       return -1;
   }
 

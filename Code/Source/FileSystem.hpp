@@ -70,6 +70,21 @@ class THEA_API FileSystem
 
     }; // struct ObjectType
 
+    /** Miscellaneous flags (enum class). */
+    struct Flags
+    {
+      /** Supported values. */
+      enum Value
+      {
+        RECURSIVE          =  0x0001,  ///< Recurse into subdirectories.
+        CASE_INSENSITIVE   =  0x0002,  ///< Case is ignored when matching file and directory names.
+        SORTED             =  0x0004,  ///< Return sorted results.
+      };
+
+      THEA_ENUM_CLASS_BODY(Flags)
+
+    }; // struct Flags
+
     /** Check if a file or directory exists. */
     static bool exists(std::string const & path);
 
@@ -110,9 +125,10 @@ class THEA_API FileSystem
     static bool readWholeFile(std::string const & path, std::string & ret);
 
     /**
-     * Get the objects (files, subdirectories etc) in a directory, optionally recursing into subdirectories and filtering
-     * objects by type and name. Symbolic links are returned as symbolic links and are not dereferenced to the files or
-     * directories they point to.
+     * Get the objects (files, subdirectories etc) in a directory, optionally filtering objects by type and name. Symbolic links
+     * are returned as symbolic links and are not dereferenced to the files or directories they point to.
+     *
+     * @note Subdirectories are <i>not</i> traversed recursively unless Flags::RECURSIVE is added to the \a flags argument.
      *
      * @param dir The path to the directory.
      * @param objects Used to return the full paths of all retrieved objects in the directory. Prior contents are discarded.
@@ -121,8 +137,8 @@ class THEA_API FileSystem
      *   shell wildcard pattern specified in the format of patternMatch(). The function will return only objects whose names
      *   (without path) match at least one of the patterns. E.g. \a patterns = "*.txt *.png" will return only files with names
      *   ending in .txt or .png.
-     * @param recursive If true, subdirectories are searched recursively. The name of each such subdirectory is also returned.
-     * @param ignore_case If true, object names are matched to patterns without distinguishing between uppercase and lowercase.
+     * @param flags A bitwise OR of Flags values specifying additional options, e.g. recursive subdirectory traversal,
+     *   case-insensitive pattern matching, or sorted output.
      *
      * @return The number of objects found, equal to the size of \a objects. If the supplied path is not a directory, returns a
      *   negative value.
@@ -131,8 +147,7 @@ class THEA_API FileSystem
                                      Array<std::string> & objects,
                                      int types = -1,
                                      std::string const & patterns = "",
-                                     bool recursive = false,
-                                     bool ignore_case = false);
+                                     int flags = 0);
 
     /**
      * Remove a file, a symbolic link, or a directory. If the path is a directory, the operation succeeds only if the directory

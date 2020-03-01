@@ -44,6 +44,7 @@
 #include <boost/cstdint.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/version.hpp>
+#include <algorithm>
 #include <cstdio>
 
 namespace Thea {
@@ -189,11 +190,15 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
 } // namespace FileSystemInternal
 
 intx
-FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & objects, int types,
-                                 std::string const & patterns, bool recursive, bool ignore_case)
+FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & objects, int types, std::string const & patterns,
+                                 int flags)
 {
   if (!directoryExists(dir))
     return -1;
+
+  bool ignore_case  =  (flags & Flags::CASE_INSENSITIVE);
+  bool recursive    =  (flags & Flags::RECURSIVE);
+  bool sorted       =  (flags & Flags::SORTED);
 
   Array<std::string> patlist;
   if (!patterns.empty())
@@ -223,6 +228,9 @@ FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & o
       if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist, ignore_case))
         objects.push_back(iter->path().string());
   }
+
+  if (sorted)
+    std::sort(objects.begin(), objects.end());
 
   return (intx)objects.size();
 }
