@@ -64,6 +64,7 @@
 
 #include "Common.hpp"
 #include "Array.hpp"
+#include "Codec.hpp"
 #include "Colors.hpp"
 #include "CoordinateFrame3.hpp"
 #include "MatVec.hpp"
@@ -76,7 +77,7 @@ namespace Thea {
 /**
  * Sequential or random access input from binary files/memory. For every <code>readX</code> method there are also versions that
  * operate on a whole Array or C-array. The first method resizes the Array to the appropriate size before reading. For a
- * C-array, they require the pointer to reference memory block at least large enough to hold <I>n</I> elements.
+ * C-array, they require the pointer to reference a memory block large enough to hold <I>n</I> elements.
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  *
@@ -86,45 +87,45 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
 {
   private:
     /** Is the file big or little endian? */
-    Endianness      m_fileEndian;
+    Endianness         m_fileEndian;
 
     /** Path to the opened file. */
-    std::string     m_path;
+    std::string        m_path;
 
     /** Swap bytes when writing? */
-    bool            m_swapBytes;
+    bool               m_swapBytes;
 
     /** Next position to read from in bitString during readBits. */
-    int             m_bitPos;
+    int                m_bitPos;
 
     /**
      * Bits currently being read by readBits. Contains at most 8 (low) bits.  Note that beginBits/readBits actually consumes one
      * extra byte, which will be restored by writeBits.*/
-    uint32          m_bitString;
+    uint32             m_bitString;
 
     /** 1 when between beginBits and endBits, 0 otherwise. */
-    int             m_beginEndBits;
+    int                m_beginEndBits;
 
     /**
      * When operating on huge files, we cannot load the whole file into memory. This is the file position to which buffer[0]
      * corresponds.
      */
-    int64           m_alreadyRead;
+    int64              m_alreadyRead;
 
     /** Length of the entire file, in bytes. For the length of the buffer, see m_bufferLength */
-    int64           m_length;
+    int64              m_length;
 
     /** Length of the array referenced by buffer. May go past the end of the file! */
-    int64           m_bufferLength;
+    int64              m_bufferLength;
 
     /** The buffer of bytes from the input stream. */
-    uint8     *     m_buffer;
+    uint8            * m_buffer;
 
     /** Next byte in file, relative to buffer. */
-    int64           m_pos;
+    int64              m_pos;
 
     /** When true, the buffer is freed in the destructor. */
-    bool            m_freeBuffer;
+    bool               m_freeBuffer;
 
     /** Ensures that we are able to read at least min_length from start_position (relative to start of file). */
     void loadIntoMemory(int64 start_position, int64 min_length = 0);
@@ -148,6 +149,34 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     /** Constant to use with the copy_memory option (evaluates to false). */
     static bool const NO_COPY;
 
+    /**
+     * An object that saves the current endianness state of a stream upon construction, and restores the previous state upon
+     * destruction, using the RAII idiom.
+     */
+    class EndiannessScope
+    {
+      public:
+        /** Constructor, saves the endianness state of a stream. */
+        EndiannessScope(BinaryInputStream & stream_)
+        : stream(stream_), saved_endian(stream_.getEndianness())
+        {}
+
+        /** Constructor, saves the endianness state of a stream and sets a new endianness. */
+        EndiannessScope(BinaryInputStream & stream_, Endianness new_endian)
+        : stream(stream_), saved_endian(stream_.getEndianness())
+        {
+          stream.setEndianness(new_endian);
+        }
+
+        /** Destructor, restores the saved endianness of the stream. */
+        ~EndiannessScope() { stream.setEndianness(saved_endian); }
+
+      private:
+        BinaryInputStream & stream;  ///< The wrapped stream.
+        Endianness saved_endian;     ///< The stream's saved endianness.
+
+    }; // class EndiannessScope
+
     /** Open a file as a binary input stream. If the file cannot be opened, an error is thrown. */
     BinaryInputStream(std::string const & path, Endianness file_endian);
 
@@ -157,12 +186,20 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      */
     BinaryInputStream(uint8 const * data, int64 data_len, Endianness data_endian, bool copy_memory = true);
 
+    /**
+     * Wrap the next \a block_len bytes of another input stream as a new, temporary input stream. The source stream must exist
+     * as long as this object does, since the implementation does not guarantee that the block will be fully copied to a new
+     * buffer.
+     */
+    BinaryInputStream(BinaryInputStream & src, int64 block_len);
+
     /** Destructor. */
     ~BinaryInputStream();
 
     /**
      * Change the endianness for interpreting the file contents. This only changes the interpretation of the file for future
-     * read calls; the underlying data is unmodified.
+     * read calls; the underlying data is unmodified. To temporarily set the endianness within a scope using the RAII idiom,
+     * and restore the original setting at the end of the scope, create an EndiannessScope object.
      */
     void setEndianness(Endianness endian);
 
@@ -537,6 +574,20 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
       return Plane3::fromEquation(a, b, c, d);
     }
 
+    /**
+     * Read an arbitrary dense or sparse 2D matrix, using a codec such as CSV or HDF5 (some of which can be auto-detected).
+     *
+     * @param m The matrix in which to store the deserialized input.
+     * @param codec The codec to use (pass Codec_AUTO() to autodetect it from the input).
+     * @param read_block_header If true, first read a header block which stores the size and codec of the serialized matrix
+     *   data. Else, the matrix block is assumed to continue until the end of the input stream unless its end can be detected
+     *   through some other means (e.g. end marker or embedded size field), and the codec will be autodetected if possible.
+     *
+     * @return The number of bytes read from the stream (including the header information).
+     */
+    template <typename MatrixT>
+    intx readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = true);
+
 #   define THEA_BINARY_INPUT_STREAM_DECLARE_READER(fname, tname) \
     void read##fname(int64 n, tname * out); \
     void read##fname(int64 n, Array<tname> & out);
@@ -577,5 +628,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
 #endif
 
 THEA_DECL_EXTERN_SMART_POINTERS(Thea::BinaryInputStream)
+
+// #include "MatrixIO.hpp"
 
 #endif

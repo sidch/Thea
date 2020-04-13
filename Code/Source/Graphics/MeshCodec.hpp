@@ -44,7 +44,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
-#include "../Serializable.hpp"
+#include "../Codec.hpp"
 #include "IncrementalMeshBuilder.hpp"
 
 namespace Thea {
@@ -69,34 +69,24 @@ class MeshCodec : public Codec
     virtual ~MeshCodec() {}
 
     /**
-     * Serialize a mesh group to a binary output stream. Optionally prefixes extra information about the mesh block such as its
-     * size and type (which may have not been specified in the encoding format itself).
-     */
-    virtual intx serializeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool prefix_info,
-                                    WriteCallback * callback) const = 0;
-
-    /**
-     * Deserialize a mesh group from a binary output stream. If the <code>read_prefixed_info</code> parameter is true, extra
+     * Read a mesh group from a binary output stream. If the <code>read_block_header</code> parameter is true, extra
      * information about the mesh block (such as its size and type) will be read first from the input stream. Else, the entire
      * input will be treated as the mesh block (the size() function of the stream must return the correct value in this case).
      *
-     * @see serializeMeshGroup
+     * @see writeMeshGroup
      */
-    virtual void deserializeMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
-                                      ReadCallback * callback) const = 0;
+    virtual void readMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, bool read_block_header,
+                               ReadCallback * callback) const = 0;
 
     /**
-     * Get the <b>4-byte</b> magic string for the codec.
-     *
-     * @see MAGIC_LENGTH
+     * Write a mesh group to a binary output stream. Optionally prefixes extra information about the mesh block such as its size
+     * and type (which may have not been specified in the encoding format itself).
      */
-    virtual char const * getMagic() const = 0;
+    virtual void writeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool write_block_header,
+                                WriteCallback * callback) const = 0;
 
     /** Get the filename extensions for the codec. */
     virtual Array<std::string> const & getExtensions() const = 0;
-
-    /** The standard length of the magic string. getMagic() must conform to this value. */
-    static int const MAGIC_LENGTH = 4;
 
 }; // class MeshCodec
 
@@ -112,12 +102,13 @@ class MeshCodec : public Codec
       typedef MeshT Mesh;                                                                                                     \
                                                                                                                               \
       char const * getName() const { return _getName(); }                                                                     \
-      char const * getMagic() const { return _getMagic(); }                                                                   \
+      Codec::MagicString const & getMagic() const { return _getMagic(); }                                                     \
       Array<std::string> const & getExtensions() const { return _getExtensions(); }                                           \
                                                                                                                               \
     protected:                                                                                                                \
       static char const * _getName() { static std::string const name_ = desc + std::string(" codec"); return name_.c_str(); } \
-      static char const * _getMagic() { static char const * magic_ = magic; return magic_; }                                  \
+      static Codec::MagicString const &  _getMagic()                                                                          \
+      { static Codec::MagicString const magic_ = Codec::toMagic(magic); return magic_; }                                      \
       static Array<std::string> const & _getExtensions()                                                                      \
       { static Array<std::string> const exts_ = initExts(); return exts_; }                                                   \
                                                                                                                               \
@@ -135,10 +126,10 @@ class MeshCodec : public Codec
                                                                                                                               \
   template < typename MeshT, typename BuilderT = Graphics::IncrementalMeshBuilder<MeshT> > class name;
 
-THEA_DEF_MESH_CODEC(Codec3DS, Codec3DSBase, "3D Studio Max",               "MM  ", "3ds")
-THEA_DEF_MESH_CODEC(CodecOBJ, CodecOBJBase, "Wavefront OBJ",               "OBJ ", "obj")
-THEA_DEF_MESH_CODEC(CodecOFF, CodecOFFBase, "Object File Format (OFF)",    "OFF ", "off", "off.bin")
-THEA_DEF_MESH_CODEC(CodecPLY, CodecPLYBase, "Polygon File Format (PLY)",   "PLY ", "ply")
+THEA_DEF_MESH_CODEC(Codec3DS, Codec3DSBase, "3D Studio Max",             "3DS",  "3ds")
+THEA_DEF_MESH_CODEC(CodecOBJ, CodecOBJBase, "Wavefront OBJ",             "OBJ",  "obj")
+THEA_DEF_MESH_CODEC(CodecOFF, CodecOFFBase, "Object File Format (OFF)",  "OFF",  "off", "off.bin")
+THEA_DEF_MESH_CODEC(CodecPLY, CodecPLYBase, "Polygon File Format (PLY)", "PLY",  "ply")
 
 #undef THEA_DEF_MESH_CODEC
 

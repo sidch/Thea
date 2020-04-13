@@ -97,17 +97,17 @@ class Gaussian1D
       k = kFromVariance(value);
     }
 
-    void serialize(BinaryOutputStream & out) const
-    {
-      out.writeFloat64(mean);
-      out.writeFloat64(variance);
-    }
-
-    void deserialize(BinaryInputStream & in)
+    void read(BinaryInputStream & in)
     {
       mean = in.readFloat64();
       variance = in.readFloat64();
       k = kFromVariance(variance);
+    }
+
+    void write(BinaryOutputStream & out) const
+    {
+      out.writeFloat64(mean);
+      out.writeFloat64(variance);
     }
 
 }; // class Gaussian1D
@@ -170,19 +170,7 @@ class Gaussian
       inv_cov = cov.inverse();  // FIXME: Add invertibility check via methods of Eigen::FullPivLU
     }
 
-    void serialize(BinaryOutputStream & out) const
-    {
-      out.writeInt64(dims());
-
-      for (intx i = 0; i < mean.size(); ++i)
-        out.writeFloat64(mean[i]);
-
-      for (intx i = 0; i < inv_cov.rows(); ++i)
-        for (intx j = 0; j < inv_cov.cols(); ++j)
-          out.writeFloat64(inv_cov(i, j));
-    }
-
-    void deserialize(BinaryInputStream & in)
+    void read(BinaryInputStream & in)
     {
       intx ndims = (intx)in.readInt64();
       resize(ndims);
@@ -193,6 +181,18 @@ class Gaussian
       for (intx i = 0; i < inv_cov.rows(); ++i)
         for (intx j = 0; j < inv_cov.cols(); ++j)
           inv_cov(i, j) = in.readFloat64();
+    }
+
+    void write(BinaryOutputStream & out) const
+    {
+      out.writeInt64(dims());
+
+      for (intx i = 0; i < mean.size(); ++i)
+        out.writeFloat64(mean[i]);
+
+      for (intx i = 0; i < inv_cov.rows(); ++i)
+        for (intx j = 0; j < inv_cov.cols(); ++j)
+          out.writeFloat64(inv_cov(i, j));
     }
 
 }; // struct Gaussian
@@ -238,45 +238,7 @@ class HoughNode
                            : class_cum_freq[(size_t)class_id] - class_cum_freq[(size_t)class_id - 1];
     }
 
-    void serializeSubtree(BinaryOutputStream & out) const
-    {
-      out.writeInt64(depth);
-      out.writeInt64(split_feature);
-      out.writeFloat64(split_value);
-
-      out.writeInt64((int64)elems.size());
-      for (size_t i = 0; i < elems.size(); ++i)
-        out.writeInt64(elems[i]);
-
-      alwaysAssertM(class_cum_freq.size() == class_feature_distrib.size(),
-                    "HoughForest: class_cum_freq.size() != class_feature_distrib.size()");
-
-      out.writeInt64((int64)class_cum_freq.size());
-
-      for (size_t i = 0; i < class_cum_freq.size(); ++i)
-        out.writeInt64(class_cum_freq[i]);
-
-      for (size_t i = 0; i < class_feature_distrib.size(); ++i)
-        class_feature_distrib[i].serialize(out);
-
-      if (left)
-      {
-        out.writeInt8(1);
-        left->serializeSubtree(out);
-      }
-      else
-        out.writeInt8(0);
-
-      if (right)
-      {
-        out.writeInt8(1);
-        right->serializeSubtree(out);
-      }
-      else
-        out.writeInt8(0);
-    }
-
-    void deserializeSubtree(BinaryInputStream & in)
+    void readSubtree(BinaryInputStream & in)
     {
       clear();
 
@@ -297,19 +259,57 @@ class HoughNode
 
       class_feature_distrib.resize((size_t)num_classes);
       for (size_t i = 0; i < class_feature_distrib.size(); ++i)
-        class_feature_distrib[i].deserialize(in);
+        class_feature_distrib[i].read(in);
 
       if (in.readInt8())
       {
         left = new HoughNode(depth + 1);
-        left->deserializeSubtree(in);
+        left->readSubtree(in);
       }
 
       if (in.readInt8())
       {
         right = new HoughNode(depth + 1);
-        right->deserializeSubtree(in);
+        right->readSubtree(in);
       }
+    }
+
+    void writeSubtree(BinaryOutputStream & out) const
+    {
+      out.writeInt64(depth);
+      out.writeInt64(split_feature);
+      out.writeFloat64(split_value);
+
+      out.writeInt64((int64)elems.size());
+      for (size_t i = 0; i < elems.size(); ++i)
+        out.writeInt64(elems[i]);
+
+      alwaysAssertM(class_cum_freq.size() == class_feature_distrib.size(),
+                    "HoughForest: class_cum_freq.size() != class_feature_distrib.size()");
+
+      out.writeInt64((int64)class_cum_freq.size());
+
+      for (size_t i = 0; i < class_cum_freq.size(); ++i)
+        out.writeInt64(class_cum_freq[i]);
+
+      for (size_t i = 0; i < class_feature_distrib.size(); ++i)
+        class_feature_distrib[i].write(out);
+
+      if (left)
+      {
+        out.writeInt8(1);
+        left->writeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
+
+      if (right)
+      {
+        out.writeInt8(1);
+        right->writeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
     }
 
 }; // class HoughNode
@@ -609,28 +609,26 @@ class HoughTree
       return true;
     }
 
-    void serializeNodes(BinaryOutputStream & out) const
-    {
-      out.setEndianness(Endianness::LITTLE);
-      if (root)
-      {
-        out.writeInt8(1);
-        root->serializeSubtree(out);
-      }
-      else
-        out.writeInt8(0);
-    }
-
-    void deserializeNodes(BinaryInputStream & in)
+    void readNodes(BinaryInputStream & in)
     {
       clear();
 
-      in.setEndianness(Endianness::LITTLE);
       if (in.readInt8())
       {
         root = new Node(0);
-        root->deserializeSubtree(in);
+        root->readSubtree(in);
       }
+    }
+
+    void writeNodes(BinaryOutputStream & out) const
+    {
+      if (root)
+      {
+        out.writeInt8(1);
+        root->writeSubtree(out);
+      }
+      else
+        out.writeInt8(0);
     }
 
     void setVerbose(int level)
@@ -1061,7 +1059,7 @@ HoughForest::Options::load(std::string const & path)
     }
 
     TextInputStream in(path, configReadSettings());
-    deserialize(in);
+    read(in);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load options from input file '%s'", path.c_str())
 
@@ -1085,7 +1083,7 @@ HoughForest::Options::save(std::string const & path) const
     }
 
     TextOutputStream out(path, configWriteSettings());
-    serialize(out);
+    write(out);
     out.commit();
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save options to output file '%s'", path.c_str())
@@ -1094,21 +1092,26 @@ HoughForest::Options::save(std::string const & path) const
 }
 
 void
-HoughForest::Options::deserialize(BinaryInputStream & input, Codec const & codec)
+HoughForest::Options::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  max_depth                 =  (intx)input.readInt64();
-  max_leaf_elements         =  (intx)input.readInt64();
-  max_candidate_features    =  (intx)input.readInt64();
-  num_feature_expansions    =  (intx)input.readInt64();
-  max_candidate_thresholds  =  (intx)input.readInt64();
-  min_class_uncertainty     =  (double)input.readFloat64();
-  max_dominant_fraction     =  (double)input.readFloat64();
-  probabilistic_sampling    =  (input.readInt8() != 0);
-  verbose                   =  (int)input.readInt32();
+  (void)read_block_header;  // ignored
+
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
+
+    max_depth                 =  (intx)input.readInt64();
+    max_leaf_elements         =  (intx)input.readInt64();
+    max_candidate_features    =  (intx)input.readInt64();
+    num_feature_expansions    =  (intx)input.readInt64();
+    max_candidate_thresholds  =  (intx)input.readInt64();
+    min_class_uncertainty     =  (double)input.readFloat64();
+    max_dominant_fraction     =  (double)input.readFloat64();
+    probabilistic_sampling    =  (input.readInt8() != 0);
+    verbose                   =  (int)input.readInt32();
+  }
 }
 
 void
-HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
+HoughForest::Options::read(TextInputStream & input, Codec const & codec)
 {
   *this = defaults();
 
@@ -1139,21 +1142,26 @@ HoughForest::Options::deserialize(TextInputStream & input, Codec const & codec)
 }
 
 void
-HoughForest::Options::serialize(BinaryOutputStream & output, Codec const & codec) const
+HoughForest::Options::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  output.writeInt64(max_depth);
-  output.writeInt64(max_leaf_elements);
-  output.writeInt64(max_candidate_features);
-  output.writeInt64(num_feature_expansions);
-  output.writeInt64(max_candidate_thresholds);
-  output.writeFloat64(min_class_uncertainty);
-  output.writeFloat64(max_dominant_fraction);
-  output.writeInt8(probabilistic_sampling ? 1 : 0);
-  output.writeInt32(verbose);
+  (void)write_block_header;  // ignored
+
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+    output.writeInt64(max_depth);
+    output.writeInt64(max_leaf_elements);
+    output.writeInt64(max_candidate_features);
+    output.writeInt64(num_feature_expansions);
+    output.writeInt64(max_candidate_thresholds);
+    output.writeFloat64(min_class_uncertainty);
+    output.writeFloat64(max_dominant_fraction);
+    output.writeInt8(probabilistic_sampling ? 1 : 0);
+    output.writeInt32(verbose);
+  }
 }
 
 void
-HoughForest::Options::serialize(TextOutputStream & output, Codec const & codec) const
+HoughForest::Options::write(TextOutputStream & output, Codec const & codec) const
 {
   output.printf("max_depth = %ld\n", max_depth);
   output.printf("max_leaf_elements = %ld\n", max_leaf_elements);
@@ -1274,7 +1282,7 @@ HoughForest::train(intx num_trees, TrainingData const & training_data_)
   if (full_opts.verbose)
   {
     TextOutputStream opts_out;
-    full_opts.serialize(opts_out);
+    full_opts.write(opts_out);
     THEA_CONSOLE << "HoughForest: Options:\n" << opts_out.commitToString();
   }
 
@@ -1377,7 +1385,7 @@ HoughForest::load(std::string const & path)
   try
   {
     BinaryInputStream in(path, Endianness::LITTLE);
-    deserialize(in);
+    read(in);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load from input file '%s'", path.c_str())
 
@@ -1395,7 +1403,7 @@ HoughForest::save(std::string const & path) const
       THEA_ERROR << "HoughForest: Could not save to output file '" << path << '\'';
     }
 
-    serialize(out);
+    write(out);
     out.commit();
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save to output file '%s'", path.c_str())
@@ -1404,89 +1412,101 @@ HoughForest::save(std::string const & path) const
 }
 
 void
-HoughForest::deserialize(BinaryInputStream & input, Codec const & codec)
+HoughForest::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   using namespace HoughForestInternal;
 
   clear();
 
-  options.deserialize(input);
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // header is not needed
 
-  input.setEndianness(Endianness::LITTLE);
+  options.read(input);
 
-  num_classes = (intx)input.readInt64();
-  num_features = (intx)input.readInt64();
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
-  num_vote_params.resize((size_t)num_classes);
-  intx max_vote_params = 0;
-  for (size_t i = 0; i < num_vote_params.size(); ++i)
-  {
-    num_vote_params[i] = (intx)input.readInt64();
-    if (i == 0 || num_vote_params[i] > max_vote_params)
-      max_vote_params = num_vote_params[i];
+    num_classes = (intx)input.readInt64();
+    num_features = (intx)input.readInt64();
+
+    num_vote_params.resize((size_t)num_classes);
+    intx max_vote_params = 0;
+    for (size_t i = 0; i < num_vote_params.size(); ++i)
+    {
+      num_vote_params[i] = (intx)input.readInt64();
+      if (i == 0 || num_vote_params[i] > max_vote_params)
+        max_vote_params = num_vote_params[i];
+    }
+
+    intx num_trees = (intx)input.readInt64();
+    trees.resize(num_trees);
+    for (size_t i = 0; i < trees.size(); ++i)
+    {
+      trees[i] = TreePtr(new HoughTree(this, num_classes, num_features, num_vote_params, options));
+      trees[i]->readNodes(input);
+    }
+
+    int64 num_examples = input.readInt64();
+    all_classes.resize((size_t)num_examples);
+    for (size_t i = 0; i < all_classes.size(); ++i)
+      all_classes[i] = (intx)input.readInt64();
+
+    intx nrows = (intx)input.readInt64();
+    intx ncols = (intx)input.readInt64();
+    all_features.resize(nrows, ncols);
+    for (intx i = 0; i < nrows; ++i)
+      for (intx j = 0; j < ncols; ++j)
+        all_features(i, j) = input.readFloat64();
+
+    nrows = (intx)input.readInt64();
+    ncols = (intx)input.readInt64();
+    all_self_votes.resize(nrows, ncols);
+    for (intx i = 0; i < nrows; ++i)
+      for (intx j = 0; j < ncols; ++j)
+        all_self_votes(i, j) = input.readFloat64();
   }
-
-  intx num_trees = (intx)input.readInt64();
-  trees.resize(num_trees);
-  for (size_t i = 0; i < trees.size(); ++i)
-  {
-    trees[i] = TreePtr(new HoughTree(this, num_classes, num_features, num_vote_params, options));
-    trees[i]->deserializeNodes(input);
-  }
-
-  int64 num_examples = input.readInt64();
-  all_classes.resize((size_t)num_examples);
-  for (size_t i = 0; i < all_classes.size(); ++i)
-    all_classes[i] = (intx)input.readInt64();
-
-  intx nrows = (intx)input.readInt64();
-  intx ncols = (intx)input.readInt64();
-  all_features.resize(nrows, ncols);
-  for (intx i = 0; i < nrows; ++i)
-    for (intx j = 0; j < ncols; ++j)
-      all_features(i, j) = input.readFloat64();
-
-  nrows = (intx)input.readInt64();
-  ncols = (intx)input.readInt64();
-  all_self_votes.resize(nrows, ncols);
-  for (intx i = 0; i < nrows; ++i)
-    for (intx j = 0; j < ncols; ++j)
-      all_self_votes(i, j) = input.readFloat64();
 }
 
 void
-HoughForest::serialize(BinaryOutputStream & output, Codec const & codec) const
+HoughForest::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
   using namespace HoughForestInternal;
 
-  options.serialize(output);
+  Codec::BlockHeader header("HoughF");
+  if (write_block_header)
+    header.markAndSkip(output);
 
-  output.setEndianness(Endianness::LITTLE);
+  options.write(output);
 
-  output.writeInt64(num_classes);
-  output.writeInt64(num_features);
-  for (size_t i = 0; i < num_vote_params.size(); ++i)
-    output.writeInt64(num_vote_params[i]);
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
 
-  output.writeInt64((int64)trees.size());
-  for (size_t i = 0; i < trees.size(); ++i)
-    trees[i]->serializeNodes(output);
+    output.writeInt64(num_classes);
+    output.writeInt64(num_features);
+    for (size_t i = 0; i < num_vote_params.size(); ++i)
+      output.writeInt64(num_vote_params[i]);
 
-  output.writeInt64((int64)all_classes.size());
-  for (size_t i = 0; i < all_classes.size(); ++i)
-    output.writeInt64(all_classes[i]);
+    output.writeInt64((int64)trees.size());
+    for (size_t i = 0; i < trees.size(); ++i)
+      trees[i]->writeNodes(output);
 
-  output.writeInt64(all_features.rows());
-  output.writeInt64(all_features.cols());
-  for (intx i = 0; i < all_features.rows(); ++i)
-    for (intx j = 0; j < all_features.cols(); ++j)
-      output.writeFloat64(all_features(i, j));
+    output.writeInt64((int64)all_classes.size());
+    for (size_t i = 0; i < all_classes.size(); ++i)
+      output.writeInt64(all_classes[i]);
 
-  output.writeInt64(all_self_votes.rows());
-  output.writeInt64(all_self_votes.cols());
-  for (intx i = 0; i < all_self_votes.rows(); ++i)
-    for (intx j = 0; j < all_self_votes.cols(); ++j)
-      output.writeFloat64(all_self_votes(i, j));
+    output.writeInt64(all_features.rows());
+    output.writeInt64(all_features.cols());
+    for (intx i = 0; i < all_features.rows(); ++i)
+      for (intx j = 0; j < all_features.cols(); ++j)
+        output.writeFloat64(all_features(i, j));
+
+    output.writeInt64(all_self_votes.rows());
+    output.writeInt64(all_self_votes.cols());
+    for (intx i = 0; i < all_self_votes.rows(); ++i)
+      for (intx j = 0; j < all_self_votes.cols(); ++j)
+        output.writeFloat64(all_self_votes(i, j));
+  }
+
+  if (write_block_header)
+    header.calcAndWrite(output);
 }
 
 void

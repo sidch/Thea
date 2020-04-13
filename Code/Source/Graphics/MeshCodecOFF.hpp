@@ -153,23 +153,43 @@ class CodecOFF : public CodecOFFBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
-                            WriteCallback * callback) const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
+         const
     {
-      output.setEndianness(Endianness::LITTLE);
-      int64 initial_pos = output.getPosition();
+      mesh_group.clear();
 
-      int64 size_pos = 0;
-      if (prefix_info)
+      BinaryInputStream * in = &input;
+      BinaryInputStream::Ptr tmp_in;
+
+      if (read_block_header)
       {
-        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic());
+        Codec::BlockHeader bh; bh.read(input);
+        if (bh.data_size <= 0)
+          return;
 
-        // Placeholder for the size field
-        size_pos = output.getPosition();
-        output.writeUInt32(0);
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
+        in = tmp_in.get();
       }
 
-      int64 enc_start = output.getPosition();
+      std::string header = trimWhitespace(in->readLine());
+      if (header != "OFF" && !beginsWith(header, "OFF "))
+        throw Error(std::string(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
+
+      bool binary = (header == "OFF BINARY" || beginsWith(header, "OFF BINARY "));
+      if (binary)
+        readBinary(mesh_group, *in, callback);
+      else
+        readAscii(mesh_group, *in, callback);
+    }
+
+    void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
+                        WriteCallback * callback) const
+    {
+      Codec::BlockHeader bh(this->getMagic());
+      if (write_block_header)
+        bh.markAndSkip(output);
+
+      { BinaryOutputStream::EndiannessScope scope(output, Endianness::BIG);  // binary OFF uses big-endian storage
 
         intx num_vertices = 0, num_faces = 0;
         getStats(mesh_group, num_vertices, num_faces);
@@ -177,7 +197,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
         VertexIndexMap vertex_indices;
         if (write_opts.binary)
         {
-          output.setEndianness(Endianness::BIG);  // binary OFF uses big-endian storage
           writeString("OFF BINARY\n", output);
           output.writeInt32((int32)num_vertices);
           output.writeInt32((int32)num_faces);
@@ -189,63 +208,19 @@ class CodecOFF : public CodecOFFBase<MeshT>
           writeString(format("%ld %ld 0\n", num_vertices, num_faces), output);
         }
 
-        serializeVertices(mesh_group, output, vertex_indices, callback);
+        writeVertices(mesh_group, output, vertex_indices, callback);
 
         intx next_index = 0;
-        serializeFaces(mesh_group, vertex_indices, output, callback, next_index);
-
-      int64 enc_end = output.getPosition();
-
-      if (prefix_info)
-      {
-        output.setEndianness(Endianness::LITTLE);
-        output.setPosition(size_pos);
-        output.writeUInt32((uint32)(enc_end - enc_start));
+        writeFaces(mesh_group, vertex_indices, output, callback, next_index);
       }
 
-      return (intx)(enc_end - initial_pos);
-    }
-
-    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
-                              ReadCallback * callback) const
-    {
-      mesh_group.clear();
-
-      BinaryInputStream * in = &input;
-      Array<uint8> enc_block;
-      BinaryInputStream::Ptr tmp_in;
-
-      if (read_prefixed_info)
-      {
-        input.setEndianness(Endianness::LITTLE);
-        input.skip(BaseT::MAGIC_LENGTH);
-        uint32 encoding_size = input.readUInt32();
-
-        if (encoding_size <= 0)
-          return;
-
-        enc_block.resize((size_t)encoding_size);
-        input.readBytes((int64)encoding_size, &enc_block[0]);
-
-        tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::BIG, false));
-                                                              // shared pointer ensures deallocation on return
-        in = tmp_in.get();
-      }
-
-      std::string header = trimWhitespace(in->readLine());
-      if (header != "OFF" && !beginsWith(header, "OFF "))
-        throw Error(std::string(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
-
-      bool binary = (header == "OFF BINARY" || beginsWith(header, "OFF BINARY "));
-      if (binary)
-        deserializeBinary(mesh_group, *in, callback);
-      else
-        deserializeAscii(mesh_group, *in, callback);
+      if (write_block_header)
+        bh.calcAndWrite(output);
     }
 
   private:
-    /** Deserialize a mesh group in ASCII format. */
-    void deserializeAscii(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
+    /** Read a mesh group in ASCII format. */
+    void readAscii(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
     {
       std::string line = trimWhitespace(in.readLine());
       while (line.empty() || line[0] == '#')
@@ -380,10 +355,10 @@ class CodecOFF : public CodecOFFBase<MeshT>
       mesh_group.addMesh(mesh);
     }
 
-    /** Deserialize a mesh group in binary format. */
-    void deserializeBinary(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
+    /** Read a mesh group in binary format. */
+    void readBinary(MeshGroup & mesh_group, BinaryInputStream & in, ReadCallback * callback) const
     {
-      in.setEndianness(Endianness::BIG);  // binary OFF uses big-endian
+      BinaryInputStream::EndiannessScope scope(in, Endianness::BIG);  // binary OFF uses big-endian
 
       intx num_vertices = (intx)in.readInt32();
       intx num_faces = (intx)in.readInt32();
@@ -509,26 +484,26 @@ class CodecOFF : public CodecOFFBase<MeshT>
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */
-    void serializeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback) const
+    void writeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
-        serializeVertices(**mi, output, vertex_indices, callback);
+        writeVertices(**mi, output, vertex_indices, callback);
       }
 
       for (typename MeshGroup::GroupConstIterator ci = mesh_group.childrenBegin(); ci != mesh_group.childrenEnd(); ++ci)
       {
-        serializeVertices(**ci, output, vertex_indices, callback);
+        writeVertices(**ci, output, vertex_indices, callback);
       }
     }
 
     /** Write out all the vertices from a general or DCEL mesh and map them to indices. */
     template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                                 || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback,
+                       typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                             || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -549,9 +524,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
     /** Write out all the vertices from a display mesh and map them to indices. */
     template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback,
+                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -576,26 +551,26 @@ class CodecOFF : public CodecOFFBase<MeshT>
     }
 
     /** Write out all the faces from a mesh group. */
-    void serializeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index) const
+    void writeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
-        serializeFaces(**mi, vertex_indices, output, callback, next_index);
+        writeFaces(**mi, vertex_indices, output, callback, next_index);
       }
 
       for (typename MeshGroup::GroupConstIterator ci = mesh_group.childrenBegin(); ci != mesh_group.childrenEnd(); ++ci)
       {
-        serializeFaces(**ci, vertex_indices, output, callback, next_index);
+        writeFaces(**ci, vertex_indices, output, callback, next_index);
       }
     }
 
     /** Write out all the faces from a general mesh. */
     template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                              || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
+    void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index,
+                    typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -636,9 +611,9 @@ class CodecOFF : public CodecOFFBase<MeshT>
 
     /** Write out all the faces from a display mesh. */
     template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index,
+                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 

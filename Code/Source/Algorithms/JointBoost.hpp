@@ -155,16 +155,16 @@ class THEA_API JointBoost
         bool save(std::string const & path) const;
 
         /** Load classifier options from a standard input stream. */
-        bool deserialize(std::istream & in);
+        bool read(std::istream & in);
 
         /** Load classifier options from a text input stream. */
-        bool deserialize(TextInputStream & in);
+        bool read(TextInputStream & in);
 
         /** Save classifier options to a standard output stream. */
-        bool serialize(std::ostream & out) const;
+        bool write(std::ostream & out) const;
 
         /** Save classifier options to a text output stream. */
-        bool serialize(TextOutputStream & out) const;
+        bool write(TextOutputStream & out) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
@@ -277,10 +277,10 @@ class THEA_API JointBoost
       std::string toString() const;
 
       /** Load the stump from an input stream. */
-      bool deserialize(std::istream & in);
+      bool read(std::istream & in);
 
       /** Save the stump to an output stream. */
-      bool serialize(std::ostream & out) const;
+      bool write(std::ostream & out) const;
 
     }; // struct SharedStump
 
@@ -307,10 +307,10 @@ class THEA_API JointBoost
     double computeValidationError(TrainingData const & validation_data_, SharedStump::Ptr new_stump = SharedStump::Ptr());
 
     /** Load the classifier from an input stream. */
-    bool deserialize(std::istream & in);
+    bool read(std::istream & in);
 
     /** Save the trained classifier to an output stream. */
-    bool serialize(std::ostream & out) const;
+    bool write(std::ostream & out) const;
 
     intx num_classes;                ///< Number of object classes.
     intx num_features;               ///< Number of features per object.

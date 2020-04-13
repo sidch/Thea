@@ -64,6 +64,7 @@
 
 #include "Common.hpp"
 #include "Array.hpp"
+#include "Codec.hpp"
 #include "Colors.hpp"
 #include "CoordinateFrame3.hpp"
 #include "MatVec.hpp"
@@ -83,8 +84,7 @@ namespace Thea {
  *
  * This class does <b>not</b> use overloading to distinguish between writing, say, a float and a double. Instead, the write
  * functions are explicitly named writeFloat32(), writeFloat64() etc. This is because it would be very hard to debug the error
- * sequence: <code>bo.write(1.0); ... float f = bi.readFloat32();</code> in which a double is serialized and then deserialized
- * as a float.
+ * sequence: <code>bo.write(1.0); ... float f = bi.readFloat32();</code> in which a double is written and then read as a float.
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  *
@@ -94,43 +94,43 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
 {
   private:
     /** Is the file big or little endian? */
-    Endianness      m_fileEndian;
+    Endianness         m_fileEndian;
 
     /** Path to the opened file. */
-    std::string     m_path;
+    std::string        m_path;
 
     /** 0 outside of beginBits...endBits, 1 inside */
-    int             m_beginEndBits;
+    int                m_beginEndBits;
 
     /**
      * The current string of bits being built up by beginBits() ... endBits(). This string is treated semantically, as if the
      * lowest bit was on the left and the highest was on the right.
      */
-    uint8           m_bitString;
+    uint8              m_bitString;
 
     /** Position (from the lowest bit) currently used in m_bitString. */
-    int             m_bitPos;
+    int                m_bitPos;
 
     /** True if the file endianess does not match the machine endian. */
-    bool            m_swapBytes;
+    bool               m_swapBytes;
 
     /** The buffer of bytes to be written to the output stream. */
-    uint8     *     m_buffer;
+    uint8            * m_buffer;
 
     /** Number of elements in the buffer */
-    int64           m_bufferLen;
+    int64              m_bufferLen;
 
     /** Underlying size of memory allocated. */
-    int64           m_bufferCapacity;
+    int64              m_bufferCapacity;
 
     /** Next byte in file */
-    int64           m_pos;
+    int64              m_pos;
 
     /** Number of bytes already written to the file.*/
-    int64           m_alreadyWritten;
+    int64              m_alreadyWritten;
 
     /** Error-check. */
-    bool            m_ok;
+    bool               m_ok;
 
     /** Reserve space by dumping buffer contents to disk if necessary. */
     void reserveBytesWhenOutOfMemory(size_t bytes);
@@ -158,6 +158,34 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
   public:
     THEA_DECL_SMART_POINTERS(BinaryOutputStream)
 
+    /**
+     * An object that saves the current endianness state of a stream upon construction, and restores the previous state upon
+     * destruction, using the RAII idiom.
+     */
+    class EndiannessScope
+    {
+      public:
+        /** Constructor, saves the endianness state of a stream. */
+        EndiannessScope(BinaryOutputStream & stream_)
+        : stream(stream_), saved_endian(stream_.getEndianness())
+        {}
+
+        /** Constructor, saves the endianness state of a stream and sets a new endianness. */
+        EndiannessScope(BinaryOutputStream & stream_, Endianness new_endian)
+        : stream(stream_), saved_endian(stream_.getEndianness())
+        {
+          stream.setEndianness(new_endian);
+        }
+
+        /** Destructor, restores the saved endianness of the stream. */
+        ~EndiannessScope() { stream.setEndianness(saved_endian); }
+
+      private:
+        BinaryOutputStream & stream;  ///< The wrapped stream.
+        Endianness saved_endian;      ///< The stream's saved endianness.
+
+    }; // class EndiannessScope
+
     /** Construct a stream that writes to an (expanding, contiguous) memory buffer. */
     explicit BinaryOutputStream(Endianness endian = Endianness::LITTLE);
 
@@ -174,7 +202,10 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     /** True if no errors have been encountered.*/
     bool ok() const;
 
-    /** Set the endianness of subsequent multi-byte write operations. */
+    /**
+     * Set the endianness of subsequent multi-byte write operations. To temporarily set the endianness within a scope using the
+     * RAII idiom, and restore the original setting at the end of the scope, create an EndiannessScope object.
+     */
     void setEndianness(Endianness endian);
 
     /** Get the endianness of current multi-byte write operations. */
@@ -529,6 +560,18 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
       writeFloat32(d);
     }
 
+    /**
+     * Write an arbitrary dense or sparse 2D matrix, using a codec such as CSV or HDF5.
+     *
+     * @param m The matrix to write.
+     * @param codec The codec to use.
+     * @param write_block_header If true, first write a header block which stores the size and codec of the serialized matrix data.
+     *
+     * @return The number of bytes written to the stream (including the header information).
+     */
+    template <typename MatrixT>
+    intx writeMatrix(MatrixT const & m, Codec const & codec, bool write_block_header = true);
+
 #define THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(fname, tname)\
     void write##fname(int64 n, tname const * out); \
     void write##fname(int64 n, Array<tname> const & out);
@@ -569,5 +612,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
 #endif
 
 THEA_DECL_EXTERN_SMART_POINTERS(Thea::BinaryOutputStream)
+
+// #include "MatrixIO.hpp"
 
 #endif

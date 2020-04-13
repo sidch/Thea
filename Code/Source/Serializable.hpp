@@ -43,51 +43,10 @@
 #define __Thea_Serializable_hpp__
 
 #include "Common.hpp"
+#include "Codec.hpp"
 #include "IOStream.hpp"
-#include "NamedObject.hpp"
 
 namespace Thea {
-
-/**
- * A serialization codec. Identified by an ID that is unique for a given run of the program (it is <b>not</b> guaranteed to
- * retain its value over different runs).
- */
-class THEA_API Codec : public AbstractNamedObject
-{
-  public:
-    /** Destructor. */
-    virtual ~Codec() {}
-
-    /** Check if two codecs are equal. All instances of a codec class <b>must</b> be considered equal. */
-    bool operator==(Codec const & other) const { return typeid(*this) == typeid(other); }
-
-    /**
-     * Implicitly convert to an integer value for use in switch statements etc. This value will be common to all instances of
-     * the codec class
-     */
-    operator intx() const { return reinterpret_cast<intx>(&typeid(*this)); }
-};
-
-/** Write the name of the object to an output stream. */
-inline std::ostream &
-operator<<(std::ostream & os, Codec const & codec)
-{
-  return os << codec.getName() << " codec";
-}
-
-/** Indicates that the appropriate codec should be auto-detected. */
-class THEA_API Codec_AUTO : public Codec
-{
-  public:
-    char const * getName() const { static char const * my_name = "Auto"; return my_name; }
-};
-
-/** Indicates that the codec is unknown. */
-class THEA_API Codec_UNKNOWN : public Codec
-{
-  public:
-    char const * getName() const { static char const * my_name = "Unknown"; return my_name; }
-};
 
 /** The interface for a serializable object. */
 class THEA_API Serializable
@@ -98,19 +57,40 @@ class THEA_API Serializable
     /** Destructor. */
     virtual ~Serializable() {};
 
-    /** Serialize the object to a binary output stream. */
-    virtual void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const = 0;
+    /**
+     * Read the object from a binary input stream.
+     *
+     * @param input The stream from which to read data.
+     * @param codec The codec to use. If set to Codec_AUTO(), the codec will be autodetected (if possible) from the input.
+     * @param read_block_header If true, a Codec::BlockHeader object containing information about the codec and size of the
+     *   serialized block will be first read from the input, and used to aid codec detection etc. The implementation is <b>free
+     *   to ignore this directive</b>, e.g. if the codec and input size can be detected through other means. This behavior must
+     *   be synchronized with write(BinaryOutputStream &, Codec const &, bool): either both must omit block headers, or both
+     *   must read/write them if directed to do so.
+     */
+    virtual void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false) = 0;
 
-    /** Deserialize the object from a binary input stream. */
-    virtual void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO()) = 0;
+    /**
+     * Write the object to a binary output stream.
+     *
+     * @param output The stream to which data will be written.
+     * @param codec The codec to use. If set to Codec_AUTO(), an appropriate codec will be automatically selected.
+     * @param write_block_header If true, a Codec::BlockHeader object containing information about the codec and size of the
+     *   serialized block will be first written to the input. The implementation is <b>free to ignore this directive</b>, e.g.
+     *   if the codec and input size are encoded through other means. This behavior must be synchronized with
+     *   read(BinaryInputStream &, Codec const &, bool): either both must omit block headers, or both must read/write them if
+     *   directed to do so.
+     */
+    virtual void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false)
+                 const = 0;
 
-    /** Serialize the object to a text output stream. */
-    virtual void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const
-    { throw Error("Serialization to text stream not implemented"); }
-
-    /** Deserialize the object from a text input stream. */
-    virtual void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO())
+    /** Read the object from a text input stream. */
+    virtual void read(TextInputStream & input, Codec const & codec = Codec_AUTO())
     { throw Error("Deserialization from text stream not implemented"); }
+
+    /** Write the object to a text output stream. */
+    virtual void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const
+    { throw Error("Serialization to text stream not implemented"); }
 
     /** Get the default settings for parsing configuration text files. */
     static TextInputStream::Settings const & configReadSettings()

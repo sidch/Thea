@@ -158,6 +158,31 @@ IF(WITH_CGAL AND Thea_FIND_CGAL)
   ENDIF()
 ENDIF()
 
+# Dependency: HDF5 (optional)
+IF(WITH_HDF5 AND Thea_FIND_HDF5)
+  IF(EXISTS ${THEA_DEPS_ROOT}/installed-hdf5)
+    SET(HDF5_ROOT ${THEA_DEPS_ROOT}/installed-hdf5)
+  ELSE()
+    SET(HDF5_ROOT ${THEA_DEPS_ROOT})
+  ENDIF()
+
+  # Work around a FindHDF5 bug (?) that causes system paths to be ignored if HDF5_ROOT is specified
+  FIND_PACKAGE(HDF5 QUIET)
+  IF(NOT HDF5_FOUND)
+    SET(HDF5_ROOT )
+    FIND_PACKAGE(HDF5)
+  ENDIF()
+
+  IF(HDF5_FOUND)
+    SET(Thea_DEPS_INCLUDE_DIRS ${Thea_DEPS_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS})
+    SET(Thea_DEPS_CFLAGS "${Thea_DEPS_CFLAGS} ${HDF5_DEFINITIONS} -DTHEA_ENABLE_HDF5")
+    SET(Thea_DEPS_LIBRARIES ${Thea_DEPS_LIBRARIES} ${HDF5_LIBRARIES})
+    SET(Thea_DEPS_LIBRARY_DIRS ${Thea_DEPS_LIBRARY_DIRS} ${HDF5_LIBRARY_DIRS})
+  ELSE()  # this is not a fatal error
+    MESSAGE(STATUS "HDF5 not found: library will be built without HDF5-dependent components")
+  ENDIF()
+ENDIF()
+
 # Additional platform-specific libraries
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   SET(Thea_DEPS_PLATFORM_LIBRARIES "-framework Carbon")

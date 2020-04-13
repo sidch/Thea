@@ -1,0 +1,200 @@
+//============================================================================
+//
+// This file is part of the Thea project.
+//
+// This software is covered by the following BSD license, except for portions
+// derived from other works which are covered by their respective licenses.
+// For full licensing information including reproduction of these external
+// licenses, see the file LICENSE.txt provided in the documentation.
+//
+// Copyright (C) 2009, Siddhartha Chaudhuri/Stanford University
+//
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+// this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
+//
+// * Neither the name of the copyright holders nor the names of contributors
+// to this software may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+//
+//============================================================================
+
+#ifndef __Thea_Codec_hpp__
+#define __Thea_Codec_hpp__
+
+#include "Common.hpp"
+#include "NamedObject.hpp"
+#include <algorithm>
+#include <array>
+
+namespace Thea {
+
+// Forward declarations
+class BinaryInputStream;
+class BinaryOutputStream;
+
+/**
+ * A serialization codec. Identified by an ID that is unique for a given run of the program (it is <b>not</b> guaranteed to
+ * retain its value over different runs).
+ */
+class THEA_API Codec : public AbstractNamedObject
+{
+  public:
+    THEA_DECL_SMART_POINTERS(Codec)
+
+    /** The standard length (in bytes) of the codec's magic string as used in Header. */
+    static intx const MAGIC_LENGTH = 8;
+
+    /** The length in bytes of a serialized block header. */
+    static intx const BLOCK_HEADER_LENGTH = MAGIC_LENGTH + /* sizeof(data_size) = */ 8;
+
+    /** The type of the codec's magic string (an array of MAGIC_LENGTH bytes). */
+    typedef std::array<int8, (size_t)MAGIC_LENGTH> MagicString;
+
+    /**
+     * A header preceding a data block serialized using a codec. The header contains the size of the data block and information
+     * identifying the serialization codec.
+     */
+    struct BlockHeader
+    {
+      public:
+        MagicString  magic;      ///< A magic string identifying the codec used to serialize the data.
+        uint64       data_size;  ///< The size of the data block in bytes.
+
+        /** Construct with a magic string and a data block size. */
+        BlockHeader(MagicString const & magic_ = zeroMagic(), uint64 data_size_ = 0)
+        : magic(magic_), data_size(data_size_), header_pos(0) {}
+
+        /** Construct with a magic string specified as a std::string, and a data block size. */
+        BlockHeader(std::string const & magic_, uint64 data_size_ = 0)
+        : magic(toMagic(magic_)), data_size(data_size_), header_pos(0) {}
+
+        /** Construct by calling read() on an input stream. */
+        BlockHeader(BinaryInputStream & in);
+
+        /** Read the header from an input stream. This is guaranteed to read exactly Codec::BLOCK_HEADER_LENGTH bytes. */
+        void read(BinaryInputStream & in);
+
+        /** Write the header to an output stream. This is guaranteed to write exactly Codec::BLOCK_HEADER_LENGTH bytes. */
+        void write(BinaryOutputStream & out) const;
+
+        /**
+         * Internally save the current location in an output stream, while reserving room to write a block header at that
+         * position. This function should be called before writing a data block, and the return value passed to calcAndWrite()
+         * after the data block is written.
+         *
+         * \code
+         *   header.markAndSkip(out);
+         *   // write data block
+         *   header.calcAndWrite(out);
+         * \endcode
+         *
+         * @return The saved location.
+         *
+         * @see calcAndWrite()
+         */
+        int64 markAndSkip(BinaryOutputStream & out);
+
+        /**
+         * Write the header to an output stream, after calculating the data block size based on where the header was supposed to
+         * have been written (calculated using markAndSkip()) vs the current stream position, assumed to be at the end of the
+         * data block. After writing the header, the next write position is moved back to the end of the data block. This is
+         * guaranteed to write exactly Codec::BLOCK_HEADER_LENGTH bytes starting at \a header_pos.
+         *
+         * \code
+         *   header.markAndSkip(out);
+         *   // write data block
+         *   header.calcAndWrite(out);
+         * \endcode
+         *
+         * @note This function updates data_size.
+         *
+         * @warning This function seeks backwards in the stream, which may fail if a very large file is being written. This is
+         *   because of the current implementation of BinaryOutputStream::setPosition(), which should be fixed at some point.
+         *
+         * @see markAndSkip()
+         */
+        void calcAndWrite(BinaryOutputStream & out);
+
+      private:
+        int64 header_pos;  ///< Used to store the marked stream position at which the header should be written.
+
+    }; // struct BlockHeader
+
+    /** Destructor. */
+    virtual ~Codec() = 0;
+
+    /** Get the magic string for the codec, if it has one (else a string of all zeros). */
+    virtual MagicString const & getMagic() const { static MagicString const ZERO = zeroMagic(); return ZERO; }
+
+    /** Check if two codecs are equal. All instances of a codec class <b>must</b> be considered equal. */
+    bool operator==(Codec const & other) const { return typeid(*this) == typeid(other); }
+
+    /**
+     * Implicitly convert to an integer value for use in switch statements etc. This value will be common to all instances of
+     * the codec class
+     */
+    operator intx() const { return reinterpret_cast<intx>(&typeid(*this)); }
+
+    /** Convenience function to convert a string literal to a magic string. */
+    static MagicString toMagic(std::string const & s)
+    {
+      MagicString m;
+      m.fill(0);  // padding, if needed
+      std::copy_n(s.data(), std::min((size_t)MAGIC_LENGTH, s.length()), m.data());
+      return m;
+    }
+
+  private:
+    /** Construct a magic string with all zeros. */
+    static MagicString zeroMagic() { MagicString z; z.fill(0); return z; }
+
+}; // class Codec
+
+// Pure virtual destructor should have a body
+inline Codec::~Codec() {}
+
+/** Write the name of the object to an output stream. */
+inline std::ostream &
+operator<<(std::ostream & os, Codec const & codec)
+{
+  return os << codec.getName() << " codec";
+}
+
+/** Indicates that the appropriate codec should be auto-detected. */
+class THEA_API Codec_AUTO : public Codec
+{
+  public:
+    char const * getName() const { static char const * my_name = "Auto"; return my_name; }
+};
+
+/** Indicates that the codec is unknown. */
+class THEA_API Codec_UNKNOWN : public Codec
+{
+  public:
+    char const * getName() const { static char const * my_name = "Unknown"; return my_name; }
+};
+
+} // namespace Thea
+
+#endif

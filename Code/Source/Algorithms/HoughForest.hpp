@@ -201,17 +201,17 @@ class THEA_API HoughForest : public Serializable
         /** Save options to a disk file. */
         bool save(std::string const & path) const;
 
-        /** Save options to a binary output stream. */
-        void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-
         /** Load options from a binary input stream. */
-        void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+        void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
 
-        /** Save options to a text output stream. */
-        void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+        /** Save options to a binary output stream. */
+        void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
 
         /** Load options from a text input stream. */
-        void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO());
+        void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
+
+        /** Save options to a text output stream. */
+        void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
@@ -370,11 +370,11 @@ class THEA_API HoughForest : public Serializable
     /** Save the trained forest to disk. */
     bool save(std::string const & path) const;
 
-    /** Save the trained forest to an output stream. */
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-
     /** Load the forest from an input stream. */
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+
+    /** Save the trained forest to an output stream. */
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
 
     /** Print debugging information about this forest to the console. */
     void dumpToConsole() const;

@@ -98,10 +98,10 @@ class THEA_API Pyramid1D : public Serializable
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid1D(BinaryInputStream & input) { deserialize(input); }
+    Pyramid1D(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid1D(TextInputStream & input) { deserialize(input); }
+    Pyramid1D(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -109,10 +109,10 @@ class THEA_API Pyramid1D : public Serializable
     /** Get the number of elements in the base (input) level. */
     int baseSize() const { return levels.empty() ? 0 : (int)levels[0].size(); }
 
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
-    void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
 
   protected:
     /** Default constructor. */
@@ -212,10 +212,10 @@ class THEA_API Pyramid2D : public Serializable
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid2D(BinaryInputStream & input) { deserialize(input); }
+    Pyramid2D(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid2D(TextInputStream & input) { deserialize(input); }
+    Pyramid2D(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -226,10 +226,10 @@ class THEA_API Pyramid2D : public Serializable
     /** Get the number of rows in the base (input) level. */
     int baseSizeY() const { return ny; }
 
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
-    void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
 
   protected:
     /** 2D array of scalars. */
@@ -321,10 +321,10 @@ class THEA_API Pyramid3D : public Serializable
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid3D(BinaryInputStream & input) { deserialize(input); }
+    Pyramid3D(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid3D(TextInputStream & input) { deserialize(input); }
+    Pyramid3D(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -338,10 +338,10 @@ class THEA_API Pyramid3D : public Serializable
     /** Get the number of bins in the Z direction in the base (input) level. */
     int baseSizeZ() const { return nz; }
 
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
-    void serialize(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
+    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
 
   protected:
     /** 3D array of scalars. */

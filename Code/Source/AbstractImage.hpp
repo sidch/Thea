@@ -157,7 +157,7 @@ class THEA_API AbstractImage
 
     /**
      * Check if the image has been allocated non-zero memory space (hence has valid type and dimensions) or not. An image
-     * created by the default constructor is invalid and must be further initialized using deserialize() or a similar function.
+     * created by the default constructor is invalid and must be further initialized using Image::read() or a similar function.
      */
     virtual int8 isValid() const = 0;
 

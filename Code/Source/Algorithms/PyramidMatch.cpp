@@ -406,63 +406,60 @@ Pyramid3D::downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsa
 }
 
 void
-Pyramid1D::serialize(BinaryOutputStream & output, Codec const & codec) const
+Pyramid1D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  output.writeUInt32(1);                   // dimensions
-  output.writeUInt32((uint32)num_levels);  // number of levels
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
 
-  for (int i = 0; i < num_levels; ++i)
-  {
-    output.writeUInt32((uint32)levels[i].size());  // number of bins in this level
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
-    Array<Real> const & level_data = levels[i];
-    for (size_t j = 0; j < level_data.size(); ++j)
-      output.writeFloat64(level_data[j]);
+    uint32 dims = input.readUInt32();
+    if (dims != 1) throw Error("Pyramid1D: Number of dimensions must be 1");
+
+    num_levels = input.readUInt32();
+    levels.clear();
+    if (num_levels > 0) levels.resize(num_levels);
+
+    for (int i = 0; i < num_levels; ++i)
+    {
+      size_t level_size = (size_t)input.readUInt32();
+      levels[i].resize(level_size);
+
+      Array<Real> & level_data = levels[i];
+      for (size_t j = 0; j < level_data.size(); ++j)
+        level_data[j] = input.readFloat64();
+    }
   }
 }
 
 void
-Pyramid1D::deserialize(BinaryInputStream & input, Codec const & codec)
+Pyramid1D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  uint32 dims = input.readUInt32();
-  if (dims != 1) throw Error("Pyramid1D: Number of dimensions must be 1");
+  Codec::BlockHeader header("PYR1D");
+  if (write_block_header)
+    header.markAndSkip(output);
 
-  num_levels = input.readUInt32();
-  levels.clear();
-  if (num_levels > 0) levels.resize(num_levels);
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
 
-  for (int i = 0; i < num_levels; ++i)
-  {
-    size_t level_size = (size_t)input.readUInt32();
-    levels[i].resize(level_size);
+    output.writeUInt32(1);                   // dimensions
+    output.writeUInt32((uint32)num_levels);  // number of levels
 
-    Array<Real> & level_data = levels[i];
-    for (size_t j = 0; j < level_data.size(); ++j)
-      level_data[j] = input.readFloat64();
+    for (int i = 0; i < num_levels; ++i)
+    {
+      output.writeUInt32((uint32)levels[i].size());  // number of bins in this level
+
+      Array<Real> const & level_data = levels[i];
+      for (size_t j = 0; j < level_data.size(); ++j)
+        output.writeFloat64(level_data[j]);
+    }
   }
+
+  if (write_block_header)
+    header.calcAndWrite(output);
 }
 
 void
-Pyramid1D::serialize(TextOutputStream & output, Codec const & codec) const
-{
-  output.printf("1\n");               // dimensions
-  output.printf("%d\n", num_levels);  // number of levels
-  output.writeNewline();
-
-  for (int i = 0; i < num_levels; ++i)
-  {
-    output.printf("%d\n", (int)levels[i].size());  // number of bins in this level
-
-    Array<Real> const & level_data = levels[i];
-    for (size_t j = 0; j < level_data.size(); ++j)
-      output.printf("%lf\n", level_data[j]);
-
-    output.writeNewline();
-  }
-}
-
-void
-Pyramid1D::deserialize(TextInputStream & input, Codec const & codec)
+Pyramid1D::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
   if (dims != 1) throw Error("Pyramid1D: Number of dimensions must be 1");
@@ -483,76 +480,92 @@ Pyramid1D::deserialize(TextInputStream & input, Codec const & codec)
 }
 
 void
-Pyramid2D::serialize(BinaryOutputStream & output, Codec const & codec) const
+Pyramid1D::write(TextOutputStream & output, Codec const & codec) const
 {
-  output.writeUInt32(2);                   // dimensions
-  output.writeUInt32((uint32)num_levels);  // number of levels
-
-  for (int i = 0; i < num_levels; ++i)
-  {
-    Array2D const & level = levels[i];
-    output.writeUInt32((uint32)level.sx);
-    output.writeUInt32((uint32)level.sy);
-
-    Array<Real> const & level_data = level.data;
-    for (size_t j = 0; j < level_data.size(); ++j)
-      output.writeFloat64(level_data[j]);
-  }
-}
-
-void
-Pyramid2D::deserialize(BinaryInputStream & input, Codec const & codec)
-{
-  uint32 dims = input.readUInt32();
-  if (dims != 2) throw Error("Pyramid2D: Number of dimensions must be 2");
-
-  num_levels = input.readUInt32();
-  levels.clear();
-  if (num_levels > 0) levels.resize(num_levels);
-
-  nx = ny = 0;
-
-  for (int i = 0; i < num_levels; ++i)
-  {
-    Array2D & level = levels[i];
-    level.sx = (size_t)input.readUInt32();
-    level.sy = (size_t)input.readUInt32();
-
-    if (i == 0)
-    {
-      nx = level.sx;
-      ny = level.sy;
-    }
-
-    Array<Real> & level_data = level.data;
-    level_data.resize(level.sx * level.sy);
-
-    for (size_t j = 0; j < level_data.size(); ++j)
-      level_data[j] = input.readFloat64();
-  }
-}
-
-void
-Pyramid2D::serialize(TextOutputStream & output, Codec const & codec) const
-{
-  output.printf("2\n");               // dimensions
+  output.printf("1\n");               // dimensions
   output.printf("%d\n", num_levels);  // number of levels
   output.writeNewline();
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array2D const & level = levels[i];
-    output.printf("%d\n", (int)level.sx);
-    output.printf("%d\n", (int)level.sy);
+    output.printf("%d\n", (int)levels[i].size());  // number of bins in this level
 
-    Array<Real> const & level_data = level.data;
+    Array<Real> const & level_data = levels[i];
     for (size_t j = 0; j < level_data.size(); ++j)
       output.printf("%lf\n", level_data[j]);
+
+    output.writeNewline();
   }
 }
 
 void
-Pyramid2D::deserialize(TextInputStream & input, Codec const & codec)
+Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+{
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
+
+    uint32 dims = input.readUInt32();
+    if (dims != 2) throw Error("Pyramid2D: Number of dimensions must be 2");
+
+    num_levels = input.readUInt32();
+    levels.clear();
+    if (num_levels > 0) levels.resize(num_levels);
+
+    nx = ny = 0;
+
+    for (int i = 0; i < num_levels; ++i)
+    {
+      Array2D & level = levels[i];
+      level.sx = (size_t)input.readUInt32();
+      level.sy = (size_t)input.readUInt32();
+
+      if (i == 0)
+      {
+        nx = level.sx;
+        ny = level.sy;
+      }
+
+      Array<Real> & level_data = level.data;
+      level_data.resize(level.sx * level.sy);
+
+      for (size_t j = 0; j < level_data.size(); ++j)
+        level_data[j] = input.readFloat64();
+    }
+  }
+}
+
+void
+Pyramid2D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
+{
+  Codec::BlockHeader header("PYR2D");
+  if (write_block_header)
+    header.markAndSkip(output);
+
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+    output.writeUInt32(2);                   // dimensions
+    output.writeUInt32((uint32)num_levels);  // number of levels
+
+    for (int i = 0; i < num_levels; ++i)
+    {
+      Array2D const & level = levels[i];
+      output.writeUInt32((uint32)level.sx);
+      output.writeUInt32((uint32)level.sy);
+
+      Array<Real> const & level_data = level.data;
+      for (size_t j = 0; j < level_data.size(); ++j)
+        output.writeFloat64(level_data[j]);
+    }
+  }
+
+  if (write_block_header)
+    header.calcAndWrite(output);
+}
+
+void
+Pyramid2D::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
   if (dims != 2) throw Error("Pyramid2D: Number of dimensions must be 2");
@@ -584,69 +597,17 @@ Pyramid2D::deserialize(TextInputStream & input, Codec const & codec)
 }
 
 void
-Pyramid3D::serialize(BinaryOutputStream & output, Codec const & codec) const
+Pyramid2D::write(TextOutputStream & output, Codec const & codec) const
 {
-  output.writeUInt32(3);                   // dimensions
-  output.writeUInt32((uint32)num_levels);  // number of levels
-
-  for (int i = 0; i < num_levels; ++i)
-  {
-    Array3D const & level = levels[i];
-    output.writeUInt32((uint32)level.sx);
-    output.writeUInt32((uint32)level.sy);
-    output.writeUInt32((uint32)level.sz);
-
-    Array<Real> const & level_data = level.data;
-    for (size_t j = 0; j < level_data.size(); ++j)
-      output.writeFloat64(level_data[j]);
-  }
-}
-
-void
-Pyramid3D::deserialize(BinaryInputStream & input, Codec const & codec)
-{
-  uint32 dims = input.readUInt32();
-  if (dims != 3) throw Error("Pyramid3D: Number of dimensions must be 3");
-
-  num_levels = input.readUInt32();
-  levels.clear();
-  if (num_levels > 0) levels.resize(num_levels);
-
-  for (int i = 0; i < num_levels; ++i)
-  {
-    Array3D & level = levels[i];
-    level.sx = (size_t)input.readUInt32();
-    level.sy = (size_t)input.readUInt32();
-    level.sz = (size_t)input.readUInt32();
-
-    if (i == 0)
-    {
-      nx = level.sx;
-      ny = level.sy;
-      nz = level.sz;
-    }
-
-    Array<Real> & level_data = level.data;
-    level_data.resize(level.sx * level.sy * level.sz);
-
-    for (size_t j = 0; j < level_data.size(); ++j)
-      level_data[j] = input.readFloat64();
-  }
-}
-
-void
-Pyramid3D::serialize(TextOutputStream & output, Codec const & codec) const
-{
-  output.printf("3\n");               // dimensions
+  output.printf("2\n");               // dimensions
   output.printf("%d\n", num_levels);  // number of levels
   output.writeNewline();
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array3D const & level = levels[i];
+    Array2D const & level = levels[i];
     output.printf("%d\n", (int)level.sx);
     output.printf("%d\n", (int)level.sy);
-    output.printf("%d\n", (int)level.sz);
 
     Array<Real> const & level_data = level.data;
     for (size_t j = 0; j < level_data.size(); ++j)
@@ -655,7 +616,74 @@ Pyramid3D::serialize(TextOutputStream & output, Codec const & codec) const
 }
 
 void
-Pyramid3D::deserialize(TextInputStream & input, Codec const & codec)
+Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+{
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
+
+    uint32 dims = input.readUInt32();
+    if (dims != 3) throw Error("Pyramid3D: Number of dimensions must be 3");
+
+    num_levels = input.readUInt32();
+    levels.clear();
+    if (num_levels > 0) levels.resize(num_levels);
+
+    for (int i = 0; i < num_levels; ++i)
+    {
+      Array3D & level = levels[i];
+      level.sx = (size_t)input.readUInt32();
+      level.sy = (size_t)input.readUInt32();
+      level.sz = (size_t)input.readUInt32();
+
+      if (i == 0)
+      {
+        nx = level.sx;
+        ny = level.sy;
+        nz = level.sz;
+      }
+
+      Array<Real> & level_data = level.data;
+      level_data.resize(level.sx * level.sy * level.sz);
+
+      for (size_t j = 0; j < level_data.size(); ++j)
+        level_data[j] = input.readFloat64();
+    }
+  }
+}
+
+void
+Pyramid3D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
+{
+  Codec::BlockHeader header("PYR3D");
+  if (write_block_header)
+    header.markAndSkip(output);
+
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+    output.writeUInt32(3);                   // dimensions
+    output.writeUInt32((uint32)num_levels);  // number of levels
+
+    for (int i = 0; i < num_levels; ++i)
+    {
+      Array3D const & level = levels[i];
+      output.writeUInt32((uint32)level.sx);
+      output.writeUInt32((uint32)level.sy);
+      output.writeUInt32((uint32)level.sz);
+
+      Array<Real> const & level_data = level.data;
+      for (size_t j = 0; j < level_data.size(); ++j)
+        output.writeFloat64(level_data[j]);
+    }
+  }
+
+  if (write_block_header)
+    header.calcAndWrite(output);
+}
+
+void
+Pyramid3D::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
   if (dims != 3) throw Error("Pyramid3D: Number of dimensions must be 3");
@@ -683,6 +711,26 @@ Pyramid3D::deserialize(TextInputStream & input, Codec const & codec)
 
     for (size_t j = 0; j < level_data.size(); ++j)
       level_data[j] = input.readNumber();
+  }
+}
+
+void
+Pyramid3D::write(TextOutputStream & output, Codec const & codec) const
+{
+  output.printf("3\n");               // dimensions
+  output.printf("%d\n", num_levels);  // number of levels
+  output.writeNewline();
+
+  for (int i = 0; i < num_levels; ++i)
+  {
+    Array3D const & level = levels[i];
+    output.printf("%d\n", (int)level.sx);
+    output.printf("%d\n", (int)level.sy);
+    output.printf("%d\n", (int)level.sz);
+
+    Array<Real> const & level_data = level.data;
+    for (size_t j = 0; j < level_data.size(); ++j)
+      output.printf("%lf\n", level_data[j]);
   }
 }
 

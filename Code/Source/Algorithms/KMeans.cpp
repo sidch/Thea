@@ -59,7 +59,7 @@ KMeans::Options::load(std::string const & path)
   try
   {
     TextInputStream in(path, Serializable::configReadSettings());
-    deserialize(in);
+    read(in);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load options from input file '%s'", path.c_str())
 
@@ -72,7 +72,7 @@ KMeans::Options::save(std::string const & path) const
   try
   {
     TextOutputStream out(path, Serializable::configWriteSettings());
-    serialize(out);
+    write(out);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not save options to output file '%s'", path.c_str())
 
@@ -80,17 +80,22 @@ KMeans::Options::save(std::string const & path) const
 }
 
 void
-KMeans::Options::deserialize(BinaryInputStream & input, Codec const & codec)
+KMeans::Options::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  max_iterations = input.readInt64();
-  max_time = input.readFloat64();
-  seeding = Seeding(input.readAlignedString(4));
-  parallelize = (input.readInt32() != 0);
-  verbose = (input.readInt32() != 0);
+  (void)read_block_header;  // ignored
+
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
+
+    max_iterations = input.readInt64();
+    max_time = input.readFloat64();
+    seeding = Seeding(input.readAlignedString(4));
+    parallelize = (input.readInt32() != 0);
+    verbose = (input.readInt32() != 0);
+  }
 }
 
 void
-KMeans::Options::deserialize(TextInputStream & input, Codec const & codec)
+KMeans::Options::read(TextInputStream & input, Codec const & codec)
 {
   *this = defaults();
 
@@ -116,17 +121,22 @@ KMeans::Options::deserialize(TextInputStream & input, Codec const & codec)
 }
 
 void
-KMeans::Options::serialize(BinaryOutputStream & output, Codec const & codec) const
+KMeans::Options::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  output.writeInt64(max_iterations);
-  output.writeFloat64(max_time);
-  output.writeAlignedString(seeding.toString(), 4);
-  output.writeInt32(parallelize ? 1 : 0);
-  output.writeInt32(verbose ? 1 : 0);
+  (void)write_block_header;  // ignored
+
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+    output.writeInt64(max_iterations);
+    output.writeFloat64(max_time);
+    output.writeAlignedString(seeding.toString(), 4);
+    output.writeInt32(parallelize ? 1 : 0);
+    output.writeInt32(verbose ? 1 : 0);
+  }
 }
 
 void
-KMeans::Options::serialize(TextOutputStream & output, Codec const & codec) const
+KMeans::Options::write(TextOutputStream & output, Codec const & codec) const
 {
   output.printf("max_iterations = %ld\n", max_iterations);
   output.printf("max_time = %lg\n", max_time);
@@ -142,8 +152,7 @@ KMeans::load(std::string const & path)
   try
   {
     TextInputStream in(path.c_str(), Serializable::configReadSettings());
-    options.deserialize(in);
-    deserialize(in);
+    read(in);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
 
@@ -156,9 +165,7 @@ KMeans::save(std::string const & path) const
   try
   {
     TextOutputStream out(path.c_str(), Serializable::configWriteSettings());
-    options.serialize(out);
-    out.writeNewline();
-    serialize(out);
+    write(out);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
 
@@ -166,23 +173,33 @@ KMeans::save(std::string const & path) const
 }
 
 void
-KMeans::deserialize(BinaryInputStream & input, Codec const & codec)
+KMeans::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  intx num_clusters = input.readInt64();
-  if (num_clusters < 0) throw Error("KMeans: Negative number of clusters read");
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
 
-  intx num_point_features = input.readInt64();
-  if (num_point_features < 0) throw Error("KMeans: Negative number of point features read");
+  options.read(input);
 
-  centers.resize(num_clusters, num_point_features);
-  for (intx i = 0; i < num_clusters; ++i)
-    for (intx j = 0; j < num_point_features; ++j)
-      centers(i, j) = input.readFloat64();
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
+
+    intx num_clusters = input.readInt64();
+    if (num_clusters < 0) throw Error("KMeans: Negative number of clusters read");
+
+    intx num_point_features = input.readInt64();
+    if (num_point_features < 0) throw Error("KMeans: Negative number of point features read");
+
+    centers.resize(num_clusters, num_point_features);
+    for (intx i = 0; i < num_clusters; ++i)
+      for (intx j = 0; j < num_point_features; ++j)
+        centers(i, j) = input.readFloat64();
+  }
 }
 
 void
-KMeans::deserialize(TextInputStream & input, Codec const & codec)
+KMeans::read(TextInputStream & input, Codec const & codec)
 {
+  options.read(input);
+
   intx num_clusters = (intx)input.readNumber();
   if (num_clusters < 0) throw Error("KMeans: Negative number of clusters read");
 
@@ -196,22 +213,37 @@ KMeans::deserialize(TextInputStream & input, Codec const & codec)
 }
 
 void
-KMeans::serialize(BinaryOutputStream & output, Codec const & codec) const
+KMeans::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  intx num_clusters = numClusters();
-  intx num_point_features = numPointFeatures();
+  Codec::BlockHeader header("KMeans");
+  if (write_block_header)
+    header.markAndSkip(output);
 
-  output.writeInt64(num_clusters);
-  output.writeInt64(num_point_features);
+  options.write(output);
 
-  for (intx i = 0; i < num_clusters; ++i)
-    for (intx j = 0; j < num_point_features; ++j)
-      output.writeFloat64(centers(i, j));
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+    intx num_clusters = numClusters();
+    intx num_point_features = numPointFeatures();
+
+    output.writeInt64(num_clusters);
+    output.writeInt64(num_point_features);
+
+    for (intx i = 0; i < num_clusters; ++i)
+      for (intx j = 0; j < num_point_features; ++j)
+        output.writeFloat64(centers(i, j));
+  }
+
+  if (write_block_header)
+    header.calcAndWrite(output);
 }
 
 void
-KMeans::serialize(TextOutputStream & output, Codec const & codec) const
+KMeans::write(TextOutputStream & output, Codec const & codec) const
 {
+  options.write(output);
+  output.writeNewline();
+
   intx num_clusters = numClusters();
   intx num_point_features = numPointFeatures();
 

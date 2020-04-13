@@ -66,6 +66,9 @@ IF(NOT THEA_DEPS_ROOT)
 ENDIF()
 SET(THEA_DEPS_ROOT ${THEA_DEPS_ROOT} CACHE PATH "Path to folder with installations of dependencies")
 
+# Add some additional system search paths which may be omitted by default
+SET(CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH} /usr/local /opt/local)
+
 # Locate dependencies
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
 

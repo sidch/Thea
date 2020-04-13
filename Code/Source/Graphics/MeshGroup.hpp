@@ -65,7 +65,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     typedef std::shared_ptr<Mesh> MeshPtr;             ///< A shared pointer to a mesh.
     typedef std::shared_ptr<Mesh const> MeshConstPtr;  ///< A shared pointer to a const mesh.
 
-    /** Interface for callback functions that are called when a vertex or face is deserialized. */
+    /** Interface for callback functions that are called when a vertex or face is read. */
     class ReadCallback
     {
       public:
@@ -86,7 +86,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
 
     }; // class ReadCallback
 
-    /** Interface for callback functions that are called when a vertex or face is serialized. */
+    /** Interface for callback functions that are called when a vertex or face is written. */
     class WriteCallback
     {
       public:
@@ -329,81 +329,63 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
         if (*ci) (*ci)->draw(render_system, options);
     }
 
-    using Serializable::serialize;    // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
-    using Serializable::deserialize;  // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any
-                                      // case the behavior appears to be as expected with this line.
+    using Serializable::read;   // Added to suppress a Clang warning about hidden overloaded virtual function, but is this
+    using Serializable::write;  // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any case
+                                // the behavior appears to be as expected with this line.
 
-    /**
-     * @copydoc Serializable::serialize()
-     *
-     * The serialized mesh group is prefixed with a header indicating the type and size of the encoding.
-     */
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
     {
-      serialize(output, codec, NULL);
+      read(input, codec, read_block_header, NULL);
     }
 
-    /**
-     * Write the mesh group to an output stream, with a callback function called after every element is written.
-     *
-     * The serialized mesh group is prefixed with a header indicating the type and size of the encoding.
-     */
-    void serialize(BinaryOutputStream & output, Codec const & codec, WriteCallback * callback) const
+    /** Read the mesh group from an input stream, with a callback function called after every element is read. */
+    void read(BinaryInputStream & input, Codec const & codec, bool read_block_header, ReadCallback * callback)
     {
       if (codec == Codec_AUTO())
-        throw Error(getNameStr() + ": You must explicitly choose a codec for serializing mesh groups");
-
-      try
-      {
-        MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-        mesh_codec.serializeMeshGroup(*this, output, true, callback);
-      }
-      catch (std::bad_cast &)
-      {
-        // Serious programming error
-        throw FatalError(getNameStr() + ": Codec specified for mesh group serialization is not a mesh codec.");
-      }
-    }
-
-    /**
-     * @copydoc Serializable::deserialize()
-     *
-     * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
-     */
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO())
-    {
-      deserialize(input, codec, NULL);
-    }
-
-    /**
-     * Read the mesh group from an input stream, with a callback function called after every element is read.
-     *
-     * The mesh group <b>must</b> have been serialized using the layout specified in serialize().
-     */
-    void deserialize(BinaryInputStream & input, Codec const & codec, ReadCallback * callback)
-    {
-      if (codec == Codec_AUTO())
-        deserialize_AUTO(input, true, callback);
+        read_AUTO(input, read_block_header, callback);
       else
       {
         try
         {
           MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-          mesh_codec.deserializeMeshGroup(*this, input, true, callback);
+          mesh_codec.readMeshGroup(*this, input, read_block_header, callback);
         }
         catch (std::bad_cast &)
         {
           // Serious programming error
-          throw FatalError(getNameStr() + ": Codec specified for mesh group deserialization is not a mesh codec.");
+          throw FatalError(getNameStr() + ": Codec specified for reading mesh group is not a mesh codec.");
         }
       }
 
       updateBounds();
     }
 
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
+    {
+      write(output, codec, write_block_header, NULL);
+    }
+
+    /** Write the mesh group to an output stream, with a callback function called after every element is written. */
+    void write(BinaryOutputStream & output, Codec const & codec, bool write_block_header, WriteCallback * callback) const
+    {
+      if (codec == Codec_AUTO())
+        throw Error(getNameStr() + ": You must explicitly choose a codec for writing mesh groups");
+
+      try
+      {
+        MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
+        mesh_codec.writeMeshGroup(*this, output, write_block_header, callback);
+      }
+      catch (std::bad_cast &)
+      {
+        // Serious programming error
+        throw FatalError(getNameStr() + ": Codec specified for writing mesh group is not a mesh codec.");
+      }
+    }
+
     /**
-     * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
-     * thrown if the mesh group cannot be saved.
+     * Save the mesh group to a file. The file will <b>not</b> have a prefixed Codec::BlockHeader. An exception will be thrown
+     * if the mesh group cannot be saved.
      */
     void save(std::string const & path, Codec const & codec = Codec_AUTO(), WriteCallback * callback = NULL) const
     {
@@ -412,18 +394,18 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
 
     /**
      * Save the mesh group to a file, choosing one of a given set of codecs that best matches the output path, else falling back
-     * on a default option. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be thrown if
+     * on a default option. The file will <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be saved.
      */
-    void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
-              WriteCallback * callback = NULL) const
+    void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs, WriteCallback * callback = NULL)
+         const
     {
       save(path, Codec_AUTO(), &codecs, callback);
     }
 
     /**
-     * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
-     * thrown if the mesh group cannot be loaded.
+     * Load the mesh from a file. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown
+     * if the mesh group cannot be loaded.
      */
     void load(std::string const & path, Codec const & codec = Codec_AUTO(), ReadCallback * callback = NULL)
     {
@@ -432,18 +414,17 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
 
     /**
      * Load the mesh from a file, choosing one of a given set of codecs that best matches the input path, else falling back on a
-     * default option. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be thrown if
+     * default option. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
-              ReadCallback * callback = NULL)
+    void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs, ReadCallback * callback = NULL)
     {
       load(path, Codec_AUTO(), &codecs, callback);
     }
 
   private:
     /**
-     * Save the mesh group to a file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will be
+     * Save the mesh group to a file. Unlike write(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
      */
     void save(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
@@ -468,7 +449,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       }
 
       BinaryOutputStream out(path, Endianness::LITTLE);
-      mesh_codec->serializeMeshGroup(*this, out, false, callback);
+      mesh_codec->writeMeshGroup(*this, out, false, callback);
 
       out.commit();
       if (!out.ok())
@@ -476,8 +457,8 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     }
 
     /**
-     * Load the mesh from a file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception will be
-     * thrown if the mesh group cannot be loaded.
+     * Load the mesh from a file. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown
+     * if the mesh group cannot be loaded.
      */
     void load(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
               ReadCallback * callback)
@@ -501,7 +482,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       }
 
       BinaryInputStream in(path, Endianness::LITTLE);
-      mesh_codec->deserializeMeshGroup(*this, in, false, callback);
+      mesh_codec->readMeshGroup(*this, in, false, callback);
 
       setName(FilePath::objectName(path));
 
@@ -509,34 +490,36 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     }
 
     /**
-     * Automatically detect the type of the encoded mesh group and deserialize it appropriately. Limited to a hard-coded set
-     * of standard mesh codecs in the default specialization.
+     * Automatically detect the type of the encoded mesh group and read it appropriately. Limited to a hard-coded set of
+     * standard mesh codecs in the default specialization.
      */
-    void deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info, ReadCallback * callback)
+    void read_AUTO(BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
     {
-      if (read_prefixed_info)
+      if (read_block_header)
       {
         // Try to identify the codec by the magic string
         int64 pos = input.getPosition();
-        std::string magic = input.readString(MeshCodec<Mesh>::MAGIC_LENGTH);
+        Codec::BlockHeader header; header.read(input);
         input.setPosition(pos);
 
         MeshCodec<Mesh> const * codec = NULL;
         intx codec_index = 0;
         while ((codec = getDefaultCodec(codec_index++)))
-          if (codec->getMagic() == magic)
+          if (codec->getMagic() == header.magic)
           {
-            codec->deserializeMeshGroup(*this, input, true, callback);
+            codec->readMeshGroup(*this, input, true, callback);
             return;
           }
       }
-
-      // Try to identify by filename extension
-      MeshCodec<Mesh> const * codec = codecFromPath(input.getPath());
-      if (codec)
+      else
       {
-        codec->deserializeMeshGroup(*this, input, false, callback);
-        return;
+        // Try to identify by filename extension
+        MeshCodec<Mesh> const * codec = codecFromPath(input.getPath());
+        if (codec)
+        {
+          codec->readMeshGroup(*this, input, false, callback);
+          return;
+        }
       }
 
       throw Error(getNameStr() + ": Could not detect mesh encoding from input. Please specify the encoding explicitly.");

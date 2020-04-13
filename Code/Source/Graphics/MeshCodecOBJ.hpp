@@ -230,62 +230,21 @@ class CodecOBJ : public CodecOBJBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
-                            WriteCallback * callback) const
-    {
-      output.setEndianness(Endianness::LITTLE);
-      int64 initial_pos = output.getPosition();
-
-      int64 size_pos = 0;
-      if (prefix_info)
-      {
-        output.writeBytes(BaseT::MAGIC_LENGTH, BaseT::getMagic());
-
-        // Placeholder for the size field
-        size_pos = output.getPosition();
-        output.writeUInt32(0);
-      }
-
-      int64 enc_start = output.getPosition();
-        VertexIndexMap vertex_indices;
-        serializeVertices(mesh_group, output, vertex_indices, callback);
-
-        intx next_index = 0;
-        serializeFaces(mesh_group, vertex_indices, output, callback, next_index);
-      int64 enc_end = output.getPosition();
-
-      if (prefix_info)
-      {
-        output.setPosition(size_pos);
-        output.writeUInt32((uint32)(enc_end - enc_start));
-      }
-
-      return (intx)(enc_end - initial_pos);
-    }
-
-    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
-                              ReadCallback * callback) const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
+         const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
-      if (read_prefixed_info)
+      if (read_block_header)
       {
-        input.setEndianness(Endianness::LITTLE);
-        input.skip(BaseT::MAGIC_LENGTH);
-        uint32 encoding_size = input.readUInt32();
-
-        if (encoding_size <= 0)
+        Codec::BlockHeader bh; bh.read(input);
+        if (bh.data_size <= 0)
           return;
 
-        enc_block.resize((size_t)encoding_size);
-        input.readBytes((int64)encoding_size, &enc_block[0]);
-
-        tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
-                                                              // shared pointer ensures deallocation on return
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
         in = tmp_in.get();
       }
 
@@ -588,6 +547,25 @@ class CodecOBJ : public CodecOBJBase<MeshT>
                    << " vertices and " << num_faces << " faces";
     }
 
+    void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
+                        WriteCallback * callback) const
+    {
+      Codec::BlockHeader bh(this->getMagic());
+      if (write_block_header)
+        bh.markAndSkip(output);
+
+      // No need to set endianness, OBJ is a purely text-based format
+
+      VertexIndexMap vertex_indices;
+      writeVertices(mesh_group, output, vertex_indices, callback);
+
+      intx next_index = 0;
+      writeFaces(mesh_group, vertex_indices, output, callback, next_index);
+
+      if (write_block_header)
+        bh.calcAndWrite(output);
+    }
+
   private:
     /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
     static void writeString(std::string const & str, BinaryOutputStream & output)
@@ -596,26 +574,26 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */
-    void serializeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback) const
+    void writeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
-        serializeVertices(**mi, output, vertex_indices, callback);
+        writeVertices(**mi, output, vertex_indices, callback);
       }
 
       for (typename MeshGroup::GroupConstIterator ci = mesh_group.childrenBegin(); ci != mesh_group.childrenEnd(); ++ci)
       {
-        serializeVertices(**ci, output, vertex_indices, callback);
+        writeVertices(**ci, output, vertex_indices, callback);
       }
     }
 
     /** Write out all the vertices from a general mesh or DCEL mesh and map them to indices. */
     template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                                 || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback,
+                       typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                             || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -634,9 +612,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
     /** Write out all the vertices from a display mesh and map them to indices. */
     template <typename _MeshT>
-    void serializeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                           WriteCallback * callback,
-                           typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
+                       WriteCallback * callback,
+                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -678,26 +656,26 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the faces from a mesh group. Returns the number of faces written. */
-    void serializeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index) const
+    void writeFaces(MeshGroup const & mesh_group, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index) const
     {
       for (typename MeshGroup::MeshConstIterator mi = mesh_group.meshesBegin(); mi != mesh_group.meshesEnd(); ++mi)
       {
-        serializeFaces(**mi, vertex_indices, output, callback, next_index);
+        writeFaces(**mi, vertex_indices, output, callback, next_index);
       }
 
       for (typename MeshGroup::GroupConstIterator ci = mesh_group.childrenBegin(); ci != mesh_group.childrenEnd(); ++ci)
       {
-        serializeFaces(**ci, vertex_indices, output, callback, next_index);
+        writeFaces(**ci, vertex_indices, output, callback, next_index);
       }
     }
 
     /** Write out all the faces from a general or DCEL mesh. Returns the number of faces written. */
     template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                              || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
+    void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index,
+                    typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -731,9 +709,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
     /** Write out all the faces from a display mesh. Returns the number of faces written. */
     template <typename _MeshT>
-    void serializeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                        WriteCallback * callback, intx & next_index,
-                        typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+    void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
+                    WriteCallback * callback, intx & next_index,
+                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;

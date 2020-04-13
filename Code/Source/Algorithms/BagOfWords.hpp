@@ -131,10 +131,14 @@ class THEA_API BagOfWords : public Serializable
     /** Save the bag-of-words model to a disk file. */
     bool save(std::string const & path) const { return vocabulary.save(path); }
 
-    void deserialize(BinaryInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.deserialize(in); }
-    void serialize(BinaryOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.serialize(out); }
-    void deserialize(TextInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.deserialize(in); }
-    void serialize(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.serialize(out); }
+    void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
+    { vocabulary.read(in, codec, read_block_header); }
+
+    void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
+    { vocabulary.write(out, codec, write_block_header); }
+
+    void read(TextInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.read(in, codec); }
+    void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.write(out, codec); }
 
   private:
     KMeans vocabulary;   ///< The set of learned words.

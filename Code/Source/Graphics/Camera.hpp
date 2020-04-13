@@ -294,14 +294,10 @@ class THEA_API Camera : public Serializable
     /** Get a string describing the camera. */
     std::string toString() const;
 
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
-
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
 
   private:
-    /** Get the endianness of the serialized form. */
-    static Endianness getEndianness() { return Endianness::LITTLE; }
-
     /** Update the cached projection transform and its inverse. */
     void updateCachedProjectionTransform() const;
 

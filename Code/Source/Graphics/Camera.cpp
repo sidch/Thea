@@ -135,41 +135,52 @@ Camera::toString() const
 }
 
 void
-Camera::serialize(BinaryOutputStream & output, Codec const & codec) const
+Camera::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  output.setEndianness(getEndianness());
+  if (read_block_header)
+    input.skip(Codec::BLOCK_HEADER_LENGTH);  // header is not needed
 
-  output.writeCoordinateFrame3(frame);
-  output.writeUInt8(projection_type == ProjectionType::ORTHOGRAPHIC ? 0 : 1);
-  output.writeFloat32(static_cast<float32>(left));
-  output.writeFloat32(static_cast<float32>(right));
-  output.writeFloat32(static_cast<float32>(bottom));
-  output.writeFloat32(static_cast<float32>(top));
-  output.writeFloat32(static_cast<float32>(near_dist));
-  output.writeFloat32(static_cast<float32>(far_dist));
+  { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
-  output.writeUInt8(proj_y_dir == ProjectedYDirection::UP ? 0 : 1);
+    frame = input.readCoordinateFrame3();
+
+    uint8 pt = input.readUInt8();
+    projection_type = (pt == 0 ? ProjectionType::ORTHOGRAPHIC : ProjectionType::PERSPECTIVE);
+
+    left       =  static_cast<Real>(input.readFloat32());
+    right      =  static_cast<Real>(input.readFloat32());
+    bottom     =  static_cast<Real>(input.readFloat32());
+    top        =  static_cast<Real>(input.readFloat32());
+    near_dist  =  static_cast<Real>(input.readFloat32());
+    far_dist   =  static_cast<Real>(input.readFloat32());
+
+    uint8 pyd = input.readUInt8();
+    proj_y_dir = (pyd == 0 ? ProjectedYDirection::UP : ProjectedYDirection::DOWN);
+  }
 }
 
 void
-Camera::deserialize(BinaryInputStream & input, Codec const & codec)
+Camera::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  input.setEndianness(getEndianness());
+  Codec::BlockHeader header("Camera");
+  if (write_block_header)
+    header.markAndSkip(output);
 
-  frame = input.readCoordinateFrame3();
+  { BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
 
-  uint8 pt = input.readUInt8();
-  projection_type = (pt == 0 ? ProjectionType::ORTHOGRAPHIC : ProjectionType::PERSPECTIVE);
+    output.writeCoordinateFrame3(frame);
+    output.writeUInt8(projection_type == ProjectionType::ORTHOGRAPHIC ? 0 : 1);
+    output.writeFloat32(static_cast<float32>(left));
+    output.writeFloat32(static_cast<float32>(right));
+    output.writeFloat32(static_cast<float32>(bottom));
+    output.writeFloat32(static_cast<float32>(top));
+    output.writeFloat32(static_cast<float32>(near_dist));
+    output.writeFloat32(static_cast<float32>(far_dist));
+    output.writeUInt8(proj_y_dir == ProjectedYDirection::UP ? 0 : 1);
+  }
 
-  left       =  static_cast<Real>(input.readFloat32());
-  right      =  static_cast<Real>(input.readFloat32());
-  bottom     =  static_cast<Real>(input.readFloat32());
-  top        =  static_cast<Real>(input.readFloat32());
-  near_dist  =  static_cast<Real>(input.readFloat32());
-  far_dist   =  static_cast<Real>(input.readFloat32());
-
-  uint8 pyd = input.readUInt8();
-  proj_y_dir = (pyd == 0 ? ProjectedYDirection::UP : ProjectedYDirection::DOWN);
+  if (write_block_header)
+    header.calcAndWrite(output);
 }
 
 } // namespace Graphics

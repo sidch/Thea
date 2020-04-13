@@ -243,80 +243,20 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
 // 2D formats
 //=============================================================================================================================
 
-// Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
-#define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
-intx                                                                                                                          \
-codec::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const                               \
-{                                                                                                                             \
-  fipMemoryIO mem;                                                                                                            \
-  if (const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags) != TRUE)                            \
-    throw Error("Could not save image to memory stream");                                                                     \
-                                                                                                                              \
-  BYTE * data;                                                                                                                \
-  DWORD size_in_bytes;                                                                                                        \
-  if (!mem.acquire(&data, &size_in_bytes))                                                                                    \
-    throw Error(std::string(getName()) + ": Error accessing the FreeImage memory stream");                                    \
-                                                                                                                              \
-  if (prefix_info)                                                                                                            \
-  {                                                                                                                           \
-    output.setEndianness(Endianness::LITTLE);                                                                                 \
-    output.writeUInt64(static_cast<uint64>(size_in_bytes));                                                                   \
-  }                                                                                                                           \
-                                                                                                                              \
-  output.writeBytes(size_in_bytes, data);                                                                                     \
-                                                                                                                              \
-  return (intx)(prefix_info ? size_in_bytes + 4 : size_in_bytes);                                                             \
-}
-
-// TODO: Add options to all the ones that support them
-THEA_DEF_SERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
-THEA_DEF_SERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
-
 #define THEA_DEF_DESERIALIZE_IMAGE(codec, fip_format, flags)                                                                  \
 void                                                                                                                          \
-codec::deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const                              \
+codec::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const                                      \
 {                                                                                                                             \
   /* Get the size of the image block in bytes */                                                                              \
-  input.setEndianness(Endianness::LITTLE);                                                                                    \
-  uint64 size = read_prefixed_info ? input.readUInt64() : input.size();                                                       \
+  uint64 size = (read_block_header ? BlockHeader(input).data_size : input.size());                                            \
                                                                                                                               \
   /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
   /* input stream?)  */                                                                                                       \
-  Array<uint8> img_block((size_t)size);                                                                             \
-  input.readBytes((int64)size, &img_block[0]);                                                                                \
+  Array<uint8> img_block((size_t)size);                                                                                       \
+  input.readBytes((int64)size, img_block.data());                                                                             \
                                                                                                                               \
   /* Decode the image */                                                                                                      \
-  fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);                                                                        \
+  fipMemoryIO mem((BYTE *)img_block.data(), (DWORD)size);                                                                     \
   FIBITMAP * bitmap = mem.load(fip_format, flags);                                                                            \
   if (!bitmap)                                                                                                                \
     throw Error(std::string(getName()) + ": Could not decode image from memory stream");                                      \
@@ -370,126 +310,74 @@ THEA_DEF_DESERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
 THEA_DEF_DESERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
 
+// Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
+#define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
+void                                                                                                                          \
+codec::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const                            \
+{                                                                                                                             \
+  fipMemoryIO mem;                                                                                                            \
+  if (const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags) != TRUE)                            \
+    throw Error("Could not save image to memory stream");                                                                     \
+                                                                                                                              \
+  BYTE * data;                                                                                                                \
+  DWORD size_in_bytes;                                                                                                        \
+  if (!mem.acquire(&data, &size_in_bytes))                                                                                    \
+    throw Error(std::string(getName()) + ": Error accessing the FreeImage memory stream");                                    \
+                                                                                                                              \
+  if (write_block_header)                                                                                                     \
+  {                                                                                                                           \
+    BlockHeader header(this->getMagic(), (uint64)size_in_bytes);                                                              \
+    header.write(output);                                                                                                     \
+  }                                                                                                                           \
+                                                                                                                              \
+  output.writeBytes(size_in_bytes, data);                                                                                     \
+}
+
+// TODO: Add options to all the ones that support them
+THEA_DEF_SERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
+THEA_DEF_SERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
+
 //=============================================================================================================================
 // 3D formats
 //=============================================================================================================================
 
-intx
-Codec3BM::serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const
-{
-  if (!image.isValid())
-    throw Error(std::string(getName()) + ": Cannot serialize an invalid image");
-
-  Image::Type type(image.getType());
-  int64 width   =  image.getWidth();
-  int64 height  =  image.getHeight();
-  int64 depth   =  image.getDepth();
-
-  if (type != Image::Type::LUMINANCE_8U
-   && type != Image::Type::RGB_8U
-   && type != Image::Type::RGBA_8U)
-    throw Error(std::string(getName()) + ": Can only serialize 8-bit luminance, RGB or RGBA images");
-
-  output.setEndianness(Endianness::LITTLE);
-
-  int bpp = image.getBitsPerPixel();
-  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
-
-  static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
-  static uint64 const INFO_HEADER_SIZE = 72;
-  uint64 data_size = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
-  uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_size;
-
-  if (prefix_info)
-    output.writeUInt64(size_in_bytes);
-
-  // Write file header (32 bytes):
-  //   4 bytes: Magic string "3BM\0"
-  //   4 bytes: Version
-  //   8 bytes: Size of the whole file in bytes
-  //   8 bytes: Reserved
-  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
-
-  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'M', (uint8)'\0' };
-  output.writeBytes(4, MAGIC);
-  output.writeUInt32(0x0001);
-  output.writeUInt64(size_in_bytes);
-  output.writeUInt64(0);
-  output.writeUInt64(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
-
-  // Write info header (72 bytes):
-  //   8 bytes: Size of this header (72 bytes)
-  //   8 bytes: Width of the bitmap in voxels
-  //   8 bytes: Height of the bitmap in voxels
-  //   8 bytes: Depth of the bitmap in voxels
-  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
-  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
-  //   8 bytes: Size of raw image data
-  //   8 bytes: Width resolution in voxels/meter
-  //   8 bytes: Height resolution in voxels/meter
-  //   8 bytes: Depth resolution in voxels/meter
-
-  output.writeUInt64(INFO_HEADER_SIZE);
-  output.writeUInt64((uint64)width);
-  output.writeUInt64((uint64)height);
-  output.writeUInt64((uint64)depth);
-  output.writeUInt32((uint32)bpp);
-  output.writeUInt32(0);
-  output.writeUInt64(data_size);
-  output.writeUInt64(3937);  // 100dpi
-  output.writeUInt64(3937);  // 100dpi
-  output.writeUInt64(3937);  // 100dpi
-
-  // Write image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
-  if (width > 0 && height > 0 && depth > 0 && bpp > 0)
-  {
-    int bytes_pp = bpp / 8;
-    Array<uint8> row_buf((size_t)stream_scan_width, 0);
-    for (intx i = 0; i < depth; ++i)
-      for (intx j = 0; j < height; ++j)
-      {
-        uint8 const * in_pixel = (uint8 const *)image.getScanLine(j, i);
-        uint8 * out_pixel = &row_buf[0];
-
-        switch (bytes_pp)
-        {
-          case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
-          case 3:
-          {
-            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-            {
-              out_pixel[0] = in_pixel[Image::Channel::BLUE ];
-              out_pixel[1] = in_pixel[Image::Channel::GREEN];
-              out_pixel[2] = in_pixel[Image::Channel::RED  ];
-            }
-            break;
-          }
-          default: // 4
-          {
-            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-            {
-              out_pixel[0] = in_pixel[Image::Channel::BLUE ];
-              out_pixel[1] = in_pixel[Image::Channel::GREEN];
-              out_pixel[2] = in_pixel[Image::Channel::RED  ];
-              out_pixel[3] = in_pixel[Image::Channel::ALPHA];
-            }
-            break;
-          }
-        }
-
-        output.writeBytes((int64)stream_scan_width, &row_buf[0]);
-      }
-  }
-
-  return (intx)(prefix_info ? size_in_bytes + 4 : size_in_bytes);
-}
-
 void
-Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const
+Codec3BM::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const
 {
   // Get the size of the image block in bytes
-  input.setEndianness(Endianness::LITTLE);
-  uint64 prefixed_size = read_prefixed_info ? input.readUInt64() : 0 /* we'll fix this below */;
+  uint64 prefixed_size = (read_block_header ? BlockHeader(input).data_size : 0);
+
+  BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
   int64 start_position = input.getPosition();
 
@@ -556,18 +444,124 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
   }
 
   image.resize(type, width, height, depth);
+  if (width > 0 && height > 0 && depth > 0 && bpp > 0)
+  {
+    int bytes_pp = bpp / 8;
+    Array<uint8> row_buf((size_t)stream_scan_width);
+    for (intx i = 0; i < depth; ++i)
+      for (intx j = 0; j < height; ++j)
+      {
+        input.readBytes(stream_scan_width, &row_buf[0]);
+
+        uint8 const * in_pixel = &row_buf[0];
+        uint8 * out_pixel = (uint8 *)image.getScanLine(j, i);
+
+        switch (bytes_pp)
+        {
+          case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
+          case 3:
+          {
+            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[Image::Channel::RED  ] = in_pixel[2];
+              out_pixel[Image::Channel::GREEN] = in_pixel[1];
+              out_pixel[Image::Channel::BLUE ] = in_pixel[0];
+            }
+            break;
+          }
+          default: // 4
+          {
+            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[Image::Channel::RED  ] = in_pixel[2];
+              out_pixel[Image::Channel::GREEN] = in_pixel[1];
+              out_pixel[Image::Channel::BLUE ] = in_pixel[0];
+              out_pixel[Image::Channel::ALPHA] = in_pixel[3];
+            }
+            break;
+          }
+        }
+      }
+  }
+}
+
+void
+Codec3BM::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const
+{
+  if (!image.isValid())
+    throw Error(std::string(getName()) + ": Cannot write an invalid image");
+
+  Image::Type type(image.getType());
+  int64 width   =  image.getWidth();
+  int64 height  =  image.getHeight();
+  int64 depth   =  image.getDepth();
+
+  if (type != Image::Type::LUMINANCE_8U
+   && type != Image::Type::RGB_8U
+   && type != Image::Type::RGBA_8U)
+    throw Error(std::string(getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
+
+  int bpp = image.getBitsPerPixel();
+  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+
+  static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
+  static uint64 const INFO_HEADER_SIZE = 72;
+  uint64 data_size = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
+  uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_size;
+
+  if (write_block_header)
+    BlockHeader(getMagic(), size_in_bytes).write(output);
+
+  BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+  // Write file header (32 bytes):
+  //   4 bytes: Magic string "3BM\0"
+  //   4 bytes: Version
+  //   8 bytes: Size of the whole file in bytes
+  //   8 bytes: Reserved
+  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
+
+  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'M', (uint8)'\0' };
+  output.writeBytes(4, MAGIC);
+  output.writeUInt32(0x0001);
+  output.writeUInt64(size_in_bytes);
+  output.writeUInt64(0);
+  output.writeUInt64(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
+
+  // Write info header (72 bytes):
+  //   8 bytes: Size of this header (72 bytes)
+  //   8 bytes: Width of the bitmap in voxels
+  //   8 bytes: Height of the bitmap in voxels
+  //   8 bytes: Depth of the bitmap in voxels
+  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
+  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
+  //   8 bytes: Size of raw image data
+  //   8 bytes: Width resolution in voxels/meter
+  //   8 bytes: Height resolution in voxels/meter
+  //   8 bytes: Depth resolution in voxels/meter
+
+  output.writeUInt64(INFO_HEADER_SIZE);
+  output.writeUInt64((uint64)width);
+  output.writeUInt64((uint64)height);
+  output.writeUInt64((uint64)depth);
+  output.writeUInt32((uint32)bpp);
+  output.writeUInt32(0);
+  output.writeUInt64(data_size);
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+
+  // Write image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
   if (width <= 0 || height <= 0 || depth <= 0 || bpp <= 0)
     return;
 
   int bytes_pp = bpp / 8;
-  Array<uint8> row_buf((size_t)stream_scan_width);
+  Array<uint8> row_buf((size_t)stream_scan_width, 0);
   for (intx i = 0; i < depth; ++i)
     for (intx j = 0; j < height; ++j)
     {
-      input.readBytes(stream_scan_width, &row_buf[0]);
-
-      uint8 const * in_pixel = &row_buf[0];
-      uint8 * out_pixel = (uint8 *)image.getScanLine(j, i);
+      uint8 const * in_pixel = (uint8 const *)image.getScanLine(j, i);
+      uint8 * out_pixel = &row_buf[0];
 
       switch (bytes_pp)
       {
@@ -576,9 +570,9 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
         {
           for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
-            out_pixel[Image::Channel::RED  ] = in_pixel[2];
-            out_pixel[Image::Channel::GREEN] = in_pixel[1];
-            out_pixel[Image::Channel::BLUE ] = in_pixel[0];
+            out_pixel[0] = in_pixel[Image::Channel::BLUE ];
+            out_pixel[1] = in_pixel[Image::Channel::GREEN];
+            out_pixel[2] = in_pixel[Image::Channel::RED  ];
           }
           break;
         }
@@ -586,14 +580,16 @@ Codec3BM::deserializeImage(Image & image, BinaryInputStream & input, bool read_p
         {
           for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
-            out_pixel[Image::Channel::RED  ] = in_pixel[2];
-            out_pixel[Image::Channel::GREEN] = in_pixel[1];
-            out_pixel[Image::Channel::BLUE ] = in_pixel[0];
-            out_pixel[Image::Channel::ALPHA] = in_pixel[3];
+            out_pixel[0] = in_pixel[Image::Channel::BLUE ];
+            out_pixel[1] = in_pixel[Image::Channel::GREEN];
+            out_pixel[2] = in_pixel[Image::Channel::RED  ];
+            out_pixel[3] = in_pixel[Image::Channel::ALPHA];
           }
           break;
         }
       }
+
+      output.writeBytes((int64)stream_scan_width, &row_buf[0]);
     }
 }
 
@@ -683,10 +679,10 @@ Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
   resize(type_, width_, height_, depth_);
 }
 
-Image::Image(BinaryInputStream & input, Codec const & codec)
+Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 : type(Type::UNKNOWN), fip_img(NULL)
 {
-  deserialize(input, codec);
+  read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
@@ -938,10 +934,25 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 }
 
 void
-Image::serialize(BinaryOutputStream & output, Codec const & codec) const
+Image::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+{
+  if (codec == Codec_AUTO())
+    read_AUTO(input, read_block_header);
+  else
+  {
+    ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
+    if (!img_codec)
+      throw Error("Codec specified for image deserialization is not an image codec.");
+
+    img_codec->readImage(*this, input, read_block_header);
+  }
+}
+
+void
+Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
   if (!isValid())
-    throw Error("Can't serialize an invalid image");
+    throw Error("Can't write an invalid image");
 
   if (codec == Codec_AUTO())
     throw Error("You must explicitly choose a codec for serializing images");
@@ -950,54 +961,7 @@ Image::serialize(BinaryOutputStream & output, Codec const & codec) const
   if (!img_codec)
     throw Error("Codec specified for image serialization is not an image codec.");
 
-  img_codec->serializeImage(*this, output, true);
-}
-
-void
-Image::deserialize(BinaryInputStream & input, Codec const & codec)
-{
-  if (codec == Codec_AUTO())
-    deserialize_AUTO(input, true);
-  else
-  {
-    ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
-    if (!img_codec)
-      throw Error("Codec specified for image deserialization is not an image codec.");
-
-    img_codec->deserializeImage(*this, input, true);
-  }
-}
-
-void
-Image::save(std::string const & path, Codec const & codec) const
-{
-  if (!isValid())
-    throw Error("Can't save an invalid image");
-
-  ImageCodec const * c = NULL;
-  if (codec == Codec_AUTO())
-  {
-    c = ImageInternal::codecFromPath(path);
-    if (!c)
-      throw Error("Could not detect codec from path");
-  }
-
-  if (!c)
-  {
-    c = dynamic_cast<ImageCodec const *>(&codec);
-    if (!c)
-      throw Error("Codec specified for saving image is not an image codec.");
-  }
-
-  BinaryOutputStream out(path, Endianness::LITTLE);
-  if (!out.ok())
-    throw Error("Could not open image file for writing");
-
-  c->serializeImage(*this, out, false);
-
-  out.commit();
-  if (!out.ok())
-    throw Error("Could not save image file");
+  img_codec->writeImage(*this, output, write_block_header);
 }
 
 void
@@ -1008,29 +972,37 @@ Image::load(std::string const & path, Codec const & codec)
   if (file_size <= 0)
     throw Error("Image file does not exist or is empty");
 
-  if (codec == Codec_AUTO())
-    deserialize_AUTO(in, false);
-  else
-  {
-    try
-    {
-      ImageCodec const & img_codec = dynamic_cast<ImageCodec const &>(codec);
-      img_codec.deserializeImage(*this, in, false);
-    }
-    catch (std::bad_cast &)
-    {
-      throw Error("Codec specified for loading image is not an image codec.");
-    }
-  }
+  read(in, codec, false);
 }
 
 void
-Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
+Image::save(std::string const & path, Codec const & codec) const
 {
-  // Get the size of the image block in bytes
-  input.setEndianness(Endianness::LITTLE);
-  uint32 size = read_prefixed_info ? input.readUInt32() : input.size();
+  if (!isValid())
+    throw Error("Can't save an invalid image");
 
+  Codec const * c = NULL;
+  if (codec == Codec_AUTO())
+  {
+    c = ImageInternal::codecFromPath(path);
+    if (!c)
+      throw Error("Could not detect codec from path");
+  }
+  else
+    c = &codec;
+
+  BinaryOutputStream out(path, Endianness::LITTLE);
+  if (!out.ok())
+    throw Error("Could not open image file for writing");
+
+  write(out, *c, false);
+}
+
+void
+Image::read_AUTO(BinaryInputStream & input, bool read_block_header)
+{
+  // Read the block header, if present. We will only use the size info and auto-detect the codec from the image block itself.
+  int64 size = (read_block_header ? (int64)Codec::BlockHeader(input).data_size : input.size());
   if (size <= 0)
     throw Error("No image data found");
 
@@ -1043,7 +1015,7 @@ Image::deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info)
   if (detected_codec)
   {
     BinaryInputStream mem_stream(&img_block[0], (int64)size, Endianness::LITTLE, /* copy_memory = */ false);
-    detected_codec->deserializeImage(*this, mem_stream, false);
+    detected_codec->readImage(*this, mem_stream, false);
   }
   else
   {

@@ -69,9 +69,9 @@ class THEA_API Image : public AbstractImage, public Serializable
     /**
      * Construct an image by deserializing it from an input stream.
      *
-     * @see deserialize()
+     * @see read()
      */
-    Image(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
+    Image(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
 
     /**
      * Construct an image by loading it from a file.
@@ -197,31 +197,20 @@ class THEA_API Image : public AbstractImage, public Serializable
     /** Rescale the image to a new width and height. */
     bool rescale(int64 new_width, int64 new_height, int64 new_depth = 1, Filter filter = Filter::AUTO);
 
-    /**
-     * @copydoc Serializable::serialize()
-     *
-     * The serialized image is prefixed with a header indicating its encoded size.
-     */
-    void serialize(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
 
     /**
-     * @copydoc Serializable::deserialize()
-     *
-     * The image <b>must</b> have been serialized using the layout specified in serialize().
-     */
-    void deserialize(BinaryInputStream & input, Codec const & codec = Codec_AUTO());
-
-    /**
-     * Save the image to an image file. Unlike serialize(), the file will <b>not</b> have a prefixed header. An exception will
-     * be thrown if the image cannot be saved.
-     */
-    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const;
-
-    /**
-     * Load the image from an image file. Unlike deserialize(), the file should <b>not</b> have a prefixed header. An exception
-     * will be thrown if the image cannot be loaded.
+     * Load the image from an image file. The file should <b>not</b> have a prefixed Codec::BlockHeader. An exception will be
+     * thrown if the image cannot be loaded.
      */
     void load(std::string const & path, Codec const & codec = Codec_AUTO());
+
+    /**
+     * Save the image to an image file. The file will <b>not</b> have a prefixed Codec::BlockHeader. An exception will be thrown
+     * if the image cannot be saved.
+     */
+    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const;
 
     /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
     fipImage const * _getFreeImage() const { return fip_img; }
@@ -233,8 +222,8 @@ class THEA_API Image : public AbstractImage, public Serializable
     void _setType(Type type_);
 
   private:
-    /** Automatically detect the type of the encoded image and deserialize it appropriately. */
-    void deserialize_AUTO(BinaryInputStream & input, bool read_prefixed_info);
+    /** Automatically detect the type of the encoded image and read it appropriately. */
+    void read_AUTO(BinaryInputStream & input, bool read_block_header);
 
     /** Cache properties related to the image type. */
     void cacheTypeProperties();
@@ -267,74 +256,75 @@ class THEA_API ImageCodec : public Codec
 {
   public:
     /**
-     * Serialize an image to a binary output stream. Optionally prefixes extra information about the image block such as its
-     * size and type (which may have not been specified in the encoding format itself).
+     * Read an image from a binary input stream. If \a read_block_header is true, extra information about the image block (such
+     * as its size and type) will be read first from the input stream. Else, the entire input will be treated as the image block
+     * (the size() function of the stream must return the correct value in this case).
      *
-     * @return The number of bytes written (this will include the information field if it was written)
+     * @see writeImage
      */
-    virtual intx serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const = 0;
+    virtual void readImage(Image & image, BinaryInputStream & input, bool read_block_header) const = 0;
 
     /**
-     * Deserialize an image from a binary input stream. If the <code>read_prefixed_info</code> parameter is true, extra
-     * information about the image block (such as its size and type) will be read first from the input stream. Else, the entire
-     * input will be treated as the image block (the size() function of the stream must return the correct value in this case).
+     * Write an image to a binary output stream. Optionally prefixes extra information about the image block such as its size
+     * and type (which may have not been specified in the encoding format itself).
      *
-     * @see serializeMeshGroup
+     * @see readImage
      */
-    virtual void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const = 0;
+    virtual void writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const = 0;
 };
 
-#define THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                 \
+#define THEA_DEF_IMAGE_CODEC_BODY(name, magic, desc)                                                                          \
     public:                                                                                                                   \
       char const * getName() const { static char const * my_name = desc; return my_name; }                                    \
-      intx serializeImage(Image const & image, BinaryOutputStream & output, bool prefix_info) const;                          \
-      void deserializeImage(Image & image, BinaryInputStream & input, bool read_prefixed_info) const;
+      MagicString const & getMagic() const { static MagicString const magic_ = toMagic(magic); return magic_; }               \
+      void readImage(Image & image, BinaryInputStream & input, bool read_block_header) const;                                 \
+      void writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const;
 
-#define THEA_DEF_IMAGE_CODEC(name, desc)                                                                                      \
+#define THEA_DEF_IMAGE_CODEC(name, magic, desc)                                                                               \
   class THEA_API name : public ImageCodec                                                                                     \
   {                                                                                                                           \
     public: name() {}                                                                                                         \
-    THEA_DEF_IMAGE_CODEC_BODY(name, desc)                                                                                     \
+    THEA_DEF_IMAGE_CODEC_BODY(name, magic, desc)                                                                              \
   };
 
 // TODO: Add options to all the ones that support them
 
 // 2D formats
-THEA_DEF_IMAGE_CODEC(CodecBMP,     "Windows or OS/2 Bitmap File (*.BMP)")
-THEA_DEF_IMAGE_CODEC(CodecCUT,     "Dr. Halo (*.CUT)")
-THEA_DEF_IMAGE_CODEC(CodecDDS,     "DirectDraw Surface (*.DDS)")
-THEA_DEF_IMAGE_CODEC(CodecEXR,     "ILM OpenEXR (*.EXR)")
-THEA_DEF_IMAGE_CODEC(CodecFAXG3,   "Raw Fax format CCITT G3 (*.G3)")
-THEA_DEF_IMAGE_CODEC(CodecGIF,     "Graphics Interchange Format (*.GIF)")
-THEA_DEF_IMAGE_CODEC(CodecHDR,     "High Dynamic Range (*.HDR)")
-THEA_DEF_IMAGE_CODEC(CodecICO,     "Windows Icon (*.ICO)")
-THEA_DEF_IMAGE_CODEC(CodecIFF,     "Amiga IFF (*.IFF, *.LBM)")
-THEA_DEF_IMAGE_CODEC(CodecJ2K,     "JPEG-2000 codestream (*.J2K, *.J2C)")
-THEA_DEF_IMAGE_CODEC(CodecJNG,     "JPEG Network Graphics (*.JNG)")
-THEA_DEF_IMAGE_CODEC(CodecJP2,     "JPEG-2000 File Format (*.JP2)")
-THEA_DEF_IMAGE_CODEC(CodecKOALA,   "Commodore 64 Koala format (*.KOA)")
-THEA_DEF_IMAGE_CODEC(CodecMNG,     "Multiple Network Graphics (*.MNG)")
-THEA_DEF_IMAGE_CODEC(CodecPBM,     "Portable Bitmap (ASCII) (*.PBM)")
-THEA_DEF_IMAGE_CODEC(CodecPBMRAW,  "Portable Bitmap (BINARY) (*.PBM)")
-THEA_DEF_IMAGE_CODEC(CodecPCD,     "Kodak PhotoCD (*.PCD)")
-THEA_DEF_IMAGE_CODEC(CodecPCX,     "Zsoft Paintbrush PCX bitmap format (*.PCX)")
-THEA_DEF_IMAGE_CODEC(CodecPFM,     "Portable Floatmap (*.PFM)")
-THEA_DEF_IMAGE_CODEC(CodecPGM,     "Portable Graymap (ASCII) (*.PGM)")
-THEA_DEF_IMAGE_CODEC(CodecPGMRAW,  "Portable Graymap (BINARY) (*.PGM)")
-THEA_DEF_IMAGE_CODEC(CodecPNG,     "Portable Network Graphics (*.PNG)")
-THEA_DEF_IMAGE_CODEC(CodecPPM,     "Portable Pixelmap (ASCII) (*.PPM)")
-THEA_DEF_IMAGE_CODEC(CodecPPMRAW,  "Portable Pixelmap (BINARY) (*.PPM)")
-THEA_DEF_IMAGE_CODEC(CodecPSD,     "Adobe Photoshop (*.PSD)")
-THEA_DEF_IMAGE_CODEC(CodecRAS,     "Sun Rasterfile (*.RAS)")
-THEA_DEF_IMAGE_CODEC(CodecSGI,     "Silicon Graphics SGI image format (*.SGI)")
-THEA_DEF_IMAGE_CODEC(CodecTARGA,   "Truevision Targa files (*.TGA, *.TARGA)")
-THEA_DEF_IMAGE_CODEC(CodecTIFF,    "Tagged Image File Format (*.TIF, *.TIFF)")
-THEA_DEF_IMAGE_CODEC(CodecWBMP,    "Wireless Bitmap (*.WBMP)")
-THEA_DEF_IMAGE_CODEC(CodecXBM,     "X11 Bitmap Format (*.XBM)")
-THEA_DEF_IMAGE_CODEC(CodecXPM,     "X11 Pixmap Format (*.XPM)")
+THEA_DEF_IMAGE_CODEC(CodecBMP,     "BMP",     "Windows or OS/2 Bitmap File (*.BMP)")
+THEA_DEF_IMAGE_CODEC(CodecCUT,     "CUT",     "Dr. Halo (*.CUT)")
+THEA_DEF_IMAGE_CODEC(CodecDDS,     "DDS",     "DirectDraw Surface (*.DDS)")
+THEA_DEF_IMAGE_CODEC(CodecEXR,     "EXR",     "ILM OpenEXR (*.EXR)")
+THEA_DEF_IMAGE_CODEC(CodecFAXG3,   "FAXG3",   "Raw Fax format CCITT G3 (*.G3)")
+THEA_DEF_IMAGE_CODEC(CodecGIF,     "GIF",     "Graphics Interchange Format (*.GIF)")
+THEA_DEF_IMAGE_CODEC(CodecHDR,     "HDR",     "High Dynamic Range (*.HDR)")
+THEA_DEF_IMAGE_CODEC(CodecICO,     "ICO",     "Windows Icon (*.ICO)")
+THEA_DEF_IMAGE_CODEC(CodecIFF,     "IFF",     "Amiga IFF (*.IFF, *.LBM)")
+THEA_DEF_IMAGE_CODEC(CodecJ2K,     "J2K",     "JPEG-2000 codestream (*.J2K, *.J2C)")
+THEA_DEF_IMAGE_CODEC(CodecJNG,     "JNG",     "JPEG Network Graphics (*.JNG)")
+THEA_DEF_IMAGE_CODEC(CodecJP2,     "JP2",     "JPEG-2000 File Format (*.JP2)")
+THEA_DEF_IMAGE_CODEC(CodecKOALA,   "KOALA",   "Commodore 64 Koala format (*.KOA)")
+THEA_DEF_IMAGE_CODEC(CodecMNG,     "MNG",     "Multiple Network Graphics (*.MNG)")
+THEA_DEF_IMAGE_CODEC(CodecPBM,     "PBM",     "Portable Bitmap (ASCII) (*.PBM)")
+THEA_DEF_IMAGE_CODEC(CodecPBMRAW,  "PBMRAW",  "Portable Bitmap (BINARY) (*.PBM)")
+THEA_DEF_IMAGE_CODEC(CodecPCD,     "PCD",     "Kodak PhotoCD (*.PCD)")
+THEA_DEF_IMAGE_CODEC(CodecPCX,     "PCX",     "Zsoft Paintbrush PCX bitmap format (*.PCX)")
+THEA_DEF_IMAGE_CODEC(CodecPFM,     "PFM",     "Portable Floatmap (*.PFM)")
+THEA_DEF_IMAGE_CODEC(CodecPGM,     "PGM",     "Portable Graymap (ASCII) (*.PGM)")
+THEA_DEF_IMAGE_CODEC(CodecPGMRAW,  "PGMRAW",  "Portable Graymap (BINARY) (*.PGM)")
+THEA_DEF_IMAGE_CODEC(CodecPNG,     "PNG",     "Portable Network Graphics (*.PNG)")
+THEA_DEF_IMAGE_CODEC(CodecPPM,     "PPM",     "Portable Pixelmap (ASCII) (*.PPM)")
+THEA_DEF_IMAGE_CODEC(CodecPPMRAW,  "PPMRAW",  "Portable Pixelmap (BINARY) (*.PPM)")
+THEA_DEF_IMAGE_CODEC(CodecPSD,     "PSD",     "Adobe Photoshop (*.PSD)")
+THEA_DEF_IMAGE_CODEC(CodecRAS,     "RAS",     "Sun Rasterfile (*.RAS)")
+THEA_DEF_IMAGE_CODEC(CodecSGI,     "SGI",     "Silicon Graphics SGI image format (*.SGI)")
+THEA_DEF_IMAGE_CODEC(CodecTARGA,   "TARGA",   "Truevision Targa files (*.TGA, *.TARGA)")
+THEA_DEF_IMAGE_CODEC(CodecTIFF,    "TIFF",    "Tagged Image File Format (*.TIF, *.TIFF)")
+THEA_DEF_IMAGE_CODEC(CodecWBMP,    "WBMP",    "Wireless Bitmap (*.WBMP)")
+THEA_DEF_IMAGE_CODEC(CodecXBM,     "XBM",     "X11 Bitmap Format (*.XBM)")
+THEA_DEF_IMAGE_CODEC(CodecXPM,     "XPM",     "X11 Pixmap Format (*.XPM)")
 
 // 3D formats
-THEA_DEF_IMAGE_CODEC(Codec3BM,     "3D Bitmap (*.3BM)")
+THEA_DEF_IMAGE_CODEC(Codec3BM,     "3BM",     "3D Bitmap (*.3BM)")
 
 /** JPEG image codec. */
 class THEA_API CodecJPEG : public ImageCodec
@@ -362,7 +352,7 @@ class THEA_API CodecJPEG : public ImageCodec
     /** Constructor to set encoding options. */
     CodecJPEG(Options const & options_) : options(options_) {}
 
-    THEA_DEF_IMAGE_CODEC_BODY(CodecJPEG, "Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)")
+    THEA_DEF_IMAGE_CODEC_BODY(CodecJPEG, "JPEG", "Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)")
 
   private:
     Options options;

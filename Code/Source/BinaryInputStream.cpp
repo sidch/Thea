@@ -283,6 +283,8 @@ BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endiann
   m_bufferLength(0),
   m_pos(0)
 {
+  alwaysAssertM(data_len >= 0, "BinaryInputStream: Can't create buffer with negative size");
+
   m_freeBuffer = copy_memory;
   setEndianness(data_endian);
 
@@ -291,14 +293,20 @@ BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endiann
 
   if (!copy_memory)
   {
+    alwaysAssertM(data_len <= 0 || data, "BinaryInputStream: Wrapped buffer of non-zero size must be non-null");
     debugAssertM(!m_freeBuffer, "BinaryInputStream: Can't free buffer if it is not a copy");
+
     m_buffer = const_cast<uint8 *>(data);
   }
   else
   {
     debugAssertM(m_freeBuffer, "BinaryInputStream: Must free buffer if it is a copy");
-    m_buffer = (uint8 *)std::malloc(m_length);
-    std::memcpy(m_buffer, data, data_len);
+
+    m_buffer = (uint8 *)std::malloc((size_t)m_length);
+    if (!m_buffer)
+      throw Error("BinaryInputStream: Could not allocate buffer");
+
+    std::memcpy(m_buffer, data, (size_t)data_len);
   }
 }
 
@@ -341,7 +349,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
   }
 
   alwaysAssertM(m_freeBuffer, "BinaryInputStream: Allocated buffer not set to be freed");
-  m_buffer = (uint8 *)std::malloc(m_bufferLength);
+  m_buffer = (uint8 *)std::malloc((size_t)m_bufferLength);
 
   if (m_buffer == NULL)
   {
@@ -350,7 +358,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
     while ((m_buffer == NULL) && (m_bufferLength > 1024))
     {
       m_bufferLength /= 2;
-      m_buffer = (uint8 *)std::malloc(m_bufferLength);
+      m_buffer = (uint8 *)std::malloc((size_t)m_bufferLength);
     }
   }
 
@@ -363,6 +371,37 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
 
   fclose(file);
   file = NULL;
+}
+
+BinaryInputStream::BinaryInputStream(BinaryInputStream & src, int64 block_len)
+: NamedObject(std::string("block(") + src.getNameStr() + ')'),
+  m_path(src.m_path),
+  m_bitPos(0),
+  m_bitString(0),
+  m_beginEndBits(0),
+  m_alreadyRead(0),
+  m_length(block_len),
+  m_bufferLength(0),
+  m_buffer(NULL),
+  m_pos(0),
+  m_freeBuffer(true)
+{
+  alwaysAssertM(block_len >= 0, "BinaryInputStream: Can't create buffer with negative size");
+
+  setEndianness(src.m_fileEndian);
+
+  if (m_length <= 0)
+    return;
+
+  // FIXME: Replace the copy with an (offset, length) pair that directly references the source file or memory buffer? But
+  // because of the way BinaryInputStream caches data from a file (reopening it when buffering), this might not actually save
+  // memory for files at least.
+
+  m_buffer = (uint8 *)std::malloc((size_t)m_length);
+  if (!m_buffer)
+    throw Error(getNameStr() + ": Could not allocate buffer");
+
+  src.readBytes(m_length, m_buffer);
 }
 
 BinaryInputStream::~BinaryInputStream()

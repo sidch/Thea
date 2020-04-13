@@ -164,35 +164,21 @@ class Codec3DS : public Codec3DSBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    intx serializeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool prefix_info,
-                            WriteCallback * callback) const
-    {
-      throw Error(std::string(getName()) + ": Not implemented");
-    }
-
-    void deserializeMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_prefixed_info,
-                              ReadCallback * callback) const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header,
+                       ReadCallback * callback) const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
-      Array<uint8> enc_block;
       BinaryInputStream::Ptr tmp_in;
 
-      if (read_prefixed_info)
+      if (read_block_header)
       {
-        input.setEndianness(Endianness::LITTLE);
-        input.skip(BaseT::MAGIC_LENGTH);
-        uint32 encoding_size = input.readUInt32();
-
-        if (encoding_size <= 0)
+        Codec::BlockHeader bh; bh.read(input);
+        if (bh.data_size <= 0)
           return;
 
-        enc_block.resize((size_t)encoding_size);
-        input.readBytes((int64)encoding_size, &enc_block[0]);
-
-        tmp_in = BinaryInputStream::Ptr(new BinaryInputStream(&enc_block[0], (int64)encoding_size, Endianness::LITTLE, false));
-                                                              // shared pointer ensures deallocation on return
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
         in = tmp_in.get();
       }
 
@@ -251,6 +237,12 @@ class Codec3DS : public Codec3DSBase<MeshT>
                    << " faces (including malformed faces which may have been dropped from the final mesh)";
 
       lib3ds_file_free(file3ds);
+    }
+
+    void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
+                        WriteCallback * callback) const
+    {
+      throw Error(std::string(getName()) + ": Not implemented");
     }
 
   private:

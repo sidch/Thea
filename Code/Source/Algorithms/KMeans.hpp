@@ -119,10 +119,10 @@ class THEA_API KMeans : public Serializable
         /** Save options to a disk file. */
         bool save(std::string const & path) const;
 
-        void deserialize(BinaryInputStream & in, Codec const & codec = Codec_AUTO());
-        void serialize(BinaryOutputStream & out, Codec const & codec = Codec_AUTO()) const;
-        void deserialize(TextInputStream & in, Codec const & codec = Codec_AUTO());
-        void serialize(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
+        void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+        void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+        void read(TextInputStream & in, Codec const & codec = Codec_AUTO());
+        void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
@@ -331,10 +331,10 @@ class THEA_API KMeans : public Serializable
     /** Save the k-means model to a disk file. */
     bool save(std::string const & path) const;
 
-    void deserialize(BinaryInputStream & in, Codec const & codec = Codec_AUTO());
-    void serialize(BinaryOutputStream & out, Codec const & codec = Codec_AUTO()) const;
-    void deserialize(TextInputStream & in, Codec const & codec = Codec_AUTO());
-    void serialize(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void read(TextInputStream & in, Codec const & codec = Codec_AUTO());
+    void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
 
   private:
     /** Select initial centers by k-means++. */

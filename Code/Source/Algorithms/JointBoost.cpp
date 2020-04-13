@@ -818,7 +818,7 @@ JointBoost::Options::load(std::string const & path)
     }
 
     TextInputStream in(path, Serializable::configReadSettings());
-    return deserialize(in);
+    return read(in);
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "JointBoost: Could not load options from input file '%s'", path.c_str())
 }
@@ -841,7 +841,7 @@ JointBoost::Options::save(std::string const & path) const
     }
 
     TextOutputStream out(path, Serializable::configWriteSettings());
-    if (!serialize(out))
+    if (!write(out))
       return false;
 
     out.commit();
@@ -861,10 +861,10 @@ JointBoost::load(std::string const & path)
     return false;
   }
 
-  if (!options.deserialize(in))
+  if (!options.read(in))
     return false;
 
-  if (!deserialize(in))
+  if (!read(in))
     return false;
 
   return true;
@@ -880,19 +880,19 @@ JointBoost::save(std::string const & path) const
     return false;
   }
 
-  if (!options.serialize(out))
+  if (!options.write(out))
     return false;
 
   out << std::endl;  // break up the output a bit
 
-  if (!serialize(out))
+  if (!write(out))
     return false;
 
   return true;
 }
 
 bool
-JointBoost::Options::deserialize(std::istream & in)
+JointBoost::Options::read(std::istream & in)
 {
   in >> min_boosting_rounds
      >> max_boosting_rounds
@@ -913,7 +913,7 @@ JointBoost::Options::deserialize(std::istream & in)
 }
 
 bool
-JointBoost::Options::deserialize(TextInputStream & input)
+JointBoost::Options::read(TextInputStream & input)
 {
   *this = defaults();
 
@@ -944,7 +944,7 @@ JointBoost::Options::deserialize(TextInputStream & input)
 }
 
 bool
-JointBoost::Options::serialize(std::ostream & out) const
+JointBoost::Options::write(std::ostream & out) const
 {
   out << min_boosting_rounds << '\n'
       << max_boosting_rounds << '\n'
@@ -965,7 +965,7 @@ JointBoost::Options::serialize(std::ostream & out) const
 }
 
 bool
-JointBoost::Options::serialize(TextOutputStream & output) const
+JointBoost::Options::write(TextOutputStream & output) const
 {
   output.printf("min_boosting_rounds = %ld\n", min_boosting_rounds);
   output.printf("max_boosting_rounds = %ld\n", max_boosting_rounds);
@@ -980,7 +980,7 @@ JointBoost::Options::serialize(TextOutputStream & output) const
 }
 
 bool
-JointBoost::SharedStump::deserialize(std::istream & in)
+JointBoost::SharedStump::read(std::istream & in)
 {
   if (!(in >> f >> n >> a >> b >> theta))
     return false;
@@ -998,7 +998,7 @@ JointBoost::SharedStump::deserialize(std::istream & in)
 }
 
 bool
-JointBoost::SharedStump::serialize(std::ostream & out) const
+JointBoost::SharedStump::write(std::ostream & out) const
 {
   out << f << '\n'
       << n << '\n'
@@ -1016,7 +1016,7 @@ JointBoost::SharedStump::serialize(std::ostream & out) const
 }
 
 bool
-JointBoost::deserialize(std::istream & in)
+JointBoost::read(std::istream & in)
 {
   if (!(in >> num_classes >> num_features))
   {
@@ -1070,7 +1070,7 @@ JointBoost::deserialize(std::istream & in)
   for (std::size_t i = 0; i < stumps.size(); ++i)
   {
     stumps[i] = SharedStump::Ptr(new SharedStump);
-    if (!stumps[i]->deserialize(in))
+    if (!stumps[i]->read(in))
     {
       THEA_ERROR << "JointBoost: Could not read stump " << i;
       return false;
@@ -1081,7 +1081,7 @@ JointBoost::deserialize(std::istream & in)
 }
 
 bool
-JointBoost::serialize(std::ostream & out) const
+JointBoost::write(std::ostream & out) const
 {
   out << num_classes << '\n'
       << num_features << '\n' << std::endl;
@@ -1101,7 +1101,7 @@ JointBoost::serialize(std::ostream & out) const
 
   out << stumps.size() << std::endl;
   for (std::size_t i = 0; i < stumps.size(); ++i)
-    if (!stumps[i]->serialize(out))
+    if (!stumps[i]->write(out))
       return false;
 
   return !out.fail();
