@@ -1,6 +1,7 @@
 #include "../Algorithms/StdLinearSolver.hpp"
 #include "../Algorithms/LogisticRegression.hpp"
 #include "../Array.hpp"
+#include "../BinaryInputStream.hpp"
 #include "../MatrixWrapper.hpp"
 #include "../MatVec.hpp"
 #include <iostream>

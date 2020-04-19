@@ -575,18 +575,16 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     }
 
     /**
-     * Read an arbitrary dense or sparse 2D matrix, using a codec such as CSV or HDF5 (some of which can be auto-detected).
+     * Read an arbitrary dense or sparse 2D matrix, using a codec such as CSV or HDF5 (some of which can be autodetected).
      *
      * @param m The matrix in which to store the deserialized input.
      * @param codec The codec to use (pass Codec_AUTO() to autodetect it from the input).
      * @param read_block_header If true, first read a header block which stores the size and codec of the serialized matrix
      *   data. Else, the matrix block is assumed to continue until the end of the input stream unless its end can be detected
      *   through some other means (e.g. end marker or embedded size field), and the codec will be autodetected if possible.
-     *
-     * @return The number of bytes read from the stream (including the header information).
      */
     template <typename MatrixT>
-    intx readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = true);
+    void readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = true);
 
 #   define THEA_BINARY_INPUT_STREAM_DECLARE_READER(fname, tname) \
     void read##fname(int64 n, tname * out); \
@@ -629,6 +627,6 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
 
 THEA_DECL_EXTERN_SMART_POINTERS(Thea::BinaryInputStream)
 
-// #include "MatrixIO.hpp"
+#include "MatrixIO.hpp"
 
 #endif

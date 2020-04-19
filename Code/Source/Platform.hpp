@@ -162,7 +162,7 @@
 /**
  * A signed integer suitable for indexing a structure held in memory. 32-bit on 32-bit systems, 64-bit on 64-bit systems. This
  * is expected to be fast and can usually be used for any application involving integers, unless smaller or larger storage is
- * explicitly required. It also matches the current default type of Eigen::Index. Note that is <b>not</b> equivalent to int,
+ * explicitly required. It also matches the current default type of Eigen::Index. Note that it is <b>not</b> equivalent to int,
  * long or long long, whose sizes depend on LP32/64, ILP32/64 or LLP64 conventions.
  *
  * The phonetic similarity to "index" is intentional.
@@ -174,7 +174,7 @@ typedef std::ptrdiff_t intx;
 
 /**
  * An unsigned integer suitable for indexing a structure held in memory. 32-bit on 32-bit systems, 64-bit on 64-bit systems.
- * Note that is <b>not</b> equivalent to unsigned int, unsigned long or unsigned long long, whose sizes depend on LP32/64,
+ * Note that it is <b>not</b> equivalent to unsigned int, unsigned long or unsigned long long, whose sizes depend on LP32/64,
  * ILP32/64 or LLP64 conventions.
  *
  * The phonetic similarity to "(unsigned) index" is intentional.

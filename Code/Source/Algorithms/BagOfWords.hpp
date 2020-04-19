@@ -141,7 +141,7 @@ class THEA_API BagOfWords : public Serializable
     void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.write(out, codec); }
 
   private:
-    KMeans vocabulary;   ///< The set of learned words.
+    KMeans vocabulary;  ///< The set of learned words.
 
 }; // class BagOfWords
 

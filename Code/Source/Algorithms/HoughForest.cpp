@@ -1419,7 +1419,7 @@ HoughForest::read(BinaryInputStream & input, Codec const & codec, bool read_bloc
   clear();
 
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // header is not needed
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // header is not needed
 
   options.read(input);
 

@@ -176,7 +176,7 @@ void
 KMeans::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
 
   options.read(input);
 

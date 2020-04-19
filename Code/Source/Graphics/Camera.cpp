@@ -138,7 +138,7 @@ void
 Camera::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // header is not needed
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // header is not needed
 
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 

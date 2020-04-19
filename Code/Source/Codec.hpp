@@ -62,40 +62,44 @@ class THEA_API Codec : public AbstractNamedObject
   public:
     THEA_DECL_SMART_POINTERS(Codec)
 
-    /** The standard length (in bytes) of the codec's magic string as used in Header. */
+    /** The standard length (in bytes) of the codec's magic string as used in BlockHeader. */
     static intx const MAGIC_LENGTH = 8;
-
-    /** The length in bytes of a serialized block header. */
-    static intx const BLOCK_HEADER_LENGTH = MAGIC_LENGTH + /* sizeof(data_size) = */ 8;
 
     /** The type of the codec's magic string (an array of MAGIC_LENGTH bytes). */
     typedef std::array<int8, (size_t)MAGIC_LENGTH> MagicString;
 
     /**
-     * A header preceding a data block serialized using a codec. The header contains the size of the data block and information
-     * identifying the serialization codec.
+     * A header preceding a data block serialized using a codec. The header contains the size of the data block, a magic string
+     * identifying the serialization codec, and an optional 64-bit field that can be used for additional information.
      */
     struct BlockHeader
     {
       public:
+        /** The length in bytes of a serialized block header. */
+        static intx const SERIALIZED_LENGTH = MAGIC_LENGTH
+                                            + /* sizeof(data_size) = */ 8
+                                            + /* sizeof(custom) = */ 8
+                                            + /* reserved */ 8;
+
         MagicString  magic;      ///< A magic string identifying the codec used to serialize the data.
         uint64       data_size;  ///< The size of the data block in bytes.
+        uint64       custom;     ///< Additional custom data that can be optionally stored in the header.
 
         /** Construct with a magic string and a data block size. */
         BlockHeader(MagicString const & magic_ = zeroMagic(), uint64 data_size_ = 0)
-        : magic(magic_), data_size(data_size_), header_pos(0) {}
+        : magic(magic_), data_size(data_size_), custom(0), header_pos(0) {}
 
         /** Construct with a magic string specified as a std::string, and a data block size. */
         BlockHeader(std::string const & magic_, uint64 data_size_ = 0)
-        : magic(toMagic(magic_)), data_size(data_size_), header_pos(0) {}
+        : magic(toMagic(magic_)), data_size(data_size_), custom(0), header_pos(0) {}
 
         /** Construct by calling read() on an input stream. */
         BlockHeader(BinaryInputStream & in);
 
-        /** Read the header from an input stream. This is guaranteed to read exactly Codec::BLOCK_HEADER_LENGTH bytes. */
+        /** Read the header from an input stream. This is guaranteed to read exactly SERIALIZED_LENGTH bytes. */
         void read(BinaryInputStream & in);
 
-        /** Write the header to an output stream. This is guaranteed to write exactly Codec::BLOCK_HEADER_LENGTH bytes. */
+        /** Write the header to an output stream. This is guaranteed to write exactly SERIALIZED_LENGTH bytes. */
         void write(BinaryOutputStream & out) const;
 
         /**
@@ -119,7 +123,7 @@ class THEA_API Codec : public AbstractNamedObject
          * Write the header to an output stream, after calculating the data block size based on where the header was supposed to
          * have been written (calculated using markAndSkip()) vs the current stream position, assumed to be at the end of the
          * data block. After writing the header, the next write position is moved back to the end of the data block. This is
-         * guaranteed to write exactly Codec::BLOCK_HEADER_LENGTH bytes starting at \a header_pos.
+         * guaranteed to write exactly Codec::BlockHeader::SERIALIZED_LENGTH bytes starting at \a header_pos.
          *
          * \code
          *   header.markAndSkip(out);
@@ -181,7 +185,7 @@ operator<<(std::ostream & os, Codec const & codec)
   return os << codec.getName() << " codec";
 }
 
-/** Indicates that the appropriate codec should be auto-detected. */
+/** Indicates that the appropriate codec should be autodetected. */
 class THEA_API Codec_AUTO : public Codec
 {
   public:

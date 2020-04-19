@@ -1001,7 +1001,7 @@ Image::save(std::string const & path, Codec const & codec) const
 void
 Image::read_AUTO(BinaryInputStream & input, bool read_block_header)
 {
-  // Read the block header, if present. We will only use the size info and auto-detect the codec from the image block itself.
+  // Read the block header, if present. We will only use the size info and autodetect the codec from the image block itself.
   int64 size = (read_block_header ? (int64)Codec::BlockHeader(input).data_size : input.size());
   if (size <= 0)
     throw Error("No image data found");

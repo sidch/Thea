@@ -409,7 +409,7 @@ void
 Pyramid1D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
 
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
@@ -502,7 +502,7 @@ void
 Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
 
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
@@ -619,7 +619,7 @@ void
 Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
-    input.skip(Codec::BLOCK_HEADER_LENGTH);  // not used
+    input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
 
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
