@@ -61,7 +61,8 @@ class MatrixCodec : public Codec
 }; // class MatrixCodec
 
 /**
- * Codec for reading/writing matrices to/from comma-separated values (CSV) text files.
+ * Codec for reading/writing matrices to/from comma-separated values (CSV) text files. Instead of the comma, a different
+ * separating character may be specified (typically tab or space).
  *
  * For dense matrices, each line is a row of the matrix, with elements separated by the separating character.
  *
@@ -206,7 +207,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
           std::istringstream line_in(in->readLine());
           if (!std::getline(line_in, rstr, sep) || !std::getline(line_in, cstr, sep) || !std::getline(line_in, vstr, sep))
             throw Error(format("%s: Could not read triplet on line %ld of stream '%s'",
-                               getName(), (long)triplets.size() + 1, input.getName()));
+                               getName(), (long)triplets.size() + 2, input.getName()));
 
           intx row = (intx)std::stol(rstr), col = (intx)std::stol(cstr);
           long double value = std::stold(vstr);
@@ -261,7 +262,7 @@ BinaryInputStream::readMatrix(MatrixT & m, Codec const & codec, bool read_block_
     if (read_block_header && bh.magic != mat_codec->getMagic())
       throw Error(getNameStr() + ": Magic string mismatch");
 
-    mat_codec->readMatrix(m, *this, &bh);
+    mat_codec->readMatrix(m, *this, (read_block_header ? &bh : NULL));
   }
 }
 

@@ -584,7 +584,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      *   through some other means (e.g. end marker or embedded size field), and the codec will be autodetected if possible.
      */
     template <typename MatrixT>
-    void readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = true);
+    void readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
 
 #   define THEA_BINARY_INPUT_STREAM_DECLARE_READER(fname, tname) \
     void read##fname(int64 n, tname * out); \
