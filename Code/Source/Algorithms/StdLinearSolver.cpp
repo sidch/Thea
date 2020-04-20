@@ -66,9 +66,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     {}
 
     // Solve the linear system Ax = b for a dense double-precision matrix A.
-    template <typename MatrixT, typename ScalarT>
-    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr,
-               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = nullptr)
+    template < typename MatrixT, typename ScalarT,
+               typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
+    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -189,9 +189,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     }
 
     // Solve the linear system Ax = b for a sparse ScalarT-precision matrix A.
-    template <typename MatrixT, typename ScalarT>
-    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr,
-               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = nullptr)
+    template < typename MatrixT, typename ScalarT,
+               typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
+    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -283,9 +283,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Use a solver based on sparse factorization, for column-major matrices. Returns true if a suitable solver was found, NOT
     // if the problem was successfully solved.
-    template <typename MatrixT, typename ScalarT>
-    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
-                              typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = nullptr)
+    template < typename MatrixT, typename ScalarT,
+               typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit), int >::type = 0 >
+    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b)
     {
       switch (method)
       {
@@ -348,9 +348,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Use a solver based on sparse factorization, for row-major matrices. Eigen does not provide any such solvers, so this
     // method is empty. Returns false to indicate no solver was found.
-    template <typename MatrixT, typename ScalarT>
-    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
-                              typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = nullptr)
+    template < typename MatrixT, typename ScalarT,
+               typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit), int >::type = 0 >
+    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b)
     {
       return false;
     }

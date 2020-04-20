@@ -711,31 +711,27 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
   private:
     /** Set vertex color. */
-    template <typename VertexT>
-    void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr)
+    template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
+    void setVertexColor(VertexT * vertex, ColorRGBA const & color)
     {
       vertex->attr().setColor(color);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
-    template <typename VertexT>
-    void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr)
+    template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
+    void setVertexColor(VertexT * vertex, ColorRGBA const & color)
     {}
 
     /** Set vertex texture coordinates. */
-    template <typename VertexT>
-    void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr)
+    template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
+    void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord)
     {
       vertex->attr().setTexCoord(texcoord);
     }
 
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
-    template <typename VertexT>
-    void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr)
+    template < typename VertexT, typename std::enable_if< !HasTexCoord<VertexT>::value, int >::type = 0 >
+    void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord)
     {}
 
     /**
@@ -1319,8 +1315,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     }
 
     /** Pack vertex colors densely in an array. */
-    template <typename VertexT>
-    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr) const
+    template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
+    void packVertexColors() const
     {
       if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
 
@@ -1333,8 +1329,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
-    template <typename VertexT>
-    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr) const
+    template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
+    void packVertexColors() const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
       {
@@ -1344,8 +1340,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     }
 
     /** Pack vertex texture coordinates densely in an array. */
-    template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
+    template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
+    void packVertexTexCoords() const
     {
       if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
 
@@ -1358,8 +1354,8 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     }
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
-    template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
+    template < typename VertexT, typename std::enable_if< !HasTexCoord<VertexT>::value, int >::type = 0 >
+    void packVertexTexCoords() const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
       {

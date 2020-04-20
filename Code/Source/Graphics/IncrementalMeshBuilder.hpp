@@ -55,7 +55,7 @@ class IncrementalMeshBuilder
 {
   private:
     typedef int VertexHandle;  // dummy
-    typedef int FaceHandle;  // dummy
+    typedef int FaceHandle;    // dummy
 
   public:
     THEA_DECL_SMART_POINTERS(IncrementalMeshBuilder)

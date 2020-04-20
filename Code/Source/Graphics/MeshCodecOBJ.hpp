@@ -589,11 +589,10 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the vertices from a general mesh or DCEL mesh and map them to indices. */
-    template <typename _MeshT>
+    template < typename _MeshT, typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                                      || Graphics::IsDCELMesh<_MeshT>::value, int >::type = 0 >
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                       WriteCallback * callback,
-                       typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                             || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = nullptr) const
+                       WriteCallback * callback) const
     {
       intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -611,10 +610,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the vertices from a display mesh and map them to indices. */
-    template <typename _MeshT>
+    template < typename _MeshT, typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value, int >::type = 0 >
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
-                       WriteCallback * callback,
-                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
+                       WriteCallback * callback) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -671,11 +669,10 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the faces from a general or DCEL mesh. Returns the number of faces written. */
-    template <typename _MeshT>
+    template < typename _MeshT, typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
+                                                      || Graphics::IsDCELMesh<_MeshT>::value, int >::type = 0 >
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                    WriteCallback * callback, intx & next_index,
-                    typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = nullptr) const
+                    WriteCallback * callback, intx & next_index) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -708,10 +705,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
     /** Write out all the faces from a display mesh. Returns the number of faces written. */
-    template <typename _MeshT>
+    template < typename _MeshT, typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value, int >::type = 0 >
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
-                    WriteCallback * callback, intx & next_index,
-                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
+                    WriteCallback * callback, intx & next_index) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;

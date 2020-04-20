@@ -101,15 +101,15 @@ namespace Math {
  *   ... treat m as a normal Eigen dynamic-size matrix ...
  * \endcode
  */
-template <typename MatrixT, typename AbstractDenseMatrixT>
+template < typename MatrixT, typename AbstractDenseMatrixT,
+           typename std::enable_if< std::is_base_of< AbstractDenseMatrix<typename AbstractDenseMatrixT::value_type>,
+                                                 AbstractDenseMatrixT >::value
+                                 && std::is_same<typename AbstractDenseMatrixT::value_type,
+                                                 typename MatrixT::value_type>::value
+                                 && std::is_const<AbstractDenseMatrixT>::value == std::is_const<MatrixT>::value,
+                                    int >::type = 0 >
 Eigen::Map<MatrixT>  // this should ensure only valid Eigen types will match this function
-mapTo(AbstractDenseMatrixT & m,
-      typename std::enable_if< std::is_base_of< AbstractDenseMatrix<typename AbstractDenseMatrixT::value_type>,
-                                                AbstractDenseMatrixT >::value
-                            && std::is_same<typename AbstractDenseMatrixT::value_type,
-                                            typename MatrixT::value_type>::value
-                            && std::is_const<AbstractDenseMatrixT>::value == std::is_const<MatrixT>::value
-                             >::type * dummy = 0)
+mapTo(AbstractDenseMatrixT & m)
 {
   alwaysAssertM(MatrixT::IsVectorAtCompileTime || MatrixT::IsRowMajor == m.isRowMajor(),
                 "mapTo: AbstractDenseMatrix layout does not match target Eigen::Map matrix type");

@@ -1266,17 +1266,15 @@ class /* THEA_API */ KDTreeN
     }
 
     /** Get the bounding box for an object, if it is bounded. */
-    template <typename U>
-    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename std::enable_if< IsBoundedN<U, N>::value >::type * dummy = nullptr)
+    template < typename U, typename std::enable_if< IsBoundedN<U, N>::value, int >::type = 0 >
+    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds)
     {
       BoundedTraitsN<U, N, ScalarT>::getBounds(u, bounds);
     }
 
     /** Returns a null bounding box for unbounded objects. */
-    template <typename U>
-    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename std::enable_if< !IsBoundedN<U, N>::value >::type * dummy = nullptr)
+    template < typename U, typename std::enable_if< !IsBoundedN<U, N>::value, int >::type = 0 >
+    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds)
     {
       bounds.setNull();
     }
@@ -1285,9 +1283,8 @@ class /* THEA_API */ KDTreeN
      * Get a lower bound on (the monotone approximation to) the distance between the bounding box of a kd-tree node and a
      * bounded query object, or a negative value if no such lower bound can be calculated.
      */
-    template <typename MetricT, typename QueryT>
-    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename std::enable_if< IsBoundedN<QueryT, N>::value >::type * dummy = nullptr) const
+    template < typename MetricT, typename QueryT, typename std::enable_if< IsBoundedN<QueryT, N>::value, int >::type = 0 >
+    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds) const
     {
       if (node && !query_bounds.isNull())
         return MetricT::template monotoneApproxDistance<N, ScalarT>(query_bounds, getBoundsWorldSpace(*node));
@@ -1299,9 +1296,8 @@ class /* THEA_API */ KDTreeN
      * Get a lower bound on (the monotone approximation to) the distance between the bounding box of a kd-tree node and an
      * unbounded query object, or a negative value if no such lower bound can be calculated. \a query_bounds is ignored.
      */
-    template <typename MetricT, typename QueryT>
-    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename std::enable_if< !IsBoundedN<QueryT, N>::value >::type * dummy = nullptr) const
+    template < typename MetricT, typename QueryT, typename std::enable_if< !IsBoundedN<QueryT, N>::value, int >::type = 0 >
+    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds) const
     {
       // Assume the following specialization exists
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
@@ -1351,13 +1347,13 @@ class /* THEA_API */ KDTreeN
      * Search the elements in a leaf node for the one closest to another element, when the latter is a proximity query
      * structure.
      */
-    template <typename MetricT, typename QueryT>
+    template < typename MetricT, typename QueryT,
+               typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void closestPairLeaf(
       Node const * leaf,
       QueryT const & query,
       NeighborPair & pair,
-      bool get_closest_points,
-      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
+      bool get_closest_points) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1386,13 +1382,13 @@ class /* THEA_API */ KDTreeN
      * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
      * structure.
      */
-    template <typename MetricT, typename QueryT>
+    template < typename MetricT, typename QueryT,
+               typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void closestPairLeaf(
       Node const * leaf,
       QueryT const & query,
       NeighborPair & pair,
-      bool get_closest_points,
-      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
+      bool get_closest_points) const
     {
       VectorT qp = VectorT::Zero(), tp = VectorT::Zero();  // initialize to squash uninitialized variable warning
       double mad;
@@ -1461,15 +1457,15 @@ class /* THEA_API */ KDTreeN
      * Search the elements in a leaf node for the k nearest neighbors of an object, when the latter is a proximity query
      * structure of compatible type.
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
+    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet,
+               typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void kClosestPairsLeaf(
       Node const * leaf,
       QueryT const & query,
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
       bool get_closest_points,
-      intx use_as_query_index_and_swap,
-      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
+      intx use_as_query_index_and_swap) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1492,15 +1488,15 @@ class /* THEA_API */ KDTreeN
      * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
      * structure.
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
+    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet,
+               typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void kClosestPairsLeaf(
       Node const * leaf,
       QueryT const & query,
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
       bool get_closest_points,
-      intx use_as_query_index_and_swap,
-      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
+      intx use_as_query_index_and_swap) const
     {
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
 

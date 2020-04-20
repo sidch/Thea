@@ -117,10 +117,9 @@ class THEA_API LaplaceBeltrami
      * Compute the discrete Laplace-Beltrami operator for a general mesh using the method of [Xu 2006] and store it in the
      * result.
      */
-    template <typename MeshT, typename MatrixT>
-    static void computeXu(MeshT const & mesh, MatrixT & result,
-                          typename std::enable_if< CheckTypes<Graphics::IsGeneralMesh<MeshT>,
-                                                              MatrixT>::value >::type * dummy = nullptr)
+    template < typename MeshT, typename MatrixT,
+               typename std::enable_if< CheckTypes<Graphics::IsGeneralMesh<MeshT>, MatrixT>::value, int >::type = 0 >
+    static void computeXu(MeshT const & mesh, MatrixT & result)
     {
       // First sequentially index all vertices of the mesh
       UnorderedMap<typename MeshT::Vertex const *, intx> indices;
@@ -196,10 +195,9 @@ class THEA_API LaplaceBeltrami
     /**
      * Compute the discrete Laplace-Beltrami operator for a DCEL mesh using the method of [Xu 2006] and store it in the result.
      */
-    template <typename MeshT, typename MatrixT>
-    static void computeXu(MeshT const & mesh, MatrixT & result,
-                          typename std::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>,
-                                                              MatrixT>::value >::type * dummy = nullptr)
+    template < typename MeshT, typename MatrixT,
+               typename std::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>, MatrixT>::value, int >::type = 0 >
+    static void computeXu(MeshT const & mesh, MatrixT & result)
     {
       // First sequentially index all vertices of the mesh
       UnorderedMap<typename MeshT::Vertex const *, intx> indices;

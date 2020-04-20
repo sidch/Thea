@@ -284,14 +284,12 @@ class THEA_API IMLSSurface : private Noncopyable
     template <typename MeshT> void constructFromMesh(MeshT const & mesh);
 
     /** Add a general mesh to the polygon soup. \a tris is used to store the generated triangles. */
-    template <typename MeshT>
-    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = nullptr);
+    template < typename MeshT, typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value, int >::type = 0 >
+    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris);
 
     /** Add a DCEL mesh to the polygon soup. \a tris is used to store the generated triangles. */
-    template <typename MeshT>
-    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = nullptr);
+    template < typename MeshT, typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value, int >::type = 0 >
+    void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris);
 
     /** Add a mesh group to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
@@ -399,10 +397,9 @@ IMLSSurface::constructFromMesh(MeshT const & mesh)
   computeEnclosingPhi();
 }
 
-template <typename MeshT>
+template < typename MeshT, typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value, int >::type >
 void
-IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                     typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy)
+IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris)
 {
   typedef UnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;
@@ -470,10 +467,9 @@ IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
   }
 }
 
-template <typename MeshT>
+template < typename MeshT, typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value, int >::type >
 void
-IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                     typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy)
+IMLSSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris)
 {
   typedef UnorderedMap<typename MeshT::Vertex const *, int> VertexIndexMap;
   VertexIndexMap vertex_indices;

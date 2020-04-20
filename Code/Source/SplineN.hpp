@@ -122,17 +122,15 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      *
      * @return The non-negative squared fitting error on success, or a negative value on error.
      */
-    template <typename InputIterator>
+    template < typename InputIterator,
+               typename std::enable_if<
+                   Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>::value, int >::type = 0 >
     double fitToPoints(InputIterator begin, InputIterator end,
                        T const * initial_params = nullptr,
                        T * final_params = nullptr,
                        bool fix_first_and_last = false,
                        intx max_reparam_iters = -1,
-                       intx num_reparam_steps_per_iter = -1,
-
-                       typename std::enable_if<
-                                  Algorithms::IsPointN<typename std::iterator_traits<InputIterator>::value_type, N>::value
-                                              >::type * dummy = nullptr)
+                       intx num_reparam_steps_per_iter = -1)
     {
       if (max_reparam_iters < 0) max_reparam_iters = (initial_params ? 0 : 3);
       if (num_reparam_steps_per_iter < 0) num_reparam_steps_per_iter = 1;  // conservative choice, following Graphics Gems

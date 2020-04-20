@@ -85,10 +85,10 @@ class THEA_API BagOfWords : public Serializable
      *
      * @return True if the training converged, else false.
      */
-    template <typename AddressableMatrixT>
-    bool train(intx num_words, AddressableMatrixT const & training_points,
+    template < typename AddressableMatrixT,
                typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
-                                                         AddressableMatrixT >::value >::type * dummy = nullptr)
+                                                         AddressableMatrixT >::value, int >::type = 0 >
+    bool train(intx num_words, AddressableMatrixT const & training_points)
     {
       return vocabulary.cluster(num_words, training_points);
     }
@@ -104,11 +104,10 @@ class THEA_API BagOfWords : public Serializable
      *   real-valued scalar type (e.g. <code>intx</code> or <code>double</code>).
      * @param point_weights [Optional] The contribution of each point to the histogram (1 if null).
      */
-    template <typename AddressableMatrixT, typename U>
-    void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = nullptr,
-                                typename std::enable_if<
-                                    std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
-                                                     AddressableMatrixT >::value >::type * dummy = nullptr) const
+    template < typename AddressableMatrixT, typename U,
+               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+                                                         AddressableMatrixT >::value, int >::type = 0 >
+    void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = nullptr) const
     {
       intx num_points = points.rows();
       Array<intx> labeling((size_t)num_points);
