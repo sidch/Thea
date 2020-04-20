@@ -167,7 +167,7 @@ Vector3 reflectVector(Vector3 const & v, Plane3 const & mirror_plane);
  * hit time in this case is allowed to be negative.
  */
 bool lineIntersectsTriangle(Line3 const & line, Vector3 const & v0, Vector3 const & edge01, Vector3 const & edge02,
-                            Real * time = NULL);
+                            Real * time = nullptr);
 
 /**
  * Closest pair of points betwen two line segments (p1, q1) and (p2, q2) in 2D. The points are returned in c1 and c2.

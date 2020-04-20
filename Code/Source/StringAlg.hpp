@@ -56,7 +56,9 @@
 #include "Common.hpp"
 #include "BasicStringAlg.hpp"
 #include "Array.hpp"
+#include <cctype>
 #include <sstream>
+#include <type_traits>
 
 #ifdef THEA_WINDOWS
 #  ifndef FNM_NOMATCH
@@ -72,6 +74,26 @@
 #endif
 
 namespace Thea {
+
+/**
+ * Convert a string to a scalar number. The string must contain the number and nothing else except leading/trailing whitespace.
+ */
+template <typename T, typename std::enable_if< std::is_arithmetic<T>::value, T >::type * = nullptr>
+T
+fromString(std::string const & str)
+{
+  size_t idx = 0;
+  T x = std::is_integral<T>::value ? (std::is_signed<T>::value ? static_cast<T>(std::stoll(str, &idx))
+                                                               : static_cast<T>(std::stoull(str, &idx)))
+                                   : static_cast<T>(std::stold(str, &idx));
+
+  // Check that the rest of the string is only whitespace
+  for (size_t i = idx; i < str.size(); ++i)
+    if (!std::isspace(str[i]))
+      throw Error("Could not convert string '" + str + "' to scalar");
+
+  return x;
+}
 
 /**
  * Separates a comma-separated line, properly escaping commas within double quotes (") and super quotes ("""). This matches

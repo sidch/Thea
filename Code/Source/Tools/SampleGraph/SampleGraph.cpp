@@ -298,7 +298,7 @@ main(int argc, char * argv[])
 
         MeshSampler<Mesh> sampler(mg);
         sampler.sampleEvenlyByArea((intx)(min_samples - sample_positions.size()), dense_positions,
-                                   (consistent_normals ? &dense_normals : NULL));
+                                   (consistent_normals ? &dense_normals : nullptr));
 
         if (!dense_positions.empty())
           THEA_CONSOLE << dense_positions.size() << " extra samples added to original set, for density";
@@ -327,9 +327,9 @@ main(int argc, char * argv[])
   SampleGraph::Options opts;
   opts.setMaxDegree(max_nbrs);
   SampleGraph graph(opts);
-  graph.setSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : NULL));
-  graph.setOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : NULL));
-  graph.init(reachability && !kdtree.isEmpty() ? &kdtree : NULL);
+  graph.setSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : nullptr));
+  graph.setOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : nullptr));
+  graph.init(reachability && !kdtree.isEmpty() ? &kdtree : nullptr);
 
   THEA_CONSOLE << "Computed sample graph";
 

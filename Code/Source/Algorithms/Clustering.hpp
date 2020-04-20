@@ -297,8 +297,8 @@ class THEA_API Clustering
             {
               CLUTO_VP_ClusterDirect((int)cm.rows(),                    // nrows
                                      (int)cm.cols(),                 // ncols
-                                     NULL,                                 // rowptr
-                                     NULL,                                 // rowind
+                                     nullptr,                                 // rowptr
+                                     nullptr,                                 // rowind
                                      &cm.getValues()[0],                   // rowval
                                      simfun,                               // simfun
                                      crfun,                                // crfun
@@ -320,8 +320,8 @@ class THEA_API Clustering
             {
               CLUTO_VP_ClusterRB((int)cm.rows(),                    // nrows
                                  (int)cm.cols(),                 // ncols
-                                 NULL,                                 // rowptr
-                                 NULL,                                 // rowind
+                                 nullptr,                                 // rowptr
+                                 nullptr,                                 // rowind
                                  &cm.getValues()[0],                   // rowval
                                  simfun,                               // simfun
                                  crfun,                                // crfun
@@ -346,8 +346,8 @@ class THEA_API Clustering
               float cut_value;
               num_clusters_found = CLUTO_VP_GraphClusterRB((int)cm.rows(),                    // nrows
                                                            (int)cm.cols(),                 // ncols
-                                                           NULL,                                 // rowptr
-                                                           NULL,                                 // rowind
+                                                           nullptr,                                 // rowptr
+                                                           nullptr,                                 // rowind
                                                            &cm.getValues()[0],                   // rowval
                                                            simfun,                               // simfun
                                                            CLUTO_ROWMODEL_NONE,                  // rowmodel
@@ -420,9 +420,9 @@ class THEA_API Clustering
             return 0;
           }
 
-          int   * rowptr = (cm.getRowIndices().size()    > 0 ? &cm.getRowIndices()[0]    : NULL);
-          int   * rowind = (cm.getColumnIndices().size() > 0 ? &cm.getColumnIndices()[0] : NULL);
-          float * rowval = (cm.getValues().size()        > 0 ? &cm.getValues()[0]        : NULL);
+          int   * rowptr = (cm.getRowIndices().size()    > 0 ? &cm.getRowIndices()[0]    : nullptr);
+          int   * rowind = (cm.getColumnIndices().size() > 0 ? &cm.getColumnIndices()[0] : nullptr);
+          float * rowval = (cm.getValues().size()        > 0 ? &cm.getValues()[0]        : nullptr);
 
           labels.resize((size_t)weights.rows());
 

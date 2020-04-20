@@ -161,7 +161,7 @@ makeSymmetric(cs * A)
 {
   cs * At, * C;
   At = cs_transpose(A, 1);
-  cs_fkeep(At, &dropDiag, NULL);  // drop diagonal entries from At
+  cs_fkeep(At, &dropDiag, nullptr);  // drop diagonal entries from At
   C = cs_add(A, At, 1, 1);        // C = A + At
   cs_spfree(At) ;
   return C;
@@ -225,7 +225,7 @@ CSPARSELinearSolver::solve(AbstractMatrix<float64> const & a, float64 const * b,
       C.m = sm.rows();
       C.n = sm.cols();
       C.p = &pcol[0];
-      C.i = irow.empty() ? NULL : &irow[0];
+      C.i = irow.empty() ? nullptr : &irow[0];
       C.x = const_cast<float64 *>(sm.getValues());
       C.nz = -1;
 

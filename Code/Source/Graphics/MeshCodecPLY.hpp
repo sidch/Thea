@@ -789,7 +789,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback,
                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                             || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
+                                             || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = nullptr) const
     {
       intx vertex_index = (intx)vertex_indices.size();
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -812,7 +812,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback,
-                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -856,7 +856,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                     WriteCallback * callback, intx & next_index,
                     typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
+                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = nullptr) const
     {
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -897,7 +897,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
     template <typename _MeshT>
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                     WriteCallback * callback, intx & next_index,
-                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 

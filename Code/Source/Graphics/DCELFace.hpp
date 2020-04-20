@@ -102,7 +102,7 @@ class /* THEA_API */ DCELFace : public NormalAttribute<Vector3>, public Attribut
     typedef DCELInternal::FwdIterator<Halfedge const, Edge const, EdgeDeref, EdgeIncrement> EdgeConstIterator;
 
     /** Default constructor. */
-    DCELFace() : halfedge(NULL), index(-1), num_edges(0) {}
+    DCELFace() : halfedge(nullptr), index(-1), num_edges(0) {}
 
     /** Get a canonical halfedge on the boundary of the face. */
     Halfedge const * getHalfedge() const

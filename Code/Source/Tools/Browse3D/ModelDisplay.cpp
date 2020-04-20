@@ -102,9 +102,9 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   render_opts(RenderOptions::defaults()),
   mode(Mode::DEFAULT),
   view_edit_mode(ViewEditMode::DEFAULT),
-  background_texture(NULL),
-  background_shader(NULL),
-  context(NULL)
+  background_texture(nullptr),
+  background_shader(nullptr),
+  context(nullptr)
 {
   alwaysAssertM(model, "ModelDisplay: Can't create a display without a valid model");
 
@@ -467,7 +467,7 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
   rs.setDepthTest(RenderSystem::DepthTest::ALWAYS_PASS);
 
   rs.pushShader();
-  rs.setShader(NULL);
+  rs.setShader(nullptr);
 
     rs.setMatrixMode(RenderSystem::MatrixMode::PROJECTION); rs.pushMatrix(); rs.setIdentityMatrix();
     rs.setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); rs.pushMatrix(); rs.setIdentityMatrix();

@@ -172,7 +172,7 @@ toOPTPPConstraint(LinearConstraint const & constraint)
 OPTPP::NonLinearConstraint *
 toOPTPPConstraint(NonlinearConstraint const & constraint)
 {
-  return NULL;
+  return nullptr;
 }
 
 } // namespace Algorithms

@@ -166,7 +166,7 @@ class /* THEA_API */ KDTreeN
         {
           public:
             /** Constructor. */
-            Buffer(size_t capacity_ = 0) : data(NULL), capacity(capacity_), current_end(0)
+            Buffer(size_t capacity_ = 0) : data(nullptr), capacity(capacity_), current_end(0)
             {
               alwaysAssertM(capacity_ > 0, "KDTreeN: Memory pool buffer capacity must be positive");
               if (capacity > 0)
@@ -198,7 +198,7 @@ class /* THEA_API */ KDTreeN
               // THEA_CONSOLE << "KDTreeN: Allocating " << num_elems << " elements from buffer of capacity " << capacity;
 
               if (current_end + num_elems > capacity)
-                return NULL;
+                return nullptr;
 
               U * ret = &data[current_end];
               current_end += num_elems;
@@ -398,8 +398,8 @@ class /* THEA_API */ KDTreeN
           depth = depth_;
           bounds = AxisAlignedBoxT();
           num_elems = 0;
-          elems = NULL;
-          lo = hi = NULL;
+          elems = nullptr;
+          lo = hi = nullptr;
         }
 
       public:
@@ -407,7 +407,7 @@ class /* THEA_API */ KDTreeN
         typedef ElementIndex const * ElementIndexConstIterator;
 
         /** Constructor. */
-        Node(intx depth_ = 0) : depth(depth_), lo(NULL), hi(NULL) {}
+        Node(intx depth_ = 0) : depth(depth_), lo(nullptr), hi(nullptr) {}
 
         /** Get the depth of the node in the tree (the root is at depth 0). */
         intx getDepth() const { return depth; }
@@ -450,8 +450,8 @@ class /* THEA_API */ KDTreeN
   public:
     /** Default constructor. */
     KDTreeN()
-    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
-      valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
+    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
+      valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {}
 
     /**
@@ -469,8 +469,8 @@ class /* THEA_API */ KDTreeN
     template <typename InputIterator>
     KDTreeN(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
             bool save_memory = false)
-    : root(NULL), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
-      valid_acceleration_structure(false), acceleration_structure(NULL), valid_bounds(true)
+    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
+      valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {
       init(begin, end, max_elems_per_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
     }
@@ -627,7 +627,7 @@ class /* THEA_API */ KDTreeN
         createTree(root, true, &tmp_index_pool, &index_pool);
       }
       else
-        createTree(root, false, &index_pool, NULL);
+        createTree(root, false, &index_pool, nullptr);
 
       invalidateBounds();
     }
@@ -691,7 +691,7 @@ class /* THEA_API */ KDTreeN
         return acceleration_structure;
       }
       else
-        return NULL;
+        return nullptr;
     }
 
     void setTransform(Transform const & trans_)
@@ -731,7 +731,7 @@ class /* THEA_API */ KDTreeN
       node_pool.clear(deallocate_all_memory);
       index_pool.clear(deallocate_all_memory);
 
-      root = NULL;
+      root = nullptr;
 
       invalidateBounds();
     }
@@ -830,10 +830,10 @@ class /* THEA_API */ KDTreeN
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
     template <typename MetricT, typename QueryT>
-    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
-    const
+    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = nullptr,
+                        VectorT * closest_point = nullptr) const
     {
-      NeighborPair pair = closestPair<MetricT>(query, dist_bound, closest_point != NULL);
+      NeighborPair pair = closestPair<MetricT>(query, dist_bound, closest_point != nullptr);
 
       if (pair.isValid())
       {
@@ -1224,7 +1224,7 @@ class /* THEA_API */ KDTreeN
       {
         main_index_pool->free(start->num_elems);
         start->num_elems = 0;
-        start->elems = NULL;
+        start->elems = nullptr;
       }
     }
 
@@ -1268,7 +1268,7 @@ class /* THEA_API */ KDTreeN
     /** Get the bounding box for an object, if it is bounded. */
     template <typename U>
     static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename std::enable_if< IsBoundedN<U, N>::value >::type * dummy = NULL)
+                                typename std::enable_if< IsBoundedN<U, N>::value >::type * dummy = nullptr)
     {
       BoundedTraitsN<U, N, ScalarT>::getBounds(u, bounds);
     }
@@ -1276,7 +1276,7 @@ class /* THEA_API */ KDTreeN
     /** Returns a null bounding box for unbounded objects. */
     template <typename U>
     static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds,
-                                typename std::enable_if< !IsBoundedN<U, N>::value >::type * dummy = NULL)
+                                typename std::enable_if< !IsBoundedN<U, N>::value >::type * dummy = nullptr)
     {
       bounds.setNull();
     }
@@ -1287,7 +1287,7 @@ class /* THEA_API */ KDTreeN
      */
     template <typename MetricT, typename QueryT>
     double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename std::enable_if< IsBoundedN<QueryT, N>::value >::type * dummy = NULL) const
+                                   typename std::enable_if< IsBoundedN<QueryT, N>::value >::type * dummy = nullptr) const
     {
       if (node && !query_bounds.isNull())
         return MetricT::template monotoneApproxDistance<N, ScalarT>(query_bounds, getBoundsWorldSpace(*node));
@@ -1301,7 +1301,7 @@ class /* THEA_API */ KDTreeN
      */
     template <typename MetricT, typename QueryT>
     double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds,
-                                   typename std::enable_if< !IsBoundedN<QueryT, N>::value >::type * dummy = NULL) const
+                                   typename std::enable_if< !IsBoundedN<QueryT, N>::value >::type * dummy = nullptr) const
     {
       // Assume the following specialization exists
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
@@ -1357,7 +1357,7 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
+      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1392,7 +1392,7 @@ class /* THEA_API */ KDTreeN
       QueryT const & query,
       NeighborPair & pair,
       bool get_closest_points,
-      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
+      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
     {
       VectorT qp = VectorT::Zero(), tp = VectorT::Zero();  // initialize to squash uninitialized variable warning
       double mad;
@@ -1469,7 +1469,7 @@ class /* THEA_API */ KDTreeN
       double dist_bound,
       bool get_closest_points,
       intx use_as_query_index_and_swap,
-      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
+      typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
     {
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1500,7 +1500,7 @@ class /* THEA_API */ KDTreeN
       double dist_bound,
       bool get_closest_points,
       intx use_as_query_index_and_swap,
-      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = NULL) const
+      typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value >::type * dummy = nullptr) const
     {
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
 
@@ -1773,7 +1773,7 @@ class /* THEA_API */ KDTreeN
     {
       if (valid_acceleration_structure) return;
 
-      delete acceleration_structure; acceleration_structure = NULL;
+      delete acceleration_structure; acceleration_structure = nullptr;
 
       static int const DEFAULT_NUM_ACCELERATION_SAMPLES = 250;
       Array<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
@@ -1815,7 +1815,7 @@ class /* THEA_API */ KDTreeN
       if (deallocate_memory)
       {
         delete acceleration_structure;
-        acceleration_structure = NULL;
+        acceleration_structure = nullptr;
 
         sample_filters.clear();
       }

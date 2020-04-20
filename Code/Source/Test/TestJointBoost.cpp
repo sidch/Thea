@@ -117,7 +117,7 @@ test(JointBoost const & jb, ExampleSet const & test_set, bool get_class_probs = 
     test_set.getExampleFeatures(i, &f[0]);
     intx c = test_set.getExampleClass(i);
 
-    intx pc = jb.predict(&f[0], get_class_probs ? &class_probabilities[0] : NULL);
+    intx pc = jb.predict(&f[0], get_class_probs ? &class_probabilities[0] : nullptr);
     if (pc == c)
       num_correct++;
 

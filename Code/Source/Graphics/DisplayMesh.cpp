@@ -51,16 +51,16 @@ DisplayMesh::DisplayMesh(std::string const & name)
   valid_bounds(true),
   wireframe_enabled(false),
   changed_buffers(BufferID::ALL),
-  var_area(NULL),
-  vertices_var(NULL),
-  tris_var(NULL),
-  quads_var(NULL),
-  normals_var(NULL),
-  colors_var(NULL),
-  texcoords_var(NULL),
-  vertex_matrix(NULL, 3, 0),
-  tri_matrix(NULL, 3, 0),
-  quad_matrix(NULL, 4, 0),
+  var_area(nullptr),
+  vertices_var(nullptr),
+  tris_var(nullptr),
+  quads_var(nullptr),
+  normals_var(nullptr),
+  colors_var(nullptr),
+  texcoords_var(nullptr),
+  vertex_matrix(nullptr, 3, 0),
+  tri_matrix(nullptr, 3, 0),
+  quad_matrix(nullptr, 4, 0),
   vertex_wrapper(&vertex_matrix),
   tri_wrapper(&tri_matrix),
   quad_wrapper(&quad_matrix)
@@ -78,16 +78,16 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   bounds(src.bounds),
   wireframe_enabled(src.wireframe_enabled),
   changed_buffers(BufferID::ALL),
-  var_area(NULL),
-  vertices_var(NULL),
-  tris_var(NULL),
-  quads_var(NULL),
-  normals_var(NULL),
-  colors_var(NULL),
-  texcoords_var(NULL),
-  vertex_matrix(NULL, 3, 0),
-  tri_matrix(NULL, 3, 0),
-  quad_matrix(NULL, 4, 0),
+  var_area(nullptr),
+  vertices_var(nullptr),
+  tris_var(nullptr),
+  quads_var(nullptr),
+  normals_var(nullptr),
+  colors_var(nullptr),
+  texcoords_var(nullptr),
+  vertex_matrix(nullptr, 3, 0),
+  tri_matrix(nullptr, 3, 0),
+  quad_matrix(nullptr, 4, 0),
   vertex_wrapper(&vertex_matrix),
   tri_wrapper(&tri_matrix),
   quad_wrapper(&quad_matrix)
@@ -121,7 +121,7 @@ AbstractDenseMatrix<Real> const *
 DisplayMesh::getVertexMatrix() const
 {
   // Assume Vector3 is tightly packed and has no padding
-  Vector3 const * buf = (vertices.empty() ? NULL : &vertices[0]);
+  Vector3 const * buf = (vertices.empty() ? nullptr : &vertices[0]);
   new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
   return &vertex_wrapper;
 }
@@ -129,7 +129,7 @@ DisplayMesh::getVertexMatrix() const
 AbstractDenseMatrix<uint32> const *
 DisplayMesh::getTriangleMatrix() const
 {
-  uint32 const * buf = (tris.empty() ? NULL : &tris[0]);
+  uint32 const * buf = (tris.empty() ? nullptr : &tris[0]);
   new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, numTriangles());
   return &tri_wrapper;
 }
@@ -137,7 +137,7 @@ DisplayMesh::getTriangleMatrix() const
 AbstractDenseMatrix<uint32> const *
 DisplayMesh::getQuadMatrix() const
 {
-  uint32 const * buf = (quads.empty() ? NULL : &quads[0]);
+  uint32 const * buf = (quads.empty() ? nullptr : &quads[0]);
   new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, numQuads());
   return &quad_wrapper;
 }
@@ -149,9 +149,9 @@ DisplayMesh::getVertex(intx i)
 
   size_t si = (size_t)i;
   return Vertex(this, vertices[si],
-                hasNormals()    ?  &normals[si]    :  NULL,
-                hasColors()     ?  &colors[si]     :  NULL,
-                hasTexCoords()  ?  &texcoords[si]  :  NULL);
+                hasNormals()    ?  &normals[si]    :  nullptr,
+                hasColors()     ?  &colors[si]     :  nullptr,
+                hasTexCoords()  ?  &texcoords[si]  :  nullptr);
 }
 
 DisplayMesh::IndexTriple
@@ -642,14 +642,14 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
   if (changed_buffers == BufferID::ALL)
   {
     if (var_area) var_area->reset();
-    vertices_var = normals_var = colors_var = texcoords_var = tris_var = quads_var = edges_var = NULL;
+    vertices_var = normals_var = colors_var = texcoords_var = tris_var = quads_var = edges_var = nullptr;
 
     if (vertices.empty() || (tris.empty() && quads.empty()))
     {
       if (var_area)
       {
         render_system.destroyVARArea(var_area);
-        var_area = NULL;
+        var_area = nullptr;
       }
 
       allGPUBuffersAreValid();
@@ -819,12 +819,12 @@ DisplayMesh::draw(RenderSystem & render_system, AbstractRenderOptions const & op
       render_system.pushColorFlags();
       render_system.pushTextures();
 
-        render_system.setShader(NULL);
-        render_system.setColorArray(NULL);
-        render_system.setTexCoordArray(0, NULL);
-        render_system.setNormalArray(NULL);
+        render_system.setShader(nullptr);
+        render_system.setColorArray(nullptr);
+        render_system.setTexCoordArray(0, nullptr);
+        render_system.setNormalArray(nullptr);
         render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
-        render_system.setTexture(0, NULL);
+        render_system.setTexture(0, nullptr);
 
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
         if (!edges.empty()) render_system.sendIndices(RenderSystem::Primitive::LINES, (intx)edges.size(), &edges[0]);

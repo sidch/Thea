@@ -120,7 +120,7 @@ class THEA_API LaplaceBeltrami
     template <typename MeshT, typename MatrixT>
     static void computeXu(MeshT const & mesh, MatrixT & result,
                           typename std::enable_if< CheckTypes<Graphics::IsGeneralMesh<MeshT>,
-                                                              MatrixT>::value >::type * dummy = NULL)
+                                                              MatrixT>::value >::type * dummy = nullptr)
     {
       // First sequentially index all vertices of the mesh
       UnorderedMap<typename MeshT::Vertex const *, intx> indices;
@@ -199,7 +199,7 @@ class THEA_API LaplaceBeltrami
     template <typename MeshT, typename MatrixT>
     static void computeXu(MeshT const & mesh, MatrixT & result,
                           typename std::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>,
-                                                              MatrixT>::value >::type * dummy = NULL)
+                                                              MatrixT>::value >::type * dummy = nullptr)
     {
       // First sequentially index all vertices of the mesh
       UnorderedMap<typename MeshT::Vertex const *, intx> indices;

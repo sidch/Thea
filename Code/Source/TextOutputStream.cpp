@@ -148,7 +148,7 @@ TextOutputStream::_commit(bool flush, bool force)
       m_ok = false;
     }
 
-  FILE * f = NULL;
+  FILE * f = nullptr;
   if (m_ok)
   {
     f = fopen(path.c_str(), "wb");

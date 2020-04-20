@@ -50,7 +50,7 @@ namespace Thea {
 namespace Algorithms {
 
 // Convert a scalar function to OPT++ form.
-OPTPP::NLPBase * toOPTPPFunction(ScalarFunction const & f, double const * init_pt = NULL);
+OPTPP::NLPBase * toOPTPPFunction(ScalarFunction const & f, double const * init_pt = nullptr);
 
 } // namespace Algorithms
 } // namespace Thea

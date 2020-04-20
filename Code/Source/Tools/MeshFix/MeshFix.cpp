@@ -310,7 +310,7 @@ meshFix(int argc, char * argv[])
   }
 
   WriteCallback write_callback(labels);
-  mg.save(outfile, codecs, (export_face_labels ? &write_callback : NULL));
+  mg.save(outfile, codecs, (export_face_labels ? &write_callback : nullptr));
 
   if (export_face_labels)
   {
@@ -978,7 +978,7 @@ orient(Mesh & mesh)
     }
 
     // Find vertex with max X
-    Mesh::Vertex * xmax_vertex = NULL;
+    Mesh::Vertex * xmax_vertex = nullptr;
     for (size_t j = 0; j < cc[i].size(); ++j)
       for (Mesh::Face::VertexConstIterator fvi = cc[i][j]->verticesBegin(); fvi != cc[i][j]->verticesEnd(); ++fvi)
         if (!xmax_vertex || (*fvi)->getPosition().x() > xmax_vertex->getPosition().x())
@@ -991,7 +991,7 @@ orient(Mesh & mesh)
     }
 
     // Find the "most X-facing" face incident on xmax_vertex. This face should always have a normal with positive X-component.
-    Mesh::Face * xmax_face = NULL;
+    Mesh::Face * xmax_face = nullptr;
     Real xmax_face_nx = -1;
     for (Mesh::Vertex::FaceConstIterator vfi = xmax_vertex->facesBegin(); vfi != xmax_vertex->facesEnd(); ++vfi)
     {
@@ -1213,7 +1213,8 @@ orientMajority(Mesh & mesh)
 
   if (verbose)
   {
-    THEA_CONSOLE << "orient-majority('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces() << " faces";
+    THEA_CONSOLE << "orient-majority('" << mesh.getName() << "'): Flipped " << num_flipped << '/' << mesh.numFaces()
+                 << " faces";
   }
 
   return false;

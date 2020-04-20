@@ -80,7 +80,7 @@ class /* THEA_API */ SparsePCA_N
      * @return True if the search converged, false otherwise.
      */
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
-                                                          VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
+                                                          VectorT axes[N], VectorT * centroid = nullptr, ScalarT lambda = -1,
                                                           ScalarT eps = -1, intx max_iters = -1);
 
 }; // class SparsePCA_N
@@ -93,7 +93,7 @@ class SparsePCA_N<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<
     typedef Vector<N, ScalarT> VectorT;
 
     template <typename InputIterator> static bool compute(InputIterator begin, InputIterator end, ScalarT variances[N],
-                                                          VectorT axes[N], VectorT * centroid = NULL, ScalarT lambda = -1,
+                                                          VectorT axes[N], VectorT * centroid = nullptr, ScalarT lambda = -1,
                                                           ScalarT eps = -1, intx max_iters = -1)
     {
       if (lambda < 0)

@@ -44,7 +44,7 @@
 
 namespace Thea {
 
-static Graphics::GL::GLPlugin * plugin = NULL;
+static Graphics::GL::GLPlugin * plugin = nullptr;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_GL_API Plugin *
@@ -68,7 +68,7 @@ static char const * GL_PLUGIN_NAME        =  "OpenGL RenderSystem";
 static char const * GL_RENDERSYSTEM_NAME  =  "OpenGL";
 
 GLPlugin::GLPlugin(FactoryRegistry * registry_)
-: registry(registry_), factory(NULL), started(false)
+: registry(registry_), factory(nullptr), started(false)
 {
   alwaysAssertM(registry, std::string(GL_PLUGIN_NAME) + ": Factory registry must be non-null");
 }

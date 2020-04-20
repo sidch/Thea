@@ -44,10 +44,10 @@ bool GLCaps::has_headless_context = false;
 GLContext GLCaps::headless_context;
 
 #if defined(THEA_GL_OSMESA)
-  char * GLCaps::headless_buffer = NULL;
+  char * GLCaps::headless_buffer = nullptr;
 #elif defined(THEA_WINDOWS)
 #elif defined(THEA_LINUX) || defined(THEA_BSD)
-  Display * GLCaps::headless_display = NULL;
+  Display * GLCaps::headless_display = nullptr;
   Pixmap GLCaps::headless_pixmap;
   GLXPixmap GLCaps::headless_glx_pixmap;
 #elif defined(THEA_MAC)
@@ -236,9 +236,9 @@ GLCaps::createHeadlessContext()
 
 #if OSMESA_MAJOR_VERSION * 100 + OSMESA_MINOR_VERSION >= 305
   // specify Z, stencil, accum sizes
-  headless_context = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
+  headless_context = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, nullptr);
 #else
-  headless_context = OSMesaCreateContext(OSMESA_RGBA, NULL);
+  headless_context = OSMesaCreateContext(OSMESA_RGBA, nullptr);
 #endif
 
   if (!headless_context)
@@ -396,7 +396,7 @@ GLCaps::isHeadless()
 void
 GLCaps::loadExtensions()
 {
-  alwaysAssertM(glGetString(GL_RENDERER) != NULL, "Error initializing OpenGL, please check your GL installation");
+  alwaysAssertM(glGetString(GL_RENDERER) != nullptr, "Error initializing OpenGL, please check your GL installation");
 
   if (_loadedExtensions)
     return;
@@ -496,7 +496,7 @@ GLCaps::checkAllBugs()
 
     glGenTextures(1, &color_tex);
     glBindTexture(GL_TEXTURE_2D, color_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, FB_SIZE, FB_SIZE, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, FB_SIZE, FB_SIZE, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
     THEA_CHECK_GL_OK
 
     glGenRenderbuffersEXT(1, &depth_rb);
@@ -1028,10 +1028,10 @@ getRootKeyFromString(char const * str, size_t length)
     else if  ( std::strncmp(str, "HKEY_CLASSES_ROOT", length) == 0 )
       return HKEY_CLASSES_ROOT;
     else
-      return NULL;
+      return nullptr;
   }
   else
-    return NULL;
+    return nullptr;
 }
 
 bool
@@ -1042,7 +1042,7 @@ registryKeyExists(std::string const & key)
     return false;
 
   HKEY hkey = getRootKeyFromString(key.c_str(), pos);
-  if (hkey == NULL)
+  if (hkey == nullptr)
     return false;
 
   HKEY openKey;
@@ -1066,7 +1066,7 @@ registryValueExists(std::string const & key, std::string const & value)
     return false;
 
   HKEY hkey = getRootKeyFromString(key.c_str(), pos);
-  if ( hkey == NULL )
+  if ( hkey == nullptr )
     return false;
 
   HKEY openKey;
@@ -1076,7 +1076,7 @@ registryValueExists(std::string const & key, std::string const & value)
   if (result == ERROR_SUCCESS)
   {
     uint32 dataSize = 0;
-    result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, NULL, reinterpret_cast<LPDWORD>(&dataSize));
+    result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, nullptr, reinterpret_cast<LPDWORD>(&dataSize));
     debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
     RegCloseKey(openKey);
   }
@@ -1092,7 +1092,7 @@ registryReadString(std::string const & key, std::string const & value, std::stri
     return false;
 
   HKEY hkey = getRootKeyFromString(key.c_str(), pos);
-  if (hkey == NULL)
+  if (hkey == nullptr)
     return false;
 
   HKEY openKey;
@@ -1102,7 +1102,7 @@ registryReadString(std::string const & key, std::string const & value, std::stri
   if (result == ERROR_SUCCESS)
   {
     uint32 dataSize = 0;
-    result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, NULL, reinterpret_cast<LPDWORD>(&dataSize));
+    result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, nullptr, reinterpret_cast<LPDWORD>(&dataSize));
     debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 
     if (result == ERROR_SUCCESS)
@@ -1112,7 +1112,7 @@ registryReadString(std::string const & key, std::string const & value, std::stri
 
       char * tmpStr = static_cast<char *>(std::malloc(dataSize));
       std::memset(tmpStr, 0, (size_t)dataSize);
-      result = RegQueryValueExA(openKey, value.c_str(), NULL, NULL, reinterpret_cast<LPBYTE>(tmpStr),
+      result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, reinterpret_cast<LPBYTE>(tmpStr),
                                 reinterpret_cast<LPDWORD>(&dataSize));
       debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 

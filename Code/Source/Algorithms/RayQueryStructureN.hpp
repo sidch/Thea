@@ -62,7 +62,7 @@ class /* THEA_API */ RayStructureIntersectionN : public RayIntersectionN<N, T>
 
   public:
     /** Constructor. */
-    RayStructureIntersectionN(Real time_ = -1, typename BaseT::VectorT const * normal_ = NULL, intx element_index_ = -1)
+    RayStructureIntersectionN(Real time_ = -1, typename BaseT::VectorT const * normal_ = nullptr, intx element_index_ = -1)
     : BaseT(time_, normal_), element_index(element_index_)
     {}
 

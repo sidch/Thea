@@ -76,11 +76,11 @@ class THEA_API DisplayMeshVertex
 
   public:
     /** Default constructor. Creates an invalid vertex reference. Only for compatibility with standard containers. */
-    DisplayMeshVertex() : mesh(NULL), point(NULL) {}
+    DisplayMeshVertex() : mesh(nullptr), point(nullptr) {}
 
     /** Constructor. */
-    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = NULL, ColorRGBA * color_ = NULL,
-                      Vector2 * texcoord_ = NULL)
+    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = nullptr, ColorRGBA * color_ = nullptr,
+                      Vector2 * texcoord_ = nullptr)
     : mesh(mesh_), point(&point_), normal(normal_), color(color_), texcoord(texcoord_)
     {}
 
@@ -100,7 +100,7 @@ class THEA_API DisplayMeshVertex
     void setPosition(Vector3 const & point_);
 
     /** Check if the vertex has a normal. */
-    bool hasNormal() const { return normal != NULL; }
+    bool hasNormal() const { return normal != nullptr; }
 
     /** Get the normal at the vertex. Call only if hasNormal() returns true. */
     Vector3 const & getNormal() const
@@ -113,7 +113,7 @@ class THEA_API DisplayMeshVertex
     void setNormal(Vector3 const & normal_);
 
     /** Check if the vertex has a color. */
-    bool hasColor() const { return color != NULL; }
+    bool hasColor() const { return color != nullptr; }
 
     /** Get the color at the vertex. Call only if hasColor() returns true. */
     ColorRGBA const & getColor() const
@@ -126,7 +126,7 @@ class THEA_API DisplayMeshVertex
     void setColor(ColorRGBA const & color_);
 
     /** Check if the vertex has a texture coordinate. */
-    bool hasTexCoord() const { return texcoord != NULL; }
+    bool hasTexCoord() const { return texcoord != nullptr; }
 
     /**
      * Get the texture coordinates at the vertex, or null if no such texture coordinates exist. Call only if hasTexCoord()
@@ -154,7 +154,7 @@ class THEA_API DisplayMeshIndexedVertex
     typedef DisplayMesh Mesh;  ///< Parent mesh class.
 
     /** Constructor. */
-    DisplayMeshIndexedVertex(DisplayMesh * mesh_ = NULL, intx index_ = -1) : mesh(mesh_), index(index_) {}
+    DisplayMeshIndexedVertex(DisplayMesh * mesh_ = nullptr, intx index_ = -1) : mesh(mesh_), index(index_) {}
 
     /** Check if the vertex reference is valid. */
     operator bool() const { return mesh && index >= 0; }
@@ -223,7 +223,7 @@ class THEA_API DisplayMeshFace
     typedef DisplayMesh Mesh;  ///< Parent mesh class.
 
     /** Default constructor. Creates an invalid face. */
-    DisplayMeshFace() : mesh(NULL), num_vertices(0), starting_index(-1), num_primitives(0) {}
+    DisplayMeshFace() : mesh(nullptr), num_vertices(0), starting_index(-1), num_primitives(0) {}
 
     /** Constructor. */
     DisplayMeshFace(DisplayMesh * mesh_, int num_vertices_, bool is_triangles_, intx starting_index_, int num_primitives_)
@@ -522,8 +522,8 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
      * @return The index of the new vertex in the mesh (distinct from the source index input to this function). Indices are
      *   guaranteed to be sequentially generated, starting from 0.
      */
-    virtual intx addVertex(Vector3 const & point, intx source_index = -1, Vector3 const * normal = NULL,
-                           ColorRGBA const * color = NULL, Vector2 const * texcoord = NULL);
+    virtual intx addVertex(Vector3 const & point, intx source_index = -1, Vector3 const * normal = nullptr,
+                           ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr);
 
     /**
      * Add a triangular face to the mesh, specified by three vertex indices and an optional source face index (typically the

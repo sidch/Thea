@@ -118,10 +118,10 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     typedef typename GroupSet::const_iterator  GroupConstIterator;
 
     /** Default constructor. */
-    MeshGroup() : parent(NULL) {}
+    MeshGroup() : parent(nullptr) {}
 
     /** Constructor. */
-    MeshGroup(std::string const & name_) : NamedObject(name_), parent(NULL) {}
+    MeshGroup(std::string const & name_) : NamedObject(name_), parent(nullptr) {}
 
     /**
      * Construct a flat group (no children) from a set of meshes. The input iterator must dereference to a pointer to a mesh.
@@ -207,7 +207,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       if (child)
       {
         children.erase(child);
-        child->parent = NULL;
+        child->parent = nullptr;
       }
     }
 
@@ -215,7 +215,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     void clearChildren()
     {
       for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
-        (*ci)->parent = NULL;
+        (*ci)->parent = nullptr;
 
       children.clear();
     }
@@ -335,7 +335,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
 
     void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
     {
-      read(input, codec, read_block_header, NULL);
+      read(input, codec, read_block_header, nullptr);
     }
 
     /** Read the mesh group from an input stream, with a callback function called after every element is read. */
@@ -362,7 +362,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
 
     void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
     {
-      write(output, codec, write_block_header, NULL);
+      write(output, codec, write_block_header, nullptr);
     }
 
     /** Write the mesh group to an output stream, with a callback function called after every element is written. */
@@ -387,9 +387,9 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * Save the mesh group to a file. The file will <b>not</b> have a prefixed Codec::BlockHeader. An exception will be thrown
      * if the mesh group cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec = Codec_AUTO(), WriteCallback * callback = NULL) const
+    void save(std::string const & path, Codec const & codec = Codec_AUTO(), WriteCallback * callback = nullptr) const
     {
-      save(path, codec, NULL, callback);
+      save(path, codec, nullptr, callback);
     }
 
     /**
@@ -397,8 +397,8 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * on a default option. The file will <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be saved.
      */
-    void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs, WriteCallback * callback = NULL)
-         const
+    void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
+              WriteCallback * callback = nullptr) const
     {
       save(path, Codec_AUTO(), &codecs, callback);
     }
@@ -407,9 +407,9 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * Load the mesh from a file. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown
      * if the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Codec const & codec = Codec_AUTO(), ReadCallback * callback = NULL)
+    void load(std::string const & path, Codec const & codec = Codec_AUTO(), ReadCallback * callback = nullptr)
     {
-      load(path, codec, NULL, callback);
+      load(path, codec, nullptr, callback);
     }
 
     /**
@@ -417,7 +417,8 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * default option. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown if
      * the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs, ReadCallback * callback = NULL)
+    void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
+              ReadCallback * callback = nullptr)
     {
       load(path, Codec_AUTO(), &codecs, callback);
     }
@@ -430,7 +431,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     void save(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
               WriteCallback * callback) const
     {
-      MeshCodec<Mesh> const * mesh_codec = NULL;
+      MeshCodec<Mesh> const * mesh_codec = nullptr;
 
       if (codec == Codec_AUTO())
       {
@@ -463,7 +464,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     void load(std::string const & path, Codec const & codec, Array< typename MeshCodec<Mesh>::Ptr > const * codecs,
               ReadCallback * callback)
     {
-      MeshCodec<Mesh> const * mesh_codec = NULL;
+      MeshCodec<Mesh> const * mesh_codec = nullptr;
 
       if (codec == Codec_AUTO())
       {
@@ -502,7 +503,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
         Codec::BlockHeader header; header.read(input);
         input.setPosition(pos);
 
-        MeshCodec<Mesh> const * codec = NULL;
+        MeshCodec<Mesh> const * codec = nullptr;
         intx codec_index = 0;
         while ((codec = getDefaultCodec(codec_index++)))
           if (codec->getMagic() == header.magic)
@@ -529,7 +530,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     static MeshCodec<Mesh> const * codecFromPath(std::string path)
     {
       path = toLower(path);
-      MeshCodec<Mesh> const * codec = NULL;
+      MeshCodec<Mesh> const * codec = nullptr;
       intx codec_index = 0;
       while ((codec = getDefaultCodec(codec_index++)))
       {
@@ -538,7 +539,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
             return codec;
       }
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get one of the default mesh codecs. */
@@ -555,7 +556,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       if (index >= 0 && index < NUM_CODECS)
         return codecs[index];
       else
-        return NULL;
+        return nullptr;
     }
 
     /** Try to get the appropriate codec for a mesh, given a collection of codecs. */
@@ -573,7 +574,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
             return codec;
       }
 
-      return NULL;
+      return nullptr;
     }
 
     MeshGroup * parent;  // not a smart pointer, to avoid circular references

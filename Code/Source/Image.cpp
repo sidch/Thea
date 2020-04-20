@@ -220,7 +220,7 @@ codecFromPath(std::string const & path)
 
   CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::extension(path)));
   if (existing == codec_map.end())
-    return NULL;
+    return nullptr;
   else
     return existing->second.get();
 }
@@ -234,7 +234,7 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
   if (num_bytes >= 4 && buf[0] == (uint8)'3' && buf[1] == (uint8)'B' && buf[2] == (uint8)'M' && buf[3] == (uint8)'\0')
     return &CODEC_3BM;
 
-  return NULL;
+  return nullptr;
 }
 
 } // namespace ImageInternal
@@ -668,31 +668,31 @@ Image::Type::hasByteAlignedChannels() const
 }
 
 Image::Image()
-: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(NULL)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(nullptr)
 {
   cacheTypeProperties();
 }
 
 Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(NULL)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(nullptr)
 {
   resize(type_, width_, height_, depth_);
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
-: type(Type::UNKNOWN), fip_img(NULL)
+: type(Type::UNKNOWN), fip_img(nullptr)
 {
   read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
-: type(Type::UNKNOWN), fip_img(NULL)
+: type(Type::UNKNOWN), fip_img(nullptr)
 {
   load(path, codec);
 }
 
 Image::Image(Image const & src)
-: type(Type::UNKNOWN), fip_img(NULL)
+: type(Type::UNKNOWN), fip_img(nullptr)
 {
   *this = src;
   cacheTypeProperties();
@@ -716,14 +716,14 @@ Image::operator=(Image const & src)
         *fip_img = *src.fip_img;
     }
     else
-      fip_img = NULL;
+      fip_img = nullptr;
 
     data.clear();
   }
   else
   {
     data = src.data;
-    delete fip_img; fip_img = NULL;
+    delete fip_img; fip_img = nullptr;
   }
 
   cacheTypeProperties();
@@ -752,7 +752,7 @@ Image::clear()
   if (fip_img)
   {
     fip_img->clear();
-    fip_img = NULL;
+    fip_img = nullptr;
   }
 
   data.clear();
@@ -806,9 +806,9 @@ void *
 Image::getData()
 {
   if (depth == 1)
-    return isValid() ? fip_img->accessPixels() : NULL;
+    return isValid() ? fip_img->accessPixels() : nullptr;
   else
-    return data.empty() ? NULL : &data[0];
+    return data.empty() ? nullptr : &data[0];
 }
 
 double
@@ -863,7 +863,7 @@ Image::getScanLine(int64 row, int64 z)
   alwaysAssertM(z >= 0 && z < depth, "Image: Z value out of bounds");
 
   if (!isValid())
-    return NULL;
+    return nullptr;
 
   if (depth == 1)
     return fip_img->getScanLine(row);
@@ -981,7 +981,7 @@ Image::save(std::string const & path, Codec const & codec) const
   if (!isValid())
     throw Error("Can't save an invalid image");
 
-  Codec const * c = NULL;
+  Codec const * c = nullptr;
   if (codec == Codec_AUTO())
   {
     c = ImageInternal::codecFromPath(path);

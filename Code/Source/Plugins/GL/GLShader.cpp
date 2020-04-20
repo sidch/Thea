@@ -185,7 +185,7 @@ GLShader::readActiveUniforms()
     {
       UniformData data;
 
-      glGetActiveUniformARB(program_id, i, max_uniform_name_length, NULL, &data.size, &data.type, &name_chars[0]);
+      glGetActiveUniformARB(program_id, i, max_uniform_name_length, nullptr, &data.size, &data.type, &name_chars[0]);
       std::string name(&name_chars[0]);
 
       data.location = glGetUniformLocationARB(program_id, &name_chars[0]);
@@ -459,17 +459,17 @@ GLShader::setUniform(char const * uniform_name, int64 num_values, Texture * cons
 
 #define GLShader__FLOAT_ARRAY_SET_UNIFORM(uniform_type, uniform_convert_type, uniform_gl_type, num_components)                \
   void                                                                                                                        \
-  GLShader::setUniform(char const * uniform_name, int64 num_values, uniform_type const * values)                               \
+  GLShader::setUniform(char const * uniform_name, int64 num_values, uniform_type const * values)                              \
   {                                                                                                                           \
     Uniforms::iterator entry = uniforms.find(uniform_name);                                                                   \
     GLShader__SET_UNIFORM_STANDARD_CHECKS(uniform_gl_type, num_values);                                                       \
     if (entry->second.size < 2)                                                                                               \
       throw Error("Attempting to set non-array uniform '" + std::string(uniform_name) + "' from array type");                 \
                                                                                                                               \
-    entry->second.value.f_array.resize((size_t)(num_components * num_values));                                          \
+    entry->second.value.f_array.resize((size_t)(num_components * num_values));                                                \
                                                                                                                               \
     /* Copy elements one by one to avoid packing issues */                                                                    \
-    static float32 * array_start = &entry->second.value.f_array[0];                                                             \
+    static float32 * array_start = &entry->second.value.f_array[0];                                                           \
     for (intx i = 0; i < num_values; ++i)                                                                                     \
       GLShaderInternal::toFloats(static_cast<uniform_convert_type>(values[i]), array_start + i * num_components);             \
                                                                                                                               \

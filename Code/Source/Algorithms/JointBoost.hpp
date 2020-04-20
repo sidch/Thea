@@ -225,7 +225,7 @@ class THEA_API JointBoost
      *
      * @return The number of stumps added during the training process.
      */
-    intx train(TrainingData const & training_data_, TrainingData const * validation_data_ = NULL);
+    intx train(TrainingData const & training_data_, TrainingData const * validation_data_ = nullptr);
 
     /**
      * Predict the most likely class for an object with a given set of features, optionally also returning the probability of
@@ -237,7 +237,7 @@ class THEA_API JointBoost
      *
      * @return The index of the most likely class of the object.
      */
-    intx predict(double const * features, double * class_probabilities = NULL) const;
+    intx predict(double const * features, double * class_probabilities = nullptr) const;
 
     /** Load the classifier from a disk file. */
     bool load(std::string const & path);
@@ -296,7 +296,7 @@ class THEA_API JointBoost
 
     /** Fit stump parameters a, b and theta, for a particular subset of classes. */
     double fitStump(SharedStump & stump, Array<double> const & stump_features, Array<intx> const & stump_classes,
-                    intx * num_generated_thresholds = NULL);
+                    intx * num_generated_thresholds = nullptr);
 
     /**
      * Compute the prediction error (number of misclassified examples) on a validation set.

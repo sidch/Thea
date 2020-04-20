@@ -175,7 +175,7 @@ void
 BinaryOutputStream::reallocBuffer(size_t bytes, size_t oldBufferLen)
 {
   size_t newBufferLen = (size_t)(m_bufferLen * 1.5) + 100;
-  uint8 * newBuffer = NULL;
+  uint8 * newBuffer = nullptr;
 
   if ((m_path == "<memory>") || (newBufferLen < THEA_MAX_WRITE_BUFFER_SIZE))
   {
@@ -183,11 +183,11 @@ BinaryOutputStream::reallocBuffer(size_t bytes, size_t oldBufferLen)
     // size buffer.
     newBuffer = (uint8 *)std::realloc(m_buffer, newBufferLen);
 
-    if (newBuffer != NULL)
+    if (newBuffer != nullptr)
       m_bufferCapacity = newBufferLen;
   }
 
-  if ((newBuffer == NULL) && (bytes > 0))
+  if ((newBuffer == nullptr) && (bytes > 0))
   {
     // Realloc failed; we're probably out of memory. Back out the entire call and try to dump some data to disk.
     m_bufferLen = oldBufferLen;
@@ -231,7 +231,7 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
     (void)count;  // avoid unused variable warning
 
     fclose(file);
-    file = NULL;
+    file = nullptr;
 
     // Record that we saved this data.
     m_alreadyWritten += bytesToWrite;
@@ -259,7 +259,7 @@ BinaryOutputStream::BinaryOutputStream(Endianness endian)
   m_beginEndBits(0),
   m_bitString(0),
   m_bitPos(0),
-  m_buffer(NULL),
+  m_buffer(nullptr),
   m_bufferLen(0),
   m_bufferCapacity(0),
   m_pos(0),
@@ -275,7 +275,7 @@ BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file
   m_beginEndBits(0),
   m_bitString(0),
   m_bitPos(0),
-  m_buffer(NULL),
+  m_buffer(nullptr),
   m_bufferLen(0),
   m_bufferCapacity(0),
   m_pos(0),
@@ -356,7 +356,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
       m_ok = false;
     }
 
-  FILE * file = NULL;
+  FILE * file = nullptr;
   if (m_ok)
   {
     char const * mode = (m_alreadyWritten > 0 ? "ab" : "wb");
@@ -370,7 +370,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
 
   if (m_ok)
   {
-    if (m_buffer != NULL && m_bufferLen > 0)
+    if (m_buffer != nullptr && m_bufferLen > 0)
     {
       size_t success = fwrite(m_buffer, m_bufferLen, 1, file);
       debugAssertM(success == 1, getNameStr() + ": Could not write buffer contents to disk");
@@ -385,7 +385,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
       fflush(file);
 
     fclose(file);
-    file = NULL;
+    file = nullptr;
   }
 
   return m_ok;

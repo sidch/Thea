@@ -186,8 +186,9 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
      * @return The index of the kd-tree triangle containing the closest point, if one is found within the distance bound, else
      *   a negative number.
      */
-    intx closestPoint(Vector3 const & query, Real distance_bound = -1, Real * min_dist = NULL, Vector3 * closest_pt = NULL,
-                      Vector3 * closest_pt_normal = NULL, bool accelerate_with_vertices = true) const;
+    intx closestPoint(Vector3 const & query, Real distance_bound = -1, Real * min_dist = nullptr,
+                      Vector3 * closest_pt = nullptr, Vector3 * closest_pt_normal = nullptr,
+                      bool accelerate_with_vertices = true) const;
 
     /**
      * Select the nearest point on the model along a ray.
@@ -283,11 +284,11 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     void removeSegment(intx index);
 
     /** Get the segment containing a given mesh, or null if there is no such segment. */
-    Segment const * getSegment(Mesh const * mesh, int * index = NULL) const
+    Segment const * getSegment(Mesh const * mesh, int * index = nullptr) const
     { return const_cast<Model *>(this)->getSegment(mesh, index); }
 
     /** Get the segment containing a given mesh, or null if there is no such segment. */
-    Segment * getSegment(Mesh const * mesh, int * index = NULL);
+    Segment * getSegment(Mesh const * mesh, int * index = nullptr);
 
     /** Select a particular segment. */
     void selectSegment(intx index);

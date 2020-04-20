@@ -61,7 +61,7 @@ main(int argc, char * argv[])
     mesh->triangulate();
 #endif
 
-    Mesh::Vertex const * vx = NULL;
+    Mesh::Vertex const * vx = nullptr;
     while (true)
     {
       for (auto vi = mesh->verticesBegin(); vi != mesh->verticesEnd(); ++vi)
@@ -93,7 +93,7 @@ main(int argc, char * argv[])
 
       // THEA_CONSOLE << "Vertex = " << toString(vx->getPosition());
 
-      Mesh::Vertex const * next = NULL;
+      Mesh::Vertex const * next = nullptr;
       for (auto vei = vx->edgesBegin(); vei != vx->edgesEnd(); ++vei)
       {
         // THEA_CONSOLE << "Edge " << toString((*vei)->getEndpoint(0)->getPosition()) << " - "

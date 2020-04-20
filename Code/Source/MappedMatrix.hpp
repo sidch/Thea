@@ -261,10 +261,10 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     AbstractAddressableMatrix<T> * asAddressable() { return this; }
     AbstractSparseMatrix<T> const * asSparse() const { return this; }
     AbstractSparseMatrix<T> * asSparse() { return this; }
-    AbstractDenseMatrix<T> const * asDense() const { return NULL; }
-    AbstractDenseMatrix<T> * asDense() { return NULL; }
-    AbstractCompressedSparseMatrix<T> const * asCompressed() const { return NULL; }
-    AbstractCompressedSparseMatrix<T> * asCompressed() { return NULL; }
+    AbstractDenseMatrix<T> const * asDense() const { return nullptr; }
+    AbstractDenseMatrix<T> * asDense() { return nullptr; }
+    AbstractCompressedSparseMatrix<T> const * asCompressed() const { return nullptr; }
+    AbstractCompressedSparseMatrix<T> * asCompressed() { return nullptr; }
 
   private:
     intx num_rows, num_cols;

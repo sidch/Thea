@@ -359,8 +359,8 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
      * Get the squared distance between this triangle and another triangle, and optionally return the closest pair of points.
      */
     template <typename OtherVertexTripleT>
-    Real squaredDistance(Triangle3Base<OtherVertexTripleT> const & other, Vector3 * this_pt = NULL, Vector3 * other_pt = NULL)
-         const
+    Real squaredDistance(Triangle3Base<OtherVertexTripleT> const & other, Vector3 * this_pt = nullptr,
+                         Vector3 * other_pt = nullptr) const
     {
       // From Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
 
@@ -451,7 +451,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     }
 
     /** Get the squared distance between this triangle and a ball, and optionally return the closest pair of points. */
-    Real squaredDistance(Ball3 const & ball, Vector3 * this_pt = NULL, Vector3 * ball_pt = NULL) const
+    Real squaredDistance(Ball3 const & ball, Vector3 * this_pt = nullptr, Vector3 * ball_pt = nullptr) const
     {
       if (!this_pt && !ball_pt)
       {
@@ -496,7 +496,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /**
      * Get the squared distance between this triangle and an infinite line, and optionally return the closest pair of points.
      */
-    Real squaredDistance(Line3 const & line, Vector3 * this_pt = NULL, Vector3 * line_pt = NULL) const
+    Real squaredDistance(Line3 const & line, Vector3 * this_pt = nullptr, Vector3 * line_pt = nullptr) const
     {
       // Two tests where one would suffice, but for now it avoids having to code a new function or modify an existing one.
       // Shift the ray origins to ensure the rays overlap and there are no errors at line.getPoint().
@@ -539,7 +539,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /**
      * Get the squared distance between this triangle and a line segment, and optionally return the closest pair of points.
      */
-    Real squaredDistance(LineSegment3 const & seg, Vector3 * this_pt = NULL, Vector3 * seg_pt = NULL) const
+    Real squaredDistance(LineSegment3 const & seg, Vector3 * this_pt = nullptr, Vector3 * seg_pt = nullptr) const
     {
       // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
 
@@ -565,7 +565,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
     /**
      * Get the squared distance between this triangle and a ray, and optionally return the closest pair of points.
      */
-    Real squaredDistance(Ray3 const & ray, Vector3 * this_pt = NULL, Vector3 * ray_pt = NULL) const
+    Real squaredDistance(Ray3 const & ray, Vector3 * this_pt = nullptr, Vector3 * ray_pt = nullptr) const
     {
       // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
 
@@ -605,7 +605,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
      * optionally return the closest pair of points.
      */
     template <typename LineLikeT>
-    Real squaredDistanceToPerimeter(LineLikeT const & line, Vector3 * this_pt = NULL, Vector3 * line_pt = NULL) const
+    Real squaredDistanceToPerimeter(LineLikeT const & line, Vector3 * this_pt = nullptr, Vector3 * line_pt = nullptr) const
     {
       // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteDistLine3Triangle3.h
 
@@ -614,7 +614,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       for (int i = 0; i < 3; ++i)
       {
         LineSegment3 edge(getVertex(i), getVertex((i + 1) % 3));
-        Real edge_d2 = edge.squaredDistance(line, (this_pt ? &c1 : NULL), (line_pt ? &c2 : NULL));
+        Real edge_d2 = edge.squaredDistance(line, (this_pt ? &c1 : nullptr), (line_pt ? &c2 : nullptr));
         if (d2 < 0 || edge_d2 < d2)
         {
           d2 = edge_d2;

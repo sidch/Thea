@@ -54,8 +54,8 @@
 namespace Browse3D {
 
 PointCloud::PointCloud(std::string const & path, std::string const & features_path)
-: has_normals(false), normals_are_normalized(false), has_graph(false), changed_buffers(0), var_area(NULL), vertices_var(NULL),
-  colors_var(NULL)
+: has_normals(false), normals_are_normalized(false), has_graph(false), changed_buffers(0), var_area(nullptr),
+  vertices_var(nullptr), colors_var(nullptr)
 {
   if (!path.empty())
     load(path, features_path);
@@ -576,14 +576,14 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
   if (app().options().fancy_points) return;
   if (changed_buffers == 0) return;
 
-  vertices_var = colors_var = NULL;
+  vertices_var = colors_var = nullptr;
 
   if (points.empty())
   {
     if (var_area)
     {
       render_system.destroyVARArea(var_area);
-      var_area = NULL;
+      var_area = nullptr;
     }
 
     changed_buffers = 0;
@@ -658,7 +658,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
   render_system.pushTextures();
   render_system.pushColorFlags();
 
-    render_system.setTexture(0, NULL);
+    render_system.setTexture(0, nullptr);
 
     if (app().options().fancy_points)
     {
@@ -679,7 +679,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
     }
     else
     {
-      render_system.setShader(NULL);
+      render_system.setShader(nullptr);
 
       render_system.beginIndexedPrimitives();
 
@@ -699,7 +699,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
 
     if (has_graph && app().options().show_graph)
     {
-      render_system.setShader(NULL);
+      render_system.setShader(nullptr);
       render_system.setColor(ColorRGB(1, 1, 0));
 
       render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
@@ -717,7 +717,7 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
     }
     else if (has_normals && app().options().show_normals)
     {
-      render_system.setShader(NULL);
+      render_system.setShader(nullptr);
       render_system.setColor(ColorRGB(0, 0, 1));
 
       Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().norm() : 1);

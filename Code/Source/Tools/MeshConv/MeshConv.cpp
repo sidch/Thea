@@ -45,7 +45,7 @@ splitMesh(MG::Ptr mg)
       Mesh::Ptr m(new Mesh(format("%s/%ld", (*mi)->getName(), (intx)j)));
       VertexMap vmap;
       Array<Mesh::Vertex *> new_face_vertices;
-      Mesh::Vertex * new_vertex = NULL;
+      Mesh::Vertex * new_vertex = nullptr;
 
       for (size_t k = 0; k < cc[j].size(); ++k)
       {

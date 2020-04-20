@@ -134,7 +134,7 @@ class THEA_API Polygon2
      * @return The number of triangles created.
      */
     intx triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indices,
-                             Array<bool> * tri_vert_is_boundary = NULL,
+                             Array<bool> * tri_vert_is_boundary = nullptr,
                              TriangulationOptions const & options = TriangulationOptions::defaults()) const;
 
     /** Compute the area of the polygon. */

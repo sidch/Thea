@@ -76,7 +76,7 @@ class BoundedSortedArray
      * @param compare_ The comparator that evaluates the "less-than" operator on objects of type T.
      */
     BoundedSortedArray(int capacity_ = 0, Compare compare_ = Compare())
-    : compare(compare_), capacity(capacity_), num_elems(0), values(NULL)
+    : compare(compare_), capacity(capacity_), num_elems(0), values(nullptr)
     {
       alwaysAssertM(capacity >= 0, "BoundedSortedArray: Capacity must be non-negative");
 
@@ -87,7 +87,7 @@ class BoundedSortedArray
     /** Copy constructor. */
     BoundedSortedArray(BoundedSortedArray const & src)
     : compare(src.compare), capacity(src.capacity), num_elems(src.num_elems),
-      values(src.capacity > 0 ? new T[src.capacity] : NULL)
+      values(src.capacity > 0 ? new T[src.capacity] : nullptr)
     {
       if (src.num_elems > 0)
         Algorithms::fastCopy(src.values, src.values + src.num_elems, values);
@@ -102,7 +102,7 @@ class BoundedSortedArray
       if (capacity != src.capacity)
       {
         delete [] values;
-        values = (src.capacity > 0 ? new T[src.capacity] : NULL);
+        values = (src.capacity > 0 ? new T[src.capacity] : nullptr);
         capacity = src.capacity;
       }
 
@@ -121,7 +121,7 @@ class BoundedSortedArray
       if (capacity != capacity_)
       {
         delete [] values;
-        values = (capacity_ > 0 ? new T[capacity_] : NULL);
+        values = (capacity_ > 0 ? new T[capacity_] : nullptr);
         capacity = capacity_;
       }
 

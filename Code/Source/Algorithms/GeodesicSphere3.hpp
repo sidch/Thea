@@ -64,7 +64,7 @@ class THEA_API GeodesicSphere3
      *
      * @return True on success, false on error.
      */
-    static bool compute(intx num_subdivs, Array<Vector3> & vertices, Array<intx> * triangles = NULL);
+    static bool compute(intx num_subdivs, Array<Vector3> & vertices, Array<intx> * triangles = nullptr);
 
     /**
      * Recursively subdivides a given set of triangles formed from vertices on the unit sphere, projecting each new vertex to
@@ -79,7 +79,7 @@ class THEA_API GeodesicSphere3
      * @return True on success, false on error.
      */
     static bool compute(intx num_subdivs, Array<Vector3> & vertices, Array<intx> const & old_triangles,
-                        Array<intx> * new_triangles = NULL);
+                        Array<intx> * new_triangles = nullptr);
 
 }; // class GeodesicSphere3
 

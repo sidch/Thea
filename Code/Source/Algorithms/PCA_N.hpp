@@ -71,7 +71,7 @@ class /* THEA_API */ PCA_N
      */
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[N], VectorT eigenvectors[N],
-                                                          VectorT * centroid = NULL);
+                                                          VectorT * centroid = nullptr);
 
 }; // class PCA_N
 
@@ -84,7 +84,7 @@ class PCA_N<T, 2, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 2>:
 
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[2], VectorT eigenvectors[2],
-                                                          VectorT * centroid = NULL)
+                                                          VectorT * centroid = nullptr)
     {
       typedef Matrix<2, 2, ScalarT> MatrixT;
 
@@ -150,7 +150,7 @@ class PCA_N<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>:
 
     template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
                                                           ScalarT eigenvalues[3], VectorT eigenvectors[3],
-                                                          VectorT * centroid = NULL)
+                                                          VectorT * centroid = nullptr)
     {
       typedef Matrix<3, 3, ScalarT> MatrixT;
 

@@ -72,7 +72,7 @@ class /* THEA_API */ LinearLeastSquares3
      * @return The sum of squared fitting errors.
      */
     template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL);
+    static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = nullptr);
 
     /**
      * Linear least-squares fitting of a plane to a set of 3D objects. InputIterator must dereference to type T or pointer-to-T.
@@ -86,7 +86,7 @@ class /* THEA_API */ LinearLeastSquares3
      * @return The fitting quality: 0 (worst) to 1 (perfect).
      */
     template <typename InputIterator>
-    static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL);
+    static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = nullptr);
 
 }; // class LinearLeastSquares3
 
@@ -96,7 +96,7 @@ class LinearLeastSquares3<T, typename std::enable_if< IsNonReferencedPointN<T, 3
 {
   public:
     template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = NULL)
+    static double fitLine(InputIterator begin, InputIterator end, Line3 & line, Vector3 * centroid = nullptr)
     {
       Vector3d center;
       Matrix3d cov = covMatrix(begin, end, center);
@@ -120,7 +120,7 @@ class LinearLeastSquares3<T, typename std::enable_if< IsNonReferencedPointN<T, 3
     }
 
     template <typename InputIterator>
-    static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = NULL)
+    static double fitPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 * centroid = nullptr)
     {
       Vector3d center;
       Matrix3d cov = covMatrix(begin, end, center);

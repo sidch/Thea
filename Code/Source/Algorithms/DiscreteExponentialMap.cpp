@@ -176,10 +176,10 @@ class Impl
       }
       else
       {
-        unwind(tangent_plane, vertex->getPosition(), NULL, curr_data);
+        unwind(tangent_plane, vertex->getPosition(), nullptr, curr_data);
         Vector3 offset = curr_data.proj_p - origin;
         curr_data.uv = Vector2(offset.dot(u_axis), offset.dot(v_axis));
-        curr_data.pred_data = NULL;
+        curr_data.pred_data = nullptr;
 
         params[vertex->getIndex()] = (options.normalize() ? curr_data.uv / radius : curr_data.uv);
 

@@ -68,7 +68,7 @@ class NeighboringSample
 {
   public:
     /** Constructor. */
-    NeighboringSample(SurfaceSample * sample_ = NULL, Real separation_ = 0) : sample(sample_), separation(separation_) {}
+    NeighboringSample(SurfaceSample * sample_ = nullptr, Real separation_ = 0) : sample(sample_), separation(separation_) {}
 
     /** Get a reference to this sample. */
     SurfaceSample * getSample() const { return sample; }
@@ -271,13 +271,13 @@ class SampleGraph : private Noncopyable
     /** Get an iterator to the first neighbor of a vertex. */
     NeighborIterator neighborsBegin(VertexHandle vertex)
     {
-      return vertex->getNeighbors().isEmpty() ? NULL : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
+      return vertex->getNeighbors().isEmpty() ? nullptr : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
     }
 
     /** Get a const iterator to the first neighbor of a vertex. */
     NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
     {
-      return vertex->getNeighbors().isEmpty() ? NULL : &vertex->getNeighbors()[0];
+      return vertex->getNeighbors().isEmpty() ? nullptr : &vertex->getNeighbors()[0];
     }
 
     /** Get an iterator to the one position beyond the last neighbor of a vertex. */
@@ -328,7 +328,7 @@ class SampleGraph : private Noncopyable
     }
 
     /** Set the sample positions and (optionally) normals. All prior samples will be cleared. */
-    void setSamples(intx num_samples, Vector3 const * positions, Vector3 const * normals = NULL)
+    void setSamples(intx num_samples, Vector3 const * positions, Vector3 const * normals = nullptr)
     {
       alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of samples");
       alwaysAssertM(num_samples == 0 || positions, "SampleGraph: Sample positions must be specified");
@@ -359,7 +359,7 @@ class SampleGraph : private Noncopyable
      * final graph, but will be used to more accurately compute adjacencies. If normals are not specified, they must also not
      * have been specified for the main samples.
      */
-    void setOversampling(intx num_samples, Vector3 const * dense_positions, Vector3 const * dense_normals = NULL)
+    void setOversampling(intx num_samples, Vector3 const * dense_positions, Vector3 const * dense_normals = nullptr)
     {
       alwaysAssertM(num_samples >= 0, "SampleGraph: Cannot specify a negative number of dense samples");
       alwaysAssertM(!has_normals || dense_normals,
@@ -384,7 +384,7 @@ class SampleGraph : private Noncopyable
     /** Construct the sample graph from a set of samples, without tests that require access to the underlying surface. */
     void init()
     {
-      init<DummyRayQueryStructure3>(NULL);
+      init<DummyRayQueryStructure3>(nullptr);
     }
 
     /**

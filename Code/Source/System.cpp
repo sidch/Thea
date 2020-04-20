@@ -105,11 +105,11 @@ System::initTime()
 
 #else
 
-  gettimeofday(&m_start, NULL);
+  gettimeofday(&m_start, nullptr);
 
   // "sse" = "seconds since epoch". The time function returns the seconds since the epoch GMT (perhaps more correctly called
   // UTC).
-  time_t gmt = ::time(NULL);
+  time_t gmt = ::time(nullptr);
 
   // No call to free or delete is needed, but subsequent calls to asctime, ctime, mktime, etc. might overwrite local_time_vals.
   tm * localTimeVals = localtime(&gmt);
@@ -146,7 +146,7 @@ System::time()
   // Linux resolution defaults to 100Hz. There is no need to do a separate RDTSC call as gettimeofday actually uses RDTSC
   // when on systems that support it, otherwise it uses the system clock.
   struct timeval now;
-  gettimeofday(&now, NULL);
+  gettimeofday(&now, nullptr);
 
   return (now.tv_sec  - instance().m_start.tv_sec) +
       (now.tv_usec - instance().m_start.tv_usec) / 1e6

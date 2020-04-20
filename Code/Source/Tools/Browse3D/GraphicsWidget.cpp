@@ -46,8 +46,8 @@
 
 namespace Browse3D {
 
-Graphics::Shader * GraphicsWidget::shader = NULL;
-Graphics::Shader * phong_shader = NULL;
+Graphics::Shader * GraphicsWidget::shader = nullptr;
+Graphics::Shader * phong_shader = nullptr;
 
 Vector3 GraphicsWidget::light_dir       =  Vector3(-1, -1, -2);
 ColorRGB GraphicsWidget::light_color    =  ColorRGB(1, 1, 1);

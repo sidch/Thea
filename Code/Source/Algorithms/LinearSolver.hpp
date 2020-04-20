@@ -78,7 +78,7 @@ class THEA_API LinearSolver : public virtual AbstractNamedObject
      * @return True if the system was successfully solved, else false. (The same value is returned by subsequent calls to
      *   hasSolution().)
      */
-    virtual int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = NULL) = 0;
+    virtual int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = nullptr) = 0;
 
     /** Get the size of the solution, which is also the number of columns of the coefficient matrix A. */
     virtual int64 dims() const = 0;

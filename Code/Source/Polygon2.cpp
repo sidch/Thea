@@ -118,7 +118,7 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indi
 
   in.numberofpointattributes = 0;
   in.pointlist = new REAL[2 * (int)impl->vertices.size()];
-  in.pointmarkerlist = NULL;
+  in.pointmarkerlist = nullptr;
 
   in.numberofpoints = 0;
   for (size_t i = 0, j = 0; i < impl->vertices.size(); ++i)
@@ -143,7 +143,7 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indi
 
   in.numberofsegments = in.numberofpoints;
   in.segmentlist = new int[2 * in.numberofsegments];
-  in.segmentmarkerlist = NULL;
+  in.segmentmarkerlist = nullptr;
   in.numberofholes = 0;
   in.numberofregions = 0;
 
@@ -156,9 +156,9 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indi
     in.segmentlist[k + 1] = j;
   }
 
-  out.pointlist = NULL;
-  out.trianglelist = NULL;
-  out.pointmarkerlist = NULL;
+  out.pointlist = nullptr;
+  out.trianglelist = nullptr;
+  out.pointmarkerlist = nullptr;
 
   std::string opt_str = format("p"         // triangulate planar straight-line graph (PSLG)
                                "q"         // quality mesh generation by Delaunay refinement, adding Steiner points
@@ -180,7 +180,7 @@ Polygon2::triangulateInterior(Array<Vector2> & tri_verts, Array<intx> & tri_indi
   char * opt_c_str = new char[opt_str.size() + 1];
   std::strcpy(opt_c_str, opt_str.c_str());
 
-  ::triangulate(opt_c_str, &in, &out, NULL);
+  ::triangulate(opt_c_str, &in, &out, nullptr);
 
   // Free input arrays
   delete [] in.pointlist;

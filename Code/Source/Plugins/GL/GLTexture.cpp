@@ -107,7 +107,7 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, int64 
                      Format const * desired_format, Dimension dimension_, Options const & options)
 : render_system(render_system_), name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
 {
-  setInternalFormat(NULL, desired_format);
+  setInternalFormat(nullptr, desired_format);
   doSanityChecks();
 
   glGenTextures(1, &gl_id);
@@ -126,15 +126,15 @@ GLTexture::GLTexture(GLRenderSystem * render_system_, char const * name_, int64 
     switch (dimension)
     {
       case Dimension::DIM_CUBE_MAP:
-        glTexImage(NULL, format, Face::NEG_X);
-        glTexImage(NULL, format, Face::POS_Y);
-        glTexImage(NULL, format, Face::NEG_Y);
-        glTexImage(NULL, format, Face::POS_Z);
-        glTexImage(NULL, format, Face::NEG_Z);
+        glTexImage(nullptr, format, Face::NEG_X);
+        glTexImage(nullptr, format, Face::POS_Y);
+        glTexImage(nullptr, format, Face::NEG_Y);
+        glTexImage(nullptr, format, Face::POS_Z);
+        glTexImage(nullptr, format, Face::NEG_Z);
         // Fall-through...
 
       default:
-        glTexImage(NULL, format, Face::POS_X);  // face argument is ignored if not cube map
+        glTexImage(nullptr, format, Face::POS_X);  // face argument is ignored if not cube map
     }
   }
 }
@@ -409,7 +409,7 @@ GLTexture::setOptions(Options const & options)
 void
 GLTexture::updateImage(AbstractImage const & image, Face face)
 {
-  _updateImage(image, face, NULL);
+  _updateImage(image, face, nullptr);
 }
 
 void
@@ -526,8 +526,8 @@ GLTexture::getImage(AbstractImage & image, Face face) const
 }
 
 void
-GLTexture::getSubImage(AbstractImage & image, int64 x, int64 y, int64 z, int64 subimage_width, int64 subimage_height, int64 subimage_depth,
-                       Face face) const
+GLTexture::getSubImage(AbstractImage & image, int64 x, int64 y, int64 z, int64 subimage_width, int64 subimage_height,
+                       int64 subimage_depth, Face face) const
 {
   // Until GL gets a GetTexSubImage function...
   throw Error(std::string(getName()) + ": Reading texture subimages is not supported");

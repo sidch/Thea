@@ -87,7 +87,7 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Mesh const & mesh, Real normalization_scale = -1)
-    : kdtree(new KDTree), precomp_kdtree(NULL), scale(normalization_scale)
+    : kdtree(new KDTree), precomp_kdtree(nullptr), scale(normalization_scale)
     {
       kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -110,7 +110,7 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group, Real normalization_scale = -1)
-    : kdtree(new KDTree), precomp_kdtree(NULL), scale(normalization_scale)
+    : kdtree(new KDTree), precomp_kdtree(nullptr), scale(normalization_scale)
     {
       kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -137,7 +137,7 @@ class ShapeDiameter
      *   it separately and pass it as a parameter to this function.
      */
     ShapeDiameter(ExternalKDTree const * kdtree_, Real normalization_scale = -1)
-    : kdtree(NULL), precomp_kdtree(kdtree_), scale(normalization_scale)
+    : kdtree(nullptr), precomp_kdtree(kdtree_), scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
 

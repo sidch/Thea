@@ -46,6 +46,7 @@
 #include "MatVec.hpp"
 #include "SparseMatVec.hpp"
 #include <algorithm>
+#include <cctype>
 #include <type_traits>
 
 namespace Thea {
@@ -101,6 +102,16 @@ parseHeader(BinaryInputStream & input, Codec::BlockHeader const * block_header, 
   return BinaryInputStream::Ptr();
 }
 
+inline char
+detectSeparatorFromLine(std::string const & line, char default_sep)
+{
+  // Look for separators in the order comma, tab, space
+  if (line.find_first_of(',')  != std::string::npos) { return ',';  }
+  if (line.find_first_of('\t') != std::string::npos) { return '\t'; }
+  if (line.find_first_of(' ')  != std::string::npos) { return ' ';  }
+  return default_sep;
+}
+
 } // namespace CodecCSVInternal
 
 // Specialization of CodecCSV for dense matrices.
@@ -109,8 +120,13 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
 : public MatrixCodec<MatrixT>
 {
   public:
-    /** Construct the codec with a given field separation character (typically comma, tab or space). */
-    CodecCSV(char separator_ = ',') : separator(separator_) {}
+    /**
+     * Constructor.
+     *
+     * @param separator_ Field separation character, typically comma, tab or space. If negative, it will be auto-detected
+     *   (independently) from each input stream.
+     */
+    CodecCSV(char separator_ = -1) : separator(separator_) {}
 
     char const * getName() const { static char const * my_name = "CSV"; return my_name; }
     Codec::MagicString const & getMagic() const { static Codec::MagicString const magic = Codec::toMagic("CSV"); return magic; }
@@ -124,7 +140,18 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
 
       Array<std::string> lines;
       while (in->hasMore())
+      {
         lines.push_back(in->readLine());
+
+        // If the separator is still not set, try to autodetect it from the first line
+        if (lines.size() == 1 && sep < 0)
+        {
+          sep = CodecCSVInternal::detectSeparatorFromLine(lines[0], '\n');  // assume entire line is one field
+          if (sep < 0)
+            throw Error(format("%s: Could not autodetect the field separator from the stream '%s'",
+                               getName(), input.getName()));
+        }
+      }
 
       if (lines.empty())
       {
@@ -143,10 +170,10 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
         for (intx j = 0; j < num_cols; ++j)
         {
           if (!std::getline(line_in, field, sep))
-            throw Error(format("%s: Could not read number from row %ld, column %ld of stream '%s'",
+            throw Error(format("%s: Could not read matrix element (%ld, %ld) from stream '%s'",
                                getName(), (long)i, (long)j, input.getName()));
 
-          m(i, j) = std::stod(field);
+          m(i, j) = fromString<typename MatrixT::value_type>(field);
         }
       }
     }
@@ -162,8 +189,13 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
 : public MatrixCodec<MatrixT>
 {
   public:
-    /** Construct the codec with a given field separation character (typically comma, tab or space). */
-    CodecCSV(char separator_ = ',') : separator(separator_) {}
+    /**
+     * Constructor.
+     *
+     * @param separator_ Field separation character, typically comma, tab or space. If negative, it will be auto-detected
+     *   (independently) from each input stream.
+     */
+    CodecCSV(char separator_ = -1) : separator(separator_) {}
 
     char const * getName() const { static char const * my_name = "CSV"; return my_name; }
     Codec::MagicString const & getMagic() const { static Codec::MagicString const magic = Codec::toMagic("CSV"); return magic; }
@@ -185,7 +217,18 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
       // Read dimensions of matrix
       std::string rstr, cstr;
       {
-        std::istringstream line_in(in->readLine());
+        auto line = in->readLine();
+
+        // If the separator is still not set, try to autodetect it from the first line
+        if (sep < 0)
+        {
+          sep = CodecCSVInternal::detectSeparatorFromLine(line, -1);
+          if (sep < 0)
+            throw Error(format("%s: Could not autodetect the field separator from the stream '%s'",
+                               getName(), input.getName()));
+        }
+
+        std::istringstream line_in(line);
         if (!std::getline(line_in, rstr, sep) || !std::getline(line_in, cstr, sep))
           throw Error(format("%s: Could not read matrix dimensions from stream '%s'", getName(), input.getName()));
 
@@ -210,12 +253,12 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
                                getName(), (long)triplets.size() + 2, input.getName()));
 
           intx row = (intx)std::stol(rstr), col = (intx)std::stol(cstr);
-          long double value = std::stold(vstr);
+          auto value = fromString<typename MatrixT::value_type>(vstr);
           if (row < 0 || row >= m.rows() || col < 0 || col >= m.cols())
             throw Error(format("%s: Out-of-bounds matrix position (%ld, %ld) in stream '%s'",
                                getName(), (long)row, (long)col, input.getName()));
 
-          triplets.push_back(Eigen::Triplet<Value>(row, col, static_cast<Value>(value)));
+          triplets.push_back(Eigen::Triplet<Value>(row, col, value));
         }
 
         m.setFromTriplets(triplets.begin(), triplets.end());
@@ -262,7 +305,7 @@ BinaryInputStream::readMatrix(MatrixT & m, Codec const & codec, bool read_block_
     if (read_block_header && bh.magic != mat_codec->getMagic())
       throw Error(getNameStr() + ": Magic string mismatch");
 
-    mat_codec->readMatrix(m, *this, (read_block_header ? &bh : NULL));
+    mat_codec->readMatrix(m, *this, (read_block_header ? &bh : nullptr));
   }
 }
 

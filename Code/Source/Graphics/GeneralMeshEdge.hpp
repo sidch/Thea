@@ -76,7 +76,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
 
     /** Construct from two endpoints. */
-    GeneralMeshEdge(Vertex * v0 = NULL, Vertex * v1 = NULL) : marked(false), bits(0), internal_bits(0)
+    GeneralMeshEdge(Vertex * v0 = nullptr, Vertex * v1 = nullptr) : marked(false), bits(0), internal_bits(0)
     {
       endpoints[0] = v0;
       endpoints[1] = v1;
@@ -167,7 +167,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
       debugAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
 
       if (numFaces() > 2)  // non-manifold
-        return NULL;
+        return nullptr;
 
       // Find which incident face has this endpoint as the origin of the edge when stepping round the face. The required edge
       // is then the predecessor of this edge around the face.
@@ -179,7 +179,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
           return prev;
       }
 
-      return NULL;
+      return nullptr;
     }
 
     /**

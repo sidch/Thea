@@ -146,17 +146,17 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       changed_buffers(BufferID::ALL),
       num_tri_indices(0),
       num_quad_indices(0),
-      var_area(NULL),
-      vertex_positions_var(NULL),
-      vertex_normals_var(NULL),
-      vertex_colors_var(NULL),
-      vertex_texcoords_var(NULL),
-      tris_var(NULL),
-      quads_var(NULL),
-      edges_var(NULL),
-      vertex_matrix(NULL, 3, 0),
-      tri_matrix(NULL, 3, 0),
-      quad_matrix(NULL, 4, 0),
+      var_area(nullptr),
+      vertex_positions_var(nullptr),
+      vertex_normals_var(nullptr),
+      vertex_colors_var(nullptr),
+      vertex_texcoords_var(nullptr),
+      tris_var(nullptr),
+      quads_var(nullptr),
+      edges_var(nullptr),
+      vertex_matrix(nullptr, 3, 0),
+      tri_matrix(nullptr, 3, 0),
+      quad_matrix(nullptr, 4, 0),
       vertex_wrapper(&vertex_matrix),
       tri_wrapper(&tri_matrix),
       quad_wrapper(&quad_matrix)
@@ -175,9 +175,9 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
      * data in the maps is <b>not</b> cleared.
      */
     void copyTo(GeneralMesh & dst,
-                UnorderedMap<Vertex const *, Vertex *> * vertex_map = NULL,
-                UnorderedMap<Edge const *, Edge *> * edge_map = NULL,
-                UnorderedMap<Face const *, Face *> * face_map = NULL) const
+                UnorderedMap<Vertex const *, Vertex *> * vertex_map = nullptr,
+                UnorderedMap<Edge const *, Edge *> * edge_map = nullptr,
+                UnorderedMap<Face const *, Face *> * face_map = nullptr) const
     {
       typedef UnorderedMap<Vertex const *, Vertex *> VertexMap;
       typedef UnorderedMap<Edge   const *, Edge   *> EdgeMap;
@@ -257,7 +257,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     {
       // Assume Vector3 is tightly packed and has no padding
       packVertexPositions();
-      Vector3 const * buf = (packed_vertex_positions.empty() ? NULL : &packed_vertex_positions[0]);
+      Vector3 const * buf = (packed_vertex_positions.empty() ? nullptr : &packed_vertex_positions[0]);
       new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
       return &vertex_wrapper;
     }
@@ -265,7 +265,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     AbstractDenseMatrix<uint32> const * getTriangleMatrix() const
     {
       packTopology();
-      uint32 const * buf = (packed_tris.empty() ? NULL : &packed_tris[0]);
+      uint32 const * buf = (packed_tris.empty() ? nullptr : &packed_tris[0]);
       new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, num_tri_indices / 3);
       return &tri_wrapper;
     }
@@ -273,7 +273,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     AbstractDenseMatrix<uint32> const * getQuadMatrix() const
     {
       packTopology();
-      uint32 const * buf = (packed_quads.empty() ? NULL : &packed_quads[0]);
+      uint32 const * buf = (packed_quads.empty() ? nullptr : &packed_quads[0]);
       new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, num_quad_indices / 4);
       return &quad_wrapper;
     }
@@ -398,8 +398,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
      *
      * @return A pointer to the newly created vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
-                       Vector2 const * texcoord = NULL)
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = nullptr,
+                       ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
       if (normal)
         vertices.push_back(Vertex(point, *normal));
@@ -547,7 +547,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         Edge * edge = &(*ei);
         Edge * existing = (Edge *)welder.getUndirectedEdge(edge->getEndpoint(0)->getPosition(),
                                                            edge->getEndpoint(1)->getPosition());
-        bool can_seal = (existing != NULL);
+        bool can_seal = (existing != nullptr);
         if (can_seal)
         {
           // We can seal only if the two edges don't share a face
@@ -745,25 +745,25 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     Edge * splitEdge(Edge * edge, Vertex * vertex)
     {
       if (!edge)
-        return NULL;
+        return nullptr;
 
       if (edge->isSelfLoop())
       {
         THEA_DEBUG << getName() << ": Can't split self-loop edge";
-        return NULL;
+        return nullptr;
       }
 
       if (edge->hasEndpoint(vertex))
       {
         THEA_DEBUG << getName() << ": Can't split edge at existing endpoint";
-        return NULL;
+        return nullptr;
       }
 
       for (auto efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
         if ((*efi)->hasVertex(vertex))
         {
           THEA_DEBUG << getName() << ": Can't split edge at vertex on the same face";
-          return NULL;
+          return nullptr;
         }
 
       Vertex * old_e1 = edge->getEndpoint(1);
@@ -840,7 +840,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       if (!splitEdge(edge, new_vx))  // should generally never happen
       {
         vertices.pop_back();  // remove the vertex we just added
-        return NULL;
+        return nullptr;
       }
 
       invalidateGPUBuffers();
@@ -1215,7 +1215,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       if (num_verts < 3)
       {
         THEA_WARNING << getName() << ": Skipping face -- too few vertices (" << num_verts << ')';
-        return NULL;
+        return nullptr;
       }
 
       face->clear();
@@ -1255,7 +1255,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     /** Set vertex color. */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
+                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr)
     {
       vertex->attr().setColor(color);
       invalidateGPUBuffers(BufferID::VERTEX_COLOR);
@@ -1264,13 +1264,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
+                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr)
     {}
 
     /** Set vertex texture coordinates. */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
+                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr)
     {
       vertex->attr().setTexCoord(texcoord);
       invalidateGPUBuffers(BufferID::VERTEX_TEXCOORD);
@@ -1279,7 +1279,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
+                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr)
     {}
 
     /**
@@ -1297,8 +1297,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     bool getSuccessor(Vertex const * vertex, Face const * face, Edge const * edge,
                       Face const ** next_face, Edge const ** next_edge) const
     {
-      *next_edge = NULL;
-      *next_face = NULL;
+      *next_edge = nullptr;
+      *next_face = nullptr;
 
       // Find the next face around the vertex
       for (auto efi = edge->facesBegin(); efi != edge->facesEnd(); ++efi)
@@ -1348,9 +1348,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
       // Start from the edge found above and an incident face, and step around the vertex
       Edge const * edge = first_edge;
-      Face const * face = edge->isBoundaryEdge() ? NULL : *edge->facesBegin();  // if we're starting from a boundary edge, the
-                                                                                // initial "face" is the empty space before the
-                                                                                // first edge
+      Face const * face = edge->isBoundaryEdge() ? nullptr : *edge->facesBegin();  // if starting from a boundary edge, initial
+                                                                                   // "face" is empty space before first edge
       intx num_visited_edges = 0;
       while (true)
       {
@@ -1358,8 +1357,8 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
           break;
 
         // Step around the vertex
-        Edge const * next_edge = NULL;
-        Face const * next_face = NULL;
+        Edge const * next_edge = nullptr;
+        Face const * next_face = nullptr;
         if (!getSuccessor(vertex, face, edge, &next_face, &next_edge))
           break;
 
@@ -1609,7 +1608,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL) const
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr) const
     {
       if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
 
@@ -1623,7 +1622,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL) const
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr) const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
       {
@@ -1634,7 +1633,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL) const
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
     {
       if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
 
@@ -1648,7 +1647,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL) const
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
       {
@@ -1783,20 +1782,20 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
   {
     if (var_area) var_area->reset();
 
-    vertex_positions_var  =  NULL;
-    vertex_normals_var    =  NULL;
-    vertex_colors_var     =  NULL;
-    vertex_texcoords_var  =  NULL;
-    tris_var              =  NULL;
-    quads_var             =  NULL;
-    edges_var             =  NULL;
+    vertex_positions_var  =  nullptr;
+    vertex_normals_var    =  nullptr;
+    vertex_colors_var     =  nullptr;
+    vertex_texcoords_var  =  nullptr;
+    tris_var              =  nullptr;
+    quads_var             =  nullptr;
+    edges_var             =  nullptr;
 
     if (vertices.empty() || (faces.empty() && edges.empty()))
     {
       if (var_area)
       {
         render_system.destroyVARArea(var_area);
-        var_area = NULL;
+        var_area = nullptr;
       }
 
       setAllGPUBuffersAreValid();
@@ -1949,17 +1948,17 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
     if (options.sendNormals() && vertex_normals_var)
       render_system.setNormalArray(vertex_normals_var);
     else
-      render_system.setNormalArray(NULL);
+      render_system.setNormalArray(nullptr);
 
     if (options.sendColors() && vertex_colors_var)
       render_system.setColorArray(vertex_colors_var);
     else
-      render_system.setColorArray(NULL);
+      render_system.setColorArray(nullptr);
 
     if (options.sendTexCoords() && vertex_texcoords_var)
       render_system.setTexCoordArray(0, vertex_texcoords_var);
     else
-      render_system.setTexCoordArray(0, NULL);
+      render_system.setTexCoordArray(0, nullptr);
 
     if (options.drawFaces())
     {
@@ -2010,10 +2009,10 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
       render_system.pushShader();
       render_system.pushColorFlags();
 
-        render_system.setShader(NULL);
-        render_system.setColorArray(NULL);
-        render_system.setTexCoordArray(0, NULL);
-        render_system.setNormalArray(NULL);
+        render_system.setShader(nullptr);
+        render_system.setColorArray(nullptr);
+        render_system.setTexCoordArray(0, nullptr);
+        render_system.setNormalArray(nullptr);
         render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
@@ -2078,7 +2077,7 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
     render_system.pushShader();
     render_system.pushColorFlags();
 
-      render_system.setShader(NULL);
+      render_system.setShader(nullptr);
       render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
 
       render_system.beginPrimitive(RenderSystem::Primitive::LINES);

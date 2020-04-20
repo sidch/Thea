@@ -94,7 +94,7 @@ class GraphicsWidget : public Graphics::Drawable
 
   private:
     /** Set shader uniforms related to lighting. */
-    static void setLightingUniforms(Graphics::Shader * s = NULL);
+    static void setLightingUniforms(Graphics::Shader * s = nullptr);
 
     /** Get the wrapped Phong shader. */
     static Graphics::Shader * getPhongShader(Graphics::RenderSystem & render_system);

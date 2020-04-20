@@ -119,7 +119,7 @@ class VertexWelderImpl
                 return ni->second.vertex;
           }
 
-      return NULL;
+      return nullptr;
     }
 
 }; // class VertexWelderImpl

@@ -68,7 +68,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceT>
     static intx findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
-                                  typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
+                                  typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = nullptr)
     {
       return findEdgeConnectedDefault(mesh, components);
     }
@@ -85,7 +85,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceT>
     static intx findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components,
-                                  typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
+                                  typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = nullptr)
     {
       return findEdgeConnectedDefault(mesh, components);
     }
@@ -148,7 +148,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceUnionFind>
     static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
-                                   typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL)
+                                   typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = nullptr)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
@@ -169,7 +169,7 @@ class THEA_API ConnectedComponents
      */
     template <typename MeshT, typename FaceUnionFind>
     static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf,
-                                   typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
+                                   typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = nullptr)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
       {
@@ -187,7 +187,7 @@ class THEA_API ConnectedComponents
     template <typename MeshT, typename FaceT>
     static void collectFaces(MeshT & mesh, Array<FaceT *> & faces,
                              typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value
-                                                   || Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL)
+                                                   || Graphics::IsDCELMesh<MeshT>::value >::type * dummy = nullptr)
     {
       faces.clear();
       for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); fi++)

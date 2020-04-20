@@ -118,7 +118,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     Vertex * getPredecessor(VertexConstIterator vertex)
     {
       if (vertices.empty())
-        return NULL;
+        return nullptr;
       else if (vertex == vertices.begin())
         return vertices.back();
       else
@@ -141,7 +141,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
         if (*vi == vertex)
           return getPredecessor(vi);
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get the successor of a vertex around the face. Assumes the iterator points to a valid vertex of the face. */
@@ -154,7 +154,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     Vertex * getSuccessor(VertexConstIterator vertex)
     {
       if (vertices.empty())
-        return NULL;
+        return nullptr;
       else
       {
         ++vertex;
@@ -175,7 +175,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
         if (*vi == vertex)
           return getSuccessor(vi);
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get the predecessor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
@@ -188,7 +188,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     Edge * getPredecessor(EdgeConstIterator edge)
     {
       if (edges.empty())
-        return NULL;
+        return nullptr;
       else if (edge == edges.begin())
         return edges.back();
       else
@@ -208,7 +208,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
         if (*ei == edge)
           return getPredecessor(ei);
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get the successor of an edge around the face. Assumes the iterator points to a valid edge of the face. */
@@ -218,7 +218,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     Edge * getSuccessor(EdgeConstIterator edge)
     {
       if (edges.empty())
-        return NULL;
+        return nullptr;
       else
       {
         ++edge;
@@ -236,7 +236,7 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
         if (*ei == edge)
           return getSuccessor(ei);
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get an iterator pointing to the first vertex of the face. */

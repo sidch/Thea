@@ -84,7 +84,7 @@ THE SOFTWARE.
 #endif
 
 #ifdef THEA_WINDOWS
-#  define THEA_DYNLIB_LOAD( a )       LoadLibraryEx( a, NULL, LOAD_WITH_ALTERED_SEARCH_PATH )
+#  define THEA_DYNLIB_LOAD( a )       LoadLibraryEx( a, nullptr, LOAD_WITH_ALTERED_SEARCH_PATH )
 #  define THEA_DYNLIB_GETSYM( a, b )  GetProcAddress( a, b )
 #  define THEA_DYNLIB_UNLOAD( a )     !FreeLibrary( a )
 #else
@@ -117,7 +117,7 @@ DynLib_addExtension(std::string const & name)
 }
 
 DynLib::DynLib(std::string const & name)
-: NamedObject(name), h_inst(NULL), ref_count(0)
+: NamedObject(name), h_inst(nullptr), ref_count(0)
 {}
 
 DynLib::~DynLib()
@@ -155,7 +155,7 @@ DynLib::unload()
   if (THEA_DYNLIB_UNLOAD(h_inst))
     throw Error("Could not unload dynamic library '" + getNameStr() + "' (" + dynlibError() + ')');
 
-  h_inst = NULL;
+  h_inst = nullptr;
   ref_count = 0;
 }
 
@@ -187,7 +187,7 @@ DynLib::getSymbol(std::string const & sym_name) const
   if (h_inst)
     return (void *)THEA_DYNLIB_GETSYM(h_inst, sym_name.c_str());
   else
-    return NULL;
+    return nullptr;
 }
 
 std::string
@@ -196,12 +196,12 @@ DynLib::dynlibError() const
 #if defined(THEA_WINDOWS)
   LPVOID lpMsgBuf;
   FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                NULL,
+                nullptr,
                 GetLastError(),
                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 (LPTSTR)&lpMsgBuf,
                 0,
-                NULL);
+                nullptr);
 
   std::string ret = (char *)lpMsgBuf;
   LocalFree(lpMsgBuf);  // free the buffer.

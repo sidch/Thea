@@ -239,7 +239,7 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
     throw Error(getNameStr() + ": Read failed");
 
   fclose(file);
-  file = NULL;
+  file = nullptr;
 
 #else
 
@@ -257,7 +257,7 @@ BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
     throw Error(getNameStr() + ": Read failed");
 
   fclose(file);
-  file = NULL;
+  file = nullptr;
 
 #endif
 
@@ -319,7 +319,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
   m_alreadyRead(0),
   m_length(0),
   m_bufferLength(0),
-  m_buffer(NULL),
+  m_buffer(nullptr),
   m_pos(0),
   m_freeBuffer(true)
 {
@@ -351,11 +351,11 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
   alwaysAssertM(m_freeBuffer, "BinaryInputStream: Allocated buffer not set to be freed");
   m_buffer = (uint8 *)std::malloc((size_t)m_bufferLength);
 
-  if (m_buffer == NULL)
+  if (m_buffer == nullptr)
   {
     // Try to allocate a small array; not much memory is available.
     // Give up if we can't allocate even 1k.
-    while ((m_buffer == NULL) && (m_bufferLength > 1024))
+    while ((m_buffer == nullptr) && (m_bufferLength > 1024))
     {
       m_bufferLength /= 2;
       m_buffer = (uint8 *)std::malloc((size_t)m_bufferLength);
@@ -370,7 +370,7 @@ BinaryInputStream::BinaryInputStream(std::string const & path, Endianness file_e
     throw Error(getNameStr() + ": Could not initialize file buffer");
 
   fclose(file);
-  file = NULL;
+  file = nullptr;
 }
 
 BinaryInputStream::BinaryInputStream(BinaryInputStream & src, int64 block_len)
@@ -382,7 +382,7 @@ BinaryInputStream::BinaryInputStream(BinaryInputStream & src, int64 block_len)
   m_alreadyRead(0),
   m_length(block_len),
   m_bufferLength(0),
-  m_buffer(NULL),
+  m_buffer(nullptr),
   m_pos(0),
   m_freeBuffer(true)
 {
@@ -485,7 +485,7 @@ BinaryInputStream::readString(int64 n)
   std::string out = s;
 
   std::free(s);
-  s = NULL;
+  s = nullptr;
 
   m_pos += n;
   return out;

@@ -359,7 +359,7 @@ vformat(char const * fmt, va_list arg_ptr)
   if (actual_size > BUF_SIZE)
   {
     // Now use the heap.
-    char * heap_buffer = NULL;
+    char * heap_buffer = nullptr;
 
     if (actual_size < MAX_SIZE)
     {
@@ -595,14 +595,14 @@ fnmatch(char const * pattern, char const * query, int flags)
         {
           if (flags & FNM_PATHNAME)
             return ((flags & FNM_LEADING_DIR) ||
-                    std::strchr(query, '/') == NULL ?
+                    std::strchr(query, '/') == nullptr ?
                     0 : FNM_NOMATCH);
           else
             return (0);
         }
         else if (c == '/' && (flags & FNM_PATHNAME))
         {
-          if ((query = std::strchr(query, '/')) == NULL)
+          if ((query = std::strchr(query, '/')) == nullptr)
             return (FNM_NOMATCH);
 
           break;

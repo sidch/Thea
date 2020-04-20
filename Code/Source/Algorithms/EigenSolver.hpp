@@ -78,7 +78,7 @@ class THEA_API EigenSolver : public virtual AbstractNamedObject
      * @return The number of eigenpairs found, or a negative number on error.
      */
     virtual int64 solve(AbstractMatrix<float64> const & m, int8 compute_eigenvectors = true,
-                        int64 num_requested_eigenpairs = -1, AbstractOptions const * options = NULL) = 0;
+                        int64 num_requested_eigenpairs = -1, AbstractOptions const * options = nullptr) = 0;
 
     /** Get the size of each eigenvector, which is also the number of rows (or columns) of the input operator matrix. */
     virtual int64 dims() const = 0;

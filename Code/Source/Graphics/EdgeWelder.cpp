@@ -140,7 +140,7 @@ class EdgeWelderImpl
                   }
                 }
 
-      return NULL;
+      return nullptr;
     }
 
 }; // class EdgeWelderImpl

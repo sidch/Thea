@@ -704,7 +704,7 @@ closestLeaf(TriangleKDTree const & kdtree, Vector3 const & query, Array<NodeValu
   std::greater<NodeValuePair> cmp;
 
   double closest_dist2 = std::numeric_limits<double>::infinity();
-  TriangleKDTree::Node const * closest_node = NULL;
+  TriangleKDTree::Node const * closest_node = nullptr;
 
   // Find the closest leaf (at triangle level) in the leaf queue
   if (!leaf_queue.empty())

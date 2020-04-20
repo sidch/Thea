@@ -167,17 +167,17 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       changed_buffers(BufferID::ALL),
       num_tri_indices(0),
       num_quad_indices(0),
-      var_area(NULL),
-      vertex_positions_var(NULL),
-      vertex_normals_var(NULL),
-      vertex_colors_var(NULL),
-      vertex_texcoords_var(NULL),
-      tris_var(NULL),
-      quads_var(NULL),
-      edges_var(NULL),
-      vertex_matrix(NULL, 3, 0),
-      tri_matrix(NULL, 3, 0),
-      quad_matrix(NULL, 4, 0),
+      var_area(nullptr),
+      vertex_positions_var(nullptr),
+      vertex_normals_var(nullptr),
+      vertex_colors_var(nullptr),
+      vertex_texcoords_var(nullptr),
+      tris_var(nullptr),
+      quads_var(nullptr),
+      edges_var(nullptr),
+      vertex_matrix(nullptr, 3, 0),
+      tri_matrix(nullptr, 3, 0),
+      quad_matrix(nullptr, 4, 0),
       vertex_wrapper(&vertex_matrix),
       tri_wrapper(&tri_matrix),
       quad_wrapper(&quad_matrix)
@@ -199,9 +199,9 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
      * data in the maps is <b>not</b> cleared. <b>Currently not implemented.</b>
      */
     void copyTo(DCELMesh & dst,
-                UnorderedMap<Vertex const *, Vertex *> * vertex_map = NULL,
-                UnorderedMap<Edge const *, Edge *> * edge_map = NULL,
-                UnorderedMap<Face const *, Face *> * face_map = NULL) const
+                UnorderedMap<Vertex const *, Vertex *> * vertex_map = nullptr,
+                UnorderedMap<Edge const *, Edge *> * edge_map = nullptr,
+                UnorderedMap<Face const *, Face *> * face_map = nullptr) const
     {
       throw Error("DCELMesh: Copy function not currently implemented");
     }
@@ -211,7 +211,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     {
       // Assume Vector3 is tightly packed and has no padding
       packVertexPositions();
-      Vector3 const * buf = (packed_vertex_positions.empty() ? NULL : &packed_vertex_positions[0]);
+      Vector3 const * buf = (packed_vertex_positions.empty() ? nullptr : &packed_vertex_positions[0]);
       new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
       return &vertex_wrapper;
     }
@@ -219,7 +219,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     AbstractDenseMatrix<uint32> const * getTriangleMatrix() const
     {
       packTopology();
-      uint32 const * buf = (packed_tris.empty() ? NULL : &packed_tris[0]);
+      uint32 const * buf = (packed_tris.empty() ? nullptr : &packed_tris[0]);
       new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, num_tri_indices / 3);
       return &tri_wrapper;
     }
@@ -227,7 +227,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     AbstractDenseMatrix<uint32> const * getQuadMatrix() const
     {
       packTopology();
-      uint32 const * buf = (packed_quads.empty() ? NULL : &packed_quads[0]);
+      uint32 const * buf = (packed_quads.empty() ? nullptr : &packed_quads[0]);
       new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, num_quad_indices / 4);
       return &quad_wrapper;
     }
@@ -380,7 +380,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
      *
      * @return A pointer to the new vertex on success, null on failure.
      */
-    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL)
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = nullptr)
     {
       if (vertices.empty()) bounds.set(point, point);
       else                  bounds.merge(point);
@@ -417,7 +417,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       if (vbegin == vend)
       {
         THEA_WARNING << getName() << ": Skipping face -- it has no vertices";
-        return NULL;
+        return nullptr;
       }
 
 #ifdef THEA_DCELMESH_VERBOSE
@@ -448,7 +448,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       if (num_verts < 3)
       {
         THEA_WARNING << getName() << ": Skipping face -- too few vertices (" << num_verts << ')';
-        return NULL;
+        return nullptr;
       }
 
       // Compute the face normal, assume it is consistent across the face
@@ -481,20 +481,20 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       if (edge)
       {
         THEA_ERROR << getName() << "Can't split null edge";
-        return NULL;
+        return nullptr;
       }
 
       Vector3 p = (1 - frac) * edge->getOrigin()->getPosition() + frac * edge->getEnd()->getPosition();
       Vector3 n = ((1 - frac) * edge->getOrigin()->getNormal() + frac * edge->getEnd()->getNormal()).normalized();
       Vertex * new_vx = addVertex(p, &n);
       if (!new_vx)
-        return NULL;
+        return nullptr;
 
       if (!splitEdge(edge, new_vx))  // invalidates GPU buffers
       {
         // We should generally never get here
         removeVertex(new_vx);
-        return NULL;
+        return nullptr;
       }
 
       return new_vx;
@@ -512,13 +512,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       Vector3 n = (t * edge->getOrigin()->getNormal() + s * edge->getEnd()->getNormal()).normalized();
       Vertex * new_vx = addVertex(pos, &n);
       if (!new_vx)
-        return NULL;
+        return nullptr;
 
       if (!splitEdge(edge, new_vx))  // invalidates GPU buffers
       {
         // We should generally never get here
         removeVertex(new_vx);
-        return NULL;
+        return nullptr;
       }
 
       return new_vx;
@@ -572,7 +572,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       // Now do the actual stitching
       e0 = loop0_start;  // we should be here already, but let's play safe
       e1 = loop1_start;
-      Halfedge * next0 = NULL, * next1 = NULL;
+      Halfedge * next0 = nullptr, * next1 = nullptr;
       for (intx i = 0; i < n; ++i, e0 = next0, e1 = next1)
       {
         if (i < n - 1)
@@ -713,7 +713,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     /** Set vertex color. */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL)
+                        typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr)
     {
       vertex->attr().setColor(color);
     }
@@ -721,13 +721,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template <typename VertexT>
     void setVertexColor(VertexT * vertex, ColorRGBA const & color,
-                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL)
+                        typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr)
     {}
 
     /** Set vertex texture coordinates. */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL)
+                           typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr)
     {
       vertex->attr().setTexCoord(texcoord);
     }
@@ -735,7 +735,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
     template <typename VertexT>
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord,
-                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL)
+                           typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr)
     {}
 
     /**
@@ -749,7 +749,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
       size_t origin = 0;
       Halfedge * e = findExistingEdge(num_verts, verts, origin);
 
-      Face * face = NULL;
+      Face * face = nullptr;
       face = addFace(num_verts, verts, e, origin, normal);
       if (!face)
       {
@@ -763,12 +763,12 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
         }
 
         if (!addIsolatedVertices(num_verts, verts, existing0, existing1, iso_verts))
-          return NULL;
+          return nullptr;
 
         if (e && e->isBoundaryEdge())
           face = addFace(num_verts, const_cast<Vertex **>(&iso_verts[0]), e, origin, normal);
         else
-          face = addFace(num_verts, const_cast<Vertex **>(&iso_verts[0]), NULL, 0, false, normal);
+          face = addFace(num_verts, const_cast<Vertex **>(&iso_verts[0]), nullptr, 0, false, normal);
       }
 
       return face;
@@ -795,12 +795,12 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
           else
           {
             THEA_WARNING << getName() << ": Face has edge already adjoining two faces";
-            return NULL;
+            return nullptr;
           }
         }
       }
       else
-        return addFace(num_verts, verts, NULL, 0, false, normal);
+        return addFace(num_verts, verts, nullptr, 0, false, normal);
     }
 
     /**
@@ -866,13 +866,13 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
           if (!e->isBoundaryHalfedge())
           {
             THEA_WARNING << getName() << ": Can't stitch a face to a halfedge that already adjoins a face";
-            return NULL;
+            return nullptr;
           }
 
           if (prev && prev->next() != e)
           {
             THEA_WARNING << getName() << ": Face breaks halfedge order at vertex";
-            return NULL;
+            return nullptr;
           }
 
           edges[i] = e;
@@ -903,14 +903,14 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
               else
               {
                 THEA_WARNING << getName() << ": Can't stitch a face to a halfedge that already adjoins a face";
-                return NULL;
+                return nullptr;
               }
             }
             else
-              edges[i] = NULL;
+              edges[i] = nullptr;
           }
 
-          prev = NULL;  // no current edge between i and next
+          prev = nullptr;  // no current edge between i and next
         }
 
         i = next;
@@ -924,7 +924,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
       // Now actually create and add the edges. In this loop we directly access private members (ha ha) of the edges to bypass
       // any consistency checks until we've finished adding the face.
-      Halfedge * new_e, * new_twin, * next_e, * last = NULL; (void)last;  // Squash -Wunused-but-set-variable
+      Halfedge * new_e, * new_twin, * next_e, * last = nullptr; (void)last;  // Squash -Wunused-but-set-variable
       Vertex * vi, * vnext;
       intx index0, index1;
       bool added_canonical_edge_to_face = false;
@@ -1093,7 +1093,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
      */
     Halfedge * findExistingEdge(size_t num_verts, Vertex ** verts, size_t & origin_index) const
     {
-      Halfedge * e  = NULL;
+      Halfedge * e  = nullptr;
       size_t last = num_verts - 1;
       for (size_t i = 0; i < num_verts; ++i)
       {
@@ -1140,7 +1140,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
     {
       Halfedge * first = u->getHalfedge();
       if (!first)
-        return NULL;
+        return nullptr;
 
       // Compute the new normal, which defines the plane of projection
       Vector3 new_normal = u->estimateUpdatedNormal(normal);
@@ -1320,7 +1320,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
     /** Pack vertex colors densely in an array. */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = NULL) const
+    void packVertexColors(typename std::enable_if< HasColor<VertexT>::value >::type * dummy = nullptr) const
     {
       if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
 
@@ -1334,7 +1334,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template <typename VertexT>
-    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = NULL) const
+    void packVertexColors(typename std::enable_if< !HasColor<VertexT>::value >::type * dummy = nullptr) const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
       {
@@ -1345,7 +1345,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
     /** Pack vertex texture coordinates densely in an array. */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = NULL) const
+    void packVertexTexCoords(typename std::enable_if< HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
     {
       if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
 
@@ -1359,7 +1359,7 @@ class /* THEA_API */ DCELMesh : public virtual NamedObject, public AbstractMesh
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template <typename VertexT>
-    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = NULL) const
+    void packVertexTexCoords(typename std::enable_if< !HasTexCoord<VertexT>::value >::type * dummy = nullptr) const
     {
       if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
       {
@@ -1495,20 +1495,20 @@ DCELMesh<V, E, F>::uploadToGraphicsSystem(RenderSystem & render_system)
   {
     if (var_area) var_area->reset();
 
-    vertex_positions_var  =  NULL;
-    vertex_normals_var    =  NULL;
-    vertex_colors_var     =  NULL;
-    vertex_texcoords_var  =  NULL;
-    tris_var              =  NULL;
-    quads_var             =  NULL;
-    edges_var             =  NULL;
+    vertex_positions_var  =  nullptr;
+    vertex_normals_var    =  nullptr;
+    vertex_colors_var     =  nullptr;
+    vertex_texcoords_var  =  nullptr;
+    tris_var              =  nullptr;
+    quads_var             =  nullptr;
+    edges_var             =  nullptr;
 
     if (vertices.empty() || (faces.empty() && halfedges.empty()))
     {
       if (var_area)
       {
         render_system.destroyVARArea(var_area);
-        var_area = NULL;
+        var_area = nullptr;
       }
 
       setAllGPUBuffersAreValid();
@@ -1661,17 +1661,17 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, AbstractRenderOpti
     if (options.sendNormals() && vertex_normals_var)
       render_system.setNormalArray(vertex_normals_var);
     else
-      render_system.setNormalArray(NULL);
+      render_system.setNormalArray(nullptr);
 
     if (options.sendColors() && vertex_colors_var)
       render_system.setColorArray(vertex_colors_var);
     else
-      render_system.setColorArray(NULL);
+      render_system.setColorArray(nullptr);
 
     if (options.sendTexCoords() && vertex_texcoords_var)
       render_system.setTexCoordArray(0, vertex_texcoords_var);
     else
-      render_system.setTexCoordArray(0, NULL);
+      render_system.setTexCoordArray(0, nullptr);
 
     if (options.drawFaces())
     {
@@ -1722,10 +1722,10 @@ DCELMesh<V, E, F>::drawBuffered(RenderSystem & render_system, AbstractRenderOpti
       render_system.pushShader();
       render_system.pushColorFlags();
 
-        render_system.setShader(NULL);
-        render_system.setColorArray(NULL);
-        render_system.setTexCoordArray(0, NULL);
-        render_system.setNormalArray(NULL);
+        render_system.setShader(nullptr);
+        render_system.setColorArray(nullptr);
+        render_system.setTexCoordArray(0, nullptr);
+        render_system.setNormalArray(nullptr);
         render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
 
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
@@ -1790,7 +1790,7 @@ DCELMesh<V, E, F>::drawImmediate(RenderSystem & render_system, AbstractRenderOpt
     render_system.pushShader();
     render_system.pushColorFlags();
 
-      render_system.setShader(NULL);
+      render_system.setShader(nullptr);
       render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
 
       render_system.beginPrimitive(RenderSystem::Primitive::LINES);

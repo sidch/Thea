@@ -121,7 +121,7 @@ class RefIterator< T *, typename std::enable_if< ! std::is_pointer< typename std
 : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
 {
   public:
-    RefIterator(T * ii_ = NULL) : ii(ii_) {}
+    RefIterator(T * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
@@ -138,7 +138,7 @@ template <typename T>
 class RefIterator<T **> : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
 {
   public:
-    explicit RefIterator(T ** ii_ = NULL) : ii(ii_) {}
+    explicit RefIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
@@ -157,7 +157,7 @@ class RefIterator<T const * const *>
 : public std::iterator<std::random_access_iterator_tag, T const, std::ptrdiff_t, T const *, T const &>
 {
   public:
-    explicit RefIterator(T const * const * ii_ = NULL) : ii(ii_) {}
+    explicit RefIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
 
@@ -221,7 +221,7 @@ class PtrIterator<T *>
 : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
 {
   public:
-    PtrIterator(T * ii_ = NULL) : ii(ii_) {}
+    PtrIterator(T * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
 
@@ -238,7 +238,7 @@ class PtrIterator<T **>
 : public std::iterator<std::random_access_iterator_tag, T *, std::ptrdiff_t, T **, T * &>
 {
   public:
-    PtrIterator(T ** ii_ = NULL) : ii(ii_) {}
+    PtrIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
 
@@ -256,7 +256,7 @@ class PtrIterator<T const * const *>
 : public std::iterator<std::random_access_iterator_tag, T const *, std::ptrdiff_t, T const * const *, T const * const &>
 {
   public:
-    PtrIterator(T const * const * ii_ = NULL) : ii(ii_) {}
+    PtrIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
 

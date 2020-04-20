@@ -119,7 +119,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      *
      * @return Eigenvalues of samples in the neighborhood, sorted in decreasing order.
      */
-    Vector3 compute(Vector3 const & position, Vector3 * eigenvectors = NULL, Real nbd_radius = -1) const
+    Vector3 compute(Vector3 const & position, Vector3 * eigenvectors = nullptr, Real nbd_radius = -1) const
     {
       if (nbd_radius <= 0)
         nbd_radius = 0.1f;

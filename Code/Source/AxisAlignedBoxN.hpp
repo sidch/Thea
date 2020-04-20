@@ -391,7 +391,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     T distance(LineN<N, T> const & line) const { return std::sqrt(squaredDistance(line)); }
 
     /** Get the squared distance between this box and an infinite line, and optionally return the closest pair of points. */
-    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = NULL, VectorT * line_pt = NULL) const
+    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = nullptr, VectorT * line_pt = nullptr) const
     {
       throw FatalError(format("AxisAlignedBoxN: Distance between line and box not implemented in %ld dimension(s)", N));
     }
@@ -400,7 +400,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     T distance(LineSegmentN<N, T> const & seg) const { return std::sqrt(squaredDistance(seg)); }
 
     /** Get the squared distance between this box and a line segment, and optionally return the closest pair of points. */
-    T squaredDistance(LineSegmentN<N, T> const & seg, VectorT * this_pt = NULL, VectorT * seg_pt = NULL) const
+    T squaredDistance(LineSegmentN<N, T> const & seg, VectorT * this_pt = nullptr, VectorT * seg_pt = nullptr) const
     {
       throw FatalError(format("AxisAlignedBoxN: Distance between line segment and box not implemented in %ld dimension(s)", N));
     }
@@ -409,7 +409,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     T distance(RayN<N, T> const & ray) const { return std::sqrt(squaredDistance(ray)); }
 
     /** Get the squared distance between this box and a ray, and optionally return the closest pair of points. */
-    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = NULL, VectorT * ray_pt = NULL) const
+    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = nullptr, VectorT * ray_pt = nullptr) const
     {
       throw FatalError(format("AxisAlignedBoxN: Distance between ray and box not implemented in %ld dimension(s)", N));
     }

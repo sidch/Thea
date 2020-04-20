@@ -195,7 +195,7 @@ class THEA_GL_DLL_LOCAL GLRenderSystem : public RenderSystem
       GLVAR index_var;  ///< Index array.
 
       /** Constructor. */
-      BufferState(GLVARArea * vertex_area_ = NULL, GLVARArea * index_area_ = NULL, GLVAR index_var_ = GLVAR())
+      BufferState(GLVARArea * vertex_area_ = nullptr, GLVARArea * index_area_ = nullptr, GLVAR index_var_ = GLVAR())
       : vertex_area(vertex_area_), index_area(index_area_), index_var(index_var_)
       {}
 

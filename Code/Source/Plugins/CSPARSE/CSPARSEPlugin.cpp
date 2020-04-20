@@ -44,7 +44,7 @@
 
 namespace Thea {
 
-static Algorithms::CSPARSEPlugin * plugin = NULL;
+static Algorithms::CSPARSEPlugin * plugin = nullptr;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_CSPARSE_API Plugin *
@@ -67,7 +67,7 @@ static char const * CSPARSE_PLUGIN_NAME        =  "CSPARSE LinearSolver";
 static char const * CSPARSE_LINEARSOLVER_NAME  =  "CSPARSE";
 
 CSPARSEPlugin::CSPARSEPlugin(FactoryRegistry * registry_)
-: registry(registry_), factory(NULL), started(false)
+: registry(registry_), factory(nullptr), started(false)
 {
   alwaysAssertM(registry, std::string(CSPARSE_PLUGIN_NAME) + ": Factory registry must be non-null");
 }
@@ -120,7 +120,7 @@ CSPARSEPlugin::uninstall()
   if (factory)
   {
     delete factory;
-    factory = NULL;
+    factory = nullptr;
   }
 }
 

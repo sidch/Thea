@@ -85,8 +85,8 @@ class THEA_API NumericalOptimizer : public virtual AbstractNamedObject
      * @return True if a local minimum was successfully found, else false. (The same value is returned by successive calls to
      *   hasSolution().)
      */
-    virtual int8 minimize(ScalarFunction const & objective, float64 const * hint = NULL,
-                          AbstractOptions const * options = NULL) = 0;
+    virtual int8 minimize(ScalarFunction const & objective, float64 const * hint = nullptr,
+                          AbstractOptions const * options = nullptr) = 0;
 
     /** Was a local minimum found by the last call to minimize()? */
     virtual int8 hasSolution() const = 0;

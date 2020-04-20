@@ -69,11 +69,11 @@ class THEA_API Pyramid1D : public Serializable
     THEA_DECL_SMART_POINTERS(Pyramid1D)
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
-    template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, NULL, false); }
+    template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
     template <typename T> Pyramid1D(Array<T> const & base_data)
-    { construct(&base_data[0], (int)base_data.size(), NULL, false); }
+    { construct(&base_data[0], (int)base_data.size(), nullptr, false); }
 
     /**
      * Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling with gaussian smoothing. The
@@ -167,17 +167,17 @@ class THEA_API Pyramid2D : public Serializable
      * be in row-major order, i.e. y is the major index and x is the minor index.
      */
     template <typename T> Pyramid2D(T const * base_data, int nx_, int ny_)
-    { construct(base_data, nx_, ny_, NULL, false); }
+    { construct(base_data, nx_, ny_, nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
     template <typename T> Pyramid2D(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data)
-    { construct(base_data.data(), base_data.cols(), base_data.rows(), NULL, false); }
+    { construct(base_data.data(), base_data.cols(), base_data.rows(), nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
     template <typename T, MatrixLayout::Value Layout> Pyramid2D(MatrixX<T, Layout> const & base_data)
     {
       MatrixX<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
-      construct(base_data_copy.data(), base_data.cols(), base_data.rows(), NULL, false);
+      construct(base_data_copy.data(), base_data.cols(), base_data.rows(), nullptr, false);
     }
 
     /**
@@ -306,7 +306,7 @@ class THEA_API Pyramid3D : public Serializable
      * be in z-major order, i.e. z is the major index, y is the submajor index and x is the minor index.
      */
     template <typename T> Pyramid3D(T const * base_data, int nx_, int ny_, int nz_)
-    { construct(base_data, nx_, ny_, nz_, NULL, false); }
+    { construct(base_data, nx_, ny_, nz_, nullptr, false); }
 
     /**
      * Construct a pyramid from the base (highest-resolution) 3D array by recursive downsampling with gaussian smoothing. The

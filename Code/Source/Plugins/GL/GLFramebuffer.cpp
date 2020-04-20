@@ -84,7 +84,7 @@ GLFramebuffer::GLFramebuffer(GLRenderSystem * render_system_, char const * name_
   THEA_CHECK_GL_OK
 
   for (int32 i = 0; i < AttachmentPoint::MAX_ATTACHMENTS; ++i)
-    attachment_table[i] = NULL;
+    attachment_table[i] = nullptr;
 }
 
 GLFramebuffer::~GLFramebuffer()
@@ -226,7 +226,7 @@ GLFramebuffer::detach(AttachmentPoint ap)
       glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, gl_ap, GL_TEXTURE_2D, 0, 0);
       THEA_CHECK_GL_OK
 
-      attachment_table[ap] = NULL;
+      attachment_table[ap] = nullptr;
       num_attachments--;
 
       if (GLFramebuffer__isDrawBuffer(ap))
@@ -275,7 +275,7 @@ GLFramebuffer::detachAll()
         glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GLFramebuffer__apToGLenum((AttachmentPoint)ap), GL_TEXTURE_2D, 0, 0);
         THEA_CHECK_GL_OK
 
-        attachment_table[ap] = NULL;
+        attachment_table[ap] = nullptr;
         num_attachments--;
       }
     }

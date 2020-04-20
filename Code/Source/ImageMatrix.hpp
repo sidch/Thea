@@ -119,10 +119,10 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     // Type-casting functions
     AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
     AbstractAddressableMatrix<Value> * asAddressable() { return this; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return NULL; }
-    AbstractSparseMatrix<Value> * asSparse() { return NULL; }
-    AbstractDenseMatrix<Value> const * asDense() const { return NULL; }
-    AbstractDenseMatrix<Value> * asDense() { return NULL; }
+    AbstractSparseMatrix<Value> const * asSparse() const { return nullptr; }
+    AbstractSparseMatrix<Value> * asSparse() { return nullptr; }
+    AbstractDenseMatrix<Value> const * asDense() const { return nullptr; }
+    AbstractDenseMatrix<Value> * asDense() { return nullptr; }
 
   private:
     Image * image;  ///< The wrapped image

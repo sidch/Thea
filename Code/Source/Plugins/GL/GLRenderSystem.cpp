@@ -89,7 +89,7 @@ RenderSystem__depthTestToGLenum(RenderSystem::DepthTest depth_test)
 }
 
 GLRenderSystem::GLRenderSystem(char const * name_)
-: name(name_), current_framebuffer(NULL), current_shader(NULL)
+: name(name_), current_framebuffer(nullptr), current_shader(nullptr)
 {
   GLCaps::init();
 
@@ -297,7 +297,7 @@ GLRenderSystem::setFramebuffer(Framebuffer * framebuffer)
     if (current_framebuffer)
     {
       glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
-      current_framebuffer = NULL;
+      current_framebuffer = nullptr;
       THEA_CHECK_GL_OK
     }
   }
@@ -357,7 +357,7 @@ GLRenderSystem::setShader(Shader * shader)
     if (current_shader)
     {
       glUseProgramObjectARB(0);
-      current_shader = NULL;
+      current_shader = nullptr;
       THEA_CHECK_GL_OK
     }
   }
@@ -1122,7 +1122,7 @@ GLRenderSystem::finishAllOperations()
   glFlush();
 }
 
-RenderSystem * GLRenderSystemFactory::singleton          =  NULL;
+RenderSystem * GLRenderSystemFactory::singleton          =  nullptr;
 bool           GLRenderSystemFactory::singleton_created  =  false;
 
 GLRenderSystemFactory::~GLRenderSystemFactory()
@@ -1136,14 +1136,14 @@ GLRenderSystemFactory::createRenderSystem(char const * name)
   if (singleton)
   {
     THEA_ERROR << "GLRenderSystemFactory: Only one OpenGL rendersystem can be created per process";
-    return NULL;
+    return nullptr;
   }
 
   try
   {
     singleton = new GLRenderSystem(name);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return NULL;, ERROR, "%s", "Could not create new OpenGL rendersystem")
+  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s", "Could not create new OpenGL rendersystem")
 
   singleton_created = true;
   return singleton;
@@ -1162,7 +1162,7 @@ void
 GLRenderSystemFactory::destroyAllRenderSystems()
 {
   delete singleton;
-  singleton = NULL;
+  singleton = nullptr;
   /* singleton_created = false; */  // Disabled until we figure out how to completely clean up the previous rendersystem.
 }
 

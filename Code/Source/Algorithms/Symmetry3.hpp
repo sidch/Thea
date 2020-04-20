@@ -67,14 +67,14 @@ class /* THEA_API */ Symmetry3
      * @param begin The first object.
      * @param end One position beyond the last object.
      * @param plane Used to store the resulting symmetry plane.
-     * @param precomputed_centroid The precomputed centroid of the objects. If NULL, the centroid will be computed from the
+     * @param precomputed_centroid The precomputed centroid of the objects. If nullptr, the centroid will be computed from the
      *   input data.
      *
      * @return The error, in the range 0 (best) to 1 (worst), of the symmetry relation.
      */
     template <typename InputIterator>
     static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
-                            Vector3 const * precomputed_centroid = NULL);
+                            Vector3 const * precomputed_centroid = nullptr);
 
 }; // class Symmetry3
 
@@ -84,8 +84,8 @@ class /* THEA_API */ Symmetry3<T, typename std::enable_if< IsNonReferencedPointN
 {
   public:
     template <typename InputIterator>
-    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane, Vector3 const * precomputed_centroid = NULL,
-                            intx num_rounds = -1)
+    static double findPlane(InputIterator begin, InputIterator end, Plane3 & plane,
+                            Vector3 const * precomputed_centroid = nullptr, intx num_rounds = -1)
     {
       if (begin == end)  // no points, early exit
         return false;

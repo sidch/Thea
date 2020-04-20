@@ -179,14 +179,14 @@ ShapeRenderer::exec(int argc, char ** argv)
 }
 
 AtomicInt32 ShapeRendererImpl::has_render_system(0);
-RenderSystemFactory * ShapeRendererImpl::render_system_factory = NULL;
-RenderSystem * ShapeRendererImpl::render_system = NULL;
-Shader * ShapeRendererImpl::point_shader = NULL;
-Shader * ShapeRendererImpl::mesh_shader = NULL;
-Shader * ShapeRendererImpl::face_id_shader = NULL;
-Texture * ShapeRendererImpl::matcap_tex = NULL;
-Texture * ShapeRendererImpl::tex2d = NULL;
-Texture * ShapeRendererImpl::tex3d = NULL;
+RenderSystemFactory * ShapeRendererImpl::render_system_factory = nullptr;
+RenderSystem * ShapeRendererImpl::render_system = nullptr;
+Shader * ShapeRendererImpl::point_shader = nullptr;
+Shader * ShapeRendererImpl::mesh_shader = nullptr;
+Shader * ShapeRendererImpl::face_id_shader = nullptr;
+Texture * ShapeRendererImpl::matcap_tex = nullptr;
+Texture * ShapeRendererImpl::tex2d = nullptr;
+Texture * ShapeRendererImpl::tex3d = nullptr;
 
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
@@ -344,9 +344,9 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   // Set up framebuffer for offscreen drawing
   int buffer_width   =  antialiasing_level * out_width;
   int buffer_height  =  antialiasing_level * out_height;
-  Texture * color_tex = NULL;
-  Texture * depth_tex = NULL;
-  Framebuffer * fb = NULL;
+  Texture * color_tex = nullptr;
+  Texture * depth_tex = nullptr;
+  Framebuffer * fb = nullptr;
   try
   {
     Texture::Options tex_opts = Texture::Options::defaults();
@@ -380,7 +380,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
 
   // Load matcap material, if any
-  matcap_tex = NULL;
+  matcap_tex = nullptr;
   if (!matcap_path.empty())
   {
     try
@@ -392,7 +392,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
 
   // Load 2D texture, if any
-  tex2d = NULL;
+  tex2d = nullptr;
   if (!tex2d_path.empty())
   {
     try
@@ -404,7 +404,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   }
 
   // Load 3D texture, if any
-  tex3d = NULL;
+  tex3d = nullptr;
   if (!tex3d_path.empty())
   {
     try
@@ -1422,7 +1422,7 @@ struct FaceColorizer
   Array<int> const * labels;
 
   FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const * tri_ids_, FaceIndexMap const * quad_ids_,
-                Array<int> const * labels_ = NULL)
+                Array<int> const * labels_ = nullptr)
   : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_)
   {}
 
@@ -1591,7 +1591,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
     }
 
     // Build mapping from face indices to their parent meshes
-    Array<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), NULL);
+    Array<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), nullptr);
     for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
       face_meshes[(size_t)fi->second] = fi->first.first;
 
@@ -1781,8 +1781,8 @@ struct VertexColorizer
           intx nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
-                                    (feat_vals1 ? &feat_vals1[nn_index] : NULL),
-                                    (feat_vals2 ? &feat_vals2[nn_index] : NULL));
+                                    (feat_vals1 ? &feat_vals1[nn_index] : nullptr),
+                                    (feat_vals2 ? &feat_vals2[nn_index] : nullptr));
         }
 
         mesh.setColor((intx)i, sum_weights > 0 ? c / sum_weights : c);
@@ -1925,8 +1925,8 @@ ShapeRendererImpl::loadFeatures(Model & model)
     for (size_t i = 0; i < model.points.size(); ++i)
     {
       model.point_colors[i] = featToColor(feat_vals[0][i],
-                                          (feat_vals.size() > 1 ? &feat_vals[1][i] : NULL),
-                                          (feat_vals.size() > 2 ? &feat_vals[2][i] : NULL));
+                                          (feat_vals.size() > 1 ? &feat_vals[1][i] : nullptr),
+                                          (feat_vals.size() > 2 ? &feat_vals[2][i] : nullptr));
     }
   }
   else
@@ -1934,8 +1934,8 @@ ShapeRendererImpl::loadFeatures(Model & model)
     PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
     VertexColorizer visitor(&fkdtree,
                             &feat_vals[0][0],
-                            feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
-                            feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
+                            feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
+                            feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
     model.mesh_group.forEachMeshUntil(visitor);
   }
 
@@ -2036,7 +2036,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
     if (color_by_label)
     {
-      if (!loadLabels(model, NULL, NULL))
+      if (!loadLabels(model, nullptr, nullptr))
         return false;
     }
     else if (color_by_features)
@@ -2072,7 +2072,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
       double out_scale = min(out_width, out_height);
       intx max_samples = (intx)ceil(10 * out_scale);
-      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points, NULL, (color_by_id ? &sampled_tris : NULL));
+      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points, nullptr, (color_by_id ? &sampled_tris : nullptr));
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
 
@@ -2312,8 +2312,8 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true, Texture * matcap_tex = NULL,
-               Texture * tex2d = NULL, Texture * tex3d = NULL, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true, Texture * matcap_tex = nullptr,
+               Texture * tex2d = nullptr, Texture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"

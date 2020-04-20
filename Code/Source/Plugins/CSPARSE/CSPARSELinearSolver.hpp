@@ -86,7 +86,7 @@ class THEA_CSPARSE_DLL_LOCAL CSPARSELinearSolver : public LinearSolver, public v
      *   - <i>Type:</i> <code>float64</code>
      *   - <i>Default</i>: 1e-20
      */
-    int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = NULL);
+    int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = nullptr);
 
     int64 dims() const { return (int64)solution.size(); }
     int8 hasSolution() const { return has_solution; }

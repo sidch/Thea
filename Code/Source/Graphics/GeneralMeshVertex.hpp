@@ -131,7 +131,7 @@ class /* THEA_API */ GeneralMeshVertex
     /** Get the edge from this vertex to another, if it exists, else return null. */
     Edge * getEdgeTo(GeneralMeshVertex const * v)
     {
-      if (v == this) return NULL;
+      if (v == this) return nullptr;
 
       for (EdgeConstIterator ei = edgesBegin(); ei != edgesEnd(); ++ei)
       {
@@ -139,11 +139,11 @@ class /* THEA_API */ GeneralMeshVertex
         if (e->hasEndpoint(v)) return e;
       }
 
-      return NULL;
+      return nullptr;
     }
 
     /** Check if the vertex is adjacent to a given edge. */
-    bool hasEdgeTo(GeneralMeshVertex const * v) const { return getEdgeTo(v) != NULL; }
+    bool hasEdgeTo(GeneralMeshVertex const * v) const { return getEdgeTo(v) != nullptr; }
 
     /** Check if the edge is adjacent to a given face. */
     bool hasIncidentEdge(Edge const * edge) const

@@ -69,18 +69,18 @@ static int const POINTS_TAB_INDEX    =     1;
 static Real const MIN_SPLIT_SIZE     =   300;
 
 MainWindowUI::MainWindowUI()
-: model_display(NULL),
-  toolbox(NULL),
-  points_table(NULL),
-  point_label(NULL),
-  point_snap_to_vertex(NULL),
-  segments_table(NULL),
-  segment_label(NULL)
+: model_display(nullptr),
+  toolbox(nullptr),
+  points_table(nullptr),
+  point_label(nullptr),
+  point_snap_to_vertex(nullptr),
+  segments_table(nullptr),
+  segment_label(nullptr)
 {}
 
 MainWindow::MainWindow(wxWindow * parent)
 : BaseType(parent, wxID_ANY, "Browse3D", wxDefaultPosition, wxSize(800, 600)),
-  model(NULL)
+  model(nullptr)
 {
   init();
 }
@@ -367,8 +367,8 @@ MainWindow::~MainWindow()
   model->Unbind(EVT_MODEL_NEEDS_SYNC_SAMPLES, &MainWindow::syncSamples, this);
   model->Unbind(EVT_MODEL_NEEDS_SYNC_SEGMENTS, &MainWindow::syncSegments, this);
 
-  ui.model_display->setModel(NULL);  // this is necessary else we get a segfault when the base class destructor is called after
-                                     // this, and can't find the model to deregister callbacks when destroying the display.
+  ui.model_display->setModel(nullptr);  // else we get a segfault when the base class destructor is called after this, and can't
+                                        // find the model to deregister callbacks when destroying the display.
   clearOverlays();
   delete model;
 }
@@ -431,7 +431,7 @@ getFeaturePatterns(Array<std::string> & patterns)
 }
 
 intx
-fileIndex(Array<std::string> const & files, std::string const & file, Array<std::string> const * patterns = NULL)
+fileIndex(Array<std::string> const & files, std::string const & file, Array<std::string> const * patterns = nullptr)
 {
   std::string fname = FilePath::objectName(file);
   for (size_t i = 0; i < files.size(); ++i)
@@ -443,7 +443,7 @@ fileIndex(Array<std::string> const & files, std::string const & file, Array<std:
 
 intx
 fileIndex(std::string const & dir, std::string const & file, Array<std::string> & files,
-          Array<std::string> const * patterns = NULL)
+          Array<std::string> const * patterns = nullptr)
 {
   files.clear();
 

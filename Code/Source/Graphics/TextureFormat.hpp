@@ -513,7 +513,7 @@ class THEA_API TextureFormat
      */
     static TextureFormat const * AUTO()
     {
-      return NULL;
+      return nullptr;
     }
 
     /**
@@ -527,7 +527,7 @@ class THEA_API TextureFormat
      the screen's format.*/
     static TextureFormat const * stencil(int bits = 8);
 
-    /** Returns the matching TextureFormat* identified by the Code.  May return NULL
+    /** Returns the matching TextureFormat* identified by the Code.  May return nullptr
       if this format's code is reserved but not yet implemented by Thea. */
     static TextureFormat const * fromCode(TextureFormat::Code code);
 

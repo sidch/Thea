@@ -71,7 +71,7 @@ class /* THEA_API */ LinearLeastSquares2
      * @return The sum of squared fitting errors.
      */
     template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL);
+    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = nullptr);
 
 }; // class LinearLeastSquares2
 
@@ -81,7 +81,7 @@ class /* THEA_API */ LinearLeastSquares2<T, typename std::enable_if< IsNonRefere
 {
   public:
     template <typename InputIterator>
-    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = NULL)
+    static double fitLine(InputIterator begin, InputIterator end, Line2 & line, Vector2 * centroid = nullptr)
     {
       Vector2d center = CentroidN<T, 2>::compute(begin, end);
       Matrix2d m = Matrix2d::Zero();

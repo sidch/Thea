@@ -208,7 +208,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
 
     T distance(LineN<3, T> const & line) const { return std::sqrt(squaredDistance(line)); }
 
-    T squaredDistance(LineN<3, T> const & line, VectorT * this_pt = NULL, VectorT * line_pt = NULL) const
+    T squaredDistance(LineN<3, T> const & line, VectorT * this_pt = nullptr, VectorT * line_pt = nullptr) const
     {
       // Translate the line and box so that the box has center at the origin.
       VectorT boxCenter = this->getCenter(), boxExtent = 0.5f * this->getExtent();
@@ -226,7 +226,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
 
     T distance(LineSegmentN<3, T> const & seg) const { return std::sqrt(squaredDistance(seg)); }
 
-    T squaredDistance(LineSegmentN<3, T> const & seg, VectorT * this_pt = NULL, VectorT * seg_pt = NULL) const
+    T squaredDistance(LineSegmentN<3, T> const & seg, VectorT * this_pt = nullptr, VectorT * seg_pt = nullptr) const
     {
       // Translate the line and box so that the box has center at the origin.
       VectorT boxCenter = this->getCenter(), boxExtent = 0.5f * this->getExtent();
@@ -272,7 +272,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
 
     T distance(RayN<3, T> const & ray) const { return std::sqrt(squaredDistance(ray)); }
 
-    T squaredDistance(RayN<3, T> const & ray, VectorT * this_pt = NULL, VectorT * ray_pt = NULL) const
+    T squaredDistance(RayN<3, T> const & ray, VectorT * this_pt = nullptr, VectorT * ray_pt = nullptr) const
     {
       // Translate the line and box so that the box has center at the origin.
       VectorT boxCenter = this->getCenter(), boxExtent = 0.5f * this->getExtent();

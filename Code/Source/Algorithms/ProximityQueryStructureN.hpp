@@ -184,8 +184,8 @@ class /* THEA_API */ ProximityQueryStructureN
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
     template <typename MetricT, typename QueryT>
-    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = NULL, VectorT * closest_point = NULL)
-         const;
+    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = nullptr,
+                        VectorT * closest_point = nullptr) const;
 
     /**
      * Get the closest pair of elements between this structure and another structure, whose separation is less than a specified

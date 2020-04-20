@@ -60,7 +60,7 @@ PluginManager::~PluginManager()
 Plugin *
 PluginManager::load(std::string const & path)
 {
-  if (dynlibs.find(path) != dynlibs.end()) return NULL;
+  if (dynlibs.find(path) != dynlibs.end()) return nullptr;
 
   DynLib * dynlib = Application::getDynLibManager().load(path);
 
@@ -72,7 +72,7 @@ PluginManager::load(std::string const & path)
     Application::getDynLibManager().unload(dynlib);
 
     THEA_ERROR << "PluginManager: Could not initialize plugin '" << path << '\'';
-    return NULL;
+    return nullptr;
   }
 
   install(plugin, dynlib, path);
@@ -155,7 +155,7 @@ PluginManager::unloadAllDylibs()
 void
 PluginManager::install(Plugin * plugin)
 {
-  install(plugin, NULL, "");
+  install(plugin, nullptr, "");
 }
 
 void

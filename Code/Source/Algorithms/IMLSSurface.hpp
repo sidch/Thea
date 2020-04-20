@@ -286,12 +286,12 @@ class THEA_API IMLSSurface : private Noncopyable
     /** Add a general mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
     void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = NULL);
+                 typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value >::type * dummy = nullptr);
 
     /** Add a DCEL mesh to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>
     void addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris,
-                 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = NULL);
+                 typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type * dummy = nullptr);
 
     /** Add a mesh group to the polygon soup. \a tris is used to store the generated triangles. */
     template <typename MeshT>

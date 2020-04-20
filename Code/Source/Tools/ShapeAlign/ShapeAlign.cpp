@@ -580,7 +580,7 @@ main(int argc, char * argv[])
     return -1;
   }
 
-  ostream * out = NULL;
+  ostream * out = nullptr;
   ofstream fout;
   if (!out_path.empty())
   {

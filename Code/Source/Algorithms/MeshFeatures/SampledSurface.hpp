@@ -139,7 +139,7 @@ class SampledSurface
 
       Array<Vector3> positions;
       Array<Triangle const *> tris;
-      sampler.sampleEvenlyByArea(num_samples, positions, NULL, &tris);
+      sampler.sampleEvenlyByArea(num_samples, positions, nullptr, &tris);
 
       samples.clear();
       for (size_t i = 0; i < positions.size(); ++i)
@@ -165,11 +165,12 @@ class SampledSurface
      *   diameter will be used.
      */
     SampledSurface(intx num_samples, Vector3 const * positions, Vector3 const * normals, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
+    : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
+      scale(normalization_scale)
     {
       alwaysAssertM(num_samples >= 0,   "SampledSurface: Number of precomputed samples must be non-negative");
-      alwaysAssertM(positions != NULL,  "SampledSurface: Null array of sample positions");
-      alwaysAssertM(normals != NULL,    "SampledSurface: Null array of sample normals");
+      alwaysAssertM(positions != nullptr,  "SampledSurface: Null array of sample positions");
+      alwaysAssertM(normals != nullptr,    "SampledSurface: Null array of sample normals");
 
       samples.resize((size_t)num_samples);
       for (size_t i = 0; i < samples.size(); ++i)
@@ -189,7 +190,8 @@ class SampledSurface
      */
     template <typename MeshT>
     SampledSurface(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
+    : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
+      scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh);
       computeSamples(sampler, num_samples, samples);
@@ -212,7 +214,8 @@ class SampledSurface
      */
     template <typename MeshT>
     SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(true), sample_graph(NULL), scale(normalization_scale)
+    : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
+      scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh_group);
       computeSamples(sampler, num_samples, samples);
@@ -234,7 +237,7 @@ class SampledSurface
      *   diameter will be used.
      */
     SampledSurface(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(sample_kdtree_), owns_sample_graph(true), sample_graph(NULL),
+    : sample_kdtree(nullptr), precomp_kdtree(sample_kdtree_), owns_sample_graph(true), sample_graph(nullptr),
       scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "SampledSurface: Precomputed KD-tree cannot be null");
@@ -264,7 +267,7 @@ class SampledSurface
      *   diameter will be used.
      */
     SampledSurface(SampleGraph const * sample_graph_, Real normalization_scale = -1)
-    : sample_kdtree(NULL), precomp_kdtree(NULL), owns_sample_graph(false),
+    : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(false),
       sample_graph(const_cast<SampleGraph *>(sample_graph_)), scale(normalization_scale)
     {
       alwaysAssertM(sample_graph, "SampledSurface: Sample graph cannot be null");

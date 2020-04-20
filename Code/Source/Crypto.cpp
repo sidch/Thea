@@ -107,7 +107,7 @@ base_crc32(uint32 crc, void const * buf, size_t size)
 uint32
 Crypto::crc32(void const * byte, size_t num_bytes)
 {
-  return base_crc32(base_crc32(0, NULL, 0), byte, num_bytes);
+  return base_crc32(base_crc32(0, nullptr, 0), byte, num_bytes);
 }
 
 } // namespace Thea

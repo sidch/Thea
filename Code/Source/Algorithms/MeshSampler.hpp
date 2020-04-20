@@ -83,7 +83,7 @@ class MeshSampler
      * Initializes internal data structures that do not need to be recomputed for successive calls to functions that generate
      * samples on this mesh.
      */
-    MeshSampler(Mesh const & mesh) : num_external_tris(0), external_tris(NULL)
+    MeshSampler(Mesh const & mesh) : num_external_tris(0), external_tris(nullptr)
     {
       tris.add(const_cast<Mesh &>(mesh));
     }
@@ -93,7 +93,7 @@ class MeshSampler
      * does. Initializes internal data structures that do not need to be recomputed for successive calls to functions that
      * generate samples on this mesh.
      */
-    MeshSampler(Graphics::MeshGroup<Mesh> const & mesh_group) : num_external_tris(0), external_tris(NULL)
+    MeshSampler(Graphics::MeshGroup<Mesh> const & mesh_group) : num_external_tris(0), external_tris(nullptr)
     {
       tris.add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));
     }
@@ -126,8 +126,8 @@ class MeshSampler
      */
     intx sampleEvenlyByArea(intx desired_num_samples,
                             Array<Vector3> & positions,
-                            Array<Vector3> * face_normals = NULL,
-                            Array<Triangle const *> * triangles = NULL,
+                            Array<Vector3> * face_normals = nullptr,
+                            Array<Triangle const *> * triangles = nullptr,
                             CountMode count_mode = CountMode::EXACT,
                             bool verbose = false) const
     {
@@ -296,8 +296,8 @@ class MeshSampler
      */
     intx sampleEvenlyBySeparation(intx desired_num_samples,
                                   Array<Vector3> & positions,
-                                  Array<Vector3> * face_normals = NULL,
-                                  Array<Triangle const *> * triangles = NULL,
+                                  Array<Vector3> * face_normals = nullptr,
+                                  Array<Triangle const *> * triangles = nullptr,
                                   CountMode count_mode = CountMode::EXACT,
                                   Real oversampling_factor = -1,
                                   bool verbose = false) const
@@ -323,8 +323,8 @@ class MeshSampler
 
       intx num_oversampling = (intx)std::ceil(oversampling_factor * desired_num_samples);
       intx orig_num_samples = sampleEvenlyByArea(num_oversampling, orig_positions,
-                                                 face_normals ? &orig_face_normals : NULL,
-                                                 triangles ? &orig_triangles : NULL, CountMode::EXACT);
+                                                 face_normals ? &orig_face_normals : nullptr,
+                                                 triangles ? &orig_triangles : nullptr, CountMode::EXACT);
       if (orig_num_samples < num_oversampling)
       {
         THEA_ERROR << "MeshSampler: Could not compute oversampling";

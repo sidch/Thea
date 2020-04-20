@@ -68,7 +68,7 @@
 namespace Thea {
 
 Random::Random(void * x)
-: state(NULL), m_threadsafe(false)
+: state(nullptr), m_threadsafe(false)
 {
   (void)x;
 }
@@ -89,7 +89,7 @@ Random::Random(uint32 seed, bool threadsafe)
 Random::~Random()
 {
   delete [] state;
-  state = NULL;
+  state = nullptr;
 }
 
 uint32
@@ -370,10 +370,10 @@ Random::getRandomSeed()
 {
   // http://stackoverflow.com/questions/322938/recommended-way-to-initialize-srand
 #ifdef THEA_WINDOWS
-  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(NULL),
+  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(nullptr),
                                      (uintx)GetCurrentProcessId());
 #else
-  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(NULL), (uintx)getpid());
+  return (uint32)RandomInternal::mix((uintx)std::clock(), (uintx)std::time(nullptr), (uintx)getpid());
 #endif
 }
 

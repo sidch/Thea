@@ -64,8 +64,8 @@ class /* THEA_API */ RayIntersectionN
 
   public:
     /** Constructor. */
-    RayIntersectionN(T time_ = -1, VectorT const * normal_ = NULL)
-    : time(time_), has_normal(normal_ != NULL), normal(normal_ ? *normal_ : VectorT::Zero())
+    RayIntersectionN(T time_ = -1, VectorT const * normal_ = nullptr)
+    : time(time_), has_normal(normal_ != nullptr), normal(normal_ ? *normal_ : VectorT::Zero())
     {}
 
     /** Check if the intersection is valid. */

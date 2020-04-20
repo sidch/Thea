@@ -249,7 +249,7 @@ class THEA_API HoughForest : public Serializable
          * @param features_ [Optional] Features of the (training or estimated) point used to compute the vote. Null if unknown.
          */
         Vote(intx target_class_, intx num_params_, double const * params_, double weight_, intx index_ = -1,
-             intx num_features_ = -1, double const * features_ = NULL)
+             intx num_features_ = -1, double const * features_ = nullptr)
         : target_class(target_class_),
           num_params(num_params_),
           params(params_),

@@ -73,11 +73,11 @@ App::Options::Options()
 }
 
 App::App()
-: main_window(NULL),
+: main_window(nullptr),
   has_render_system(0),
-  gl_plugin(NULL),
-  render_system_factory(NULL),
-  render_system(NULL)
+  gl_plugin(nullptr),
+  render_system_factory(nullptr),
+  render_system(nullptr)
 {
 }
 

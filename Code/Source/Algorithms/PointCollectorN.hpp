@@ -95,7 +95,7 @@ class /* THEA_API */ PointCollectorN
     typedef CollectionT Collection;  ///< The collection type.
 
     /** Default constructor. Call setCollection() subsequently. */
-    PointCollectorN() : collection(NULL) {}
+    PointCollectorN() : collection(nullptr) {}
 
     /** Constructor. */
     PointCollectorN(CollectionT * collection_)

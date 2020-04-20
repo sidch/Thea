@@ -143,7 +143,7 @@ class /* THEA_API */ ShortestPaths
      *   distances and without predecessors.
      */
     void dijkstra(Graph & graph, VertexHandle src, UnorderedMap<VertexHandle, ShortestPathInfo> & result, double limit = -1,
-                  UnorderedMap<VertexHandle, double> const * src_region = NULL, bool include_unreachable = false)
+                  UnorderedMap<VertexHandle, double> const * src_region = nullptr, bool include_unreachable = false)
     {
       result.clear();
       MapCallback callback(result);
@@ -186,7 +186,7 @@ class /* THEA_API */ ShortestPaths
      */
     template <typename CallbackT>
     void dijkstraWithCallback(Graph & graph, VertexHandle src, CallbackT callback, double limit = -1,
-                              UnorderedMap<VertexHandle, double> const * src_region = NULL,
+                              UnorderedMap<VertexHandle, double> const * src_region = nullptr,
                               bool include_unreachable = false);
 
   private:

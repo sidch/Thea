@@ -113,7 +113,7 @@ class MainWindow : public wxFrame
     }; // enum EventID
 
     /** Constructor. */
-    explicit MainWindow(wxWindow * parent = NULL);
+    explicit MainWindow(wxWindow * parent = nullptr);
 
     /** Destructor. */
     ~MainWindow();
@@ -134,7 +134,7 @@ class MainWindow : public wxFrame
     intx numOverlays() const { return (intx)overlays.size(); }
 
     /** Get the set of overlay models. */
-    Model const * const * getOverlays() const { return overlays.empty() ? NULL : &overlays[0]; }
+    Model const * const * getOverlays() const { return overlays.empty() ? nullptr : &overlays[0]; }
 
     /** Check if point-picking is on. */
     bool pickPoints() const;

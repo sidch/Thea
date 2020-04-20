@@ -111,7 +111,7 @@ ARPACKEigenSolver::solveSparse(AbstractCompressedSparseMatrix<float64> const & m
                          getName(), (long)nnz, (long)pcol[pcol.size() - 1]));
 
     ARluNonSymMatrix<float64, float64> arm(m.rows(), nnz, const_cast<float64 *>(m.getValues()),
-                                         (irow.empty() ? NULL : &irow[0]), &pcol[0]);
+                                         (irow.empty() ? nullptr : &irow[0]), &pcol[0]);
 
     // Setup the problem
     std::shared_ptr< ARluNonSymStdEig<float64> > eig =

@@ -79,7 +79,7 @@ class Visibility
      * @param mesh The mesh representing the shape.
      */
     Visibility(Mesh const & mesh)
-    : kdtree(new KDTree), precomp_kdtree(NULL)
+    : kdtree(new KDTree), precomp_kdtree(nullptr)
     {
       kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -93,7 +93,7 @@ class Visibility
      * @param mesh_group The mesh group representing the shape.
      */
     Visibility(Graphics::MeshGroup<Mesh> const & mesh_group)
-    : kdtree(new KDTree), precomp_kdtree(NULL)
+    : kdtree(new KDTree), precomp_kdtree(nullptr)
     {
       kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -107,7 +107,7 @@ class Visibility
      * @param kdtree_ The precomputed kd-tree representing the shape.
      */
     Visibility(ExternalKDTree const * kdtree_)
-    : kdtree(NULL), precomp_kdtree(kdtree_)
+    : kdtree(nullptr), precomp_kdtree(kdtree_)
     {
       alwaysAssertM(precomp_kdtree, "Visibility: Precomputed KD-tree cannot be null");
 

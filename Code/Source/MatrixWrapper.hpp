@@ -145,8 +145,8 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
     // Type-casting functions
     AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
     AbstractAddressableMatrix<Value> * asAddressable() { return this; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return NULL; }
-    AbstractSparseMatrix<Value> * asSparse() { return NULL; }
+    AbstractSparseMatrix<Value> const * asSparse() const { return nullptr; }
+    AbstractSparseMatrix<Value> * asSparse() { return nullptr; }
     AbstractDenseMatrix<Value> const * asDense() const { return this; }
     AbstractDenseMatrix<Value> * asDense() { return this; }
 

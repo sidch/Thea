@@ -44,7 +44,7 @@
 
 namespace Thea {
 
-static Algorithms::ARPACKPlugin * plugin = NULL;
+static Algorithms::ARPACKPlugin * plugin = nullptr;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_ARPACK_API Plugin *
@@ -67,7 +67,7 @@ static char const * ARPACK_PLUGIN_NAME       =  "ARPACK EigenSolver";
 static char const * ARPACK_EIGENSOLVER_NAME  =  "ARPACK";
 
 ARPACKPlugin::ARPACKPlugin(FactoryRegistry * registry_)
-: registry(registry_), factory(NULL), started(false)
+: registry(registry_), factory(nullptr), started(false)
 {
   alwaysAssertM(registry, std::string(ARPACK_PLUGIN_NAME) + ": Factory registry must be non-null");
 }
@@ -120,7 +120,7 @@ ARPACKPlugin::uninstall()
   if (factory)
   {
     delete factory;
-    factory = NULL;
+    factory = nullptr;
   }
 }
 

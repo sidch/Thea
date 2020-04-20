@@ -117,7 +117,8 @@ Ray3
 Camera::computePickRay(Vector2 const & screen_pos) const
 {
   Vector2 p = 0.5f * (screen_pos + Vector2(1, 1));
-  Ray3 view_ray(Vector3::Zero(), Vector3(left + p.x() * (right - left), bottom + p.y() * (top - bottom), -near_dist).normalized());
+  Ray3 view_ray(Vector3::Zero(),
+                Vector3(left + p.x() * (right - left), bottom + p.y() * (top - bottom), -near_dist).normalized());
   return view_ray.toWorldSpace(frame);
 }
 

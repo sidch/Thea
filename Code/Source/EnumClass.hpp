@@ -104,7 +104,7 @@ namespace Thea {
 #define THEA_ENUM_CLASS_STRINGS_END(name)                                                                                     \
         };                                                                                                                    \
                                                                                                                               \
-        return (i >= (sizeof(STRS) / sizeof(std::pair<Value, std::string>))) ? NULL : &STRS[i];                               \
+        return (i >= (sizeof(STRS) / sizeof(std::pair<Value, std::string>))) ? nullptr : &STRS[i];                            \
       }                                                                                                                       \
                                                                                                                               \
     public:                                                                                                                   \

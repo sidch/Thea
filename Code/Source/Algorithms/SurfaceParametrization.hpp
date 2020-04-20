@@ -357,14 +357,14 @@ class THEA_API SurfaceParametrization
       if (f->numVertices() != 3)
       {
         THEA_ERROR << "SurfaceParametrization: Selected weight type requires triangular faces";
-        return NULL;
+        return nullptr;
       }
 
       for (auto fvi = f->verticesBegin(); fvi != f->verticesEnd(); ++fvi)
         if (*fvi != vi && *fvi != vj)
           return *fvi;
 
-      return NULL;
+      return nullptr;
     }
 
     /** Get the cotangent of the angle between (\a v0, \a v1) and (\a v0, \a v2). */

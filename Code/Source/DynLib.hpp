@@ -93,7 +93,7 @@ class THEA_API DynLib : public virtual NamedObject
      *
      * @param sym_name The name of the symbol to search for
      *
-     * @return A handle to the symbol on success, NULL on failure.
+     * @return A handle to the symbol on success, nullptr on failure.
      */
     void * getSymbol(std::string const & sym_name) const;
 

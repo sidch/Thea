@@ -121,7 +121,7 @@ class /* THEA_DLL_LOCAL */ LineNBase
      * Get the point on this line and the point on another line closest to each other, and return the squared distance between
      * them.
      */
-    T squaredDistance(LineT const & other, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
+    T squaredDistance(LineT const & other, VectorT * this_pt = nullptr, VectorT * other_pt = nullptr) const
     {
       // Adapted from Christer Ericson, "Real-Time Collision Detection", Morgan-Kaufman, 2005.
 

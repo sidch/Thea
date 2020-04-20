@@ -283,7 +283,7 @@ TextureFormat::fromString(std::string const & s)
     }
   }
 
-  return NULL;
+  return nullptr;
 }
 
 TextureFormat const *
@@ -365,7 +365,7 @@ TextureFormat::fromCode(Code code)
       return RGB8UI();
 
     case Code::ARGB8:
-      return NULL;
+      return nullptr;
 
     case Code::BGR8:
       return BGR8();
@@ -444,7 +444,7 @@ TextureFormat::fromCode(Code code)
       // TODO
     case Code::HSV32F:
       // TODO
-      return NULL;
+      return nullptr;
       break;
 
     case Code::RGB_DXT1:
@@ -544,7 +544,7 @@ TextureFormat::fromCode(Code code)
       break;
 
     default:
-      return NULL;
+      return nullptr;
   }
 }
 

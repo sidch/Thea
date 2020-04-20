@@ -119,7 +119,7 @@ class /** THEA_API */ FwdIterator
 {
   public:
     // Constructor.
-    FwdIterator(EdgeT * e_ = NULL, bool first_ = true) : initial(e_), e(e_), first(first_) {}
+    FwdIterator(EdgeT * e_ = nullptr, bool first_ = true) : initial(e_), e(e_), first(first_) {}
 
     // Construct from a compatible iterator, typically a non-const to const conversion. Compatibility is the responsibility of
     // the caller.
@@ -230,7 +230,8 @@ class /* THEA_API */ DCELHalfedge : public AttributedObject<HalfedgeAttribute>
     typedef DCELInternal::FwdIterator<DCELHalfedge const, Face const, FaceDeref, FaceIncrement> FaceConstIterator;
 
     /** Default constructor. */
-    DCELHalfedge(intx index_ = -1) : index(index_), twin_he(NULL), next_he(NULL), face(NULL), origin(NULL), bits(0) {}
+    DCELHalfedge(intx index_ = -1) : index(index_), twin_he(nullptr), next_he(nullptr), face(nullptr), origin(nullptr), bits(0)
+    {}
 
     /** Get the vertex from which this halfedge originates. */
     Vertex const * getOrigin() const

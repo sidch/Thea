@@ -11,7 +11,7 @@ class MyOpt : public NumericalOptimizer, public virtual NamedObject
   public:
     MyOpt() : NamedObject("MyOpt") {}
 
-    int8 minimize(ScalarFunction const & objective, float64 const * hint = NULL, AbstractOptions const * options = NULL)
+    int8 minimize(ScalarFunction const & objective, float64 const * hint = nullptr, AbstractOptions const * options = nullptr)
     {
       return true;
     }

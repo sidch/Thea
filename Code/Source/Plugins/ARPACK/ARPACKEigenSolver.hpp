@@ -89,7 +89,7 @@ class THEA_ARPACK_DLL_LOCAL ARPACKEigenSolver : public EigenSolver, public virtu
      *   - <i>Default</i>: 0.0
      */
     int64 solve(AbstractMatrix<float64> const & m, int8 compute_eigenvectors = true, int64 num_requested_eigenpairs = -1,
-                AbstractOptions const * options = NULL);
+                AbstractOptions const * options = nullptr);
 
     int64 dims() const { return ndims; }
     int64 numEigenpairs() const { return (int64)eigenvalues[0].size(); }

@@ -101,7 +101,7 @@ class AlignedAllocator
       if (posix_memalign((void **)(&p), N, n * sizeof(value_type)) == 0)
         return p;
       else
-        return NULL;
+        return nullptr;
 #endif
     }
 

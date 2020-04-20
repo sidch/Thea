@@ -96,7 +96,7 @@ Application::programPath()
 
 #ifdef THEA_WINDOWS
   {
-    GetModuleFileNameA(NULL, path, sizeof(path));
+    GetModuleFileNameA(nullptr, path, sizeof(path));
   }
 #elif defined(THEA_MAC)
   {
@@ -117,7 +117,7 @@ Application::programPath()
       return "";
 
     debugAssertM((int)sizeof(path) > ret, "Application: String too short to store current program path");
-    // Ensure proper NULL termination
+    // Ensure proper nullptr termination
     path[ret] = 0;
   }
 #endif

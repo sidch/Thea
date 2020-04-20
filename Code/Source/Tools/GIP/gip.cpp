@@ -403,8 +403,8 @@ unflattenFromFloatArray(float32 const * buffer, Image & image)
 
 namespace CL {
 
-cl_platform_id platform_id = NULL;
-cl_device_id device_id = NULL;
+cl_platform_id platform_id = nullptr;
+cl_device_id device_id = nullptr;
 cl_context context;
 cl_command_queue command_queue;
 
@@ -466,7 +466,7 @@ clErrorString(cl_int err)
 }
 
 void
-checkCL(cl_int err, char const * loc = NULL)
+checkCL(cl_int err, char const * loc = nullptr)
 {
   if (err != CL_SUCCESS)
   {
@@ -485,14 +485,14 @@ initCL()
   // From: http://www.thebigblob.com/getting-started-with-opencl-and-gpu-computing/
 
   // Get platform and device information
-  cl_int ret = clGetPlatformIDs(1, &CL::platform_id, NULL);
+  cl_int ret = clGetPlatformIDs(1, &CL::platform_id, nullptr);
   checkCL(ret, "initCL::getPlatformIDs");
 
-  ret = clGetDeviceIDs(CL::platform_id, config.device_type, 1, &CL::device_id, NULL);
+  ret = clGetDeviceIDs(CL::platform_id, config.device_type, 1, &CL::device_id, nullptr);
   checkCL(ret, "initCL::getDeviceIDs");
 
   // Create an OpenCL context
-  CL::context = clCreateContext(NULL, 1, &CL::device_id, NULL, NULL, &ret);
+  CL::context = clCreateContext(nullptr, 1, &CL::device_id, nullptr, nullptr, &ret);
   checkCL(ret, "initCL::createContext");
 
   // Create a command queue
@@ -538,7 +538,7 @@ copyImageFromCL(cl_mem buf, Image & image)
   size_t buf_size = (size_t)(aligned_width * aligned_height * 4 * sizeof(float32));
 
   Array<float32> host_buffer((size_t)buf_size);
-  cl_int ret = clEnqueueReadBuffer(CL::command_queue, buf, CL_TRUE, 0, buf_size, &host_buffer[0], 0, NULL, NULL);
+  cl_int ret = clEnqueueReadBuffer(CL::command_queue, buf, CL_TRUE, 0, buf_size, &host_buffer[0], 0, nullptr, nullptr);
   checkCL(ret, "copyImageFromCL::enqueueReadBuffer");
 
   // No need to flush, we issued a blocking call above
@@ -610,7 +610,7 @@ main(int argc, char * argv[])
     // Create a second OpenCL buffer for the output
     size_t buf_size = (size_t)(globals.image_aligned_width * globals.image_aligned_height * 4 * sizeof(float32));
     cl_int ret;
-    cl_mem outbuf = clCreateBuffer(CL::context, CL_MEM_READ_WRITE, buf_size, NULL, &ret);
+    cl_mem outbuf = clCreateBuffer(CL::context, CL_MEM_READ_WRITE, buf_size, nullptr, &ret);
     checkCL(ret, "main::createBuffer");
 
     // Apply operations
@@ -676,15 +676,15 @@ createKernel(char const * prog, char const * caller_name, cl_program & program, 
   checkCL(ret, (std::string(caller_name) + "::createProgramWithSource").c_str());
 
   // Build the program
-  ret = clBuildProgram(program, 1, &CL::device_id, NULL, NULL, NULL);
+  ret = clBuildProgram(program, 1, &CL::device_id, nullptr, nullptr, nullptr);
   if (ret != CL_SUCCESS)
   {
     if (ret == CL_BUILD_PROGRAM_FAILURE)
     {
       size_t log_size;
-      clGetProgramBuildInfo(program, CL::device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size);
+      clGetProgramBuildInfo(program, CL::device_id, CL_PROGRAM_BUILD_LOG, 0, nullptr, &log_size);
       char * log = new char[log_size];
-      clGetProgramBuildInfo(program, CL::device_id, CL_PROGRAM_BUILD_LOG, log_size, log, NULL);
+      clGetProgramBuildInfo(program, CL::device_id, CL_PROGRAM_BUILD_LOG, log_size, log, nullptr);
       THEA_ERROR << "OpenCL error in " << caller_name << "::buildProgram: Program build failure";
       std::cerr << "Build log:\n";
       std::cerr << log << std::endl;
@@ -716,7 +716,7 @@ runKernel(cl_kernel kernel, char const * caller_name)
 {
   // Execute the OpenCL kernel on the list
   size_t global_work_size[2] = { (size_t)globals.image_width, (size_t)globals.image_height };
-  cl_int ret = clEnqueueNDRangeKernel(CL::command_queue, kernel, 2, NULL, global_work_size, NULL, 0, NULL, NULL);
+  cl_int ret = clEnqueueNDRangeKernel(CL::command_queue, kernel, 2, nullptr, global_work_size, nullptr, 0, nullptr, nullptr);
   checkCL(ret, (std::string(caller_name) + "::enqueueNDRangeKernel").c_str());
 }
 

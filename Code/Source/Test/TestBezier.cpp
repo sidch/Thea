@@ -67,7 +67,7 @@ main(int argc, char * argv[])
     if (reparam_iters == 10)
       reparam_iters = 100;
 
-    double sqerr = b.fitToPoints(&d[0], &d[0] + dsize, NULL, &u[0], true, reparam_iters);
+    double sqerr = b.fitToPoints(&d[0], &d[0] + dsize, nullptr, &u[0], true, reparam_iters);
     THEA_CONSOLE << "sqerr" << reparam_iters << " = " << sqerr << ';';
 
     THEA_CONSOLE << "points" << reparam_iters << " = [";

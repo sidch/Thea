@@ -63,16 +63,16 @@ class /* THEA_API */ TransformedObject
      * Constructor. Both pointers are stored directly, so the original objects must persist as long as the TransformedObject is
      * being used. This is the preferred constructor for efficiency.
      */
-    explicit TransformedObject(Object const * obj_ = NULL, Transform const * trans_ = NULL) : obj(obj_), trans(trans_) {}
+    explicit TransformedObject(Object const * obj_ = nullptr, Transform const * trans_ = nullptr) : obj(obj_), trans(trans_) {}
 
     /** Check if this class wraps an existing object or not. */
-    bool hasObject() const { return obj != NULL; }
+    bool hasObject() const { return obj != nullptr; }
 
     /** Get the wrapped object. */
     Object const & getObject() const { return *obj; }
 
     /** Check if this class wraps an existing transformation or not. */
-    bool hasTransform() const { return trans != NULL; }
+    bool hasTransform() const { return trans != nullptr; }
 
     /** Get the wrapped transformation. */
     Transform const & getTransform() const { return *trans; }

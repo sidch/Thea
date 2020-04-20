@@ -58,7 +58,7 @@ namespace FurthestPointSamplingInternal {
 // Called during Dijkstra search.
 struct DijkstraCallback : public Noncopyable
 {
-  DijkstraCallback() : furthest_sample(NULL) {}
+  DijkstraCallback() : furthest_sample(nullptr) {}
 
   bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
   {
@@ -101,7 +101,7 @@ FurthestPointSampling::subsample(intx num_orig_points, Vector3 const * orig_poin
   int prev_percent = 0;
   for (intx i = 0; i < num_desired_points; ++i)
   {
-    SampleGraph::VertexHandle furthest_sample = NULL;
+    SampleGraph::VertexHandle furthest_sample = nullptr;
     if (src_region.empty())
     {
       // Just pick the first sample
@@ -110,7 +110,8 @@ FurthestPointSampling::subsample(intx num_orig_points, Vector3 const * orig_poin
     else
     {
       FurthestPointSamplingInternal::DijkstraCallback callback;
-      shortest_paths.dijkstraWithCallback(graph, NULL, std::ref(callback), -1, &src_region, /* include_unreachable = */ true);
+      shortest_paths.dijkstraWithCallback(graph, nullptr, std::ref(callback), -1, &src_region,
+                                          /* include_unreachable = */ true);
       if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
       {
         THEA_ERROR << "FurthestPointSampling: Could not return enough uniformly separated points";

@@ -180,7 +180,7 @@ struct FaceToMeshMapper
       if (face_index >= (intx)mapping.size())
       {
         mapping.reserve((size_t)(2 * (face_index + 1)));
-        mapping.resize((size_t)(face_index + 1), NULL);
+        mapping.resize((size_t)(face_index + 1), nullptr);
       }
 
       mapping[(size_t)face_index] = &mesh;
@@ -535,12 +535,12 @@ main(int argc, char * argv[])
 
         if (uniformly_separated)
         {
-          sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
+          sampler.sampleEvenlyBySeparation(num_samples, positions, &normals, (need_face_ids ? &tris : nullptr),
                                            MeshSampler<Mesh>::CountMode::EXACT, oversampling_factor, true);
         }
         else
         {
-          sampler.sampleEvenlyByArea(num_samples, positions, &normals, (need_face_ids ? &tris : NULL),
+          sampler.sampleEvenlyByArea(num_samples, positions, &normals, (need_face_ids ? &tris : nullptr),
                                      MeshSampler<Mesh>::CountMode::EXACT, true);
         }
 

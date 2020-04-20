@@ -84,14 +84,14 @@ Manifold::makeOrientedManifold(Array<Vector3> const & in_vertices, Array< Array<
   int   * in_t               =  const_cast<int *>(&in_triangles[0]);        // array of input triangles
   int     new_num_vertices   =  0;                                          // number of generated vertices
   int     new_num_triangles  =  0;                                          // number of generated triangles
-  float * new_vertices       =  NULL;                                       // array of generated vertices
-  int   * new_triangles      =  NULL;                                       // array of generated vertices
-  int   * vertex_lut         =  NULL;                                       // maps new vertex indices to old vertex indices
-  int   * triangle_lut       =  NULL;                                       // maps new triangle indices to old triangle indices
+  float * new_vertices       =  nullptr;                                    // array of generated vertices
+  int   * new_triangles      =  nullptr;                                    // array of generated vertices
+  int   * vertex_lut         =  nullptr;                                    // maps new vertex indices to old vertex indices
+  int   * triangle_lut       =  nullptr;                                    // maps new triangle indices to old triangle indices
   int     new_num_edges      =  0;                                          // number of generated edges
-  EdgeS * new_edges          =  NULL;                                       // set of generated edges
+  EdgeS * new_edges          =  nullptr;                                    // set of generated edges
 
-  Htable edge_table[1];                                                    // used to internally track edges
+  Htable edge_table[1];                                                     // used to internally track edges
   std::memset((void *)edge_table, 0, sizeof(Htable));
 
   int success = _dxfToOrientedManifold(num_vertices,

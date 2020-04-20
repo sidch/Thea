@@ -53,7 +53,7 @@ MG mg;
 GLfloat color[4] = { 0.7, 0.7, 0.7, 1.0 };
 Vector3 translate(0, 0, 0);
 GLfloat scale = 1;
-RenderSystem * render_system = NULL;
+RenderSystem * render_system = nullptr;
 GLfloat view_rotx = 20.0, view_roty = 30.0, view_rotz = 0.0;
 
 int

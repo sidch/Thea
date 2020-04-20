@@ -48,14 +48,14 @@ namespace Graphics {
 namespace GL {
 
 GLVAR::GLVAR()
-: area(NULL), capacity(0), pointer(NULL), generation(-1), gl_type(-1), num_components(0), elem_size(0), gl_target(-1),
+: area(nullptr), capacity(0), pointer(nullptr), generation(-1), gl_type(-1), num_components(0), elem_size(0), gl_target(-1),
   num_elems(0)
 {
 }
 
 GLVAR::GLVAR(GLVARArea * area_, int64 num_bytes)
-: area(area_), capacity(num_bytes), pointer(NULL), generation(-1), gl_type(-1), num_components(0), elem_size(0), gl_target(-1),
-  num_elems(0)
+: area(area_), capacity(num_bytes), pointer(nullptr), generation(-1), gl_type(-1), num_components(0), elem_size(0),
+  gl_target(-1), num_elems(0)
 {
   alwaysAssertM(area_, "GLVAR: Valid VAR area required");
   alwaysAssertM(num_bytes > 0, "GLVAR: Capacity must be greater than zero");
@@ -95,37 +95,37 @@ static_assert(sizeof(Real) == sizeof(float32) || sizeof(Real) == sizeof(float64)
               "GLVAR: Real number type must be either 32-bit float64 or 64-bit float64");
 GLenum GL_REAL_TYPE = (sizeof(Real) == sizeof(float32) ? GL_FLOAT : GL_DOUBLE);
 
-#define GLVAR_UPDATE_ARRAY(func_name, type_, gl_type_, num_components_, gl_target_) \
-  void \
-  GLVAR::func_name(int64 start_elem, int64 num_elems_to_update, type_ const * array) \
-  { \
-    if (num_elems_to_update <= 0) return; \
-    \
-    alwaysAssertM(isValid(), "GLVAR: Can't update invalid VAR"); \
-    \
-    if (num_elems > 0) \
-    { \
-      alwaysAssertM(gl_type == gl_type_ && num_components == num_components_ && gl_target == gl_target_, \
-                    "GLVAR: Can't update non-empty VAR with elements of a different type"); \
-    } \
-    else \
-    { \
-      gl_type = gl_type_; \
-      num_components = num_components_; \
-      elem_size = sizeof(type_); \
-      gl_target = gl_target_; \
-    } \
-    \
-    int64 offset_bytes = start_elem * elem_size; \
-    int64 num_bytes = num_elems_to_update * elem_size; \
-    int64 total_size = offset_bytes + num_bytes; \
-    if (total_size > capacity) \
-      throw Error("GLVAR: Can't update beyond end of VAR"); \
-    \
-    if (start_elem + num_elems_to_update > num_elems) \
-      num_elems = start_elem + num_elems_to_update; \
-    \
-    uploadToGraphicsSystem(offset_bytes, num_bytes, array); \
+#define GLVAR_UPDATE_ARRAY(func_name, type_, gl_type_, num_components_, gl_target_)                                           \
+  void                                                                                                                        \
+  GLVAR::func_name(int64 start_elem, int64 num_elems_to_update, type_ const * array)                                          \
+  {                                                                                                                           \
+    if (num_elems_to_update <= 0) return;                                                                                     \
+                                                                                                                              \
+    alwaysAssertM(isValid(), "GLVAR: Can't update invalid VAR");                                                              \
+                                                                                                                              \
+    if (num_elems > 0)                                                                                                        \
+    {                                                                                                                         \
+      alwaysAssertM(gl_type == gl_type_ && num_components == num_components_ && gl_target == gl_target_,                      \
+                    "GLVAR: Can't update non-empty VAR with elements of a different type");                                   \
+    }                                                                                                                         \
+    else                                                                                                                      \
+    {                                                                                                                         \
+      gl_type = gl_type_;                                                                                                     \
+      num_components = num_components_;                                                                                       \
+      elem_size = sizeof(type_);                                                                                              \
+      gl_target = gl_target_;                                                                                                 \
+    }                                                                                                                         \
+                                                                                                                              \
+    int64 offset_bytes = start_elem * elem_size;                                                                              \
+    int64 num_bytes = num_elems_to_update * elem_size;                                                                        \
+    int64 total_size = offset_bytes + num_bytes;                                                                              \
+    if (total_size > capacity)                                                                                                \
+      throw Error("GLVAR: Can't update beyond end of VAR");                                                                   \
+                                                                                                                              \
+    if (start_elem + num_elems_to_update > num_elems)                                                                         \
+      num_elems = start_elem + num_elems_to_update;                                                                           \
+                                                                                                                              \
+    uploadToGraphicsSystem(offset_bytes, num_bytes, array);                                                                   \
   }
 
 #define GLVAR_UPDATE_VECTOR_ARRAY(type_, gl_type_, num_components_) \

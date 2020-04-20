@@ -280,7 +280,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
       }
   }
 
-  training_data = NULL;
+  training_data = nullptr;
 
   if (options.verbose)
   {

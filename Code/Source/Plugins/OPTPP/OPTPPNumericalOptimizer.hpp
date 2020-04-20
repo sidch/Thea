@@ -76,7 +76,7 @@ class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizer : public NumericalOptimizer
      *
      * @todo This function is currently a no-op.
      */
-    bool minimize(ScalarFunction const & objective, double const * hint = NULL, Options const & options = Options());
+    bool minimize(ScalarFunction const & objective, double const * hint = nullptr, Options const & options = Options());
 
 }; // class OPTPPNumericalOptimizer
 

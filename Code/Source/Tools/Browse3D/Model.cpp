@@ -538,7 +538,7 @@ Model::addPickedSample(std::string const & label, bool snap_to_vertex)
         return false;
       }
 
-      MeshVertex const * nnv = NULL;
+      MeshVertex const * nnv = nullptr;
       Real min_sqdist = -1;
       for (MeshFace::VertexConstIterator fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
       {
@@ -721,7 +721,7 @@ namespace ModelInternal {
 
 struct SimilarComponentCollector
 {
-  SimilarComponentCollector() : query_mesh(NULL), query_group(NULL) {}
+  SimilarComponentCollector() : query_mesh(nullptr), query_group(nullptr) {}
 
   void setQuery(Mesh const * mesh) { query_mesh = mesh; }
   void setQuery(MeshGroup const * group) { query_group = group; }
@@ -899,7 +899,7 @@ Model::getSegment(Mesh const * mesh, int * index)
     }
 
   if (index) *index = -1;
-  return NULL;
+  return nullptr;
 }
 
 void
@@ -1055,8 +1055,8 @@ struct VertexFeatureVisitor
           intx nn_index = nbrs[j].getTargetIndex();
           sum_weights += weight;
           c += weight * featToColor(feat_vals0[nn_index],
-                                    (feat_vals1 ? &feat_vals1[nn_index] : NULL),
-                                    (feat_vals2 ? &feat_vals2[nn_index] : NULL));
+                                    (feat_vals1 ? &feat_vals1[nn_index] : nullptr),
+                                    (feat_vals2 ? &feat_vals2[nn_index] : nullptr));
         }
 
         vi->attr().setColor(sum_weights > 0 ? c / sum_weights : c);
@@ -1212,8 +1212,8 @@ Model::loadFeatures(std::string const & path_)
     PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
     VertexFeatureVisitor visitor(&fkdtree,
                                  &feat_vals[0][0],
-                                 feat_vals.size() > 1 ? &feat_vals[1][0] : NULL,
-                                 feat_vals.size() > 2 ? &feat_vals[2][0] : NULL);
+                                 feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
+                                 feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
     mesh_group->forEachMeshUntil(visitor);
   }
   THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
@@ -1530,7 +1530,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
   render_system.pushColorFlags();
 
     setPhongShader(render_system);
-    render_system.setTexture(0, NULL);
+    render_system.setTexture(0, nullptr);
 
     if (app().getMainWindow()->pickPoints())
     {
@@ -1581,7 +1581,7 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
 
         if (app().options().show_normals)
         {
-          render_system.setShader(NULL);
+          render_system.setShader(nullptr);
           render_system.setColor(ColorRGB(0, 1, 0));
 
           Real normal_scale = 0.025f * getBounds().getExtent().norm();

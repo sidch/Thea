@@ -44,7 +44,7 @@
 
 namespace Thea {
 
-static Algorithms::OPTPPPlugin * plugin = NULL;
+static Algorithms::OPTPPPlugin * plugin = nullptr;
 
 /** DLL start routine. Installs plugin. */
 extern "C" THEA_OPTPP_API Plugin *
@@ -67,7 +67,7 @@ static char const * OPTPP_PLUGIN_NAME              =  "OPT++ NumericalOptimizer"
 static char const * OPTPP_NUMERICALOPTIMIZER_NAME  =  "OPT++";
 
 OPTPPPlugin::OPTPPPlugin(FactoryRegistry * registry_)
-: registry(registry_), factory(NULL), started(false)
+: registry(registry_), factory(nullptr), started(false)
 {
   alwaysAssertM(registry, std::string(OPTPP_PLUGIN_NAME) + ": Factory registry must be non-null");
 }
@@ -120,7 +120,7 @@ OPTPPPlugin::uninstall()
   if (factory)
   {
     delete factory;
-    factory = NULL;
+    factory = nullptr;
   }
 }
 

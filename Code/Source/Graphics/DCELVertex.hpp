@@ -113,12 +113,13 @@ class /* THEA_API */ DCELVertex
 
     /** Default constructor. */
     DCELVertex()
-    : NormalBaseType(Vector3::Zero()), leaving(NULL), index(-1), has_precomputed_normal(false), normal_normalization_factor(0)
+    : NormalBaseType(Vector3::Zero()), leaving(nullptr), index(-1), has_precomputed_normal(false),
+      normal_normalization_factor(0)
     {}
 
     /** Sets the vertex to have a location. */
     explicit DCELVertex(Vector3 const & p)
-    : PositionBaseType(p), NormalBaseType(Vector3::Zero()), leaving(NULL), index(-1), has_precomputed_normal(false),
+    : PositionBaseType(p), NormalBaseType(Vector3::Zero()), leaving(nullptr), index(-1), has_precomputed_normal(false),
       normal_normalization_factor(0)
     {}
 
@@ -127,7 +128,7 @@ class /* THEA_API */ DCELVertex
      * this constructor is used.
      */
     DCELVertex(Vector3 const & p, Vector3 const & n)
-    : PositionBaseType(p), NormalBaseType(n), leaving(NULL), index(-1), has_precomputed_normal(true),
+    : PositionBaseType(p), NormalBaseType(n), leaving(nullptr), index(-1), has_precomputed_normal(true),
       normal_normalization_factor(0)
     {}
 
@@ -137,7 +138,7 @@ class /* THEA_API */ DCELVertex
     /** Get the edge from this vertex to another, if it exists, else return null. */
     Halfedge * getEdgeTo(DCELVertex const * v)
     {
-      Halfedge const * rval = NULL;
+      Halfedge const * rval = nullptr;
 
       if (leaving)
       {
@@ -146,7 +147,7 @@ class /* THEA_API */ DCELVertex
         else
         {
           Halfedge const * test = leaving->twin()->next();
-          while (rval == NULL && test != leaving)
+          while (rval == nullptr && test != leaving)
           {
             Halfedge const * twin = test->twin();
             if (twin->getOrigin() == v)

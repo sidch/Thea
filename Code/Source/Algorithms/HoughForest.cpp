@@ -211,7 +211,7 @@ class HoughNode
     HoughNode * right;
 
     HoughNode(intx depth_ = 0)
-    : depth(depth_), split_feature(-1), split_value(0), left(NULL), right(NULL) {}
+    : depth(depth_), split_feature(-1), split_value(0), left(nullptr), right(nullptr) {}
 
     ~HoughNode()
     {
@@ -222,7 +222,7 @@ class HoughNode
     {
       delete left;
       delete right;
-      left = right = NULL;
+      left = right = nullptr;
     }
 
     bool isLeaf() const
@@ -339,7 +339,7 @@ class HoughTree
       num_vote_params(num_vote_params_),
       max_vote_params(*std::max_element(num_vote_params_.begin(), num_vote_params_.end())),
       options(options_),
-      root(NULL)
+      root(nullptr)
     {
       alwaysAssertM(parent_, "HoughTree: Can't create tree without parent forest");
     }
@@ -354,7 +354,7 @@ class HoughTree
     void clear()
     {
       delete root;
-      root = NULL;
+      root = nullptr;
     }
 
     // Train the tree.

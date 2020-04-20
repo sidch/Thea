@@ -160,7 +160,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     }
 
     /** Get the squared distance between this segment and another segment, and optionally return the closest pair of points. */
-    T squaredDistance(LineSegmentT const & other, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
+    T squaredDistance(LineSegmentT const & other, VectorT * this_pt = nullptr, VectorT * other_pt = nullptr) const
     {
       VectorT c1, c2;
       T s, t;
@@ -180,7 +180,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     }
 
     /** Get the squared distance between this segment and an infinite line, and optionally return the closest pair of points. */
-    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = NULL, VectorT * line_pt = NULL) const
+    T squaredDistance(LineN<N, T> const & line, VectorT * this_pt = nullptr, VectorT * line_pt = nullptr) const
     {
       VectorT c1, c2;
       T s, t;
@@ -200,7 +200,7 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     }
 
     /** Get the squared distance between this segment and a ray, and optionally return the closest pair of points. */
-    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = NULL, VectorT * ray_pt = NULL) const
+    T squaredDistance(RayN<N, T> const & ray, VectorT * this_pt = nullptr, VectorT * ray_pt = nullptr) const
     {
       VectorT c1, c2;
       T s, t;

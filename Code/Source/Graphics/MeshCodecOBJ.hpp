@@ -270,7 +270,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
 
       MeshPtr mesh;
       std::shared_ptr<Builder> bp;
-      Builder * builder = NULL;
+      Builder * builder = nullptr;
 
       intx num_faces = 0;
 
@@ -425,9 +425,9 @@ class CodecOBJ : public CodecOBJBase<MeshT>
               {
                 typename Builder::VertexHandle vref = builder->addVertex(vertices[(size_t)vtn[0] - 1],
                                                                          read_opts.store_vertex_indices ? vtn[0] - 1 : -1,
-                                                                         vtn[2] > 0 ? &normals[(size_t)vtn[2] - 1] : NULL,
-                                                                         NULL,  // color
-                                                                         vtn[1] > 0 ? &texcoords[(size_t)vtn[1] - 1] : NULL);
+                                                                         vtn[2] > 0 ? &normals[(size_t)vtn[2] - 1] : nullptr,
+                                                                         nullptr,  // color
+                                                                         vtn[1] > 0 ? &texcoords[(size_t)vtn[1] - 1] : nullptr);
                 if (callback)
                   callback->vertexRead(mesh.get(), vtn[0] - 1, vref);
 
@@ -593,7 +593,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback,
                        typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                             || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = NULL) const
+                                             || Graphics::IsDCELMesh<_MeshT>::value >::type * dummy = nullptr) const
     {
       intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
@@ -614,7 +614,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void writeVertices(_MeshT const & mesh, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback,
-                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+                       typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
       typename Mesh::VertexArray const & vertices = mesh.getVertices();
@@ -675,7 +675,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                     WriteCallback * callback, intx & next_index,
                     typename std::enable_if< Graphics::IsGeneralMesh<_MeshT>::value
-                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = NULL) const
+                                          || Graphics::IsDCELMesh<_MeshT>::value>::type * dummy = nullptr) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;
@@ -711,7 +711,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     template <typename _MeshT>
     void writeFaces(_MeshT const & mesh, VertexIndexMap const & vertex_indices, BinaryOutputStream & output,
                     WriteCallback * callback, intx & next_index,
-                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = NULL) const
+                    typename std::enable_if< Graphics::IsDisplayMesh<_MeshT>::value >::type * dummy = nullptr) const
     {
       if (write_opts.skip_empty_meshes && mesh.numFaces() <= 0)
         return;

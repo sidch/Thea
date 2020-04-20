@@ -131,11 +131,11 @@ class SamplePointerGraph
     intx numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
     NeighborIterator neighborsBegin(VertexHandle vertex)
     {
-      return vertex->getNeighbors().isEmpty() ? NULL : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
+      return vertex->getNeighbors().isEmpty() ? nullptr : const_cast<SurfaceSample::Neighbor *>(&vertex->getNeighbors()[0]);
     }
     NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
     {
-      return vertex->getNeighbors().isEmpty() ? NULL : &vertex->getNeighbors()[0];
+      return vertex->getNeighbors().isEmpty() ? nullptr : &vertex->getNeighbors()[0];
     }
     NeighborIterator neighborsEnd(VertexHandle vertex) { return neighborsBegin(vertex) + numNeighbors(vertex); }
     NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const { return neighborsBegin(vertex) + numNeighbors(vertex); }

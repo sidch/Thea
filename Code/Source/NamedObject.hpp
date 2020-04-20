@@ -120,7 +120,7 @@ NamedObject::~NamedObject()
 inline std::ostream &
 operator<<(std::ostream & os, NamedObject const & obj)
 {
-  std::string cls = getClass(obj);
+  std::string cls = getTypeName(obj);
 
   // Remove template parameters
   size_t last = cls.find('<');

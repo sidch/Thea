@@ -417,7 +417,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     std::string readAlignedString(int alignment = 4);
 
     /**
-     * Read an \a n character string.  The string is not required to end in NULL in the file but will always be a proper
+     * Read an \a n character string.  The string is not required to end in nullptr in the file but will always be a proper
      * std::string when returned.
      */
     std::string readString(int64 n);

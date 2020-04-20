@@ -55,7 +55,7 @@ namespace Browse3D {
 class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
+    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(nullptr) {}
 
     void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
     {
@@ -73,7 +73,7 @@ class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
 class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
 {
   public:
-    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(NULL) {}
+    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(nullptr) {}
 
     void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
     {
@@ -100,13 +100,14 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
   public:
     THEA_DECL_SMART_POINTERS(Mesh)
 
-    Mesh(std::string const & name = "AnonymousMesh") : NamedObject(name), BaseType(name), parent(NULL), valid_features(false) {}
+    Mesh(std::string const & name = "AnonymousMesh")
+    : NamedObject(name), BaseType(name), parent(nullptr), valid_features(false) {}
 
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;
 
-    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = NULL, ColorRGBA const * color = NULL,
-                       Vector2 const * texcoord = NULL)
+    Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = nullptr,
+                       ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
       Vertex * vertex = BaseType::addVertex(point, index, normal, color, texcoord);
 
@@ -141,7 +142,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     static Vertex * mapIndexToVertex(intx index)
     {
       IndexVertexMap::const_iterator existing = index_to_vertex.find(index);
-      return existing == index_to_vertex.end() ? NULL : existing->second;
+      return existing == index_to_vertex.end() ? nullptr : existing->second;
     }
 
     static void resetFaceIndices()
@@ -152,7 +153,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     static Face * mapIndexToFace(intx index)
     {
       IndexFaceMap::const_iterator existing = index_to_face.find(index);
-      return existing == index_to_face.end() ? NULL : existing->second;
+      return existing == index_to_face.end() ? nullptr : existing->second;
     }
 
     void setParent(MeshGroup * p) { parent = p; }

@@ -240,7 +240,7 @@ main(int argc, char * argv[])
   for (size_t i = 0; i < pts.size(); ++i)
   {
     Vector3 cp = Vector3::Zero();
-    intx elem = kdtree.closestElement<MetricL2>(pts[i], -1, NULL, &cp);
+    intx elem = kdtree.closestElement<MetricL2>(pts[i], -1, nullptr, &cp);
     if (elem < 0)
     {
       THEA_ERROR << "Could not find nearest neighbor of query point " << pts[i] << " on mesh";
@@ -873,7 +873,7 @@ computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, intx num_
 
   for (size_t i = 0; i < positions.size(); ++i)
   {
-    Vector3 evals = pca.compute(positions[i], NULL, (Real)nbd_radius);
+    Vector3 evals = pca.compute(positions[i], nullptr, (Real)nbd_radius);
     if (evals[0] > 0)
     {
       values.push_back(evals[1] / evals[0]);

@@ -99,37 +99,18 @@ alwaysAssertM(CondT const & test, MessageT const & msg)
   }
 }
 
-// No longer required, we have static_assert since switching to C++11.
-// /**
-//  * Require an expression to evaluate to true at compile-time. Example usage:
-//  *
-//  * \code
-//  *   THEA_STATIC_ASSERT(sizeof(int) == 2)
-//  * \endcode
-//  *
-//  * From Ralf Holly, http://www.drdobbs.com/compile-time-assertions/184401873
-//  */
-/* #define THEA_STATIC_ASSERT(e) \
- * do \
- * { \
- * enum { assert_static__ = 1/((int)(e)) }; \
- * } while (0)
- */
-
-/** Get the class of an object. */
-template <typename T>
-/* THEA_API */
-std::string
-getClass(T const & obj)
-{
-  // GCC doesn't demangle type_info::name(). New versions include a demangling function in the ABI.
+// GCC doesn't demangle type_info::name(). New versions include a demangling function in the ABI.
 #ifdef THEA_HAVE_CXA_DEMANGLE
 
+namespace CommonInternal {
+
+inline std::string
+demangle(char const * class_name)
+{
   size_t length = 1024;
   int status;
 
-  char const * class_name = typeid(obj).name();
-  char * ret = abi::__cxa_demangle(class_name, NULL, &length, &status);
+  char * ret = abi::__cxa_demangle(class_name, nullptr, &length, &status);
   if (ret)
   {
     std::string result(ret);
@@ -141,11 +122,33 @@ getClass(T const & obj)
     std::free(ret);
     return class_name;
   }
+}
 
+} // namespace CommonInternal
+
+#endif // THEA_HAVE_CXA_DEMANGLE
+
+/** Get the name of a type, ignoring reference and cv-qualifiers. */
+template <typename T>
+std::string
+getTypeName()
+{
+#ifdef THEA_HAVE_CXA_DEMANGLE
+  return CommonInternal::demangle(typeid(T).name());
 #else
+  return typeid(T).name();
+#endif
+}
 
+/** Get the name of the dynamic type of an object, ignoring reference and cv-qualifiers. */
+template <typename T>
+std::string
+getTypeName(T const & obj)
+{
+#ifdef THEA_HAVE_CXA_DEMANGLE
+  return CommonInternal::demangle(typeid(obj).name());
+#else
   return typeid(obj).name();
-
 #endif
 }
 

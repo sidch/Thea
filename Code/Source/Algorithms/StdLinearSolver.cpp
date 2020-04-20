@@ -67,8 +67,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Solve the linear system Ax = b for a dense double-precision matrix A.
     template <typename MatrixT, typename ScalarT>
-    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = NULL,
-               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = NULL)
+    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr,
+               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -190,8 +190,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
     // Solve the linear system Ax = b for a sparse ScalarT-precision matrix A.
     template <typename MatrixT, typename ScalarT>
-    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = NULL,
-               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = NULL)
+    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr,
+               std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value > * dummy = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -285,7 +285,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // if the problem was successfully solved.
     template <typename MatrixT, typename ScalarT>
     bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
-                              typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = NULL)
+                              typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = nullptr)
     {
       switch (method)
       {
@@ -350,7 +350,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // method is empty. Returns false to indicate no solver was found.
     template <typename MatrixT, typename ScalarT>
     bool solveSparseFactorize(MatrixT const & a, ScalarT const * b,
-                              typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = NULL)
+                              typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit) >::type * dummy = nullptr)
     {
       return false;
     }

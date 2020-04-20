@@ -26,7 +26,7 @@ class Graph
             P * p;
 
           public:
-            basic_iterator() : p(NULL) {}
+            basic_iterator() : p(nullptr) {}
 
             basic_iterator(P * p_) : p(p_) {}
 
@@ -62,7 +62,7 @@ class Graph
         typedef basic_iterator<T> iterator;
         typedef basic_iterator<T const> const_iterator;
 
-        IntrusiveList() : first(NULL), last(NULL), num_elems(0) {}
+        IntrusiveList() : first(nullptr), last(nullptr), num_elems(0) {}
 
         const_iterator begin() const { return const_iterator(first); }
         iterator begin() { return iterator(first); }
@@ -74,13 +74,13 @@ class Graph
           if (empty())
           {
             first = last = &t;
-            t.prev = t.next = NULL;
+            t.prev = t.next = nullptr;
           }
           else
           {
             last->next = &t;
             t.prev = last;
-            t.next = NULL;
+            t.next = nullptr;
             last = &t;
           }
 
@@ -92,13 +92,13 @@ class Graph
           if (empty())
           {
             first = last = &t;
-            t.prev = t.next = NULL;
+            t.prev = t.next = nullptr;
           }
           else
           {
             first->prev = &t;
             t.next = first;
-            t.prev = NULL;
+            t.prev = nullptr;
             first = &t;
           }
 
@@ -157,9 +157,9 @@ class Graph
         Edge * next;
 
         Edge(Vertex * origin_, Vertex * end_, EdgeAttribute const & attrib)
-        : BaseType(attrib), origin(origin_), end(end_), prev(NULL), next(NULL) {}
+        : BaseType(attrib), origin(origin_), end(end_), prev(nullptr), next(nullptr) {}
 
-        Edge() : origin(NULL), end(NULL), prev(NULL), next(NULL) {}
+        Edge() : origin(nullptr), end(nullptr), prev(nullptr), next(nullptr) {}
 
         Vertex const * getOrigin() const { return origin; }
         Vertex * getOrigin() { return origin; }
@@ -186,8 +186,8 @@ class Graph
         typedef typename EdgeSet::iterator EdgeIterator;
         typedef typename EdgeSet::const_iterator EdgeConstIterator;
 
-        Vertex(VertexAttribute const & attrib) : BaseType(attrib), prev(NULL), next(NULL) {}
-        Vertex() : prev(NULL), next(NULL) {}
+        Vertex(VertexAttribute const & attrib) : BaseType(attrib), prev(nullptr), next(nullptr) {}
+        Vertex() : prev(nullptr), next(nullptr) {}
 
         EdgeConstIterator incomingEdgesBegin() const { return incoming_edges.begin(); }
         EdgeIterator incomingEdgesBegin() { return incoming_edges.begin(); }

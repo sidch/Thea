@@ -73,10 +73,10 @@ GLVARArea::GLVARArea(GLRenderSystem * render_system_, char const * name_, int64 
       }
 
       // Load some (undefined) data to initialize the buffer
-      glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizei)capacity, NULL, gl_usage);
+      glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizei)capacity, nullptr, gl_usage);
       THEA_CHECK_GL_OK
 
-      base_pointer = NULL;
+      base_pointer = nullptr;
 
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
       THEA_CHECK_GL_OK

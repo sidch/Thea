@@ -191,11 +191,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
       Lib3dsIo io;
 
       io.self        =  static_cast<void *>(in);
-      io.impl        =  NULL;
+      io.impl        =  nullptr;
       io.seek_func   =  seekInput;
       io.tell_func   =  tellInput;
       io.read_func   =  read;
-      io.write_func  =  NULL;
+      io.write_func  =  nullptr;
       io.log_func    =  log;
 
       if (!lib3ds_file_read(file3ds, &io))
@@ -203,7 +203,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
 
 #else
 
-      Lib3dsIo * io = lib3ds_io_new(static_cast<void *>(in), errorInput, seekInput, tellInput, read, NULL);
+      Lib3dsIo * io = lib3ds_io_new(static_cast<void *>(in), errorInput, seekInput, tellInput, read, nullptr);
       if (!io)
         throw Error(std::string(getName()) + ": Couldn't create lib3ds IO object");
 
@@ -225,13 +225,13 @@ class Codec3DS : public Codec3DSBase<MeshT>
         Builder flat_builder(mesh);
         flat_builder.begin();
 
-          convert3DSSubtree(file3ds->meshes, file3ds->nodes, NULL, Matrix4::Identity(), &flat_builder, callback);
+          convert3DSSubtree(file3ds->meshes, file3ds->nodes, nullptr, Matrix4::Identity(), &flat_builder, callback);
 
         flat_builder.end();
         mesh_group.addMesh(mesh);
       }
       else
-        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::Identity(), NULL, callback);
+        convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::Identity(), nullptr, callback);
 
       THEA_CONSOLE << getName() << ": Read a total of " << vertex_count << " vertices and " << face_count
                    << " faces (including malformed faces which may have been dropped from the final mesh)";
@@ -301,7 +301,7 @@ class Codec3DS : public Codec3DSBase<MeshT>
           {
             Vector2 texcoord(m->texelL[i][0], m->texelL[i][1]);
             vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex)
-                                                               : vertex, vindex, NULL, NULL, &texcoord);
+                                                               : vertex, vindex, nullptr, nullptr, &texcoord);
           }
           else
             vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex) : vertex, vindex);
@@ -388,11 +388,11 @@ class Codec3DS : public Codec3DSBase<MeshT>
             transform = Matrix4::Identity();
 
           if (flat_builder)
-            convert3DSSubtree(n->user.mesh, n->childs, NULL, transform, flat_builder, callback);
+            convert3DSSubtree(n->user.mesh, n->childs, nullptr, transform, flat_builder, callback);
           else
           {
             typename MeshGroup::Ptr child_group(new MeshGroup(mesh_group->getName() + format("/Child%d", i)));
-            convert3DSSubtree(n->user.mesh, n->childs, child_group.get(), transform, NULL, callback);
+            convert3DSSubtree(n->user.mesh, n->childs, child_group.get(), transform, nullptr, callback);
             mesh_group->addChild(child_group);
           }
         }

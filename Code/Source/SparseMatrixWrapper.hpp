@@ -124,8 +124,8 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     Value * getValues() { return m->valuePtr(); }
 
     // Type-casting functions
-    AbstractAddressableMatrix<Value> const * asAddressable() const { return NULL; }
-    AbstractAddressableMatrix<Value> * asAddressable() { return NULL; }
+    AbstractAddressableMatrix<Value> const * asAddressable() const { return nullptr; }
+    AbstractAddressableMatrix<Value> * asAddressable() { return nullptr; }
     AbstractSparseMatrix<Value> const * asSparse() const { return this; }
     AbstractSparseMatrix<Value> * asSparse() { return this; }
     AbstractCompressedSparseMatrix<Value> const * asCompressed() const { return this; }

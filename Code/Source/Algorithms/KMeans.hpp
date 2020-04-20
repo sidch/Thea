@@ -174,10 +174,10 @@ class THEA_API KMeans : public Serializable
      * @return True if the clustering converged, else false.
      */
     template <typename AddressableMatrixT>
-    bool cluster(intx num_clusters, AddressableMatrixT const & points, intx * labeling = NULL,
-                 double * squared_distances = NULL,
+    bool cluster(intx num_clusters, AddressableMatrixT const & points, intx * labeling = nullptr,
+                 double * squared_distances = nullptr,
                  typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
-                                                           AddressableMatrixT >::value >::type * dummy = NULL)
+                                                           AddressableMatrixT >::value >::type * dummy = nullptr)
     {
       static intx   const DEFAULT_MAX_ITERS = 1000;
       static double const DEFAULT_MAX_TIME  =   60;  // seconds
@@ -297,7 +297,7 @@ class THEA_API KMeans : public Serializable
      * @return The index of the cluster containing the point, in the range [0, numClusters() - 1], or a negative value if no
      *   such cluster was found.
      */
-    intx mapToCluster(double const * point, double * squared_distance = NULL) const
+    intx mapToCluster(double const * point, double * squared_distance = nullptr) const
     {
       intx label;
       double sqdist;
@@ -318,9 +318,9 @@ class THEA_API KMeans : public Serializable
      *   each point. Assumed to be preallocated to the number of points. Ignored if null.
      */
     template <typename AddressableMatrixT>
-    void mapToClusters(AddressableMatrixT const & points, intx * labeling, double * squared_distances = NULL,
+    void mapToClusters(AddressableMatrixT const & points, intx * labeling, double * squared_distances = nullptr,
                        typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
-                                                                 AddressableMatrixT >::value >::type * dummy = NULL) const
+                                                                 AddressableMatrixT >::value >::type * dummy = nullptr) const
     {
       mapToClusters(numClusters(), points, labeling, squared_distances);
     }
@@ -369,7 +369,7 @@ class THEA_API KMeans : public Serializable
         double start_time = System::time();
         for (intx i = 1; i < num_clusters; ++i)
         {
-          mapToClusters(i, points, NULL, &sqdist[0]);
+          mapToClusters(i, points, nullptr, &sqdist[0]);
 
           // Sample next center from points with probability proportional to sqdist
           double sum_sqdist = 0;
@@ -479,7 +479,7 @@ class THEA_API KMeans : public Serializable
      */
     template <typename AddressableMatrixT>
     bool mapToClusters(intx num_clusters, AddressableMatrixT const & points, intx * cluster_indices,
-                       double * cluster_sqdists = NULL) const
+                       double * cluster_sqdists = nullptr) const
     {
       intx num_points = (intx)points.rows();
       unsigned int concurrency = std::thread::hardware_concurrency();

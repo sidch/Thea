@@ -565,7 +565,8 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
      *
      * @param m The matrix to write.
      * @param codec The codec to use.
-     * @param write_block_header If true, first write a header block which stores the size and codec of the serialized matrix data.
+     * @param write_block_header If true, first write a header block which stores the size and codec of the serialized matrix
+     *   data.
      */
     template <typename MatrixT>
     void writeMatrix(MatrixT const & m, Codec const & codec, bool write_block_header = false);

@@ -155,7 +155,7 @@ class THEA_API PluginManager : public FactoryRegistry
     /**
      * Load a dynamically linked plugin from a path. The plugin will be automatically installed via install().
      *
-     * @return A pointer to the new or previously loaded plugin on success, NULL on failure.
+     * @return A pointer to the new or previously loaded plugin on success, nullptr on failure.
      *
      * @see unload()
      */
@@ -230,7 +230,7 @@ class THEA_API PluginManager : public FactoryRegistry
       Plugin * plugin;
       DynLib * dynlib;
 
-      PluginDynLib(Plugin * p = NULL, DynLib * d = NULL) : plugin(p), dynlib(d) {}
+      PluginDynLib(Plugin * p = nullptr, DynLib * d = nullptr) : plugin(p), dynlib(d) {}
 
     }; // struct PluginDynLib
 

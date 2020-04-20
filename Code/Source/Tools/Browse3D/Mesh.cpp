@@ -54,7 +54,7 @@ Mesh::getAncestor(intx generations) const
   if (generations < 1)
   {
     THEA_ERROR << getName() << ": Ancestor generation gap must be >= 1";
-    return NULL;
+    return nullptr;
   }
 
   MeshGroup * anc = parent;

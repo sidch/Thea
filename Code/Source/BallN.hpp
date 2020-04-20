@@ -146,7 +146,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     { T x = distance(other); return x * x; }
 
     /** Get the squared distance of the ball from an axis-aligned box and optionally return the closest pair of points. */
-    T squaredDistance(AxisAlignedBoxN<N, T> const & aab, VectorT * this_pt = NULL, VectorT * other_pt = NULL) const
+    T squaredDistance(AxisAlignedBoxN<N, T> const & aab, VectorT * this_pt = nullptr, VectorT * other_pt = nullptr) const
     {
       if (this_pt || other_pt)
         throw FatalError("BallN: Finding closest points between ball and box not yet implemented");
