@@ -1,0 +1,1 @@
+- GPU-accelerated meshes should somehow release their GPU buffers when they are destroyed, but the destructor is not provided a rendersystem reference.
