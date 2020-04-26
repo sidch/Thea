@@ -9,7 +9,7 @@ Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released unde
 If you find a bug, please let me know promptly. Thank you!
 
 ***
-**!!! IMPORTANT !!!** If you last cloned this repository before Apr 27, 2020, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged.
+!!! **IMPORTANT** !!! If you last cloned this repository before Apr 27, 2020, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged.
 ***
 
 ## What is Thea?
