@@ -488,6 +488,22 @@ BinaryOutputStream::writeUInt64(uint64 u)
 }
 
 void
+BinaryOutputStream::printf(char const * fmt, ...)
+{
+  va_list arg_list;
+  va_start(arg_list, fmt);
+  this->vprintf(fmt, arg_list);
+  va_end(arg_list);
+}
+
+void
+BinaryOutputStream::vprintf(char const * fmt, va_list arg_list)
+{
+  std::string result = vformat(fmt, arg_list);
+  writeBytes((int64)result.length(), result.data());
+}
+
+void
 BinaryOutputStream::writeAlignedString(std::string const & s, int alignment)
 {
   int length = (int)s.length();

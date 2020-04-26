@@ -159,7 +159,7 @@ Stopwatch::tock()
 
   lastTockTime = now;
 
-  alwaysAssertM(inBetween, "Stopwatch: tock() called without matching tick().");
+  alwaysAssertM(inBetween, "Stopwatch: tock() called without matching tick()");
   inBetween = false;
 }
 

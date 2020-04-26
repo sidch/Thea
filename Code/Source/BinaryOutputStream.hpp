@@ -72,6 +72,7 @@
 #include "Noncopyable.hpp"
 #include "Plane3.hpp"
 #include <algorithm>
+#include <cstdarg>
 #include <cstring>
 
 namespace Thea {
@@ -402,14 +403,40 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     }
 
     /**
+     * Print a formatted string to the stream using C-style printf syntax, without null-termination or a preceding length field.
+     * This is equivalent to:
+     *
+     * \code
+     * std::string s = format(fmt, ...);
+     * output.writeBytes((int64)s.length(), s.data());
+     * \endcode
+     *
+     * @see vprintf(), writeString()
+     */
+    void __cdecl printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
+
+    /**
+     * Print a formatted string to the stream using C-style vprintf syntax, without null-termination or a preceding length
+     * field. This is equivalent to:
+     *
+     * \code
+     * std::string s = vformat(fmt, arg_list);
+     * output.writeBytes((int64)s.length(), s.data());
+     * \endcode
+     *
+     * @see printf(), writeString()
+     */
+    void __cdecl vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
+
+    /**
      * Write a string. The format is:
      * - Length of string (32-bit integer)
      * - Characters of string ('length' bytes, no null termination)
      *
-     * @see BinaryInputStream::readString
+     * @see BinaryInputStream::readString()
      *
      * @note This version explicitly writes the length of the string and does not rely on null termination, making this a safer
-     * option than the original G3D version. To write a null-terminated string, use writeBytes.
+     * option than the original G3D version. To write raw character sequences, use printf() or writeBytes().
      */
     void writeString(std::string const & s)
     {
@@ -565,7 +592,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
      *
      * @param m The matrix to write.
      * @param codec The codec to use.
-     * @param write_block_header If true, first write a header block which stores the size and codec of the serialized matrix
+     * @param write_block_header If true, first write a header section which stores the size and codec of the serialized matrix
      *   data.
      */
     template <typename MatrixT>

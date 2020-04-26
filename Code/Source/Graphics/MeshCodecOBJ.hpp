@@ -230,21 +230,17 @@ class CodecOBJ : public CodecOBJBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
-         const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
+                       ReadCallback * callback) const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
       BinaryInputStream::Ptr tmp_in;
-
-      if (read_block_header)
+      if (block_header)
       {
-        Codec::BlockHeader bh; bh.read(input);
-        if (bh.data_size <= 0)
-          return;
-
-        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
+        if (block_header->data_size <= 0) { return; }
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)block_header->data_size);
         in = tmp_in.get();
       }
 
@@ -567,12 +563,6 @@ class CodecOBJ : public CodecOBJBase<MeshT>
     }
 
   private:
-    /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
-    static void writeString(std::string const & str, BinaryOutputStream & output)
-    {
-      output.writeBytes((int64)str.length(), str.data());
-    }
-
     /** Write out all the vertices from a mesh group and map them to indices. */
     void writeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback) const
@@ -597,7 +587,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       intx vertex_index = (intx)vertex_indices.size() + 1;  // OBJ numbers vertices starting from 1
       for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi, ++vertex_index)
       {
-        writeString(format("v %f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z()), output);
+        output.printf("v %f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z());
         vertex_indices[&(*vi)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index - 1, &(*vi));
       }
@@ -605,7 +595,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       if (!write_opts.ignore_normals)
       {
         for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-          writeString(format("vn %f %f %f\n", vi->getNormal().x(), vi->getNormal().y(), vi->getNormal().z()), output);
+          output.printf("vn %f %f %f\n", vi->getNormal().x(), vi->getNormal().y(), vi->getNormal().z());
       }
     }
 
@@ -621,7 +611,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
       for (size_t i = 0; i < vertices.size(); ++i, ++vertex_index)
       {
         Vector3 const & v = vertices[i];
-        writeString(format("v %f %f %f\n", v.x(), v.y(), v.z()), output);
+        output.printf("v %f %f %f\n", v.x(), v.y(), v.z());
         vertex_indices[DisplayMeshVRef(&mesh, (intx)i)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index - 1, (intx)i);
       }
@@ -635,7 +625,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         for (size_t i = 0; i < texcoords.size(); ++i)
         {
           Vector2 const & t = texcoords[i];
-          writeString(format("vt %f %f\n", t.x(), t.y()), output);
+          output.printf("vt %f %f\n", t.x(), t.y());
         }
       }
 
@@ -648,7 +638,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         for (size_t i = 0; i < normals.size(); ++i)
         {
           Vector3 const & n = normals[i];
-          writeString(format("vn %f %f %f\n", n.x(), n.y(), n.z()), output);
+          output.printf("vn %f %f %f\n", n.x(), n.y(), n.z());
         }
       }
     }
@@ -678,7 +668,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         return;
 
       if (!write_opts.flatten)
-        writeString(std::string("\ng ") + mesh.getName() + '\n', output);
+        output.printf("\ng %s\n", mesh.getName());
 
       for (typename Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -698,7 +688,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         }
 
         os << '\n';
-        writeString(os.str(), output);
+        output.writeBytes((int64)os.str().length(), os.str().data());
 
         if (callback) callback->faceWritten(&mesh, next_index++, &face);
       }
@@ -713,7 +703,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
         return;
 
       if (!write_opts.flatten)
-        writeString(std::string("\ng ") + mesh.getName() + '\n', output);
+        output.printf("\ng %s\n", mesh.getName());
 
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 
@@ -748,7 +738,7 @@ class CodecOBJ : public CodecOBJBase<MeshT>
           }
 
           os << '\n';
-          writeString(os.str(), output);
+          output.writeBytes((int64)os.str().length(), os.str().data());
 
           if (callback)
           {

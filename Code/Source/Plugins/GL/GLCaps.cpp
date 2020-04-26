@@ -402,7 +402,7 @@ GLCaps::loadExtensions()
     return;
 
   alwaysAssertM(!_initialized, "Attempt to initialize OpenGL twice");
-  alwaysAssertM(glGetCurrentContext(), "Unable to load OpenGL extensions without a current context.");
+  alwaysAssertM(glGetCurrentContext(), "Unable to load OpenGL extensions without a current context");
 
   GLenum err = glewInit();
   if (err != GLEW_OK)
@@ -486,7 +486,7 @@ GLCaps::checkAllBugs()
   if (_checkedForBugs)
     return;
 
-  alwaysAssertM(_loadedExtensions, "Cannot check for OpenGL bugs before extensions are loaded.");
+  alwaysAssertM(_loadedExtensions, "Cannot check for OpenGL bugs before extensions are loaded");
 
   bool is_headless = isHeadless();
   GLuint fb, color_tex, depth_rb;
@@ -538,34 +538,34 @@ GLCaps::checkAllBugs()
 bool
 GLCaps::hasBug_glMultiTexCoord3fvARB()
 {
-  alwaysAssertM(_initialized, "GLCaps has not been initialized.");
+  alwaysAssertM(_initialized, "GLCaps has not been initialized");
   return bug_glMultiTexCoord3fvARB;
 }
 
 bool
 GLCaps::hasBug_normalMapTexGen()
 {
-  alwaysAssertM(_initialized, "GLCaps has not been initialized.");
+  alwaysAssertM(_initialized, "GLCaps has not been initialized");
   return bug_normalMapTexGen;
 }
 
 bool
 GLCaps::hasBug_redBlueMipmapSwap()
 {
-  alwaysAssertM(_initialized, "GLCaps has not been initialized.");
+  alwaysAssertM(_initialized, "GLCaps has not been initialized");
   return bug_redBlueMipmapSwap;
 }
 
 bool
 GLCaps::hasBug_mipmapGeneration()
 {
-  alwaysAssertM(_initialized, "GLCaps has not been initialized.");
+  alwaysAssertM(_initialized, "GLCaps has not been initialized");
   return bug_mipmapGeneration;
 }
 
 bool GLCaps::hasBug_slowVBO()
 {
-  alwaysAssertM(_initialized, "GLCaps has not been initialized.");
+  alwaysAssertM(_initialized, "GLCaps has not been initialized");
   return bug_slowVBO;
 }
 
@@ -664,7 +664,7 @@ GLCaps::supportsRenderBuffer(const Texture::Format* fmt)
 std::string const &
 GLCaps::glVersion()
 {
-  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::glVersion before GLCaps::init().");
+  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::glVersion before GLCaps::init()");
   static std::string _glVersion = (char *)glGetString(GL_VERSION);
   return _glVersion;
 }
@@ -672,7 +672,7 @@ GLCaps::glVersion()
 std::string const &
 GLCaps::driverVersion()
 {
-  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::driverVersion before GLCaps::init().");
+  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::driverVersion before GLCaps::init()");
   static std::string _driverVersion = getDriverVersion().c_str();
   return _driverVersion;
 }
@@ -680,14 +680,14 @@ GLCaps::driverVersion()
 std::string const &
 GLCaps::vendor()
 {
-  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::vendor before GLCaps::init().");
+  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::vendor before GLCaps::init()");
   static std::string _driverVendor = (char *)glGetString(GL_VENDOR);
   return _driverVendor;
 }
 
 std::string const & GLCaps::renderer()
 {
-  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::renderer before GLCaps::init().");
+  alwaysAssertM(_loadedExtensions, "Cannot call GLCaps::renderer before GLCaps::init()");
   static std::string _glRenderer = (char *)glGetString(GL_RENDERER);
   return _glRenderer;
 }

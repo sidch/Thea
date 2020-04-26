@@ -56,7 +56,6 @@
 #include "FilePath.hpp"
 #include "FileSystem.hpp"
 #include "Math.hpp"
-#include <cstdarg>
 #include <stdio.h>
 
 namespace Thea {
@@ -313,21 +312,21 @@ void TextOutputStream::writeSymbols(
 }
 
 void
-TextOutputStream::printf(std::string const formatString, ...)
+TextOutputStream::printf(char const * fmt, ...)
 {
-  va_list argList;
-  va_start(argList, formatString);
-  this->vprintf(formatString.c_str(), argList);
-  va_end(argList);
+  va_list arg_list;
+  va_start(arg_list, fmt);
+  this->vprintf(fmt, arg_list);
+  va_end(arg_list);
 }
 
 void
-TextOutputStream::printf(char const * formatString, ...)
+TextOutputStream::vprintf(char const * fmt, va_list arg_list)
 {
-  va_list argList;
-  va_start(argList, formatString);
-  this->vprintf(formatString, argList);
-  va_end(argList);
+  std::string str = vformat(fmt, arg_list);
+  std::string clean;
+  convertNewlines(str, clean);
+  wordWrapIndentAppend(clean);
 }
 
 void
@@ -587,15 +586,6 @@ TextOutputStream::indentAppend(char c)
   }
 
   changed = true;
-}
-
-void
-TextOutputStream::vprintf(char const * formatString, va_list argPtr)
-{
-  std::string str = vformat(formatString, argPtr);
-  std::string clean;
-  convertNewlines(str, clean);
-  wordWrapIndentAppend(clean);
 }
 
 } // namespace Thea

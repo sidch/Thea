@@ -160,11 +160,15 @@ isQuote(char c)
 }
 
 #ifdef __GNUC__
-#  define THEA_CHECK_PRINTF_ARGS   __attribute__((__format__(__printf__, 1, 2)))
-#  define THEA_CHECK_VPRINTF_ARGS  __attribute__((__format__(__printf__, 1, 0)))
+#  define THEA_CHECK_PRINTF_ARGS          __attribute__((__format__(__printf__, 1, 2)))
+#  define THEA_CHECK_VPRINTF_ARGS         __attribute__((__format__(__printf__, 1, 0)))
+#  define THEA_CHECK_MEMBER_PRINTF_ARGS   __attribute__((__format__(__printf__, 2, 3)))
+#  define THEA_CHECK_MEMBER_VPRINTF_ARGS  __attribute__((__format__(__printf__, 2, 0)))
 #else
 #  define THEA_CHECK_PRINTF_ARGS
 #  define THEA_CHECK_VPRINTF_ARGS
+#  define THEA_CHECK_MEMBER_PRINTF_ARGS
+#  define THEA_CHECK_MEMBER_VPRINTF_ARGS
 #endif
 
 /**
@@ -181,9 +185,6 @@ THEA_API std::string __cdecl format(char const * fmt, ...) THEA_CHECK_PRINTF_ARG
  * when the string is longer.
  */
 THEA_API std::string vformat(char const * fmt, va_list arg_ptr) THEA_CHECK_VPRINTF_ARGS;
-
-#undef THEA_CHECK_PRINTF_ARGS
-#undef THEA_CHECK_VPRINTF_ARGS
 
 } // namespace Thea
 

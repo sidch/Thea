@@ -416,7 +416,7 @@ clErrorString(cl_int err)
   switch (err)
   {
     case CL_SUCCESS:                            return "Success!";
-    case CL_DEVICE_NOT_FOUND:                   return "Device not found.";
+    case CL_DEVICE_NOT_FOUND:                   return "Device not found";
     case CL_DEVICE_NOT_AVAILABLE:               return "Device not available";
     case CL_COMPILER_NOT_AVAILABLE:             return "Compiler not available";
     case CL_MEM_OBJECT_ALLOCATION_FAILURE:      return "Memory object allocation failure";

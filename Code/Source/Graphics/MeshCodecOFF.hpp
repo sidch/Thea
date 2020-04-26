@@ -153,21 +153,17 @@ class CodecOFF : public CodecOFFBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
-         const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
+                       ReadCallback * callback) const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
       BinaryInputStream::Ptr tmp_in;
-
-      if (read_block_header)
+      if (block_header)
       {
-        Codec::BlockHeader bh; bh.read(input);
-        if (bh.data_size <= 0)
-          return;
-
-        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
+        if (block_header->data_size <= 0) { return; }
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)block_header->data_size);
         in = tmp_in.get();
       }
 
@@ -197,16 +193,13 @@ class CodecOFF : public CodecOFFBase<MeshT>
         VertexIndexMap vertex_indices;
         if (write_opts.binary)
         {
-          writeString("OFF BINARY\n", output);
+          output.printf("OFF BINARY\n");
           output.writeInt32((int32)num_vertices);
           output.writeInt32((int32)num_faces);
           output.writeInt32(0);  // num_edges
         }
         else
-        {
-          writeString("OFF\n", output);
-          writeString(format("%ld %ld 0\n", num_vertices, num_faces), output);
-        }
+          output.printf("OFF\n%ld %ld 0\n", num_vertices, num_faces);
 
         writeVertices(mesh_group, output, vertex_indices, callback);
 
@@ -477,12 +470,6 @@ class CodecOFF : public CodecOFFBase<MeshT>
         getStats(**ci, num_vertices, num_faces);
     }
 
-    /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
-    static void writeString(std::string const & str, BinaryOutputStream & output)
-    {
-      output.writeBytes((int64)str.length(), str.data());
-    }
-
     /** Write out all the vertices from a mesh group and map them to indices. */
     void writeVertices(MeshGroup const & mesh_group, BinaryOutputStream & output, VertexIndexMap & vertex_indices,
                        WriteCallback * callback) const
@@ -514,7 +501,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           output.writeFloat32((float32)vi->getPosition().z());
         }
         else
-          writeString(format("%f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z()), output);
+          output.printf("%f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z());
 
         vertex_indices[&(*vi)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, &(*vi));
@@ -541,7 +528,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           output.writeFloat32((float32)v.z());
         }
         else
-          writeString(format("%f %f %f\n", v.x(), v.y(), v.z()), output);
+          output.printf("%f %f %f\n", v.x(), v.y(), v.z());
 
         vertex_indices[DisplayMeshVRef(&mesh, (intx)i)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, (intx)i);
@@ -599,7 +586,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
           }
 
           os << '\n';
-          writeString(os.str(), output);
+          output.writeBytes((int64)os.str().length(), os.str().data());
         }
 
         if (callback) callback->faceWritten(&mesh, next_index++, &face);
@@ -646,7 +633,7 @@ class CodecOFF : public CodecOFFBase<MeshT>
             }
 
             os << '\n';
-            writeString(os.str(), output);
+            output.writeBytes((int64)os.str().length(), os.str().data());
           }
 
           if (callback)

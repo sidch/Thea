@@ -59,6 +59,7 @@
 #include "Array.hpp"
 #include "NamedObject.hpp"
 #include "Noncopyable.hpp"
+#include <cstdarg>
 
 namespace Thea {
 
@@ -307,37 +308,17 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
       std::string const & e = "",
       std::string const & f = "");
 
-// Indices shifted by one for member functions
-#ifdef __GNUC__
-#  define THEA_TEXTOUTPUTSTREAM_CHECK_PRINTF_ARGS   __attribute__((__format__(__printf__, 2, 3)))
-#  define THEA_TEXTOUTPUTSTREAM_CHECK_VPRINTF_ARGS  __attribute__((__format__(__printf__, 2, 0)))
-#else
-#  define THEA_TEXTOUTPUTSTREAM_CHECK_PRINTF_ARGS
-#  define THEA_TEXTOUTPUTSTREAM_CHECK_VPRINTF_ARGS
-#endif
-
     /**
      * Use C-style %printf syntax to write to the stream. Follows normal %printf conventions. Note that the output will be
      * reformatted for word-wrapping and newlines.
      */
-    void __cdecl printf(char const * fmt, ...) THEA_TEXTOUTPUTSTREAM_CHECK_PRINTF_ARGS;
-
-    /**
-     * Use C-style %printf syntax to write to the stream, where the format string is a std::string. Follows normal %printf
-     * conventions. Note that the output will be reformatted for word-wrapping and newlines.
-     *
-     * @note Can't pass \a fmt by reference because that confuses va_start.
-     */
-    void __cdecl printf(std::string const fmt, ...);
+    void __cdecl printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
 
     /**
      * Use C-style %vprintf syntax to write to the stream. Follows normal %vprintf conventions. Note that the output will be
      * reformatted for word-wrapping and newlines.
      */
-    void __cdecl vprintf(char const * fmt, va_list argPtr) THEA_TEXTOUTPUTSTREAM_CHECK_VPRINTF_ARGS;
-
-#undef THEA_TEXTOUTPUTSTREAM_CHECK_PRINTF_ARGS
-#undef THEA_TEXTOUTPUTSTREAM_CHECK_VPRINTF_ARGS
+    void __cdecl vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
 
 }; // class TextOutputStream
 

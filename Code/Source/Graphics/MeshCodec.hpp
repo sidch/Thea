@@ -54,7 +54,7 @@ namespace Graphics {
 // Forward declaration
 template <typename MeshT> class MeshGroup;
 
-/** Abstract base class for all mesh codecs. */
+/** Abstract base class for codecs that read/write meshes to/from streams. */
 template <typename MeshT>
 class MeshCodec : public Codec
 {
@@ -69,18 +69,15 @@ class MeshCodec : public Codec
     virtual ~MeshCodec() {}
 
     /**
-     * Read a mesh group from a binary output stream. If the <code>read_block_header</code> parameter is true, extra
-     * information about the mesh block (such as its size and type) will be read first from the input stream. Else, the entire
-     * input will be treated as the mesh block (the size() function of the stream must return the correct value in this case).
-     *
-     * @see writeMeshGroup
+     * Read a mesh group from a binary output stream. Any block header, if present, is assumed to have already been extracted
+     * from the stream and stored in the object pointed to by \a block_header. Else, \a block_header should be a null pointer.
      */
-    virtual void readMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, bool read_block_header,
+    virtual void readMeshGroup(MeshGroup<Mesh> & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
                                ReadCallback * callback) const = 0;
 
     /**
-     * Write a mesh group to a binary output stream. Optionally prefixes extra information about the mesh block such as its size
-     * and type (which may have not been specified in the encoding format itself).
+     * Write a mesh group to a binary output stream. Optionally (if \a write_block_header is true) prefixes extra information
+     * about the mesh block such as its size and type (which may have not been specified in the encoding format itself).
      */
     virtual void writeMeshGroup(MeshGroup<Mesh> const & mesh_group, BinaryOutputStream & output, bool write_block_header,
                                 WriteCallback * callback) const = 0;

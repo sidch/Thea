@@ -164,21 +164,17 @@ class Codec3DS : public Codec3DSBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header,
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
                        ReadCallback * callback) const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
       BinaryInputStream::Ptr tmp_in;
-
-      if (read_block_header)
+      if (block_header)
       {
-        Codec::BlockHeader bh; bh.read(input);
-        if (bh.data_size <= 0)
-          return;
-
-        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
+        if (block_header->data_size <= 0) { return; }
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)block_header->data_size);
         in = tmp_in.get();
       }
 

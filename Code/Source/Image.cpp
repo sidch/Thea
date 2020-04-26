@@ -942,7 +942,7 @@ Image::read(BinaryInputStream & input, Codec const & codec, bool read_block_head
   {
     ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
     if (!img_codec)
-      throw Error("Codec specified for image deserialization is not an image codec.");
+      throw Error("Codec specified for image deserialization is not an image codec");
 
     img_codec->readImage(*this, input, read_block_header);
   }
@@ -959,7 +959,7 @@ Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_
 
   ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
   if (!img_codec)
-    throw Error("Codec specified for image serialization is not an image codec.");
+    throw Error("Codec specified for image serialization is not an image codec");
 
   img_codec->writeImage(*this, output, write_block_header);
 }

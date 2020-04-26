@@ -187,9 +187,10 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     BinaryInputStream(uint8 const * data, int64 data_len, Endianness data_endian, bool copy_memory = true);
 
     /**
-     * Wrap the next \a block_len bytes of another input stream as a new, temporary input stream. The source stream must exist
-     * as long as this object does, since the implementation does not guarantee that the block will be fully copied to a new
-     * buffer.
+     * Wrap the next \a block_len bytes of another input stream as a new, temporary input stream with the same endianness. The
+     * source stream must exist as long as this object does, since the implementation does not guarantee that the block will be
+     * fully copied to a new buffer. The block is marked as read in the source stream, and the next read position in that stream
+     * is set to just after the block.
      */
     BinaryInputStream(BinaryInputStream & src, int64 block_len);
 
@@ -577,14 +578,48 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     /**
      * Read an arbitrary dense or sparse 2D matrix, using a codec such as CSV or HDF5 (some of which can be autodetected).
      *
+     * @param read_block_header If true, first read a header section which stores the size and codec of the serialized matrix
      * @param m The matrix in which to store the deserialized input.
      * @param codec The codec to use (pass Codec_AUTO() to autodetect it from the input).
-     * @param read_block_header If true, first read a header block which stores the size and codec of the serialized matrix
      *   data. Else, the matrix block is assumed to continue until the end of the input stream unless its end can be detected
      *   through some other means (e.g. end marker or embedded size field), and the codec will be autodetected if possible.
+     *
+     * @return Always returns 0 (except on error when it throws an exception), for consistency with the other version of this
+     *   function which chooses between a variable number of matrix types depending on the input.
+     *
+     * @note Unlike most other deserialization functions that optionally read a block header, the \a read_block_header parameter
+     *   is the first parameter instead of the last one for consistency with the other version of this function which chooses
+     *   between a variable number of matrix types depending on the input.
      */
     template <typename MatrixT>
-    void readMatrix(MatrixT & m, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    intx readMatrix(bool read_block_header, MatrixT & m, Codec const & codec = Codec_AUTO());
+
+    /**
+     * Given a set of candidate matrices of different types, read that one whose format best matches the input data. The codec
+     * will be auto-detected. The most common use is when either a dense matrix or a sparse matrix must be read, but it is not
+     * known ahead of time which is present in the input. Sample use in such a situation could be something like:
+     *
+     * \code
+     * MatrixXd dense;
+     * SparseMatrix<double> sparse;
+     * auto which = input.readMatrix(true, dense, sparse);
+     * THEA_CONSOLE << "Read " << (which == 0 ? "dense" : "sparse") << " matrix";
+     * \endcode
+     *
+     * @param read_block_header If true, first read a header section which stores the size and codec of the serialized matrix.
+     * @param m0 A matrix of the first candidate type.
+     * @param m1 A matrix of the second candidate type.
+     * @param rest Optional matrices of more candidate types.
+     *
+     * @return The index of the matrix which was read. The first matrix (of type CandidateMatrixType0) has index 0, the second
+     *   (of type CandidateMatrixType1) has index 1, and so on.
+     */
+    template < typename CandidateMatrixType0, typename CandidateMatrixType1, typename... MoreMatrixTypes,
+               typename std::enable_if< !std::is_base_of<Codec, CandidateMatrixType1>::value, int >::type * = nullptr >
+    intx readMatrix(bool read_block_header, CandidateMatrixType0 & m0, CandidateMatrixType1 & m1, MoreMatrixTypes & ... rest)
+    {
+      return readMatrixHelper(0, read_block_header, m0, m1, rest...);
+    }
 
 #   define THEA_BINARY_INPUT_STREAM_DECLARE_READER(fname, tname) \
     void read##fname(int64 n, tname * out); \
@@ -616,6 +651,17 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(CoordinateFrame3,    CoordinateFrame3)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Plane3,              Plane3)
 #   undef THEA_BINARY_INPUT_STREAM_DECLARE_READER
+
+  private:
+    /**
+     * Base case for reading a matrix of the type best matching the input. This base case takes no matrix arguments and always
+     * throws an error.
+     */
+    intx readMatrixHelper(intx index, bool read_block_header);
+
+    /** Helper function for reading a matrix of the type best matching the input. */
+    template <typename CandidateMatrixT, typename... MoreMatrixTypes>
+    intx readMatrixHelper(intx index, bool read_block_header, CandidateMatrixT & m, MoreMatrixTypes & ... rest);
 
 }; // class BinaryInputStream
 

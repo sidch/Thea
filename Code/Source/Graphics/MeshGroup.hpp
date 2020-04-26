@@ -345,16 +345,21 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
         read_AUTO(input, read_block_header, callback);
       else
       {
-        try
+        Codec::BlockHeader bh_obj, * bh = nullptr;
+        if (read_block_header)
         {
-          MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-          mesh_codec.readMeshGroup(*this, input, read_block_header, callback);
+          bh_obj.read(input);
+          bh = &bh_obj;
         }
-        catch (std::bad_cast &)
-        {
-          // Serious programming error
-          throw FatalError(getNameStr() + ": Codec specified for reading mesh group is not a mesh codec.");
-        }
+
+        MeshCodec<Mesh> const * mesh_codec = dynamic_cast< MeshCodec<Mesh> const * >(&codec);
+        if (!mesh_codec)
+          throw Error(getNameStr() + ": Codec specified for reading mesh group is not a mesh codec");
+
+        if (bh && bh->magic != mesh_codec->getMagic())
+          throw Error(getNameStr() + ": Magic string mismatch");
+
+        mesh_codec->readMeshGroup(*this, input, bh, callback);
       }
 
       updateBounds();
@@ -371,16 +376,11 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       if (codec == Codec_AUTO())
         throw Error(getNameStr() + ": You must explicitly choose a codec for writing mesh groups");
 
-      try
-      {
-        MeshCodec<Mesh> const & mesh_codec = dynamic_cast< MeshCodec<Mesh> const & >(codec);
-        mesh_codec.writeMeshGroup(*this, output, write_block_header, callback);
-      }
-      catch (std::bad_cast &)
-      {
-        // Serious programming error
-        throw FatalError(getNameStr() + ": Codec specified for writing mesh group is not a mesh codec.");
-      }
+      MeshCodec<Mesh> const * mesh_codec = dynamic_cast< MeshCodec<Mesh> const * >(&codec);
+      if (!mesh_codec)
+        throw Error(getNameStr() + ": Codec specified for writing mesh group is not a mesh codec");
+
+      mesh_codec->writeMeshGroup(*this, output, write_block_header, callback);
     }
 
     /**
@@ -483,7 +483,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       }
 
       BinaryInputStream in(path, Endianness::LITTLE);
-      mesh_codec->readMeshGroup(*this, in, false, callback);
+      mesh_codec->readMeshGroup(*this, in, nullptr, callback);
 
       setName(FilePath::objectName(path));
 
@@ -499,16 +499,13 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       if (read_block_header)
       {
         // Try to identify the codec by the magic string
-        int64 pos = input.getPosition();
         Codec::BlockHeader header; header.read(input);
-        input.setPosition(pos);
-
         MeshCodec<Mesh> const * codec = nullptr;
         intx codec_index = 0;
         while ((codec = getDefaultCodec(codec_index++)))
           if (codec->getMagic() == header.magic)
           {
-            codec->readMeshGroup(*this, input, true, callback);
+            codec->readMeshGroup(*this, input, &header, callback);
             return;
           }
       }
@@ -518,7 +515,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
         MeshCodec<Mesh> const * codec = codecFromPath(input.getPath());
         if (codec)
         {
-          codec->readMeshGroup(*this, input, false, callback);
+          codec->readMeshGroup(*this, input, nullptr, callback);
           return;
         }
       }

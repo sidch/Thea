@@ -141,8 +141,8 @@ main(int argc, char * argv[])
     THEA_CONSOLE << "  --min-samples=N       Minimum number of original plus generated samples";
     THEA_CONSOLE << "  --normals | -n        Run extra tests assuming consistently oriented mesh normals";
     THEA_CONSOLE << "  --reachability | -r   Reachability test for adjacency (requires -n)";
-    THEA_CONSOLE << "  --distances | -d      Output distances b/w all pairs of points as a .dist file.";
-    THEA_CONSOLE << "                        Requires graph to already exist.";
+    THEA_CONSOLE << "  --distances | -d      Output distances b/w all pairs of points as a .dist file";
+    THEA_CONSOLE << "                        Requires graph to already exist";
     THEA_CONSOLE << "";
 
     return -1;

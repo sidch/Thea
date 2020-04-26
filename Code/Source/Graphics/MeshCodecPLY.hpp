@@ -250,21 +250,17 @@ class CodecPLY : public CodecPLYBase<MeshT>
              WriteOptions const & write_opts_ = WriteOptions::defaults())
     : read_opts(read_opts_), write_opts(write_opts_) {}
 
-    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
-         const
+    void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
+                       ReadCallback * callback) const
     {
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
       BinaryInputStream::Ptr tmp_in;
-
-      if (read_block_header)
+      if (block_header)
       {
-        Codec::BlockHeader bh; bh.read(input);
-        if (bh.data_size <= 0)
-          return;
-
-        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)bh.data_size);
+        if (block_header->data_size <= 0) { return; }
+        tmp_in = std::make_shared<BinaryInputStream>(input, (int64)block_header->data_size);
         in = tmp_in.get();
       }
 
@@ -744,29 +740,23 @@ class CodecPLY : public CodecPLYBase<MeshT>
         getStats(**ci, num_vertices, num_faces);
     }
 
-    /** Write the bytes of a string (without any trailing zero) to a binary output stream. */
-    static void writeString(std::string const & str, BinaryOutputStream & output)
-    {
-      output.writeBytes((int64)str.length(), str.data());
-    }
-
     /** Write the default header of a PLY file. */
     void writeDefaultHeader(BinaryOutputStream & out, bool binary, intx num_vertices, intx num_faces) const
     {
-      writeString("ply\n", out);
+      out.printf("ply\n");
 
-      if (binary) writeString("format binary_little_endian 1.0\n", out);  // default to little-endian output
-      else        writeString("format ascii 1.0\n", out);
+      if (binary) out.printf("format binary_little_endian 1.0\n");  // default to little-endian output
+      else        out.printf("format ascii 1.0\n");
 
-      writeString(format("element vertex %ld\n", num_vertices), out);
-      writeString("property float x\n", out);  // stick to old typenames for compatibility
-      writeString("property float y\n", out);
-      writeString("property float z\n", out);
+      out.printf("element vertex %ld\n", num_vertices);
+      out.printf("property float x\n");  // stick to old typenames for compatibility
+      out.printf("property float y\n");
+      out.printf("property float z\n");
 
-      writeString(format("element face %ld\n", num_faces), out);
-      writeString("property list int int vertex_indices\n", out);
+      out.printf("element face %ld\n", num_faces);
+      out.printf("property list int int vertex_indices\n");
 
-      writeString("end_header\n", out);
+      out.printf("end_header\n");
     }
 
     /** Write out all the vertices from a mesh group and map them to indices. */
@@ -800,7 +790,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
           output.writeFloat32((float32)vi->getPosition().z());
         }
         else
-          writeString(format("%f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z()), output);
+          output.printf("%f %f %f\n", vi->getPosition().x(), vi->getPosition().y(), vi->getPosition().z());
 
         vertex_indices[&(*vi)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, &(*vi));
@@ -827,7 +817,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
           output.writeFloat32((float32)v.z());
         }
         else
-          writeString(format("%f %f %f\n", v.x(), v.y(), v.z()), output);
+          output.printf("%f %f %f\n", v.x(), v.y(), v.z());
 
         vertex_indices[DisplayMeshVRef(&mesh, (intx)i)] = vertex_index;
         if (callback) callback->vertexWritten(&mesh, vertex_index, (intx)i);
@@ -883,7 +873,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
           }
 
           os << '\n';
-          writeString(os.str(), output);
+          output.writeBytes((int64)os.str().length(), os.str().data());
         }
 
         if (callback) callback->faceWritten(&mesh, next_index++, &face);
@@ -928,7 +918,7 @@ class CodecPLY : public CodecPLYBase<MeshT>
             }
 
             os << '\n';
-            writeString(os.str(), output);
+            output.writeBytes((int64)os.str().length(), os.str().data());
           }
 
           if (callback)
