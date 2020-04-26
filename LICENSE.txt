@@ -1,20 +1,20 @@
-Thea Toolkit, Computer Graphics Lab, Stanford University
+Thea Toolkit
 Author: Siddhartha Chaudhuri
 
 COPYRIGHT AND LICENSING INFORMATION
 
-Informally: this project is copyright Siddhartha Chaudhuri/Stanford University.
-Most of the toolkit was developed while the author (S.C.) was a PhD student and
-later a postdoc at Stanford -- copyright for the majority of the source code
-therefore belongs to Stanford. Later modifications are copyright the author.
-The toolkit is licensed under the BSD license, which permits free distribution
-and modification in either source or binary form as long as certain conditions
-(below) are met. This software is based in part on other products. Their
-copyright notices follow the main copyright notice below.
+Summary: The toolkit is licensed under the BSD license, which permits free
+distribution and modification in either source or binary form as long as
+certain conditions (below) are met. This software is based in part on other
+products. Their licenses follow the main license below.
 
 ======
 
-Copyright (c) 2012, Siddhartha Chaudhuri/Stanford University
+Copyright (c) 2009, Siddhartha Chaudhuri/Stanford University
+Copyright (c) 2012, Siddhartha Chaudhuri/Princeton University
+Copyright (c) 2014, Siddhartha Chaudhuri/Cornell University
+Copyright (c) 2015, Siddhartha Chaudhuri/IIT Bombay
+Copyright (c) 2017, Siddhartha Chaudhuri/Adobe Systems, Inc.
 
 All rights reserved.
 
