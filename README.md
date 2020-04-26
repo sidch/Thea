@@ -1,10 +1,10 @@
 # Thea
-A toolkit for visual computing with a focus on geometry processing. 
+A toolkit for visual computing with a focus on geometry processing.
 
 Source code is available at [https://github.com/sidch/Thea](https://github.com/sidch/Thea).<br/>
 Online documentation is available at [https://sidch.github.io/Thea](https://sidch.github.io/Thea).
 
-Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released under the BSD license (see `Thea/Code/Documentation/LICENSE.txt`).
+Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released under the BSD license (see `LICENSE.txt`).
 
 If you find a bug, please let me know promptly. Thank you!
 
