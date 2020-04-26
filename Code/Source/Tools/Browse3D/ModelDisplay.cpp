@@ -350,7 +350,7 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
 
   if (!background_texture)
   {
-    static std::string const BG_IMAGE = "wood.jpg";
+    static std::string const BG_IMAGE = "background.jpg";
     Image bg_img;
     if (loadImage(bg_img, Application::getResourcePath("Images/" + BG_IMAGE)))
     {

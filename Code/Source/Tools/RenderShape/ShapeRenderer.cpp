@@ -228,7 +228,7 @@ ShapeRendererImpl::resetArgs()
   color_by_label = false;
   color_by_features = false;
   show_edges = false;
-  edge_color = ColorRGBA(0.5f, 0.5f, 1.0f, 1.0f);
+  edge_color = ColorRGBA(0.15f, 0.25f, 0.5f, 1.0f);
   labels_path = "";
   labels.clear();
   features_path = "";
