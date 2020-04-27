@@ -16,6 +16,7 @@
 #define __Thea_AbstractCompressedSparseMatrix_hpp__
 
 #include "AbstractSparseMatrix.hpp"
+#include "RowOrColumnMajorMatrix.hpp"
 
 namespace Thea {
 
@@ -26,16 +27,11 @@ namespace Thea {
  * @see Eigen::SparseMatrix
  */
 template <typename T>
-class /* THEA_API */ AbstractCompressedSparseMatrix : public virtual AbstractSparseMatrix<T>
+class /* THEA_API */ AbstractCompressedSparseMatrix : public virtual AbstractSparseMatrix<T>,
+                                                      public virtual RowOrColumnMajorMatrix<T>
 {
   public:
     THEA_DECL_SMART_POINTERS(AbstractCompressedSparseMatrix)
-
-    /** Is the matrix stored in compressed row format? */
-    virtual int8 isRowMajor() const = 0;
-
-    /** Is the matrix stored in compressed column format? */
-    virtual int8 isColumnMajor() const = 0;
 
     /**
      * Make sure the matrix actually is fully compressed. If not, it will be stored in Eigen's custom format which allows gaps

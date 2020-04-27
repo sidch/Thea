@@ -39,8 +39,8 @@ class /* THEA_API */ AbstractSparseMatrix : public virtual AbstractMatrix<T>
      * If the matrix is stored in compressed column or row format, get a pointer to a derived interface supporting access
      * specific to that format. Else, return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractCompressedSparseMatrix<T> const * asCompressed() const = 0;
 
@@ -48,8 +48,8 @@ class /* THEA_API */ AbstractSparseMatrix : public virtual AbstractMatrix<T>
      * If the matrix is stored in compressed column or row format, get a pointer to a derived interface supporting access
      * specific to that format. Else, return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractCompressedSparseMatrix<T> * asCompressed() = 0;
 

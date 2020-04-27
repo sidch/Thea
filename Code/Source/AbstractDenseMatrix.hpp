@@ -17,6 +17,7 @@
 
 #include "AbstractAddressableMatrix.hpp"
 #include "MatVec.hpp"
+#include "RowOrColumnMajorMatrix.hpp"
 #include <type_traits>
 
 namespace Thea {
@@ -26,16 +27,10 @@ namespace Thea {
  * Useful for passing matrices across shared library boundaries.
  */
 template <typename T>
-class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMatrix<T>
+class /* THEA_API */ AbstractDenseMatrix : public virtual AbstractAddressableMatrix<T>, public virtual RowOrColumnMajorMatrix<T>
 {
   public:
     THEA_DECL_SMART_POINTERS(AbstractDenseMatrix)
-
-    /** Is the matrix stored in row-major format? */
-    virtual int8 isRowMajor() const = 0;
-
-    /** Is the matrix stored in column-major format? */
-    virtual int8 isColumnMajor() const = 0;
 
     /** Get a pointer to the beginning of the matrix's data block. */
     virtual T const * data() const = 0;

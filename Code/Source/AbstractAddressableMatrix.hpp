@@ -62,8 +62,8 @@ class /* THEA_API */ AbstractAddressableMatrix : public virtual AbstractMatrix<T
      * If the matrix is stored as a dense array, get a pointer to a derived interface supporting dense-specific access. Else,
      * return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractDenseMatrix<T> const * asDense() const = 0;
 
@@ -71,8 +71,8 @@ class /* THEA_API */ AbstractAddressableMatrix : public virtual AbstractMatrix<T
      * If the matrix is stored as a dense array, get a pointer to a derived interface supporting dense-specific access. Else,
      * return null.
      *
-     * @note: <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid
-     *   it and only use <code>static_cast</code> is dangerous.
+     * @note <code>dynamic_cast</code> does not work reliably across shared library boundaries, and relying on users to avoid it
+     *   and only use <code>static_cast</code> is dangerous.
      */
     virtual AbstractDenseMatrix<T> * asDense() = 0;
 

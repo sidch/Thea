@@ -78,9 +78,11 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     // Functions from AbstractSparseMatrix
     int64 numStoredElements() const { return m->nonZeros(); }
 
-    // Functions from AbstractCompressedSparseMatrix
-    int8 isRowMajor() const { return MatrixT::Flags & Eigen::RowMajorBit; }
+    // Functions from RowOrColumnMajorMatrix
+    int8 isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
     int8 isColumnMajor() const { return !isRowMajor(); }
+
+    // Functions from AbstractCompressedSparseMatrix
     int64 innerSize() const { return (int64)m->innerSize(); }
     int64 outerSize() const { return (int64)m->outerSize(); }
     int8 isFullyCompressed() const { return m->isCompressed(); }

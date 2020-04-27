@@ -26,7 +26,7 @@ namespace Thea {
 #define THEA_ENUM_CLASS_BODY(name)                                                                                            \
     public:                                                                                                                   \
       name() {}                                                                                                               \
-      template <typename T> explicit name(T value_) : value(static_cast<Value>(value_)) {}                                    \
+      template <typename EnumClassSrcT> explicit name(EnumClassSrcT value_) : value(static_cast<Value>(value_)) {}            \
       name(Value value_) : value(value_) {}                                                                                   \
       operator Value() const { return value; }                                                                                \
       bool operator==(Value other) const { return value == other; }                                                           \
