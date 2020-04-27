@@ -8,6 +8,10 @@ Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released unde
 
 If you find a bug, please let me know promptly. Thank you!
 
+***
+!!! **IMPORTANT** !!! If you last cloned this repository before Apr 27, 2020, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged.
+***
+
 ## What is Thea?
 
 *Thea* is a library of C++ classes for computer graphics, primarily for [3D geometry processing](https://www.cse.iitb.ac.in/~cs749/spr2017). It is the core library I use for nearly all my research projects, and it is also the core library for [Adobe Fuse](https://www.adobe.com/products/fuse.html), which I originally authored. As such, it is developed for personal use and its features reflect this: please do not write to me to asking for specific features to be included. However, over time, it has become quite general-purpose. Among its features are:
