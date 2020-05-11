@@ -1,3 +1,5 @@
+![Thea header image](https://raw.githubusercontent.com/sidch/Thea/master/Code/Documentation/images/header.jpg)
+
 # Thea
 A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
 
