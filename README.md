@@ -183,7 +183,7 @@ out.save("remeshed.obj");
 
 Figure: *(Left)* Input mesh. *(Right)* After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used. Thea's bundled *RenderShape* utility was used to render these images.
 
-Here is a complete, compilable version of the above example: [remesh.cpp](Code/Documentation/remesh.cpp)
+Here is a complete, compilable version of the above example: [remesh.cpp](Code/Documentation/samples/remesh.cpp)
 
 For some real-world samples, see the applications in the `Thea/Code/Source/Tools` folder.
 
