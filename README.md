@@ -181,7 +181,7 @@ out.save("remeshed.obj");
 
 ![Bunny mesh, before and after remeshing](Code/Documentation/images/remesh.jpg?raw=true)
 
-Figure: *(Left)* Input mesh. *(Right)* After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used.
+Figure: *(Left)* Input mesh. *(Right)* After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used. Thea's bundled *RenderShape* utility was used to render these images.
 
 Here is a complete, compilable version of the above example: [remesh.cpp](Code/Documentation/remesh.cpp)
 
