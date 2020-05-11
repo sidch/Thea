@@ -129,6 +129,8 @@
 #  define THEA_END_PACKED_CLASS(byte_align)  ;
 #endif
 
+namespace Thea {
+
 // The following typedefs are here and not in NumericType.hpp since they are needed by headers that NumericType.hpp itself
 // depends on.
 
@@ -156,5 +158,7 @@ typedef std::ptrdiff_t intx;
  * @see https://rust-lang.github.io/rfcs/0544-rename-int-uint.html
  */
 typedef std::size_t uintx;
+
+} // namespace Thea
 
 #endif

@@ -103,11 +103,11 @@ A `MeshGroup` is a hierarchical collection of meshes, encoding a scene graph. Th
 
 Next, we'll create a "functor" class that evaluates a signed distance field around the shape. It returns 0 for points on the surface of the shape, positive values for points outside the shape boundary, and negative values for points inside the shape boundary.
 ```cpp
-/** Assumes consistent outward normals, and no nested structures. */
+// Assumes consistent outward normals, and no nested structures.
 class SignedDistance
 {
   public:
-    /** Constructor. */
+    // Constructor.
     SignedDistance(MeshGroup<Mesh> & m) : num_calls(0)
     {
       kdtree.add(m);
@@ -115,7 +115,7 @@ class SignedDistance
       kdtree.enableNearestNeighborAcceleration();
     }
 
-    /** Evaluate the signed distance from a given point. */
+    // Evaluate the signed distance from a given point.
     Real operator()(Vector3 const & p) const
     {
       num_calls++;
@@ -126,7 +126,7 @@ class SignedDistance
       return cn.dot(cp - p) < 0 ? d : -d;
     }
 
-    /** How many times was the kdtree queried? */
+    // How many times was the kdtree queried?
     intx numCalls() const { return num_calls; }
 
   private:
@@ -181,7 +181,7 @@ out.save("remeshed.obj");
 
 ![Bunny mesh, before and after remeshing](https://raw.githubusercontent.com/sidch/Thea/master/Code/Documentation/images/remesh.jpg)
 
-Figure: *(Left)* Input mesh. *(Right)* After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used. Thea's bundled *RenderShape* utility was used to render these images.
+Figure: (Left) Input mesh. (Right) After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used. Thea's bundled *RenderShape* utility was used to render these images.
 
 Here is a complete, compilable version of the above example: [remesh.cpp](https://github.com/sidch/Thea/blob/master/Code/Documentation/samples/remesh.cpp)
 
