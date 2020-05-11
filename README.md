@@ -1,5 +1,5 @@
 # Thea
-A toolkit for visual computing with a focus on geometry processing.
+A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
 
 Source code is available at [https://github.com/sidch/Thea](https://github.com/sidch/Thea).<br/>
 Online documentation is available at [https://sidch.github.io/Thea](https://sidch.github.io/Thea).
@@ -36,7 +36,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Design principles
 
-*Thea* is written in standards-compliant C++11, and is designed with the following objectives in mind:
+*Thea* has a particular focus on being a foundation layer for interactive 3D modeling applications. It is written in standards-compliant C++11 for speed, and is designed with the following objectives in mind:
 * Optimize for ease of use
   * Clean, simple APIs are essential
   * Everything should be well-documented
