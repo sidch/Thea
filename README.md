@@ -50,7 +50,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
   * Typedef common specializations  (`Vector3 = Eigen::Matrix<Real, 3, 1, MatrixLayout::COLUMN_MAJOR | Eigen::DontAlign>`)
   * `enable_if` + `type_traits` is often better than polymorphism
 
-There are a few more specific design choices that apply to specific submodules. *Thea* has been extensively used for interactive 3D modeling applications. Hence, the main mesh class (`GeneralMesh`) is optimized for fast local updates on the CPU, with low-overhead synchronization with the GPU. Specifically:
+There are a few more specific design choices that apply to specific submodules. Since *Thea* focuses on interactive 3D modeling, the main mesh class (`GeneralMesh`) is optimized for fast local updates on the CPU, with low-overhead synchronization with the GPU. Specifically:
 * All references are pointers to persistent locations, not indices
   * Vertex/face/edge lists are std::list
   * Pass a custom pooled allocator if you want fast small allocs and memory coherence
@@ -58,7 +58,7 @@ There are a few more specific design choices that apply to specific submodules. 
 * GPU updates are fine-grained (but could be more so)
   * Only affected buffers are updated, in lazy batches
 
-Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`).
+Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`). In conjunction, *Thea*'s kd-tree class (`KDTreeN`), used to detect UI interactions with a mesh, tries to minimize the latency of recomputing the tree after the underlying geometry is changed.
 
 ### Examples
 
