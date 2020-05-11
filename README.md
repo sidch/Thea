@@ -1,5 +1,5 @@
 # Thea
-A toolkit for visual computing with a focus on geometry processing.
+A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
 
 Source code is available at [https://github.com/sidch/Thea](https://github.com/sidch/Thea).<br/>
 Online documentation is available at [https://sidch.github.io/Thea](https://sidch.github.io/Thea).
@@ -17,7 +17,7 @@ If you find a bug, please let me know promptly. Thank you!
 *Thea* is a library of C++ classes for computer graphics, primarily for [3D geometry processing](https://www.cse.iitb.ac.in/~cs749/spr2017). It is the core library I use for nearly all my research projects, and it is also the core library for [Adobe Fuse](https://www.adobe.com/products/fuse.html), which I originally authored. As such, it is developed for personal use and its features reflect this: please do not write to me to asking for specific features to be included. However, over time, it has become quite general-purpose. Among its features are:
 
 * **Polygon mesh classes** with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and a lightweight one designed only for rendering.
-* General **linear algebra** via [Eigen](http://eigen.tuxfamily.org), **geometric transformations** (e.g. rigid transforms), several additional convenience functions and classes (e.g. to wrap raw buffers as matrices), and easy-to-use interfaces to various **solver packages** (NNLS, CSPARSE, ARPACK).
+* General **linear algebra** via [Eigen](http://eigen.tuxfamily.org), **geometric transformations** (e.g. rigid transforms), several additional convenience functions and classes (e.g. to wrap raw buffers as matrices), and easy-to-use interfaces to various **solver packages** (Eigen, NNLS, CSPARSE, ARPACK).
 * 2, 3 and N-dimensional **geometric primitives**, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
 * An eclectic **collection of algorithms**, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, surface parametrization (global and local), discrete Laplace-Beltrami operators, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic **image processing** (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
@@ -36,7 +36,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Design principles
 
-*Thea* is written in standards-compliant C++11, and is designed with the following objectives in mind:
+*Thea* has a particular focus on being a foundation layer for interactive 3D modeling applications. It is written in standards-compliant C++11 for speed, and is designed with the following objectives in mind:
 * Optimize for ease of use
   * Clean, simple APIs are essential
   * Everything should be well-documented
@@ -50,7 +50,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
   * Typedef common specializations  (`Vector3 = Eigen::Matrix<Real, 3, 1, MatrixLayout::COLUMN_MAJOR | Eigen::DontAlign>`)
   * `enable_if` + `type_traits` is often better than polymorphism
 
-There are a few more specific design choices that apply to specific submodules. *Thea* has been extensively used for interactive 3D modeling applications. Hence, the main mesh class (`GeneralMesh`) is optimized for fast local updates on the CPU, with low-overhead synchronization with the GPU. Specifically:
+There are a few more specific design choices that apply to specific submodules. Since *Thea* focuses on interactive 3D modeling, the main mesh class (`GeneralMesh`) is optimized for fast local updates on the CPU, with low-overhead synchronization with the GPU. Specifically:
 * All references are pointers to persistent locations, not indices
   * Vertex/face/edge lists are std::list
   * Pass a custom pooled allocator if you want fast small allocs and memory coherence
@@ -58,7 +58,7 @@ There are a few more specific design choices that apply to specific submodules. 
 * GPU updates are fine-grained (but could be more so)
   * Only affected buffers are updated, in lazy batches
 
-Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`).
+Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`). In conjunction, *Thea*'s kd-tree class (`KDTreeN`), used to detect UI interactions with a mesh, tries to minimize the latency of recomputing the tree after the underlying geometry is changed.
 
 ### Examples
 
