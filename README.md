@@ -262,6 +262,7 @@ c++ -std=c++11 -Wall -g2 -O2 -fno-strict-aliasing \
     -I"$prefix/include" -I"$prefix/include/eigen3" \
     <source-files> \
     -L"$prefix/lib" -lThea \
+    -lfreeimageplus -lfreeimage -l3ds \
     -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt \
     -lm \
     [-ldl] [-framework Carbon]
