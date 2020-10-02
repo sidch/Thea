@@ -17,10 +17,10 @@
 
 #include "ColorL.hpp"
 #include "ColorL8.hpp"
-#include "ColorRGB.hpp"
-#include "ColorRGB8.hpp"
-#include "ColorRGBA.hpp"
-#include "ColorRGBA8.hpp"
+#include "ColorRgb.hpp"
+#include "ColorRgb8.hpp"
+#include "ColorRgba.hpp"
+#include "ColorRgba8.hpp"
 
 namespace Thea {
 

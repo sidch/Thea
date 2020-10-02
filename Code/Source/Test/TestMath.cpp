@@ -108,7 +108,7 @@ testSVD()
   VectorXd consts; consts << 6, 5, 7, 10;
 
   cout << endl;
-  if (lsq.solve(MatrixWrapper<MatrixXd>(&coeffs), consts.data()))
+  if (lsq.solve(&asLvalue(Math::wrapMatrix(coeffs)), consts.data()))
     cout << "Unconstrained linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
          << endl;
   else
@@ -117,7 +117,7 @@ testSVD()
   // Next, non-negative solution only (expected result [0, 2.57] (CHECK!))
   cout << endl;
   StdLinearSolver lsq_nneg(StdLinearSolver::Method::DEFAULT, StdLinearSolver::Constraint::NON_NEGATIVE);
-  if (lsq.solve(MatrixWrapper<MatrixXd>(&coeffs), consts.data()))
+  if (lsq.solve(&asLvalue(Math::wrapMatrix(coeffs)), consts.data()))
     cout << "Non-negative linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
          << endl;
   else

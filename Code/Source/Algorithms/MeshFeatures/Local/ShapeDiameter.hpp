@@ -18,7 +18,7 @@
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
 #include "../../BestFitSphere3.hpp"
-#include "../../MeshKDTree.hpp"
+#include "../../MeshKdTree.hpp"
 #include "../../MetricL2.hpp"
 #include "../../PointCollectorN.hpp"
 #include "../../RayIntersectionTester.hpp"
@@ -40,15 +40,15 @@ namespace Local {
  *
  * Gal, Shamir and Cohen-Or, "Pose-Oblivious Shape Signature", IEEE TVCG 2007.
  */
-template < typename MeshT, typename ExternalKDTreeT = MeshKDTree<MeshT> >
+template < typename MeshT, typename ExternalKdTreeT = MeshKdTree<MeshT> >
 class ShapeDiameter
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
-    typedef ExternalKDTreeT ExternalKDTree;  ///< A precomputed kd-tree on the mesh.
+    typedef ExternalKdTreeT ExternalKdTree;  ///< A precomputed kd-tree on the mesh.
 
   private:
-    typedef MeshKDTree<Mesh> KDTree;  ///< A kd-tree on the mesh.
+    typedef MeshKdTree<Mesh> KdTree;  ///< A kd-tree on the mesh.
 
   public:
     /**
@@ -60,7 +60,7 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Mesh const & mesh, Real normalization_scale = -1)
-    : kdtree(new KDTree), precomp_kdtree(nullptr), scale(normalization_scale)
+    : kdtree(new KdTree), precomp_kdtree(nullptr), scale(normalization_scale)
     {
       kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -83,7 +83,7 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group, Real normalization_scale = -1)
-    : kdtree(new KDTree), precomp_kdtree(nullptr), scale(normalization_scale)
+    : kdtree(new KdTree), precomp_kdtree(nullptr), scale(normalization_scale)
     {
       kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -109,7 +109,7 @@ class ShapeDiameter
      *   kd-tree. If you want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute
      *   it separately and pass it as a parameter to this function.
      */
-    ShapeDiameter(ExternalKDTree const * kdtree_, Real normalization_scale = -1)
+    ShapeDiameter(ExternalKdTree const * kdtree_, Real normalization_scale = -1)
     : kdtree(nullptr), precomp_kdtree(kdtree_), scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
@@ -260,8 +260,8 @@ class ShapeDiameter
     }
 
   private:
-    KDTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
-    ExternalKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
+    KdTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
+    ExternalKdTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
     Real scale;  ///< The normalization length.
 
 }; // class ShapeDiameter

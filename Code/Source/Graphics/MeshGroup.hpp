@@ -21,7 +21,7 @@
 #include "../NamedObject.hpp"
 #include "../Serializable.hpp"
 #include "../Set.hpp"
-#include "Drawable.hpp"
+#include "IDrawable.hpp"
 #include "MeshCodec.hpp"
 
 namespace Thea {
@@ -29,7 +29,7 @@ namespace Graphics {
 
 /** A collection of meshes and subgroups. */
 template <typename MeshT>
-class MeshGroup : public virtual NamedObject, public Drawable, public Serializable
+class MeshGroup : public virtual NamedObject, public IDrawable, public Serializable
 {
   public:
     THEA_DECL_SMART_POINTERS(MeshGroup)
@@ -293,7 +293,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      */
     AxisAlignedBox3 const & getBounds() const { return bounds; }
 
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
+    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
     {
       for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
         if (*mi) (*mi)->draw(render_system, options);
@@ -306,7 +306,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     using Serializable::write;  // really necessary? Cannot be reproduced in toy example -- maybe a compiler bug? In any case
                                 // the behavior appears to be as expected with this line.
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false)
     {
       read(input, codec, read_block_header, nullptr);
     }
@@ -314,8 +314,8 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     /** Read the mesh group from an input stream, with a callback function called after every element is read. */
     void read(BinaryInputStream & input, Codec const & codec, bool read_block_header, ReadCallback * callback)
     {
-      if (codec == Codec_AUTO())
-        read_AUTO(input, read_block_header, callback);
+      if (codec == CodecAuto())
+        readAuto(input, read_block_header, callback);
       else
       {
         Codec::BlockHeader bh_obj, * bh = nullptr;
@@ -338,7 +338,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
       updateBounds();
     }
 
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const
     {
       write(output, codec, write_block_header, nullptr);
     }
@@ -346,7 +346,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     /** Write the mesh group to an output stream, with a callback function called after every element is written. */
     void write(BinaryOutputStream & output, Codec const & codec, bool write_block_header, WriteCallback * callback) const
     {
-      if (codec == Codec_AUTO())
+      if (codec == CodecAuto())
         throw Error(getNameStr() + ": You must explicitly choose a codec for writing mesh groups");
 
       MeshCodec<Mesh> const * mesh_codec = dynamic_cast< MeshCodec<Mesh> const * >(&codec);
@@ -360,7 +360,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * Save the mesh group to a file. The file will <b>not</b> have a prefixed Codec::BlockHeader. An exception will be thrown
      * if the mesh group cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec = Codec_AUTO(), WriteCallback * callback = nullptr) const
+    void save(std::string const & path, Codec const & codec = CodecAuto(), WriteCallback * callback = nullptr) const
     {
       save(path, codec, nullptr, callback);
     }
@@ -373,14 +373,14 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     void save(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
               WriteCallback * callback = nullptr) const
     {
-      save(path, Codec_AUTO(), &codecs, callback);
+      save(path, CodecAuto(), &codecs, callback);
     }
 
     /**
      * Load the mesh from a file. Unlike read(), the file should <b>not</b> have a prefixed header. An exception will be thrown
      * if the mesh group cannot be loaded.
      */
-    void load(std::string const & path, Codec const & codec = Codec_AUTO(), ReadCallback * callback = nullptr)
+    void load(std::string const & path, Codec const & codec = CodecAuto(), ReadCallback * callback = nullptr)
     {
       load(path, codec, nullptr, callback);
     }
@@ -393,7 +393,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     void load(std::string const & path, Array< typename MeshCodec<Mesh>::Ptr > const & codecs,
               ReadCallback * callback = nullptr)
     {
-      load(path, Codec_AUTO(), &codecs, callback);
+      load(path, CodecAuto(), &codecs, callback);
     }
 
   private:
@@ -406,7 +406,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     {
       MeshCodec<Mesh> const * mesh_codec = nullptr;
 
-      if (codec == Codec_AUTO())
+      if (codec == CodecAuto())
       {
         if (codecs)
           mesh_codec = codecFromPath(path, *codecs);
@@ -439,7 +439,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     {
       MeshCodec<Mesh> const * mesh_codec = nullptr;
 
-      if (codec == Codec_AUTO())
+      if (codec == CodecAuto())
       {
         if (codecs)
           mesh_codec = codecFromPath(path, *codecs);
@@ -467,7 +467,7 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
      * Automatically detect the type of the encoded mesh group and read it appropriately. Limited to a hard-coded set of
      * standard mesh codecs in the default specialization.
      */
-    void read_AUTO(BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
+    void readAuto(BinaryInputStream & input, bool read_block_header, ReadCallback * callback)
     {
       if (read_block_header)
       {
@@ -516,10 +516,10 @@ class MeshGroup : public virtual NamedObject, public Drawable, public Serializab
     static MeshCodec<Mesh> const * getDefaultCodec(intx index)
     {
       // A set of default codecs that should be implemented for each mesh type
-      static Codec3DS<Mesh> const codec_3DS;
-      static CodecOBJ<Mesh> const codec_OBJ;
-      static CodecOFF<Mesh> const codec_OFF;
-      static CodecPLY<Mesh> const codec_PLY;
+      static Codec3ds<Mesh> const codec_3DS;
+      static CodecObj<Mesh> const codec_OBJ;
+      static CodecOff<Mesh> const codec_OFF;
+      static CodecPly<Mesh> const codec_PLY;
       static MeshCodec<Mesh> const * codecs[] = { &codec_3DS, &codec_OBJ, &codec_OFF, &codec_PLY };
       static int NUM_CODECS = (intx)(sizeof(codecs) / sizeof(MeshCodec<Mesh> const *));
 

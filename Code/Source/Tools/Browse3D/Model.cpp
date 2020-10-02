@@ -20,7 +20,7 @@
 #include "ModelDisplay.hpp"
 #include "PointCloud.hpp"
 #include "Util.hpp"
-#include "../../Algorithms/KDTreeN.hpp"
+#include "../../Algorithms/KdTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
@@ -55,18 +55,18 @@ getWorkingDir()
 }
 
 bool
-enableGPURendering(Mesh & mesh)
+enableGpuRendering(Mesh & mesh)
 {
-  mesh.setGPUBufferedRendering(true);
-  mesh.setGPUBufferedWireframe(true);
+  mesh.setGpuBufferedRendering(true);
+  mesh.setGpuBufferedWireframe(true);
   return false;
 }
 
 bool
-disableGPURendering(Mesh & mesh)
+disableGpuRendering(Mesh & mesh)
 {
-  mesh.setGPUBufferedRendering(false);
-  mesh.setGPUBufferedWireframe(false);
+  mesh.setGpuBufferedRendering(false);
+  mesh.setGpuBufferedWireframe(false);
   return false;
 }
 
@@ -80,7 +80,7 @@ linkMeshesToParent(MeshGroupPtr mesh_group)
     linkMeshesToParent(*ci);
 }
 
-static ColorRGBA const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
+static ColorRgba const PICKED_SEGMENT_COLOR(0.4f, 0.69f, 0.21f, 1.0f);
 
 } // namespace ModelInternal
 
@@ -93,9 +93,9 @@ Model::Model(std::string const & initial_mesh)
   segment_depth_promotion(0),
   selected_segment(-1),
   valid_kdtree(true),
-  kdtree(new KDTree),
+  kdtree(new KdTree),
   valid_vertex_kdtree(true),
-  vertex_kdtree(new VertexKDTree)
+  vertex_kdtree(new VertexKdTree)
 {
   load(initial_mesh);
 
@@ -177,7 +177,7 @@ Model::load(std::string path_)
     Mesh::resetVertexIndices();  // reset counting
     Mesh::resetFaceIndices();
 
-    static CodecOBJ<Mesh> const obj_codec(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true));
+    static CodecObj<Mesh> const obj_codec(CodecObj<Mesh>::ReadOptions().setIgnoreTexCoords(true));
     try
     {
       if (endsWith(toLower(path_), ".obj"))
@@ -258,18 +258,18 @@ Model::clearTransform()
 void
 Model::invalidateAll()
 {
-  invalidateVertexKDTree();
-  invalidateKDTree();
+  invalidateVertexKdTree();
+  invalidateKdTree();
 }
 
 void
-Model::invalidateKDTree()
+Model::invalidateKdTree()
 {
   valid_kdtree = false;
 }
 
 void
-Model::updateKDTree() const
+Model::updateKdTree() const
 {
   if (valid_kdtree) return;
 
@@ -290,7 +290,7 @@ Model::updateKDTree() const
 }
 
 void
-Model::invalidateVertexKDTree()
+Model::invalidateVertexKdTree()
 {
   valid_vertex_kdtree = false;
 }
@@ -316,7 +316,7 @@ struct CollectVerticesFunctor
 } // namespace ModelInternal
 
 void
-Model::updateVertexKDTree() const
+Model::updateVertexKdTree() const
 {
   if (valid_vertex_kdtree) return;
 
@@ -332,20 +332,20 @@ Model::updateVertexKDTree() const
   valid_vertex_kdtree = true;
 }
 
-Model::KDTree const &
-Model::getKDTree(bool recompute_if_invalid) const
+Model::KdTree const &
+Model::getKdTree(bool recompute_if_invalid) const
 {
   if (recompute_if_invalid)
-    updateKDTree();
+    updateKdTree();
 
   return *kdtree;
 }
 
-Model::VertexKDTree const &
-Model::getVertexKDTree(bool recompute_if_invalid) const
+Model::VertexKdTree const &
+Model::getVertexKdTree(bool recompute_if_invalid) const
 {
   if (recompute_if_invalid)
-    updateVertexKDTree();
+    updateVertexKdTree();
 
   return *vertex_kdtree;
 }
@@ -353,19 +353,19 @@ Model::getVertexKDTree(bool recompute_if_invalid) const
 bool
 Model::rayIntersects(Ray3 const & ray, Real max_time) const
 {
-  return getKDTree().rayIntersects<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getKdTree().rayIntersects<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 Real
 Model::rayIntersectionTime(Ray3 const & ray, Real max_time) const
 {
-  return getKDTree().rayIntersectionTime<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getKdTree().rayIntersectionTime<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 Model::RayStructureIntersection3
 Model::rayIntersection(Ray3 const & ray, Real max_time) const
 {
-  return getKDTree().rayStructureIntersection<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getKdTree().rayStructureIntersection<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 intx
@@ -379,14 +379,14 @@ Model::closestPoint(Vector3 const & query, Real distance_bound, Real * min_dist,
     if (accelerate_with_vertices)
     {
       // Tighten the bound as much as we can with a fast initial query on the set of vertices
-      updateVertexKDTree();
+      updateVertexKdTree();
       double fast_distance_bound = 0;
       intx vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, &fast_distance_bound);
       if (vertex_index >= 0)
         distance_bound = (Real)fast_distance_bound;
     }
 
-    updateKDTree();
+    updateKdTree();
     double d = 0;
     intx index = kdtree->closestElement<MetricL2>(query, distance_bound, &d, closest_pt);
     if (index >= 0)
@@ -414,7 +414,7 @@ Model::pick(Ray3 const & ray)
   }
   else
   {
-    KDTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, true);
+    KdTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, true);
     if (cp.isValid())
     {
       t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().normalized());
@@ -428,7 +428,7 @@ Model::pick(Ray3 const & ray)
 
   if (index >= 0)
   {
-    KDTree::VertexTriple const & triple = kdtree->getElements()[(size_t)index].getVertices();
+    KdTree::VertexTriple const & triple = kdtree->getElements()[(size_t)index].getVertices();
     picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
     picked_sample.face_index = triple.getMeshFace()->getIndex();
 
@@ -744,7 +744,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
   if (isec.isValid())
   {
     size_t index = (size_t)isec.getElementIndex();
-    KDTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
+    KdTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
     Mesh * mesh = const_cast<Mesh *>(triple.getMesh());
 
     Segment const * existing = getSegment(mesh);
@@ -982,25 +982,25 @@ Model::getSegmentsPath() const
 
 namespace ModelInternal {
 
-ColorRGB
+ColorRgb
 featToColor(Real f0, Real const * f1, Real const * f2)
 {
   if (!f2)
   {
     if (!f1)
-      return ColorRGB::jetColorMap(0.2 + 0.6 * f0);
+      return ColorRgb::jetColorMap(0.2 + 0.6 * f0);
     else
-      return ColorRGB(f0, *f1, 1.0f);
+      return ColorRgb(f0, *f1, 1.0f);
   }
   else
-    return ColorRGB(f0, *f1, *f2);
+    return ColorRgb(f0, *f1, *f2);
 }
 
-typedef Algorithms::KDTreeN<Vector3, 3> PointKDTree;
+typedef Algorithms::KdTreeN<Vector3, 3> PointKdTree;
 
 struct VertexFeatureVisitor
 {
-  VertexFeatureVisitor(PointKDTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  VertexFeatureVisitor(PointKdTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
   : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
@@ -1009,7 +1009,7 @@ struct VertexFeatureVisitor
     Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
-    BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
+    BoundedSortedArrayN<MAX_NBRS, PointKdTree::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
       nbrs.clear();
@@ -1019,7 +1019,7 @@ struct VertexFeatureVisitor
 
       if (num_nbrs > 0)
       {
-        ColorRGB c(0, 0, 0);
+        ColorRgb c(0, 0, 0);
         double sum_weights = 0;
         for (int j = 0; j < num_nbrs; ++j)
         {
@@ -1037,16 +1037,16 @@ struct VertexFeatureVisitor
       else
       {
         THEA_WARNING << "No nearest neighbor found!";
-        vi->attr().setColor(ColorRGB(1, 1, 1));
+        vi->attr().setColor(ColorRgb(1, 1, 1));
       }
     }
 
-    mesh.invalidateGPUBuffers(Mesh::BufferID::VERTEX_COLOR);
+    mesh.invalidateGpuBuffers(Mesh::BufferId::VERTEX_COLOR);
 
     return false;
   }
 
-  PointKDTree * fkdtree;
+  PointKdTree * fkdtree;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
@@ -1182,7 +1182,7 @@ Model::loadFeatures(std::string const & path_)
       }
     }
 
-    PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
+    PointKdTree fkdtree(feat_pts.begin(), feat_pts.end());
     VertexFeatureVisitor visitor(&fkdtree,
                                  &feat_vals[0][0],
                                  feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
@@ -1201,7 +1201,7 @@ namespace ModelInternal {
 class FaceLabeler
 {
   public:
-    FaceLabeler(Array<ColorRGBA> const & elem_colors_) : elem_colors(elem_colors_) {}
+    FaceLabeler(Array<ColorRgba> const & elem_colors_) : elem_colors(elem_colors_) {}
 
     bool operator()(Mesh & mesh) const
     {
@@ -1218,7 +1218,7 @@ class FaceLabeler
     }
 
   private:
-    Array<ColorRGBA> const & elem_colors;
+    Array<ColorRgba> const & elem_colors;
 };
 
 } // namespace ModelInternal
@@ -1238,7 +1238,7 @@ Model::loadElementLabels(std::string const & path_)
     return has_elem_labels;
   }
 
-  Array<ColorRGBA> elem_colors;
+  Array<ColorRgba> elem_colors;
   std::string line;
   while (std::getline(in, line))
   {
@@ -1381,10 +1381,10 @@ Model::updateBounds()
 }
 
 void
-Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
-                              Graphics::AbstractRenderOptions const & options) const
+Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::IRenderSystem & render_system,
+                              Graphics::IRenderOptions const & options) const
 {
-  Graphics::RenderOptions ro(options);  // make a copy and tweak it
+  Graphics::RenderOptions ro = dynamic_cast<Graphics::RenderOptions const &>(options);  // make a copy and tweak it
   ro.setOverrideEdgeColor(true);
 
   for (MeshGroup::MeshConstIterator mi = mesh_group->meshesBegin(); mi != mesh_group->meshesEnd(); ++mi, ++node_index)
@@ -1398,27 +1398,27 @@ Model::drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_ind
     {
       if (seg_index >= 0 && seg_index == selected_segment)
       {
-        ColorRGBA edge_color(1, 0, 0, 1);
+        ColorRgba edge_color(1, 0, 0, 1);
         ro.setEdgeColor(edge_color.data()).setDrawEdges(true);
       }
       else
         ro.setDrawEdges(false);
 
-      render_system.setColor(getLabelColor(seg->getLabel()));
+      render_system.setColor(getLabelColor(seg->getLabel()).data());
     }
     else if (picked_segment.hasMesh(mesh, segment_depth_promotion))
     {
       ro.setDrawEdges(false);
-      render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR);
+      render_system.setColor(ModelInternal::PICKED_SEGMENT_COLOR.data());
     }
     else
     {
-      ColorRGBA edge_color = getPaletteColor(node_index);
+      ColorRgba edge_color = getPaletteColor(node_index);
       ro.setDrawEdges(true).setEdgeColor(edge_color.data());
-      render_system.setColor(color);
+      render_system.setColor(color.data());
     }
 
-    mesh->draw(render_system, ro);
+    mesh->draw(&render_system, &ro);
   }
 
   for (MeshGroup::GroupConstIterator ci = mesh_group->childrenBegin(); ci != mesh_group->childrenEnd(); ++ci)
@@ -1429,11 +1429,11 @@ namespace ModelInternal {
 
 struct DrawFaceNormals
 {
-  DrawFaceNormals(Graphics::RenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
+  DrawFaceNormals(Graphics::IRenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
 
   bool operator()(Mesh const & mesh)
   {
-    render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+    render_system->beginPrimitive(Graphics::IRenderSystem::Primitive::LINES);
 
       for (Mesh::FaceConstIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
       {
@@ -1446,8 +1446,8 @@ struct DrawFaceNormals
 
         c /= fi->numVertices();
 
-        render_system->sendVertex(c);
-        render_system->sendVertex(Vector3(c + normal_scale * fi->getNormal()));
+        render_system->sendVertex(3, c.data());
+        render_system->sendVertex(3, Vector3(c + normal_scale * fi->getNormal()).data());
       }
 
     render_system->endPrimitive();
@@ -1455,22 +1455,22 @@ struct DrawFaceNormals
     return false;
   }
 
-  Graphics::RenderSystem * render_system;
+  Graphics::IRenderSystem * render_system;
   Real normal_scale;
 };
 
 struct DrawVertexNormals
 {
-  DrawVertexNormals(Graphics::RenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
+  DrawVertexNormals(Graphics::IRenderSystem * rs, Real normal_scale_) : render_system(rs), normal_scale(normal_scale_) {}
 
   bool operator()(Mesh const & mesh)
   {
-    render_system->beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+    render_system->beginPrimitive(Graphics::IRenderSystem::Primitive::LINES);
 
       for (Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
       {
-        render_system->sendVertex(vi->getPosition());
-        render_system->sendVertex(Vector3(vi->getPosition() + normal_scale * vi->getNormal()));
+        render_system->sendVertex(3, vi->getPosition().data());
+        render_system->sendVertex(3, Vector3(vi->getPosition() + normal_scale * vi->getNormal()).data());
       }
 
     render_system->endPrimitive();
@@ -1478,65 +1478,68 @@ struct DrawVertexNormals
     return false;
   }
 
-  Graphics::RenderSystem * render_system;
+  Graphics::IRenderSystem * render_system;
   Real normal_scale;
 };
 
 } // namespace ModelInternal
 
 void
-Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
+Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
   if (isEmpty())
     return;
 
-  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRGB(1, 1, 1), ColorRGB(1, 1, 1));
+  if (!options) options = Graphics::RenderOptions::defaults();
+
+  GraphicsWidget::setLight(Vector3(-1, -1, -2), ColorRgb(1, 1, 1), ColorRgb(1, 1, 1));
 
   if (hasTransform())
   {
-    render_system.setMatrixMode(Graphics::RenderSystem::MatrixMode::MODELVIEW); render_system.pushMatrix();
-    render_system.multMatrix(getTransform().homogeneous());
+    render_system->setMatrixMode(Graphics::IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+    Matrix4 m = getTransform().homogeneous(); auto wm = Math::wrapMatrix(m);
+    render_system->multMatrix(&wm);
   }
 
-  render_system.pushShader();
-  render_system.pushTextures();
-  render_system.pushColorFlags();
+  render_system->pushShader();
+  render_system->pushTextures();
+  render_system->pushColorFlags();
 
-    setPhongShader(render_system);
-    render_system.setTexture(0, nullptr);
+    setPhongShader(*render_system);
+    render_system->setTexture(0, nullptr);
 
     if (app().getMainWindow()->pickPoints())
     {
       Real sample_radius = 0.005f * getBounds().getExtent().norm();
       if (valid_pick)
       {
-        render_system.setColor(ColorRGB::red());
-        drawSphere(render_system, picked_sample.position, sample_radius);
+        render_system->setColor(ColorRgba::red().data());
+        drawSphere(*render_system, picked_sample.position, sample_radius);
       }
 
       for (size_t i = 0; i < samples.size(); ++i)
       {
-        render_system.setColor(getLabelColor(samples[i].label));
+        render_system->setColor(getLabelColor(samples[i].label).data());
 
         if ((intx)i == selected_sample)
-          drawSphere(render_system, samples[i].position, 3 * sample_radius);
+          drawSphere(*render_system, samples[i].position, 3 * sample_radius);
         else
-          drawSphere(render_system, samples[i].position, sample_radius);
+          drawSphere(*render_system, samples[i].position, sample_radius);
       }
     }
 
-    render_system.setColor(color);
+    render_system->setColor(color.data());
 
     if (mesh_group)
     {
       if (app().getMainWindow()->pickSegments())
       {
         int node_index = 0;
-        drawSegmentedMeshGroup(mesh_group, 0, node_index, render_system, options);
+        drawSegmentedMeshGroup(mesh_group, 0, node_index, *render_system, *options);
       }
       else
       {
-        Graphics::RenderOptions ro = options;  // make a copy
+        Graphics::RenderOptions ro = dynamic_cast<Graphics::RenderOptions const &>(*options);  // make a copy
 
         if (has_features)
           ro.setSendColors(true).setUseVertexData(true);
@@ -1546,37 +1549,37 @@ Model::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOpti
         bool smooth_shading = (ro.useVertexNormals() && ro.useVertexData());
 
         if (smooth_shading)
-          mesh_group->forEachMeshUntil(ModelInternal::enableGPURendering);
+          mesh_group->forEachMeshUntil(ModelInternal::enableGpuRendering);
         else
-          mesh_group->forEachMeshUntil(ModelInternal::disableGPURendering);
+          mesh_group->forEachMeshUntil(ModelInternal::disableGpuRendering);
 
-        mesh_group->draw(render_system, ro);
+        mesh_group->draw(render_system, &ro);
 
         if (app().options().show_normals)
         {
-          render_system.setShader(nullptr);
-          render_system.setColor(ColorRGB(0, 1, 0));
+          render_system->setShader(nullptr);
+          render_system->setColor(ColorRgba(0, 1, 0).data());
 
           Real normal_scale = 0.025f * getBounds().getExtent().norm();
 
           if (smooth_shading)
-            mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(&render_system, normal_scale));
+            mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(render_system, normal_scale));
           else
-            mesh_group->forEachMeshUntil(ModelInternal::DrawFaceNormals(&render_system, normal_scale));
+            mesh_group->forEachMeshUntil(ModelInternal::DrawFaceNormals(render_system, normal_scale));
         }
       }
     }
 
-  render_system.popColorFlags();
-  render_system.popTextures();
-  render_system.popShader();
+  render_system->popColorFlags();
+  render_system->popTextures();
+  render_system->popShader();
 
   if (point_cloud)
     point_cloud->draw(render_system, options);
 
   if (hasTransform())
   {
-    render_system.setMatrixMode(Graphics::RenderSystem::MatrixMode::MODELVIEW); render_system.popMatrix();
+    render_system->setMatrixMode(Graphics::IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
   }
 }
 

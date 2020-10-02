@@ -1,7 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/CentroidN.hpp"
-#include "../../Algorithms/ICP3.hpp"
-#include "../../Algorithms/KDTreeN.hpp"
+#include "../../Algorithms/Icp3.hpp"
+#include "../../Algorithms/KdTreeN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -334,11 +334,11 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         from_pts[i] += offset;
     }
 
-    KDTreeN<Vector3d, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
+    KdTreeN<Vector3d, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
 
     if (rotate_axis_aligned)
     {
-      ICP3<double> icp(-1, -1, false);
+      Icp3<double> icp(-1, -1, false);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
@@ -389,7 +389,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         return -1;
       }
 
-      ICP3<double> icp(-1, -1, false);
+      Icp3<double> icp(-1, -1, false);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
@@ -429,7 +429,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
     }
     else
     {
-      ICP3<double> icp(-1, -1, true);
+      Icp3<double> icp(-1, -1, true);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 

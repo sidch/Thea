@@ -15,7 +15,7 @@
 #include "Util.hpp"
 #include "Math.hpp"
 #include "../../Graphics/Camera.hpp"
-#include "../../Graphics/RenderSystem.hpp"
+#include "../../Graphics/IRenderSystem.hpp"
 #include "../../Ball3.hpp"
 #include "../../FileSystem.hpp"
 #include "../../Image.hpp"
@@ -28,7 +28,7 @@ namespace Browse3D {
 
 // Polar axis (center to pole) is w
 void
-drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v,
+drawHemisphere(Graphics::IRenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v,
                Vector3 const & w, Real radius, int num_longitude_steps, int num_latitude_steps)
 {
   using namespace Graphics;
@@ -52,7 +52,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
 
     if (i > 1)
     {
-      render_system.beginPrimitive(RenderSystem::Primitive::QUAD_STRIP);
+      render_system.beginPrimitive(IRenderSystem::Primitive::QUAD_STRIP);
 
         for (int j = 0; j <= num_longitude_steps; ++j)
         {
@@ -62,23 +62,23 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
 
           offset_dir = (c_lng * prev_s_lat) * u + (s_lng * prev_s_lat) * v + prev_c_lat * w;
           offset = radius * offset_dir;
-          render_system.sendNormal(offset_dir);
-          render_system.sendVertex(Vector3(center + offset));
+          render_system.sendNormal(offset_dir.data());
+          render_system.sendVertex(3, Vector3(center + offset).data());
 
           offset_dir = (c_lng * s_lat) * u + (s_lng * s_lat) * v + c_lat * w;
           offset = radius * offset_dir;
-          render_system.sendNormal(offset_dir);
-          render_system.sendVertex(Vector3(center + offset));
+          render_system.sendNormal(offset_dir.data());
+          render_system.sendVertex(3, Vector3(center + offset).data());
         }
 
       render_system.endPrimitive();
     }
     else
     {
-      render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLE_FAN);
+      render_system.beginPrimitive(IRenderSystem::Primitive::TRIANGLE_FAN);
 
-        render_system.sendNormal(w);
-        render_system.sendVertex(Vector3(center + radius * w));
+        render_system.sendNormal(w.data());
+        render_system.sendVertex(3, Vector3(center + radius * w).data());
 
         for (int j = 0; j <= num_longitude_steps; ++j)
         {
@@ -88,8 +88,8 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
 
           offset_dir = (c_lng * s_lat) * u + (s_lng * s_lat) * v + c_lat * w;
           offset = radius * offset_dir;
-          render_system.sendNormal(offset_dir);
-          render_system.sendVertex(Vector3(center + offset));
+          render_system.sendNormal(offset_dir.data());
+          render_system.sendVertex(3, Vector3(center + offset).data());
         }
 
       render_system.endPrimitive();
@@ -101,7 +101,7 @@ drawHemisphere(Graphics::RenderSystem & render_system, Vector3 const & center, V
 }
 
 void
-drawSphere(Graphics::RenderSystem & render_system, Vector3 const & center, Real radius, int num_steps)
+drawSphere(Graphics::IRenderSystem & render_system, Vector3 const & center, Real radius, int num_steps)
 {
   int num_latitude_steps = (int)std::ceil(num_steps / 4.0);
 
@@ -112,7 +112,7 @@ drawSphere(Graphics::RenderSystem & render_system, Vector3 const & center, Real 
 }
 
 void
-drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Vector3 const & u,
+drawCylinder(Graphics::IRenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Vector3 const & u,
              Vector3 const & v, Real radius, int num_steps)
 {
   using namespace Graphics;
@@ -121,7 +121,7 @@ drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center
 
   float conv_factor = (float)Math::twoPi() / num_steps;
 
-  render_system.beginPrimitive(RenderSystem::Primitive::QUAD_STRIP);
+  render_system.beginPrimitive(IRenderSystem::Primitive::QUAD_STRIP);
 
     for (int i = 0; i <= num_steps; ++i)
     {
@@ -130,16 +130,16 @@ drawCylinder(Graphics::RenderSystem & render_system, Vector3 const & base_center
       float c = Math::fastCos(angle);
       Vector3 offset_dir = s * u + c * v;
       Vector3 offset = radius * offset_dir;
-      render_system.sendNormal(offset_dir);
-      render_system.sendVertex(Vector3(base_center + offset));
-      render_system.sendVertex(Vector3(top_center + offset));
+      render_system.sendNormal(offset_dir.data());
+      render_system.sendVertex(3, Vector3(base_center + offset).data());
+      render_system.sendVertex(3, Vector3(top_center + offset).data());
     }
 
   render_system.endPrimitive();
 }
 
 void
-drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Real radius,
+drawCapsule(Graphics::IRenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Real radius,
             int num_steps)
 {
   Vector3 w = (top_center - base_center).normalized();
@@ -157,9 +157,9 @@ drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center,
 }
 
 void
-drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v, Real radius,
-          Real width, int num_major_steps, int num_minor_steps, bool alternate_colors, ColorRGBA const & color1,
-          ColorRGBA const & color2)
+drawTorus(Graphics::IRenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v, Real radius,
+          Real width, int num_major_steps, int num_minor_steps, bool alternate_colors, ColorRgba const & color1,
+          ColorRgba const & color2)
 {
   using namespace Graphics;
 
@@ -171,7 +171,7 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
   if (alternate_colors)
     render_system.pushColorFlags();
 
-  render_system.beginPrimitive(RenderSystem::Primitive::QUAD_STRIP);
+  render_system.beginPrimitive(IRenderSystem::Primitive::QUAD_STRIP);
 
     for (int i = 0; i < num_minor_steps; ++i)
     {
@@ -194,15 +194,15 @@ drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector
         Vector3 n(c_maj * c_min, s_maj * c_min, s_min);
 
         if (alternate_colors)
-          render_system.setColor(j & 0x01 ? color2 : color1);
+          render_system.setColor(j & 0x01 ? color2.data() : color1.data());
 
-        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w));
-        render_system.sendVertex(Vector3(center + p.x() * u + p.y() * v + p.z() * w));
+        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w).data());
+        render_system.sendVertex(3, Vector3(center + p.x() * u + p.y() * v + p.z() * w).data());
 
         p += Vector3(c_maj * width * c_min_offset, s_maj * width * c_min_offset, width * s_min_offset);
         n += Vector3(c_maj * c_min_offset, s_maj * c_min_offset, s_min_offset);
-        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w));
-        render_system.sendVertex(Vector3(center + p.x() * u + p.y() * v + p.z() * w));
+        render_system.sendNormal(Vector3(n.x() * u + n.y() * v + n.z() * w).data());
+        render_system.sendVertex(3, Vector3(center + p.x() * u + p.y() * v + p.z() * w).data());
       }
     }
 
@@ -312,33 +312,33 @@ dragToScale(wxPoint const & start, wxPoint const & end, int width, int height, G
 }
 
 int const NUM_PALETTE_COLORS = 24;
-ColorRGB COLOR_PALETTE[NUM_PALETTE_COLORS] = {
-  ColorRGB::fromARGB(0x298edb),
-  ColorRGB::fromARGB(0x982411),
-  ColorRGB::fromARGB(0x6d4e25),
-  ColorRGB::fromARGB(0x1b5043),
-  ColorRGB::fromARGB(0x6e7662),
-  ColorRGB::fromARGB(0xa08b00),
-  ColorRGB::fromARGB(0x58427b),
-  ColorRGB::fromARGB(0x1d2f5b),
-  ColorRGB::fromARGB(0xac5e34),
-  ColorRGB::fromARGB(0x804055),
-  ColorRGB::fromARGB(0x6d7a00),
-  ColorRGB::fromARGB(0x572e2c),
+ColorRgba COLOR_PALETTE[NUM_PALETTE_COLORS] = {
+  ColorRgb::fromARGB(0x298edb),
+  ColorRgb::fromARGB(0x982411),
+  ColorRgb::fromARGB(0x6d4e25),
+  ColorRgb::fromARGB(0x1b5043),
+  ColorRgb::fromARGB(0x6e7662),
+  ColorRgb::fromARGB(0xa08b00),
+  ColorRgb::fromARGB(0x58427b),
+  ColorRgb::fromARGB(0x1d2f5b),
+  ColorRgb::fromARGB(0xac5e34),
+  ColorRgb::fromARGB(0x804055),
+  ColorRgb::fromARGB(0x6d7a00),
+  ColorRgb::fromARGB(0x572e2c),
 
   // Invert each color above
-  ColorRGB::fromARGB(~0x298edb),
-  ColorRGB::fromARGB(~0x982411),
-  ColorRGB::fromARGB(~0x6d4e25),
-  ColorRGB::fromARGB(~0x1b5043),
-  ColorRGB::fromARGB(~0x6e7662),
-  ColorRGB::fromARGB(~0xa08b00),
-  ColorRGB::fromARGB(~0x58427b),
-  ColorRGB::fromARGB(~0x1d2f5b),
-  ColorRGB::fromARGB(~0xac5e34),
-  ColorRGB::fromARGB(~0x804055),
-  ColorRGB::fromARGB(~0x6d7a00),
-  ColorRGB::fromARGB(~0x572e2c)
+  ColorRgb::fromARGB(~0x298edb),
+  ColorRgb::fromARGB(~0x982411),
+  ColorRgb::fromARGB(~0x6d4e25),
+  ColorRgb::fromARGB(~0x1b5043),
+  ColorRgb::fromARGB(~0x6e7662),
+  ColorRgb::fromARGB(~0xa08b00),
+  ColorRgb::fromARGB(~0x58427b),
+  ColorRgb::fromARGB(~0x1d2f5b),
+  ColorRgb::fromARGB(~0xac5e34),
+  ColorRgb::fromARGB(~0x804055),
+  ColorRgb::fromARGB(~0x6d7a00),
+  ColorRgb::fromARGB(~0x572e2c)
 };
 
 int
@@ -347,7 +347,7 @@ numPaletteColors()
   return NUM_PALETTE_COLORS;
 }
 
-ColorRGB const &
+ColorRgba const &
 getPaletteColor(intx i)
 {
   intx n = numPaletteColors();
@@ -360,13 +360,13 @@ getPaletteColor(intx i)
   return COLOR_PALETTE[index];
 }
 
-ColorRGB
+ColorRgba
 getLabelColor(std::string const & label)
 {
   std::hash<std::string> hasher;
   Random rnd((uint32)hasher(label));
 
-  return ColorRGB(rnd.uniform01(), rnd.uniform01(), rnd.uniform01());
+  return ColorRgba(rnd.uniform01(), rnd.uniform01(), rnd.uniform01(), 1);
 }
 
 bool

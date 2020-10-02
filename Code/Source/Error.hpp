@@ -23,14 +23,10 @@
 
 namespace Thea {
 
-/**
- * An error class.
- */
+/** An error class. */
 typedef std::runtime_error Error;
 
-/**
- * A fatal error class. Doesn't derive from std::exception so that it is not caught by one of the usual handlers.
- */
+/** A fatal error class. Doesn't derive from std::exception so that it is not caught by one of the usual handlers. */
 class THEA_API FatalError
 {
   public:
@@ -62,27 +58,22 @@ class THEA_API FatalError
  * </pre>
  */
 #define THEA_STANDARD_CATCH_BLOCKS(action__, stream__, message__, ...) \
-    catch (FatalError & e__) \
+    catch (FatalError const & e__) \
     { \
       THEA_ERROR << format( "A fatal error occurred (%s)", e__.what() ); \
       throw; \
     } \
-    catch (Error & e__) \
+    catch (std::exception const & e__) \
     { \
       THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
       action__ \
     } \
-    catch (std::exception & e__) \
-    { \
-      THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.what() ); \
-      action__ \
-    } \
-    catch (std::string & e__) \
+    catch (std::string const & e__) \
     { \
       THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__.c_str() ); \
       action__ \
     } \
-    catch (const char * e__) \
+    catch (char const * e__) \
     { \
       THEA_ ## stream__ << format( (message__ + std::string(" (%s)")).c_str(), __VA_ARGS__, e__ ); \
       action__ \

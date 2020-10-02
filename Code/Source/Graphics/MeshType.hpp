@@ -25,7 +25,7 @@ namespace Graphics {
 THEA_HAS_TYPE(IsGeneralMesh, GENERAL_MESH_TAG)
 
 /** Concept of a DCEL mesh. */
-THEA_HAS_TYPE(IsDCELMesh, DCEL_MESH_TAG)
+THEA_HAS_TYPE(IsDcelMesh, DCEL_MESH_TAG)
 
 /** Concept of a display mesh. */
 THEA_HAS_TYPE(IsDisplayMesh, DISPLAY_MESH_TAG)

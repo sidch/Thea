@@ -17,8 +17,8 @@
 #include "../../Application.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
-#include "../../Plugin.hpp"
-#include "../../Graphics/RenderSystem.hpp"
+#include "../../IPlugin.hpp"
+#include "../../Graphics/IRenderSystem.hpp"
 #include <wx/cmdline.h>
 #include <wx/image.h>
 #include <boost/program_options.hpp>
@@ -33,14 +33,14 @@ namespace Browse3D {
 
 namespace AppInternal {
 
-static ColorRGBA  const  DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
+static ColorRgba  const  DEFAULT_COLOR(1.0f, 0.9f, 0.8f, 1.0f);
 static Vector4    const  DEFAULT_MATERIAL(0.3f, 0.7f, 0.2f, 25);
 
 } // namespace AppInternal
 
 App::Options::Options()
 : accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false),
-  color(AppInternal::DEFAULT_COLOR), bg_plain(false), bg_color(ColorRGB::black()), two_sided(true), flat(false),
+  color(AppInternal::DEFAULT_COLOR), bg_plain(false), bg_color(ColorRgb::black()), two_sided(true), flat(false),
   material(AppInternal::DEFAULT_MATERIAL), fancy_points(false), fancy_colors(false), point_scale(1), no_axes(false)
 {
 }
@@ -313,7 +313,7 @@ App::parseOptions(std::vector<std::string> const & args)
   {
     std::stringstream ss; ss << std::hex << s_color;
     uint32 argb; ss >> argb;
-    opts.color = ColorRGB::fromARGB(argb);
+    opts.color = ColorRgb::fromARGB(argb);  // Rgb and not Rgba to ensure it's opaque
   }
 
   if (!s_bg_color.empty())
@@ -321,12 +321,12 @@ App::parseOptions(std::vector<std::string> const & args)
     std::stringstream ss; ss << std::hex << s_bg_color;
     uint32 argb; ss >> argb;
     opts.bg_plain = true;
-    opts.bg_color = ColorRGB::fromARGB(argb);
+    opts.bg_color = ColorRgb::fromARGB(argb);  // Rgb and not Rgba to ensure it's opaque
   }
   else
   {
     opts.bg_plain = false;
-    opts.bg_color = ColorRGB::black();
+    opts.bg_color = ColorRgb::black();
   }
 
   if (!s_material.empty())

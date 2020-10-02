@@ -941,10 +941,9 @@ class HoughTree
       }
     }
 
-    void estimateClassGaussians(Array<intx> const & elems, TrainingData const & training_data,
-                                Array<Gaussian> & gaussians)
+    void estimateClassGaussians(Array<intx> const & elems, TrainingData const & training_data, Array<Gaussian> & gaussians)
     {
-      // NOTE: Incomplete
+      // FIXME: Incomplete
 
       gaussians.resize((size_t)num_classes);
 
@@ -961,7 +960,7 @@ class HoughTree
 
     void estimateClassGaussian(intx c)
     {
-      // NOTE: Incomplete
+      // FIXME: Incomplete
     }
 
     HoughForest * parent;
@@ -1189,18 +1188,13 @@ HoughForest::clear()
 }
 
 void
-HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * training_data_) const
+HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const & training_data) const
 {
   if (opts_.max_leaf_elements < 0)
     opts_.max_leaf_elements = 10;
 
   if (opts_.max_depth < 0)
-  {
-    if (training_data_)
-      opts_.max_depth = 3 * Math::binaryTreeDepth(training_data_->numExamples(), opts_.max_leaf_elements);
-    else
-      opts_.max_depth = 10;
-  }
+    opts_.max_depth = 3 * Math::binaryTreeDepth(training_data.numExamples(), opts_.max_leaf_elements);
 
   if (opts_.max_candidate_features < 0)
   {
@@ -1215,12 +1209,7 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
   }
 
   if (opts_.max_candidate_thresholds < 0)
-  {
-    if (training_data_)
-      opts_.max_candidate_thresholds = std::max(5L, (intx)std::ceil(training_data_->numExamples() / 1000.0));
-    else
-      opts_.max_candidate_thresholds = 5;
-  }
+    opts_.max_candidate_thresholds = std::max(5L, (intx)std::ceil(training_data.numExamples() / 1000.0));
 
   if (opts_.min_class_uncertainty < 0)  // we don't need to check max_dominant_fraction, it's not directly used anywhere
   {
@@ -1231,15 +1220,15 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const * 
 }
 
 void
-HoughForest::train(intx num_trees, TrainingData const & training_data_)
+HoughForest::train(intx num_trees, TrainingData const & training_data)
 {
   alwaysAssertM(num_trees >= 0, "HoughForest: Forest cannot have a negative number of trees");
-  alwaysAssertM(training_data_.numFeatures() == numFeatures(), "HoughForest: Training data has different number of features");
-  alwaysAssertM(training_data_.numClasses() == numClasses(), "HoughForest: Training data has different number of classes");
+  alwaysAssertM(training_data.numFeatures() == numFeatures(), "HoughForest: Training data has different number of features");
+  alwaysAssertM(training_data.numClasses() == numClasses(), "HoughForest: Training data has different number of classes");
 
   for (intx i = 0; i < num_classes; ++i)
   {
-    alwaysAssertM(training_data_.numVoteParameters(i) == numVoteParameters(i),
+    alwaysAssertM(training_data.numVoteParameters(i) == numVoteParameters(i),
                   format("HoughForest: Training data has different number of vote parameters for class %ld", i));
   }
 
@@ -1250,7 +1239,7 @@ HoughForest::train(intx num_trees, TrainingData const & training_data_)
 
   // Auto-select appropriate values for unspecified options
   Options full_opts = options;
-  autoSelectUnspecifiedOptions(full_opts, &training_data_);
+  autoSelectUnspecifiedOptions(full_opts, training_data);
 
   if (full_opts.verbose)
   {
@@ -1268,7 +1257,7 @@ HoughForest::train(intx num_trees, TrainingData const & training_data_)
     TreePtr tree(new Tree(this, num_classes, num_features, num_vote_params, full_opts));
 
     timer.tick();
-      tree->train(training_data_);
+      tree->train(training_data);
     timer.tock();
 
     trees[i] = tree;
@@ -1278,7 +1267,7 @@ HoughForest::train(intx num_trees, TrainingData const & training_data_)
   }
 
   timer.tick();
-    cacheTrainingData(training_data_);
+    cacheTrainingData(training_data);
   timer.tock();
 
   if (options.verbose)

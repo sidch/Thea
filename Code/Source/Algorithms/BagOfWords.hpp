@@ -17,7 +17,7 @@
 
 #include "../Common.hpp"
 #include "KMeans.hpp"
-#include "../AbstractAddressableMatrix.hpp"
+#include "../IAddressableMatrix.hpp"
 #include "../Serializable.hpp"
 #include <type_traits>
 
@@ -59,7 +59,7 @@ class THEA_API BagOfWords : public Serializable
      * @return True if the training converged, else false.
      */
     template < typename AddressableMatrixT,
-               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+               typename std::enable_if< std::is_base_of< IAddressableMatrix<typename AddressableMatrixT::Value>,
                                                          AddressableMatrixT >::value, int >::type = 0 >
     bool train(intx num_words, AddressableMatrixT const & training_points)
     {
@@ -78,7 +78,7 @@ class THEA_API BagOfWords : public Serializable
      * @param point_weights [Optional] The contribution of each point to the histogram (1 if null).
      */
     template < typename AddressableMatrixT, typename U,
-               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+               typename std::enable_if< std::is_base_of< IAddressableMatrix<typename AddressableMatrixT::Value>,
                                                          AddressableMatrixT >::value, int >::type = 0 >
     void computeWordFrequencies(AddressableMatrixT const & points, U * histogram, double const * point_weights = nullptr) const
     {
@@ -103,14 +103,14 @@ class THEA_API BagOfWords : public Serializable
     /** Save the bag-of-words model to a disk file. */
     bool save(std::string const & path) const { return vocabulary.save(path); }
 
-    void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
+    void read(BinaryInputStream & in, Codec const & codec = CodecAuto(), bool read_block_header = false)
     { vocabulary.read(in, codec, read_block_header); }
 
-    void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
+    void write(BinaryOutputStream & out, Codec const & codec = CodecAuto(), bool write_block_header = false) const
     { vocabulary.write(out, codec, write_block_header); }
 
-    void read(TextInputStream & in, Codec const & codec = Codec_AUTO()) { vocabulary.read(in, codec); }
-    void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const { vocabulary.write(out, codec); }
+    void read(TextInputStream & in, Codec const & codec = CodecAuto()) { vocabulary.read(in, codec); }
+    void write(TextOutputStream & out, Codec const & codec = CodecAuto()) const { vocabulary.write(out, codec); }
 
   private:
     KMeans vocabulary;  ///< The set of learned words.

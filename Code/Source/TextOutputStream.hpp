@@ -285,13 +285,13 @@ class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyabl
      * Use C-style %printf syntax to write to the stream. Follows normal %printf conventions. Note that the output will be
      * reformatted for word-wrapping and newlines.
      */
-    void __cdecl printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
+    void THEA_CDECL printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
 
     /**
      * Use C-style %vprintf syntax to write to the stream. Follows normal %vprintf conventions. Note that the output will be
      * reformatted for word-wrapping and newlines.
      */
-    void __cdecl vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
+    void THEA_CDECL vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
 
 }; // class TextOutputStream
 

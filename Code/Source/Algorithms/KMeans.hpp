@@ -16,10 +16,10 @@
 #define __Thea_Algorithms_KMeans_hpp__
 
 #include "../Common.hpp"
-#include "../AbstractAddressableMatrix.hpp"
+#include "../IAddressableMatrix.hpp"
 #include "../Array.hpp"
 #include "../AtomicInt32.hpp"
-#include "../IOStream.hpp"
+#include "../Iostream.hpp"
 #include "../Math.hpp"
 #include "../MatVec.hpp"
 #include "../Random.hpp"
@@ -92,10 +92,10 @@ class THEA_API KMeans : public Serializable
         /** Save options to a disk file. */
         bool save(std::string const & path) const;
 
-        void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-        void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
-        void read(TextInputStream & in, Codec const & codec = Codec_AUTO());
-        void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
+        void read(BinaryInputStream & in, Codec const & codec = CodecAuto(), bool read_block_header = false);
+        void write(BinaryOutputStream & out, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
+        void read(TextInputStream & in, Codec const & codec = CodecAuto());
+        void write(TextOutputStream & out, Codec const & codec = CodecAuto()) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
@@ -147,7 +147,7 @@ class THEA_API KMeans : public Serializable
      * @return True if the clustering converged, else false.
      */
     template < typename AddressableMatrixT,
-               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+               typename std::enable_if< std::is_base_of< IAddressableMatrix<typename AddressableMatrixT::Value>,
                                                            AddressableMatrixT >::value, int >::type = 0 >
     bool cluster(intx num_clusters, AddressableMatrixT const & points, intx * labeling = nullptr,
                  double * squared_distances = nullptr)
@@ -291,7 +291,7 @@ class THEA_API KMeans : public Serializable
      *   each point. Assumed to be preallocated to the number of points. Ignored if null.
      */
     template < typename AddressableMatrixT,
-               typename std::enable_if< std::is_base_of< AbstractAddressableMatrix<typename AddressableMatrixT::Value>,
+               typename std::enable_if< std::is_base_of< IAddressableMatrix<typename AddressableMatrixT::Value>,
                                                          AddressableMatrixT >::value, int >::type = 0 >
     void mapToClusters(AddressableMatrixT const & points, intx * labeling, double * squared_distances = nullptr) const
     {
@@ -304,10 +304,10 @@ class THEA_API KMeans : public Serializable
     /** Save the k-means model to a disk file. */
     bool save(std::string const & path) const;
 
-    void read(BinaryInputStream & in, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & out, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
-    void read(TextInputStream & in, Codec const & codec = Codec_AUTO());
-    void write(TextOutputStream & out, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & in, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void write(BinaryOutputStream & out, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
+    void read(TextInputStream & in, Codec const & codec = CodecAuto());
+    void write(TextOutputStream & out, Codec const & codec = CodecAuto()) const;
 
   private:
     /** Select initial centers by k-means++. */

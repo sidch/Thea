@@ -22,7 +22,7 @@ namespace Thea {
 
 /**
  * Union-find data structure. Original code by Kartik Kukreja, https://github.com/kartikkukreja/ . The data structure will save
- * a copy of each object to support getObjectID(), so T should be easily copyable (a small/POD class, or a pointer).
+ * a copy of each object to support getObjectId(), so T should be easily copyable (a small/POD class, or a pointer).
  */
 template <typename T = intx>
 class UnionFind
@@ -30,8 +30,8 @@ class UnionFind
   public:
     /**
      * Create a union-find data structure for \a n objects, which will be assumed to have sequential IDs from 0 to \a n - 1. If
-     * you use this constructor, note that getObjectID() will return the expected results (operating as an identity function)
-     * only if <code>T = intx</code>. Else, avoid calling getObjectID().
+     * you use this constructor, note that getObjectId() will return the expected results (operating as an identity function)
+     * only if <code>T = intx</code>. Else, avoid calling getObjectId().
      */
     UnionFind(intx n)
     : has_objects(false)
@@ -42,7 +42,7 @@ class UnionFind
     /**
      * Create a union-find data structure for objects in the range [\a begin, \a end). The objects will be assigned sequential
      * IDs 0, 1, 2, ..., n - 1 in the same order as the input. Note that the data structure will save a copy of each object to
-     * support getObjectID(), so T should be easily copyable (a small/POD class, or a pointer).
+     * support getObjectId(), so T should be easily copyable (a small/POD class, or a pointer).
      */
     template <typename InputIterator> UnionFind(InputIterator begin, InputIterator end)
     : has_objects(true)
@@ -66,7 +66,7 @@ class UnionFind
      * UnionFind(intx) constructor, this function will give the expected results (operating as an identity function) only if
      * <code>T = intx</code>.
      */
-    intx getObjectID(T const & obj) const
+    intx getObjectId(T const & obj) const
     {
       typename ObjectMap::const_iterator existing = objects.find(obj);
       return (existing == objects.end() ? -1 : existing->second);
@@ -160,7 +160,7 @@ class UnionFind
 // Specialization for T = intx
 template <>
 inline intx
-UnionFind<intx>::getObjectID(intx const & obj) const
+UnionFind<intx>::getObjectId(intx const & obj) const
 {
   if (has_objects)
   {

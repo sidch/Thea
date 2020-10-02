@@ -32,11 +32,11 @@ namespace MeshFeatures {
 namespace Local {
 
 /** Compute the histogram of distances from a query point to other points on a shape. */
-template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
+class LocalDistanceHistogram : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -76,7 +76,7 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    LocalDistanceHistogram(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    LocalDistanceHistogram(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -147,10 +147,10 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
       {
         Ball3 ball(position, max_distance);
 
-        if (this->hasExternalKDTree())
-          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, callback);
+        if (this->hasExternalKdTree())
+          this->getMutableExternalKdTree()->template processRangeUntil<IntersectionTester>(ball, callback);
         else
-          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, callback);
+          this->getMutableInternalKdTree()->template processRangeUntil<IntersectionTester>(ball, callback);
       }
     }
 
@@ -186,10 +186,10 @@ class LocalDistanceHistogram : public SampledSurface<ExternalSampleKDTreeT>
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
       intx seed_index = -1;
-      if (this->hasExternalKDTree())
-        seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
+      if (this->hasExternalKdTree())
+        seed_index = this->getMutableExternalKdTree()->template closestElement<MetricL2>(position);
       else
-        seed_index = this->getMutableInternalKDTree()->template closestElement<MetricL2>(position);
+        seed_index = this->getMutableInternalKdTree()->template closestElement<MetricL2>(position);
 
       alwaysAssertM(seed_index >= 0, "LocalDistanceHistogram: Seed sample for geodesic distances not found");
 

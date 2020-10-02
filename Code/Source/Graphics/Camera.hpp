@@ -12,14 +12,15 @@
 //
 //============================================================================
 
-#ifndef __Thea_Camera_hpp__
-#define __Thea_Camera_hpp__
+#ifndef __Thea_Graphics_Camera_hpp__
+#define __Thea_Graphics_Camera_hpp__
 
 #include "../Common.hpp"
-#include "../Serializable.hpp"
 #include "../NamedObject.hpp"
 #include "../RigidTransform3.hpp"
 #include "../Ray3.hpp"
+#include "../Serializable.hpp"
+#include "IRenderSystem.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -258,6 +259,9 @@ class THEA_API Camera : public Serializable
      */
     Ray3 computePickRay(Vector2 const & screen_pos) const;
 
+    /** Set the camera as the current viewing camera on a rendersystem. */
+    void makeCurrent(IRenderSystem * render_system) const;
+
     /** Get the name of the camera. */
     std::string getName() const
     {
@@ -267,8 +271,8 @@ class THEA_API Camera : public Serializable
     /** Get a string describing the camera. */
     std::string toString() const;
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
 
   private:
     /** Update the cached projection transform and its inverse. */

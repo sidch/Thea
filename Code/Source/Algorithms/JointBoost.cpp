@@ -145,7 +145,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
   if (options.verbose)
   {
     THEA_CONSOLE << "JointBoost: Starting training (" << num_classes << " classes, " << num_features << " features, "
-                 << training_data_.numExamples() << " examples)";
+                 << training_data->numExamples() << " examples)";
     THEA_CONSOLE << "JointBoost:     -- min_rounds = " << min_rounds;
     THEA_CONSOLE << "JointBoost:     -- max_rounds = " << max_rounds;
     THEA_CONSOLE << "JointBoost:     -- min_fractional_error_reduction = " << min_fractional_error_reduction;
@@ -213,7 +213,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
       // Check if error has increased on validation set
       if (validation_data_)
       {
-        round_validation_err = computeValidationError(*validation_data_, stump);
+        round_validation_err = computeValidationError(validation_data_, stump);
 
         if (validation_error >= 0 && round_validation_err > validation_error)
         {
@@ -260,7 +260,7 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     if (validation_data_)
     {
       if (validation_error < 0)
-        validation_error = computeValidationError(*validation_data_);
+        validation_error = computeValidationError(validation_data_);
 
       THEA_CONSOLE << "JointBoost: Completed training, added " << stumps.size() << " stump(s) with final error " << error
                    << ", validation error " << validation_error;
@@ -364,8 +364,7 @@ JointBoost::optimizeStumpExhaustive(SharedStump & stump, Array<double> const & s
 }
 
 double
-JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump_features,
-                                Array<intx> const & stump_classes)
+JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump_features, Array<intx> const & stump_classes)
 {
   Array<SharedStump> candidate_stumps;
   Array<double> candidate_errors;
@@ -736,26 +735,27 @@ JointBoost::predict(double const * features, double * class_probabilities) const
 }
 
 double
-JointBoost::computeValidationError(TrainingData const & validation_data_, SharedStump::Ptr new_stump)
+JointBoost::computeValidationError(TrainingData const * validation_data_, SharedStump::Ptr new_stump)
 {
-  alwaysAssertM(validation_data_.numFeatures() == num_features, "JointBoost: Validation set has different number of features");
+  alwaysAssertM(validation_data_, "JointBoost: No validation set provided");
+  alwaysAssertM(validation_data_->numFeatures() == num_features, "JointBoost: Validation set has different number of features");
 
   if (new_stump)
     stumps.push_back(new_stump);
 
-  MatrixX<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_.numExamples(), num_features);
+  MatrixX<double, MatrixLayout::ROW_MAJOR> validation_features(validation_data_->numExamples(), num_features);
   Array<double> feat;
   for (intx i = 0; i < num_features; ++i)
   {
-    validation_data_.getFeature(i, feat);
+    validation_data_->getFeature(i, feat);
     validation_features.col(i) = VectorXdMap(&feat[0], (intx)feat.size());
   }
 
   Array<intx> validation_classes;
   Array<double> validation_weights;
 
-  validation_data_.getClasses(validation_classes);
-  validation_data_.getWeights(validation_weights);
+  validation_data_->getClasses(validation_classes);
+  validation_data_->getWeights(validation_weights);
 
   alwaysAssertM((intx)validation_classes.size() == validation_features.rows(),
                 "JointBoost: Ground truth classes for validation data do not match number of examples");

@@ -35,9 +35,9 @@ typedef  std::uint64_t       uint64;
 
 using    std::               size_t;
 
-typedef  float               Real;
 typedef  float               float32;  // assume IEEE 754
 typedef  double              float64;  // assume IEEE 754
+typedef  float32             Real;
 
 /**
  * Type of a number (enum class). This values are guaranteed to have the following encoding:
@@ -61,6 +61,7 @@ struct NumericType
     UINT64      =   0x0140,
     FLOAT32     =   0x1020,
     FLOAT64     =   0x1040,
+    REAL        =   (sizeof(Real) == 4 ? 0x1020 : 0x1040)  // duplicate values are ok in an enum
   };
 
   THEA_ENUM_CLASS_BODY(NumericType)
@@ -77,6 +78,7 @@ struct NumericType
     THEA_ENUM_CLASS_STRING(UINT64,    "uint64")
     THEA_ENUM_CLASS_STRING(FLOAT32,   "float32")
     THEA_ENUM_CLASS_STRING(FLOAT64,   "float64")
+    // no string for REAL since it's a duplicate of either FLOAT32 or FLOAT64
   THEA_ENUM_CLASS_STRINGS_END(NumericType)
 
   /** Convert a numeric C++ type to the corresponding enum. Use as <code>NumericType::From<type>::value</code>. */

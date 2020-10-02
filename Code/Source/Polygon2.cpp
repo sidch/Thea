@@ -14,6 +14,7 @@
 #include "Polygon2.hpp"
 #include "Polygon3.hpp"
 
+// Be careful not to use NumericType::REAL after this!!!
 #ifdef SINGLE
 #  define REAL float
 #else

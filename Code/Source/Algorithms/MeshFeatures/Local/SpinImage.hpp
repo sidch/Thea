@@ -34,11 +34,11 @@ namespace Local {
  * A. Johnson and M. Hebert, "Using Spin Images for Efficient Object Recognition in Cluttered 3D Scenes",
  * IEEE Trans. PAMI 21(5), 433-449, 1999.
  */
-template < typename ExternalSampleKDTreeT = KDTreeN<MeshFeatures::SurfaceSample, 3> >
-class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<MeshFeatures::SurfaceSample, 3> >
+class SpinImage : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 50000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -91,7 +91,7 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used to define the extents of the spin image. If <= 0, the bounding
      *   sphere diameter will be used.
      */
-    SpinImage(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    SpinImage(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -110,8 +110,8 @@ class SpinImage : public SampledSurface<ExternalSampleKDTreeT>
      */
     void compute(Vector3 const & position, int num_radial_bins, int num_height_bins, MatrixX<double> & spin_image) const
     {
-      intx nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
-                                                : this->getInternalKDTree()->template closestElement<MetricL2>(position);
+      intx nn_index = this->hasExternalKdTree() ? this->getExternalKdTree()->template closestElement<MetricL2>(position)
+                                                : this->getInternalKdTree()->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
         THEA_WARNING << "SpinImage: Query point cannot be mapped to mesh, spin image set to zero";

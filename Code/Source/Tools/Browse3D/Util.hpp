@@ -25,7 +25,7 @@ class Image;
 
 namespace Graphics {
 
-class RenderSystem;
+class IRenderSystem;
 class Camera;
 
 } // namespace Graphics
@@ -35,25 +35,25 @@ class Camera;
 namespace Browse3D {
 
 // Draw a sphere.
-void drawSphere(Graphics::RenderSystem & render_system, Vector3 const & center, Real radius, int num_steps = 16);
+void drawSphere(Graphics::IRenderSystem & render_system, Vector3 const & center, Real radius, int num_steps = 16);
 
 // Draw a capsule (cylinder with edges capped by hemispheres).
-void drawCapsule(Graphics::RenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Real radius,
+void drawCapsule(Graphics::IRenderSystem & render_system, Vector3 const & base_center, Vector3 const & top_center, Real radius,
                  int num_steps = 16);
 
 // Draw a torus with the given center and primary axes given by the unit vectors u, v.
-void drawTorus(Graphics::RenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v,
+void drawTorus(Graphics::IRenderSystem & render_system, Vector3 const & center, Vector3 const & u, Vector3 const & v,
                Real radius, Real width, int num_major_steps = 16, int num_minor_steps = 8, bool alternate_dark_light = false,
-               ColorRGBA const & color1 = ColorRGBA(1, 0, 0, 1), ColorRGBA const & color2 = ColorRGBA(0, 1, 0, 1));
+               ColorRgba const & color1 = ColorRgba(1, 0, 0, 1), ColorRgba const & color2 = ColorRgba(0, 1, 0, 1));
 
 // Get the number of colors in the standard palette.
 int numPaletteColors();
 
 // Get the i-th color in the standard palette.
-ColorRGB const & getPaletteColor(intx i);
+ColorRgba const & getPaletteColor(intx i);
 
 // Map a label to a color.
-ColorRGB getLabelColor(std::string const & label);
+ColorRgba getLabelColor(std::string const & label);
 
 // Compute a picking ray, given a screen point and a camera.
 Ray3 computePickRay(wxRealPoint const & p, Graphics::Camera const & camera, int width, int height);

@@ -13,6 +13,7 @@
 //============================================================================
 
 #include "Camera.hpp"
+#include "../MatrixWrapper.hpp"
 
 THEA_INSTANTIATE_SMART_POINTERS(Thea::Graphics::Camera)
 
@@ -93,6 +94,22 @@ Camera::computePickRay(Vector2 const & screen_pos) const
   Ray3 view_ray(Vector3::Zero(),
                 Vector3(left + p.x() * (right - left), bottom + p.y() * (top - bottom), -near_dist).normalized());
   return view_ray.toWorldSpace(frame);
+}
+
+void
+Camera::makeCurrent(IRenderSystem * render_system) const
+{
+  alwaysAssertM(render_system, "Camera: Cannot set current camera on null rendersystem");
+
+  Matrix4 proj = getProjectionTransform();
+  Matrix4 modelview = getWorldToCameraTransform().homogeneous();
+  MatrixWrapper wp(&proj), wmv(&modelview);
+
+  render_system->setMatrixMode(IRenderSystem::MatrixMode::PROJECTION);
+  render_system->setMatrix(&wp);
+
+  render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW);
+  render_system->setMatrix(&wmv);
 }
 
 std::string

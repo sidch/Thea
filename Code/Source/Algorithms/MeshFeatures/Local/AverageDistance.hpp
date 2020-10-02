@@ -32,11 +32,11 @@ namespace MeshFeatures {
 namespace Local {
 
 /** Compute the average distance from a query point to other points on a shape. */
-template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
+class AverageDistance : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -76,7 +76,7 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used as the default way to normalize the average distance (an actual
      *   distance of \a normalization_scale will be mapped to 1). If <= 0, the bounding sphere diameter will be used.
      */
-    AverageDistance(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    AverageDistance(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -129,10 +129,10 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
       {
         Ball3 ball(position, max_distance);
 
-        if (this->hasExternalKDTree())
-          this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
+        if (this->hasExternalKdTree())
+          this->getMutableExternalKdTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
         else
-          this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
+          this->getMutableInternalKdTree()->template processRangeUntil<IntersectionTester>(ball, std::ref(callback));
       }
 
       return callback.getAverageDistance() / max_distance;
@@ -159,10 +159,10 @@ class AverageDistance : public SampledSurface<ExternalSampleKDTreeT>
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
       intx seed_index = -1;
-      if (this->hasExternalKDTree())
-        seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
+      if (this->hasExternalKdTree())
+        seed_index = this->getMutableExternalKdTree()->template closestElement<MetricL2>(position);
       else
-        seed_index = this->getMutableInternalKDTree()->template closestElement<MetricL2>(position);
+        seed_index = this->getMutableInternalKdTree()->template closestElement<MetricL2>(position);
 
       alwaysAssertM(seed_index >= 0, "AverageDistance: Seed sample for geodesic distances not found");
 

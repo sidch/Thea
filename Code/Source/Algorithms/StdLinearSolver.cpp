@@ -13,8 +13,8 @@
 //============================================================================
 
 #include "StdLinearSolver.hpp"
-#include "../AbstractDenseMatrix.hpp"
-#include "../AbstractCompressedSparseMatrix.hpp"
+#include "../IDenseMatrix.hpp"
+#include "../ICompressedSparseMatrix.hpp"
 #include "NNLS/nnls.h"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/QR>
@@ -41,7 +41,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // Solve the linear system Ax = b for a dense double-precision matrix A.
     template < typename MatrixT, typename ScalarT,
                typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
-    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr)
+    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, IOptions const * options = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -164,7 +164,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // Solve the linear system Ax = b for a sparse ScalarT-precision matrix A.
     template < typename MatrixT, typename ScalarT,
                typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
-    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, AbstractOptions const * options = nullptr)
+    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, IOptions const * options = nullptr)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -345,7 +345,7 @@ template <MatrixLayout::Value L, typename StorageIndex> using SM = Eigen::Map< S
 template <MatrixLayout::Value L, typename ScalarT>
 bool
 implSolve(StdLinearSolverImpl * impl, int storage_type, intx nr, intx nc, intx nnz, void const * in, void const * out,
-          ScalarT const * val, void const * nzc, ScalarT const * b, AbstractOptions const * opt)
+          ScalarT const * val, void const * nzc, ScalarT const * b, IOptions const * opt)
 {
   void    * in2  = const_cast<void *>(in);
   void    * out2 = const_cast<void *>(out);
@@ -434,23 +434,26 @@ StdLinearSolver::setMaxIterations(intx max_iters_)
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, float64 const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, float64 const * b, IOptions const * options)
 {
   return impl->solve(a, b, options);
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, float64 const * b, AbstractOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, float64 const * b, IOptions const * options)
 {
   return impl->solve(a, b, options);
 }
 
 int8
-StdLinearSolver::solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options)
+StdLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options)
 {
-  if (a.asAddressable() && a.asAddressable()->asDense())
+  alwaysAssertM(a, "StdLinearSolver: Coefficient matrix is null");
+  alwaysAssertM(b, "StdLinearSolver: Constant matrix is null");
+
+  if (a->asAddressable() && a->asAddressable()->asDense())
   {
-    AbstractDenseMatrix<float64> const & dm = *a.asAddressable()->asDense();
+    IDenseMatrix<float64> const & dm = *a->asAddressable()->asDense();
     if (dm.isRowMajor())
     {
       Eigen::Map< MatrixX<float64, MatrixLayout::ROW_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
@@ -462,9 +465,9 @@ StdLinearSolver::solve(AbstractMatrix<float64> const & a, float64 const * b, Abs
       return impl->solve(wrapped, b, options);
     }
   }
-  else if (a.asSparse() && a.asSparse()->asCompressed())
+  else if (a->asSparse() && a->asSparse()->asCompressed())
   {
-    AbstractCompressedSparseMatrix<float64> const & sm = *a.asSparse()->asCompressed();
+    ICompressedSparseMatrix<float64> const & sm = *a->asSparse()->asCompressed();
     int storage_type = sm.getInnerIndexType();
     if (storage_type != sm.getOuterIndexType() || storage_type != sm.getNonZeroCountType())
     {
@@ -511,7 +514,7 @@ StdLinearSolver::getSolution() const
 }
 
 int8
-StdLinearSolver::getSquaredError(float64 & err) const
+StdLinearSolver::getSquaredError(float64 * err) const
 {
   return false;
 }

@@ -16,7 +16,7 @@
 #define __Thea_Algorithms_LaplaceBeltrami_hpp__
 
 #include "../Common.hpp"
-#include "../AbstractAddressableMatrix.hpp"
+#include "../IAddressableMatrix.hpp"
 #include "../Math.hpp"
 #include "../UnorderedMap.hpp"
 #include "../Graphics/MeshType.hpp"
@@ -61,7 +61,7 @@ class THEA_API LaplaceBeltrami
       THEA_ENUM_CLASS_BODY(Method)
     };
 
-    /** Compute the discrete Laplace-Beltrami operator for a DCELMesh and store it in the result. */
+    /** Compute the discrete Laplace-Beltrami operator for a DcelMesh and store it in the result. */
     template <typename MeshT, typename MatrixT> static void compute(MeshT const & mesh, Method method, MatrixT & result)
     {
       switch (method)
@@ -79,7 +79,7 @@ class THEA_API LaplaceBeltrami
     struct CheckTypes
     {
       static bool const value = MeshTypeCheckT::value
-                             && std::is_base_of< AbstractAddressableMatrix<typename MatrixT::Value>, MatrixT >::value;
+                             && std::is_base_of< IAddressableMatrix<typename MatrixT::Value>, MatrixT >::value;
     };
 
     //==========================================================================================================================
@@ -169,7 +169,7 @@ class THEA_API LaplaceBeltrami
      * Compute the discrete Laplace-Beltrami operator for a DCEL mesh using the method of [Xu 2006] and store it in the result.
      */
     template < typename MeshT, typename MatrixT,
-               typename std::enable_if< CheckTypes<Graphics::IsDCELMesh<MeshT>, MatrixT>::value, int >::type = 0 >
+               typename std::enable_if< CheckTypes<Graphics::IsDcelMesh<MeshT>, MatrixT>::value, int >::type = 0 >
     static void computeXu(MeshT const & mesh, MatrixT & result)
     {
       // First sequentially index all vertices of the mesh

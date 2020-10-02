@@ -17,7 +17,7 @@
 
 #include "../Common.hpp"
 #include "Filter.hpp"
-#include "KDTreeN.hpp"
+#include "KdTreeN.hpp"
 #include "IntersectionTester.hpp"
 #include "MetricL2.hpp"
 #include "PointTraitsN.hpp"
@@ -201,7 +201,7 @@ class SampleGraph : private Noncopyable
     typedef Array<SurfaceSample>                SampleArray;    ///< Array of samples.
 
   private:
-    typedef KDTreeN<SurfaceSample *, 3>         SampleKDTree;   ///< KD-tree on surface samples.
+    typedef KdTreeN<SurfaceSample *, 3>         SampleKdTree;   ///< KD-tree on surface samples.
 
   public:
     //=========================================================================================================================
@@ -390,7 +390,7 @@ class SampleGraph : private Noncopyable
         return;
 
       // Create kd-tree on samples
-      SampleKDTree sample_kdtree(sample_ptrs.begin(), sample_ptrs.end());
+      SampleKdTree sample_kdtree(sample_ptrs.begin(), sample_ptrs.end());
 
       // Get a measure of the average pairwise separation of samples
       avg_separation = 0;
@@ -533,7 +533,7 @@ class SampleGraph : private Noncopyable
 
     /** Find the samples adjacent to a given sample. */
     template <typename RayQueryStructureT>
-    void findSampleNeighbors(SurfaceSample * sample, SampleKDTree & sample_kdtree, Real init_radius,
+    void findSampleNeighbors(SurfaceSample * sample, SampleKdTree & sample_kdtree, Real init_radius,
                              RayQueryStructureT const * surface)
     {
       static int const MAX_ITERS = 3;

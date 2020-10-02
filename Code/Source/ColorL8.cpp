@@ -25,7 +25,7 @@
 
 #include "ColorL8.hpp"
 #include "ColorL.hpp"
-#include "ColorRGBA.hpp"
+#include "ColorRgba.hpp"
 #include "Math.hpp"
 
 namespace Thea {
@@ -34,7 +34,7 @@ ColorL8::ColorL8(ColorL const & c)
 : val(Math::clamp((uint8)Math::round(c.value() * 255), (uint8)0, (uint8)255))
 {}
 
-ColorL::ColorL(ColorRGBA const & other)
+ColorL::ColorL(ColorRgba const & other)
 {
   Real lum = 0.299f * other.r() + 0.587f * other.g() + 0.114f * other.b();
   val = Math::clamp((uint8)Math::round(lum * 255), (uint8)0, (uint8)255);

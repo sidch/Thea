@@ -23,7 +23,7 @@
 #ifndef THEA_NO_ZERNIKE
 
 #include "../Common.hpp"
-#include "../AbstractAddressableMatrix.hpp"
+#include "../IAddressableMatrix.hpp"
 #include "../MatVec.hpp"
 #include <boost/multi_array.hpp>
 #include <complex>
@@ -85,7 +85,7 @@ class THEA_API Zernike2
      * @return The number of pixels that have non-zero values and were used to compute the moments.
      */
     template <int N, typename T, typename ScalarT>
-    intx compute(AbstractAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
+    intx compute(IAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
                  MomentMatrix<N, ScalarT> & moments) const;
 
   private:
@@ -155,7 +155,7 @@ struct Zernike2::Accum<1, ScalarT>
 
 template <int N, typename T, typename ScalarT>
 intx
-Zernike2::compute(AbstractAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
+Zernike2::compute(IAddressableMatrix<T> const & distrib, double center_x, double center_y, double radius,
                   Zernike2::MomentMatrix<N, ScalarT> & moments) const
 {
   alwaysAssertM(radius > 0, "Zernike2: Radius must be greater than zero");

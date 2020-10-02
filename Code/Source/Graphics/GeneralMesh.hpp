@@ -24,7 +24,7 @@
 #include "../NamedObject.hpp"
 #include "../Polygon3.hpp"
 #include "../UnorderedMap.hpp"
-#include "AbstractMesh.hpp"
+#include "IMesh.hpp"
 #include "DefaultMeshCodecs.hpp"
 #include "GeneralMeshFace.hpp"
 #include "GeneralMeshVertex.hpp"
@@ -43,7 +43,7 @@ namespace Graphics {
  * @note When using GPU-buffered rendering, any methods of this class which change the mesh will automatically re-initialize the
  * buffers. <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the GeneralMeshVertex,
  * GeneralMeshEdge and GeneralMeshFace classes, then the user <i>must</i> manually indicate that the mesh needs to be
- * resynchronized with the GPU. The invalidateGPUBuffers() function should be used for this.
+ * resynchronized with the GPU. The invalidateGpuBuffers() function should be used for this.
  *
  * @todo Add support for GPU-buffered texture coordinates with 1, 3 or 4 dimensions.
  * @todo Instantiate different types of GPU buffers for different types of colors/texture coordinates.
@@ -52,7 +52,7 @@ template < typename VertexAttributeT               =  Graphics::NullAttribute,
            typename EdgeAttributeT                 =  Graphics::NullAttribute,
            typename FaceAttributeT                 =  Graphics::NullAttribute,
            template <typename T> class AllocatorT  =  std::allocator >
-class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMesh
+class /* THEA_API */ GeneralMesh : public virtual NamedObject, public IMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(GeneralMesh)
@@ -89,7 +89,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     typedef Face   const  *  FaceConstHandle;    ///< Handle to an immutable mesh face.
 
     /** Identifiers for the various buffers (enum class). */
-    struct BufferID
+    struct BufferId
     {
       /** Supported values. */
       enum Value
@@ -103,30 +103,30 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         TOPOLOGY         =  0x0020   ///< Buffer(s) containing face indices.
       };
 
-      THEA_ENUM_CLASS_BODY(BufferID)
+      THEA_ENUM_CLASS_BODY(BufferId)
 
-    }; // struct BufferID
+    }; // struct BufferId
 
     /** Constructor. */
     GeneralMesh(std::string const & name = "AnonymousMesh")
     : NamedObject(name),
       max_vertex_index(-1),
       max_face_index(-1),
-      changed_packed(BufferID::ALL),
+      changed_packed(BufferId::ALL),
       has_large_polys(false),
       buffered_rendering(false),
       buffered_wireframe(false),
-      changed_buffers(BufferID::ALL),
+      changed_buffers(BufferId::ALL),
       num_tri_indices(0),
       num_quad_indices(0),
-      var_area(nullptr),
-      vertex_positions_var(nullptr),
-      vertex_normals_var(nullptr),
-      vertex_colors_var(nullptr),
-      vertex_texcoords_var(nullptr),
-      tris_var(nullptr),
-      quads_var(nullptr),
-      edges_var(nullptr),
+      buf_pool(nullptr),
+      vertex_positions_buf(nullptr),
+      vertex_normals_buf(nullptr),
+      vertex_colors_buf(nullptr),
+      vertex_texcoords_buf(nullptr),
+      tris_buf(nullptr),
+      quads_buf(nullptr),
+      edges_buf(nullptr),
       vertex_matrix(nullptr, 3, 0),
       tri_matrix(nullptr, 3, 0),
       quad_matrix(nullptr, 4, 0),
@@ -226,7 +226,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     }
 
     // Abstract mesh interface
-    AbstractDenseMatrix<Real> const * getVertexMatrix() const
+    IDenseMatrix<Real> const * THEA_ICALL getVertexMatrix() const
     {
       // Assume Vector3 is tightly packed and has no padding
       packVertexPositions();
@@ -235,7 +235,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       return &vertex_wrapper;
     }
 
-    AbstractDenseMatrix<uint32> const * getTriangleMatrix() const
+    IDenseMatrix<uint32> const * THEA_ICALL getTriangleMatrix() const
     {
       packTopology();
       uint32 const * buf = (packed_tris.empty() ? nullptr : &packed_tris[0]);
@@ -243,7 +243,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       return &tri_wrapper;
     }
 
-    AbstractDenseMatrix<uint32> const * getQuadMatrix() const
+    IDenseMatrix<uint32> const * THEA_ICALL getQuadMatrix() const
     {
       packTopology();
       uint32 const * buf = (packed_quads.empty() ? nullptr : &packed_quads[0]);
@@ -307,7 +307,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
       has_large_polys = false;
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** True if and only if the mesh contains no objects. */
@@ -366,13 +366,13 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
     /**
      * Add a vertex to the mesh, with optional precomputed normal, color, texture coordinates and index. If the index is
-     * negative, a new, unique index is generated for the vertex. Automatically calls invalidateGPUBuffers() to schedule a
+     * negative, a new, unique index is generated for the vertex. Automatically calls invalidateGpuBuffers() to schedule a
      * resync with the GPU.
      *
      * @return A pointer to the newly created vertex on success, null on failure.
      */
     Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = nullptr,
-                       ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr)
+                       ColorRgba const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
       if (normal)
         vertices.push_back(Vertex(point, *normal));
@@ -390,7 +390,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
       vertex->setIndex(index);
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return vertex;
     }
 
@@ -400,7 +400,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
      * generated for the face. Unless the mesh is already in an inconsistent state, failure to add the face will not affect the
      * mesh.
      *
-     * Automatically calls invalidateGPUBuffers() to schedule a resync with the GPU.
+     * Automatically calls invalidateGpuBuffers() to schedule a resync with the GPU.
      *
      * @return A pointer to the newly created face, or null on error.
      */
@@ -462,7 +462,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       unlinkFace(fp);
       faces.erase(face);
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return true;
     }
 
@@ -539,7 +539,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       }
 
       removeIsolatedEdges();
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /**
@@ -579,7 +579,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         old_vertex->faces.clear();
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /**
@@ -705,7 +705,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       vertex_to_remove->edges.clear();
       vertex_to_remove->faces.clear();
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /**
@@ -795,7 +795,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         }
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return new_edge;
     }
 
@@ -816,7 +816,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         return nullptr;
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return new_vx;
     }
 
@@ -866,7 +866,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
       // Remove isolated edges, including those that became isolated above
       removeIsolatedEdges();
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Remove all empty faces (fewer than 3 edges) from the mesh. */
@@ -891,7 +891,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       }
 
       removeIsolatedEdges();  // also removes isolated vertices
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Remove all isolated edges (no incident faces) from the mesh. */
@@ -910,7 +910,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       }
 
       removeIsolatedVertices();  // some vertices might have become isolated because of edge removal
-      invalidateGPUBuffers(BufferID::TOPOLOGY);
+      invalidateGpuBuffers(BufferId::TOPOLOGY);
     }
 
     /** Remove all isolated vertices (no incident edges or faces) from the mesh. */
@@ -924,7 +924,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
           ++vi;
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Remove all vertices marked for deletion by other operations. */
@@ -938,7 +938,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
           ++vi;
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Remove all edges marked for deletion by other operations. */
@@ -952,7 +952,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
           ++ei;
       }
 
-      invalidateGPUBuffers(BufferID::TOPOLOGY);
+      invalidateGpuBuffers(BufferId::TOPOLOGY);
     }
 
     /** Remove all faces marked for deletion by other operations. */
@@ -966,7 +966,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
           ++fi;
       }
 
-      invalidateGPUBuffers(BufferID::TOPOLOGY);
+      invalidateGpuBuffers(BufferId::TOPOLOGY);
     }
 
     /**
@@ -1081,30 +1081,30 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     }
 
     /**
-     * Check if GPU-buffered rendering is on or off. If it is on, you <b>must manually call</b> invalidateGPUBuffers() every
+     * Check if GPU-buffered rendering is on or off. If it is on, you <b>must manually call</b> invalidateGpuBuffers() every
      * time the mesh changes, to make sure the GPU buffers are update when the mesh is next rendered.
      *
-     * @see setGPUBufferedRendering()
+     * @see setGpuBufferedRendering()
      */
-    bool renderingIsGPUBuffered() const { return buffered_rendering; }
+    bool renderingIsGpuBuffered() const { return buffered_rendering; }
 
     /**
-     * Turn GPU-buffered rendering on/off. If you enable this function, you <b>must manually call</b> invalidateGPUBuffers()
+     * Turn GPU-buffered rendering on/off. If you enable this function, you <b>must manually call</b> invalidateGpuBuffers()
      * every time the mesh changes, to make sure the GPU buffers are synchronized when the mesh is next rendered.
      *
-     * @see renderingIsGPUBuffered()
+     * @see renderingIsGpuBuffered()
      */
-    void setGPUBufferedRendering(bool value)
+    void setGpuBufferedRendering(bool value)
     {
       if (value == buffered_rendering)
         return;
 
       buffered_rendering = value;
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Invalidate part or all of the current GPU data for the mesh. */
-    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL)
+    void invalidateGpuBuffers(int changed_buffers_ = BufferId::ALL)
     {
       changed_buffers |= changed_buffers_;
       changed_packed  |= changed_buffers_;
@@ -1117,24 +1117,24 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
      *
      * Wireframe mode is initially disabled to save video memory. This flag is ignored in non-buffered (immediate) mode.
      *
-     * @see wireframeIsGPUBuffered()
+     * @see wireframeIsGpuBuffered()
      */
-    void setGPUBufferedWireframe(bool value)
+    void setGpuBufferedWireframe(bool value)
     {
       if (value == buffered_wireframe)
         return;
 
       buffered_wireframe = value;
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /**
      * Check if wireframe drawing is enabled in GPU-buffered mode. This is initially disabled to save video memory. This flag is
      * ignored in non-buffered (immediate) mode.
      *
-     * @see setGPUBufferedWireframe()
+     * @see setGpuBufferedWireframe()
      */
-    bool wireframeIsGPUBuffered() const { return buffered_wireframe; }
+    bool wireframeIsGpuBuffered() const { return buffered_wireframe; }
 
     /**
      * Pack all mesh data to arrays that can be directly transferred to the GPU. Packed arrays that are already synchronized
@@ -1149,12 +1149,15 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       packTopology();
     }
 
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const
+    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
     {
+      if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return; }
+      if (!options) options = RenderOptions::defaults();
+
       if (buffered_rendering)
-        drawBuffered(render_system, options);
+        drawBuffered(*render_system, *options);
       else
-        drawImmediate(render_system, options);
+        drawImmediate(*render_system, *options);
     }
 
   private:
@@ -1163,7 +1166,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
      * [vbegin, vend). VertexInputIterator must dereference to a pointer to a Vertex. Unless the mesh is already in an
      * inconsistent state, failure to add the face will not affect the mesh.
      *
-     * Automatically calls invalidateGPUBuffers() to schedule a resync with the GPU.
+     * Automatically calls invalidateGpuBuffers() to schedule a resync with the GPU.
      *
      * @param face The previously constructed face, assumed to be <b>uninitialized</b>.
      * @param vbegin Points to the beginning of the vertex sequence.
@@ -1221,21 +1224,21 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
         (*fvi)->addFaceNormal(face->getNormal());  // weight by face area?
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return face;
     }
 
     /** Set vertex color. */
     template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
-    void setVertexColor(VertexT * vertex, ColorRGBA const & color)
+    void setVertexColor(VertexT * vertex, ColorRgba const & color)
     {
       vertex->attr().setColor(color);
-      invalidateGPUBuffers(BufferID::VERTEX_COLOR);
+      invalidateGpuBuffers(BufferId::VERTEX_COLOR);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
     template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
-    void setVertexColor(VertexT * vertex, ColorRGBA const & color)
+    void setVertexColor(VertexT * vertex, ColorRgba const & color)
     {}
 
     /** Set vertex texture coordinates. */
@@ -1243,7 +1246,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord)
     {
       vertex->attr().setTexCoord(texcoord);
-      invalidateGPUBuffers(BufferID::VERTEX_TEXCOORD);
+      invalidateGpuBuffers(BufferId::VERTEX_TEXCOORD);
     }
 
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
@@ -1430,7 +1433,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
       old_edge->faces.clear();
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return true;
     }
 
@@ -1466,7 +1469,7 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       for (auto fei = face->edges.begin(); fei != face->edges.end(); ++fei)
         (*fei)->removeFace(face);
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /** Replace a higher-degree face with multiple triangular faces. */
@@ -1495,18 +1498,18 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
         }
       }
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
       return true;
     }
 
     /** Draw the mesh in immediate rendering mode. */
-    void drawImmediate(RenderSystem & render_system, AbstractRenderOptions const & options) const;
+    void drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const;
 
     /**
      * Utility function to draw a face. Must be enclosed in the appropriate
-     * RenderSystem::beginPrimitive()/RenderSystem::endPrimitive() block.
+     * IRenderSystem::beginPrimitive()/IRenderSystem::endPrimitive() block.
      */
-    void drawFace(Face const & face, RenderSystem & render_system, AbstractRenderOptions const & options) const
+    void drawFace(Face const & face, IRenderSystem & render_system, IRenderOptions const & options) const
     {
       if (!options.useVertexNormals() && options.sendNormals())
         face.drawNormal(render_system, options);
@@ -1529,74 +1532,74 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     }
 
     /** Check if a packed array is synchronized with the mesh or not. */
-    bool packedArrayIsValid(BufferID buffer) const { return (changed_packed & (int)buffer) == 0; }
+    bool packedArrayIsValid(BufferId buffer) const { return (changed_packed & (int)buffer) == 0; }
 
     /** Mark a specific packed array as being synchronized with the mesh. */
-    void setPackedArrayIsValid(BufferID buffer) const { changed_packed &= (~(int)buffer); }
+    void setPackedArrayIsValid(BufferId buffer) const { changed_packed &= (~(int)buffer); }
 
     /** Clear the set of changed packed arrays. */
     void setAllPackedArraysAreValid() const { changed_packed = 0; }
 
     /** Check if a GPU buffer is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
+    bool gpuBufferIsValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void setAllGPUBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
+    void setAllGpuBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
-    void uploadToGraphicsSystem(RenderSystem & render_system);
+    void uploadToGraphicsSystem(IRenderSystem & render_system);
 
     /** Draw the mesh in GPU-buffered rendering mode. */
-    void drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const;
+    void drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
     void packVertexPositions() const
     {
-      if (packedArrayIsValid(BufferID::VERTEX_POSITION)) return;
+      if (packedArrayIsValid(BufferId::VERTEX_POSITION)) return;
 
       packed_vertex_positions.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = vi->getPosition();
 
-      setPackedArrayIsValid(BufferID::VERTEX_POSITION);
+      setPackedArrayIsValid(BufferId::VERTEX_POSITION);
     }
 
     /** Pack vertex positions densely in an array. */
     void packVertexNormals() const
     {
-      if (packedArrayIsValid(BufferID::VERTEX_NORMAL)) return;
+      if (packedArrayIsValid(BufferId::VERTEX_NORMAL)) return;
 
       packed_vertex_normals.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = vi->getNormal();
 
-      setPackedArrayIsValid(BufferID::VERTEX_NORMAL);
+      setPackedArrayIsValid(BufferId::VERTEX_NORMAL);
     }
 
     /** Pack vertex colors densely in an array. */
     template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
     void packVertexColors() const
     {
-      if (packedArrayIsValid(BufferID::VERTEX_COLOR)) return;
+      if (packedArrayIsValid(BufferId::VERTEX_COLOR)) return;
 
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_colors[i] = ColorRGBA(vi->attr().getColor());
+        packed_vertex_colors[i] = ColorRgba(vi->attr().getColor());
 
-      setPackedArrayIsValid(BufferID::VERTEX_COLOR);
+      setPackedArrayIsValid(BufferId::VERTEX_COLOR);
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
     void packVertexColors() const
     {
-      if (!packedArrayIsValid(BufferID::VERTEX_COLOR))
+      if (!packedArrayIsValid(BufferId::VERTEX_COLOR))
       {
         packed_vertex_colors.clear();
-        setPackedArrayIsValid(BufferID::VERTEX_COLOR);
+        setPackedArrayIsValid(BufferId::VERTEX_COLOR);
       }
     }
 
@@ -1604,31 +1607,31 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
     void packVertexTexCoords() const
     {
-      if (packedArrayIsValid(BufferID::VERTEX_TEXCOORD)) return;
+      if (packedArrayIsValid(BufferId::VERTEX_TEXCOORD)) return;
 
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = vi->attr().getTexCoord();
 
-      setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
+      setPackedArrayIsValid(BufferId::VERTEX_TEXCOORD);
     }
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template < typename VertexT, typename std::enable_if< !HasTexCoord<VertexT>::value, int >::type = 0 >
     void packVertexTexCoords() const
     {
-      if (!packedArrayIsValid(BufferID::VERTEX_TEXCOORD))
+      if (!packedArrayIsValid(BufferId::VERTEX_TEXCOORD))
       {
         packed_vertex_texcoords.clear();
-        setPackedArrayIsValid(BufferID::VERTEX_TEXCOORD);
+        setPackedArrayIsValid(BufferId::VERTEX_TEXCOORD);
       }
     }
 
     /** Pack face and edge indices densely in an array. */
     void packTopology() const
     {
-      if (packedArrayIsValid(BufferID::TOPOLOGY)) return;
+      if (packedArrayIsValid(BufferId::TOPOLOGY)) return;
 
       packed_tris.clear();
       packed_quads.clear();
@@ -1678,12 +1681,12 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
       num_tri_indices   =  (intx)packed_tris.size();
       num_quad_indices  =  (intx)packed_quads.size();
 
-      setPackedArrayIsValid(BufferID::TOPOLOGY);
+      setPackedArrayIsValid(BufferId::TOPOLOGY);
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
     typedef Array<Vector3>    NormalArray;    ///< Array of normals.
-    typedef Array<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef Array<ColorRgba>  ColorArray;     ///< Array of colors.
     typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
     typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
@@ -1712,18 +1715,18 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
     mutable intx           num_tri_indices;          ///< Number of triangle indices in the mesh.
     mutable intx           num_quad_indices;         ///< Number of quad indices in the mesh.
 
-    VARArea * var_area;          ///< GPU buffer area.
-    VAR * vertex_positions_var;  ///< GPU buffer for vertex positions.
-    VAR * vertex_normals_var;    ///< GPU buffer for vertex normals.
-    VAR * vertex_colors_var;     ///< GPU buffer for vertex colors.
-    VAR * vertex_texcoords_var;  ///< GPU buffer for texture coordinates.
-    VAR * tris_var;              ///< GPU buffer for triangle indices.
-    VAR * quads_var;             ///< GPU buffer for quad indices.
-    VAR * edges_var;             ///< GPU buffer for edges.
+    IBufferPool * buf_pool;          ///< GPU buffer pool.
+    IBuffer * vertex_positions_buf;  ///< GPU buffer for vertex positions.
+    IBuffer * vertex_normals_buf;    ///< GPU buffer for vertex normals.
+    IBuffer * vertex_colors_buf;     ///< GPU buffer for vertex colors.
+    IBuffer * vertex_texcoords_buf;  ///< GPU buffer for texture coordinates.
+    IBuffer * tris_buf;              ///< GPU buffer for triangle indices.
+    IBuffer * quads_buf;             ///< GPU buffer for quad indices.
+    IBuffer * edges_buf;             ///< GPU buffer for edges.
 
     mutable Array<Vertex *> face_vertices;  ///< Internal cache of vertex pointers for a face.
 
-    // Map the packed vertex and index buffers as matrices for the AbstractMesh API
+    // Map the packed vertex and index buffers as matrices for the IMesh API
     typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
     typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
     typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
@@ -1740,34 +1743,34 @@ class /* THEA_API */ GeneralMesh : public virtual NamedObject, public AbstractMe
 
 template <typename V, typename E, typename F, template <typename T> class A>
 inline void
-GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
+GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
   if (!buffered_rendering || changed_buffers == 0) return;
 
-  if (!gpuBufferIsValid(BufferID::TOPOLOGY))
-    invalidateGPUBuffers(BufferID::ALL);
+  if (!gpuBufferIsValid(BufferId::TOPOLOGY))
+    invalidateGpuBuffers(BufferId::ALL);
 
-  if (changed_buffers == BufferID::ALL)
+  if (changed_buffers == BufferId::ALL)
   {
-    if (var_area) var_area->reset();
+    if (buf_pool) buf_pool->reset();
 
-    vertex_positions_var  =  nullptr;
-    vertex_normals_var    =  nullptr;
-    vertex_colors_var     =  nullptr;
-    vertex_texcoords_var  =  nullptr;
-    tris_var              =  nullptr;
-    quads_var             =  nullptr;
-    edges_var             =  nullptr;
+    vertex_positions_buf  =  nullptr;
+    vertex_normals_buf    =  nullptr;
+    vertex_colors_buf     =  nullptr;
+    vertex_texcoords_buf  =  nullptr;
+    tris_buf              =  nullptr;
+    quads_buf             =  nullptr;
+    edges_buf             =  nullptr;
 
     if (vertices.empty() || (faces.empty() && edges.empty()))
     {
-      if (var_area)
+      if (buf_pool)
       {
-        render_system.destroyVARArea(var_area);
-        var_area = nullptr;
+        render_system.destroyBufferPool(buf_pool);
+        buf_pool = nullptr;
       }
 
-      setAllGPUBuffersAreValid();
+      setAllGpuBuffersAreValid();
       return;
     }
 
@@ -1807,73 +1810,75 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
     // THEA_CONSOLE << "num_tri_indices = " << num_tri_indices;
     // THEA_CONSOLE << "num_quad_indices = " << num_quad_indices;
 
-    if (var_area)
+    if (buf_pool)
     {
-      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
+      if (buf_pool->getCapacity() <= num_bytes || buf_pool->getCapacity() > (intx)(1.5 * num_bytes))
       {
-        render_system.destroyVARArea(var_area);
+        render_system.destroyBufferPool(buf_pool);
 
-        std::string vararea_name = getNameStr() + " VAR area";
-        var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-        if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+        std::string pool_name = getNameStr() + " buffer pool";
+        buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
+        if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
       }
-      // Else no need to reset var_area, we've done it above
+      // Else no need to reset buf_pool, we've done it above
     }
     else
     {
-      std::string vararea_name = getNameStr() + " VAR area";
-      var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-      if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+      std::string pool_name = getNameStr() + " buffer pool";
+      buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
+      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
     }
 
     if (!packed_vertex_positions.empty())
     {
-      vertex_positions_var = var_area->createArray(vertex_position_bytes);
-      if (!vertex_positions_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
-      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+      vertex_positions_buf = buf_pool->createBuffer(vertex_position_bytes);
+      if (!vertex_positions_buf) throw Error(getNameStr() + ": Couldn't create vertices buffer");
+      vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
+                                   &packed_vertex_positions[0]);
     }
 
     if (!packed_vertex_normals.empty())
     {
-      vertex_normals_var = var_area->createArray(vertex_normal_bytes);
-      if (!vertex_normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
-      vertex_normals_var->updateVectors(0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+      vertex_normals_buf = buf_pool->createBuffer(vertex_normal_bytes);
+      if (!vertex_normals_buf) throw Error(getNameStr() + ": Couldn't create normals buffer");
+      vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL, &packed_vertex_normals[0]);
     }
 
     if (!packed_vertex_colors.empty())
     {
-      vertex_colors_var = var_area->createArray(vertex_color_bytes);
-      if (!vertex_colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
-      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+      vertex_colors_buf = buf_pool->createBuffer(vertex_color_bytes);
+      if (!vertex_colors_buf) throw Error(getNameStr() + ": Couldn't create colors buffer");
+      vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL, &packed_vertex_colors[0]);
     }
 
     if (!packed_vertex_texcoords.empty())
     {
-      vertex_texcoords_var = var_area->createArray(vertex_texcoord_bytes);
-      if (!vertex_texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
-      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+      vertex_texcoords_buf = buf_pool->createBuffer(vertex_texcoord_bytes);
+      if (!vertex_texcoords_buf) throw Error(getNameStr() + ": Couldn't create texcoords buffer");
+      vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::REAL,
+                                   &packed_vertex_texcoords[0]);
     }
 
 #ifndef THEA_GENERAL_MESH_NO_INDEX_ARRAY
     if (!packed_tris.empty())
     {
-      tris_var = var_area->createArray(tri_bytes);
-      if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
-      tris_var->updateIndices(0, (intx)packed_tris.size(), &packed_tris[0]);
+      tris_buf = buf_pool->createBuffer(tri_bytes);
+      if (!tris_buf) throw Error(getNameStr() + ": Couldn't create triangle indices buffer");
+      tris_buf->updateIndices(0, (int64)packed_tris.size(), NumericType::UINT32, &packed_tris[0]);
     }
 
     if (!packed_quads.empty())
     {
-      quads_var = var_area->createArray(quad_bytes);
-      if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
-      quads_var->updateIndices(0, (intx)packed_quads.size(), &packed_quads[0]);
+      quads_buf = buf_pool->createBuffer(quad_bytes);
+      if (!quads_buf) throw Error(getNameStr() + ": Couldn't create quad indices buffer");
+      quads_buf->updateIndices(0, (int64)packed_quads.size(), NumericType::UINT32, &packed_quads[0]);
     }
 
     if (!packed_edges.empty())
     {
-      edges_var = var_area->createArray(edge_bytes);
-      if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
-      edges_var->updateIndices(0, (intx)packed_edges.size(), &packed_edges[0]);
+      edges_buf = buf_pool->createBuffer(edge_bytes);
+      if (!edges_buf) throw Error(getNameStr() + ": Couldn't create edge indices buffer");
+      edges_buf->updateIndices(0, (int64)packed_edges.size(), NumericType::UINT32, &packed_edges[0]);
     }
 #endif
   }
@@ -1881,53 +1886,55 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(RenderSystem & render_system)
   {
     packArrays();
 
-    if (!gpuBufferIsValid(BufferID::VERTEX_POSITION) && !vertices.empty())
-      vertex_positions_var->updateVectors(0, (intx)packed_vertex_positions.size(), &packed_vertex_positions[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty())
+      vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
+                                   &packed_vertex_positions[0]);
 
-    if (!gpuBufferIsValid(BufferID::VERTEX_NORMAL) && !vertices.empty())
-      vertex_normals_var->updateVectors (0, (intx)packed_vertex_normals.size(), &packed_vertex_normals[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && !vertices.empty())
+      vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL, &packed_vertex_normals[0]);
 
-    if (!gpuBufferIsValid(BufferID::VERTEX_COLOR) && hasVertexColors())
-      vertex_colors_var->updateColors(0, (intx)packed_vertex_colors.size(), &packed_vertex_colors[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasVertexColors())
+      vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL, &packed_vertex_colors[0]);
 
-    if (!gpuBufferIsValid(BufferID::VERTEX_TEXCOORD) && hasVertexTexCoords())
-      vertex_texcoords_var->updateVectors(0, (intx)packed_vertex_texcoords.size(), &packed_vertex_texcoords[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasVertexTexCoords())
+      vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::REAL,
+                                   &packed_vertex_texcoords[0]);
   }
 
-  setAllGPUBuffersAreValid();
+  setAllGpuBuffersAreValid();
 }
 
 template <typename V, typename E, typename F, template <typename T> class A>
 inline void
-GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRenderOptions const & options) const
+GeneralMesh<V, E, F, A>::drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const
 {
   if (options.drawEdges() && !buffered_wireframe)
     throw Error(getNameStr() + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
 
   const_cast<GeneralMesh *>(this)->uploadToGraphicsSystem(render_system);
 
-  if (!vertex_positions_var) return;
+  if (!vertex_positions_buf) return;
   if (!options.drawFaces() && !options.drawEdges()) return;
   if (!options.drawFaces() && edges.size() <= 0) return;
   if (!options.drawEdges() && faces.size() <= 0) return;
 
   render_system.beginIndexedPrimitives();
 
-    render_system.setVertexArray(vertex_positions_var);
-    if (options.sendNormals() && vertex_normals_var)
-      render_system.setNormalArray(vertex_normals_var);
+    render_system.setVertexBuffer(vertex_positions_buf);
+    if (options.sendNormals() && vertex_normals_buf)
+      render_system.setNormalBuffer(vertex_normals_buf);
     else
-      render_system.setNormalArray(nullptr);
+      render_system.setNormalBuffer(nullptr);
 
-    if (options.sendColors() && vertex_colors_var)
-      render_system.setColorArray(vertex_colors_var);
+    if (options.sendColors() && vertex_colors_buf)
+      render_system.setColorBuffer(vertex_colors_buf);
     else
-      render_system.setColorArray(nullptr);
+      render_system.setColorBuffer(nullptr);
 
-    if (options.sendTexCoords() && vertex_texcoords_var)
-      render_system.setTexCoordArray(0, vertex_texcoords_var);
+    if (options.sendTexCoords() && vertex_texcoords_buf)
+      render_system.setTexCoordBuffer(0, vertex_texcoords_buf);
     else
-      render_system.setTexCoordArray(0, nullptr);
+      render_system.setTexCoordBuffer(0, nullptr);
 
     if (options.drawFaces())
     {
@@ -1939,21 +1946,21 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
         if (num_tri_indices > 0)
-          render_system.sendIndices(RenderSystem::Primitive::TRIANGLES, num_tri_indices, &packed_tris[0]);
+          render_system.sendIndices(IRenderSystem::Primitive::TRIANGLES, num_tri_indices, &packed_tris[0]);
 
         if (num_quad_indices > 0)
-          render_system.sendIndices(RenderSystem::Primitive::QUADS, num_quad_indices, &packed_quads[0]);
+          render_system.sendIndices(IRenderSystem::Primitive::QUADS, num_quad_indices, &packed_quads[0]);
 #else
         if (num_tri_indices > 0)
         {
-          render_system.setIndexArray(tris_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::TRIANGLES, 0, num_tri_indices);
+          render_system.setIndexBuffer(tris_buf);
+          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, num_tri_indices);
         }
 
         if (num_quad_indices > 0)
         {
-          render_system.setIndexArray(quads_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::QUADS, 0, num_quad_indices);
+          render_system.setIndexBuffer(quads_buf);
+          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::QUADS, 0, num_quad_indices);
         }
 #endif
 
@@ -1963,7 +1970,7 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
           for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
             if (fi->numEdges() > 4)
             {
-              render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
+              render_system.beginPrimitive(IRenderSystem::Primitive::POLYGON);
                 drawFace(*fi, render_system, options);
               render_system.endPrimitive();
             }
@@ -1979,19 +1986,19 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
       render_system.pushColorFlags();
 
         render_system.setShader(nullptr);
-        render_system.setColorArray(nullptr);
-        render_system.setTexCoordArray(0, nullptr);
-        render_system.setNormalArray(nullptr);
-        render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
+        render_system.setColorBuffer(nullptr);
+        render_system.setTexCoordBuffer(0, nullptr);
+        render_system.setNormalBuffer(nullptr);
+        render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
 
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
         if (!edges.empty())
-          render_system.sendIndices(RenderSystem::Primitive::LINES, 2 * (intx)edges.size(), &packed_edges[0]);
+          render_system.sendIndices(IRenderSystem::Primitive::LINES, 2 * (int64)edges.size(), &packed_edges[0]);
 #else
         if (!edges.empty())
         {
-          render_system.setIndexArray(edges_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, 2 * (intx)edges.size());
+          render_system.setIndexBuffer(edges_buf);
+          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, 2 * (int64)edges.size());
         }
 #endif
 
@@ -2004,7 +2011,7 @@ GeneralMesh<V, E, F, A>::drawBuffered(RenderSystem & render_system, AbstractRend
 
 template <typename V, typename E, typename F, template <typename T> class A>
 inline void
-GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRenderOptions const & options) const
+GeneralMesh<V, E, F, A>::drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const
 {
   // Three separate passes over the faces is probably faster (TODO: profile) than using Primitive::POLYGON for each face
 
@@ -2017,13 +2024,13 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
     }
 
     // First try to render as much stuff using triangles as possible
-    render_system.beginPrimitive(RenderSystem::Primitive::TRIANGLES);
+    render_system.beginPrimitive(IRenderSystem::Primitive::TRIANGLES);
       for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isTriangle()) drawFace(*fi, render_system, options);
     render_system.endPrimitive();
 
     // Now render all quads
-    render_system.beginPrimitive(RenderSystem::Primitive::QUADS);
+    render_system.beginPrimitive(IRenderSystem::Primitive::QUADS);
       for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
         if (fi->isQuad()) drawFace(*fi, render_system, options);
     render_system.endPrimitive();
@@ -2032,7 +2039,7 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
     for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
       if (fi->numEdges() > 4)
       {
-        render_system.beginPrimitive(RenderSystem::Primitive::POLYGON);
+        render_system.beginPrimitive(IRenderSystem::Primitive::POLYGON);
           drawFace(*fi, render_system, options);
         render_system.endPrimitive();
       }
@@ -2047,9 +2054,9 @@ GeneralMesh<V, E, F, A>::drawImmediate(RenderSystem & render_system, AbstractRen
     render_system.pushColorFlags();
 
       render_system.setShader(nullptr);
-      render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color
+      render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
 
-      render_system.beginPrimitive(RenderSystem::Primitive::LINES);
+      render_system.beginPrimitive(IRenderSystem::Primitive::LINES);
         for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
         {
           ei->attr().draw(render_system, options);

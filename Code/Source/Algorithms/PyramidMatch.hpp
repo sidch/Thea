@@ -26,26 +26,26 @@ namespace Algorithms {
 
 namespace PyramidInternal {
 
-void smoothIncrement1D(Real * dst, int dst_size, int index, Real mean, Real value);
+void smoothIncrement1d(Real * dst, int dst_size, int index, Real mean, Real value);
 
-void smoothIncrement2D(Real * dst, int dst_sx, int dst_sy, int x, int y, Real mean_x, Real mean_y, Real value);
+void smoothIncrement2d(Real * dst, int dst_sx, int dst_sy, int x, int y, Real mean_x, Real mean_y, Real value);
 
-void smoothIncrement3D(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, int y, int z, Vector3 const & mean,
+void smoothIncrement3d(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, int y, int z, Vector3 const & mean,
                        Real value);
 
 } // namespace PyramidInternal
 
 /** A 1D pyramid. */
-class THEA_API Pyramid1D : public Serializable
+class THEA_API Pyramid1d : public Serializable
 {
   public:
-    THEA_DECL_SMART_POINTERS(Pyramid1D)
+    THEA_DECL_SMART_POINTERS(Pyramid1d)
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
-    template <typename T> Pyramid1D(T const * base_data, int n) { construct(base_data, n, nullptr, false); }
+    template <typename T> Pyramid1d(T const * base_data, int n) { construct(base_data, n, nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
-    template <typename T> Pyramid1D(Array<T> const & base_data)
+    template <typename T> Pyramid1d(Array<T> const & base_data)
     { construct(&base_data[0], (int)base_data.size(), nullptr, false); }
 
     /**
@@ -53,7 +53,7 @@ class THEA_API Pyramid1D : public Serializable
      * mean of each bin should be specified relative to the limits of the bin, in the range [0, 1].
      */
     template <typename T>
-    Pyramid1D(T const * base_data, int n, Real const * means, bool smooth_base_level = false)
+    Pyramid1d(T const * base_data, int n, Real const * means, bool smooth_base_level = false)
     {
       Array<Real> means_copy(means, means + n);
       construct(base_data, n, &means_copy[0], smooth_base_level);
@@ -64,17 +64,17 @@ class THEA_API Pyramid1D : public Serializable
      * mean of each bin should be specified relative to the limits of the bin, in the range [0, 1].
      */
     template <typename T>
-    Pyramid1D(Array<T> const & base_data, Array<Real> const & means, bool smooth_base_level = false)
+    Pyramid1d(Array<T> const & base_data, Array<Real> const & means, bool smooth_base_level = false)
     {
       Array<Real> means_copy = means;
       construct(&base_data[0], (int)base_data.size(), &means_copy[0], smooth_base_level);
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid1D(BinaryInputStream & input) { read(input); }
+    Pyramid1d(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid1D(TextInputStream & input) { read(input); }
+    Pyramid1d(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -82,19 +82,19 @@ class THEA_API Pyramid1D : public Serializable
     /** Get the number of elements in the base (input) level. */
     int baseSize() const { return levels.empty() ? 0 : (int)levels[0].size(); }
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
-    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
-    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = CodecAuto());
+    void write(TextOutputStream & output, Codec const & codec = CodecAuto()) const;
 
   protected:
     /** Default constructor. */
-    Pyramid1D() {}
+    Pyramid1d() {}
 
     /** Construct a pyramid from the base (highest-resolution) 1D array by recursive downsampling. */
     template <typename T> void construct(T const * base_data, int n, Real * means, bool smooth_base_level)
     {
-      alwaysAssertM(Math::isPowerOf2((unsigned)n), "Pyramid1D: Base size must be a power of 2");
+      alwaysAssertM(Math::isPowerOf2((unsigned)n), "Pyramid1d: Base size must be a power of 2");
 
       num_levels = Math::floorLog2((uint32)n) + 1;
       levels.resize(num_levels);
@@ -105,7 +105,7 @@ class THEA_API Pyramid1D : public Serializable
         Real * dst = &levels[0][0];
 
         for (int i = 0; i < n; ++i)
-          PyramidInternal::smoothIncrement1D(dst, n, i, means[i], base_data[i]);
+          PyramidInternal::smoothIncrement1d(dst, n, i, means[i], base_data[i]);
       }
       else
       {
@@ -127,27 +127,27 @@ class THEA_API Pyramid1D : public Serializable
 
     friend class PyramidMatch;
 
-}; // class Pyramid1D
+}; // class Pyramid1d
 
 /** A 2D pyramid. */
-class THEA_API Pyramid2D : public Serializable
+class THEA_API Pyramid2d : public Serializable
 {
   public:
-    THEA_DECL_SMART_POINTERS(Pyramid2D)
+    THEA_DECL_SMART_POINTERS(Pyramid2d)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. The input array is assumed to
      * be in row-major order, i.e. y is the major index and x is the minor index.
      */
-    template <typename T> Pyramid2D(T const * base_data, int nx_, int ny_)
+    template <typename T> Pyramid2d(T const * base_data, int nx_, int ny_)
     { construct(base_data, nx_, ny_, nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
-    template <typename T> Pyramid2D(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data)
+    template <typename T> Pyramid2d(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data)
     { construct(base_data.data(), base_data.cols(), base_data.rows(), nullptr, false); }
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
-    template <typename T, MatrixLayout::Value Layout> Pyramid2D(MatrixX<T, Layout> const & base_data)
+    template <typename T, MatrixLayout::Value Layout> Pyramid2d(MatrixX<T, Layout> const & base_data)
     {
       MatrixX<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
       construct(base_data_copy.data(), base_data.cols(), base_data.rows(), nullptr, false);
@@ -159,7 +159,7 @@ class THEA_API Pyramid2D : public Serializable
      * should be specified relative to the limits of the bin, in the range [0, 1] x [0, 1].
      */
     template <typename T>
-    Pyramid2D(T const * base_data, int nx_, int ny_, Vector2 const * means, bool smooth_base_level = false)
+    Pyramid2d(T const * base_data, int nx_, int ny_, Vector2 const * means, bool smooth_base_level = false)
     {
       Array<Vector2> means_copy(means, means + nx_ * ny_);
       construct(base_data, nx_, ny_, &means_copy[0], smooth_base_level);
@@ -167,7 +167,7 @@ class THEA_API Pyramid2D : public Serializable
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling with gaussian smoothing. */
     template <typename T, MatrixLayout::Value MeansLayout>
-    Pyramid2D(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
+    Pyramid2d(MatrixX<T, MatrixLayout::ROW_MAJOR> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
               bool smooth_base_level = false)
     {
       MatrixX<Vector2, MatrixLayout::ROW_MAJOR> means_copy(means);
@@ -176,7 +176,7 @@ class THEA_API Pyramid2D : public Serializable
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling with gaussian smoothing. */
     template <typename T, MatrixLayout::Value BaseLayout, MatrixLayout::Value MeansLayout>
-    Pyramid2D(MatrixX<T, BaseLayout> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
+    Pyramid2d(MatrixX<T, BaseLayout> const & base_data, MatrixX<Vector2, MeansLayout> const & means,
               bool smooth_base_level = false)
     {
       MatrixX<T, MatrixLayout::ROW_MAJOR> base_data_copy(base_data);
@@ -185,10 +185,10 @@ class THEA_API Pyramid2D : public Serializable
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid2D(BinaryInputStream & input) { read(input); }
+    Pyramid2d(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid2D(TextInputStream & input) { read(input); }
+    Pyramid2d(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -199,37 +199,37 @@ class THEA_API Pyramid2D : public Serializable
     /** Get the number of rows in the base (input) level. */
     int baseSizeY() const { return ny; }
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
-    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
-    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = CodecAuto());
+    void write(TextOutputStream & output, Codec const & codec = CodecAuto()) const;
 
   protected:
     /** 2D array of scalars. */
-    struct Array2D
+    struct Array2d
     {
       Array<Real> data;
       int sx, sy;
 
-      Array2D() : sx(0), sy(0) {}
-      Array2D(int sx_, int sy_) : data(sx_ * sy_), sx(sx_), sy(sy_) {}
-      Array2D(int sx_, int sy_, Real value) : data(sx_ * sy_, value), sx(sx_), sy(sy_) {}
+      Array2d() : sx(0), sy(0) {}
+      Array2d(int sx_, int sy_) : data(sx_ * sy_), sx(sx_), sy(sy_) {}
+      Array2d(int sx_, int sy_, Real value) : data(sx_ * sy_, value), sx(sx_), sy(sy_) {}
 
-      template <typename T> Array2D(T const * data_, int sx_, int sy_) : data(data_, data_ + sx_ * sy_), sx(sx_), sy(sy_) {}
+      template <typename T> Array2d(T const * data_, int sx_, int sy_) : data(data_, data_ + sx_ * sy_), sx(sx_), sy(sy_) {}
 
       Real operator()(int x, int y) const { return data[y * sx + x]; }
       Real & operator()(int x, int y) { return data[y * sx + x]; }
     };
 
     /** Default constructor. */
-    Pyramid2D() {}
+    Pyramid2d() {}
 
     /** Construct a pyramid from the base (highest-resolution) 2D array by recursive downsampling. */
     template <typename T>
     void construct(T const * base_data, int nx_, int ny_, Vector2 * means, bool smooth_base_level)
     {
       alwaysAssertM(Math::isPowerOf2((unsigned)nx_) && Math::isPowerOf2((unsigned)ny_),
-                    "Pyramid2D: Base dimensions must be powers of 2");
+                    "Pyramid2d: Base dimensions must be powers of 2");
 
       nx = nx_;
       ny = ny_;
@@ -239,17 +239,17 @@ class THEA_API Pyramid2D : public Serializable
 
       if (smooth_base_level)
       {
-        levels[0] = Array2D(nx, ny, 0);
+        levels[0] = Array2d(nx, ny, 0);
 
         Real * dst = &levels[0].data[0];
 
         intx i = 0;
         for (int y = 0; y < ny; ++y)
           for (int x = 0; x < nx; ++x, ++i)
-            PyramidInternal::smoothIncrement2D(dst, nx, ny, x, y, means[i].x(), means[i].y(), base_data[i]);
+            PyramidInternal::smoothIncrement2d(dst, nx, ny, x, y, means[i].x(), means[i].y(), base_data[i]);
       }
       else
-        levels[0] = Array2D(base_data, nx, ny);
+        levels[0] = Array2d(base_data, nx, ny);
 
       createPyramid(means);
     }
@@ -258,27 +258,27 @@ class THEA_API Pyramid2D : public Serializable
     void createPyramid(Vector2 * means);
 
     /** Resize a 2D array to half its size in each specified dimension. */
-    void downsample(Array2D const & src, Array2D & dst, int num_dims_to_downsample, Vector2 * means) const;
+    void downsample(Array2d const & src, Array2d & dst, int num_dims_to_downsample, Vector2 * means) const;
 
     int num_levels;
     int nx, ny;
-    Array<Array2D> levels;
+    Array<Array2d> levels;
 
     friend class PyramidMatch;
 
-}; // class Pyramid2D
+}; // class Pyramid2d
 
 /** A 3D pyramid. */
-class THEA_API Pyramid3D : public Serializable
+class THEA_API Pyramid3d : public Serializable
 {
   public:
-    THEA_DECL_SMART_POINTERS(Pyramid3D)
+    THEA_DECL_SMART_POINTERS(Pyramid3d)
 
     /**
      * Construct a pyramid from the base (highest-resolution) 3D array by recursive downsampling. The input array is assumed to
      * be in z-major order, i.e. z is the major index, y is the submajor index and x is the minor index.
      */
-    template <typename T> Pyramid3D(T const * base_data, int nx_, int ny_, int nz_)
+    template <typename T> Pyramid3d(T const * base_data, int nx_, int ny_, int nz_)
     { construct(base_data, nx_, ny_, nz_, nullptr, false); }
 
     /**
@@ -286,7 +286,7 @@ class THEA_API Pyramid3D : public Serializable
      * input array is assumed to be in z-major order, i.e. z is the major index, y is the submajor index and x is the minor
      * index. The mean of each bin should be specified relative to the limits of the bin, in the range [0, 1] x [0, 1] x [0, 1].
      */
-    template <typename T> Pyramid3D(T const * base_data, int nx_, int ny_, int nz_, Vector3 const * means,
+    template <typename T> Pyramid3d(T const * base_data, int nx_, int ny_, int nz_, Vector3 const * means,
                                     bool smooth_base_level = false)
     {
       Array<Vector3> means_copy(means, means + nx_ * ny_ * nz_);
@@ -294,10 +294,10 @@ class THEA_API Pyramid3D : public Serializable
     }
 
     /** Load the pyramid from a binary input stream. */
-    Pyramid3D(BinaryInputStream & input) { read(input); }
+    Pyramid3d(BinaryInputStream & input) { read(input); }
 
     /** Load the pyramid from a text input stream. */
-    Pyramid3D(TextInputStream & input) { read(input); }
+    Pyramid3d(TextInputStream & input) { read(input); }
 
     /** Get the number of levels in the pyramid. */
     int numLevels() const { return num_levels; }
@@ -311,39 +311,39 @@ class THEA_API Pyramid3D : public Serializable
     /** Get the number of bins in the Z direction in the base (input) level. */
     int baseSizeZ() const { return nz; }
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
-    void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
-    void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
+    void read(TextInputStream & input, Codec const & codec = CodecAuto());
+    void write(TextOutputStream & output, Codec const & codec = CodecAuto()) const;
 
   protected:
     /** 3D array of scalars. */
-    struct Array3D
+    struct Array3d
     {
       Array<Real> data;
       int sx, sy, sz;
 
-      Array3D() : sx(0), sy(0), sz(0) {}
-      Array3D(int sx_, int sy_, int sz_) : data(sx_ * sy_ * sz_), sx(sx_), sy(sy_), sz(sz_) {}
-      Array3D(int sx_, int sy_, int sz_, Real value)
+      Array3d() : sx(0), sy(0), sz(0) {}
+      Array3d(int sx_, int sy_, int sz_) : data(sx_ * sy_ * sz_), sx(sx_), sy(sy_), sz(sz_) {}
+      Array3d(int sx_, int sy_, int sz_, Real value)
       : data(sx_ * sy_ * sz_, value), sx(sx_), sy(sy_), sz(sz_) {}
 
       template <typename T>
-      Array3D(T const * data_, int sx_, int sy_, int sz_) : data(data_, data_ + sx_ * sy_ * sz_), sx(sx_), sy(sy_), sz(sz_) {}
+      Array3d(T const * data_, int sx_, int sy_, int sz_) : data(data_, data_ + sx_ * sy_ * sz_), sx(sx_), sy(sy_), sz(sz_) {}
 
       Real operator()(int x, int y, int z) const { return data[(z * sy + y) * sx + x]; }
       Real & operator()(int x, int y, int z) { return data[(z * sy + y) * sx + x]; }
     };
 
     /** Default constructor. */
-    Pyramid3D() {}
+    Pyramid3d() {}
 
     /** Construct a pyramid from the base (highest-resolution) 3D array by recursive downsampling. */
     template <typename T>
     void construct(T const * base_data, int nx_, int ny_, int nz_, Vector3 * means, bool smooth_base_level)
     {
       alwaysAssertM(Math::isPowerOf2((unsigned)nx_) && Math::isPowerOf2((unsigned)ny_) && Math::isPowerOf2((unsigned)nz_),
-                    "Pyramid3D: Base dimensions must be powers of 2");
+                    "Pyramid3d: Base dimensions must be powers of 2");
 
       nx = nx_;
       ny = ny_;
@@ -354,7 +354,7 @@ class THEA_API Pyramid3D : public Serializable
 
       if (smooth_base_level)
       {
-        levels[0] = Array3D(nx, ny, nz, 0);
+        levels[0] = Array3d(nx, ny, nz, 0);
 
         Real * dst = &levels[0].data[0];
 
@@ -362,10 +362,10 @@ class THEA_API Pyramid3D : public Serializable
         for (int z = 0; z < nz; ++z)
           for (int y = 0; y < ny; ++y)
             for (int x = 0; x < nx; ++x, ++i)
-              PyramidInternal::smoothIncrement3D(dst, nx, ny, nz, x, y, z, means[i], base_data[i]);
+              PyramidInternal::smoothIncrement3d(dst, nx, ny, nz, x, y, z, means[i], base_data[i]);
       }
       else
-        levels[0] = Array3D(base_data, nx, ny, nz);
+        levels[0] = Array3d(base_data, nx, ny, nz);
 
       createPyramid(means);
     }
@@ -374,15 +374,15 @@ class THEA_API Pyramid3D : public Serializable
     void createPyramid(Vector3 * means);
 
     /** Resize a 3D array to half its size in each specified dimension. */
-    void downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsample, Vector3 * means) const;
+    void downsample(Array3d const & src, Array3d & dst, int num_dims_to_downsample, Vector3 * means) const;
 
     int num_levels;
     int nx, ny, nz;
-    Array<Array3D> levels;
+    Array<Array3d> levels;
 
     friend class PyramidMatch;
 
-}; // class Pyramid3D
+}; // class Pyramid3d
 
 /**
  * Compare two 1, 2 or 3-dimensional scalar arrays of the same size using a pyramid-matching technique. See Kristen Grauman and
@@ -411,21 +411,21 @@ class THEA_API PyramidMatch
      * Compute the similarity of two pyramids with 1D supports. More similar pyramids will return a greater value (need not be
      * positive).
      */
-    static Real similarity(Pyramid1D const & pyramid1, Pyramid1D const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
+    static Real similarity(Pyramid1d const & pyramid1, Pyramid1d const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
                            Real attenuation_factor = -1);
 
     /**
      * Compute the similarity of two pyramids with 2D supports. More similar pyramids will return a greater value (need not be
      * positive).
      */
-    static Real similarity(Pyramid2D const & pyramid1, Pyramid2D const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
+    static Real similarity(Pyramid2d const & pyramid1, Pyramid2d const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
                            Real attenuation_factor = -1);
 
     /**
      * Compute the similarity of two pyramids with 3D supports. More similar pyramids will return a greater value (need not be
      * positive).
      */
-    static Real similarity(Pyramid3D const & pyramid1, Pyramid3D const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
+    static Real similarity(Pyramid3d const & pyramid1, Pyramid3d const & pyramid2, Kernel kernel = Kernel::HIK, int levels = -1,
                            Real attenuation_factor = -1);
 
     /** Run some unit tests. Throws an error if a test fails. */

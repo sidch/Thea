@@ -13,14 +13,14 @@
 //============================================================================
 
 #include "Application.hpp"
-#include "Algorithms/EigenSolver.hpp"
-#include "Algorithms/LinearSolver.hpp"
-#include "Algorithms/NumericalOptimizer.hpp"
-#include "Graphics/RenderSystem.hpp"
+#include "Algorithms/IEigenSolver.hpp"
+#include "Algorithms/ILinearSolver.hpp"
+#include "Algorithms/INumericalOptimizer.hpp"
+#include "Graphics/IRenderSystem.hpp"
 #include "DynLib.hpp"
 #include "FilePath.hpp"
 #include "FileSystem.hpp"
-#include "Plugin.hpp"
+#include "IPlugin.hpp"
 #include "System.hpp"
 
 #if defined(THEA_WINDOWS)

@@ -96,10 +96,10 @@ class MeshCodec : public Codec
                                                                                                                               \
   template < typename MeshT, typename BuilderT = Graphics::IncrementalMeshBuilder<MeshT> > class name;
 
-THEA_DEF_MESH_CODEC(Codec3DS, Codec3DSBase, "3D Studio Max",             "3DS",  "3ds")
-THEA_DEF_MESH_CODEC(CodecOBJ, CodecOBJBase, "Wavefront OBJ",             "OBJ",  "obj")
-THEA_DEF_MESH_CODEC(CodecOFF, CodecOFFBase, "Object File Format (OFF)",  "OFF",  "off", "off.bin")
-THEA_DEF_MESH_CODEC(CodecPLY, CodecPLYBase, "Polygon File Format (PLY)", "PLY",  "ply")
+THEA_DEF_MESH_CODEC(Codec3ds, Codec3dsBase, "3D Studio Max",             "3DS",  "3ds")
+THEA_DEF_MESH_CODEC(CodecObj, CodecObjBase, "Wavefront OBJ",             "OBJ",  "obj")
+THEA_DEF_MESH_CODEC(CodecOff, CodecOffBase, "Object File Format (OFF)",  "OFF",  "off", "off.bin")
+THEA_DEF_MESH_CODEC(CodecPly, CodecPlyBase, "Polygon File Format (PLY)", "PLY",  "ply")
 
 #undef THEA_DEF_MESH_CODEC
 

@@ -19,17 +19,19 @@
 
 namespace Thea {
 
-/** Interface for an object that has a name. */
-class THEA_API AbstractNamedObject
+/** Interface for an object that has a name string. */
+class THEA_API INamedObject
 {
   public:
     /** Destructor. */
-    virtual ~AbstractNamedObject() {}
+    virtual ~INamedObject() = 0;
 
     /** Get the name of the object. */
-    virtual char const * getName() const = 0;
+    virtual char const * THEA_ICALL getName() const = 0;
 
-}; // class AbstractNamedObject
+}; // class INamedObject
+
+inline INamedObject::~INamedObject() {}
 
 /**
  * An object wrapping a name string.
@@ -46,13 +48,10 @@ class THEA_API AbstractNamedObject
  * This also means that a derived class in an inheritance hierarchy involving NamedObject must explicitly call the NamedObject
  * constructor if it wants to initialize the name.
  */
-class THEA_API NamedObject : public virtual AbstractNamedObject
+class THEA_API NamedObject : public virtual INamedObject
 {
   public:
     THEA_DECL_SMART_POINTERS(NamedObject)
-
-    /** Destructor. */
-    virtual ~NamedObject() = 0;
 
     /** Default constructor. */
     NamedObject() {}
@@ -63,11 +62,13 @@ class THEA_API NamedObject : public virtual AbstractNamedObject
     /** Copy constructor. */
     NamedObject(NamedObject const & src): name(src.name) {}
 
+    /** Destructor. */
+    ~NamedObject() {}
+
     /** Assignment operator. */
     NamedObject & operator=(NamedObject const & src) { name = src.name; return *this; }
 
-    /** Get the name of the object. */
-    char const * getName() const { return name.c_str(); }
+    char const * THEA_ICALL getName() const { return name.c_str(); }
 
     /** Set the name of the object. */
     void setName(std::string const & name_) { name = name_; }
@@ -80,14 +81,6 @@ class THEA_API NamedObject : public virtual AbstractNamedObject
     std::string name;
 
 }; // class NamedObject
-
-// Inline functions
-inline
-NamedObject::~NamedObject()
-{
-  // Pure virtual destructor should have a body
-  // http://www.linuxtopia.org/online_books/programming_books/thinking_in_c++/Chapter15_024.html
-}
 
 /** Write a short description of a named object to an output stream. */
 inline std::ostream &

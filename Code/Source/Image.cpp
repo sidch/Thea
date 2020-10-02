@@ -34,10 +34,10 @@ THEA_INSTANTIATE_SMART_POINTERS(Thea::Image)
 
 namespace Thea {
 
-int32 const AbstractImage::Channel::RED    =  FI_RGBA_RED;
-int32 const AbstractImage::Channel::GREEN  =  FI_RGBA_GREEN;
-int32 const AbstractImage::Channel::BLUE   =  FI_RGBA_BLUE;
-int32 const AbstractImage::Channel::ALPHA  =  FI_RGBA_ALPHA;
+int32 const IImage::Channel::RED    =  FI_RGBA_RED;
+int32 const IImage::Channel::GREEN  =  FI_RGBA_GREEN;
+int32 const IImage::Channel::BLUE   =  FI_RGBA_BLUE;
+int32 const IImage::Channel::ALPHA  =  FI_RGBA_ALPHA;
 
 namespace ImageInternal {
 
@@ -716,7 +716,7 @@ Image::isValid() const
       && (depth != 1 || (fip_img && fip_img->isValid() != 0));
 }
 
-void
+int8
 Image::clear()
 {
   type = Type::UNKNOWN;
@@ -729,17 +729,22 @@ Image::clear()
   }
 
   data.clear();
+
+  return true;
 }
 
-void
+int8
 Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
 {
   Type t(type_);
   if (t == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
-    throw Error("Cannot resize image to unknown type or non-positive size (use clear() function to destroy data)");
+  {
+    THEA_ERROR << "Image: Cannot resize to unknown type or non-positive size (use clear() function to destroy data)";
+    return false;
+  }
 
   if (t == type && width_ == getWidth() && height_ == getHeight() && depth_ == getDepth())
-    return;
+    return true;
 
   if (depth_ == 1)
   {
@@ -751,7 +756,10 @@ Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
   else
   {
     if (t.getBitsPerPixel() % 8 != 0)
-      throw Error("Non-2D image must have byte-aligned pixels");
+    {
+      THEA_ERROR << "Image: Non-2D image must have byte-aligned pixels";
+      return false;
+    }
 
     int64 scan_width = ImageInternal::scanWidth(width_, t.getBitsPerPixel(), (int32)ROW_ALIGNMENT);
     int64 buf_size = scan_width * height_ * depth_;
@@ -766,7 +774,12 @@ Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
   cacheTypeProperties();
 
   if (!isValid())
-    throw Error("Could not resize the image to the specified type and dimensions");
+  {
+    THEA_ERROR << "Image: Could not resize to the specified type and dimensions " << width_ << 'x' << height_ << 'x' << depth_;
+    return false;
+  }
+  else
+    return true;
 }
 
 void const *
@@ -833,7 +846,11 @@ Image::getScanLine(int64 row, int64 z) const
 void *
 Image::getScanLine(int64 row, int64 z)
 {
-  alwaysAssertM(z >= 0 && z < depth, "Image: Z value out of bounds");
+  if (z < 0 || z >= depth)
+  {
+    THEA_ERROR << "Image: Z value out of bounds";
+    return nullptr;
+  }
 
   if (!isValid())
     return nullptr;
@@ -909,8 +926,8 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 void
 Image::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
-  if (codec == Codec_AUTO())
-    read_AUTO(input, read_block_header);
+  if (codec == CodecAuto())
+    readAuto(input, read_block_header);
   else
   {
     ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
@@ -927,7 +944,7 @@ Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_
   if (!isValid())
     throw Error("Can't write an invalid image");
 
-  if (codec == Codec_AUTO())
+  if (codec == CodecAuto())
     throw Error("You must explicitly choose a codec for serializing images");
 
   ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
@@ -955,7 +972,7 @@ Image::save(std::string const & path, Codec const & codec) const
     throw Error("Can't save an invalid image");
 
   Codec const * c = nullptr;
-  if (codec == Codec_AUTO())
+  if (codec == CodecAuto())
   {
     c = ImageInternal::codecFromPath(path);
     if (!c)
@@ -972,7 +989,7 @@ Image::save(std::string const & path, Codec const & codec) const
 }
 
 void
-Image::read_AUTO(BinaryInputStream & input, bool read_block_header)
+Image::readAuto(BinaryInputStream & input, bool read_block_header)
 {
   // Read the block header, if present. We will only use the size info and autodetect the codec from the image block itself.
   int64 size = (read_block_header ? (int64)Codec::BlockHeader(input).data_size : input.size());

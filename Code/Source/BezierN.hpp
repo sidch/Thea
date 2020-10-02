@@ -84,8 +84,8 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     bool hasDeriv(intx deriv_order) const { return (deriv_order >= 0); }
 
   private:
-    mutable Array<VectorT>   ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
-    mutable MatrixX<double>  binom;    ///< Cached binomial coefficients.
+    mutable Array<VectorT>   ctrl[4];   ///< Arrays of curve control vectors and first, second and third-order differences.
+    mutable MatrixX<float64>  binom;    ///< Cached binomial coefficients.
 
     /** Cache binomial coefficients for computing Bernstein polynomials. */
     void cacheBinom() const
@@ -175,7 +175,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       return result;
     }
 
-    void getBasisFunctions(double t, VectorXd & b) const
+    void getBasisFunctions(float64 t, VectorX<float64> & b) const
     {
       // Bernstein basis
 
@@ -185,12 +185,12 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       b.resize(n + 1);
 
       b[0] = 1.0;
-      double tpow = t;
+      float64 tpow = t;
       for (intx i = 1; i <= n; ++i, tpow *= t)
         b[i] = binom(n, i) * tpow;
 
-      double omt = 1 - t;
-      double omt_pow = omt;
+      float64 omt = 1 - t;
+      float64 omt_pow = omt;
       for (intx i = n - 1; i >= 0; --i, omt_pow *= omt)
         b[i] *= omt_pow;
     }

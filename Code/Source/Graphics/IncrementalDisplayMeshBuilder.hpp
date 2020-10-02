@@ -67,7 +67,7 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsDisplayMesh<MeshT
 
     /** Add a vertex to the mesh and return a handle to it. Must be called within a begin() / end() block. */
     VertexHandle addVertex(Vector3 const & pos, intx index = -1, Vector3 const * normal = nullptr,
-                           ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr)
+                           ColorRgba const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
       debugAssertM(building, "IncrementalMeshBuilder: A vertex cannot be added outside a begin/end block");
 

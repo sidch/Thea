@@ -1,9 +1,9 @@
 #include "../Common.hpp"
 #include "../Application.hpp"
 #include "../FilePath.hpp"
-#include "../Plugin.hpp"
+#include "../IPlugin.hpp"
 #include "../System.hpp"
-#include "../Graphics/RenderSystem.hpp"
+#include "../Graphics/IRenderSystem.hpp"
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
@@ -58,7 +58,7 @@ testGL(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << plugin_path << endl;
-  Plugin * gl_plugin = Application::getPluginManager().load(plugin_path);
+  IPlugin * gl_plugin = Application::getPluginManager().load(plugin_path);
 
   // Create a GL context via a GLUT window
   glutInit(&argc, argv);
@@ -70,10 +70,10 @@ testGL(int argc, char * argv[])
   gl_plugin->startup();
 
   // We should now have a GL rendersystem factory
-  RenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
+  IRenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
 
   // Create a rendersystem
-  RenderSystem * rs = factory->createRenderSystem("My OpenGL rendersystem");
+  IRenderSystem * rs = factory->createRenderSystem("My OpenGL rendersystem");
 
   cout << "GL_RENDERER  =  " << (char *)glGetString(GL_RENDERER) << endl;
   cout << "GL_VERSION   =  " << (char *)glGetString(GL_VERSION)  << endl;

@@ -17,7 +17,7 @@
 
 #include "../Common.hpp"
 #include "../CompressedSparseMatrix.hpp"
-#include "EigenSolver.hpp"
+#include "IEigenSolver.hpp"
 #include <complex>
 
 namespace Thea {

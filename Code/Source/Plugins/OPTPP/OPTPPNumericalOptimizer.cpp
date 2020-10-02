@@ -25,7 +25,7 @@ OPTPPNumericalOptimizer::OPTPPNumericalOptimizer(std::string const & name_)
 {}
 
 bool
-OPTPPNumericalOptimizer::minimize(ScalarFunction const & objective, double const * hint, Options const & options)
+OPTPPNumericalOptimizer::minimize(IScalarFunction const & objective, double const * hint, Options const & options)
 {
   // TODO
 
@@ -40,7 +40,7 @@ OPTPPNumericalOptimizerFactory::~OPTPPNumericalOptimizerFactory()
   destroyAllNumericalOptimizers();
 }
 
-NumericalOptimizer *
+INumericalOptimizer *
 OPTPPNumericalOptimizerFactory::createNumericalOptimizer(char const * name)
 {
   OPTPPNumericalOptimizer * ls = new OPTPPNumericalOptimizer(name);
@@ -49,7 +49,7 @@ OPTPPNumericalOptimizerFactory::createNumericalOptimizer(char const * name)
 }
 
 void
-OPTPPNumericalOptimizerFactory::destroyNumericalOptimizer(NumericalOptimizer * optimizer)
+OPTPPNumericalOptimizerFactory::destroyNumericalOptimizer(INumericalOptimizer * optimizer)
 {
   optimizers.erase(optimizer);
   delete optimizer;

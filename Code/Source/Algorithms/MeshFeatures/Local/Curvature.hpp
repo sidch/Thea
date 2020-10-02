@@ -29,11 +29,11 @@ namespace MeshFeatures {
 namespace Local {
 
 /** Compute the curvature at a point on a shape. */
-template < typename ExternalSampleKDTreeT = KDTreeN<MeshFeatures::SurfaceSample, 3> >
-class Curvature : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<MeshFeatures::SurfaceSample, 3> >
+class Curvature : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -73,7 +73,7 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    Curvature(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    Curvature(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -93,8 +93,8 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
      */
     double computeProjectedCurvature(Vector3 const & position, Real nbd_radius = -1) const
     {
-      intx nn_index = this->hasExternalKDTree() ? this->getExternalKDTree()->template closestElement<MetricL2>(position)
-                                                : this->getInternalKDTree()->template closestElement<MetricL2>(position);
+      intx nn_index = this->hasExternalKdTree() ? this->getExternalKdTree()->template closestElement<MetricL2>(position)
+                                                : this->getInternalKdTree()->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
         THEA_WARNING << "Curvature: Query point cannot be mapped to mesh, curvature value set to zero";
@@ -126,10 +126,10 @@ class Curvature : public SampledSurface<ExternalSampleKDTreeT>
       ProjectedCurvatureFunctor func(position, normal);
       Ball3 range(position, nbd_radius);
 
-      if (this->hasExternalKDTree())
-        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
+      if (this->hasExternalKdTree())
+        this->getMutableExternalKdTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
       else
-        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
+        this->getMutableInternalKdTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
 
       return func.getCurvature();
     }

@@ -18,7 +18,7 @@
 #include "../Common.hpp"
 #include "../Colors.hpp"
 #include "RenderOptions.hpp"
-#include "RenderSystem.hpp"
+#include "IRenderSystem.hpp"
 
 namespace Thea {
 namespace Graphics {
@@ -27,11 +27,11 @@ namespace Graphics {
 struct /* THEA_API */ NullAttribute  // for some reason VS 2008 objects to dllimport-ing this, even though it has no
                                      // header-defined static functions
 {
-  void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const {}  // noop
+  void draw(IRenderSystem & render_system, IRenderOptions const & options) const {}  // noop
 
 }; // class NullAttribute
 
-/** A utility attribute class that wraps a position in space (a valid argument for RenderSystem::sendVertex()). */
+/** A utility attribute class that wraps a position in space. */
 template <typename PositionT>
 struct PositionAttribute
 {
@@ -53,18 +53,19 @@ struct PositionAttribute
     void setPosition(Position const & p_) { p = p_; }
 
     /** Send the position to a rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const { render_system.sendVertex(p); }
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
+    { render_system.sendVertex((int32)p.size(), p.template cast<Real>().data()); }
 
     /** Send the position to a rendersystem (aliased so it can be called individually via derived classes). */
-    void drawPosition(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    { render_system.sendVertex(p); }
+    void drawPosition(IRenderSystem & render_system, IRenderOptions const & options) const
+    { render_system.sendVertex((int32)p.size(), p.template cast<Real>().data()); }
 
   private:
     Position p;
 
 }; // class PositionAttribute
 
-/** A utility attribute class that wraps a normal (a valid argument for RenderSystem::sendNormal()). */
+/** A utility attribute class that wraps a normal (a valid argument for IRenderSystem::sendNormal()). */
 template <typename NormalT>
 struct NormalAttribute
 {
@@ -86,23 +87,19 @@ struct NormalAttribute
     void setNormal(Normal const & n_) { n = n_; }
 
     /** Send the normal to a rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendNormals()) render_system.sendNormal(n);
-    }
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendNormals()) render_system.sendNormal(n.template cast<Real>().data()); }
 
     /** Send the normal to a rendersystem (aliased so it can be called individually via derived classes). */
-    void drawNormal(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendNormals()) render_system.sendNormal(n);
-    }
+    void drawNormal(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendNormals()) render_system.sendNormal(n.template cast<Real>().data()); }
 
   private:
     Normal n;
 
 }; // class NormalAttribute
 
-/** A utility attribute class that wraps a color (a valid argument for RenderSystem::sendColor()). */
+/** A utility attribute class that wraps a color (a valid argument for IRenderSystem::sendColor()). */
 template <typename ColorT>
 struct ColorAttribute
 {
@@ -124,23 +121,19 @@ struct ColorAttribute
     void setColor(Color const & c_) { c = c_; }
 
     /** Send the color to a rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendColors()) render_system.setColor(c);
-    }
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendColors()) render_system.setColor(ColorRgba(c).data()); }
 
     /** Send the color to a rendersystem (aliased so it can be called individually via derived classes). */
-    void drawColor(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendColors()) render_system.setColor(c);
-    }
+    void drawColor(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendColors()) render_system.setColor(ColorRgba(c).data()); }
 
   private:
     Color c;
 
 }; // class ColorAttribute
 
-/** A utility attribute class that wraps a coordinate for texture unit 0 (a valid argument for RenderSystem::sendTexCoord()). */
+/** A utility attribute class that wraps a coordinate for texture unit 0 (a valid argument for IRenderSystem::sendTexCoord()). */
 template <typename TexCoordT>
 struct TexCoordAttribute
 {
@@ -162,16 +155,12 @@ struct TexCoordAttribute
     void setTexCoord(TexCoord const & t_) { t = t_; }
 
     /** Send the texture coordinate to a rendersystem, for texture unit 0. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendTexCoords()) render_system.sendTexCoord(0, t);
-    }
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendTexCoords()) render_system.sendTexCoord(0, (int32)t.size(), t.template cast<Real>().data()); }
 
     /** Send the texture coordinate to a rendersystem (aliased so it can be called individually via derived classes). */
-    void drawTexCoord(RenderSystem & render_system, AbstractRenderOptions const & options) const
-    {
-      if (options.sendTexCoords()) render_system.sendTexCoord(0, t);
-    }
+    void drawTexCoord(IRenderSystem & render_system, IRenderOptions const & options) const
+    { if (options.sendTexCoords()) render_system.sendTexCoord(0, (int32)t.size(), t.template cast<Real>().data()); }
 
   private:
     TexCoord t;
@@ -203,7 +192,7 @@ struct NormalColorAttribute : public NormalAttribute<NormalT>, public ColorAttri
     NormalColorAttribute(Normal const & n_, Color const & c_) : NormalBaseT(n_), ColorBaseT(c_) {}
 
     /** Send the normal and the color to the rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
     { NormalBaseT::draw(render_system, options); ColorBaseT::draw(render_system, options); }
 
 }; // class NormalColorAttribute
@@ -233,7 +222,7 @@ struct NormalTexCoordAttribute : public NormalAttribute<NormalT>, public TexCoor
     NormalTexCoordAttribute(Normal const & n_, TexCoord const & t_) : NormalBaseT(n_), TexCoordBaseT(t_) {}
 
     /** Send the normal and the texture coordinate (for texture unit 0) to the rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
     { NormalBaseT::draw(render_system, options); TexCoordBaseT::draw(render_system, options); }
 
 }; // class NormalTexCoordAttribute
@@ -263,7 +252,7 @@ struct ColorTexCoordAttribute : public ColorAttribute<ColorT>, public TexCoordAt
     ColorTexCoordAttribute(Color const & c_, TexCoord const & t_) : ColorBaseT(c_), TexCoordBaseT(t_) {}
 
     /** Send the normal and the texture coordinate (for texture unit 0) to the rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
     { ColorBaseT::draw(render_system, options); TexCoordBaseT::draw(render_system, options); }
 
 }; // class ColorTexCoordAttribute
@@ -297,7 +286,7 @@ struct NormalColorTexCoordAttribute
     : NormalBaseT(n_), ColorBaseT(c_), TexCoordBaseT(t_) {}
 
     /** Send the normal, color and texture coordinate (for texture unit 0) to the rendersystem. */
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
+    void draw(IRenderSystem & render_system, IRenderOptions const & options) const
     {
       NormalBaseT::draw(render_system, options);
       ColorBaseT::draw(render_system, options);

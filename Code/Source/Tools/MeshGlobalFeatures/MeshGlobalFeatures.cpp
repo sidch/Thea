@@ -8,7 +8,7 @@
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
-#include "../../IOStream.hpp"
+#include "../../Iostream.hpp"
 #include "../../MatVec.hpp"
 #include <algorithm>
 #include <cstdio>

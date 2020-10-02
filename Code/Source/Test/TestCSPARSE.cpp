@@ -6,8 +6,8 @@
 #include "../Options.hpp"
 #include "../SparseMatrixWrapper.hpp"
 #include "../SparseMatVec.hpp"
-#include "../Plugin.hpp"
-#include "../Algorithms/LinearSolver.hpp"
+#include "../IPlugin.hpp"
+#include "../Algorithms/ILinearSolver.hpp"
 #include <cmath>
 #include <iostream>
 #include <cstdio>
@@ -51,16 +51,16 @@ testCSPARSE(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << plugin_path << endl;
-  Plugin * plugin = Application::getPluginManager().load(plugin_path);
+  IPlugin * plugin = Application::getPluginManager().load(plugin_path);
 
   // Start up the plugin
   plugin->startup();
 
   // We should now have a CSPARSE linear solver factory
-  LinearSolverFactory * factory = Application::getLinearSolverManager().getFactory("CSPARSE");
+  ILinearSolverFactory * factory = Application::getLinearSolverManager().getFactory("CSPARSE");
 
   // Create a linear solver
-  LinearSolver * ls = factory->createLinearSolver("My CSPARSE linear solver");
+  ILinearSolver * ls = factory->createLinearSolver("My CSPARSE linear solver");
 
   MatrixXd A(3, 3);
   A(0, 0) =   1; A(0, 1) =   3; A(0, 2) =  -2;
@@ -74,7 +74,7 @@ testCSPARSE(int argc, char * argv[])
 
   Options opts;
   opts.set("method", "LU");
-  ls->solve(SparseMatrixWrapper<CSC>(&A_sparse), b, &opts);
+  ls->solve(&asLvalue(Math::wrapMatrix(A_sparse)), b, &opts);
 
   static double const EPSILON = 0.0001;
   double expected[3] = {-15, 8, 2};

@@ -17,11 +17,11 @@
 
 #include "Common.hpp"
 #include "Codec.hpp"
-#include "IOStream.hpp"
+#include "Iostream.hpp"
 
 namespace Thea {
 
-/** The interface for a serializable object. */
+/** Abstract base class for a serializable object. */
 class THEA_API Serializable
 {
   public:
@@ -34,35 +34,35 @@ class THEA_API Serializable
      * Read the object from a binary input stream.
      *
      * @param input The stream from which to read data.
-     * @param codec The codec to use. If set to Codec_AUTO(), the codec will be autodetected (if possible) from the input.
+     * @param codec The codec to use. If set to CodecAuto(), the codec will be autodetected (if possible) from the input.
      * @param read_block_header If true, a Codec::BlockHeader object containing information about the codec and size of the
      *   serialized block will be first read from the input, and used to aid codec detection etc. The implementation is <b>free
      *   to ignore this directive</b>, e.g. if the codec and input size can be detected through other means. This behavior must
      *   be synchronized with write(BinaryOutputStream &, Codec const &, bool): either both must omit block headers, or both
      *   must read/write them if directed to do so.
      */
-    virtual void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false) = 0;
+    virtual void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false) = 0;
 
     /**
      * Write the object to a binary output stream.
      *
      * @param output The stream to which data will be written.
-     * @param codec The codec to use. If set to Codec_AUTO(), an appropriate codec will be automatically selected.
+     * @param codec The codec to use. If set to CodecAuto(), an appropriate codec will be automatically selected.
      * @param write_block_header If true, a Codec::BlockHeader object containing information about the codec and size of the
      *   serialized block will be first written to the input. The implementation is <b>free to ignore this directive</b>, e.g.
      *   if the codec and input size are encoded through other means. This behavior must be synchronized with
      *   read(BinaryInputStream &, Codec const &, bool): either both must omit block headers, or both must read/write them if
      *   directed to do so.
      */
-    virtual void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false)
+    virtual void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false)
                  const = 0;
 
     /** Read the object from a text input stream. */
-    virtual void read(TextInputStream & input, Codec const & codec = Codec_AUTO())
+    virtual void read(TextInputStream & input, Codec const & codec = CodecAuto())
     { throw Error("Deserialization from text stream not implemented"); }
 
     /** Write the object to a text output stream. */
-    virtual void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const
+    virtual void write(TextOutputStream & output, Codec const & codec = CodecAuto()) const
     { throw Error("Serialization to text stream not implemented"); }
 
     /** Get the default settings for parsing configuration text files. */
@@ -104,7 +104,10 @@ class THEA_API SerializableFactory
     virtual ~SerializableFactory() {}
 
     /** Create an instance of the serializable class with a given name. */
-    virtual Serializable::Ptr createSerializable(std::string const & name) const = 0;
+    virtual Serializable * createSerializable(char const * name) const = 0;
+
+    /** Destroy a serializable object created with createSerializable(). */
+    virtual void destroySerializable(Serializable * serializable) = 0;
 };
 
 } // namespace Thea

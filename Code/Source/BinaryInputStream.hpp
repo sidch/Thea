@@ -456,9 +456,9 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     }
 
     /** Read a color with 3 8-bit channels. */
-    ColorRGB8 readColorRGB8()
+    ColorRgb8 readColorRgb8()
     {
-      ColorRGB8 c;
+      ColorRgb8 c;
       c.r() = readUInt8();
       c.g() = readUInt8();
       c.b() = readUInt8();
@@ -466,9 +466,9 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     }
 
     /** Read a color with 3 floating-point channels. */
-    ColorRGB readColorRGB()
+    ColorRgb readColorRgb()
     {
-      ColorRGB c;
+      ColorRgb c;
       c.r() = readFloat32();
       c.g() = readFloat32();
       c.b() = readFloat32();
@@ -476,9 +476,9 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     }
 
     /** Read a color with 4 8-bit channels. */
-    ColorRGBA8 readColorRGBA8()
+    ColorRgba8 readColorRgba8()
     {
-      ColorRGBA8 c;
+      ColorRgba8 c;
       c.r() = readUInt8();
       c.g() = readUInt8();
       c.b() = readUInt8();
@@ -487,9 +487,9 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     }
 
     /** Read a color with 4 floating-point channels. */
-    ColorRGBA readColorRGBA()
+    ColorRgba readColorRgba()
     {
-      ColorRGBA c;
+      ColorRgba c;
       c.r() = readFloat32();
       c.g() = readFloat32();
       c.b() = readFloat32();
@@ -553,7 +553,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      *
      * @param read_block_header If true, first read a header section which stores the size and codec of the serialized matrix
      * @param m The matrix in which to store the deserialized input.
-     * @param codec The codec to use (pass Codec_AUTO() to autodetect it from the input).
+     * @param codec The codec to use (pass CodecAuto() to autodetect it from the input).
      *   data. Else, the matrix block is assumed to continue until the end of the input stream unless its end can be detected
      *   through some other means (e.g. end marker or embedded size field), and the codec will be autodetected if possible.
      *
@@ -565,7 +565,7 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
      *   between a variable number of matrix types depending on the input.
      */
     template <typename MatrixT>
-    intx readMatrix(bool read_block_header, MatrixT & m, Codec const & codec = Codec_AUTO());
+    intx readMatrix(bool read_block_header, MatrixT & m, Codec const & codec = CodecAuto());
 
     /**
      * Given a set of candidate matrices of different types, read that one whose format best matches the input data. The codec
@@ -614,10 +614,10 @@ class THEA_API BinaryInputStream : public virtual NamedObject, private Noncopyab
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Vector4,             Vector4)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorL8,             ColorL8)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorL,              ColorL)
-    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRGB8,           ColorRGB8)
-    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRGB,            ColorRGB)
-    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRGBA8,          ColorRGBA8)
-    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRGBA,           ColorRGBA)
+    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRgb8,           ColorRgb8)
+    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRgb,            ColorRgb)
+    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRgba8,          ColorRgba8)
+    THEA_BINARY_INPUT_STREAM_DECLARE_READER(ColorRgba,           ColorRgba)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Matrix2,             Matrix2)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Matrix3,             Matrix3)
     THEA_BINARY_INPUT_STREAM_DECLARE_READER(Matrix4,             Matrix4)

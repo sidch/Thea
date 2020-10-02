@@ -35,7 +35,7 @@ Real const GAUSSIAN_INTEGRALS[NUM_GAUSSIAN_INTEGRAL_BINS][3] = { {0.473112f, 0.4
                                                                  {0.100003f, 0.426885f, 0.473112f} };
 
 void
-smoothIncrement1D(Real * dst, int dst_size, int index, Real mean, Real value)
+smoothIncrement1d(Real * dst, int dst_size, int index, Real mean, Real value)
 {
   int sub_bin = Math::clamp((int)std::floor(NUM_GAUSSIAN_INTEGRAL_BINS * mean), 0, NUM_GAUSSIAN_INTEGRAL_BINS - 1);
   dst[std::max(index - 1, 0)           ]  +=  value * GAUSSIAN_INTEGRALS[sub_bin][0];  // (-infty, 0]
@@ -44,7 +44,7 @@ smoothIncrement1D(Real * dst, int dst_size, int index, Real mean, Real value)
 }
 
 void
-smoothIncrement2D(Real * dst, int dst_sx, int dst_sy, int x, int y, Real mean_x, Real mean_y, Real value)
+smoothIncrement2d(Real * dst, int dst_sx, int dst_sy, int x, int y, Real mean_x, Real mean_y, Real value)
 {
   int sub_bin_x = Math::clamp((int)std::floor(NUM_GAUSSIAN_INTEGRAL_BINS * mean_x), 0, NUM_GAUSSIAN_INTEGRAL_BINS - 1);
   int sub_bin_y = Math::clamp((int)std::floor(NUM_GAUSSIAN_INTEGRAL_BINS * mean_y), 0, NUM_GAUSSIAN_INTEGRAL_BINS - 1);
@@ -58,7 +58,7 @@ smoothIncrement2D(Real * dst, int dst_sx, int dst_sy, int x, int y, Real mean_x,
 }
 
 void
-smoothIncrement3D(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, int y, int z, Vector3 const & mean, Real value)
+smoothIncrement3d(Real * dst, int dst_sx, int dst_sy, int dst_sz, int x, int y, int z, Vector3 const & mean, Real value)
 {
   int sub_bin_x = Math::clamp((int)std::floor(NUM_GAUSSIAN_INTEGRAL_BINS * mean.x()), 0, NUM_GAUSSIAN_INTEGRAL_BINS - 1);
   int sub_bin_y = Math::clamp((int)std::floor(NUM_GAUSSIAN_INTEGRAL_BINS * mean.y()), 0, NUM_GAUSSIAN_INTEGRAL_BINS - 1);
@@ -80,23 +80,23 @@ inline Real toReal(Real            t) { return t;   }
 inline Real toReal(Vector2 const & t) { return t.x(); }
 inline Real toReal(Vector3 const & t) { return t.x(); }
 
-inline Real    add1D(Real            t, Real inc) { return t + inc;                            }
-inline Vector2 add1D(Vector2 const & t, Real inc) { return Vector2(t.x() + inc, t.y());        }
-inline Vector3 add1D(Vector3 const & t, Real inc) { return Vector3(t.x() + inc, t.y(), t.z()); }
+inline Real    add1d(Real            t, Real inc) { return t + inc;                            }
+inline Vector2 add1d(Vector2 const & t, Real inc) { return Vector2(t.x() + inc, t.y());        }
+inline Vector3 add1d(Vector3 const & t, Real inc) { return Vector3(t.x() + inc, t.y(), t.z()); }
 
-inline Vector2 add2D(Vector2 const & t, Vector2 const & inc) { return t + inc;                                          }
-inline Vector3 add2D(Vector3 const & t, Vector2 const & inc) { return Vector3(t.x() + inc.x(), t.y() + inc.y(), t.z()); }
+inline Vector2 add2d(Vector2 const & t, Vector2 const & inc) { return t + inc;                                          }
+inline Vector3 add2d(Vector3 const & t, Vector2 const & inc) { return Vector3(t.x() + inc.x(), t.y() + inc.y(), t.z()); }
 
-inline Real    halve1D(Real            t) { return 0.5f * t;                            }
-inline Vector2 halve1D(Vector2 const & t) { return Vector2(0.5f * t.x(), t.y());        }
-inline Vector3 halve1D(Vector3 const & t) { return Vector3(0.5f * t.x(), t.y(), t.z()); }
+inline Real    halve1d(Real            t) { return 0.5f * t;                            }
+inline Vector2 halve1d(Vector2 const & t) { return Vector2(0.5f * t.x(), t.y());        }
+inline Vector3 halve1d(Vector3 const & t) { return Vector3(0.5f * t.x(), t.y(), t.z()); }
 
-inline Vector2 halve2D(Vector2 const & t) { return 0.5f * t;                                   }
-inline Vector3 halve2D(Vector3 const & t) { return Vector3(0.5f * t.x(), 0.5f * t.y(), t.z()); }
+inline Vector2 halve2d(Vector2 const & t) { return 0.5f * t;                                   }
+inline Vector3 halve2d(Vector3 const & t) { return Vector3(0.5f * t.x(), 0.5f * t.y(), t.z()); }
 
 template <typename MeanT>
 void
-downsample1D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_means, int dst_size)
+downsample1d(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_means, int dst_size)
 {
   if (src_means)
   {
@@ -109,13 +109,13 @@ downsample1D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
       sum_weights = w0 + w1;
 
       if (Math::fuzzyEq(sum_weights, (Real)0))
-        dst_means[i] = 0.5f * halve1D(MeanT(src_means[j]
-                                          + add1D(src_means[j + 1], 1)));
+        dst_means[i] = 0.5f * halve1d(MeanT(src_means[j]
+                                          + add1d(src_means[j + 1], 1)));
       else
-        dst_means[i] = halve1D(MeanT(w0 * src_means[j]
-                                   + w1 * add1D(src_means[j + 1], 1))) / sum_weights;
+        dst_means[i] = halve1d(MeanT(w0 * src_means[j]
+                                   + w1 * add1d(src_means[j + 1], 1))) / sum_weights;
 
-      smoothIncrement1D(dst, dst_size, (int)i, toReal(dst_means[i]), sum_weights);
+      smoothIncrement1d(dst, dst_size, (int)i, toReal(dst_means[i]), sum_weights);
     }
   }
   else
@@ -127,7 +127,7 @@ downsample1D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
 
 template <typename MeanT>
 void
-downsample2D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_means, int dst_sx, int dst_sy)
+downsample2d(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_means, int dst_sx, int dst_sy)
 {
   static Vector2 const offset01(0, 1);
   static Vector2 const offset10(1, 0);
@@ -151,17 +151,17 @@ downsample2D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
         sum_weights = w00 + w10 + w01 + w11;
 
         if (Math::fuzzyEq(sum_weights, (Real)0))
-          dst_means[i] = 0.25f * halve2D(MeanT(src_means[j00]
-                                             + add2D(src_means[j10], offset10)
-                                             + add2D(src_means[j01], offset01)
-                                             + add2D(src_means[j11], offset11)));
+          dst_means[i] = 0.25f * halve2d(MeanT(src_means[j00]
+                                             + add2d(src_means[j10], offset10)
+                                             + add2d(src_means[j01], offset01)
+                                             + add2d(src_means[j11], offset11)));
         else
-          dst_means[i] = halve2D(MeanT(w00 *       src_means[j00]
-                                     + w10 * add2D(src_means[j10], offset10)
-                                     + w01 * add2D(src_means[j01], offset01)
-                                     + w11 * add2D(src_means[j11], offset11))) / sum_weights;
+          dst_means[i] = halve2d(MeanT(w00 *       src_means[j00]
+                                     + w10 * add2d(src_means[j10], offset10)
+                                     + w01 * add2d(src_means[j01], offset01)
+                                     + w11 * add2d(src_means[j11], offset11))) / sum_weights;
 
-        smoothIncrement2D(dst, dst_sx, dst_sy, x, y, dst_means[i].x(), dst_means[i].y(), sum_weights);
+        smoothIncrement2d(dst, dst_sx, dst_sy, x, y, dst_means[i].x(), dst_means[i].y(), sum_weights);
       }
   }
   else
@@ -173,7 +173,7 @@ downsample2D(Real const * src, MeanT const * src_means, Real * dst, MeanT * dst_
 }
 
 void
-downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * dst_means, int dst_sx, int dst_sy, int dst_sz)
+downsample3d(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * dst_means, int dst_sx, int dst_sy, int dst_sz)
 {
   static Vector3 const offset001(0, 0, 1);
   static Vector3 const offset010(0, 1, 0);
@@ -229,7 +229,7 @@ downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * 
                                                  + w011 * src_means[j011] + offset011
                                                  + w111 * src_means[j111] + offset111);
 
-          smoothIncrement3D(dst, dst_sx, dst_sy, dst_sz, x, y, z, dst_means[i], sum_weights);
+          smoothIncrement3d(dst, dst_sx, dst_sy, dst_sz, x, y, z, dst_means[i], sum_weights);
         }
   }
   else
@@ -248,28 +248,28 @@ downsample3D(Real const * src, Vector3 const * src_means, Real * dst, Vector3 * 
 } // namespace PyramidInternal
 
 void
-Pyramid1D::createPyramid(Real * means)
+Pyramid1d::createPyramid(Real * means)
 {
   for(int i = 1; i < num_levels; ++i)
     downsample(levels[i - 1], levels[i], means);
 }
 
 void
-Pyramid2D::createPyramid(Vector2 * means)
+Pyramid2d::createPyramid(Vector2 * means)
 {
   for(int i = 1; i < num_levels; ++i)
     downsample(levels[i - 1], levels[i], 2, means);
 }
 
 void
-Pyramid3D::createPyramid(Vector3 * means)
+Pyramid3d::createPyramid(Vector3 * means)
 {
   for(int i = 1; i < num_levels; ++i)
     downsample(levels[i - 1], levels[i], 3, means);
 }
 
 void
-Pyramid1D::downsample(Array<Real> const & src, Array<Real> & dst, Real * means) const
+Pyramid1d::downsample(Array<Real> const & src, Array<Real> & dst, Real * means) const
 {
   size_t dst_size = src.size() / 2;
 
@@ -278,24 +278,24 @@ Pyramid1D::downsample(Array<Real> const & src, Array<Real> & dst, Real * means) 
   else
     dst.resize(dst_size);
 
-  PyramidInternal::downsample1D(&src[0], means, &dst[0], means, (int)dst_size);
+  PyramidInternal::downsample1d(&src[0], means, &dst[0], means, (int)dst_size);
 }
 
 void
-Pyramid2D::downsample(Array2D const & src, Array2D & dst, int num_dims_to_downsample, Vector2 * means) const
+Pyramid2d::downsample(Array2d const & src, Array2d & dst, int num_dims_to_downsample, Vector2 * means) const
 {
-  alwaysAssertM(num_dims_to_downsample > 0, "Pyramid2D: At least one dimension must reduce in size during downsampling");
+  alwaysAssertM(num_dims_to_downsample > 0, "Pyramid2d: At least one dimension must reduce in size during downsampling");
 
   int dst_sx = src.sx / 2;
   int dst_sy = num_dims_to_downsample > 1 ? src.sy / 2 : src.sy;
 
   if (means)
-    dst = Array2D(dst_sx, dst_sy, 0);
+    dst = Array2d(dst_sx, dst_sy, 0);
   else
-    dst = Array2D(dst_sx, dst_sy);
+    dst = Array2d(dst_sx, dst_sy);
 
   if (num_dims_to_downsample >= 2)
-    PyramidInternal::downsample2D(&src.data[0], means, &dst.data[0], means, dst_sx, dst_sy);
+    PyramidInternal::downsample2d(&src.data[0], means, &dst.data[0], means, dst_sx, dst_sy);
   else
   {
     Real const * src_ptr = &src.data[0];
@@ -307,32 +307,32 @@ Pyramid2D::downsample(Array2D const & src, Array2D & dst, int num_dims_to_downsa
       Vector2 * dst_means_ptr = means;
 
       for (int y = 0; y < dst_sy; ++y, src_ptr += src.sx, src_means_ptr += src.sx, dst_ptr += dst_sx, dst_means_ptr += dst_sx)
-        PyramidInternal::downsample1D(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx);
+        PyramidInternal::downsample1d(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx);
     }
     else
     {
       for (int y = 0; y < dst_sy; ++y, src_ptr += src.sx, dst_ptr += dst_sx)
-        PyramidInternal::downsample1D(src_ptr, means, dst_ptr, means, dst_sx);
+        PyramidInternal::downsample1d(src_ptr, means, dst_ptr, means, dst_sx);
     }
   }
 }
 
 void
-Pyramid3D::downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsample, Vector3 * means) const
+Pyramid3d::downsample(Array3d const & src, Array3d & dst, int num_dims_to_downsample, Vector3 * means) const
 {
-  alwaysAssertM(num_dims_to_downsample > 0, "Pyramid3D: At least one dimension must reduce in size during downsampling");
+  alwaysAssertM(num_dims_to_downsample > 0, "Pyramid3d: At least one dimension must reduce in size during downsampling");
 
   int dst_sx = src.sx / 2;
   int dst_sy = num_dims_to_downsample > 1 ? src.sy / 2 : src.sy;
   int dst_sz = num_dims_to_downsample > 2 ? src.sz / 2 : src.sz;
 
   if (means)
-    dst = Array3D(dst_sx, dst_sy, dst_sz, 0);
+    dst = Array3d(dst_sx, dst_sy, dst_sz, 0);
   else
-    dst = Array3D(dst_sx, dst_sy, dst_sz);
+    dst = Array3d(dst_sx, dst_sy, dst_sz);
 
   if (num_dims_to_downsample >= 3)
-    PyramidInternal::downsample3D(&src.data[0], means, &dst.data[0], means, dst_sx, dst_sy, dst_sz);
+    PyramidInternal::downsample3d(&src.data[0], means, &dst.data[0], means, dst_sx, dst_sy, dst_sz);
   else if (num_dims_to_downsample == 2)
   {
     Real const * src_ptr = &src.data[0];
@@ -347,12 +347,12 @@ Pyramid3D::downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsa
 
       for (int z = 0; z < dst_sz; ++z, src_ptr += src_step, src_means_ptr += src_step, dst_ptr += dst_step,
                                        dst_means_ptr += dst_step)
-        PyramidInternal::downsample2D(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx, dst_sy);
+        PyramidInternal::downsample2d(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx, dst_sy);
     }
     else
     {
       for (int z = 0; z < dst_sz; ++z, src_ptr += src_step, dst_ptr += dst_step)
-        PyramidInternal::downsample2D(src_ptr, means, dst_ptr, means, dst_sx, dst_sy);
+        PyramidInternal::downsample2d(src_ptr, means, dst_ptr, means, dst_sx, dst_sy);
     }
   }
   else
@@ -367,19 +367,19 @@ Pyramid3D::downsample(Array3D const & src, Array3D & dst, int num_dims_to_downsa
 
       for (int z = 0; z < dst_sz; ++z)
         for (int y = 0; y < dst_sy; ++y, src_ptr += src.sx, src_means_ptr += src.sx, dst_ptr += dst_sx, dst_means_ptr += dst_sx)
-          PyramidInternal::downsample1D(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx);
+          PyramidInternal::downsample1d(src_ptr, src_means_ptr, dst_ptr, dst_means_ptr, dst_sx);
     }
     else
     {
       for (int z = 0; z < dst_sz; ++z)
         for (int y = 0; y < dst_sy; ++y, src_ptr += src.sx, dst_ptr += dst_sx)
-          PyramidInternal::downsample1D(src_ptr, means, dst_ptr, means, dst_sx);
+          PyramidInternal::downsample1d(src_ptr, means, dst_ptr, means, dst_sx);
     }
   }
 }
 
 void
-Pyramid1D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+Pyramid1d::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
     input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
@@ -387,7 +387,7 @@ Pyramid1D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
     uint32 dims = input.readUInt32();
-    if (dims != 1) throw Error("Pyramid1D: Number of dimensions must be 1");
+    if (dims != 1) throw Error("Pyramid1d: Number of dimensions must be 1");
 
     num_levels = input.readUInt32();
     levels.clear();
@@ -406,7 +406,7 @@ Pyramid1D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
 }
 
 void
-Pyramid1D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
+Pyramid1d::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
   Codec::BlockHeader header("PYR1D");
   if (write_block_header)
@@ -432,10 +432,10 @@ Pyramid1D::write(BinaryOutputStream & output, Codec const & codec, bool write_bl
 }
 
 void
-Pyramid1D::read(TextInputStream & input, Codec const & codec)
+Pyramid1d::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
-  if (dims != 1) throw Error("Pyramid1D: Number of dimensions must be 1");
+  if (dims != 1) throw Error("Pyramid1d: Number of dimensions must be 1");
 
   num_levels = (int)input.readNumber();
   levels.clear();
@@ -453,7 +453,7 @@ Pyramid1D::read(TextInputStream & input, Codec const & codec)
 }
 
 void
-Pyramid1D::write(TextOutputStream & output, Codec const & codec) const
+Pyramid1d::write(TextOutputStream & output, Codec const & codec) const
 {
   output.printf("1\n");               // dimensions
   output.printf("%d\n", num_levels);  // number of levels
@@ -472,7 +472,7 @@ Pyramid1D::write(TextOutputStream & output, Codec const & codec) const
 }
 
 void
-Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+Pyramid2d::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
     input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
@@ -480,7 +480,7 @@ Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
     uint32 dims = input.readUInt32();
-    if (dims != 2) throw Error("Pyramid2D: Number of dimensions must be 2");
+    if (dims != 2) throw Error("Pyramid2d: Number of dimensions must be 2");
 
     num_levels = input.readUInt32();
     levels.clear();
@@ -490,7 +490,7 @@ Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
 
     for (int i = 0; i < num_levels; ++i)
     {
-      Array2D & level = levels[i];
+      Array2d & level = levels[i];
       level.sx = (size_t)input.readUInt32();
       level.sy = (size_t)input.readUInt32();
 
@@ -510,7 +510,7 @@ Pyramid2D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
 }
 
 void
-Pyramid2D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
+Pyramid2d::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
   Codec::BlockHeader header("PYR2D");
   if (write_block_header)
@@ -523,7 +523,7 @@ Pyramid2D::write(BinaryOutputStream & output, Codec const & codec, bool write_bl
 
     for (int i = 0; i < num_levels; ++i)
     {
-      Array2D const & level = levels[i];
+      Array2d const & level = levels[i];
       output.writeUInt32((uint32)level.sx);
       output.writeUInt32((uint32)level.sy);
 
@@ -538,10 +538,10 @@ Pyramid2D::write(BinaryOutputStream & output, Codec const & codec, bool write_bl
 }
 
 void
-Pyramid2D::read(TextInputStream & input, Codec const & codec)
+Pyramid2d::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
-  if (dims != 2) throw Error("Pyramid2D: Number of dimensions must be 2");
+  if (dims != 2) throw Error("Pyramid2d: Number of dimensions must be 2");
 
   num_levels = (int)input.readNumber();
   levels.clear();
@@ -551,7 +551,7 @@ Pyramid2D::read(TextInputStream & input, Codec const & codec)
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array2D & level = levels[i];
+    Array2d & level = levels[i];
     level.sx = (int)input.readNumber();
     level.sy = (int)input.readNumber();
 
@@ -570,7 +570,7 @@ Pyramid2D::read(TextInputStream & input, Codec const & codec)
 }
 
 void
-Pyramid2D::write(TextOutputStream & output, Codec const & codec) const
+Pyramid2d::write(TextOutputStream & output, Codec const & codec) const
 {
   output.printf("2\n");               // dimensions
   output.printf("%d\n", num_levels);  // number of levels
@@ -578,7 +578,7 @@ Pyramid2D::write(TextOutputStream & output, Codec const & codec) const
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array2D const & level = levels[i];
+    Array2d const & level = levels[i];
     output.printf("%d\n", (int)level.sx);
     output.printf("%d\n", (int)level.sy);
 
@@ -589,7 +589,7 @@ Pyramid2D::write(TextOutputStream & output, Codec const & codec) const
 }
 
 void
-Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
+Pyramid3d::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
   if (read_block_header)
     input.skip(Codec::BlockHeader::SERIALIZED_LENGTH);  // not used
@@ -597,7 +597,7 @@ Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
   { BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
     uint32 dims = input.readUInt32();
-    if (dims != 3) throw Error("Pyramid3D: Number of dimensions must be 3");
+    if (dims != 3) throw Error("Pyramid3d: Number of dimensions must be 3");
 
     num_levels = input.readUInt32();
     levels.clear();
@@ -605,7 +605,7 @@ Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
 
     for (int i = 0; i < num_levels; ++i)
     {
-      Array3D & level = levels[i];
+      Array3d & level = levels[i];
       level.sx = (size_t)input.readUInt32();
       level.sy = (size_t)input.readUInt32();
       level.sz = (size_t)input.readUInt32();
@@ -627,7 +627,7 @@ Pyramid3D::read(BinaryInputStream & input, Codec const & codec, bool read_block_
 }
 
 void
-Pyramid3D::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
+Pyramid3d::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
   Codec::BlockHeader header("PYR3D");
   if (write_block_header)
@@ -640,7 +640,7 @@ Pyramid3D::write(BinaryOutputStream & output, Codec const & codec, bool write_bl
 
     for (int i = 0; i < num_levels; ++i)
     {
-      Array3D const & level = levels[i];
+      Array3d const & level = levels[i];
       output.writeUInt32((uint32)level.sx);
       output.writeUInt32((uint32)level.sy);
       output.writeUInt32((uint32)level.sz);
@@ -656,10 +656,10 @@ Pyramid3D::write(BinaryOutputStream & output, Codec const & codec, bool write_bl
 }
 
 void
-Pyramid3D::read(TextInputStream & input, Codec const & codec)
+Pyramid3d::read(TextInputStream & input, Codec const & codec)
 {
   int dims = (int)input.readNumber();
-  if (dims != 3) throw Error("Pyramid3D: Number of dimensions must be 3");
+  if (dims != 3) throw Error("Pyramid3d: Number of dimensions must be 3");
 
   num_levels = (int)input.readNumber();
   levels.clear();
@@ -667,7 +667,7 @@ Pyramid3D::read(TextInputStream & input, Codec const & codec)
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array3D & level = levels[i];
+    Array3d & level = levels[i];
     level.sx = (int)input.readNumber();
     level.sy = (int)input.readNumber();
     level.sz = (int)input.readNumber();
@@ -688,7 +688,7 @@ Pyramid3D::read(TextInputStream & input, Codec const & codec)
 }
 
 void
-Pyramid3D::write(TextOutputStream & output, Codec const & codec) const
+Pyramid3d::write(TextOutputStream & output, Codec const & codec) const
 {
   output.printf("3\n");               // dimensions
   output.printf("%d\n", num_levels);  // number of levels
@@ -696,7 +696,7 @@ Pyramid3D::write(TextOutputStream & output, Codec const & codec) const
 
   for (int i = 0; i < num_levels; ++i)
   {
-    Array3D const & level = levels[i];
+    Array3d const & level = levels[i];
     output.printf("%d\n", (int)level.sx);
     output.printf("%d\n", (int)level.sy);
     output.printf("%d\n", (int)level.sz);
@@ -724,7 +724,7 @@ similarity(PyramidMatch::Kernel kernel, Real x, Real y)
 } // namespace PyramidInternal
 
 Real
-PyramidMatch::similarity(Pyramid1D const & pyramid1, Pyramid1D const & pyramid2, Kernel kernel, int levels,
+PyramidMatch::similarity(Pyramid1d const & pyramid1, Pyramid1d const & pyramid2, Kernel kernel, int levels,
                          Real attenuation_factor)
 {
   alwaysAssertM(pyramid1.num_levels == pyramid2.num_levels, "PyramidMatch: Can't compare pyramids of different dimensions");
@@ -753,7 +753,7 @@ PyramidMatch::similarity(Pyramid1D const & pyramid1, Pyramid1D const & pyramid2,
 }
 
 Real
-PyramidMatch::similarity(Pyramid2D const & pyramid1, Pyramid2D const & pyramid2, Kernel kernel, int levels,
+PyramidMatch::similarity(Pyramid2d const & pyramid1, Pyramid2d const & pyramid2, Kernel kernel, int levels,
                          Real attenuation_factor)
 {
   alwaysAssertM(pyramid1.nx == pyramid2.nx && pyramid1.ny == pyramid2.ny,
@@ -783,7 +783,7 @@ PyramidMatch::similarity(Pyramid2D const & pyramid1, Pyramid2D const & pyramid2,
 }
 
 Real
-PyramidMatch::similarity(Pyramid3D const & pyramid1, Pyramid3D const & pyramid2, Kernel kernel, int levels,
+PyramidMatch::similarity(Pyramid3d const & pyramid1, Pyramid3d const & pyramid2, Kernel kernel, int levels,
                          Real attenuation_factor)
 {
   alwaysAssertM(pyramid1.nx == pyramid2.nx && pyramid1.ny == pyramid2.ny && pyramid1.nz == pyramid2.nz,
@@ -821,7 +821,7 @@ unitTest1()
   Array<int> x;
   x.push_back(1);
 
-  Pyramid1D p1(x), p2(x);
+  Pyramid1d p1(x), p2(x);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -843,7 +843,7 @@ unitTest2()
   x.push_back(1);
   x.push_back(1);
 
-  Pyramid1D p1(x), p2(x);
+  Pyramid1d p1(x), p2(x);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -865,7 +865,7 @@ unitTest3()
     y.push_back(7 - i);
   }
 
-  Pyramid1D p1(x), p2(y);
+  Pyramid1d p1(x), p2(y);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -884,7 +884,7 @@ unitTest4()
   Array<int> x;
   x.push_back(1);
 
-  Pyramid2D p1(&x[0], 1, 1), p2(&x[0], 1, 1);
+  Pyramid2d p1(&x[0], 1, 1), p2(&x[0], 1, 1);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -905,7 +905,7 @@ unitTest5()
   x.push_back(1);
   x.push_back(1);
 
-  Pyramid2D p1(&x[0], 2, 2), p2(&x[0], 2, 2);
+  Pyramid2d p1(&x[0], 2, 2), p2(&x[0], 2, 2);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -931,7 +931,7 @@ unitTest6()
   y.push_back(2);
   y.push_back(1);
 
-  Pyramid2D p1(&x[0], 2, 2), p2(&y[0], 2, 2);
+  Pyramid2d p1(&x[0], 2, 2), p2(&y[0], 2, 2);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -950,7 +950,7 @@ unitTest7()
   Array<int> x;
   x.push_back(1);
 
-  Pyramid3D p1(&x[0], 1, 1, 1), p2(&x[0], 1, 1, 1);
+  Pyramid3d p1(&x[0], 1, 1, 1), p2(&x[0], 1, 1, 1);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -976,7 +976,7 @@ unitTest8()
   x.push_back(1);
   x.push_back(1);
 
-  Pyramid3D p1(&x[0], 2, 2, 2), p2(&x[0], 2, 2, 2);
+  Pyramid3d p1(&x[0], 2, 2, 2), p2(&x[0], 2, 2, 2);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;
@@ -998,7 +998,7 @@ unitTest9()
     y.push_back(8 - i);
   }
 
-  Pyramid3D p1(&x[0], 2, 2, 2), p2(&y[0], 2, 2, 2);
+  Pyramid3d p1(&x[0], 2, 2, 2), p2(&y[0], 2, 2, 2);
 
   Real result = PyramidMatch::similarity(p1, p2, PyramidMatch::Kernel::HIK, -1, 0.5f);
   std::cout << "Result = " << result << '\n' << std::endl;

@@ -19,8 +19,8 @@
 #include "GraphicsWidget.hpp"
 #include "MeshFwd.hpp"
 #include "Segment.hpp"
-#include "../../Algorithms/KDTreeN.hpp"
-#include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayQueryStructureN.hpp"
 #include "../../AffineTransform3.hpp"
@@ -52,10 +52,10 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     typedef Transformable<AffineTransform3> TransformableBaseT;
 
   public:
-    typedef Thea::Algorithms::MeshKDTree<Mesh> KDTree;  ///< A kd-tree on mesh triangles.
+    typedef Thea::Algorithms::MeshKdTree<Mesh> KdTree;  ///< A kd-tree on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
-    typedef Thea::Algorithms::KDTreeN<MeshVertex const *, 3> VertexKDTree;  ///< A kd-tree on mesh vertices.
+    typedef Thea::Algorithms::KdTreeN<MeshVertex const *, 3> VertexKdTree;  ///< A kd-tree on mesh vertices.
 
     /** A sample point on the surface. */
     struct Sample
@@ -109,22 +109,22 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     //========================================================================================================================
 
     /** Invalidate the kd-tree of the model. The kd-tree will be lazily recomputed. */
-    void invalidateKDTree();
+    void invalidateKdTree();
 
     /** Invalidate the kd-tree on the vertices of the model. The kd-tree will be lazily recomputed. */
-    void invalidateVertexKDTree();
+    void invalidateVertexKdTree();
 
     /** Compute the kd-tree of the model, if the current kd-tree is invalid. */
-    void updateKDTree() const;
+    void updateKdTree() const;
 
     /** Compute the kd-tree on the vertices of the model, if the current kd-tree is invalid. */
-    void updateVertexKDTree() const;
+    void updateVertexKdTree() const;
 
     /** Get the kd-tree for the model. By default, it will be recomputed if it is currently invalid. */
-    KDTree const & getKDTree(bool recompute_if_invalid = true) const;
+    KdTree const & getKdTree(bool recompute_if_invalid = true) const;
 
     /** Get the kd-tree on the vertices of the model. By default, it will be recomputed if it is currently invalid. */
-    VertexKDTree const & getVertexKDTree(bool recompute_if_invalid = true) const;
+    VertexKdTree const & getVertexKdTree(bool recompute_if_invalid = true) const;
 
     //========================================================================================================================
     // Ray-shooting and nearest neighbor queries
@@ -324,13 +324,12 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     void deregisterDisplay(ModelDisplay * display);
 
     /** Get the default color of the model. */
-    ColorRGBA const & getColor() const { return color; }
+    ColorRgba const & getColor() const { return color; }
 
     /** Set the default color of the model. */
-    void setColor(ColorRGBA const & color_) { color = color_; }
+    void setColor(ColorRgba const & color_) { color = color_; }
 
-    void draw(Graphics::RenderSystem & render_system,
-              Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+    void draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
 
     //========================================================================================================================
     // GUI callbacks
@@ -364,8 +363,8 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     std::string getDefaultElementLabelsPath() const;
 
     /** Draw the mesh group colored by segment. */
-    void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::RenderSystem & render_system,
-                                Graphics::AbstractRenderOptions const & options) const;
+    void drawSegmentedMeshGroup(MeshGroupPtr mesh_group, int depth, int & node_index, Graphics::IRenderSystem & render_system,
+                                Graphics::IRenderOptions const & options) const;
 
     MeshGroupPtr mesh_group;
     PointCloudPtr point_cloud;
@@ -377,7 +376,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     std::string elem_labels_path;
     bool has_elem_labels;
 
-    ColorRGBA color;
+    ColorRgba color;
     AxisAlignedBox3 bounds;
 
     Array<Sample> samples;
@@ -391,10 +390,10 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     intx selected_segment;
 
     mutable bool valid_kdtree;
-    mutable KDTree * kdtree;
+    mutable KdTree * kdtree;
 
     mutable bool valid_vertex_kdtree;
-    mutable VertexKDTree * vertex_kdtree;
+    mutable VertexKdTree * vertex_kdtree;
 
 }; // class Model
 

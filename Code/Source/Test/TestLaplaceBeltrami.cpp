@@ -10,19 +10,19 @@ using namespace Thea;
    typedef Graphics::GeneralMesh<> Mesh;
 
 #else // MESH_TYPE == DCEL
-#  include "../Graphics/DCELMesh.hpp"
-   typedef Graphics::DCELMesh<> Mesh;
+#  include "../Graphics/DcelMesh.hpp"
+   typedef Graphics::DcelMesh<> Mesh;
 #endif
 
 #include "../Algorithms/LaplaceBeltrami.hpp"
-#include "../Algorithms/EigenSolver.hpp"
+#include "../Algorithms/IEigenSolver.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Application.hpp"
 #include "../FilePath.hpp"
 #include "../MappedMatrix.hpp"
 #include "../MatVec.hpp"
 #include "../Options.hpp"
-#include "../Plugin.hpp"
+#include "../IPlugin.hpp"
 #include "../SparseMatrixWrapper.hpp"
 #include "../SparseMatVec.hpp"
 #include <cmath>
@@ -59,8 +59,8 @@ Mesh::Ptr
 loadMesh(std::string const & path)
 {
   Array< MeshCodec<Mesh>::Ptr > codecs {
-    std::make_shared< CodecOBJ<Mesh> >(CodecOBJ<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true)),
-    std::make_shared< Codec3DS<Mesh> >(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true))
+    std::make_shared< CodecObj<Mesh> >(CodecObj<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true)),
+    std::make_shared< Codec3ds<Mesh> >(Codec3ds<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true))
   };
 
   MeshGroup<Mesh> mesh_group;
@@ -95,12 +95,12 @@ testLB(int argc, char * argv[])
   SparseColumnMatrix<float64> sparse_lb(n, n);
   sparse_lb.setFromTriplets(lb.tripletsBegin(), lb.tripletsEnd());
 
-  Plugin * plugin = Application::getPluginManager().load(arpack_plugin);
+  IPlugin * plugin = Application::getPluginManager().load(arpack_plugin);
   plugin->startup();
-  Algorithms::EigenSolverFactory * factory = Application::getEigenSolverManager().getFactory("ARPACK");
-  Algorithms::EigenSolver * eig = factory->createEigenSolver("My ARPACK eigensolver");
+  Algorithms::IEigenSolverFactory * factory = Application::getEigenSolverManager().getFactory("ARPACK");
+  Algorithms::IEigenSolver * eig = factory->createEigenSolver("My ARPACK eigensolver");
 
-  intx num_ret = eig->solve(SparseMatrixWrapper< SparseColumnMatrix<float64> >(&sparse_lb),
+  intx num_ret = eig->solve(&asLvalue(Math::wrapMatrix(sparse_lb)),
                             /* compute_eigenvectors = */ true,
                             /* num_requested_eigenpairs = */ num_eigs);
 
@@ -108,8 +108,8 @@ testLB(int argc, char * argv[])
   float64 const * eigvec_re, * eigvec_im;
   for (intx i = 0; i < num_ret; ++i)
   {
-    eig->getEigenvalue(i, eigval_re, eigval_im);
-    eig->getEigenvector(i, eigvec_re, eigvec_im);
+    eig->getEigenvalue(i, &eigval_re, &eigval_im);
+    eig->getEigenvector(i, &eigvec_re, &eigvec_im);
 
     THEA_CONSOLE << "eig[" << i << "] = ((" << eigval_re << ", " << eigval_im << "), "
                  << "(re: " << toString(VectorXdConstMap(eigvec_re, n))

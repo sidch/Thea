@@ -146,17 +146,17 @@ main(int argc, char * argv[])
   if (argc < 3)
     return usage(argc, argv);
 
-  CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
+  CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(CodecObj<Mesh>::ReadOptions().setIgnoreNormals(true)
                                                                                 .setIgnoreTexCoords(true)));
-  Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
+  Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(Codec3ds<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
   Array<MeshCodec<Mesh>::Ptr> read_codecs;
   read_codecs.push_back(codec_obj);
   read_codecs.push_back(codec_3ds);
 
-  CodecOFF<Mesh>::Ptr codec_off_bin(new CodecOFF<Mesh>(CodecOFF<Mesh>::ReadOptions(),
-                                                       CodecOFF<Mesh>::WriteOptions().setBinary(true)));
-  CodecPLY<Mesh>::Ptr codec_ply_bin(new CodecPLY<Mesh>(CodecPLY<Mesh>::ReadOptions(),
-                                                       CodecPLY<Mesh>::WriteOptions().setBinary(true)));
+  CodecOff<Mesh>::Ptr codec_off_bin(new CodecOff<Mesh>(CodecOff<Mesh>::ReadOptions(),
+                                                       CodecOff<Mesh>::WriteOptions().setBinary(true)));
+  CodecPly<Mesh>::Ptr codec_ply_bin(new CodecPly<Mesh>(CodecPly<Mesh>::ReadOptions(),
+                                                       CodecPly<Mesh>::WriteOptions().setBinary(true)));
 
   try
   {

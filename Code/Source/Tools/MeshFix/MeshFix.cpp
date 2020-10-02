@@ -2,8 +2,8 @@
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
-#include "../../Algorithms/KDTreeN.hpp"
-#include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
@@ -56,7 +56,7 @@ struct FaceAttribute
 
   FaceAttribute() : label_index(-1), flag(0) {}
 
-  void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const {}  // noop
+  void draw(IRenderSystem & render_system, IRenderOptions const & options) const {}  // noop
 };
 
 typedef GeneralMesh< Graphics::NullAttribute,  // vertex attribute
@@ -191,28 +191,28 @@ meshFix(int argc, char * argv[])
   if (parse_status <= 0)
     return parse_status;
 
-  Codec3DS<Mesh>::ReadOptions read_opts_3ds = Codec3DS<Mesh>::ReadOptions::defaults();
+  Codec3ds<Mesh>::ReadOptions read_opts_3ds = Codec3ds<Mesh>::ReadOptions::defaults();
   read_opts_3ds.setIgnoreTexCoords(no_texcoords)
                .setSkipEmptyMeshes(no_empty);
-  Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(read_opts_3ds, Codec3DS<Mesh>::WriteOptions::defaults()));
+  Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(read_opts_3ds, Codec3ds<Mesh>::WriteOptions::defaults()));
 
-  CodecOBJ<Mesh>::ReadOptions read_opts_obj = CodecOBJ<Mesh>::ReadOptions::defaults();
+  CodecObj<Mesh>::ReadOptions read_opts_obj = CodecObj<Mesh>::ReadOptions::defaults();
   read_opts_obj.setIgnoreTexCoords(no_texcoords)
                .setIgnoreNormals(no_normals)
                .setSkipEmptyMeshes(no_empty);
-  CodecOBJ<Mesh>::WriteOptions write_opts_obj = CodecOBJ<Mesh>::WriteOptions::defaults();
+  CodecObj<Mesh>::WriteOptions write_opts_obj = CodecObj<Mesh>::WriteOptions::defaults();
   write_opts_obj.setIgnoreTexCoords(no_texcoords)
                 .setIgnoreNormals(no_normals)
                 .setSkipEmptyMeshes(no_empty);
-  CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(read_opts_obj, write_opts_obj));
+  CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(read_opts_obj, write_opts_obj));
 
-  CodecOFF<Mesh>::ReadOptions opts_off = CodecOFF<Mesh>::ReadOptions::defaults();
+  CodecOff<Mesh>::ReadOptions opts_off = CodecOff<Mesh>::ReadOptions::defaults();
   opts_off.setSkipEmptyMeshes(no_empty);
-  CodecOFF<Mesh>::Ptr codec_off(new CodecOFF<Mesh>(opts_off));
+  CodecOff<Mesh>::Ptr codec_off(new CodecOff<Mesh>(opts_off));
 
-  CodecPLY<Mesh>::ReadOptions opts_ply = CodecPLY<Mesh>::ReadOptions::defaults();
+  CodecPly<Mesh>::ReadOptions opts_ply = CodecPly<Mesh>::ReadOptions::defaults();
   opts_ply.setSkipEmptyMeshes(no_empty);
-  CodecPLY<Mesh>::Ptr codec_ply(new CodecPLY<Mesh>(opts_ply));
+  CodecPly<Mesh>::Ptr codec_ply(new CodecPly<Mesh>(opts_ply));
 
   Array<MeshCodec<Mesh>::Ptr> codecs;
   codecs.push_back(codec_3ds);
@@ -305,8 +305,8 @@ meshFix(int argc, char * argv[])
   string lc_out = toLower(outfile);
   if (endsWith(lc_out, ".off.bin"))
   {
-    CodecOFF<Mesh>::WriteOptions write_opts_off = CodecOFF<Mesh>::WriteOptions().setBinary(true);
-    *codec_off = CodecOFF<Mesh>(opts_off, write_opts_off);
+    CodecOff<Mesh>::WriteOptions write_opts_off = CodecOff<Mesh>::WriteOptions().setBinary(true);
+    *codec_off = CodecOff<Mesh>(opts_off, write_opts_off);
   }
 
   WriteCallback write_callback(labels);
@@ -844,8 +844,8 @@ tJuncts(Mesh & mesh)
     if (vi->isBoundaryVertex())
       boundary_verts.push_back(&(*vi));
 
-  typedef KDTreeN<Mesh::Vertex *, 3> VertexKDTree;
-  VertexKDTree kdtree(boundary_verts.begin(), boundary_verts.end());
+  typedef KdTreeN<Mesh::Vertex *, 3> VertexKdTree;
+  VertexKdTree kdtree(boundary_verts.begin(), boundary_verts.end());
 
   Array<Mesh::Edge *> boundary_edges;
   Array<LineSegment3> boundary_segs;
@@ -1222,7 +1222,7 @@ orientMajority(Mesh & mesh)
 
 struct VisibilityOrienter
 {
-  typedef MeshKDTree<Mesh> KDTree;
+  typedef MeshKdTree<Mesh> KdTree;
 
   VisibilityOrienter(MG & mg, bool hi_qual_ = false)
   : hi_qual(hi_qual_)
@@ -1386,7 +1386,7 @@ struct VisibilityOrienter
     return false;
   }
 
-  KDTree kdtree;
+  KdTree kdtree;
   bool hi_qual;
   Vector3 mesh_center;
   Real camera_distance;

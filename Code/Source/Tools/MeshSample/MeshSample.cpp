@@ -22,7 +22,7 @@ struct IndexAttribute
   intx index;
 
   IndexAttribute() : index(-1) {}
-  void draw(RenderSystem & render_system, AbstractRenderOptions const & options) const {}
+  void draw(IRenderSystem & render_system, IRenderOptions const & options) const {}
 };
 
 typedef GeneralMesh<IndexAttribute, Graphics::NullAttribute, IndexAttribute> Mesh;
@@ -488,8 +488,8 @@ main(int argc, char * argv[])
       //=======================================================================================================================
 
       ReadCallback read_callback;
-      Codec3DS<Mesh>::Ptr codec_3ds(new Codec3DS<Mesh>(Codec3DS<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
-      CodecOBJ<Mesh>::Ptr codec_obj(new CodecOBJ<Mesh>(CodecOBJ<Mesh>::ReadOptions().setIgnoreNormals(true)
+      Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(Codec3ds<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
+      CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(CodecObj<Mesh>::ReadOptions().setIgnoreNormals(true)
                                                                                     .setIgnoreTexCoords(true)));
       Array<MeshCodec<Mesh>::Ptr> read_codecs;
       read_codecs.push_back(codec_3ds);

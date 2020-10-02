@@ -17,7 +17,7 @@
 
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
-#include "../../MeshKDTree.hpp"
+#include "../../MeshKdTree.hpp"
 #include "../../RayIntersectionTester.hpp"
 #include "../../../Math.hpp"
 #include "../../../MatVec.hpp"
@@ -34,15 +34,15 @@ namespace MeshFeatures {
 namespace Local {
 
 /** Compute the external visibility of a point on a mesh, by shooting rays outwards from it and checking how many escape. */
-template < typename MeshT, typename ExternalKDTreeT = MeshKDTree<MeshT> >
+template < typename MeshT, typename ExternalKdTreeT = MeshKdTree<MeshT> >
 class Visibility
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
-    typedef ExternalKDTreeT ExternalKDTree;  ///< A precomputed kd-tree on the mesh.
+    typedef ExternalKdTreeT ExternalKdTree;  ///< A precomputed kd-tree on the mesh.
 
   private:
-    typedef MeshKDTree<Mesh> KDTree;  ///< A kd-tree on the mesh.
+    typedef MeshKdTree<Mesh> KdTree;  ///< A kd-tree on the mesh.
 
   public:
     /**
@@ -52,7 +52,7 @@ class Visibility
      * @param mesh The mesh representing the shape.
      */
     Visibility(Mesh const & mesh)
-    : kdtree(new KDTree), precomp_kdtree(nullptr)
+    : kdtree(new KdTree), precomp_kdtree(nullptr)
     {
       kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -66,7 +66,7 @@ class Visibility
      * @param mesh_group The mesh group representing the shape.
      */
     Visibility(Graphics::MeshGroup<Mesh> const & mesh_group)
-    : kdtree(new KDTree), precomp_kdtree(nullptr)
+    : kdtree(new KdTree), precomp_kdtree(nullptr)
     {
       kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
       kdtree->init();
@@ -79,7 +79,7 @@ class Visibility
      *
      * @param kdtree_ The precomputed kd-tree representing the shape.
      */
-    Visibility(ExternalKDTree const * kdtree_)
+    Visibility(ExternalKdTree const * kdtree_)
     : kdtree(nullptr), precomp_kdtree(kdtree_)
     {
       alwaysAssertM(precomp_kdtree, "Visibility: Precomputed KD-tree cannot be null");
@@ -126,8 +126,8 @@ class Visibility
     }
 
   private:
-    KDTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
-    ExternalKDTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
+    KdTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
+    ExternalKdTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
     Real scale;  ///< The normalization scale for offsetting ray origins.
 
 }; // class Visibility

@@ -7,9 +7,9 @@
 #include "../FilePath.hpp"
 #include "../Math.hpp"
 #include "../MatVec.hpp"
-#include "../Plugin.hpp"
+#include "../IPlugin.hpp"
 #include "../Stopwatch.hpp"
-#include "../Graphics/RenderSystem.hpp"
+#include "../Graphics/IRenderSystem.hpp"
 
 #ifdef USE_GENERAL_MESH
 #  include "../Graphics/GeneralMesh.hpp"
@@ -43,7 +43,7 @@ void init();
 
 // Global variables
 #ifdef USE_GENERAL_MESH
-  typedef GeneralMesh< ColorAttribute<ColorRGBA> > Mesh;
+  typedef GeneralMesh< ColorAttribute<ColorRgba> > Mesh;
 #else
   typedef DisplayMesh Mesh;
 #endif
@@ -53,7 +53,7 @@ MG mg;
 GLfloat color[4] = { 0.7, 0.7, 0.7, 1.0 };
 Vector3 translate(0, 0, 0);
 GLfloat scale = 1;
-RenderSystem * render_system = nullptr;
+IRenderSystem * render_system = nullptr;
 GLfloat view_rotx = 20.0, view_roty = 30.0, view_rotz = 0.0;
 
 int
@@ -93,12 +93,12 @@ initMesh(Mesh & mesh)
     cout << "Mesh does not have vertex texture coordinates" << endl;
 
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
-    vi->attr().setColor(ColorRGB::random());
+    vi->attr().setColor(ColorRgb::random());
 
-  mesh.setGPUBufferedRendering(true);
+  mesh.setGpuBufferedRendering(true);
 
 #ifdef WIREFRAME
-  mesh.setGPUBufferedWireframe(true);
+  mesh.setGpuBufferedWireframe(true);
 #endif
 
 #else
@@ -178,7 +178,7 @@ testDisplayMesh(int argc, char * argv[])
 #endif
 
   cout << "Loading plugin: " << gl_plugin_path << endl;
-  Plugin * gl_plugin = Application::getPluginManager().load(gl_plugin_path);
+  IPlugin * gl_plugin = Application::getPluginManager().load(gl_plugin_path);
 
   // Create a GL context via a GLUT window
   glutInit(&argc, argv);
@@ -196,7 +196,7 @@ testDisplayMesh(int argc, char * argv[])
   gl_plugin->startup();
 
   // We should now have a GL rendersystem factory
-  RenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
+  IRenderSystemFactory * factory = Application::getRenderSystemManager().getFactory("OpenGL");
 
   // Create a rendersystem
   render_system = factory->createRenderSystem("My OpenGL rendersystem");
@@ -233,9 +233,9 @@ cleanup(int status)
 
 // Just for some stress tests to see how fast we can push stuff to the GPU
 bool
-invalidateGPUBuffers(Mesh & mesh)
+invalidateGpuBuffers(Mesh & mesh)
 {
-  mesh.invalidateGPUBuffers();
+  mesh.invalidateGpuBuffers();
   return false;
 }
 
@@ -250,7 +250,7 @@ draw()
   timer.tick();
 #endif
 
-  render_system->setColorClearValue(ColorRGB::white());
+  render_system->setClearColor(ColorRgba::white().data());
   render_system->clear();
 
   Matrix3 rotx = Math::rotationAxisAngle(Vector3(1, 0, 0), Math::degreesToRadians(view_rotx));
@@ -271,7 +271,7 @@ draw()
   static GLfloat const pos[4] = { 5.0, 5.0, 10.0, 0.0 };
   glLightfv(GL_LIGHT0, GL_POSITION, pos);
 
-  RenderOptions render_opts = RenderOptions::defaults();
+  RenderOptions render_opts = *RenderOptions::defaults();
 #ifdef WIREFRAME
   render_opts.drawEdges() = true;
 #endif
@@ -284,16 +284,16 @@ draw()
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
 #endif
 
-  render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW);
+  render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW);
   render_system->pushMatrix();
-    render_system->setMatrix(mat);
+    render_system->setMatrix(&asLvalue(Math::wrapMatrix(mat)));
 
 #ifdef USE_GENERAL_MESH
     // Just a stress test to see how fast we can push stuff to the GPU
-    // mg.forEachMeshUntil(invalidateGPUBuffers);
+    // mg.forEachMeshUntil(invalidateGpuBuffers);
 #endif
 
-    mg.draw(*render_system, render_opts);
+    mg.draw(render_system, &render_opts);
 
   render_system->popMatrix();
 

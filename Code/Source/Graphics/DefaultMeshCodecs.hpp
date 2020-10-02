@@ -15,9 +15,9 @@
 #ifndef __Thea_Graphics_DefaultMeshCodecs_hpp__
 #define __Thea_Graphics_DefaultMeshCodecs_hpp__
 
-#include "MeshCodec3DS.hpp"
-#include "MeshCodecOBJ.hpp"
-#include "MeshCodecOFF.hpp"
-#include "MeshCodecPLY.hpp"
+#include "MeshCodec3ds.hpp"
+#include "MeshCodecObj.hpp"
+#include "MeshCodecOff.hpp"
+#include "MeshCodecPly.hpp"
 
 #endif

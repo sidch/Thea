@@ -61,7 +61,7 @@ class /* THEA_API */ RayIntersectionN
 
 }; // class RayIntersectionN
 
-/** Interface for an object that supports ray intersection queries in N-space. */
+/** Abstract base class for an object that supports ray intersection queries in N-space. */
 template <int N, typename T = Real>
 class /* THEA_API */ RayIntersectableN
 {

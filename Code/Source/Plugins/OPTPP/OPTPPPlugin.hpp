@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_OPTPPPlugin_hpp__
 #define __Thea_Algorithms_OPTPPPlugin_hpp__
 
-#include "../../Plugin.hpp"
+#include "../../IPlugin.hpp"
 #include "OPTPPCommon.hpp"
 
 namespace Thea {
@@ -25,23 +25,23 @@ namespace Algorithms {
 class OPTPPNumericalOptimizerFactory;
 
 /** A OPT++-based plugin for solving nonlinear optimization problems. */
-class THEA_OPTPP_DLL_LOCAL OPTPPPlugin : public Plugin
+class THEA_OPTPP_DLL_LOCAL OPTPPPlugin : public IPlugin
 {
   public:
     /** Constructor. */
-    OPTPPPlugin(FactoryRegistry * registry_);
+    OPTPPPlugin(IFactoryRegistry * registry_);
 
     /** Destructor. */
     ~OPTPPPlugin();
 
-    char const * getName() const;
-    void install();
-    void startup();
-    void shutdown();
-    void uninstall();
+    char const * THEA_ICALL getName() const;
+    void THEA_ICALL install();
+    void THEA_ICALL startup();
+    void THEA_ICALL shutdown();
+    void THEA_ICALL uninstall();
 
   private:
-    FactoryRegistry * registry;
+    IFactoryRegistry * registry;
     OPTPPNumericalOptimizerFactory * factory;
     bool started;
 

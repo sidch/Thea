@@ -32,11 +32,11 @@ namespace MeshFeatures {
 namespace Local {
 
 /** Compute the average offset, from the query position, after each step of an n-step random walk. */
-template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
+class RandomWalks : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -70,7 +70,7 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
      *
      * @param sample_kdtree_ The kd-tree representing the shape.
      */
-    RandomWalks(ExternalSampleKDTreeT const * sample_kdtree_)
+    RandomWalks(ExternalSampleKdTreeT const * sample_kdtree_)
     : BaseT(sample_kdtree_)
     {}
 
@@ -100,10 +100,10 @@ class RandomWalks : public SampledSurface<ExternalSampleKDTreeT>
 
       // Find the sample closest to the query position and use it as the source for all distance calculations
       intx seed_index = -1;
-      if (this->hasExternalKDTree())
-        seed_index = this->getMutableExternalKDTree()->template closestElement<MetricL2>(position);
+      if (this->hasExternalKdTree())
+        seed_index = this->getMutableExternalKdTree()->template closestElement<MetricL2>(position);
       else
-        seed_index = this->getMutableInternalKDTree()->template closestElement<MetricL2>(position);
+        seed_index = this->getMutableInternalKdTree()->template closestElement<MetricL2>(position);
 
       alwaysAssertM(seed_index >= 0, "RandomWalks: Seed sample for random walks not found");
 

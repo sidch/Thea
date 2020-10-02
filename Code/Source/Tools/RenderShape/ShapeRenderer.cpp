@@ -1,6 +1,6 @@
 #include "ShapeRenderer.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
-#include "../../Algorithms/KDTreeN.hpp"
+#include "../../Algorithms/KdTreeN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -8,19 +8,20 @@
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshCodec.hpp"
 #include "../../Graphics/MeshGroup.hpp"
-#include "../../Plugins/GL/GLHeaders.hpp"
+#include "../../Plugins/GL/GlHeaders.hpp"
 #include "../../Application.hpp"
 #include "../../Ball3.hpp"
 #include "../../BoundedSortedArrayN.hpp"
-#include "../../ColorRGBA.hpp"
+#include "../../ColorRgba.hpp"
 #include "../../CoordinateFrame3.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
 #include "../../Image.hpp"
 #include "../../Math.hpp"
+#include "../../MatrixWrapper.hpp"
 #include "../../MatVec.hpp"
 #include "../../Memory.hpp"
-#include "../../Plugin.hpp"
+#include "../../IPlugin.hpp"
 #include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
 #include <algorithm>
@@ -60,7 +61,7 @@ struct Model
   bool is_point_cloud;
   intx max_id;
   Array<Vector3> points;
-  Array<ColorRGBA> point_colors;
+  Array<ColorRgba> point_colors;
 };
 
 enum PointUsage
@@ -75,14 +76,14 @@ class ShapeRendererImpl
 {
   private:
     static AtomicInt32 has_render_system;
-    static RenderSystemFactory * render_system_factory;
-    static RenderSystem * render_system;
-    static Shader * point_shader;
-    static Shader * mesh_shader;
-    static Shader * face_id_shader;
-    static Texture * matcap_tex;
-    static Texture * tex2d;
-    static Texture * tex3d;
+    static IRenderSystemFactory * render_system_factory;
+    static IRenderSystem * render_system;
+    static IShader * point_shader;
+    static IShader * mesh_shader;
+    static IShader * face_id_shader;
+    static ITexture * matcap_tex;
+    static ITexture * tex2d;
+    static ITexture * tex3d;
 
     Array<string> model_paths;
     Array<Matrix4> transforms;
@@ -99,7 +100,7 @@ class ShapeRendererImpl
     bool color_by_label;
     bool color_by_features;
     bool show_edges;
-    ColorRGBA edge_color;
+    ColorRgba edge_color;
     string labels_path;
     Array<int> labels;
     string features_path;
@@ -109,12 +110,12 @@ class ShapeRendererImpl
     bool color_by_tex3d;
     string tex3d_path;
     string selected_mesh;
-    ColorRGBA selected_color;
+    ColorRgba selected_color;
     bool selected_binary_mask;
     Vector4 material;
     string matcap_path;
-    ColorRGBA primary_color;
-    ColorRGBA background_color;
+    ColorRgba primary_color;
+    ColorRgba background_color;
     int antialiasing_level;
     PointUsage show_points;
     bool flat;
@@ -134,16 +135,16 @@ class ShapeRendererImpl
     bool parseViewFile(string const & path);
     bool parseViewUp(string const & s, Vector3 & up);
     bool parseARGB(string const & s, uint32 & argb);
-    bool parseColor(string const & s, ColorRGBA & c);
+    bool parseColor(string const & s, ColorRgba & c);
     int parseVector(string const & str, Vector4 & v);
     void resetArgs();
     bool loadModel(Model & model, string const & path);
     bool loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids);
     bool loadFeatures(Model & model);
-    bool renderModel(Model const & model, ColorRGBA const & color);
+    bool renderModel(Model const & model, ColorRgba const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
-    ColorRGBA getPaletteColor(intx n) const;
-    ColorRGBA getLabelColor(intx label) const;
+    ColorRgba getPaletteColor(intx n) const;
+    ColorRgba getLabelColor(intx label) const;
 
     friend struct FaceColorizer;
 
@@ -179,14 +180,14 @@ ShapeRenderer::exec(int argc, char ** argv)
 }
 
 AtomicInt32 ShapeRendererImpl::has_render_system(0);
-RenderSystemFactory * ShapeRendererImpl::render_system_factory = nullptr;
-RenderSystem * ShapeRendererImpl::render_system = nullptr;
-Shader * ShapeRendererImpl::point_shader = nullptr;
-Shader * ShapeRendererImpl::mesh_shader = nullptr;
-Shader * ShapeRendererImpl::face_id_shader = nullptr;
-Texture * ShapeRendererImpl::matcap_tex = nullptr;
-Texture * ShapeRendererImpl::tex2d = nullptr;
-Texture * ShapeRendererImpl::tex3d = nullptr;
+IRenderSystemFactory * ShapeRendererImpl::render_system_factory = nullptr;
+IRenderSystem * ShapeRendererImpl::render_system = nullptr;
+IShader * ShapeRendererImpl::point_shader = nullptr;
+IShader * ShapeRendererImpl::mesh_shader = nullptr;
+IShader * ShapeRendererImpl::face_id_shader = nullptr;
+ITexture * ShapeRendererImpl::matcap_tex = nullptr;
+ITexture * ShapeRendererImpl::tex2d = nullptr;
+ITexture * ShapeRendererImpl::tex3d = nullptr;
 
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
@@ -228,7 +229,7 @@ ShapeRendererImpl::resetArgs()
   color_by_label = false;
   color_by_features = false;
   show_edges = false;
-  edge_color = ColorRGBA(0.15f, 0.25f, 0.5f, 1.0f);
+  edge_color = ColorRgba(0.15f, 0.25f, 0.5f, 1.0f);
   labels_path = "";
   labels.clear();
   features_path = "";
@@ -238,12 +239,12 @@ ShapeRendererImpl::resetArgs()
   color_by_tex3d = false;
   tex3d_path = "";
   selected_mesh = "";
-  selected_color = ColorRGBA(1, 1, 1, 1);
+  selected_color = ColorRgba(1, 1, 1, 1);
   selected_binary_mask = true;
   material = Vector4(0.3f, 0.7f, 0.2f, 25);
   matcap_path = "";
-  primary_color = ColorRGBA(1.0f, 0.9f, 0.8f, 1.0f);
-  background_color = ColorRGBA(1, 1, 1, 1);
+  primary_color = ColorRgba(1.0f, 0.9f, 0.8f, 1.0f);
+  background_color = ColorRgba(1, 1, 1, 1);
   antialiasing_level = 1;
   show_points = POINTS_NONE;
   flat = false;
@@ -290,41 +291,41 @@ labelHash(string const & label)
   return (uint32)((hasher(label) + hasher(rev)) & 0x7FFFFFFF);
 }
 
-ColorRGBA
+ColorRgba
 ShapeRendererImpl::getPaletteColor(intx n) const
 {
-  static ColorRGBA PALETTE[] = {
-    ColorRGBA::fromARGB(0xFFFF66FF),
-    ColorRGBA::fromARGB(0xFFFFFF66),
-    ColorRGBA::fromARGB(0xFF66FFFF),
-    ColorRGBA::fromARGB(0xFF3399FF),
-    ColorRGBA::fromARGB(0xFFFF9933),
-    ColorRGBA::fromARGB(0xFFFF3399),
-    ColorRGBA::fromARGB(0xFF99FF33),
-    ColorRGBA::fromARGB(0xFF9933FF),
-    ColorRGBA::fromARGB(0xFFFFAAAA),
-    ColorRGBA::fromARGB(0xFFAAFFAA),
-    ColorRGBA::fromARGB(0xFFAAAAFF),
-    ColorRGBA::fromARGB(0xFFFF0000),
-    ColorRGBA::fromARGB(0xFF00FF00),
-    ColorRGBA::fromARGB(0xFF0000FF),
-    ColorRGBA::fromARGB(0xFF00FFFF),
-    ColorRGBA::fromARGB(0xFFFF00FF),
-    ColorRGBA::fromARGB(0xFFFFFF00),
-    ColorRGBA::fromARGB(0xFF800000),
-    ColorRGBA::fromARGB(0xFF008000),
-    ColorRGBA::fromARGB(0xFF000080),
-    ColorRGBA::fromARGB(0xFF008080),
-    ColorRGBA::fromARGB(0xFF800080),
-    ColorRGBA::fromARGB(0xFF808000),
-    ColorRGBA::fromARGB(0xFFA0A0A0),
+  static ColorRgba PALETTE[] = {
+    ColorRgba::fromARGB(0xFFFF66FF),
+    ColorRgba::fromARGB(0xFFFFFF66),
+    ColorRgba::fromARGB(0xFF66FFFF),
+    ColorRgba::fromARGB(0xFF3399FF),
+    ColorRgba::fromARGB(0xFFFF9933),
+    ColorRgba::fromARGB(0xFFFF3399),
+    ColorRgba::fromARGB(0xFF99FF33),
+    ColorRgba::fromARGB(0xFF9933FF),
+    ColorRgba::fromARGB(0xFFFFAAAA),
+    ColorRgba::fromARGB(0xFFAAFFAA),
+    ColorRgba::fromARGB(0xFFAAAAFF),
+    ColorRgba::fromARGB(0xFFFF0000),
+    ColorRgba::fromARGB(0xFF00FF00),
+    ColorRgba::fromARGB(0xFF0000FF),
+    ColorRgba::fromARGB(0xFF00FFFF),
+    ColorRgba::fromARGB(0xFFFF00FF),
+    ColorRgba::fromARGB(0xFFFFFF00),
+    ColorRgba::fromARGB(0xFF800000),
+    ColorRgba::fromARGB(0xFF008000),
+    ColorRgba::fromARGB(0xFF000080),
+    ColorRgba::fromARGB(0xFF008080),
+    ColorRgba::fromARGB(0xFF800080),
+    ColorRgba::fromARGB(0xFF808000),
+    ColorRgba::fromARGB(0xFFA0A0A0),
   };
 
-  static intx const PALETTE_SIZE = (intx)(sizeof(PALETTE) / sizeof(ColorRGBA));
+  static intx const PALETTE_SIZE = (intx)(sizeof(PALETTE) / sizeof(ColorRgba));
   return PALETTE[abs((n % (PALETTE_SIZE + palette_shift)) % PALETTE_SIZE)];
 }
 
-ColorRGBA
+ColorRgba
 ShapeRendererImpl::getLabelColor(intx label) const
 {
   return getPaletteColor(label);
@@ -344,75 +345,125 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   // Set up framebuffer for offscreen drawing
   int buffer_width   =  antialiasing_level * out_width;
   int buffer_height  =  antialiasing_level * out_height;
-  Texture * color_tex = nullptr;
-  Texture * depth_tex = nullptr;
-  Framebuffer * fb = nullptr;
-  try
+  ITexture * color_tex = nullptr;
+  ITexture * depth_tex = nullptr;
+  IFramebuffer * fb = nullptr;
+
+  TextureOptions tex_opts;
+  tex_opts.setInterpolateMode(ITextureOptions::InterpolateMode::NEAREST_NO_MIPMAP);
+  color_tex = render_system->createTexture("Color", buffer_width, buffer_height, 1, TextureFormat::RGBA8(),
+                                           ITexture::Dimension::DIM_2D, &tex_opts);
+  if (!color_tex)
   {
-    Texture::Options tex_opts = Texture::Options::defaults();
-    tex_opts.interpolateMode = Texture::InterpolateMode::NEAREST_NO_MIPMAP;
-    color_tex = render_system->createTexture("Color", buffer_width, buffer_height, 1, Texture::Format::RGBA8(),
-                                             Texture::Dimension::DIM_2D, tex_opts);
-    if (!color_tex)
-    {
-      THEA_ERROR << "Could not create color buffer";
-      return -1;
-    }
-
-    depth_tex = render_system->createTexture("Depth", buffer_width, buffer_height, 1, Texture::Format::DEPTH16(),
-                                             Texture::Dimension::DIM_2D, tex_opts);
-    if (!depth_tex)
-    {
-      THEA_ERROR << "Could not create depth buffer";
-      return -1;
-    }
-
-    fb = render_system->createFramebuffer("Framebuffer");
-    if (!fb)
-    {
-      THEA_ERROR << "Could not create offscreen framebuffer";
-      return -1;
-    }
-
-    fb->attach(Framebuffer::AttachmentPoint::COLOR_0, color_tex);
-    fb->attach(Framebuffer::AttachmentPoint::DEPTH,   depth_tex);
+    THEA_ERROR << "Could not create color buffer";
+    return -1;
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not render shape")
+
+  depth_tex = render_system->createTexture("Depth", buffer_width, buffer_height, 1, TextureFormat::DEPTH16(),
+                                           ITexture::Dimension::DIM_2D, &tex_opts);
+  if (!depth_tex)
+  {
+    THEA_ERROR << "Could not create depth buffer";
+    return -1;
+  }
+
+  fb = render_system->createFramebuffer("IFramebuffer");
+  if (!fb)
+  {
+    THEA_ERROR << "Could not create offscreen framebuffer";
+    return -1;
+  }
+
+  if (!fb->attach(IFramebuffer::AttachmentPoint::COLOR_0, color_tex)) return -1;
+  if (!fb->attach(IFramebuffer::AttachmentPoint::DEPTH,   depth_tex)) return -1;
 
   // Load matcap material, if any
   matcap_tex = nullptr;
   if (!matcap_path.empty())
   {
-    try
-    {
-      Image matcap_img(matcap_path);
-      matcap_tex = render_system->createTexture("Matcap", matcap_img);
-    }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create matcap texture")
+    Image matcap_img(matcap_path);
+    matcap_tex = render_system->createTexture("Matcap", &matcap_img, TextureFormat::AUTO(), ITexture::Dimension::DIM_2D);
+    if (!matcap_tex) return -1;
   }
+
+#if 0
+  IShader * background_shader = nullptr;
+  if (!background_shader)
+  {
+    background_shader = render_system->createShader("Background shader");
+
+    background_shader->attachModuleFromFile(IShader::ModuleType::VERTEX, "../Resources/Materials/FlatTextureVert.glsl");
+    background_shader->attachModuleFromFile(IShader::ModuleType::FRAGMENT, "../Resources/Materials/FlatTextureFrag.glsl");
+
+    background_shader->setUniform("texture", matcap_tex);
+  }
+
+  THEA_GL_OK_OR_RETURN(-1)
+
+  render_system->pushShader();
+    render_system->setShader(background_shader);
+
+    THEA_GL_OK_OR_RETURN(-1)
+
+    // FIXME: For some strange reason calling glActiveTextureARB (as done by IRenderSystem::sendTexCoord) within the
+    // glBegin/glEnd block below triggers a GL invalid operation error. Hence we'll just use the plain vanilla GL calls instead
+    // of the IRenderSystem wrappers (Update: this might have been fixed by the recent fix to GlTexture.)
+    glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    THEA_GL_OK_OR_RETURN(-1)
+      glDepthFunc(GL_ALWAYS);
+    THEA_GL_OK_OR_RETURN(-1)
+      glDepthMask(GL_FALSE);
+    THEA_GL_OK_OR_RETURN(-1)
+      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    THEA_GL_OK_OR_RETURN(-1)
+
+    THEA_GL_OK_OR_RETURN(-1)
+      glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+    THEA_GL_OK_OR_RETURN(-1)
+      glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+    THEA_GL_OK_OR_RETURN(-1)
+
+        glBegin(GL_QUADS);
+           glTexCoord2f(0, 0); glVertex3f(-1, -1, 0.5f);
+           glTexCoord2f(1, 0); glVertex3f( 1, -1, 0.5f);
+           glTexCoord2f(1, 1); glVertex3f( 1,  1, 0.5f);
+           glTexCoord2f(0, 1); glVertex3f(-1,  1, 0.5f);
+        glEnd();
+
+      THEA_GL_OK_OR_RETURN(-1)
+
+      glMatrixMode(GL_PROJECTION); glPopMatrix();
+      glMatrixMode(GL_MODELVIEW); glPopMatrix();
+    glPopAttrib();
+
+    THEA_GL_OK_OR_RETURN(-1)
+
+  render_system->popShader();
+  render_system->destroyTexture(matcap_tex);
+
+  THEA_GL_OK_OR_RETURN(-1)
+
+  THEA_CONSOLE << "Drew background";
+
+  return 0;
+#endif
 
   // Load 2D texture, if any
   tex2d = nullptr;
   if (!tex2d_path.empty())
   {
-    try
-    {
-      Image tex2d_img(tex2d_path);
-      tex2d = render_system->createTexture("Texture2D", tex2d_img, Texture::Format::AUTO(), Texture::Dimension::DIM_2D);
-    }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 2D texture")
+    Image tex2d_img(tex2d_path);
+    tex2d = render_system->createTexture("Texture2D", &tex2d_img, TextureFormat::AUTO(), ITexture::Dimension::DIM_2D);
+    if (!tex2d) return -1;
   }
 
   // Load 3D texture, if any
   tex3d = nullptr;
   if (!tex3d_path.empty())
   {
-    try
-    {
-      Image tex3d_img(tex3d_path);
-      tex3d = render_system->createTexture("Texture3D", tex3d_img, Texture::Format::AUTO(), Texture::Dimension::DIM_3D);
-    }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "Could not create 3D texture")
+    Image tex3d_img(tex3d_path);
+    tex3d = render_system->createTexture("Texture3D", &tex3d_img, TextureFormat::AUTO(), ITexture::Dimension::DIM_3D);
+    if (tex3d) return -1;
   }
 
   // Load overlay models
@@ -451,40 +502,44 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         render_system->pushColorFlags();
         render_system->pushShapeFlags();
         render_system->pushTextures();
-        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-        render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
+        render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+        render_system->setMatrixMode(IRenderSystem::MatrixMode::PROJECTION); render_system->pushMatrix();
 
-          render_system->setCamera(camera);
-          render_system->setDepthTest(RenderSystem::DepthTest::LESS);
+          camera.makeCurrent(render_system);
+          render_system->setDepthTest(IRenderSystem::DepthTest::LESS);
           render_system->setDepthWrite(true);
           render_system->setColorWrite(true, true, true, true);
 
-          render_system->setColorClearValue(background_color);
+          render_system->setClearColor(background_color.data());
           render_system->clear();
 
           // Draw primary model
-          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-            render_system->multMatrix(transforms[0]);
+          render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+          {
+            render_system->multMatrix(&asLvalue(Math::wrapMatrix(transforms[0])));
             renderModel(model, primary_color);
-          render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+          }
+          render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
 
           // Draw overlay models
           for (size_t i = 0; i < overlay_models.size(); ++i)
           {
             Model const & overlay = *overlay_models[i];
-            ColorRGBA overlay_color = getPaletteColor((intx)i - 1);
+            ColorRgba overlay_color = getPaletteColor((intx)i - 1);
             overlay_color.a() = (!color_by_id && !overlay.is_point_cloud ? 0.5f : 1.0f);
 
             render_system->setPolygonOffset(true, -1.0f);  // make sure overlays appear on top of primary shape
 
-            render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
-              render_system->multMatrix(transforms[i]);
+            render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
+            {
+              render_system->multMatrix(&asLvalue(Math::wrapMatrix(transforms[i])));
               renderModel(overlay, overlay_color);
-            render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+            }
+            render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
           }
 
-        render_system->setMatrixMode(RenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
-        render_system->setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
+        render_system->setMatrixMode(IRenderSystem::MatrixMode::PROJECTION); render_system->popMatrix();
+        render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
         render_system->popTextures();
         render_system->popShapeFlags();
         render_system->popColorFlags();
@@ -496,7 +551,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         // FreeImage JPEG codec (and who knows what other codecs) can't save it.
         Image image((background_color.a() <= 0.9999f ? Image::Type::RGBA_8U : Image::Type::RGB_8U),
                     buffer_width, buffer_height);
-        color_tex->getImage(image);
+        color_tex->getImage(&image);
 
         if (save_hitcounts)
         {
@@ -543,7 +598,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         if (save_depth)
         {
           Image depth_image(Image::Type::LUMINANCE_16U, buffer_width, buffer_height);
-          depth_tex->getImage(depth_image);
+          depth_tex->getImage(&depth_image);
 
           if (antialiasing_level > 1 && !depth_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
           {
@@ -864,13 +919,13 @@ ShapeRendererImpl::parseARGB(string const & s, uint32 & argb)
 }
 
 bool
-ShapeRendererImpl::parseColor(string const & s, ColorRGBA & c)
+ShapeRendererImpl::parseColor(string const & s, ColorRgba & c)
 {
   uint32 argb;
   if (!parseARGB(s, argb))
     return false;
 
-  c = ColorRGBA::fromARGB(argb);
+  c = ColorRgba::fromARGB(argb);
 
   if (trimWhitespace(s).length() <= 6)  // alpha channel not specified
     c.a() = 1.0;
@@ -1125,7 +1180,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
           selected_binary_mask = true;
           selected_mesh = toLower(*argv);
-          selected_color = ColorRGBA(1, 1, 1, 1);
+          selected_color = ColorRgba(1, 1, 1, 1);
 
           argv++; argc--; break;
         }
@@ -1295,7 +1350,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   // or 2D/3D texture color. The assumption is that the latter colors should be presented accurately unless the user explicitly
   // modulates them by an additional color.
   if (!explicit_primary_color && (!matcap_path.empty() || color_by_tex2d || color_by_tex3d))
-    primary_color = ColorRGBA(1, 1, 1, 1);
+    primary_color = ColorRgba(1, 1, 1, 1);
 
   if (views.empty())
   {
@@ -1395,10 +1450,10 @@ averageNormals(Mesh & mesh)
   return false;
 }
 
-ColorRGBA8
+ColorRgba8
 indexToColor(uint32 index, bool is_point)
 {
-  ColorRGBA8 color((uint8)((index      ) & 0xFF),
+  ColorRgba8 color((uint8)((index      ) & 0xFF),
                    (uint8)((index >>  8) & 0xFF),
                    (uint8)((index >> 16) & 0xFF),
                    255);
@@ -1432,7 +1487,7 @@ struct FaceColorizer
     if (labels) mesh.computeAveragedVertexNormals();
     mesh.addColors();
 
-    ColorRGBA8 color;
+    ColorRgba8 color;
     if (parent->color_by_leaf)
       color = parent->getPaletteColor(Random::common().integer());
     else if (parent->color_by_leafname)
@@ -1454,7 +1509,7 @@ struct FaceColorizer
         if (labels)
         {
           if ((size_t)id >= labels->size())
-            color = ColorRGBA8(255, 0, 0, 255);
+            color = ColorRgba8(255, 0, 0, 255);
           else
             color = parent->getLabelColor((*labels)[(size_t)id]);
         }
@@ -1481,7 +1536,7 @@ struct FaceColorizer
         if (labels)
         {
           if ((size_t)id >= labels->size())
-            color = ColorRGBA8(255, 0, 0, 255);
+            color = ColorRgba8(255, 0, 0, 255);
           else
             color = parent->getLabelColor((*labels)[(size_t)id]);
         }
@@ -1706,7 +1761,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
 
     model.point_colors.resize(model.points.size());
     for (size_t i = 0; i < model.points.size(); ++i)
-      model.point_colors[i] = (labels[i] < 0 ? ColorRGBA(1, 0, 0, 1) : getLabelColor(labels[i]));
+      model.point_colors[i] = (labels[i] < 0 ? ColorRgba(1, 0, 0, 1) : getLabelColor(labels[i]));
   }
   else
   {
@@ -1732,25 +1787,25 @@ getNextNonBlankLine(istream & in, string & line)
   return in;
 }
 
-ColorRGB
+ColorRgb
 featToColor(Real f0, Real const * f1, Real const * f2)
 {
   if (!f2)
   {
     if (!f1)
-      return ColorRGB::jetColorMap(0.2 + 0.6 * f0);
+      return ColorRgb::jetColorMap(0.2 + 0.6 * f0);
     else
-      return ColorRGB(f0, *f1, 1.0f);
+      return ColorRgb(f0, *f1, 1.0f);
   }
   else
-    return ColorRGB(f0, *f1, *f2);
+    return ColorRgb(f0, *f1, *f2);
 }
 
-typedef KDTreeN<Vector3, 3> PointKDTree;
+typedef KdTreeN<Vector3, 3> PointKdTree;
 
 struct VertexColorizer
 {
-  VertexColorizer(PointKDTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  VertexColorizer(PointKdTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
   : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
@@ -1762,7 +1817,7 @@ struct VertexColorizer
     mesh.addColors();
 
     Mesh::VertexArray const & vertices = mesh.getVertices();
-    BoundedSortedArrayN<MAX_NBRS, PointKDTree::NeighborPair> nbrs;
+    BoundedSortedArrayN<MAX_NBRS, PointKdTree::NeighborPair> nbrs;
     for (size_t i = 0; i < vertices.size(); ++i)
     {
       nbrs.clear();
@@ -1772,7 +1827,7 @@ struct VertexColorizer
 
       if (num_nbrs > 0)
       {
-        ColorRGB c(0, 0, 0);
+        ColorRgb c(0, 0, 0);
         double sum_weights = 0;
         for (int j = 0; j < num_nbrs; ++j)
         {
@@ -1790,14 +1845,14 @@ struct VertexColorizer
       else
       {
         THEA_WARNING << "No nearest neighbor found!";
-        mesh.setColor((intx)i, ColorRGB(1, 1, 1));
+        mesh.setColor((intx)i, ColorRgb(1, 1, 1));
       }
     }
 
     return false;
   }
 
-  PointKDTree * fkdtree;
+  PointKdTree * fkdtree;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
@@ -1931,7 +1986,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
   }
   else
   {
-    PointKDTree fkdtree(feat_pts.begin(), feat_pts.end());
+    PointKdTree fkdtree(feat_pts.begin(), feat_pts.end());
     VertexColorizer visitor(&fkdtree,
                             &feat_vals[0][0],
                             feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
@@ -1957,11 +2012,11 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     else if (!selected_mesh.empty() && toLower(mesh.getName()) == selected_mesh)
       mesh_id = 0xFFFFFF;
 
-    ColorRGBA8 color;
+    ColorRgba8 color;
     if (selected_binary_mask)
-      color = (mesh_id == 0 ? ColorRGBA8(0, 0, 0, 255) : ColorRGBA8(255, 255, 255, 255));
+      color = (mesh_id == 0 ? ColorRgba8(0, 0, 0, 255) : ColorRgba8(255, 255, 255, 255));
     else
-      color = (mesh_id == 0 ? ColorRGBA8(primary_color) : ColorRGBA8(selected_color));
+      color = (mesh_id == 0 ? ColorRgba8(primary_color) : ColorRgba8(selected_color));
 
     if (selected_binary_mask) mesh.isolateFaces();
     mesh.addColors();
@@ -2059,7 +2114,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     try
     {
       MeshReadCallback callback(tri_ids, quad_ids);
-      model.mesh_group.load(path, Codec_AUTO(), &callback);
+      model.mesh_group.load(path, CodecAuto(), &callback);
       model.max_id = callback.max_id;
     }
     THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
@@ -2285,7 +2340,7 @@ Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int wi
 }
 
 bool
-initPointShader(Shader & shader)
+initPointShader(IShader & shader)
 {
   static string const VERTEX_SHADER =
 "void main()\n"
@@ -2303,8 +2358,8 @@ initPointShader(Shader & shader)
 
   try
   {
-    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
-    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
+    shader.attachModuleFromString(IShader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
+    shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
   }
   THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach point shader module")
 
@@ -2312,8 +2367,8 @@ initPointShader(Shader & shader)
 }
 
 bool
-initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true, Texture * matcap_tex = nullptr,
-               Texture * tex2d = nullptr, Texture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(IShader & shader, Vector4 const & material, bool two_sided = true, ITexture * matcap_tex = nullptr,
+               ITexture * tex2d = nullptr, ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2400,12 +2455,9 @@ initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true,
   else
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
-  try
-  {
-    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
-    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, fragment_shader.c_str());
-  }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach mesh shader module")
+  if (!shader.attachModuleFromString(IShader::ModuleType::VERTEX, VERTEX_SHADER.c_str())
+   || !shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, fragment_shader.c_str()))
+    return false;
 
   shader.setUniform("two_sided", (two_sided ? 1.0f : 0.0f));
 
@@ -2413,10 +2465,14 @@ initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true,
     shader.setUniform("matcap_tex", matcap_tex);
   else
   {
-    shader.setUniform("light_dir", Vector3(-1, -1, -2));
-    shader.setUniform("light_color", ColorRGB(1, 1, 1));
-    shader.setUniform("ambient_color", ColorRGB(1, 1, 1));
-    shader.setUniform("material", material);
+    Vector3 light_dir(-1, -1, -2);
+    Vector3 light_color(1, 1, 1);
+    Vector3 ambient_color(1, 1, 1);
+
+    shader.setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
+    shader.setUniform("light_color", &asLvalue(Math::wrapMatrix(light_color)));
+    shader.setUniform("ambient_color", &asLvalue(Math::wrapMatrix(ambient_color)));
+    shader.setUniform("material", &asLvalue(Math::wrapMatrix(const_cast<Vector4 &>(material))));
   }
 
   if (tex2d)
@@ -2437,15 +2493,18 @@ initMeshShader(Shader & shader, Vector4 const & material, bool two_sided = true,
     box_ext = vol_ext / dim_ratio[fit_axis];
     Vector3 center = bbox.getCenter();
 
-    shader.setUniform("bbox_lo", Vector3(center - 0.5 * box_ext));
-    shader.setUniform("bbox_hi", Vector3(center + 0.5 * box_ext));
+    Vector3 bbox_lo = center - 0.5 * box_ext;
+    Vector3 bbox_hi = center + 0.5 * box_ext;
+
+    shader.setUniform("bbox_lo", &asLvalue(Math::wrapMatrix(bbox_lo)));
+    shader.setUniform("bbox_hi", &asLvalue(Math::wrapMatrix(bbox_hi)));
   }
 
   return true;
 }
 
 bool
-initFaceIDShader(Shader & shader)
+initFaceIdShader(IShader & shader)
 {
   static string const VERTEX_SHADER =
 "\n"
@@ -2462,24 +2521,21 @@ initFaceIDShader(Shader & shader)
 "  gl_FragColor = gl_Color;\n"
 "}\n";
 
-  try
-  {
-    shader.attachModuleFromString(Shader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
-    shader.attachModuleFromString(Shader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
-  }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach face ID shader module")
+  if (!shader.attachModuleFromString(IShader::ModuleType::VERTEX, VERTEX_SHADER.c_str())
+   || !shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str()))
+    return false;
 
   return true;
 }
 
 bool
-ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
+ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
 {
   render_system->pushShader();
   render_system->pushShapeFlags();
   render_system->pushColorFlags();
 
-  render_system->setColor(color);
+  render_system->setColor(color.data());
 
   render_system->setPolygonSmooth(false);  // smoothing causes blending halos around primitives with OSMesa
   render_system->setLineSmooth(false);
@@ -2517,16 +2573,19 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     render_system->setShader(point_shader);
 
     render_system->setPointSize(point_size * antialiasing_level);
-    render_system->beginPrimitive(RenderSystem::Primitive::POINTS);
+    render_system->beginPrimitive(IRenderSystem::Primitive::POINTS);
 
       for (size_t i = 0; i < model.points.size(); ++i)
       {
         if (color_by_id)
-          render_system->setColor(indexToColor((uint32)i, true));
+        {
+          ColorRgba c = indexToColor((uint32)i, true);
+          render_system->setColor(c.data());
+        }
         else if (color_by_label || color_by_features)
-          render_system->setColor(model.point_colors[i]);
+          render_system->setColor(model.point_colors[i].data());
 
-        render_system->sendVertex(model.points[i]);
+        render_system->sendVertex(3, model.points[i].data());
       }
 
     render_system->endPrimitive();
@@ -2545,7 +2604,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
           return false;
         }
 
-        if (!initFaceIDShader(*face_id_shader))
+        if (!initFaceIdShader(*face_id_shader))
         {
           THEA_ERROR << "Could not initialize face ID shader";
           return false;
@@ -2575,7 +2634,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
       render_system->setShader(mesh_shader);
     }
 
-    RenderOptions opts = RenderOptions::defaults();
+    RenderOptions opts;
     opts.setUseVertexData(true);
     opts.setSendNormals(true);
     opts.setSendColors(true);
@@ -2589,16 +2648,16 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
     if (has_transparency && !color_by_id)
     {
       // First back faces...
-      render_system->setCullFace(RenderSystem::CullFace::FRONT);
-      model.mesh_group.draw(*render_system, opts);
+      render_system->setCullFace(IRenderSystem::CullFace::FRONT);
+      model.mesh_group.draw(render_system, &opts);
 
       // ... then front faces
-      render_system->setCullFace(RenderSystem::CullFace::BACK);
-      model.mesh_group.draw(*render_system, opts);
+      render_system->setCullFace(IRenderSystem::CullFace::BACK);
+      model.mesh_group.draw(render_system, &opts);
     }
     else
     {
-      model.mesh_group.draw(*render_system, opts);
+      model.mesh_group.draw(render_system, &opts);
     }
   }
 
@@ -2606,6 +2665,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRGBA const & color)
   render_system->popShapeFlags();
   render_system->popShader();
 
+  THEA_GL_OK_OR_RETURN(false)
   return true;
 }
 
@@ -2616,7 +2676,7 @@ ShapeRendererImpl::loadPlugins(int argc, char ** argv)
   if (plugin_path.empty())
     throw Error("Could not locate OpenGL plugin 'TheaPluginGL'");
 
-  Plugin * gl_plugin = Application::getPluginManager().load(plugin_path);
+  IPlugin * gl_plugin = Application::getPluginManager().load(plugin_path);
   if (!gl_plugin)
   {
     THEA_ERROR << "Could not load OpenGL plugin: " << plugin_path;
@@ -2632,7 +2692,7 @@ ShapeRendererImpl::loadPlugins(int argc, char ** argv)
     return false;
   }
 
-  render_system = render_system_factory->createRenderSystem("OpenGL RenderSystem");
+  render_system = render_system_factory->createRenderSystem("OpenGL IRenderSystem");
   if (!render_system)
   {
     THEA_ERROR << "Could not create OpenGL rendersystem";

@@ -6,7 +6,7 @@
 
 // #define DCEL_MESH
 #ifdef DCEL_MESH
-#  include "../Graphics/DCELMesh.hpp"
+#  include "../Graphics/DcelMesh.hpp"
 #else
 #  include "../Graphics/GeneralMesh.hpp"
 #endif
@@ -17,7 +17,7 @@ using namespace Algorithms;
 using namespace Graphics;
 
 #ifdef DCEL_MESH
-  typedef DCELMesh<> Mesh;
+  typedef DcelMesh<> Mesh;
 #else
   typedef GeneralMesh<> Mesh;
 #endif

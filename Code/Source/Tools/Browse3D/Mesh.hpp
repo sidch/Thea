@@ -25,15 +25,15 @@
 
 namespace Browse3D {
 
-class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
+class VertexAttribute : public Graphics::ColorAttribute<ColorRgba>
 {
   public:
-    VertexAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(nullptr) {}
+    VertexAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr) {}
 
-    void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
+    void draw(Graphics::IRenderSystem & render_system, Graphics::IRenderOptions const & options) const
     {
       if (options.sendColors() && options.useVertexData())
-        Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
+        Graphics::ColorAttribute<ColorRgba>::draw(render_system, options);
     }
 
     void setParent(Mesh * p) { parent = p; }
@@ -43,15 +43,15 @@ class VertexAttribute : public Graphics::ColorAttribute<ColorRGBA>
     Mesh * parent;
 };
 
-class FaceAttribute : public Graphics::ColorAttribute<ColorRGBA>
+class FaceAttribute : public Graphics::ColorAttribute<ColorRgba>
 {
   public:
-    FaceAttribute() : Graphics::ColorAttribute<ColorRGBA>(), parent(nullptr) {}
+    FaceAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr) {}
 
-    void draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
+    void draw(Graphics::IRenderSystem & render_system, Graphics::IRenderOptions const & options) const
     {
       if (options.sendColors() && !options.useVertexData())
-        Graphics::ColorAttribute<ColorRGBA>::draw(render_system, options);
+        Graphics::ColorAttribute<ColorRgba>::draw(render_system, options);
     }
 
     void setParent(Mesh * p) { parent = p; }
@@ -80,7 +80,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     typedef BaseType::Face Face;
 
     Vertex * addVertex(Vector3 const & point, intx index = -1, Vector3 const * normal = nullptr,
-                       ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr)
+                       ColorRgba const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
       Vertex * vertex = BaseType::addVertex(point, index, normal, color, texcoord);
 

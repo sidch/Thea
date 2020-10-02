@@ -30,7 +30,7 @@ namespace Algorithms {
 /**
  * A set of three vertices of a single face of a mesh. Works for general and DCEL meshes.
  *
- * @see GeneralMesh, DCELMesh
+ * @see GeneralMesh, DcelMesh
  */
 template <typename MeshT, typename Enable = void>
 class MeshVertexTriple
@@ -290,7 +290,7 @@ buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 
 // Add a face of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
+typename std::enable_if< Graphics::IsDcelMesh<MeshT>::value >::type
 addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 {
   if (face.isTriangle())
@@ -351,7 +351,7 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 
 // Convert the faces of a DCEL mesh to a set of triangles.
 template <typename MeshT, typename TriangleT>
-typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value >::type
+typename std::enable_if< Graphics::IsDcelMesh<MeshT>::value >::type
 buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 {
   for (typename MeshT::FaceIterator fi = mesh.facesBegin(); fi != mesh.facesEnd(); ++fi)
@@ -444,7 +444,7 @@ buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 /**
  * A set of triangles obtained by triangulating mesh faces. Implemented for general, DCEL and display meshes.
  *
- * @see GeneralMesh, DCELMesh, DisplayMesh
+ * @see GeneralMesh, DcelMesh, DisplayMesh
  */
 template <typename MeshT>
 class MeshTriangles

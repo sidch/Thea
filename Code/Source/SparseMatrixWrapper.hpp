@@ -15,7 +15,7 @@
 #ifndef __Thea_SparseMatrixWrapper_hpp__
 #define __Thea_SparseMatrixWrapper_hpp__
 
-#include "AbstractCompressedSparseMatrix.hpp"
+#include "ICompressedSparseMatrix.hpp"
 #include "SparseMatVec.hpp"
 #include <type_traits>
 
@@ -26,13 +26,13 @@ namespace Thea {
  * must be an instance of the Eigen::SparseMatrix template.
  */
 template <typename MatrixT>
-class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix<typename MatrixT::value_type>
+class /* THEA_API */ SparseMatrixWrapper : public ICompressedSparseMatrix<typename MatrixT::value_type>
 {
   private:
     static_assert(std::is_base_of<Eigen::SparseMatrixBase<MatrixT>, MatrixT>::value,
                   "SparseMatrixWrapper: Wrapped matrix must be Eigen::SparseMatrix");
 
-    typedef AbstractCompressedSparseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type.
+    typedef ICompressedSparseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type.
 
   public:
     THEA_DECL_SMART_POINTERS(SparseMatrixWrapper)
@@ -60,12 +60,12 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
     /** Get the wrapped matrix. */
     MatrixT & getMatrix() { return *m; }
 
-    // Functions from AbstractMatrix
-    int64 rows() const { return (int64)m->rows(); }
-    int64 cols() const { return (int64)m->cols(); }
-    void setZero() { m->setZero(); }
-    int8 isResizable() const { return true; }
-    int8 resize(int64 nrows, int64 ncols)
+    // Functions from IMatrix
+    int64 THEA_ICALL rows() const { return (int64)m->rows(); }
+    int64 THEA_ICALL cols() const { return (int64)m->cols(); }
+    void THEA_ICALL setZero() { m->setZero(); }
+    int8 THEA_ICALL isResizable() const { return true; }
+    int8 THEA_ICALL resize(int64 nrows, int64 ncols)
     {
       try  // no exceptions should cross shared library boundaries
       {
@@ -75,41 +75,67 @@ class /* THEA_API */ SparseMatrixWrapper : public AbstractCompressedSparseMatrix
       THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "SparseMatrixWrapper: Could not resize matrix")
     }
 
-    // Functions from AbstractSparseMatrix
-    int64 numStoredElements() const { return m->nonZeros(); }
+    // Functions from ISparseMatrix
+    int64 THEA_ICALL numStoredElements() const { return m->nonZeros(); }
 
-    // Functions from RowOrColumnMajorMatrix
-    int8 isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
-    int8 isColumnMajor() const { return !isRowMajor(); }
+    // Functions from IRowOrColumnMajorMatrix
+    int8 THEA_ICALL isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
+    int8 THEA_ICALL isColumnMajor() const { return !isRowMajor(); }
 
-    // Functions from AbstractCompressedSparseMatrix
-    int64 innerSize() const { return (int64)m->innerSize(); }
-    int64 outerSize() const { return (int64)m->outerSize(); }
-    int8 isFullyCompressed() const { return m->isCompressed(); }
-    int32 getInnerIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
-    int32 getOuterIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
-    int32 getNonZeroCountType() const { return NumericType::From<typename MatrixT::StorageIndex>::value; }
-    void const * getInnerIndices() const { return m->innerIndexPtr(); }
-    void * getInnerIndices() { return m->innerIndexPtr(); }
-    void const * getOuterIndices() const { return m->outerIndexPtr(); }
-    void * getOuterIndices() { return m->outerIndexPtr(); }
-    void const * getNonZeroCounts() const { return m->innerNonZeroPtr(); }
-    void * getNonZeroCounts() { return m->innerNonZeroPtr(); }
-    Value const * getValues() const { return m->valuePtr(); }
-    Value * getValues() { return m->valuePtr(); }
+    // Functions from ICompressedSparseMatrix
+    int64 THEA_ICALL innerSize() const { return (int64)m->innerSize(); }
+    int64 THEA_ICALL outerSize() const { return (int64)m->outerSize(); }
+    int8 THEA_ICALL isFullyCompressed() const { return m->isCompressed(); }
+    int32 THEA_ICALL getInnerIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    int32 THEA_ICALL getOuterIndexType() const   { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    int32 THEA_ICALL getNonZeroCountType() const { return NumericType::From<typename MatrixT::StorageIndex>::value; }
+    void const * THEA_ICALL getInnerIndices() const { return m->innerIndexPtr(); }
+    void * THEA_ICALL getInnerIndices() { return m->innerIndexPtr(); }
+    void const * THEA_ICALL getOuterIndices() const { return m->outerIndexPtr(); }
+    void * THEA_ICALL getOuterIndices() { return m->outerIndexPtr(); }
+    void const * THEA_ICALL getNonZeroCounts() const { return m->innerNonZeroPtr(); }
+    void * THEA_ICALL getNonZeroCounts() { return m->innerNonZeroPtr(); }
+    Value const * THEA_ICALL getValues() const { return m->valuePtr(); }
+    Value * THEA_ICALL getValues() { return m->valuePtr(); }
 
     // Type-casting functions
-    AbstractAddressableMatrix<Value> const * asAddressable() const { return nullptr; }
-    AbstractAddressableMatrix<Value> * asAddressable() { return nullptr; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return this; }
-    AbstractSparseMatrix<Value> * asSparse() { return this; }
-    AbstractCompressedSparseMatrix<Value> const * asCompressed() const { return this; }
-    AbstractCompressedSparseMatrix<Value> * asCompressed() { return this; }
+    IAddressableMatrix<Value> const * THEA_ICALL asAddressable() const { return nullptr; }
+    IAddressableMatrix<Value> * THEA_ICALL asAddressable() { return nullptr; }
+    ISparseMatrix<Value> const * THEA_ICALL asSparse() const { return this; }
+    ISparseMatrix<Value> * THEA_ICALL asSparse() { return this; }
+    ICompressedSparseMatrix<Value> const * THEA_ICALL asCompressed() const { return this; }
+    ICompressedSparseMatrix<Value> * THEA_ICALL asCompressed() { return this; }
 
   private:
     MatrixT * m;  ///< The wrapped matrix.
 
 }; // class SparseMatrixWrapper
+
+namespace Math {
+
+/**
+ * Convenience function for creating a MatrixWrapper object from a matrix reference, without needing to specify template
+ * parameters.
+ */
+template <typename MatrixT>
+SparseMatrixWrapper<MatrixT>
+wrapMatrix(Eigen::SparseMatrixBase<MatrixT> & m)
+{
+  return SparseMatrixWrapper<MatrixT>(static_cast<MatrixT *>(&m));
+}
+
+/**
+ * Convenience function for creating a MatrixWrapper object from a matrix pointer, without needing to specify template
+ * parameters.
+ */
+template <typename MatrixT>
+SparseMatrixWrapper<MatrixT>
+wrapMatrix(Eigen::SparseMatrixBase<MatrixT> * m)
+{
+  return SparseMatrixWrapper<MatrixT>(static_cast<MatrixT *>(m));
+}
+
+} // namespace Math
 
 } // namespace Thea
 

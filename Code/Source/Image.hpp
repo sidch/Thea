@@ -16,10 +16,10 @@
 #define __Thea_Image_hpp__
 
 #include "Common.hpp"
-#include "AbstractImage.hpp"
+#include "IImage.hpp"
 #include "AlignedAllocator.hpp"
 #include "Array.hpp"
-#include "IOStream.hpp"
+#include "Iostream.hpp"
 #include "Serializable.hpp"
 
 // Forward declaration
@@ -28,7 +28,7 @@ class fipImage;
 namespace Thea {
 
 /** A 2D image. */
-class THEA_API Image : public AbstractImage, public Serializable
+class THEA_API Image : public IImage, public Serializable
 {
   public:
     THEA_DECL_SMART_POINTERS(Image)
@@ -44,14 +44,14 @@ class THEA_API Image : public AbstractImage, public Serializable
      *
      * @see read()
      */
-    Image(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    Image(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
 
     /**
      * Construct an image by loading it from a file.
      *
      * @see load()
      */
-    Image(std::string const & path, Codec const & codec = Codec_AUTO());
+    Image(std::string const & path, Codec const & codec = CodecAuto());
 
     /* Copy constructor. */
     Image(Image const & src);
@@ -63,13 +63,13 @@ class THEA_API Image : public AbstractImage, public Serializable
     Image & operator=(Image const & src);
 
     // Abstract interface functions
-    int8 isValid() const;
-    void clear();
-    void resize(int64 type, int64 width_, int64 height_, int64 depth_ = 1);
-    int64 getWidth() const { return width; }
-    int64 getHeight() const { return height; }
-    int64 getDepth() const { return depth; }
-    int32 getType() const { return (int)type; }
+    int8 THEA_ICALL isValid() const;
+    int8 THEA_ICALL clear();
+    int8 THEA_ICALL resize(int64 type, int64 width_, int64 height_, int64 depth_ = 1);
+    int64 THEA_ICALL getWidth() const { return width; }
+    int64 THEA_ICALL getHeight() const { return height; }
+    int64 THEA_ICALL getDepth() const { return depth; }
+    int32 THEA_ICALL getType() const { return (int)type; }
 
     /**
      * Get the number of channels per pixel. For example: 1 for luminance, 3 for RGB, 4 for RGBA. A complex number corresponds
@@ -129,12 +129,12 @@ class THEA_API Image : public AbstractImage, public Serializable
     bool hasByteAlignedChannels() const { return has_byte_aligned_channels; }
 
     // Abstract interface functions
-    void const * getData() const;
-    void * getData();
-    void const * getScanLine(int64 row, int64 z = 0) const;
-    void * getScanLine(int64 row, int64 z = 0);
-    int64 getScanWidth() const;
-    int32 getRowAlignment() const;
+    void const * THEA_ICALL getData() const;
+    void * THEA_ICALL getData();
+    void const * THEA_ICALL getScanLine(int64 row, int64 z = 0) const;
+    void * THEA_ICALL getScanLine(int64 row, int64 z = 0);
+    int64 THEA_ICALL getScanWidth() const;
+    int32 THEA_ICALL getRowAlignment() const;
 
     /**
      * Get the value of a channel of a particular pixel, normalized to the range [0, 1]. The following caveats should be
@@ -170,20 +170,20 @@ class THEA_API Image : public AbstractImage, public Serializable
     /** Rescale the image to a new width and height. */
     bool rescale(int64 new_width, int64 new_height, int64 new_depth = 1, Filter filter = Filter::AUTO);
 
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void THEA_ICALL read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
+    void THEA_ICALL write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
 
     /**
      * Load the image from an image file. The file should <b>not</b> have a prefixed Codec::BlockHeader. An exception will be
      * thrown if the image cannot be loaded.
      */
-    void load(std::string const & path, Codec const & codec = Codec_AUTO());
+    void load(std::string const & path, Codec const & codec = CodecAuto());
 
     /**
      * Save the image to an image file. The file will <b>not</b> have a prefixed Codec::BlockHeader. An exception will be thrown
      * if the image cannot be saved.
      */
-    void save(std::string const & path, Codec const & codec = Codec_AUTO()) const;
+    void save(std::string const & path, Codec const & codec = CodecAuto()) const;
 
     /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
     fipImage const * _getFreeImage() const { return fip_img; }
@@ -196,7 +196,7 @@ class THEA_API Image : public AbstractImage, public Serializable
 
   private:
     /** Automatically detect the type of the encoded image and read it appropriately. */
-    void read_AUTO(BinaryInputStream & input, bool read_block_header);
+    void readAuto(BinaryInputStream & input, bool read_block_header);
 
     /** Cache properties related to the image type. */
     void cacheTypeProperties();

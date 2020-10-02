@@ -386,7 +386,7 @@ BinaryInputStream::readMatrix(bool read_block_header, MatrixT & m, Codec const &
     bh = &bh_obj;
   }
 
-  if (codec == Codec_AUTO())
+  if (codec == CodecAuto())
   {
     // Default codecs
     static CodecCSV<MatrixT> const codec_csv;
@@ -445,7 +445,7 @@ template <typename MatrixT>
 void
 BinaryOutputStream::writeMatrix(MatrixT const & m, Codec const & codec, bool write_block_header)
 {
-  if (codec == Codec_AUTO())
+  if (codec == CodecAuto())
     throw Error(getNameStr() + ": You must explicitly choose a codec for writing matrices");
 
   MatrixCodec<MatrixT> const * mat_codec = dynamic_cast< MatrixCodec<MatrixT> const * >(&codec);

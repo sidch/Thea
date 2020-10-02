@@ -9,12 +9,12 @@
 #include "../../Algorithms/MeshFeatures/Local/Visibility.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
-#include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
-#include "../../IOStream.hpp"
+#include "../../Iostream.hpp"
 #include "../../MatVec.hpp"
 #include <cstdio>
 #include <cstring>
@@ -30,7 +30,7 @@ using namespace Algorithms;
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKDTree<Mesh> KDTree;
+typedef MeshKdTree<Mesh> KdTree;
 
 template <typename MeshTriangleT>
 Vector3
@@ -75,7 +75,7 @@ bool is_oriented = false;  // all normals point outwards
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
-bool computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+bool computeSDF(KdTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
                 Array<double> & values);
 bool computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
                                 intx num_samples, double nbd_radius, Array<double> & values);
@@ -92,7 +92,7 @@ bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num
                        int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_steps, intx num_walks,
                         MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeVisibilities(KDTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values);
+bool computeVisibilities(KdTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -227,7 +227,7 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Loaded " << pts.size() << " point(s) from " << pts_path;
 
   // Snap to surface points and normals
-  KDTree kdtree;
+  KdTree kdtree;
   kdtree.add(mg);
   kdtree.init();
 
@@ -734,7 +734,7 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 }
 
 bool
-computeSDF(KDTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+computeSDF(KdTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
            Array<double> & values)
 {
   THEA_CONSOLE << "Computing SDF features";
@@ -935,7 +935,7 @@ computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_sam
 }
 
 bool
-computeVisibilities(KDTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values)
+computeVisibilities(KdTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values)
 {
   THEA_CONSOLE << "Computing external visibilities";
 

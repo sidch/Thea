@@ -16,7 +16,7 @@
 #define __Thea_VariantMatrix_hpp__
 
 #include "Common.hpp"
-#include "IOStream.hpp"
+#include "Iostream.hpp"
 #include "MatrixWrapper.hpp"
 #include "MatVec.hpp"
 #include "Serializable.hpp"
@@ -34,7 +34,7 @@ namespace Thea {
 
 /** A container holding either a dense or a sparse matrix (or null). */
 template < typename T = Real, typename DenseMatrixT = MatrixX<T>, typename SparseMatrixT = SparseColumnMatrix<T> >
-class VariantMatrix : public AbstractDenseMatrix<T>, public AbstractCompressedSparseMatrix<T>, public Serializable
+class VariantMatrix : public IDenseMatrix<T>, public ICompressedSparseMatrix<T>, public Serializable
 {
   private:
     static_assert(std::is_base_of< Eigen::DenseBase<DenseMatrixT>, DenseMatrixT >::value,
@@ -71,8 +71,8 @@ class VariantMatrix : public AbstractDenseMatrix<T>, public AbstractCompressedSp
 
     }; // struct Type
 
-    using typename AbstractDenseMatrix<T>::Value;
-    using typename AbstractDenseMatrix<T>::value_type;
+    using typename IDenseMatrix<T>::Value;
+    using typename IDenseMatrix<T>::value_type;
 
     typedef DenseMatrixT   Dense;   ///< Dense matrix type.
     typedef SparseMatrixT  Sparse;  ///< Sparse matrix type.
@@ -115,17 +115,17 @@ class VariantMatrix : public AbstractDenseMatrix<T>, public AbstractCompressedSp
       type = Type::NONE;
     }
 
-    // Functions from AbstractMatrix
-    int64 rows() const { return isDense() ? dense_wrapper.rows() : (isSparse() ? sparse_wrapper.rows() : 0); }
-    int64 cols() const { return isDense() ? dense_wrapper.cols() : (isSparse() ? sparse_wrapper.cols() : 0); }
-    void setZero() { if (isDense()) { dense_wrapper.setZero(); } else if (isSparse()) { sparse_wrapper.setZero(); } }
+    // Functions from IMatrix
+    int64 THEA_ICALL rows() const { return isDense() ? dense_wrapper.rows() : (isSparse() ? sparse_wrapper.rows() : 0); }
+    int64 THEA_ICALL cols() const { return isDense() ? dense_wrapper.cols() : (isSparse() ? sparse_wrapper.cols() : 0); }
+    void THEA_ICALL setZero() { if (isDense()) { dense_wrapper.setZero(); } else if (isSparse()) { sparse_wrapper.setZero(); } }
 
-    int8 isResizable() const
+    int8 THEA_ICALL isResizable() const
     {
       return isDense() ? dense_wrapper.isResizable() : (isSparse() ? sparse_wrapper.isResizable() : 0);
     }
 
-    int8 resize(int64 nrows, int64 ncols)
+    int8 THEA_ICALL resize(int64 nrows, int64 ncols)
     {
       if (isDense())
         return dense_wrapper.resize(nrows, ncols);
@@ -135,66 +135,66 @@ class VariantMatrix : public AbstractDenseMatrix<T>, public AbstractCompressedSp
         return 0;
     }
 
-    // Functions from AbstractAddressableMatrix
-    Value const & at(int64 row, int64 col) const { THEA_VARMAT_CHECK_DENSE("at"); return dense_wrapper.at(row, col); }
-    Value & mutableAt(int64 row, int64 col) { THEA_VARMAT_CHECK_DENSE("mutableAt"); return dense_wrapper.mutableAt(row, col); }
+    // Functions from IAddressableMatrix
+    Value const & THEA_ICALL at(int64 row, int64 col) const { THEA_VARMAT_CHECK_DENSE("at"); return dense_wrapper.at(row, col); }
+    Value & THEA_ICALL mutableAt(int64 row, int64 col) { THEA_VARMAT_CHECK_DENSE("mutableAt"); return dense_wrapper.mutableAt(row, col); }
 
-    // Functions from RowOrColumnMajorMatrix
-    int8 isRowMajor() const { return isDense() ? dense_wrapper.isRowMajor() : (isSparse() ? sparse_wrapper.isRowMajor() : 0); }
-    int8 isColumnMajor() const
+    // Functions from IRowOrColumnMajorMatrix
+    int8 THEA_ICALL isRowMajor() const { return isDense() ? dense_wrapper.isRowMajor() : (isSparse() ? sparse_wrapper.isRowMajor() : 0); }
+    int8 THEA_ICALL isColumnMajor() const
     { return isDense() ? dense_wrapper.isColumnMajor() : (isSparse() ? sparse_wrapper.isColumnMajor() : 0); }
 
-    // Functions from AbstractDenseMatrix
-    Value const * data() const { THEA_VARMAT_CHECK_DENSE("data"); return dense_wrapper.data(); }
-    Value * data() { THEA_VARMAT_CHECK_DENSE("data");  return dense_wrapper.data(); }
-    void fill(Value const & value) { THEA_VARMAT_CHECK_DENSE("fill");  dense_wrapper.fill(value); }
-    void getRow(int64 row, Value * values) const { THEA_VARMAT_CHECK_DENSE("getRow"); dense_wrapper.getRow(row, values); }
-    void setRow(int64 row, Value const * values) { THEA_VARMAT_CHECK_DENSE("setRow"); dense_wrapper.setRow(row, values); }
-    void getColumn(int64 col, Value * values) const
+    // Functions from IDenseMatrix
+    Value const * THEA_ICALL data() const { THEA_VARMAT_CHECK_DENSE("data"); return dense_wrapper.data(); }
+    Value * THEA_ICALL data() { THEA_VARMAT_CHECK_DENSE("data");  return dense_wrapper.data(); }
+    void THEA_ICALL fill(Value value) { THEA_VARMAT_CHECK_DENSE("fill");  dense_wrapper.fill(value); }
+    void THEA_ICALL getRow(int64 row, Value * values) const { THEA_VARMAT_CHECK_DENSE("getRow"); dense_wrapper.getRow(row, values); }
+    void THEA_ICALL setRow(int64 row, Value const * values) { THEA_VARMAT_CHECK_DENSE("setRow"); dense_wrapper.setRow(row, values); }
+    void THEA_ICALL getColumn(int64 col, Value * values) const
     { THEA_VARMAT_CHECK_DENSE("getColumn"); dense_wrapper.getColumn(col, values); }
-    void setColumn(int64 col, Value const * values)
+    void THEA_ICALL setColumn(int64 col, Value const * values)
     { THEA_VARMAT_CHECK_DENSE("setColumn"); dense_wrapper.setColumn(col, values); }
 
-    // Functions from AbstractSparseMatrix
-    int64 numStoredElements() const
+    // Functions from ISparseMatrix
+    int64 THEA_ICALL numStoredElements() const
     { THEA_VARMAT_CHECK_SPARSE("numStoredElements"); return sparse_wrapper.numStoredElements(); }
 
-    // Functions from AbstractCompressedSparseMatrix
-    int64 innerSize() const { THEA_VARMAT_CHECK_SPARSE("innerSize"); return sparse_wrapper.innerSize(); }
-    int64 outerSize() const { THEA_VARMAT_CHECK_SPARSE("outerSize"); return sparse_wrapper.outerSize(); }
-    int8 isFullyCompressed() const { THEA_VARMAT_CHECK_SPARSE("isFullyCompressed"); return sparse_wrapper.isFullyCompressed(); }
-    int32 getInnerIndexType() const
+    // Functions from ICompressedSparseMatrix
+    int64 THEA_ICALL innerSize() const { THEA_VARMAT_CHECK_SPARSE("innerSize"); return sparse_wrapper.innerSize(); }
+    int64 THEA_ICALL outerSize() const { THEA_VARMAT_CHECK_SPARSE("outerSize"); return sparse_wrapper.outerSize(); }
+    int8 THEA_ICALL isFullyCompressed() const { THEA_VARMAT_CHECK_SPARSE("isFullyCompressed"); return sparse_wrapper.isFullyCompressed(); }
+    int32 THEA_ICALL getInnerIndexType() const
     { THEA_VARMAT_CHECK_SPARSE("getInnerIndexType"); return sparse_wrapper.getInnerIndexType(); }
-    int32 getOuterIndexType() const
+    int32 THEA_ICALL getOuterIndexType() const
     { THEA_VARMAT_CHECK_SPARSE("getOuterIndexType"); return sparse_wrapper.getOuterIndexType(); }
-    int32 getNonZeroCountType() const
+    int32 THEA_ICALL getNonZeroCountType() const
     { THEA_VARMAT_CHECK_SPARSE("getNonZeroCountType"); return sparse_wrapper.getNonZeroCountType(); }
-    void const * getInnerIndices() const
+    void const * THEA_ICALL getInnerIndices() const
     { THEA_VARMAT_CHECK_SPARSE("getInnerIndices"); return sparse_wrapper.getInnerIndices(); }
-    void * getInnerIndices() { THEA_VARMAT_CHECK_SPARSE("getInnerIndices"); return sparse_wrapper.getInnerIndices(); }
-    void const * getOuterIndices() const
+    void * THEA_ICALL getInnerIndices() { THEA_VARMAT_CHECK_SPARSE("getInnerIndices"); return sparse_wrapper.getInnerIndices(); }
+    void const * THEA_ICALL getOuterIndices() const
     { THEA_VARMAT_CHECK_SPARSE("getOuterIndices"); return sparse_wrapper.getOuterIndices(); }
-    void * getOuterIndices() { THEA_VARMAT_CHECK_SPARSE("getOuterIndices"); return sparse_wrapper.getOuterIndices(); }
-    void const * getNonZeroCounts() const
+    void * THEA_ICALL getOuterIndices() { THEA_VARMAT_CHECK_SPARSE("getOuterIndices"); return sparse_wrapper.getOuterIndices(); }
+    void const * THEA_ICALL getNonZeroCounts() const
     { THEA_VARMAT_CHECK_SPARSE("getNonZeroCounts"); return sparse_wrapper.getNonZeroCounts(); }
-    void * getNonZeroCounts() { THEA_VARMAT_CHECK_SPARSE("getNonZeroCounts"); return sparse_wrapper.getNonZeroCounts(); }
-    Value const * getValues() const { THEA_VARMAT_CHECK_SPARSE("getValues"); return sparse_wrapper.getValues(); }
-    Value * getValues() { THEA_VARMAT_CHECK_SPARSE("getValues"); return sparse_wrapper.getValues(); }
+    void * THEA_ICALL getNonZeroCounts() { THEA_VARMAT_CHECK_SPARSE("getNonZeroCounts"); return sparse_wrapper.getNonZeroCounts(); }
+    Value const * THEA_ICALL getValues() const { THEA_VARMAT_CHECK_SPARSE("getValues"); return sparse_wrapper.getValues(); }
+    Value * THEA_ICALL getValues() { THEA_VARMAT_CHECK_SPARSE("getValues"); return sparse_wrapper.getValues(); }
 
     // Type-casting functions
-    AbstractAddressableMatrix<Value> const * asAddressable() const { return isDense() ? this : nullptr; }
-    AbstractAddressableMatrix<Value> * asAddressable() { return isDense() ? this : nullptr; }
-    AbstractDenseMatrix<Value> const * asDense() const { return isDense() ? this : nullptr; }
-    AbstractDenseMatrix<Value> * asDense() { return isDense() ? this : nullptr; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return isSparse() ? this : nullptr; }
-    AbstractSparseMatrix<Value> * asSparse() { return isSparse() ? this : nullptr; }
-    AbstractCompressedSparseMatrix<Value> const * asCompressed() const { return isSparse() ? this : nullptr; }
-    AbstractCompressedSparseMatrix<Value> * asCompressed() { return isSparse() ? this : nullptr; }
+    IAddressableMatrix<Value> const * THEA_ICALL asAddressable() const { return isDense() ? this : nullptr; }
+    IAddressableMatrix<Value> * THEA_ICALL asAddressable() { return isDense() ? this : nullptr; }
+    IDenseMatrix<Value> const * THEA_ICALL asDense() const { return isDense() ? this : nullptr; }
+    IDenseMatrix<Value> * THEA_ICALL asDense() { return isDense() ? this : nullptr; }
+    ISparseMatrix<Value> const * THEA_ICALL asSparse() const { return isSparse() ? this : nullptr; }
+    ISparseMatrix<Value> * THEA_ICALL asSparse() { return isSparse() ? this : nullptr; }
+    ICompressedSparseMatrix<Value> const * THEA_ICALL asCompressed() const { return isSparse() ? this : nullptr; }
+    ICompressedSparseMatrix<Value> * THEA_ICALL asCompressed() { return isSparse() ? this : nullptr; }
 
     // Functions from Serializable
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false)
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false)
     {
-      if (codec == Codec_AUTO())
+      if (codec == CodecAuto())
       {
         auto which = input.readMatrix(read_block_header, dense, sparse);
         type = (which == 0 ? Type::DENSE : Type::SPARSE);
@@ -217,7 +217,7 @@ class VariantMatrix : public AbstractDenseMatrix<T>, public AbstractCompressedSp
       }
     }
 
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const
     {
       if (isDense())
         output.writeMatrix(dense, codec, write_block_header);

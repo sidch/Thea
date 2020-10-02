@@ -53,9 +53,9 @@ class THEA_API ConnectedComponents
      *
      * @return The number of components found (== components.size())
      *
-     * @see DCELMesh
+     * @see DcelMesh
      */
-    template < typename MeshT, typename FaceT, typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value, int >::type = 0 >
+    template < typename MeshT, typename FaceT, typename std::enable_if< Graphics::IsDcelMesh<MeshT>::value, int >::type = 0 >
     static intx findEdgeConnected(MeshT & mesh, Array< Array<FaceT *> > & components)
     {
       return findEdgeConnectedDefault(mesh, components);
@@ -94,7 +94,7 @@ class THEA_API ConnectedComponents
       for (size_t i = 0; i < faces.size(); ++i)
       {
         FaceT * face = faces[i];
-        intx rep = uf.find(uf.getObjectID(face));
+        intx rep = uf.find(uf.getObjectId(face));
         typename ComponentIndexMap::iterator existing = component_indices.find(rep);
         if (existing == component_indices.end())
         {
@@ -126,8 +126,8 @@ class THEA_API ConnectedComponents
         for (typename MeshT::Edge::FaceIterator fi = ei->facesBegin(); fi != ei->facesEnd(); ++fi)
           for (typename MeshT::Edge::FaceIterator fj = ei->facesBegin(); fj != fi; ++fj)
           {
-            intx handle1 = uf.getObjectID(*fi);
-            intx handle2 = uf.getObjectID(*fj);
+            intx handle1 = uf.getObjectId(*fi);
+            intx handle2 = uf.getObjectId(*fj);
             uf.merge(handle1, handle2);
           }
       }
@@ -136,10 +136,10 @@ class THEA_API ConnectedComponents
     /**
      * Unify sets containing each pair of adjacent edges of a DCEL mesh.
      *
-     * @see DCELMesh
+     * @see DcelMesh
      */
     template < typename MeshT, typename FaceUnionFind,
-               typename std::enable_if< Graphics::IsDCELMesh<MeshT>::value, int >::type = 0 >
+               typename std::enable_if< Graphics::IsDcelMesh<MeshT>::value, int >::type = 0 >
     static void unifyAdjacentFaces(MeshT & mesh, FaceUnionFind & uf)
     {
       for (typename MeshT::EdgeIterator ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ++ei)
@@ -147,17 +147,17 @@ class THEA_API ConnectedComponents
         typename MeshT::Halfedge * edge = &(*ei);
         if (!edge->isBoundaryEdge())
         {
-          intx handle1 = uf.getObjectID(edge->getFace());
-          intx handle2 = uf.getObjectID(edge->twin()->getFace());
+          intx handle1 = uf.getObjectId(edge->getFace());
+          intx handle2 = uf.getObjectId(edge->twin()->getFace());
           uf.merge(handle1, handle2);
         }
       }
     }
 
-    /** Collect all the faces of a GeneralMesh or DCELMesh. */
+    /** Collect all the faces of a GeneralMesh or DcelMesh. */
     template < typename MeshT, typename FaceT,
                typename std::enable_if< Graphics::IsGeneralMesh<MeshT>::value
-                                     || Graphics::IsDCELMesh<MeshT>::value, int >::type = 0 >
+                                     || Graphics::IsDcelMesh<MeshT>::value, int >::type = 0 >
     static void collectFaces(MeshT & mesh, Array<FaceT *> & faces)
     {
       faces.clear();

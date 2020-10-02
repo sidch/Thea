@@ -13,7 +13,7 @@
 //============================================================================
 
 #include "Codec.hpp"
-#include "IOStream.hpp"
+#include "Iostream.hpp"
 
 namespace Thea {
 

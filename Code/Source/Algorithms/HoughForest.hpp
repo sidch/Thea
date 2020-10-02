@@ -175,16 +175,16 @@ class THEA_API HoughForest : public Serializable
         bool save(std::string const & path) const;
 
         /** Load options from a binary input stream. */
-        void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+        void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
 
         /** Save options to a binary output stream. */
-        void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+        void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
 
         /** Load options from a text input stream. */
-        void read(TextInputStream & input, Codec const & codec = Codec_AUTO());
+        void read(TextInputStream & input, Codec const & codec = CodecAuto());
 
         /** Save options to a text output stream. */
-        void write(TextOutputStream & output, Codec const & codec = Codec_AUTO()) const;
+        void write(TextOutputStream & output, Codec const & codec = CodecAuto()) const;
 
         /** Get the set of default options. */
         static Options const & defaults() { static Options const def; return def; }
@@ -344,10 +344,10 @@ class THEA_API HoughForest : public Serializable
     bool save(std::string const & path) const;
 
     /** Load the forest from an input stream. */
-    void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO(), bool read_block_header = false);
+    void read(BinaryInputStream & input, Codec const & codec = CodecAuto(), bool read_block_header = false);
 
     /** Save the trained forest to an output stream. */
-    void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO(), bool write_block_header = false) const;
+    void write(BinaryOutputStream & output, Codec const & codec = CodecAuto(), bool write_block_header = false) const;
 
     /** Print debugging information about this forest to the console. */
     void dumpToConsole() const;
@@ -363,7 +363,7 @@ class THEA_API HoughForest : public Serializable
     typedef MatrixX<double, MatrixLayout::ROW_MAJOR> RowMajMatrix;  ///< Row-major matrix of double-precision values.
 
     /** Automatically choose suitable values for unspecified options. */
-    void autoSelectUnspecifiedOptions(Options & options_, TrainingData const * training_data_) const;
+    void autoSelectUnspecifiedOptions(Options & options_, TrainingData const & training_data) const;
 
     /** Cast a single vote for the parameters of a point's parent object by looking up an example in training data. */
     void singleSelfVoteByLookup(intx index, double weight, VoteCallback & callback) const;
@@ -371,15 +371,15 @@ class THEA_API HoughForest : public Serializable
     /** Create a locally cached copy of the training data, as a lookup table for voting. */
     void cacheTrainingData(TrainingData const & training_data);
 
-    intx num_classes;                 ///< Number of object classes.
-    intx num_features;                ///< Number of features per object.
+    intx num_classes;             ///< Number of object classes.
+    intx num_features;            ///< Number of features per object.
     Array<intx> num_vote_params;  ///< Number of Hough parameters per class.
-    intx max_vote_params;             ///< Maximum number of Hough parameters for any class.
-    Options options;                  ///< Additional options.
+    intx max_vote_params;         ///< Maximum number of Hough parameters for any class.
+    Options options;              ///< Additional options.
 
-    Array<TreePtr> trees;  ///< Set of Hough trees in the forest.
+    Array<TreePtr> trees;         ///< Set of Hough trees in the forest.
 
-    Array<intx> all_classes;  ///< Cached copy of all class labels in training data.
+    Array<intx> all_classes;      ///< Cached copy of all class labels in training data.
     RowMajMatrix all_features;    ///< Cached copy of all features in training data.
     RowMajMatrix all_self_votes;  ///< Cached copy of all Hough self-votes in training data.
 

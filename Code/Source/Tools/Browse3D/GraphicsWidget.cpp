@@ -14,21 +14,22 @@
 
 #include "GraphicsWidget.hpp"
 #include "App.hpp"
-#include "../../Graphics/Shader.hpp"
+#include "../../Graphics/IShader.hpp"
 #include "../../Application.hpp"
+#include "../../MatrixWrapper.hpp"
 
 namespace Browse3D {
 
-Graphics::Shader * GraphicsWidget::shader = nullptr;
-Graphics::Shader * phong_shader = nullptr;
+Graphics::IShader * GraphicsWidget::shader = nullptr;
+Graphics::IShader * phong_shader = nullptr;
 
 Vector3 GraphicsWidget::light_dir       =  Vector3(-1, -1, -2);
-ColorRGB GraphicsWidget::light_color    =  ColorRGB(1, 1, 1);
-ColorRGB GraphicsWidget::ambient_color  =  ColorRGB(1, 1, 1);
+ColorRgb GraphicsWidget::light_color    =  ColorRgb(1, 1, 1);
+ColorRgb GraphicsWidget::ambient_color  =  ColorRgb(1, 1, 1);
 bool GraphicsWidget::two_sided          =  true;
 
-Graphics::Shader *
-GraphicsWidget::getPhongShader(Graphics::RenderSystem & render_system)
+Graphics::IShader *
+GraphicsWidget::getPhongShader(Graphics::IRenderSystem & render_system)
 {
   using namespace Graphics;
 
@@ -36,34 +37,38 @@ GraphicsWidget::getPhongShader(Graphics::RenderSystem & render_system)
   {
     phong_shader = render_system.createShader("Phong shader");
 
-    phong_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
+    phong_shader->attachModuleFromFile(IShader::ModuleType::VERTEX,
                                        Application::getResourcePath("Materials/PhongVert.glsl").c_str());
-    phong_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
+    phong_shader->attachModuleFromFile(IShader::ModuleType::FRAGMENT,
                                        Application::getResourcePath("Materials/PhongFrag.glsl").c_str());
 
     setLightingUniforms(phong_shader);
-    phong_shader->setUniform("material", (app().options().no_shading ? Vector4(1, 0, 0, 0) : app().options().material));
+    Vector4 mat = (app().options().no_shading ? Vector4(1, 0, 0, 0) : app().options().material);
+    phong_shader->setUniform("material", &asLvalue(Math::wrapMatrix(mat)));
   }
 
   return phong_shader;
 }
 
 void
-GraphicsWidget::setLightingUniforms(Graphics::Shader * s)
+GraphicsWidget::setLightingUniforms(Graphics::IShader * s)
 {
   using namespace Graphics;
 
   if (!s) s = shader;
   if (!s) return;
 
-  s->setUniform("light_dir", light_dir);
-  s->setUniform("light_color", light_color);
-  s->setUniform("ambient_color", ambient_color);
-  s->setUniform("two_sided", two_sided ? 1.0f : 0.0f);
+  Vector3 v_light_color(light_color.r(), light_color.g(), light_color.b());
+  Vector3 v_ambient_color(ambient_color.r(), ambient_color.g(), ambient_color.b());
+
+  s->setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
+  s->setUniform("light_color", &asLvalue(Math::wrapMatrix(v_light_color)));
+  s->setUniform("ambient_color", &asLvalue(Math::wrapMatrix(v_ambient_color)));
+  s->setUniform("two_sided", two_sided ? (Real)1 : (Real)0);
 }
 
 void
-GraphicsWidget::setPhongShader(Graphics::RenderSystem & render_system)
+GraphicsWidget::setPhongShader(Graphics::IRenderSystem & render_system)
 {
   shader = getPhongShader(render_system);
 
@@ -72,14 +77,14 @@ GraphicsWidget::setPhongShader(Graphics::RenderSystem & render_system)
   render_system.setShader(shader);
 }
 
-Graphics::Shader *
+Graphics::IShader *
 GraphicsWidget::getShader()
 {
   return shader;
 }
 
 void
-GraphicsWidget::setLight(Vector3 const & dir, ColorRGB const & color, ColorRGB const & ambient_color_)
+GraphicsWidget::setLight(Vector3 const & dir, ColorRgb const & color, ColorRgb const & ambient_color_)
 {
   light_dir = dir;
   light_color = color;

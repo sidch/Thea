@@ -23,14 +23,14 @@ DisplayMesh::DisplayMesh(std::string const & name)
 : NamedObject(name),
   valid_bounds(true),
   wireframe_enabled(false),
-  changed_buffers(BufferID::ALL),
-  var_area(nullptr),
-  vertices_var(nullptr),
-  tris_var(nullptr),
-  quads_var(nullptr),
-  normals_var(nullptr),
-  colors_var(nullptr),
-  texcoords_var(nullptr),
+  changed_buffers(BufferId::ALL),
+  buf_pool(nullptr),
+  vertices_buf(nullptr),
+  tris_buf(nullptr),
+  quads_buf(nullptr),
+  normals_buf(nullptr),
+  colors_buf(nullptr),
+  texcoords_buf(nullptr),
   vertex_matrix(nullptr, 3, 0),
   tri_matrix(nullptr, 3, 0),
   quad_matrix(nullptr, 4, 0),
@@ -50,14 +50,14 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   valid_bounds(src.valid_bounds),
   bounds(src.bounds),
   wireframe_enabled(src.wireframe_enabled),
-  changed_buffers(BufferID::ALL),
-  var_area(nullptr),
-  vertices_var(nullptr),
-  tris_var(nullptr),
-  quads_var(nullptr),
-  normals_var(nullptr),
-  colors_var(nullptr),
-  texcoords_var(nullptr),
+  changed_buffers(BufferId::ALL),
+  buf_pool(nullptr),
+  vertices_buf(nullptr),
+  tris_buf(nullptr),
+  quads_buf(nullptr),
+  normals_buf(nullptr),
+  colors_buf(nullptr),
+  texcoords_buf(nullptr),
   vertex_matrix(nullptr, 3, 0),
   tri_matrix(nullptr, 3, 0),
   quad_matrix(nullptr, 4, 0),
@@ -87,10 +87,10 @@ DisplayMesh::clear()
   valid_bounds = true;
   bounds = AxisAlignedBox3();
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 }
 
-AbstractDenseMatrix<Real> const *
+IDenseMatrix<Real> const *
 DisplayMesh::getVertexMatrix() const
 {
   // Assume Vector3 is tightly packed and has no padding
@@ -99,7 +99,7 @@ DisplayMesh::getVertexMatrix() const
   return &vertex_wrapper;
 }
 
-AbstractDenseMatrix<uint32> const *
+IDenseMatrix<uint32> const *
 DisplayMesh::getTriangleMatrix() const
 {
   uint32 const * buf = (tris.empty() ? nullptr : &tris[0]);
@@ -107,7 +107,7 @@ DisplayMesh::getTriangleMatrix() const
   return &tri_wrapper;
 }
 
-AbstractDenseMatrix<uint32> const *
+IDenseMatrix<uint32> const *
 DisplayMesh::getQuadMatrix() const
 {
   uint32 const * buf = (quads.empty() ? nullptr : &quads[0]);
@@ -161,8 +161,8 @@ DisplayMesh::addColors()
 {
   if (colors.size() < vertices.size())
   {
-    colors.resize(vertices.size(), ColorRGBA(0, 0, 0, 0));
-    invalidateGPUBuffers();
+    colors.resize(vertices.size(), ColorRgba(0, 0, 0, 0));
+    invalidateGpuBuffers();
   }
 }
 
@@ -172,7 +172,7 @@ DisplayMesh::addNormals()
   if (normals.size() < vertices.size())
   {
     normals.resize(vertices.size(), Vector3::Zero());
-    invalidateGPUBuffers();
+    invalidateGpuBuffers();
   }
 }
 
@@ -182,12 +182,12 @@ DisplayMesh::addTexCoords()
   if (texcoords.size() < vertices.size())
   {
     texcoords.resize(vertices.size(), Vector2::Zero());
-    invalidateGPUBuffers();
+    invalidateGpuBuffers();
   }
 }
 
 intx
-DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const * normal, ColorRGBA const * color,
+DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const * normal, ColorRgba const * color,
                        Vector2 const * texcoord)
 {
   alwaysAssertM((source_index >= 0 && vertex_source_indices.size() == vertices.size())
@@ -211,7 +211,7 @@ DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const *
   if (color)              colors.push_back(*color);
   if (texcoord)           texcoords.push_back(*texcoord);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 
   return index;
 }
@@ -237,7 +237,7 @@ DisplayMesh::addTriangle(intx vi0, intx vi1, intx vi2, intx source_face_index)
   if (source_face_index >= 0)
     tri_source_face_indices.push_back(source_face_index);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 
   return index;
 }
@@ -265,7 +265,7 @@ DisplayMesh::addQuad(intx vi0, intx vi1, intx vi2, intx vi3, intx source_face_in
   if (source_face_index >= 0)
     quad_source_face_indices.push_back(source_face_index);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 
   return index;
 }
@@ -320,7 +320,7 @@ DisplayMesh::addFace(int num_vertices, intx const * face_vertex_indices_, intx s
     if (source_face_index >= 0) tri_source_face_indices.push_back(source_face_index);
   }
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 
   return Face(this, num_vertices, true, starting_index, num_tris);
 }
@@ -333,7 +333,7 @@ DisplayMesh::removeTriangle(intx tri_index)
   IndexArray::iterator ii = tris.begin() + 3 * tri_index;
   tris.erase(ii, ii + 3);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 }
 
 void
@@ -344,7 +344,7 @@ DisplayMesh::removeTriangles(intx begin, intx num_triangles)
   IndexArray::iterator ii = tris.begin() + 3 * begin;
   tris.erase(ii, ii + 3 * num_triangles);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 }
 
 void
@@ -355,7 +355,7 @@ DisplayMesh::removeQuad(intx quad_index)
   IndexArray::iterator ii = quads.begin() + 4 * quad_index;
   quads.erase(ii, ii + 4);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 }
 
 void
@@ -366,7 +366,7 @@ DisplayMesh::removeQuads(intx begin, intx num_quads)
   IndexArray::iterator ii = quads.begin() + 4 * begin;
   quads.erase(ii, ii + 4 * num_quads);
 
-  invalidateGPUBuffers();
+  invalidateGpuBuffers();
 }
 
 void
@@ -426,7 +426,7 @@ DisplayMesh::computeAveragedVertexNormals()
   for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = normals[i].normalized();
 
-  invalidateGPUBuffers(topo_change ? BufferID::ALL : BufferID::NORMAL);
+  invalidateGpuBuffers(topo_change ? BufferId::ALL : BufferId::NORMAL);
 }
 
 void
@@ -435,7 +435,7 @@ DisplayMesh::flipNormals()
   for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = -normals[i];
 
-  invalidateGPUBuffers(BufferID::NORMAL);
+  invalidateGpuBuffers(BufferId::NORMAL);
 }
 
 void
@@ -592,7 +592,7 @@ DisplayMesh::isolateFaces()
   colors     =  new_colors;
   texcoords  =  new_texcoords;
 
-  invalidateGPUBuffers(BufferID::ALL);
+  invalidateGpuBuffers(BufferId::ALL);
 }
 
 void
@@ -608,24 +608,24 @@ DisplayMesh::updateBounds()
 }
 
 void
-DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
+DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
   if (changed_buffers == 0) return;
 
-  if (changed_buffers == BufferID::ALL)
+  if (changed_buffers == BufferId::ALL)
   {
-    if (var_area) var_area->reset();
-    vertices_var = normals_var = colors_var = texcoords_var = tris_var = quads_var = edges_var = nullptr;
+    if (buf_pool) buf_pool->reset();
+    vertices_buf = normals_buf = colors_buf = texcoords_buf = tris_buf = quads_buf = edges_buf = nullptr;
 
     if (vertices.empty() || (tris.empty() && quads.empty()))
     {
-      if (var_area)
+      if (buf_pool)
       {
-        render_system.destroyVARArea(var_area);
-        var_area = nullptr;
+        render_system.destroyBufferPool(buf_pool);
+        buf_pool = nullptr;
       }
 
-      allGPUBuffersAreValid();
+      allGpuBuffersAreValid();
       return;
     }
 
@@ -647,174 +647,177 @@ DisplayMesh::uploadToGraphicsSystem(RenderSystem & render_system)
     intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + tri_bytes + quad_bytes + edge_bytes + PADDING;
 #endif
 
-    if (var_area)
+    if (buf_pool)
     {
-      if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
+      if (buf_pool->getCapacity() <= num_bytes || buf_pool->getCapacity() > (intx)(1.5 * num_bytes))
       {
-        render_system.destroyVARArea(var_area);
+        render_system.destroyBufferPool(buf_pool);
 
-        std::string vararea_name = getNameStr() + " VAR area";
-        var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-        if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+        std::string pool_name = getNameStr() + " buffer pool";
+        buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
+        if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
       }
-      // Else no need to reset var_area, we've done it above
+      // Else no need to reset buf_pool, we've done it above
     }
     else
     {
-      std::string vararea_name = getNameStr() + " VAR area";
-      var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, VARArea::Usage::WRITE_OCCASIONALLY, true);
-      if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+      std::string pool_name = getNameStr() + " buffer pool";
+      buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
+      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
     }
 
     if (!vertices.empty())
     {
-      vertices_var = var_area->createArray(vertex_bytes);
-      if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
+      vertices_buf = buf_pool->createBuffer(vertex_bytes);
+      if (!vertices_buf) throw Error(getNameStr() + ": Couldn't create vertices buffer");
     }
 
     if (hasNormals())
     {
-      normals_var = var_area->createArray(normal_bytes);
-      if (!normals_var) throw Error(getNameStr() + ": Couldn't create normals VAR");
+      normals_buf = buf_pool->createBuffer(normal_bytes);
+      if (!normals_buf) throw Error(getNameStr() + ": Couldn't create normals buffer");
     }
 
     if (hasColors())
     {
-      colors_var = var_area->createArray(color_bytes);
-      if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
+      colors_buf = buf_pool->createBuffer(color_bytes);
+      if (!colors_buf) throw Error(getNameStr() + ": Couldn't create colors buffer");
     }
 
     if (hasTexCoords())
     {
-      texcoords_var = var_area->createArray(texcoord_bytes);
-      if (!texcoords_var) throw Error(getNameStr() + ": Couldn't create texcoords VAR");
+      texcoords_buf = buf_pool->createBuffer(texcoord_bytes);
+      if (!texcoords_buf) throw Error(getNameStr() + ": Couldn't create texcoords buffer");
     }
 
 #ifndef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
     if (!tris.empty())
     {
-      tris_var = var_area->createArray(tri_bytes);
-      if (!tris_var) throw Error(getNameStr() + ": Couldn't create triangle indices VAR");
+      tris_buf = buf_pool->createBuffer(tri_bytes);
+      if (!tris_buf) throw Error(getNameStr() + ": Couldn't create triangle indices buffer");
     }
 
     if (!quads.empty())
     {
-      quads_var = var_area->createArray(quad_bytes);
-      if (!quads_var) throw Error(getNameStr() + ": Couldn't create quad indices VAR");
+      quads_buf = buf_pool->createBuffer(quad_bytes);
+      if (!quads_buf) throw Error(getNameStr() + ": Couldn't create quad indices buffer");
     }
 
     if (!edges.empty())
     {
-      edges_var = var_area->createArray(edge_bytes);
-      if (!edges_var) throw Error(getNameStr() + ": Couldn't create edge indices VAR");
+      edges_buf = buf_pool->createBuffer(edge_bytes);
+      if (!edges_buf) throw Error(getNameStr() + ": Couldn't create edge indices buffer");
     }
 
-    if (!tris.empty())  tris_var->updateIndices (0, (intx)tris.size(),  &tris[0]);
-    if (!quads.empty()) quads_var->updateIndices(0, (intx)quads.size(), &quads[0]);
-    if (!edges.empty()) edges_var->updateIndices(0, (intx)edges.size(), &edges[0]);
+    if (!tris.empty())  tris_buf->updateIndices (0, (int64)tris.size(),  NumericType::UINT32, &tris[0]);
+    if (!quads.empty()) quads_buf->updateIndices(0, (int64)quads.size(), NumericType::UINT32, &quads[0]);
+    if (!edges.empty()) edges_buf->updateIndices(0, (int64)edges.size(), NumericType::UINT32, &edges[0]);
 #endif
 
-    if (!vertices.empty()) vertices_var->updateVectors (0, (intx)vertices.size(),  &vertices[0]);
-    if (hasNormals())      normals_var->updateVectors  (0, (intx)normals.size(),   &normals[0]);
-    if (hasColors())       colors_var->updateColors    (0, (intx)colors.size(),    &colors[0]);
-    if (hasTexCoords())    texcoords_var->updateVectors(0, (intx)texcoords.size(), &texcoords[0]);
+    if (!vertices.empty()) vertices_buf->updateAttributes (0, (int64)vertices.size(),  3, NumericType::REAL, &vertices[0]);
+    if (hasNormals())      normals_buf->updateAttributes  (0, (int64)normals.size(),   3, NumericType::REAL, &normals[0]);
+    if (hasColors())       colors_buf->updateAttributes   (0, (int64)colors.size(),    4, NumericType::REAL, &colors[0]);
+    if (hasTexCoords())    texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0]);
   }
   else
   {
-    if (!gpuBufferIsValid(BufferID::VERTEX) && !vertices.empty())
-      vertices_var->updateVectors(0, (intx)vertices.size(), &vertices[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX) && !vertices.empty())
+      vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0]);
 
-    if (!gpuBufferIsValid(BufferID::NORMAL) && hasNormals())
-      normals_var->updateVectors (0, (intx)normals.size(), &normals[0]);
+    if (!gpuBufferIsValid(BufferId::NORMAL) && hasNormals())
+      normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0]);
 
-    if (!gpuBufferIsValid(BufferID::COLOR) && hasColors())
-      colors_var->updateColors(0, (intx)colors.size(), &colors[0]);
+    if (!gpuBufferIsValid(BufferId::COLOR) && hasColors())
+      colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0]);
 
-    if (!gpuBufferIsValid(BufferID::TEXCOORD) && hasTexCoords())
-      texcoords_var->updateVectors(0, (intx)texcoords.size(), &texcoords[0]);
+    if (!gpuBufferIsValid(BufferId::TEXCOORD) && hasTexCoords())
+      texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0]);
   }
 
-  allGPUBuffersAreValid();
+  allGpuBuffersAreValid();
 }
 
 void
-DisplayMesh::draw(RenderSystem & render_system, AbstractRenderOptions const & options) const
+DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options) const
 {
-  if (options.drawEdges() && !wireframe_enabled)
+  if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return; }
+  if (!options) options = RenderOptions::defaults();
+
+  if (options->drawEdges() && !wireframe_enabled)
     throw Error(getNameStr() + ": Can't draw mesh edges when wireframe mode is disabled");
 
-  const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(render_system);
+  const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(*render_system);
 
-  if (!vertices_var) return;
-  if (!options.drawFaces() && !options.drawEdges()) return;
-  if (!options.drawFaces() && !edges_var) return;
-  if (!options.drawEdges() && !tris_var && !quads_var) return;
+  if (!vertices_buf) return;
+  if (!options->drawFaces() && !options->drawEdges()) return;
+  if (!options->drawFaces() && !edges_buf) return;
+  if (!options->drawEdges() && !tris_buf && !quads_buf) return;
 
-  render_system.beginIndexedPrimitives();
+  render_system->beginIndexedPrimitives();
 
-    render_system.setVertexArray(vertices_var);
-    if (options.sendNormals()    &&  normals_var)    render_system.setNormalArray(normals_var);
-    if (options.sendColors()     &&  colors_var)     render_system.setColorArray(colors_var);
-    if (options.sendTexCoords()  &&  texcoords_var)  render_system.setTexCoordArray(0, texcoords_var);
+    render_system->setVertexBuffer(vertices_buf);
+    if (options->sendNormals()    &&  normals_buf)    render_system->setNormalBuffer(normals_buf);
+    if (options->sendColors()     &&  colors_buf)     render_system->setColorBuffer(colors_buf);
+    if (options->sendTexCoords()  &&  texcoords_buf)  render_system->setTexCoordBuffer(0, texcoords_buf);
 
-    if (options.drawFaces())
+    if (options->drawFaces())
     {
-      if (options.drawEdges())
+      if (options->drawEdges())
       {
-        render_system.pushShapeFlags();
-        render_system.setPolygonOffset(true, 2);
+        render_system->pushShapeFlags();
+        render_system->setPolygonOffset(true, 2);
       }
 
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-        if (!tris.empty()) render_system.sendIndices(RenderSystem::Primitive::TRIANGLES, (intx)tris.size(), &tris[0]);
-        if (!quads.empty()) render_system.sendIndices(RenderSystem::Primitive::QUADS, (intx)quads.size(), &quads[0]);
+        if (!tris.empty()) render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, (int64)tris.size(), &tris[0]);
+        if (!quads.empty()) render_system->sendIndices(IRenderSystem::Primitive::QUADS, (int64)quads.size(), &quads[0]);
 #else
         if (!tris.empty())
         {
-          render_system.setIndexArray(tris_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::TRIANGLES, 0, (intx)tris.size());
+          render_system->setIndexBuffer(tris_buf);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, (int64)tris.size());
         }
 
         if (!quads.empty())
         {
-          render_system.setIndexArray(quads_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::QUADS, 0, (intx)quads.size());
+          render_system->setIndexBuffer(quads_buf);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::QUADS, 0, (int64)quads.size());
         }
 #endif
 
-      if (options.drawEdges())
-        render_system.popShapeFlags();
+      if (options->drawEdges())
+        render_system->popShapeFlags();
     }
 
-    if (options.drawEdges())
+    if (options->drawEdges())
     {
-      render_system.pushShader();
-      render_system.pushColorFlags();
-      render_system.pushTextures();
+      render_system->pushShader();
+      render_system->pushColorFlags();
+      render_system->pushTextures();
 
-        render_system.setShader(nullptr);
-        render_system.setColorArray(nullptr);
-        render_system.setTexCoordArray(0, nullptr);
-        render_system.setNormalArray(nullptr);
-        render_system.setColor(ColorRGBA(options.edgeColor()));  // set default edge color (TODO: handle per-edge colors)
-        render_system.setTexture(0, nullptr);
+        render_system->setShader(nullptr);
+        render_system->setColorBuffer(nullptr);
+        render_system->setTexCoordBuffer(0, nullptr);
+        render_system->setNormalBuffer(nullptr);
+        render_system->setColor(options->edgeColor());  // set default edge color (TODO: handle per-edge colors)
+        render_system->setTexture(0, nullptr);
 
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-        if (!edges.empty()) render_system.sendIndices(RenderSystem::Primitive::LINES, (intx)edges.size(), &edges[0]);
+        if (!edges.empty()) render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)edges.size(), &edges[0]);
 #else
         if (!edges.empty())
         {
-          render_system.setIndexArray(edges_var);
-          render_system.sendIndicesFromArray(RenderSystem::Primitive::LINES, 0, (intx)edges.size());
+          render_system->setIndexBuffer(edges_buf);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)edges.size());
         }
 #endif
 
-      render_system.popTextures();
-      render_system.popColorFlags();
-      render_system.popShader();
+      render_system->popTextures();
+      render_system->popColorFlags();
+      render_system->popShader();
     }
 
-  render_system.endIndexedPrimitives();
+  render_system->endIndexedPrimitives();
 }
 
 } // namespace Graphics

@@ -19,15 +19,15 @@
 #include "../../AffineTransform3.hpp"
 #include "../../Graphics/Camera.hpp"
 #include "../../Graphics/RenderOptions.hpp"
-#include "../../Plugins/GL/GLHeaders.hpp"
+#include "../../Plugins/GL/GlHeaders.hpp"
 #include <wx/glcanvas.h>
 
 namespace Thea {
 namespace Graphics {
 
-class RenderSystem;
-class Texture;
-class Shader;
+class IRenderSystem;
+class ITexture;
+class IShader;
 
 } // namespace Graphics
 } // namespace Thea
@@ -195,10 +195,10 @@ class ModelDisplay : public wxGLCanvas
     void incrementViewTransform(AffineTransform3 const & tr);
 
     /** Draw a corner icon showing the coordinate axes. */
-    void drawAxes(Graphics::RenderSystem & rs);
+    void drawAxes(Graphics::IRenderSystem & rs);
 
     /** Draw the background image. */
-    void drawBackground(Graphics::RenderSystem & rs);
+    void drawBackground(Graphics::IRenderSystem & rs);
 
     /** Get the width of the widget. */
     int width() const { return GetSize().GetWidth(); }
@@ -217,8 +217,8 @@ class ModelDisplay : public wxGLCanvas
     wxPoint view_drag_start;
     wxPoint last_cursor;
 
-    Graphics::Texture * background_texture;
-    Graphics::Shader * background_shader;
+    Graphics::ITexture * background_texture;
+    Graphics::IShader * background_shader;
 
     wxGLContext * context;
 

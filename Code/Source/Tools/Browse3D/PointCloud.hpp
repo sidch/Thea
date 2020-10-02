@@ -22,8 +22,8 @@
 namespace Thea {
 namespace Graphics {
 
-class VARArea;
-class VAR;
+class IBufferPool;
+class IBuffer;
 
 } // namespace Graphics
 } // namespace Thea
@@ -70,14 +70,13 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     bool loadFeatures(std::string const & filename_);
 
     /** Explicitly set the color of each point. Overrides any colors derived from features. */
-    bool setPointColors(Array<ColorRGBA> const & colors_);
+    bool setPointColors(Array<ColorRgba> const & colors_);
 
     AxisAlignedBox3 const & getBounds() const;
 
     void updateBounds();
 
-    void draw(Graphics::RenderSystem & render_system,
-              Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+    void draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
 
   private:
     /** Invalidate the bounding box of the point cloud. */
@@ -90,14 +89,13 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     std::string getDefaultFeaturesFilename(std::string const & filename, std::string const & features_path) const;
 
     /** Reconstruct an approximate surface from the point cloud. */
-    void reconstructSurface(Graphics::RenderSystem & render_system,
-                            Graphics::AbstractRenderOptions const & options = Graphics::RenderOptions::defaults()) const;
+    void reconstructSurface(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
 
     /** Get the color of a point. */
-    ColorRGBA getColor(size_t point_index) const;
+    ColorRgba getColor(size_t point_index) const;
 
     /** Upload graphics buffers etc to GPU. */
-    void uploadToGraphicsSystem(Graphics::RenderSystem & render_system);
+    void uploadToGraphicsSystem(Graphics::IRenderSystem & render_system);
 
     Array<Point> points;
 
@@ -105,16 +103,16 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     bool normals_are_normalized;
     AxisAlignedBox3 bounds;
 
-    Array<ColorRGBA> colors;
+    Array<ColorRgba> colors;
     Array< Array<Real> > features;
 
     bool has_graph;
     Array< Array<intx> > graph;
 
-    int changed_buffers;           ///< A bitwise OR of the flags of the buffers that have changed.
-    Graphics::VARArea * var_area;  ///< GPU buffer area.
-    Graphics::VAR * vertices_var;  ///< GPU buffer for vertex positions.
-    Graphics::VAR * colors_var;    ///< GPU buffer for vertex colors.
+    int changed_buffers;                   ///< A bitwise OR of the flags of the buffers that have changed.
+    Graphics::IBufferPool * buf_pool;      ///< GPU buffer area.
+    Graphics::IBuffer     * vertices_buf;  ///< GPU buffer for vertex positions.
+    Graphics::IBuffer     * colors_buf;    ///< GPU buffer for vertex colors.
 
 }; // class PointCloud
 

@@ -27,7 +27,7 @@
 
 #include "ColorL.hpp"
 #include "ColorL8.hpp"
-#include "ColorRGBA.hpp"
+#include "ColorRgba.hpp"
 
 namespace Thea {
 
@@ -35,7 +35,7 @@ ColorL::ColorL(ColorL8 const & other)
 : val(other.value() / 255.0f)
 {}
 
-ColorL::ColorL(ColorRGBA const & other)
+ColorL::ColorL(ColorRgba const & other)
 : val(0.299f * other.r() + 0.587f * other.g() + 0.114f * other.b())
 {}
 

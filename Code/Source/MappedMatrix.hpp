@@ -15,8 +15,8 @@
 #ifndef __Thea_MappedMatrix_hpp__
 #define __Thea_MappedMatrix_hpp__
 
-#include "AbstractAddressableMatrix.hpp"
-#include "AbstractSparseMatrix.hpp"
+#include "IAddressableMatrix.hpp"
+#include "ISparseMatrix.hpp"
 #include "Hash.hpp"
 #include "UnorderedSet.hpp"
 #include <utility>
@@ -25,7 +25,7 @@ namespace Thea {
 
 /** Matrix that stores elements as a (row, col) --> value map. */
 template <typename T = Real, typename IndexT = intx>
-class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>, public virtual AbstractSparseMatrix<T>
+class /* THEA_API */ MappedMatrix : public virtual IAddressableMatrix<T>, public virtual ISparseMatrix<T>
 {
   public:
     typedef IndexT Index;  ///< The type of row or column indices.
@@ -105,12 +105,12 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
                     format("MappedMatrix: Cannot resize to negative dimensions %ldx%ld", (long)nrows, (long)ncols));
     }
 
-    int64 rows() const { return num_rows; }
-    int64 cols() const { return num_cols; }
-    void setZero() { triplets.clear(); }
-    int8 isResizable() const { return true; }
+    int64 THEA_ICALL rows() const { return num_rows; }
+    int64 THEA_ICALL cols() const { return num_cols; }
+    void THEA_ICALL setZero() { triplets.clear(); }
+    int8 THEA_ICALL isResizable() const { return true; }
 
-    int8 resize(int64 nrows, int64 ncols)
+    int8 THEA_ICALL resize(int64 nrows, int64 ncols)
     {
       alwaysAssertM(nrows >= 0 && ncols >= 0,
                     format("MappedMatrix: Cannot resize to negative dimensions %ldx%ld", (long)nrows, (long)ncols));
@@ -122,7 +122,7 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
       return true;
     }
 
-    int64 numStoredElements() const { return (int64)triplets.size(); }
+    int64 THEA_ICALL numStoredElements() const { return (int64)triplets.size(); }
 
     /** Get a read-only iterator pointing to the first (row, col, value) triplet in the matrix. */
     TripletConstIterator tripletsBegin() const { return triplets.begin(); }
@@ -152,34 +152,34 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::at()
+     * \copydoc IAddressableMatrix::at()
      *
      * If the element is not already stored in the matrix, it will return a zero value.
      */
-    T const & at(int64 row, int64 col) const
+    T const & THEA_ICALL at(int64 row, int64 col) const
     {
       return (*this)((Index)row, (Index)col);
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::mutableAt()
+     * \copydoc IAddressableMatrix::mutableAt()
      *
      * If the element is not already stored in the matrix, <b>it will be inserted</b> with an initial value of zero, increasing
      * the storage size.
      */
-    T & mutableAt(int64 row, int64 col)
+    T & THEA_ICALL mutableAt(int64 row, int64 col)
     {
       auto loc = triplets.insert(Triplet((Index)row, (Index)col, static_cast<T>(0)));  // insert a zero if not already set
       return const_cast<T &>(loc.first->value());  // either the existing element, or the newly inserted one.
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::getRow()
+     * \copydoc IAddressableMatrix::getRow()
      *
      * This function is in general <b>very slow</b> because it has to iterate through all the stored elements, and should be
      * avoided.
      */
-    void getRow(int64 row, T * values) const
+    void THEA_ICALL getRow(int64 row, T * values) const
     {
       std::fill(values, values + num_cols, static_cast<T>(0));
 
@@ -189,12 +189,12 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::setRow()
+     * \copydoc IAddressableMatrix::setRow()
      *
      * This function compares the elements of \a values to 0 using the not-equals operator <tt>T::operator!=</tt>. This may be
      * prone to numerical (floating-point) error.
      */
-    void setRow(int64 row, T const * values)
+    void THEA_ICALL setRow(int64 row, T const * values)
     {
       for (intx c = 0; c < num_cols; ++c)
         if (values[c] != static_cast<T>(0))
@@ -202,12 +202,12 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::getColumn()
+     * \copydoc IAddressableMatrix::getColumn()
      *
      * This function is in general <b>very slow</b> because it has to iterate through all the stored elements, and should be
      * avoided.
      */
-    void getColumn(int64 col, T * values) const
+    void THEA_ICALL getColumn(int64 col, T * values) const
     {
       std::fill(values, values + num_rows, static_cast<T>(0));
 
@@ -217,12 +217,12 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     }
 
     /**
-     * \copydoc AbstractAddressableMatrix::setColumn()
+     * \copydoc IAddressableMatrix::setColumn()
      *
      * This function compares the elements of \a values to 0 using the not-equals operator <tt>T::operator!=</tt>. This may be
      * prone to numerical (floating-point) error.
      */
-    void setColumn(int64 col, T const * values)
+    void THEA_ICALL setColumn(int64 col, T const * values)
     {
       for (intx r = 0; r < num_rows; ++r)
         if (values[r] != static_cast<T>(0))
@@ -230,14 +230,14 @@ class /* THEA_API */ MappedMatrix : public virtual AbstractAddressableMatrix<T>,
     }
 
     // Type-casting functions
-    AbstractAddressableMatrix<T> const * asAddressable() const { return this; }
-    AbstractAddressableMatrix<T> * asAddressable() { return this; }
-    AbstractSparseMatrix<T> const * asSparse() const { return this; }
-    AbstractSparseMatrix<T> * asSparse() { return this; }
-    AbstractDenseMatrix<T> const * asDense() const { return nullptr; }
-    AbstractDenseMatrix<T> * asDense() { return nullptr; }
-    AbstractCompressedSparseMatrix<T> const * asCompressed() const { return nullptr; }
-    AbstractCompressedSparseMatrix<T> * asCompressed() { return nullptr; }
+    IAddressableMatrix<T> const * THEA_ICALL asAddressable() const { return this; }
+    IAddressableMatrix<T> * THEA_ICALL asAddressable() { return this; }
+    ISparseMatrix<T> const * THEA_ICALL asSparse() const { return this; }
+    ISparseMatrix<T> * THEA_ICALL asSparse() { return this; }
+    IDenseMatrix<T> const * THEA_ICALL asDense() const { return nullptr; }
+    IDenseMatrix<T> * THEA_ICALL asDense() { return nullptr; }
+    ICompressedSparseMatrix<T> const * THEA_ICALL asCompressed() const { return nullptr; }
+    ICompressedSparseMatrix<T> * THEA_ICALL asCompressed() { return nullptr; }
 
   private:
     intx num_rows, num_cols;

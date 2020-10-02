@@ -1,5 +1,5 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/SampleGraph.hpp"
 #include "../../Algorithms/ShortestPaths.hpp"
@@ -32,7 +32,7 @@ enum { LOAD_ERROR = 1, PARSE_ERROR, UNSUPPORTED_FORMAT };
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKDTree<Mesh> KDTree;
+typedef MeshKdTree<Mesh> KdTree;
 
 int loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vector3> & normals);
 
@@ -214,7 +214,7 @@ main(int argc, char * argv[])
   Array<Vector3> dense_positions;
   Array<Vector3> dense_normals;
   bool dense_has_normals = false;
-  KDTree kdtree;
+  KdTree kdtree;
   if (mesh_path != "-")
   {
     // First try to load the file as a set of points

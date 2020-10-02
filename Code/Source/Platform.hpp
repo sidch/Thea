@@ -97,9 +97,22 @@
 // Symbol visibility flags
 #include "SymbolVisibility.hpp"
 
-#ifndef _MSC_VER
-#  define __cdecl
+// Calling conventions
+#if defined(_MSC_VER) && defined(THEA_32BIT)  // also clang and icc on Windows?
+#  if defined(__GNUC__)
+#    define THEA_CDECL __attribute__((cdecl))
+#    define THEA_STDCALL __attribute__((stdcall))
+#  else
+#    define THEA_CDECL __cdecl
+#    define THEA_STDCALL __stdcall
+#  endif
+#else
+#  define THEA_CDECL
+#  define THEA_STDCALL
 #endif
+
+/** Calling convention for member functions of abstract interface classes (for talking to shared libraries). */
+#define THEA_ICALL THEA_STDCALL
 
 /**
  * @def THEA_PRAGMA(expression)
@@ -124,7 +137,7 @@
 #ifdef _MSC_VER
 #  define THEA_END_PACKED_CLASS(byte_align)  ; THEA_PRAGMA( pack(pop) )
 #elif defined(__GNUC__)
-#  define THEA_END_PACKED_CLASS(byte_align)  __attribute((aligned(byte_align))) ;
+#  define THEA_END_PACKED_CLASS(byte_align)  __attribute__((aligned(byte_align))) ;
 #else
 #  define THEA_END_PACKED_CLASS(byte_align)  ;
 #endif

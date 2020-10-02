@@ -42,14 +42,14 @@ namespace Thea {
 // Read and write enums from binary I/O streams (requires explicitly including Serialization.hpp)
 #define THEA_ENUM_CLASS_SERIALIZATION(name)                                                                                   \
     public:                                                                                                                   \
-      void read(BinaryInputStream & input, Codec const & codec = Codec_AUTO())                                                \
+      void read(BinaryInputStream & input, Codec const & codec = CodecAuto())                                                \
       {                                                                                                                       \
         BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);                                                  \
         int v = (int)input.readInt32();                                                                                       \
         value = static_cast<Value>(v);                                                                                        \
       }                                                                                                                       \
                                                                                                                               \
-      void write(BinaryOutputStream & output, Codec const & codec = Codec_AUTO()) const                                       \
+      void write(BinaryOutputStream & output, Codec const & codec = CodecAuto()) const                                       \
       {                                                                                                                       \
         BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);                                                \
         output.writeInt32(static_cast<int>(value));                                                                           \

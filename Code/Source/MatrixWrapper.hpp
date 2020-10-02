@@ -15,7 +15,7 @@
 #ifndef __Thea_MatrixWrapper_hpp__
 #define __Thea_MatrixWrapper_hpp__
 
-#include "AbstractDenseMatrix.hpp"
+#include "IDenseMatrix.hpp"
 #include "MatVec.hpp"
 #include <type_traits>
 
@@ -26,13 +26,13 @@ namespace Thea {
  * must be an instance of the Eigen::Matrix template.
  */
 template <typename MatrixT>
-class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT::value_type>
+class /* THEA_API */ MatrixWrapper : public IDenseMatrix<typename MatrixT::value_type>
 {
   private:
     static_assert(std::is_base_of<Eigen::MatrixBase<MatrixT>, MatrixT>::value,
                   "MatrixWrapper: Wrapped matrix must be Eigen::Matrix");
 
-    typedef AbstractDenseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type
+    typedef IDenseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type
 
   public:
     THEA_DECL_SMART_POINTERS(MatrixWrapper)
@@ -60,17 +60,17 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
     /** Get the wrapped matrix. */
     MatrixT & getMatrix() { return *m; }
 
-    // Functions from AbstractMatrix
-    int64 rows() const { return (int64)m->rows(); }
-    int64 cols() const { return (int64)m->cols(); }
-    void setZero() { m->setZero(); }
+    // Functions from IMatrix
+    int64 THEA_ICALL rows() const { return (int64)m->rows(); }
+    int64 THEA_ICALL cols() const { return (int64)m->cols(); }
+    void THEA_ICALL setZero() { m->setZero(); }
 
-    int8 isResizable() const
+    int8 THEA_ICALL isResizable() const
     {
       return MatrixT::RowsAtCompileTime == Eigen::Dynamic || MatrixT::ColsAtCompileTime == Eigen::Dynamic;
     }
 
-    int8 resize(int64 nrows, int64 ncols)
+    int8 THEA_ICALL resize(int64 nrows, int64 ncols)
     {
       try  // no exceptions should cross shared library boundaries
       {
@@ -80,55 +80,81 @@ class /* THEA_API */ MatrixWrapper : public AbstractDenseMatrix<typename MatrixT
       THEA_STANDARD_CATCH_BLOCKS(return 0;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
     }
 
-    // Functions from AbstractAddressableMatrix
-    Value const & at(int64 row, int64 col) const { return (*m)(row, col); }
-    Value & mutableAt(int64 row, int64 col) { return (*m)(row, col); }
+    // Functions from IAddressableMatrix
+    Value const & THEA_ICALL at(int64 row, int64 col) const { return (*m)(row, col); }
+    Value & THEA_ICALL mutableAt(int64 row, int64 col) { return (*m)(row, col); }
 
-    // Functions from RowOrColumnMajorMatrix
-    int8 isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
-    int8 isColumnMajor() const { return !isRowMajor(); }
+    // Functions from IRowOrColumnMajorMatrix
+    int8 THEA_ICALL isRowMajor() const { return (MatrixT::Flags & Eigen::RowMajorBit); }
+    int8 THEA_ICALL isColumnMajor() const { return !isRowMajor(); }
 
-    // Functions from AbstractDenseMatrix
-    Value const * data() const { return m->data(); }
-    Value * data() { return m->data(); }
-    void fill(Value const & value) { m->fill(value); }
+    // Functions from IDenseMatrix
+    Value const * THEA_ICALL data() const { return m->data(); }
+    Value * THEA_ICALL data() { return m->data(); }
+    void THEA_ICALL fill(Value value) { m->fill(value); }
 
-    void getRow(int64 row, Value * values) const
+    void THEA_ICALL getRow(int64 row, Value * values) const
     {
       for (intx c = 0, ncols = m->cols(); c < ncols; ++c)
         values[c] = (*m)(row, c);
     }
 
-    void setRow(int64 row, Value const * values)
+    void THEA_ICALL setRow(int64 row, Value const * values)
     {
       for (intx c = 0, ncols = m->cols(); c < ncols; ++c)
         (*m)(row, c) = values[c];
     }
 
-    void getColumn(int64 col, Value * values) const
+    void THEA_ICALL getColumn(int64 col, Value * values) const
     {
       for (intx r = 0, nrows = m->rows(); r < nrows; ++r)
         values[r] = (*m)(r, col);
     }
 
-    void setColumn(int64 col, Value const * values)
+    void THEA_ICALL setColumn(int64 col, Value const * values)
     {
       for (intx r = 0, nrows = m->rows(); r < nrows; ++r)
         (*m)(r, col) = values[r];
     }
 
     // Type-casting functions
-    AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
-    AbstractAddressableMatrix<Value> * asAddressable() { return this; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return nullptr; }
-    AbstractSparseMatrix<Value> * asSparse() { return nullptr; }
-    AbstractDenseMatrix<Value> const * asDense() const { return this; }
-    AbstractDenseMatrix<Value> * asDense() { return this; }
+    IAddressableMatrix<Value> const * THEA_ICALL asAddressable() const { return this; }
+    IAddressableMatrix<Value> * THEA_ICALL asAddressable() { return this; }
+    ISparseMatrix<Value> const * THEA_ICALL asSparse() const { return nullptr; }
+    ISparseMatrix<Value> * THEA_ICALL asSparse() { return nullptr; }
+    IDenseMatrix<Value> const * THEA_ICALL asDense() const { return this; }
+    IDenseMatrix<Value> * THEA_ICALL asDense() { return this; }
 
   private:
     MatrixT * m;  ///< The wrapped matrix.
 
 }; // class MatrixWrapper
+
+namespace Math {
+
+/**
+ * Convenience function for creating a MatrixWrapper object from a matrix reference, without needing to specify template
+ * parameters.
+ */
+template <typename MatrixT>
+MatrixWrapper<MatrixT>
+wrapMatrix(Eigen::MatrixBase<MatrixT> & m)
+{
+  return MatrixWrapper<MatrixT>(static_cast<MatrixT *>(&m));
+}
+
+/**
+ * Convenience function for creating a MatrixWrapper object from a matrix pointer, without needing to specify template
+ * parameters.
+ */
+template <typename MatrixT>
+MatrixWrapper<MatrixT>
+wrapMatrix(Eigen::MatrixBase<MatrixT> * m)
+{
+  return MatrixWrapper<MatrixT>(static_cast<MatrixT *>(m));
+}
+
+} // namespace Math
 
 } // namespace Thea
 

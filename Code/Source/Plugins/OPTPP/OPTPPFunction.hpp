@@ -16,14 +16,14 @@
 #define __Thea_Algorithms_OPTPPFunction_hpp__
 
 #include "OPTPPCommon.hpp"
-#include "../../Algorithms/ScalarFunction.hpp"
+#include "../../Algorithms/IScalarFunction.hpp"
 #include <NLP.h>
 
 namespace Thea {
 namespace Algorithms {
 
 // Convert a scalar function to OPT++ form.
-OPTPP::NLPBase * toOPTPPFunction(ScalarFunction const & f, double const * init_pt = nullptr);
+OPTPP::NLPBase * toOPTPPFunction(IScalarFunction const & f, double const * init_pt = nullptr);
 
 } // namespace Algorithms
 } // namespace Thea

@@ -45,10 +45,10 @@ main(int argc, char * argv[])
         return zernike(ImageMatrix<ColorL8>(&image));
 
       case Image::Type::RGB_8U:
-        return zernike(ImageMatrix<ColorRGB8>(&image));
+        return zernike(ImageMatrix<ColorRgb8>(&image));
 
       case Image::Type::RGBA_8U:
-        return zernike(ImageMatrix<ColorRGBA8>(&image));
+        return zernike(ImageMatrix<ColorRgba8>(&image));
 
       default:
         cerr << "Unsupported image format" << endl;

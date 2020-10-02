@@ -15,7 +15,7 @@
 #ifndef __Thea_ImageMatrix_hpp__
 #define __Thea_ImageMatrix_hpp__
 
-#include "AbstractAddressableMatrix.hpp"
+#include "IAddressableMatrix.hpp"
 #include "Image.hpp"
 #include <algorithm>
 #include <climits>
@@ -29,13 +29,13 @@ namespace Thea {
  * when custom types are involved.
  */
 template <typename T>
-class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
+class /* THEA_API */ ImageMatrix : public IAddressableMatrix<T>
 {
   public:
     THEA_DECL_SMART_POINTERS(ImageMatrix)
 
-    using typename AbstractAddressableMatrix<T>::Value;       // == T
-    using typename AbstractAddressableMatrix<T>::value_type;  // == T
+    using typename IAddressableMatrix<T>::Value;       // == T
+    using typename IAddressableMatrix<T>::value_type;  // == T
 
     /** Constructor. The image pointer must remain valid until the matrix is destroyed. */
     ImageMatrix(Image * image_) : image(image_)
@@ -50,52 +50,52 @@ class /* THEA_API */ ImageMatrix : public AbstractAddressableMatrix<T>
     /** Destructor. */
     ~ImageMatrix() {}
 
-    int64 rows() const { return image->getHeight(); }
-    int64 cols() const { return image->getWidth(); }
-    int8 isResizable() const { return true; }
-    int8 resize(int64 num_rows, int64 num_cols) { image->resize(image->getType(), num_cols, num_rows); return true; }
+    int64 THEA_ICALL rows() const { return image->getHeight(); }
+    int64 THEA_ICALL cols() const { return image->getWidth(); }
+    int8 THEA_ICALL isResizable() const { return true; }
+    int8 THEA_ICALL resize(int64 num_rows, int64 num_cols) { image->resize(image->getType(), num_cols, num_rows); return true; }
 
-    void setZero()
+    void THEA_ICALL setZero()
     {
       // Assume all image channels are zero when they are bitwise zero. Scan width is in bytes.
       std::memset(image->getData(), 0, image->getScanWidth() * image->getHeight());
     }
 
-    Value const & at(int64 row, int64 col) const { return ((Value const *)image->getScanLine(row))[col]; }
-    Value & mutableAt(int64 row, int64 col) { return ((Value *)image->getScanLine(row))[col]; }
+    Value const & THEA_ICALL at(int64 row, int64 col) const { return ((Value const *)image->getScanLine(row))[col]; }
+    Value & THEA_ICALL mutableAt(int64 row, int64 col) { return ((Value *)image->getScanLine(row))[col]; }
 
     // TODO: These could perhaps be made faster by avoiding at() or mutableAt()
-    void getRow(int64 row, Value * values) const
+    void THEA_ICALL getRow(int64 row, Value * values) const
     {
       for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
         values[c] = at(row, c);
     }
 
-    void setRow(int64 row, Value const * values)
+    void THEA_ICALL setRow(int64 row, Value const * values)
     {
       for (intx c = 0, ncols = (intx)cols(); c < ncols; ++c)
         mutableAt(row, c) = values[c];
     }
 
-    void getColumn(int64 col, Value * values) const
+    void THEA_ICALL getColumn(int64 col, Value * values) const
     {
       for (intx r = 0, nrows = (intx)rows(); r < nrows; ++r)
         values[r] = at(r, col);
     }
 
-    void setColumn(int64 col, Value const * values)
+    void THEA_ICALL setColumn(int64 col, Value const * values)
     {
       for (intx r = 0, nrows = (intx)rows(); r < nrows; ++r)
         mutableAt(r, col) = values[r];
     }
 
     // Type-casting functions
-    AbstractAddressableMatrix<Value> const * asAddressable() const { return this; }
-    AbstractAddressableMatrix<Value> * asAddressable() { return this; }
-    AbstractSparseMatrix<Value> const * asSparse() const { return nullptr; }
-    AbstractSparseMatrix<Value> * asSparse() { return nullptr; }
-    AbstractDenseMatrix<Value> const * asDense() const { return nullptr; }
-    AbstractDenseMatrix<Value> * asDense() { return nullptr; }
+    IAddressableMatrix<Value> const * THEA_ICALL asAddressable() const { return this; }
+    IAddressableMatrix<Value> * THEA_ICALL asAddressable() { return this; }
+    ISparseMatrix<Value> const * THEA_ICALL asSparse() const { return nullptr; }
+    ISparseMatrix<Value> * THEA_ICALL asSparse() { return nullptr; }
+    IDenseMatrix<Value> const * THEA_ICALL asDense() const { return nullptr; }
+    IDenseMatrix<Value> * THEA_ICALL asDense() { return nullptr; }
 
   private:
     Image * image;  ///< The wrapped image

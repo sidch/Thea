@@ -18,7 +18,7 @@
 #include "../../../Common.hpp"
 #include "../SampledSurface.hpp"
 #include "../../IntersectionTester.hpp"
-#include "../../PCA_N.hpp"
+#include "../../PcaN.hpp"
 #include "../../PointTraitsN.hpp"
 #include "../../../Noncopyable.hpp"
 #include <functional>
@@ -33,11 +33,11 @@ namespace Local {
  * neighborhood of the point, sorted in decreasing order. Optionally, the eigenvectors (principal components) of the
  * distribution may also be returned.
  */
-template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
-class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
+template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
+class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
-    typedef SampledSurface<ExternalSampleKDTreeT> BaseT;  ///< Base class.
+    typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
     static intx const DEFAULT_NUM_SAMPLES = 100000;  ///< Default number of points to sample from the shape.
 
   public:
@@ -77,7 +77,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    LocalPCA(ExternalSampleKDTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    LocalPCA(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -102,10 +102,10 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
       Ball3 range(position, nbd_radius);
       func.reset();
 
-      if (this->hasExternalKDTree())
-        this->getMutableExternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
+      if (this->hasExternalKdTree())
+        this->getMutableExternalKdTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
       else
-        this->getMutableInternalKDTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
+        this->getMutableInternalKdTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
 
       return func.getPCAFeatures(eigenvectors);
     }
@@ -126,7 +126,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKDTreeT>
       {
         Real eval[3];
         Vector3 evec[3];
-        PCA_N<Vector3, 3>::compute(nbd_pts.begin(), nbd_pts.end(), eval, evec);  // returns ordered by decreasing eigenvalue
+        PcaN<Vector3, 3>::compute(nbd_pts.begin(), nbd_pts.end(), eval, evec);  // returns ordered by decreasing eigenvalue
 
         if (eigenvectors)
         {

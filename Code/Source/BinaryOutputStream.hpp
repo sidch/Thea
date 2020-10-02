@@ -386,7 +386,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
      *
      * @see vprintf(), writeString()
      */
-    void __cdecl printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
+    void THEA_CDECL printf(char const * fmt, ...) THEA_CHECK_MEMBER_PRINTF_ARGS;
 
     /**
      * Print a formatted string to the stream using C-style vprintf syntax, without null-termination or a preceding length
@@ -399,7 +399,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
      *
      * @see printf(), writeString()
      */
-    void __cdecl vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
+    void THEA_CDECL vprintf(char const * fmt, va_list arg_list) THEA_CHECK_MEMBER_VPRINTF_ARGS;
 
     /**
      * Write a string. The format is:
@@ -484,7 +484,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     }
 
     /** Write a color with 3 8-bit channels. */
-    void writeColorRGB8(ColorRGB8 const & c)
+    void writeColorRgb8(ColorRgb8 const & c)
     {
       writeUInt8(c.r());
       writeUInt8(c.g());
@@ -492,7 +492,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     }
 
     /** Write a color with 3 floating-point channels. */
-    void writeColorRGB(ColorRGB const & c)
+    void writeColorRgb(ColorRgb const & c)
     {
       writeFloat32(c.r());
       writeFloat32(c.g());
@@ -500,7 +500,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     }
 
     /** Write a color with 4 8-bit channels. */
-    void writeColorRGBA8(ColorRGBA8 const & c)
+    void writeColorRgba8(ColorRgba8 const & c)
     {
       writeUInt8(c.r());
       writeUInt8(c.g());
@@ -509,7 +509,7 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     }
 
     /** Write a color with 3 floating-point channels. */
-    void writeColorRGBA(ColorRGBA const & c)
+    void writeColorRgba(ColorRgba const & c)
     {
       writeFloat32(c.r());
       writeFloat32(c.g());
@@ -591,10 +591,10 @@ class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopya
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(Vector4,             Vector4)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorL8,             ColorL8)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorL,              ColorL)
-    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRGB8,           ColorRGB8)
-    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRGB,            ColorRGB)
-    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRGBA8,          ColorRGBA8)
-    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRGBA,           ColorRGBA)
+    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRgb8,           ColorRgb8)
+    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRgb,            ColorRgb)
+    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRgba8,          ColorRgba8)
+    THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(ColorRgba,           ColorRgba)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(Matrix2,             Matrix2)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(Matrix3,             Matrix3)
     THEA_BINARY_OUTPUT_STREAM_DECLARE_WRITER(Matrix4,             Matrix4)

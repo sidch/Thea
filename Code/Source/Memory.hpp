@@ -20,18 +20,14 @@
 
 namespace Thea {
 
-/**
- * Define smart pointer types for a class.
- */
+/** Define smart pointer types for a class. */
 #define THEA_DECL_SMART_POINTERS(type)                                                                                        \
     typedef std::shared_ptr< type > Ptr;                                                                                      \
     typedef std::shared_ptr< type const > ConstPtr;                                                                           \
     typedef std::weak_ptr< type > WeakPtr;                                                                                    \
     typedef std::weak_ptr< type const > ConstWeakPtr;
 
-/**
- * Macro that declares the standard smart pointer types as 'extern'.
- */
+/** Macro that declares the standard smart pointer types as 'extern'. */
 #ifdef THEA_EXTERN_TEMPLATES
 #  define THEA_DECL_EXTERN_SMART_POINTERS(class_name)                                                                         \
      namespace std {                                                                                                          \
@@ -44,9 +40,7 @@ namespace Thea {
 #  define THEA_DECL_EXTERN_SMART_POINTERS(class_name)  /* blank */
 #endif // THEA_EXTERN_TEMPLATES
 
-/**
- * Macro that explicitly instantiates the standard smart pointer types
- */
+/** Macro that explicitly instantiates the standard smart pointer types */
 #ifdef THEA_EXTERN_TEMPLATES
 #  define THEA_INSTANTIATE_SMART_POINTERS(class_name)                                                                         \
      namespace std {                                                                                                          \
@@ -58,6 +52,39 @@ namespace Thea {
 #else
 #  define THEA_INSTANTIATE_SMART_POINTERS(class_name)  /* blank */
 #endif // THEA_EXTERN_TEMPLATES
+
+/**
+ * Convert an r-value to an l-value. Useful as a workaround for the "can't take address of temporary" compiler error. E.g.
+ * \code
+ * int foo() { return 1; }
+ * void bar(int * x) { ... }
+ * bar(&foo());  // error
+ * bar(&asLvalue(foo()));  // ok
+ * \endcode
+ *
+ * A more realistic example involves passing a matrix, wrapped in a temporary object implementing an abstract interface, to a
+ * plugin:
+ * \code
+ * using namespace Graphics;
+ * RenderSystem * render_system = ...;
+ * Matrix4 m;
+ *
+ * // Without asLvalue()
+ * auto wm = Math::wrapMatrix(m);
+ * render_system->getMatrix(RenderSystem::MatrixMode::MODELVIEW, &wm);
+ *
+ * // With asLvalue()
+ * render_system->getMatrix(RenderSystem::MatrixMode::MODELVIEW, &asLvalue(Math::wrapMatrix(m)));
+ * \endcode
+ *
+ * From https://stackoverflow.com/a/47460052.
+ */
+template <typename T>
+T &
+asLvalue(T && t)
+{
+  return t;
+}
 
 } // namespace Thea
 

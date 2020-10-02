@@ -17,7 +17,7 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
-#include "../IOStream.hpp"
+#include "../Iostream.hpp"
 #include "../MatVec.hpp"
 #include <boost/dynamic_bitset.hpp>
 #include <iostream>
@@ -235,7 +235,7 @@ class THEA_API JointBoost
       double a;             ///< Regression weight a.
       double b;             ///< Regression weight b.
       double theta;         ///< Cut threshold.
-      Array<double> k;  ///< Constants for classes not in the sharing set.
+      Array<double> k;      ///< Constants for classes not in the sharing set.
 
       /** Evaluate the stump for a given feature and class. */
       double operator()(double feature_value, intx class_index) const
@@ -277,7 +277,7 @@ class THEA_API JointBoost
      * @param validation_data_ Validation data set.
      * @param new_stump If non-null, added to the current set of stumps before measuring error (and removed afterwards).
      */
-    double computeValidationError(TrainingData const & validation_data_, SharedStump::Ptr new_stump = SharedStump::Ptr());
+    double computeValidationError(TrainingData const * validation_data_, SharedStump::Ptr new_stump = SharedStump::Ptr());
 
     /** Load the classifier from an input stream. */
     bool read(std::istream & in);

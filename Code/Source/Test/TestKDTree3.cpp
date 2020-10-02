@@ -1,6 +1,6 @@
 #include "../Common.hpp"
 #include "../Algorithms/IntersectionTester.hpp"
-#include "../Algorithms/KDTreeN.hpp"
+#include "../Algorithms/KdTreeN.hpp"
 #include "../Algorithms/MetricL2.hpp"
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../Algorithms/RayIntersectionTester.hpp"
@@ -17,22 +17,22 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-void testPointKDTree();
-void testTriangleKDTree();
+void testPointKdTree();
+void testTriangleKdTree();
 
 int
 main(int argc, char * argv[])
 {
   try
   {
-    testPointKDTree();
+    testPointKdTree();
     cout << endl;
-    testTriangleKDTree();
+    testTriangleKdTree();
   }
   THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
-  cout << "KDTreeN: Test completed" << endl;
+  cout << "KdTreeN: Test completed" << endl;
   return 0;
 }
 
@@ -115,7 +115,7 @@ bool printPoint(intx index, MyCustomPoint & np)
 }
 
 void
-testPointKDTree()
+testPointKdTree()
 {
   cout << "=========================\n"
        << "Testing kd-tree on points\n"
@@ -142,8 +142,8 @@ testPointKDTree()
   //============================================================================================================================
 
   // Create a kd-tree for all the points
-  typedef KDTreeN<MyCustomPoint, 3> KDTree;
-  KDTree kdtree(points.begin(), points.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
+  typedef KdTreeN<MyCustomPoint, 3> KdTree;
+  KdTree kdtree(points.begin(), points.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
                                                 // reinitialization, set the deallocate_previous_memory arg of init() to false.
   cout << "Created kd-tree for points" << endl;
 
@@ -202,7 +202,7 @@ testPointKDTree()
   //============================================================================================================================
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
-  BoundedSortedArrayN<3, KDTree::NeighborPair> nbrs;
+  BoundedSortedArrayN<3, KdTree::NeighborPair> nbrs;
   intx num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound);
   if (num_nbrs > 0)
   {
@@ -229,9 +229,9 @@ testPointKDTree()
     MyCustomPoint p(oss.str(), random_pt);
     new_points.push_back(p);
   }
-  KDTree new_kdtree(new_points.begin(), new_points.end());
+  KdTree new_kdtree(new_points.begin(), new_points.end());
 
-  typedef KDTree::NeighborPair NeighborPair;
+  typedef KdTree::NeighborPair NeighborPair;
   NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, true);  // -1 means there's no limit on the maximum
                                                                               // allowed separation. Setting a (small) positive
                                                                               // value can make this query run *much* faster.
@@ -273,7 +273,7 @@ testPointKDTree()
 }
 
 void
-testTriangleKDTree()
+testTriangleKdTree()
 {
   cout << "============================\n"
        << "Testing kd-tree on triangles\n"
@@ -303,8 +303,8 @@ testTriangleKDTree()
   //============================================================================================================================
 
   // Create a kd-tree for all the triangles
-  typedef KDTreeN<MyCustomTriangle, 3> KDTree;
-  KDTree kdtree(triangles.begin(), triangles.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
+  typedef KdTreeN<MyCustomTriangle, 3> KdTree;
+  KdTree kdtree(triangles.begin(), triangles.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
                                                       // reinitialization, set the deallocate_previous_memory arg of init() to
                                                       // false.
   kdtree.enableNearestNeighborAcceleration();
@@ -348,10 +348,10 @@ testTriangleKDTree()
     MyCustomTriangle tri(MyCustomTriangleVertexTriple(oss.str(), v[0], v[1], v[2]));
     new_triangles.push_back(tri);
   }
-  KDTree new_kdtree(new_triangles.begin(), new_triangles.end());
+  KdTree new_kdtree(new_triangles.begin(), new_triangles.end());
   new_kdtree.enableNearestNeighborAcceleration();
 
-  typedef KDTree::NeighborPair NeighborPair;
+  typedef KdTree::NeighborPair NeighborPair;
   NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, true);  // -1 means there's no limit on the maximum
                                                                               // allowed separation. Setting a (small) positive
                                                                               // value can make this query run *much* faster.

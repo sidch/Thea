@@ -15,8 +15,8 @@
 #include "PointCloud.hpp"
 #include "App.hpp"
 #include "Util.hpp"
-#include "../../Graphics/VARArea.hpp"
-#include "../../Graphics/VAR.hpp"
+#include "../../Graphics/IBufferPool.hpp"
+#include "../../Graphics/IBuffer.hpp"
 #include "../../Colors.hpp"
 #include "../../FilePath.hpp"
 #include "../../FileSystem.hpp"
@@ -27,8 +27,8 @@
 namespace Browse3D {
 
 PointCloud::PointCloud(std::string const & path, std::string const & features_path)
-: has_normals(false), normals_are_normalized(false), has_graph(false), changed_buffers(0), var_area(nullptr),
-  vertices_var(nullptr), colors_var(nullptr)
+: has_normals(false), normals_are_normalized(false), has_graph(false), changed_buffers(0), buf_pool(nullptr),
+  vertices_buf(nullptr), colors_buf(nullptr)
 {
   if (!path.empty())
     load(path, features_path);
@@ -466,7 +466,7 @@ PointCloud::getDefaultFeaturesFilename(std::string const & filename, std::string
 }
 
 bool
-PointCloud::setPointColors(Array<ColorRGBA> const & colors_)
+PointCloud::setPointColors(Array<ColorRgba> const & colors_)
 {
   if (colors_.size() < points.size())
   {
@@ -501,7 +501,7 @@ PointCloud::updateBounds()
   }
 }
 
-ColorRGBA
+ColorRgba
 PointCloud::getColor(size_t point_index) const
 {
   alwaysAssertM(point_index >= 0 && point_index < points.size(),
@@ -515,9 +515,9 @@ PointCloud::getColor(size_t point_index) const
   {
     switch (features.size())
     {
-      case 1:   return ColorRGB::jetColorMap(0.2 + 0.6 * features[0][point_index]);
-      case 2:   return ColorRGB(features[0][point_index], features[1][point_index], 1.0f);
-      default:  return ColorRGB(features[0][point_index], features[1][point_index], features[2][point_index]);
+      case 1:   return ColorRgb::jetColorMap(0.2 + 0.6 * features[0][point_index]);
+      case 2:   return ColorRgb(features[0][point_index], features[1][point_index], 1.0f);
+      default:  return ColorRgb(features[0][point_index], features[1][point_index], features[2][point_index]);
     }
   }
   else if (has_normals)
@@ -526,7 +526,7 @@ PointCloud::getColor(size_t point_index) const
     if (!normals_are_normalized)
       n.normalize();
 
-    return ColorRGB(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1));
+    return ColorRgb(0.5f * (n[0] + 1), 0.5f * (n[1] + 1), 0.5f * (n[2] + 1));
   }
   else if (app().options().fancy_colors)
   {
@@ -535,28 +535,28 @@ PointCloud::getColor(size_t point_index) const
 
     Vector3 ext = getBounds().getExtent().cwiseMax(Vector3(1e-20f, 1e-20f, 1e-20f));
     Vector3 v = (points[point_index].p - getBounds().getLow()).cwiseQuotient(ext);
-    ColorRGB c((MAX_COLOR - MIN_COLOR) * v + Vector3(MIN_COLOR, MIN_COLOR, MIN_COLOR));
+    ColorRgb c((MAX_COLOR - MIN_COLOR) * v + Vector3(MIN_COLOR, MIN_COLOR, MIN_COLOR));
     Vector3 hsv; hsv << c.toHSV().head<2>(), 1;
-    return ColorRGB::fromHSV(hsv);
+    return ColorRgb::fromHSV(hsv);
   }
 
-  return ColorRGB::zero();
+  return ColorRgb::zero();
 }
 
 void
-PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
+PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
 {
   if (app().options().fancy_points) return;
   if (changed_buffers == 0) return;
 
-  vertices_var = colors_var = nullptr;
+  vertices_buf = colors_buf = nullptr;
 
   if (points.empty())
   {
-    if (var_area)
+    if (buf_pool)
     {
-      render_system.destroyVARArea(var_area);
-      var_area = nullptr;
+      render_system.destroyBufferPool(buf_pool);
+      buf_pool = nullptr;
     }
 
     changed_buffers = 0;
@@ -571,71 +571,74 @@ PointCloud::uploadToGraphicsSystem(Graphics::RenderSystem & render_system)
 
   intx num_bytes = vertex_bytes + color_bytes + PADDING;
 
-  if (var_area)
+  if (buf_pool)
   {
-    if (var_area->getCapacity() <= num_bytes || var_area->getCapacity() > (intx)(1.5 * num_bytes))
+    if (buf_pool->getCapacity() <= num_bytes || buf_pool->getCapacity() > (intx)(1.5 * num_bytes))
     {
-      render_system.destroyVARArea(var_area);
+      render_system.destroyBufferPool(buf_pool);
 
-      std::string vararea_name = getNameStr() + " VAR area";
-      var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, Graphics::VARArea::Usage::WRITE_OCCASIONALLY,
-                                             true);
-      if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+      std::string bufpool_name = getNameStr() + " buffer pool";
+      buf_pool = render_system.createBufferPool(bufpool_name.c_str(), num_bytes,
+                                                Graphics::IBufferPool::Usage::WRITE_OCCASIONALLY, true);
+      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
     }
     else
-      var_area->reset();
+      buf_pool->reset();
   }
   else
   {
-    std::string vararea_name = getNameStr() + " VAR area";
-    var_area = render_system.createVARArea(vararea_name.c_str(), num_bytes, Graphics::VARArea::Usage::WRITE_OCCASIONALLY, true);
-    if (!var_area) throw Error(getNameStr() + ": Couldn't create VAR area");
+    std::string bufpool_name = getNameStr() + " buffer pool";
+    buf_pool = render_system.createBufferPool(bufpool_name.c_str(), num_bytes, Graphics::IBufferPool::Usage::WRITE_OCCASIONALLY,
+                                              true);
+    if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
   }
 
   if (!points.empty())
   {
-    vertices_var = var_area->createArray(vertex_bytes);
-    if (!vertices_var) throw Error(getNameStr() + ": Couldn't create vertices VAR");
+    vertices_buf = buf_pool->createBuffer(vertex_bytes);
+    if (!vertices_buf) throw Error(getNameStr() + ": Couldn't create vertex buffer");
 
     Array<Vector3> vbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       vbuf[i] = points[i].p;
 
-    vertices_var->updateVectors(0, (intx)vbuf.size(), &vbuf[0]);
+    vertices_buf->updateAttributes(0, (intx)vbuf.size(), 3, NumericType::REAL, &vbuf[0]);
   }
 
   if (has_colors)
   {
-    colors_var = var_area->createArray(color_bytes);
-    if (!colors_var) throw Error(getNameStr() + ": Couldn't create colors VAR");
+    colors_buf = buf_pool->createBuffer(color_bytes);
+    if (!colors_buf) throw Error(getNameStr() + ": Couldn't create color buffer");
 
-    Array<ColorRGBA> cbuf(points.size());
+    Array<ColorRgba> cbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       cbuf[i] = getColor(i);
 
-    colors_var->updateColors(0, (intx)cbuf.size(), &cbuf[0]);
+    colors_buf->updateAttributes(0, (intx)cbuf.size(), 4, NumericType::REAL, &cbuf[0]);
   }
 
   changed_buffers = 0;
 }
 
 void
-PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRenderOptions const & options) const
+PointCloud::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
   if (isEmpty())
     return;
 
-  const_cast<PointCloud *>(this)->uploadToGraphicsSystem(render_system);
+  if (!options) options = Graphics::RenderOptions::defaults();
 
-  render_system.pushShader();
-  render_system.pushTextures();
-  render_system.pushColorFlags();
+  const_cast<PointCloud *>(this)->uploadToGraphicsSystem(*render_system);
 
-    render_system.setTexture(0, nullptr);
+  render_system->pushShader();
+  render_system->pushTextures();
+  render_system->pushColorFlags();
+
+    render_system->setTexture(0, nullptr);
 
     if (app().options().fancy_points)
     {
-      setPhongShader(render_system);
+      setPhongShader(*render_system);
 
       bool has_colors = (!features.empty()
                        || has_normals
@@ -645,70 +648,70 @@ PointCloud::draw(Graphics::RenderSystem & render_system, Graphics::AbstractRende
       for (size_t i = 0; i < points.size(); ++i)
       {
         if (has_colors)
-          render_system.setColor(getColor(i));
+          render_system->setColor(getColor(i).data());
 
-        drawSphere(render_system, points[i].p, point_radius, 8);
+        drawSphere(*render_system, points[i].p, point_radius, 8);
       }
     }
     else
     {
-      render_system.setShader(nullptr);
+      render_system->setShader(nullptr);
 
-      render_system.beginIndexedPrimitives();
+      render_system->beginIndexedPrimitives();
 
-        render_system.setVertexArray(vertices_var);
-        if (colors_var) render_system.setColorArray(colors_var);
+        render_system->setVertexBuffer(vertices_buf);
+        if (colors_buf) render_system->setColorBuffer(colors_buf);
 
-        render_system.pushShapeFlags();
-          render_system.setPointSmooth(true);
-          render_system.setPointSize(2 * app().options().point_scale);
+        render_system->pushShapeFlags();
+          render_system->setPointSmooth(true);
+          render_system->setPointSize(2 * app().options().point_scale);
 
-          render_system.sendSequentialIndices(Graphics::RenderSystem::Primitive::POINTS, 0, (intx)points.size());
+          render_system->sendSequentialIndices(Graphics::IRenderSystem::Primitive::POINTS, 0, (intx)points.size());
 
-        render_system.popShapeFlags();
+        render_system->popShapeFlags();
 
-      render_system.endIndexedPrimitives();
+      render_system->endIndexedPrimitives();
     }
 
     if (has_graph && app().options().show_graph)
     {
-      render_system.setShader(nullptr);
-      render_system.setColor(ColorRGB(1, 1, 0));
+      render_system->setShader(nullptr);
+      render_system->setColor(ColorRgb(1, 1, 0).data());
 
-      render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+      render_system->beginPrimitive(Graphics::IRenderSystem::Primitive::LINES);
 
         for (size_t i = 0; i < graph.size(); ++i)
         {
           for (size_t j = 0; j < graph[i].size(); ++j)
           {
-            render_system.sendVertex(points[i].p);
-            render_system.sendVertex(points[(size_t)graph[i][j]].p);
+            render_system->sendVertex(3, points[i].p.data());
+            render_system->sendVertex(3, points[(size_t)graph[i][j]].p.data());
           }
         }
 
-      render_system.endPrimitive();
+      render_system->endPrimitive();
     }
     else if (has_normals && app().options().show_normals)
     {
-      render_system.setShader(nullptr);
-      render_system.setColor(ColorRGB(0, 0, 1));
+      render_system->setShader(nullptr);
+      render_system->setColor(ColorRgb(0, 0, 1).data());
 
       Real normal_scale = (normals_are_normalized ? 0.025f * getBounds().getExtent().norm() : 1);
 
-      render_system.beginPrimitive(Graphics::RenderSystem::Primitive::LINES);
+      render_system->beginPrimitive(Graphics::IRenderSystem::Primitive::LINES);
 
         for (size_t i = 0; i < points.size(); ++i)
         {
-          render_system.sendVertex(points[i].p);
-          render_system.sendVertex(Vector3(points[i].p + normal_scale * points[i].n));
+          render_system->sendVertex(3, points[i].p.data());
+          render_system->sendVertex(3, Vector3(points[i].p + normal_scale * points[i].n).data());
         }
 
-      render_system.endPrimitive();
+      render_system->endPrimitive();
     }
 
-  render_system.popColorFlags();
-  render_system.popTextures();
-  render_system.popShader();
+  render_system->popColorFlags();
+  render_system->popTextures();
+  render_system->popShader();
 }
 
 } // namespace Browse3D

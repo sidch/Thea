@@ -17,7 +17,7 @@
 
 #include "OPTPPCommon.hpp"
 #include "../../Set.hpp"
-#include "../../Algorithms/NumericalOptimizer.hpp"
+#include "../../Algorithms/INumericalOptimizer.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -27,17 +27,17 @@ namespace Algorithms {
  *
  * @see http://software.sandia.gov/opt++/
  */
-class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizer : public NumericalOptimizer
+class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizer : public INumericalOptimizer
 {
   private:
-    typedef NumericalOptimizer BaseType;
+    typedef INumericalOptimizer BaseType;
 
   public:
     /** Constructor. */
     OPTPPNumericalOptimizer(std::string const & name_);
 
     /**
-     * @copydoc NumericalOptimizer::minimize()
+     * @copydoc INumericalOptimizer::minimize()
      *
      * Valid options for the OPT++ backend are:
      * - <b>method</b>: Solution method to use
@@ -49,25 +49,25 @@ class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizer : public NumericalOptimizer
      *
      * @todo This function is currently a no-op.
      */
-    bool minimize(ScalarFunction const & objective, double const * hint = nullptr, Options const & options = Options());
+    bool THEA_ICALL minimize(IScalarFunction const & objective, double const * hint = nullptr, Options const & options = Options());
 
 }; // class OPTPPNumericalOptimizer
 
 /** Factory for creating OPT++ numerical optimizers. */
-class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizerFactory : public NumericalOptimizerFactory
+class THEA_OPTPP_DLL_LOCAL OPTPPNumericalOptimizerFactory : public INumericalOptimizerFactory
 {
   public:
     /** Destructor. */
     ~OPTPPNumericalOptimizerFactory();
 
-    NumericalOptimizer * createNumericalOptimizer(char const * name);
-    void destroyNumericalOptimizer(NumericalOptimizer * optimizer);
+    INumericalOptimizer * THEA_ICALL createNumericalOptimizer(char const * name);
+    void THEA_ICALL destroyNumericalOptimizer(INumericalOptimizer * optimizer);
 
     /** Destroy all numerical optimizers created with this factory. */
     void destroyAllNumericalOptimizers();
 
   private:
-    typedef Set<NumericalOptimizer *> NumericalOptimizerSet;  ///< Set of numerical optimizers.
+    typedef Set<INumericalOptimizer *> NumericalOptimizerSet;  ///< Set of numerical optimizers.
 
     NumericalOptimizerSet optimizers;  ///< All numerical optimizers created by this factory.
 };

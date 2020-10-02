@@ -28,11 +28,11 @@ namespace MeshFeatures {
 namespace Global {
 
 /** Compute the histogram of distances between pairs of points on the shape. */
-template < typename ExternalSampleKDTreeT = KDTreeN<Vector3, 3> >
+template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
 class DistanceHistogram
 {
   public:
-    typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
+    typedef ExternalSampleKdTreeT ExternalSampleKdTree;  ///< A precomputed kd-tree on mesh samples.
 
   private:
     static intx const DEFAULT_NUM_SAMPLES = 5000;  ///< Default number of points to initially sample from the shape.
@@ -76,7 +76,7 @@ class DistanceHistogram
      * @param normalization_scale The scale of the shape, used to define the size of histogram bins if the latter is not
      *   explicitly specified when calling compute(). If <= 0, the bounding sphere diameter will be used.
      */
-    DistanceHistogram(ExternalSampleKDTree const * sample_kdtree, Real normalization_scale = -1)
+    DistanceHistogram(ExternalSampleKdTree const * sample_kdtree, Real normalization_scale = -1)
     : ldh(sample_kdtree, normalization_scale)
     {}
 
@@ -139,7 +139,7 @@ class DistanceHistogram
     }
 
   private:
-    Local::LocalDistanceHistogram<ExternalSampleKDTree> ldh;  ///< Used to compute histograms from a single query point.
+    Local::LocalDistanceHistogram<ExternalSampleKdTree> ldh;  ///< Used to compute histograms from a single query point.
 
 }; // class DistanceHistogram
 

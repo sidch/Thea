@@ -19,7 +19,7 @@
 #include "../Array.hpp"
 #include "../MatVec.hpp"
 #include "../SparseMatVec.hpp"
-#include "LinearSolver.hpp"
+#include "ILinearSolver.hpp"
 #include "NNLS/nnls.h"
 #include <Eigen/QR>
 #include <Eigen/SVD>
@@ -31,10 +31,10 @@ namespace Algorithms {
 namespace StdLinearSolverInternal { class StdLinearSolverImpl; }
 
 /**
- * Solve dense and sparse linear systems of the form Ax = b for x. This class implements the LinearSolver interface to provide a
- * variety of built-in algorithms. Other solvers may be provided by plugins implementing the LinearSolver interface.
+ * Solve dense and sparse linear systems of the form Ax = b for x. This class implements the ILinearSolver interface to provide a
+ * variety of built-in algorithms. Other solvers may be provided by plugins implementing the ILinearSolver interface.
  */
-class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
+class THEA_API StdLinearSolver : public ILinearSolver, public virtual NamedObject
 {
   public:
     THEA_DECL_SMART_POINTERS(StdLinearSolver)
@@ -136,17 +136,17 @@ class THEA_API StdLinearSolver : public LinearSolver, public virtual NamedObject
     void setMaxIterations(intx max_iters_);
 
     /** Solve the linear system Ax = b for a dense double-precision matrix A. */
-    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, AbstractOptions const * options = nullptr);
+    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, IOptions const * options = nullptr);
 
     /** Solve the linear system Ax = b for a sparse double-precision matrix A. */
-    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, AbstractOptions const * options = nullptr);
+    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, IOptions const * options = nullptr);
 
-    // Functions from LinearSolver
-    int8 solve(AbstractMatrix<float64> const & a, float64 const * b, AbstractOptions const * options = nullptr);
-    int64 dims() const;
-    int8 hasSolution() const;
-    float64 const * getSolution() const;
-    int8 getSquaredError(float64 & err) const;
+    // Functions from ILinearSolver
+    int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options = nullptr);
+    int64 THEA_ICALL dims() const;
+    int8 THEA_ICALL hasSolution() const;
+    float64 const * THEA_ICALL getSolution() const;
+    int8 THEA_ICALL getSquaredError(float64 * err) const;
 
   private:
     StdLinearSolverInternal::StdLinearSolverImpl * impl;  ///< Contains base function implementations using PIMPL idiom.

@@ -13,16 +13,16 @@
 //============================================================================
 
 #include "OPTPPFunction.hpp"
-#include "../../Algorithms/AnalyticD1ScalarFunction.hpp"
-#include "../../Algorithms/AnalyticD2ScalarFunction.hpp"
-#include "../../AddressableMatrix.hpp"
+#include "../../Algorithms/IAnalyticD1ScalarFunction.hpp"
+#include "../../Algorithms/IAnalyticD2ScalarFunction.hpp"
+#include "../../IAddressableMatrix.hpp"
 #include <NLF.h>
 #include <Opt.h>
 
 namespace Thea {
 namespace Algorithms {
 
-class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public AddressableMatrix<NEWMAT::Real>
+class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public virtual IAddressableMatrix<NEWMAT::Real>
 {
   public:
     OPTPPSymMatWrapper(NEWMAT::SymmetricMatrix * m_) : m(m_) {}
@@ -40,8 +40,6 @@ class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public AddressableMatrix<NEWMAT:
 
     void set(intx row, intx col, NEWMAT::Real const & value) { m->element((int)row, (int)col) = value; }
 
-    void fill(NEWMAT::Real const & value) { *m = value; }
-
   private:
     NEWMAT::SymmetricMatrix * m;
 
@@ -50,7 +48,7 @@ class THEA_OPTPP_DLL_LOCAL OPTPPSymMatWrapper : public AddressableMatrix<NEWMAT:
 void
 nlf0(int ndim, NEWMAT::ColumnVector const & x, OPTPP::real & fx, int & result, void * data)
 {
-  ScalarFunction const * func = static_cast<ScalarFunction *>(data);
+  IScalarFunction const * func = static_cast<IScalarFunction *>(data);
   fx = static_cast<OPTPP::real>(func->valueAt(x.data()));
   result = OPTPP::NLPFunction;
 }
@@ -65,8 +63,8 @@ nlf1(int mode, int ndim, NEWMAT::ColumnVector const & x, OPTPP::real & fx, NEWMA
 
   if (mode & OPTPP::NLPGradient)
   {
-    ScalarFunction const * func = static_cast<ScalarFunction *>(data);
-    AnalyticD1ScalarFunction const * func1 = dynamic_cast<AnalyticD1ScalarFunction const *>(func);
+    IScalarFunction const * func = static_cast<IScalarFunction *>(data);
+    IAnalyticD1ScalarFunction const * func1 = dynamic_cast<IAnalyticD1ScalarFunction const *>(func);
     alwaysAssertM(func1, "OPTPPNumericalOptimizer: Function does not have analytical first derivative");
 
     gx.ReSize(ndim);
@@ -86,8 +84,8 @@ nlf2(int mode, int ndim, NEWMAT::ColumnVector const & x, OPTPP::real & fx, NEWMA
 
   if (mode & OPTPP::NLPHessian)
   {
-    ScalarFunction const * func = static_cast<ScalarFunction *>(data);
-    AnalyticD2ScalarFunction const * func2 = dynamic_cast<AnalyticD2ScalarFunction const *>(func);
+    IScalarFunction const * func = static_cast<IScalarFunction *>(data);
+    IAnalyticD2ScalarFunction const * func2 = dynamic_cast<IAnalyticD2ScalarFunction const *>(func);
     alwaysAssertM(func2, "OPTPPNumericalOptimizer: Function does not have analytical second derivative");
 
     Hx.ReSize(ndim);
@@ -104,13 +102,13 @@ nlfInit(int ndim, NEWMAT::ColumnVector & x)
 }
 
 OPTPP::NLPBase *
-toOPTPPFunction(ScalarFunction const & f, double const * init_pt)
+toOPTPPFunction(IScalarFunction const & f, double const * init_pt)
 {
   // Ignore init_pt for now, since I can't figure out how to bind it to the init function.
 
-  if (dynamic_cast<AnalyticD2ScalarFunction const *>(&f))
+  if (dynamic_cast<IAnalyticD2ScalarFunction const *>(&f))
     return new OPTPP::NLF2(f.dims(), nlf2, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
-  else if (dynamic_cast<AnalyticD1ScalarFunction const *>(&f))
+  else if (dynamic_cast<IAnalyticD1ScalarFunction const *>(&f))
     return new OPTPP::NLF1(f.dims(), nlf1, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));
   else
     return new OPTPP::NLF0(f.dims(), nlf0, nlfInit, const_cast<void *>(static_cast<void const *>(&f)));

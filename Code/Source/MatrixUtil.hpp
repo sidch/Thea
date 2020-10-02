@@ -47,23 +47,23 @@ isSquare(MatrixT const & m)
 /** Get the elements of a matrix in row-major order. */
 template <typename Derived, typename OutT>
 void
-getElementsRowMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
+getElementsRowMajor(Eigen::MatrixBase<Derived> const & m, OutT * buf)
 {
   alwaysAssertM(buf, "Math::getElementsRowMajor: Output buffer should be non-null");
 
   Eigen::Map< MatrixX<OutT, MatrixLayout::ROW_MAJOR> > bm(buf, m.rows(), m.cols());
-  bm = m;
+  bm = m.template cast<OutT>();
 }
 
 /** Get the elements of a matrix in column-major order. */
 template <typename Derived, typename OutT>
 void
-getElementsColumnMajor(Eigen::DenseBase<Derived> const & m, OutT * buf)
+getElementsColumnMajor(Eigen::MatrixBase<Derived> const & m, OutT * buf)
 {
   alwaysAssertM(buf, "Math::getElementsColumnMajor: Output buffer should be non-null");
 
   Eigen::Map< MatrixX<OutT, MatrixLayout::COLUMN_MAJOR> > bm(buf, m.rows(), m.cols());
-  bm = m;
+  bm = m.template cast<OutT>();
 }
 
 /** Get the coordinate of a vector with the least value. The behavior is undefined if \a v is not a (row or column) vector. */

@@ -18,7 +18,7 @@
 #include "../../Common.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../BestFitSphere3.hpp"
-#include "../KDTreeN.hpp"
+#include "../KdTreeN.hpp"
 #include "../MeshSampler.hpp"
 #include "../PointCollectorN.hpp"
 #include "../PointTraitsN.hpp"
@@ -78,14 +78,14 @@ template <typename T> struct NormalTraits<T *> { static Vector3 getNormal(T cons
 template <> struct NormalTraits<Vector3> { static Vector3 getNormal(Vector3 const & t) { return Vector3::Zero(); } };
 
 /** A representation of a point-sampled surface, used for computing features. */
-template <typename ExternalSampleKDTreeT>
+template <typename ExternalSampleKdTreeT>
 class SampledSurface
 {
   public:
-    typedef ExternalSampleKDTreeT ExternalSampleKDTree;  ///< A precomputed kd-tree on mesh samples.
+    typedef ExternalSampleKdTreeT ExternalSampleKdTree;  ///< A precomputed kd-tree on mesh samples.
 
   protected:
-    typedef KDTreeN<SurfaceSample, 3> InternalSampleKDTree;  ///< A kd-tree on mesh samples.
+    typedef KdTreeN<SurfaceSample, 3> InternalSampleKdTree;  ///< A kd-tree on mesh samples.
 
   private:
     /** Get the smoothed normal at a point on a triangle with vertex normals. */
@@ -209,14 +209,14 @@ class SampledSurface
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    SampledSurface(ExternalSampleKDTree const * sample_kdtree_, Real normalization_scale = -1)
+    SampledSurface(ExternalSampleKdTree const * sample_kdtree_, Real normalization_scale = -1)
     : sample_kdtree(nullptr), precomp_kdtree(sample_kdtree_), owns_sample_graph(true), sample_graph(nullptr),
       scale(normalization_scale)
     {
       alwaysAssertM(precomp_kdtree, "SampledSurface: Precomputed KD-tree cannot be null");
 
       // Cache the external samples for quick access to positions and normals
-      typedef typename ExternalSampleKDTree::Element ExternalSample;
+      typedef typename ExternalSampleKdTree::Element ExternalSample;
       ExternalSample const * ext_samples = precomp_kdtree->getElements();
       intx num_samples = precomp_kdtree->numElements();
 
@@ -268,10 +268,10 @@ class SampledSurface
     }
 
     /** Get a non-const reference to the kd-tree on internally generated samples, or null if no such samples exist. */
-    InternalSampleKDTree * getMutableInternalKDTree() const
+    InternalSampleKdTree * getMutableInternalKdTree() const
     {
       if (!sample_kdtree && !samples.empty())
-        sample_kdtree = new InternalSampleKDTree(samples.begin(), samples.end());
+        sample_kdtree = new InternalSampleKdTree(samples.begin(), samples.end());
 
       return sample_kdtree;
     }
@@ -280,13 +280,13 @@ class SampledSurface
      * Get the kd-tree on internally generated samples, or null if no such samples exist. <b>Use with caution</b> -- you should
      * never actually change the tree even if you have a non-const handle to it!
      */
-    InternalSampleKDTree const * getInternalKDTree() const
+    InternalSampleKdTree const * getInternalKdTree() const
     {
-      return const_cast<SampledSurface *>(this)->getMutableInternalKDTree();
+      return const_cast<SampledSurface *>(this)->getMutableInternalKdTree();
     }
 
     /** Check if the shape has a kd-tree on externally generated samples. */
-    bool hasExternalKDTree() const
+    bool hasExternalKdTree() const
     {
       return (bool)precomp_kdtree;
     }
@@ -295,13 +295,13 @@ class SampledSurface
      * Get a non-const reference to the kd-tree on externally generated samples, or null if no such samples exist. <b>Use with
      * caution</b> -- you should never actually change the tree even if you have a non-const handle to it!
      */
-    ExternalSampleKDTree * getMutableExternalKDTree() const
+    ExternalSampleKdTree * getMutableExternalKdTree() const
     {
-      return const_cast<ExternalSampleKDTree *>(precomp_kdtree);
+      return const_cast<ExternalSampleKdTree *>(precomp_kdtree);
     }
 
     /** Get the kd-tree on externally generated samples, or null if no such kd-tree exists. */
-    ExternalSampleKDTree const * getExternalKDTree() const
+    ExternalSampleKdTree const * getExternalKdTree() const
     {
       return precomp_kdtree;
     }
@@ -365,8 +365,8 @@ class SampledSurface
 
   private:
     Array<SurfaceSample> samples;  ///< Set of internally-generated surface samples.
-    mutable InternalSampleKDTree * sample_kdtree;  ///< kd-tree on surface samples.
-    ExternalSampleKDTree const * precomp_kdtree;  ///< Precomputed kd-tree on surface samples.
+    mutable InternalSampleKdTree * sample_kdtree;  ///< kd-tree on surface samples.
+    ExternalSampleKdTree const * precomp_kdtree;  ///< Precomputed kd-tree on surface samples.
     bool owns_sample_graph;  ///< Was the sample graph precomputed?
     mutable SampleGraph * sample_graph;  ///< Precomputed or internally computed graph on surface samples.
     Real scale;  ///< The normalization length.

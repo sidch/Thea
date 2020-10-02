@@ -3,7 +3,7 @@
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/Clustering.hpp"
 #include "../../Algorithms/ConvexHull3.hpp"
-#include "../../Algorithms/MeshKDTree.hpp"
+#include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Colors.hpp"
@@ -46,7 +46,7 @@ main(int argc, char * argv[])
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKDTree<Mesh> KDTree;
+typedef MeshKdTree<Mesh> KdTree;
 typedef Vector<4, double> ClusterablePoint;
 
 ClusterablePoint
@@ -64,8 +64,8 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
 }
 
 int countSDFModes(Array<Real> const & sdf_values);
-ColorRGB const & getPaletteColor(int i);
-int combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KDTree const & kdtree,
+ColorRgb const & getPaletteColor(int i);
+int combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KdTree const & kdtree,
                                Array<int> & labels, double concavity_threshold, double score_threshold);
 
 int
@@ -100,7 +100,7 @@ segmentSDF(int argc, char * argv[])
   mg.load(inpath);
 
   // Initialize kdtree
-  KDTree kdtree;
+  KdTree kdtree;
   kdtree.add(mg);
   kdtree.init();
 
@@ -114,7 +114,7 @@ segmentSDF(int argc, char * argv[])
   Array<Vector3> positions, normals;
   for (intx i = 0; i < kdtree.numElements(); ++i)
   {
-    KDTree::Element const & elem = kdtree.getElements()[(size_t)i];
+    KdTree::Element const & elem = kdtree.getElements()[(size_t)i];
     double num_samples = density * elem.getArea();
     double rem = num_samples;
     for (intx j = 1; j < num_samples; ++j)
@@ -186,9 +186,9 @@ segmentSDF(int argc, char * argv[])
   for (size_t i = 0; i < positions.size(); ++i)
   {
 #ifdef DEBUG_PTS
-    ColorRGB pseudo_n = getPaletteColor(labels[i]);
+    ColorRgb pseudo_n = getPaletteColor(labels[i]);
     // Real ns = sdf_values[i] / sdf.getNormalizationScale();
-    // ColorRGB pseudo_n(ns, sqrt(1 - ns * ns), 0);
+    // ColorRgb pseudo_n(ns, sqrt(1 - ns * ns), 0);
     out << positions[i][0] << ' ' << positions[i][1] << ' ' << positions[i][2] << ' '
         << pseudo_n.r()    << ' ' << pseudo_n.g()    << ' ' << pseudo_n.b() << ' ' << sdf_values[i] << ' ' << labels[i] << endl;
 #else
@@ -203,33 +203,33 @@ segmentSDF(int argc, char * argv[])
 }
 
 static int const NUM_PALETTE_COLORS = 24;
-ColorRGB COLOR_PALETTE[NUM_PALETTE_COLORS] = {
-  ColorRGB::fromARGB(0x298edb),
-  ColorRGB::fromARGB(0x982411),
-  ColorRGB::fromARGB(0x6d4e25),
-  ColorRGB::fromARGB(0x1b5043),
-  ColorRGB::fromARGB(0x6e7662),
-  ColorRGB::fromARGB(0xa08b00),
-  ColorRGB::fromARGB(0x58427b),
-  ColorRGB::fromARGB(0x1d2f5b),
-  ColorRGB::fromARGB(0xac5e34),
-  ColorRGB::fromARGB(0x804055),
-  ColorRGB::fromARGB(0x6d7a00),
-  ColorRGB::fromARGB(0x572e2c),
+ColorRgb COLOR_PALETTE[NUM_PALETTE_COLORS] = {
+  ColorRgb::fromARGB(0x298edb),
+  ColorRgb::fromARGB(0x982411),
+  ColorRgb::fromARGB(0x6d4e25),
+  ColorRgb::fromARGB(0x1b5043),
+  ColorRgb::fromARGB(0x6e7662),
+  ColorRgb::fromARGB(0xa08b00),
+  ColorRgb::fromARGB(0x58427b),
+  ColorRgb::fromARGB(0x1d2f5b),
+  ColorRgb::fromARGB(0xac5e34),
+  ColorRgb::fromARGB(0x804055),
+  ColorRgb::fromARGB(0x6d7a00),
+  ColorRgb::fromARGB(0x572e2c),
 
   // Invert each color above
-  ColorRGB::fromARGB(~0x298edb),
-  ColorRGB::fromARGB(~0x982411),
-  ColorRGB::fromARGB(~0x6d4e25),
-  ColorRGB::fromARGB(~0x1b5043),
-  ColorRGB::fromARGB(~0x6e7662),
-  ColorRGB::fromARGB(~0xa08b00),
-  ColorRGB::fromARGB(~0x58427b),
-  ColorRGB::fromARGB(~0x1d2f5b),
-  ColorRGB::fromARGB(~0xac5e34),
-  ColorRGB::fromARGB(~0x804055),
-  ColorRGB::fromARGB(~0x6d7a00),
-  ColorRGB::fromARGB(~0x572e2c)
+  ColorRgb::fromARGB(~0x298edb),
+  ColorRgb::fromARGB(~0x982411),
+  ColorRgb::fromARGB(~0x6d4e25),
+  ColorRgb::fromARGB(~0x1b5043),
+  ColorRgb::fromARGB(~0x6e7662),
+  ColorRgb::fromARGB(~0xa08b00),
+  ColorRgb::fromARGB(~0x58427b),
+  ColorRgb::fromARGB(~0x1d2f5b),
+  ColorRgb::fromARGB(~0xac5e34),
+  ColorRgb::fromARGB(~0x804055),
+  ColorRgb::fromARGB(~0x6d7a00),
+  ColorRgb::fromARGB(~0x572e2c)
 };
 
 int
@@ -238,7 +238,7 @@ numPaletteColors()
   return NUM_PALETTE_COLORS;
 }
 
-ColorRGB const &
+ColorRgb const &
 getPaletteColor(int i)
 {
   return COLOR_PALETTE[i % numPaletteColors()];
@@ -466,14 +466,14 @@ struct SampleCluster
   int label;
   Array<Vector3 const *> positions;
   Array<Vector3 const *> normals;
-  KDTreeN<Vector3 const *, 3> * kdtree;
+  KdTreeN<Vector3 const *, 3> * kdtree;
   double concavity;
   SampleClusterConnectivityGraph::VertexIterator conn_vertex;
   bool changed;
 
-  SampleCluster() : kdtree(new KDTreeN<Vector3 const *, 3>), changed(false) {}
+  SampleCluster() : kdtree(new KdTreeN<Vector3 const *, 3>), changed(false) {}
 
-  void updateKDTree()
+  void updateKdTree()
   {
     if (changed)
     {
@@ -487,7 +487,7 @@ typedef UnorderedMap<int, SampleCluster> SampleClusterMap;
 
 double
 computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *> const & normals,
-                 KDTree const & kdtree)
+                 KdTree const & kdtree)
 {
   Real skin_width = 0.01 * kdtree.getBounds().getExtent().norm();
   THEA_CONSOLE << "Skin width = " << skin_width;
@@ -500,7 +500,7 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
   Mesh hull_mesh;
   hull.computeApprox(hull_mesh);
 
-  KDTree hull_kdtree;
+  KdTree hull_kdtree;
   hull_kdtree.add(hull_mesh);
   hull_kdtree.init();
 
@@ -532,7 +532,7 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
 }
 
 int
-combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KDTree const & kdtree,
+combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KdTree const & kdtree,
                            Array<int> & labels, double concavity_threshold, double score_threshold)
 {
   if (concavity_threshold < 0) concavity_threshold  =  0.015;
@@ -560,7 +560,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
 
     for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)
     {
-      ci->second.updateKDTree();
+      ci->second.updateKdTree();
       ci->second.conn_vertex = cluster_conn_graph.addVertex(&ci->second);
 
       for (SampleClusterMap::iterator cj = sample_clusters.begin(); cj != ci; ++cj)

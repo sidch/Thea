@@ -23,9 +23,9 @@
 #include "../../Colors.hpp"
 #include "../../Image.hpp"
 #include "../../Ray3.hpp"
-#include "../../Graphics/RenderSystem.hpp"
-#include "../../Graphics/Shader.hpp"
-#include "../../Graphics/Texture.hpp"
+#include "../../Graphics/IRenderSystem.hpp"
+#include "../../Graphics/IShader.hpp"
+#include "../../Graphics/ITexture.hpp"
 #include <wx/datetime.h>
 #include <wx/dcclient.h>
 #include <wx/image.h>
@@ -37,7 +37,7 @@ namespace Browse3D {
 
 #if NEW_WXGLCANVAS
 wxGLAttributes
-getGLAttributes()
+getGlAttributes()
 {
   wxGLAttributes attribs;
   attribs.PlatformDefaults().RGBA().Depth(16).SampleBuffers(1).Samplers(4).DoubleBuffer().EndList();
@@ -45,7 +45,7 @@ getGLAttributes()
 }
 #else
 int const *
-getGLAttributes()
+getGlAttributes()
 {
   static int attribs[32];
   int n = 0;
@@ -65,14 +65,14 @@ getGLAttributes()
 
 ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
 #if NEW_WXGLCANVAS
-: wxGLCanvas(parent, getGLAttributes()),
+: wxGLCanvas(parent, getGlAttributes()),
 #else
-: wxGLCanvas(parent, wxID_ANY, getGLAttributes()),
+: wxGLCanvas(parent, wxID_ANY, getGlAttributes()),
 #endif
   model(model_),
   camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
-  render_opts(RenderOptions::defaults()),
+  render_opts(*RenderOptions::defaults()),
   mode(Mode::DEFAULT),
   view_edit_mode(ViewEditMode::DEFAULT),
   background_texture(nullptr),
@@ -86,7 +86,7 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
 
   context = new wxGLContext(this);
 
-  static ColorRGBA const DEFAULT_EDGE_COLOR(0.15f, 0.25f, 0.5f, 1.0f);
+  static ColorRgba const DEFAULT_EDGE_COLOR(0.15f, 0.25f, 0.5f, 1.0f);
   render_opts.setSendNormals(true)
              .setSendColors(false)
              .setSendTexCoords(false)
@@ -308,25 +308,25 @@ ModelDisplay::paintGL(wxPaintEvent & event)
   wxSize size = GetSize();
   glViewport(0, 0, size.GetWidth(), size.GetHeight());
 
-  RenderSystem & rs = *app().getRenderSystem();
+  IRenderSystem & rs = *app().getRenderSystem();
 
-  rs.setColorClearValue(app().options().bg_color);
+  rs.setClearColor(app().options().bg_color.data());
   rs.clear();
 
   rs.setColorWrite(true, true, true, true);
   rs.setDepthWrite(true);
-  rs.setDepthTest(RenderSystem::DepthTest::LESS);
-  rs.setCamera(camera);
+  rs.setDepthTest(IRenderSystem::DepthTest::LESS);
+  camera.makeCurrent(&rs);
 
   if (!app().options().bg_plain)
     drawBackground(rs);
 
-  model->draw(rs, render_opts);
+  model->draw(&rs, &render_opts);
 
   intx num_overlays = app().getMainWindow()->numOverlays();
   Model const * const * overlays = app().getMainWindow()->getOverlays();
   for (intx i = 0; i < num_overlays; ++i)
-    overlays[i]->draw(rs, render_opts);
+    overlays[i]->draw(&rs, &render_opts);
 
   if (!app().options().no_axes)
     drawAxes(rs);
@@ -342,7 +342,7 @@ ModelDisplay::resize(wxSizeEvent & event)
 }
 
 void
-ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
+ModelDisplay::drawBackground(Graphics::IRenderSystem & rs)
 {
   // THEA_CONSOLE << "drawBackground";
 
@@ -354,11 +354,11 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
     Image bg_img;
     if (loadImage(bg_img, Application::getResourcePath("Images/" + BG_IMAGE)))
     {
-      Texture::Options opts = Texture::Options::defaults();
-      opts.interpolateMode = Texture::InterpolateMode::BILINEAR_NO_MIPMAP;
+      TextureOptions opts;
+      opts.setInterpolateMode(ITextureOptions::InterpolateMode::BILINEAR_NO_MIPMAP);
 
-      background_texture = rs.createTexture("Background texture", bg_img, Texture::Format::RGBA8(), Texture::Dimension::DIM_2D,
-                                            opts);
+      background_texture = rs.createTexture("Background texture", &bg_img, TextureFormat::RGBA8(), ITexture::Dimension::DIM_2D,
+                                            &opts);
     }
 
     if (background_texture)
@@ -375,10 +375,11 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
   {
     background_shader = rs.createShader("Background shader");
 
-    background_shader->attachModuleFromFile(Shader::ModuleType::VERTEX,
-                                            Application::getResourcePath("Materials/FlatTextureVert.glsl").c_str());
-    background_shader->attachModuleFromFile(Shader::ModuleType::FRAGMENT,
-                                            Application::getResourcePath("Materials/FlatTextureFrag.glsl").c_str());
+    if (!background_shader->attachModuleFromFile(IShader::ModuleType::VERTEX,
+                                                 Application::getResourcePath("Materials/FlatTextureVert.glsl").c_str())
+     || !background_shader->attachModuleFromFile(IShader::ModuleType::FRAGMENT,
+                                                 Application::getResourcePath("Materials/FlatTextureFrag.glsl").c_str()))
+      return;
 
     background_shader->setUniform("texture", background_texture);
   }
@@ -386,9 +387,9 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
   rs.pushShader();
     rs.setShader(background_shader);
 
-    // FIXME: For some strange reason calling glActiveTextureARB (as done by RenderSystem::sendTexCoord) within the
+    // FIXME: For some strange reason calling glActiveTextureARB (as done by IRenderSystem::sendTexCoord) within the
     // glBegin/glEnd block below triggers a GL invalid operation error. Hence we'll just use the plain vanilla GL calls instead
-    // of the RenderSystem wrappers. (Update: this might have been fixed by the recent fix to GLTexture.)
+    // of the IRenderSystem wrappers. (Update: this might have been fixed by the recent fix to GlTexture.)
     glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
       glDepthFunc(GL_ALWAYS);
       glDepthMask(GL_FALSE);
@@ -412,7 +413,7 @@ ModelDisplay::drawBackground(Graphics::RenderSystem & rs)
 }
 
 void
-ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
+ModelDisplay::drawAxes(Graphics::IRenderSystem & rs)
 {
   // THEA_CONSOLE << "drawAxes";
 
@@ -437,32 +438,32 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 
   rs.pushColorFlags();
   rs.pushDepthFlags();
-  rs.setDepthTest(RenderSystem::DepthTest::ALWAYS_PASS);
+  rs.setDepthTest(IRenderSystem::DepthTest::ALWAYS_PASS);
 
   rs.pushShader();
   rs.setShader(nullptr);
 
-    rs.setMatrixMode(RenderSystem::MatrixMode::PROJECTION); rs.pushMatrix(); rs.setIdentityMatrix();
-    rs.setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); rs.pushMatrix(); rs.setIdentityMatrix();
+    rs.setMatrixMode(IRenderSystem::MatrixMode::PROJECTION); rs.pushMatrix(); rs.setIdentityMatrix();
+    rs.setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); rs.pushMatrix(); rs.setIdentityMatrix();
 
-      rs.beginPrimitive(RenderSystem::Primitive::LINES);
+      rs.beginPrimitive(IRenderSystem::Primitive::LINES);
 
-        rs.setColor(ColorRGB::red());
-        rs.sendVertex(arrow_origin);
-        rs.sendVertex(x_arrow_tip);
+        rs.setColor(ColorRgba::red().data());
+        rs.sendVertex(arrow_origin[0], arrow_origin[1]);
+        rs.sendVertex(x_arrow_tip[0],  x_arrow_tip[1]);
 
-        rs.setColor(ColorRGB::green());
-        rs.sendVertex(arrow_origin);
-        rs.sendVertex(y_arrow_tip);
+        rs.setColor(ColorRgba::green().data());
+        rs.sendVertex(arrow_origin[0], arrow_origin[1]);
+        rs.sendVertex(y_arrow_tip[0],  y_arrow_tip[1]);
 
-        rs.setColor(ColorRGB::blue());
-        rs.sendVertex(arrow_origin);
-        rs.sendVertex(z_arrow_tip);
+        rs.setColor(ColorRgba::blue().data());
+        rs.sendVertex(arrow_origin[0], arrow_origin[1]);
+        rs.sendVertex(z_arrow_tip[0],  z_arrow_tip[1]);
 
       rs.endPrimitive();
 
-    rs.setMatrixMode(RenderSystem::MatrixMode::MODELVIEW); rs.popMatrix();
-    rs.setMatrixMode(RenderSystem::MatrixMode::PROJECTION); rs.popMatrix();
+    rs.setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); rs.popMatrix();
+    rs.setMatrixMode(IRenderSystem::MatrixMode::PROJECTION); rs.popMatrix();
 
 // #define DRAW_AXIS_LABELS
 #ifdef DRAW_AXIS_LABELS
@@ -493,13 +494,13 @@ ModelDisplay::drawAxes(Graphics::RenderSystem & rs)
 //   wxPoint z_text_bottom_left((int)Math::round((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
 //                             (int)Math::round((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
 //
-//   rs.setColor(ColorRGB::red());
+//   rs.setColor(ColorRgb::red());
 //   renderText(x_text_bottom_left.x(), x_text_bottom_left.y(), "X", label_font);
 //
-//   rs.setColor(ColorRGB::green());
+//   rs.setColor(ColorRgb::green());
 //   renderText(y_text_bottom_left.x(), y_text_bottom_left.y(), "Y", label_font);
 //
-//   rs.setColor(ColorRGB::blue());
+//   rs.setColor(ColorRgb::blue());
 //   renderText(z_text_bottom_left.x(), z_text_bottom_left.y(), "Z", label_font);
 
 #ifndef THEA_WINDOWS

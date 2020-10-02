@@ -23,12 +23,12 @@
 
 namespace Thea {
 
-class Plugin;
+class IPlugin;
 
 namespace Graphics {
 
-class RenderSystem;
-class RenderSystemFactory;
+class IRenderSystem;
+class IRenderSystemFactory;
 
 } // namespace Graphics
 
@@ -64,9 +64,9 @@ class App : public wxApp
       bool show_normals;                                    ///< Draw arrows for normals?
       bool show_graph;                                      ///< Show point adjacency graph, if available?
 
-      ColorRGB color;                                       ///< Model color.
+      ColorRgba color;                                      ///< Model color.
       bool bg_plain;                                        ///< Draw the background in a single plain color?
-      ColorRGB bg_color;                                    ///< Background color.
+      ColorRgba bg_color;                                   ///< Background color.
       bool two_sided;                                       ///< Use two-sided lighting?
       bool flat;                                            ///< Flat-shade all meshes?
       Vector4 material;                                     ///< Surface material coefficients (kd, ka, ks, ksp).
@@ -94,7 +94,7 @@ class App : public wxApp
     MainWindow * getMainWindow() { return main_window; }
 
     /** Get a handle to the application's rendersystem. */
-    Graphics::RenderSystem * getRenderSystem() { return render_system; }
+    Graphics::IRenderSystem * getRenderSystem() { return render_system; }
 
     //=========================================================================================================================
     // GUI callbacks etc
@@ -136,9 +136,9 @@ class App : public wxApp
     Options opts;
     MainWindow * main_window;
     AtomicInt32 has_render_system;
-    Plugin * gl_plugin;
-    Graphics::RenderSystemFactory * render_system_factory;
-    Graphics::RenderSystem * render_system;
+    IPlugin * gl_plugin;
+    Graphics::IRenderSystemFactory * render_system_factory;
+    Graphics::IRenderSystem * render_system;
 
 }; // class App
 

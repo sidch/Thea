@@ -69,7 +69,7 @@ class THEA_API ImplicitSurfaceMesher
 #ifdef THEA_ENABLE_CGAL
 
     /** Evaluates function as required by CGAL implicit surface wrapper. */
-    template <typename FunctorT> struct CGALEval
+    template <typename FunctorT> struct CgalEval
     {
       typedef CGAL::Surface_mesh_default_triangulation_3 Tr;
       typedef Tr::Geom_traits GT;
@@ -79,12 +79,12 @@ class THEA_API ImplicitSurfaceMesher
       FunctorT * func;
 
       /** Constructor. */
-      CGALEval(FunctorT * func_) : func(func_) {}
+      CgalEval(FunctorT * func_) : func(func_) {}
 
       /** Evaluate the function. */
       FT operator()(Point_3 const & p) const { return static_cast<FT>((*func)(Vector3(p.x(), p.y(), p.z()))); }
 
-    }; // CGALEval
+    }; // CgalEval
 
     typedef CGAL::Surface_mesh_default_triangulation_3  Tr;
     typedef CGAL::Complex_2_in_triangulation_3<Tr>      C2t3;
@@ -215,11 +215,11 @@ class THEA_API ImplicitSurfaceMesher
       typedef GT::Sphere_3                                        Sphere_3;
       typedef GT::Point_3                                         Point_3;
       typedef GT::FT                                              FT;
-      typedef CGAL::Implicit_surface_3< GT, CGALEval<FunctorT> >  Surface_3;
+      typedef CGAL::Implicit_surface_3< GT, CgalEval<FunctorT> >  Surface_3;
 
       Tr tr;                                     // 3D Delaunay triangulation
       C2t3 c2t3(tr);                             // 2D complex in 3D Delaunay triangulation
-      CGALEval<FunctorT> func(surface_functor);  // CGAL-style wrapper to evaluate the function
+      CgalEval<FunctorT> func(surface_functor);  // CGAL-style wrapper to evaluate the function
 
       // Define the surface
       Vector3 const & center = bounding_ball.getCenter();

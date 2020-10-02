@@ -21,63 +21,63 @@
 
 namespace Thea {
 
-/** Abstract interface for key-value options, suitable for passing across DLL boundaries. */
-class THEA_API AbstractOptions
+/** Interface for key-value options, suitable for passing across DLL boundaries. */
+class THEA_API IOptions
 {
   public:
     /** Destructor. */
-    virtual ~AbstractOptions() {}
+    virtual ~IOptions() {}
 
     /** Check if an option has been set. */
-    virtual int8 hasOption(char const * option_name) const = 0;
+    virtual int8 THEA_ICALL hasOption(char const * option_name) const = 0;
 
     /** Set the value of an integer option. */
-    virtual void setInteger(char const * option_name, int64 value) = 0;
+    virtual void THEA_ICALL setInteger(char const * option_name, int64 value) = 0;
 
     /** Set the value of a floating-point option. */
-    virtual void setFloat(char const * option_name, float64 value) = 0;
+    virtual void THEA_ICALL setFloat(char const * option_name, float64 value) = 0;
 
     /** Set the value of a string option. */
-    virtual void setString(char const * option_name, char const * value) = 0;
+    virtual void THEA_ICALL setString(char const * option_name, char const * value) = 0;
 
     /**
      * Get the value of an integer option. If the option has not been set, the default value specified by the last parameter is
      * returned.
      */
-    virtual int64 getInteger(char const * option_name, int64 default_value) const = 0;
+    virtual int64 THEA_ICALL getInteger(char const * option_name, int64 default_value) const = 0;
 
     /**
      * Get the value of a floating-point option. If the option has not been set, the default value specified by the last
      * parameter is returned.
      */
-    virtual float64 getFloat(char const * option_name, float64 default_value) const = 0;
+    virtual float64 THEA_ICALL getFloat(char const * option_name, float64 default_value) const = 0;
 
     /**
      * Get the value of a string option. If the option has not been set, the default value specified by the last parameter is
      * returned.
      */
-    virtual char const * getString(char const * option_name, char const * default_value) const = 0;
+    virtual char const * THEA_ICALL getString(char const * option_name, char const * default_value) const = 0;
 
-}; // class AbstractOptions
+}; // class IOptions
 
 /**
  * A set of options, specified as key-value pairs. Supports a much more general set of value types than the simpler abstract
  * interface it implements.
  */
-class THEA_API Options : public AbstractOptions, private Map<std::string, boost::any>
+class THEA_API Options : public virtual IOptions, private Map<std::string, boost::any>
 {
   public:
     /** Destructor. */
     ~Options() {}
 
     // Functions from abstract interface
-    int8 hasOption(char const * option_name) const { return find(option_name) != end(); }
-    void setInteger(char const * option_name, int64 value) { set<int64>(option_name, value); }
-    void setFloat(char const * option_name, float64 value) { set<float64>(option_name, value); }
-    void setString(char const * option_name, char const * value) { set<std::string>(option_name, std::string(value)); }
-    int64 getInteger(char const * option_name, int64 default_value) const { return get<int64>(option_name, default_value); }
-    float64 getFloat(char const * option_name, float64 default_value) const { return get<float64>(option_name, default_value); }
-    char const * getString(char const * option_name, char const * default_value) const;
+    int8 THEA_ICALL hasOption(char const * option_name) const { return find(option_name) != end(); }
+    void THEA_ICALL setInteger(char const * option_name, int64 value) { set<int64>(option_name, value); }
+    void THEA_ICALL setFloat(char const * option_name, float64 value) { set<float64>(option_name, value); }
+    void THEA_ICALL setString(char const * option_name, char const * value) { set<std::string>(option_name, std::string(value)); }
+    int64 THEA_ICALL getInteger(char const * option_name, int64 default_value) const { return get<int64>(option_name, default_value); }
+    float64 THEA_ICALL getFloat(char const * option_name, float64 default_value) const { return get<float64>(option_name, default_value); }
+    char const * THEA_ICALL getString(char const * option_name, char const * default_value) const;
 
     /** Set the value of an option. */
     template <typename T> void set(char const * option_name, T const & value) { (*this)[option_name] = value; }

@@ -1,5 +1,5 @@
-#include "../Algorithms/PCA_N.hpp"
-#include "../Algorithms/SparsePCA_N.hpp"
+#include "../Algorithms/PcaN.hpp"
+#include "../Algorithms/SparsePcaN.hpp"
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../Common.hpp"
 #include "../Math.hpp"
@@ -41,7 +41,7 @@ testPCA()
 
   Vector3 axes[3], centroid;
   Real vars[3];
-  PCA_N<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
+  PcaN<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
 
   cout << "\nPrincipal axes = " << endl;
   for (intx i = 0; i < 3; ++i)
@@ -58,7 +58,7 @@ testPCA()
   // Sparse PCA
   //==========================================================================================================================
 
-  SparsePCA_N<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
+  SparsePcaN<Vector3, 3>::compute(&data[0], &data[DATA_SIZE], vars, axes, &centroid);
 
   cout << "\nSparse principal axes = " << endl;
   for (intx i = 0; i < 3; ++i)

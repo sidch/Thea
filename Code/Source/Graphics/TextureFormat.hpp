@@ -27,22 +27,20 @@
 #define __Thea_Graphics_TextureFormat_hpp__
 
 #include "../Common.hpp"
-#include "../AbstractImage.hpp"
+#include "../IImage.hpp"
+#include "../NamedObject.hpp"
 
 namespace Thea {
 namespace Graphics {
 
 /**
- * Information about common GPU texture formats. Don't construct these; use the methods provided. For most formats, the number
- * indicates the number of bits per channel and a suffix of "F" indicates floating point. This does not hold for the YUV and DXT
- * formats.
+ * Interface for accessing common GPU texture formats.
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  */
-class THEA_API TextureFormat
+class THEA_API ITextureFormat : public virtual INamedObject
 {
   public:
-
     /** Code identifying the format (enum class). */
     struct THEA_API Code
     {
@@ -187,50 +185,62 @@ class THEA_API TextureFormat
       THEA_ENUM_CLASS_BODY(BayerPattern)
     };
 
+    /** Destructor. */
+    virtual ~ITextureFormat() = 0;
+
     /**  Number of channels (1 for a depth texture). */
-    int                 numComponents;
+    virtual int32 THEA_ICALL numComponents() const = 0;
 
     /** Is the format compressed? */
-    bool                compressed;
+    virtual int8 THEA_ICALL isCompressed() const = 0;
 
-    /** Code identifying the format. */
-    Code                code;
+    /** Is this a depth texture format? */
+    virtual int8 THEA_ICALL isDepth() const = 0;
 
-    /** Color space of the format. */
-    ColorSpace          colorSpace;
+    /** True if there is no alpha channel for this texture. */
+    virtual int8 THEA_ICALL isOpaque() const = 0;
 
-    /** If this is a Bayer format, what is the pattern? */
-    BayerPattern        bayerPattern;
+    /** True if the format has floating-point channels. */
+    virtual int8 THEA_ICALL isFloatingPoint() const = 0;
 
-    /** The OpenGL format equivalent to this one, such as GL_RGB8. Zero if there is no equivalent. This is actually a GLenum. */
-    int                 openGLFormat;
+    /** Code identifying the format, as a value from the Code enum. */
+    virtual int32 THEA_ICALL code() const = 0;
 
-    /** The OpenGL base format equivalent to this one (such as GL_RGB, GL_ALPHA). Zero if there is no equivalent.  */
-    int                 openGLBaseFormat;
+    /** Color space of the format, as a value from the ColorSpace enum. */
+    virtual int32 THEA_ICALL colorSpace() const = 0;
+
+    /** If this is a Bayer format, what is the pattern? Returns a value from the BayerPattern enum. */
+    virtual int32 THEA_ICALL bayerPattern() const = 0;
 
     /** Number of bits assigned to luminance. */
-    int                 luminanceBits;
+    virtual int32 THEA_ICALL luminanceBits() const = 0;
 
-    /** Number of bits per pixel storage for alpha values; Zero for compressed textures and non-RGB. */
-    int                 alphaBits;
+    /** Number of bits per pixel for the red channel. Zero for compressed textures and non-RGB. */
+    virtual int32 THEA_ICALL redBits() const = 0;
 
-    /** Number of bits per pixel storage for red values; Zero for compressed textures and non-RGB. */
-    int                 redBits;
+    /** Number of bits per pixel for the green channel. Zero for compressed textures and non-RGB. */
+    virtual int32 THEA_ICALL greenBits() const = 0;
 
-    /** Number of bits per pixel storage for green values; Zero for compressed textures and non-RGB. */
-    int                 greenBits;
+    /** Number of bits per pixel for the blue channel. Zero for compressed textures and non-RGB. */
+    virtual int32 THEA_ICALL blueBits() const = 0;
 
-    /** Number of bits per pixel storage for blue values; Zero for compressed textures  and non-RGB. */
-    int                 blueBits;
+    /** Number of bits per pixel for the alpha channel. Zero for compressed textures and non-RGB. */
+    virtual int32 THEA_ICALL alphaBits() const = 0;
 
-    /** Number of bits per pixel */
-    int                 stencilBits;
+    /** Number of bits per pixel for stencil buffers */
+    virtual int32 THEA_ICALL stencilBits() const = 0;
 
     /** Number of depth bits (for depth textures, such as shadow maps) */
-    int                 depthBits;
+    virtual int32 THEA_ICALL depthBits() const = 0;
 
     /** Amount of CPU memory per pixel when packed into an array, discounting any end-of-row padding. */
-    int                 cpuBitsPerPixel;
+    virtual int32 THEA_ICALL cpuBitsPerPixel() const = 0;
+
+    /** The OpenGL format equivalent to this one, such as GL_RGB8. Zero if there is no equivalent. This is actually a GLenum. */
+    virtual int32 THEA_ICALL openGlFormat() const = 0;
+
+    /** The OpenGL base format equivalent to this one (such as GL_RGB, GL_ALPHA). Zero if there is no equivalent.  */
+    virtual int32 THEA_ICALL openGlBaseFormat() const = 0;
 
     /**
      * Amount of GPU memory per pixel on most graphics cards, for formats supported by OpenGL. This is only an estimate -- the
@@ -239,49 +249,91 @@ class THEA_API TextureFormat
      * This may be greater than the sum of the per-channel bits because graphics cards need to pad to the nearest 1, 2, or 4
      * bytes.
      */
-    int                 openGLBitsPerPixel;
+    virtual int32 THEA_ICALL openGlBitsPerPixel() const = 0;
 
     /** The OpenGL bytes (type) format of the data buffer used with this texture format, such as GL_UNSIGNED_BYTE. */
-    int                 openGLDataFormat;
+    virtual int32 THEA_ICALL openGlDataFormat() const = 0;
 
-    /** True if there is no alpha channel for this texture. */
-    bool                opaque;
+}; // class ITextureFormat
 
-    /** True if the format has floating-point channels. */
-    bool                floatingPoint;
+inline ITextureFormat::~ITextureFormat() {}
 
-    /** Check if this is a depth texture format. */
-    bool isDepth() const;
-
-    /** Human readable name of this format.*/
-    std::string const & name() const;
-
-    /** Get an image format given its name. Takes the same values that name() returns. */
-    static TextureFormat const * fromString(std::string const & s);
-
+/**
+ * Encapsulates information about common GPU texture formats. Don't construct these; use the static methods provided. For most
+ * formats, the number indicates the number of bits per channel and a suffix of "F" indicates floating point. This does not hold
+ * for the YUV and DXT formats.
+ *
+ * Derived from the G3D library: http://g3d.sourceforge.net
+ */
+class THEA_API TextureFormat : public virtual ITextureFormat
+{
   private:
     TextureFormat(
-      int             numComponents,
-      bool            compressed,
-      int             glFormat,
-      int             glBaseFormat,
-      int             luminanceBits,
-      int             alphaBits,
-      int             redBits,
-      int             greenBits,
-      int             blueBits,
-      int             depthBits,
-      int             stencilBits,
-      int             openGLBitsPerPixel,
-      int             cpuBitsPerPixel,
-      int             glDataFormat,
-      bool            opaque,
-      bool            floatingPoint,
-      Code            code,
-      ColorSpace      colorSpace,
-      BayerPattern    bayerPattern = BayerPattern::NONE);
+      int             num_components_,
+      bool            is_compressed_,
+      bool            is_opaque_,
+      bool            is_floating_point_,
+      Code            code_,
+      ColorSpace      color_space_,
+      BayerPattern    bayer_pattern_,
+      int             luminance_bits_,
+      int             red_bits_,
+      int             green_bits_,
+      int             blue_bits_,
+      int             alpha_bits_,
+      int             stencil_bits_,
+      int             depth_bits_,
+      int             cpu_bits_per_pixel_,
+      int             gl_format_,
+      int             gl_base_format_,
+      int             gl_bits_per_pixel_,
+      int             gl_data_format_
+    );
+
+    int32  num_components;
+    int8   is_compressed;
+    int8   is_opaque;
+    int8   is_floating_point;
+    int32  code_val;
+    int32  color_space;
+    int32  bayer_pattern;
+    int32  luminance_bits;
+    int32  red_bits;
+    int32  green_bits;
+    int32  blue_bits;
+    int32  alpha_bits;
+    int32  stencil_bits;
+    int32  depth_bits;
+    int32  cpu_bits_per_pixel;
+    int32  gl_format;
+    int32  gl_base_format;
+    int32  gl_bits_per_pixel;
+    int32  gl_data_format;
 
   public:
+    int32 THEA_ICALL numComponents() const       { return num_components;     }
+    int8 THEA_ICALL isCompressed() const         { return is_compressed;      }
+    int8 THEA_ICALL isDepth() const              { return depth_bits > 0;     }
+    int8 THEA_ICALL isOpaque() const             { return is_opaque;          }
+    int8 THEA_ICALL isFloatingPoint() const      { return is_floating_point;  }
+    int32 THEA_ICALL code() const                { return code_val;           }
+    int32 THEA_ICALL colorSpace() const          { return color_space;        }
+    int32 THEA_ICALL bayerPattern() const        { return bayer_pattern;      }
+    int32 THEA_ICALL luminanceBits() const       { return luminance_bits;     }
+    int32 THEA_ICALL redBits() const             { return red_bits;           }
+    int32 THEA_ICALL greenBits() const           { return green_bits;         }
+    int32 THEA_ICALL blueBits() const            { return blue_bits;          }
+    int32 THEA_ICALL alphaBits() const           { return alpha_bits;         }
+    int32 THEA_ICALL stencilBits() const         { return stencil_bits;       }
+    int32 THEA_ICALL depthBits() const           { return depth_bits;         }
+    int32 THEA_ICALL cpuBitsPerPixel() const     { return cpu_bits_per_pixel; }
+    int32 THEA_ICALL openGlFormat() const        { return gl_format;          }
+    int32 THEA_ICALL openGlBaseFormat() const    { return gl_base_format;     }
+    int32 THEA_ICALL openGlBitsPerPixel() const  { return gl_bits_per_pixel;  }
+    int32 THEA_ICALL openGlDataFormat() const    { return gl_data_format;     }
+
+    char const * THEA_ICALL getName() const;
+
     /** L8 format. */
     static TextureFormat const * L8();
 
@@ -484,10 +536,7 @@ class THEA_API TextureFormat
      * Indicates the format should be automatically detected. The usual choice is either RGBA8 or RGB8 depending on the presence
      * of an alpha channel in the input.
      */
-    static TextureFormat const * AUTO()
-    {
-      return nullptr;
-    }
+    static TextureFormat const * AUTO() { return nullptr; }
 
     /**
      * Get a depth image format. Returns DEPTH16, DEPTH24, or DEPTH32 according to the bits specified. You can use
@@ -505,7 +554,10 @@ class THEA_API TextureFormat
     static TextureFormat const * fromCode(TextureFormat::Code code);
 
     /** Internal convenience function to convert an image type to a texture storage format. */
-    static TextureFormat const * fromImageType(AbstractImage::Type type, bool is_depth = false);
+    static TextureFormat const * fromImageType(IImage::Type type, bool is_depth = false);
+
+    /** Get an image format given its name. Takes the same values that name() returns. */
+    static TextureFormat const * fromString(std::string const & s);
 
 }; // class TextureFormat
 

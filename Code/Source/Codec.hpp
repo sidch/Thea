@@ -30,7 +30,7 @@ class BinaryOutputStream;
  * A serialization codec. Identified by an ID that is unique for a given run of the program (it is <b>not</b> guaranteed to
  * retain its value over different runs).
  */
-class THEA_API Codec : public AbstractNamedObject
+class THEA_API Codec : public INamedObject
 {
   public:
     THEA_DECL_SMART_POINTERS(Codec)
@@ -159,17 +159,17 @@ operator<<(std::ostream & os, Codec const & codec)
 }
 
 /** Indicates that the appropriate codec should be autodetected. */
-class THEA_API Codec_AUTO : public Codec
+class THEA_API CodecAuto : public Codec
 {
   public:
-    char const * getName() const { static char const * my_name = "Auto"; return my_name; }
+    char const * THEA_ICALL getName() const { static char const * my_name = "Auto"; return my_name; }
 };
 
 /** Indicates that the codec is unknown. */
 class THEA_API Codec_UNKNOWN : public Codec
 {
   public:
-    char const * getName() const { static char const * my_name = "Unknown"; return my_name; }
+    char const * THEA_ICALL getName() const { static char const * my_name = "Unknown"; return my_name; }
 };
 
 } // namespace Thea

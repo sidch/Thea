@@ -20,7 +20,7 @@
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
 #include "../MatrixWrapper.hpp"
-#include "AbstractMesh.hpp"
+#include "IMesh.hpp"
 #include "DefaultMeshCodecs.hpp"
 #include "IncrementalDisplayMeshBuilder.hpp"
 #include <array>
@@ -44,7 +44,7 @@ class THEA_API DisplayMeshVertex
     DisplayMesh  *  mesh;
     Vector3      *  point;
     Vector3      *  normal;
-    ColorRGBA    *  color;
+    ColorRgba    *  color;
     Vector2      *  texcoord;
 
   public:
@@ -52,7 +52,7 @@ class THEA_API DisplayMeshVertex
     DisplayMeshVertex() : mesh(nullptr), point(nullptr) {}
 
     /** Constructor. */
-    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = nullptr, ColorRGBA * color_ = nullptr,
+    DisplayMeshVertex(DisplayMesh * mesh_, Vector3 & point_, Vector3 * normal_ = nullptr, ColorRgba * color_ = nullptr,
                       Vector2 * texcoord_ = nullptr)
     : mesh(mesh_), point(&point_), normal(normal_), color(color_), texcoord(texcoord_)
     {}
@@ -89,14 +89,14 @@ class THEA_API DisplayMeshVertex
     bool hasColor() const { return color != nullptr; }
 
     /** Get the color at the vertex. Call only if hasColor() returns true. */
-    ColorRGBA const & getColor() const
+    ColorRgba const & getColor() const
     {
       debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
       return *color;
     }
 
     /** Set the color at the vertex. Call only if hasColor() returns true. */
-    void setColor(ColorRGBA const & color_);
+    void setColor(ColorRgba const & color_);
 
     /** Check if the vertex has a texture coordinate. */
     bool hasTexCoord() const { return texcoord != nullptr; }
@@ -163,10 +163,10 @@ class THEA_API DisplayMeshIndexedVertex
     bool hasColor() const;
 
     /** Get the color at the vertex. Call only if hasColor() returns true. */
-    ColorRGBA const & getColor() const;
+    ColorRgba const & getColor() const;
 
     /** Set the color at the vertex. Call only if hasColor() returns true. */
-    void setColor(ColorRGBA const & color_);
+    void setColor(ColorRgba const & color_);
 
     /** Check if the vertex has a texture coordinate. */
     bool hasTexCoord() const;
@@ -252,7 +252,7 @@ class THEA_API DisplayMeshFace
 }; // class DisplayMeshFace
 
 /** A class for storing meshes for display, without detailed topology information. */
-class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
+class THEA_API DisplayMesh : public virtual NamedObject, public IMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(DisplayMesh)
@@ -263,7 +263,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
     typedef Array<Vector3>    VertexArray;    ///< Array of vertex positions.
     typedef Array<Vector3>    NormalArray;    ///< Array of normals.
     typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
-    typedef Array<ColorRGBA>  ColorArray;     ///< Array of colors.
+    typedef Array<ColorRgba>  ColorArray;     ///< Array of colors.
     typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
     typedef DisplayMeshVertex Vertex;  ///< A convenience wrapper for accessing a vertex's properties.
@@ -304,7 +304,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
     bool wireframe_enabled;  ///< Enable wireframe drawing?
 
     /** Identifiers for the various buffers (enum class). */
-    struct BufferID
+    struct BufferId
     {
       enum Value
       {
@@ -317,21 +317,21 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
         QUAD      =  0x0020
       };
 
-      THEA_ENUM_CLASS_BODY(BufferID)
+      THEA_ENUM_CLASS_BODY(BufferId)
 
-    }; // struct BufferID
+    }; // struct BufferId
 
-    int changed_buffers;    ///< A bitwise OR of the flags of the buffers that have changed.
-    VARArea * var_area;     ///< GPU buffer area.
-    VAR * vertices_var;     ///< GPU buffer for vertex positions.
-    VAR * tris_var;         ///< GPU buffer for triangle indices.
-    VAR * quads_var;        ///< GPU buffer for quad indices.
-    VAR * normals_var;      ///< GPU buffer for vertex normals.
-    VAR * colors_var;       ///< GPU buffer for vertex colors.
-    VAR * texcoords_var;    ///< GPU buffer for texture coordinates.
-    VAR * edges_var;        ///< GPU buffer for edges.
+    int changed_buffers;        ///< A bitwise OR of the flags of the buffers that have changed.
+    IBufferPool * buf_pool;     ///< GPU buffer pool.
+    IBuffer * vertices_buf;     ///< GPU buffer for vertex positions.
+    IBuffer * tris_buf;         ///< GPU buffer for triangle indices.
+    IBuffer * quads_buf;        ///< GPU buffer for quad indices.
+    IBuffer * normals_buf;      ///< GPU buffer for vertex normals.
+    IBuffer * colors_buf;       ///< GPU buffer for vertex colors.
+    IBuffer * texcoords_buf;    ///< GPU buffer for texture coordinates.
+    IBuffer * edges_buf;        ///< GPU buffer for edges.
 
-    // Map the vertex and index buffers as matrices for the AbstractMesh API
+    // Map the vertex and index buffers as matrices for the IMesh API
     typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
     typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
     typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
@@ -360,9 +360,9 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
     virtual ~DisplayMesh() {}
 
     // Abstract mesh interface
-    AbstractDenseMatrix<Real> const * getVertexMatrix() const;
-    AbstractDenseMatrix<uint32> const * getTriangleMatrix() const;
-    AbstractDenseMatrix<uint32> const * getQuadMatrix() const;
+    IDenseMatrix<Real> const * THEA_ICALL getVertexMatrix() const;
+    IDenseMatrix<uint32> const * THEA_ICALL getTriangleMatrix() const;
+    IDenseMatrix<uint32> const * THEA_ICALL getQuadMatrix() const;
 
     /** Get the set of vertex positions. */
     VertexArray const & getVertices() const { return vertices; }
@@ -467,7 +467,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
     bool hasTexCoords() const { return !texcoords.empty(); }
 
     /**
-     * Adds a color property to each vertex, initially initialized to ColorRGBA(0, 0, 0, 0). If a color property already exists,
+     * Adds a color property to each vertex, initially initialized to ColorRgba(0, 0, 0, 0). If a color property already exists,
      * no action is taken.
      */
     virtual void addColors();
@@ -496,7 +496,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
      *   guaranteed to be sequentially generated, starting from 0.
      */
     virtual intx addVertex(Vector3 const & point, intx source_index = -1, Vector3 const * normal = nullptr,
-                           ColorRGBA const * color = nullptr, Vector2 const * texcoord = nullptr);
+                           ColorRgba const * color = nullptr, Vector2 const * texcoord = nullptr);
 
     /**
      * Add a triangular face to the mesh, specified by three vertex indices and an optional source face index (typically the
@@ -599,7 +599,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
 
       vertices[(size_t)vertex_index] = position;
       invalidateBounds();
-      invalidateGPUBuffers(DisplayMesh::BufferID::VERTEX);
+      invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX);
     }
 
     /** Set the normal of a mesh vertex. */
@@ -609,17 +609,17 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated normal field");
 
       normals[(size_t)vertex_index] = normal;
-      invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
+      invalidateGpuBuffers(DisplayMesh::BufferId::NORMAL);
     }
 
     /** Set the color of a mesh vertex. */
-    virtual void setColor(intx vertex_index, ColorRGBA const & color)
+    virtual void setColor(intx vertex_index, ColorRgba const & color)
     {
       alwaysAssertM(vertex_index >= 0 && vertex_index < (intx)colors.size(),
                     getNameStr() + ": Vertex index out of bounds, or vertex does not have associated color field");
 
       colors[(size_t)vertex_index] = color;
-      invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
+      invalidateGpuBuffers(DisplayMesh::BufferId::COLOR);
     }
 
     /** Set the texture coordinates of a mesh vertex. */
@@ -630,7 +630,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
                   + ": Vertex index out of bounds, or vertex does not have associated texture coordinates field");
 
       texcoords[(size_t)vertex_index] = texcoord;
-      invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);
+      invalidateGpuBuffers(DisplayMesh::BufferId::TEXCOORD);
     }
 
     /** Set the normal at each vertex as the average of the normals of all faces incident at the vertex. */
@@ -662,7 +662,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
       else if (!value && wireframe_enabled)
         wireframe_enabled = false;
 
-      invalidateGPUBuffers();
+      invalidateGpuBuffers();
     }
 
     /**
@@ -672,20 +672,20 @@ class THEA_API DisplayMesh : public virtual NamedObject, public AbstractMesh
      */
     bool wireframeIsEnabled() const { return wireframe_enabled; }
 
-    void draw(RenderSystem & render_system, AbstractRenderOptions const & options = RenderOptions::defaults()) const;
+    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const;
 
   protected:
     /** Invalidate part or all of the current GPU data for the mesh. */
-    void invalidateGPUBuffers(int changed_buffers_ = BufferID::ALL) { changed_buffers |= changed_buffers_; }
+    void invalidateGpuBuffers(int changed_buffers_ = BufferId::ALL) { changed_buffers |= changed_buffers_; }
 
     /** Check if a buffer has is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferID buffer) const { return (changed_buffers & (int)buffer) == 0; }
+    bool gpuBufferIsValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void allGPUBuffersAreValid() { changed_buffers = 0; }
+    void allGpuBuffersAreValid() { changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
-    void uploadToGraphicsSystem(RenderSystem & render_system);
+    void uploadToGraphicsSystem(IRenderSystem & render_system);
 
     /** Invalidate the current bounding box of the mesh. */
     void invalidateBounds() { valid_bounds = false; }
@@ -711,7 +711,7 @@ DisplayMeshVertex::setPosition(Vector3 const & point_)
 {
   *point = point_;
   mesh->invalidateBounds();
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::VERTEX);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX);
 }
 
 inline void
@@ -719,15 +719,15 @@ DisplayMeshVertex::setNormal(Vector3 const & normal_)
 {
   debugAssertM(hasNormal(), "DisplayMeshVertex: Vertex does not have a normal");
   *normal = normal_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::NORMAL);
 }
 
 inline void
-DisplayMeshVertex::setColor(ColorRGBA const & color_)
+DisplayMeshVertex::setColor(ColorRgba const & color_)
 {
   debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
   *color = color_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::COLOR);
 }
 
 inline void
@@ -735,7 +735,7 @@ DisplayMeshVertex::setTexCoord(Vector2 const & texcoord_)
 {
   debugAssertM(hasTexCoord(), "DisplayMeshVertex: Vertex does not have texture coordinates");
   *texcoord = texcoord_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::TEXCOORD);
 }
 
 //============================================================================================================================
@@ -760,7 +760,7 @@ DisplayMeshIndexedVertex::setPosition(Vector3 const & point_)
 {
   mesh->vertices[(size_t)index] = point_;
   mesh->invalidateBounds();
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::VERTEX);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX);
 }
 
 inline bool
@@ -781,7 +781,7 @@ DisplayMeshIndexedVertex::setNormal(Vector3 const & normal_)
 {
   debugAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
   mesh->normals[(size_t)index] = normal_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::NORMAL);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::NORMAL);
 }
 
 inline bool
@@ -790,7 +790,7 @@ DisplayMeshIndexedVertex::hasColor() const
   return mesh->hasColors();
 }
 
-inline ColorRGBA const &
+inline ColorRgba const &
 DisplayMeshIndexedVertex::getColor() const
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
@@ -798,11 +798,11 @@ DisplayMeshIndexedVertex::getColor() const
 }
 
 inline void
-DisplayMeshIndexedVertex::setColor(ColorRGBA const & color_)
+DisplayMeshIndexedVertex::setColor(ColorRgba const & color_)
 {
   debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
   mesh->colors[(size_t)index] = color_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::COLOR);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::COLOR);
 }
 
 inline bool
@@ -823,7 +823,7 @@ DisplayMeshIndexedVertex::setTexCoord(Vector2 const & texcoord_)
 {
   debugAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
   mesh->texcoords[(size_t)index] = texcoord_;
-  mesh->invalidateGPUBuffers(DisplayMesh::BufferID::TEXCOORD);
+  mesh->invalidateGpuBuffers(DisplayMesh::BufferId::TEXCOORD);
 }
 
 } // namespace Graphics

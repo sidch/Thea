@@ -6,14 +6,14 @@
 #define TEST_ABSTRACT_MESH
 
 #include "../Common.hpp"
-#include "../Graphics/DCELMesh.hpp"
+#include "../Graphics/DcelMesh.hpp"
 #include "../Graphics/DisplayMesh.hpp"
 #include "../Graphics/GeneralMesh.hpp"
 #include "../Graphics/MeshType.hpp"
 #include "../Algorithms/ConnectedComponents.hpp"
-#include "../Algorithms/IMLSSurface.hpp"
+#include "../Algorithms/ImlsSurface.hpp"
 #include "../Algorithms/ImplicitSurfaceMesher.hpp"
-#include "../Algorithms/MeshKDTree.hpp"
+#include "../Algorithms/MeshKdTree.hpp"
 #include "../Application.hpp"
 #include "../Array.hpp"
 #include "../FilePath.hpp"
@@ -29,14 +29,14 @@ using namespace Algorithms;
 using namespace Graphics;
 
 typedef GeneralMesh<> GM;
-typedef DCELMesh<> DM;
+typedef DcelMesh<> DM;
 
 void testMesh(int argc, char * argv[]);
 void testGeneralMesh(int argc, char * argv[]);
-void testDCELMesh(int argc, char * argv[]);
+void testDcelMesh(int argc, char * argv[]);
 void testManifold(int argc, char * argv[]);
 void testIMLS(int argc, char * argv[]);
-void testAbstractMesh(int argc, char * argv[]);
+void testIMesh(int argc, char * argv[]);
 
 string data_dir;
 
@@ -65,10 +65,10 @@ void
 testMesh(int argc, char * argv[])
 {
   testGeneralMesh(argc, argv);
-  testDCELMesh(argc, argv);
+  testDcelMesh(argc, argv);
   testManifold(argc, argv);
   testIMLS(argc, argv);
-  testAbstractMesh(argc, argv);
+  testIMesh(argc, argv);
 }
 
 void
@@ -80,7 +80,7 @@ testGeneralMesh(int argc, char * argv[])
   GM::Ptr mesh(new GM("General Mesh"));
   mg.addMesh(mesh);
 
-  Algorithms::MeshKDTree<GM> kdtree;
+  Algorithms::MeshKdTree<GM> kdtree;
   kdtree.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
@@ -92,7 +92,7 @@ testGeneralMesh(int argc, char * argv[])
 }
 
 void
-testDCELMesh(int argc, char * argv[])
+testDcelMesh(int argc, char * argv[])
 {
 #ifdef TEST_DCEL_MESH
 
@@ -100,7 +100,7 @@ testDCELMesh(int argc, char * argv[])
   DM::Ptr mesh(new DM("DCEL Mesh"));
   mg.addMesh(mesh);
 
-  Algorithms::MeshKDTree<DM> kdtree;
+  Algorithms::MeshKdTree<DM> kdtree;
   kdtree.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
@@ -152,10 +152,10 @@ testManifold(int argc, char * argv[])
 class BoundaryValuesFunctor
 {
   private:
-    IMLSSurface const & imls;
+    ImlsSurface const & imls;
 
   public:
-    BoundaryValuesFunctor(IMLSSurface const & imls_) : imls(imls_) {}
+    BoundaryValuesFunctor(ImlsSurface const & imls_) : imls(imls_) {}
 
     bool operator()(GM const & mesh)
     {
@@ -185,7 +185,7 @@ testIMLS(int argc, char * argv[])
   input_mg.updateBounds();
 
   // Compute the function
-  IMLSSurface imls(input_mg, 0, 0.001);
+  ImlsSurface imls(input_mg, 0, 0.001);
   cout << "IMLS function computed" << endl;
 
 // #define EVAL_BOUNDARY
@@ -295,7 +295,7 @@ testIMLS(int argc, char * argv[])
 
   MeshGroup<GM> output_mg("IMLS Output");
   output_mg.addMesh(output);
-  output_mg.save((FilePath::baseName(model_path) + "_remeshed.obj").c_str(), CodecOBJ<GM>());
+  output_mg.save((FilePath::baseName(model_path) + "_remeshed.obj").c_str(), CodecObj<GM>());
 
 #endif
 
@@ -305,7 +305,7 @@ testIMLS(int argc, char * argv[])
 #ifdef TEST_ABSTRACT_MESH
 template <typename MeshT>
 void
-saveAbstractMesh(string const & model_path, string const & out_path)
+saveIMesh(string const & model_path, string const & out_path)
 {
   MeshGroup<MeshT> in_mg(FilePath::objectName(model_path));
   in_mg.load(model_path);
@@ -333,14 +333,14 @@ saveAbstractMesh(string const & model_path, string const & out_path)
 #endif
 
 void
-testAbstractMesh(int argc, char * argv[])
+testIMesh(int argc, char * argv[])
 {
 #ifdef TEST_ABSTRACT_MESH
   string model_path = (argc < 2 ? FilePath::concat(data_dir, "teapot.obj") : argv[1]);
 
-  saveAbstractMesh<GM>         (model_path, "abstract_gen.obj");
-  saveAbstractMesh<DM>         (model_path, "abstract_dcel.obj");
-  saveAbstractMesh<DisplayMesh>(model_path, "abstract_disp.obj");
+  saveIMesh<GM>         (model_path, "abstract_gen.obj");
+  saveIMesh<DM>         (model_path, "abstract_dcel.obj");
+  saveIMesh<DisplayMesh>(model_path, "abstract_disp.obj");
 #endif
 }
 
