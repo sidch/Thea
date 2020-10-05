@@ -602,6 +602,7 @@ THEA_TEXTURE_FORMAT(RGBA32UI,         4, UNCOMP_FORMAT, CLEAR_FORMAT,  INT_FORMA
 THEA_TEXTURE_FORMAT(R11G11B10F,       3, UNCOMP_FORMAT, OPAQUE_FORMAT, FLOAT_FORMAT, R11G11B10F,       RGB,     0, 11, 11, 10,  0,  0,  0, 32,     GL_R11F_G11F_B10F_EXT,                  GL_RGB,                 32, GL_FLOAT);
 THEA_TEXTURE_FORMAT(RGB9E5F,          3, UNCOMP_FORMAT, OPAQUE_FORMAT, FLOAT_FORMAT, RGB9E5F,          RGB,     0, 14, 14, 14,  0,  0,  0, 32,     GL_RGB9_E5_EXT,                         GL_RGB,                 32, GL_FLOAT);
 // The base format for integer formats must be *_INTEGER even though the spec doesn't state this
+// FIXME: Should openGlBitsPerPixel() really be 32 and not 24 for RGB8, BGR8 etc?
 THEA_TEXTURE_FORMAT(RGB8I,            3, UNCOMP_FORMAT, OPAQUE_FORMAT, INT_FORMAT,   RGB8I,            RGB,     0,  8,  8,  8,  0,  0,  0, 24,     GL_RGB8I_EXT,                           GL_RGB_INTEGER,         32, GL_UNSIGNED_BYTE);
 THEA_TEXTURE_FORMAT(RGB8UI,           3, UNCOMP_FORMAT, OPAQUE_FORMAT, INT_FORMAT,   RGB8UI,           RGB,     0,  8,  8,  8,  0,  0,  0, 24,     GL_RGB8UI_EXT,                          GL_RGB_INTEGER,         32, GL_UNSIGNED_BYTE);
 THEA_TEXTURE_FORMAT(RGBA8UI,          4, UNCOMP_FORMAT, OPAQUE_FORMAT, INT_FORMAT,   RGBA8UI,          RGB,     0,  8,  8,  8,  0,  0,  8, 32,     GL_RGBA8UI_EXT,                         GL_RGBA_INTEGER,        32, GL_UNSIGNED_BYTE);

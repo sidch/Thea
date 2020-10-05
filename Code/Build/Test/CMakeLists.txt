@@ -438,6 +438,8 @@ ENDIF()
 # TestOPTPP
 #===========================================================
 
+IF(WITH_OPTPP)
+
 # Source file lists
 SET(TheaTestOPTPPSources
       ${SourceRoot}/Test/TestOPTPP.cpp)
@@ -458,6 +460,8 @@ SET_TARGET_PROPERTIES(TheaTestOPTPP PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
 IF(APPLE)
   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
   OSX_FIX_DYLIB_REFERENCES(TheaTestOPTPP "${TheaTestOPTPPLibraries}")
+ENDIF()
+
 ENDIF()
 
 #===========================================================

@@ -20,7 +20,7 @@
 
 #include "glew.h"
 
-#if defined(THEA_GL_OSMESA)
+#ifdef THEA_GL_OSMESA
 
 // glew.h undefs a bunch of visibility macros after it's done with them, but we need to restore them for osmesa.h
 #  if defined(_WIN32)
