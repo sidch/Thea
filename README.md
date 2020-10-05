@@ -1,3 +1,5 @@
+![Thea header image](https://raw.githubusercontent.com/sidch/Thea/master/Code/Documentation/images/header.jpg)
+
 # Thea
 A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
 
@@ -24,9 +26,9 @@ If you find a bug, please let me know promptly. Thank you!
 * A **plugin architecture** and included plugins providing easy interfaces to [OpenGL](https://www.opengl.org/), [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an [OSMesa](https://www.mesa3d.org/osmesa.html) driver to automatically create a headless CPU-only context.
 * **Pure virtual wrappers** for several common classes (e.g. dense and sparse matrices, images) that allow safely passing such objects across shared library boundaries.
 * A variety of **utility classes** for filesystem navigation, I/O, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation, bounded/sorted arrays, pseudo-random numbers, mathematics (including algebraic roots of polynomials upto degree 4) etc.
-* Several **bundled tools** for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*) etc.
+* Several **bundled tools** written using the library, for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*, different from [this one](https://sourceforge.net/p/meshfix/wiki/Home/)), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*) etc.
 
-**Thea is constantly under development and many parts are incomplete. Use at your own risk!** I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
+**Thea is constantly under development and a few parts are incomplete. Use at your own risk!** I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
 
 *Thea* is heavily influenced by Morgan McGuire's [G3D](https://casual-effects.com/g3d) library. It started out as an extension of G3D and still has significant chunks of code adapted from it (e.g. for binary/text I/O, plugin management, the rendersystem interface and OpenGL plugin, color handling, timers, quaternions, CRC32, atomic integers, and random numbers).
 
@@ -260,6 +262,7 @@ c++ -std=c++11 -Wall -g2 -O2 -fno-strict-aliasing \
     -I"$prefix/include" -I"$prefix/include/eigen3" \
     <source-files> \
     -L"$prefix/lib" -lThea \
+    -lfreeimageplus -lfreeimage -l3ds \
     -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt \
     -lm \
     [-ldl] [-framework Carbon]
