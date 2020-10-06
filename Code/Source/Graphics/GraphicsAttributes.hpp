@@ -65,7 +65,7 @@ struct PositionAttribute
 
 }; // class PositionAttribute
 
-/** A utility attribute class that wraps a normal (a valid argument for IRenderSystem::sendNormal()). */
+/** A utility attribute class that wraps a normal. */
 template <typename NormalT>
 struct NormalAttribute
 {
@@ -99,7 +99,7 @@ struct NormalAttribute
 
 }; // class NormalAttribute
 
-/** A utility attribute class that wraps a color (a valid argument for IRenderSystem::sendColor()). */
+/** A utility attribute class that wraps a color. */
 template <typename ColorT>
 struct ColorAttribute
 {
@@ -133,7 +133,7 @@ struct ColorAttribute
 
 }; // class ColorAttribute
 
-/** A utility attribute class that wraps a coordinate for texture unit 0 (a valid argument for IRenderSystem::sendTexCoord()). */
+/** A utility attribute class that wraps a coordinate for texture unit 0. */
 template <typename TexCoordT>
 struct TexCoordAttribute
 {

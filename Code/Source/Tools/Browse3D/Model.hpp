@@ -329,7 +329,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     /** Set the default color of the model. */
     void setColor(ColorRgba const & color_) { color = color_; }
 
-    void draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
+    int8 draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
 
     //========================================================================================================================
     // GUI callbacks

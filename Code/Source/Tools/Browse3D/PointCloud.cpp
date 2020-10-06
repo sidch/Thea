@@ -543,11 +543,11 @@ PointCloud::getColor(size_t point_index) const
   return ColorRgb::zero();
 }
 
-void
+bool
 PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
 {
-  if (app().options().fancy_points) return;
-  if (changed_buffers == 0) return;
+  if (app().options().fancy_points) return true;
+  if (changed_buffers == 0) return true;
 
   vertices_buf = colors_buf = nullptr;
 
@@ -560,7 +560,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
     }
 
     changed_buffers = 0;
-    return;
+    return true;
   }
 
   bool has_colors = (!features.empty() || has_normals || app().options().fancy_colors);
@@ -580,7 +580,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
       std::string bufpool_name = getNameStr() + " buffer pool";
       buf_pool = render_system.createBufferPool(bufpool_name.c_str(), num_bytes,
                                                 Graphics::IBufferPool::Usage::WRITE_OCCASIONALLY, true);
-      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+      if (!buf_pool) { THEA_ERROR << getName() << ": Couldn't create buffer pool"; return false; }
     }
     else
       buf_pool->reset();
@@ -590,45 +590,47 @@ PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
     std::string bufpool_name = getNameStr() + " buffer pool";
     buf_pool = render_system.createBufferPool(bufpool_name.c_str(), num_bytes, Graphics::IBufferPool::Usage::WRITE_OCCASIONALLY,
                                               true);
-    if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+    if (!buf_pool) { THEA_ERROR << getName() << ": Couldn't create buffer pool"; return false; }
   }
 
   if (!points.empty())
   {
     vertices_buf = buf_pool->createBuffer(vertex_bytes);
-    if (!vertices_buf) throw Error(getNameStr() + ": Couldn't create vertex buffer");
+    if (!vertices_buf) { THEA_ERROR << getName() << ": Couldn't create vertex buffer"; return false; }
 
     Array<Vector3> vbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       vbuf[i] = points[i].p;
 
-    vertices_buf->updateAttributes(0, (intx)vbuf.size(), 3, NumericType::REAL, &vbuf[0]);
+    if (!vertices_buf->updateAttributes(0, (intx)vbuf.size(), 3, NumericType::REAL, &vbuf[0])) return false;
   }
 
   if (has_colors)
   {
     colors_buf = buf_pool->createBuffer(color_bytes);
-    if (!colors_buf) throw Error(getNameStr() + ": Couldn't create color buffer");
+    if (!colors_buf) { THEA_ERROR << getName() << ": Couldn't create color buffer"; return false; }
 
     Array<ColorRgba> cbuf(points.size());
     for (size_t i = 0; i < points.size(); ++i)
       cbuf[i] = getColor(i);
 
-    colors_buf->updateAttributes(0, (intx)cbuf.size(), 4, NumericType::REAL, &cbuf[0]);
+    if (!colors_buf->updateAttributes(0, (intx)cbuf.size(), 4, NumericType::REAL, &cbuf[0])) return false;
   }
 
   changed_buffers = 0;
+
+  return true;
 }
 
-void
+int8
 PointCloud::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
   if (isEmpty())
-    return;
+    return true;
 
   if (!options) options = Graphics::RenderOptions::defaults();
 
-  const_cast<PointCloud *>(this)->uploadToGraphicsSystem(*render_system);
+  if (!const_cast<PointCloud *>(this)->uploadToGraphicsSystem(*render_system)) return false;
 
   render_system->pushShader();
   render_system->pushTextures();
@@ -712,6 +714,12 @@ PointCloud::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptio
   render_system->popColorFlags();
   render_system->popTextures();
   render_system->popShader();
+
+  char const * err = nullptr;
+  if ((err = render_system->getAndClearError()))
+  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
+
+  return true;
 }
 
 } // namespace Browse3D

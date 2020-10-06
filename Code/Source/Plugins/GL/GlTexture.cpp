@@ -27,7 +27,7 @@ namespace GlTextureInternal {
 static int8
 setDefaultUnpackingOptions(int64 row_alignment)
 {
-  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return false; }
+  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return GlCaps::setError(); }
 
   // GL's default values for everything except alignment
   glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
@@ -43,7 +43,7 @@ setDefaultUnpackingOptions(int64 row_alignment)
 static int8
 setDefaultPackingOptions(int64 row_alignment)
 {
-  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return false; }
+  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return GlCaps::setError(); }
 
   // GL's default values for everything except alignment
   glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
@@ -125,7 +125,8 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, int64 
 
 GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage const * image,
                      Format const * desired_format, int32 dimension_, Options const * options)
-: render_system(render_system_), name(name_), dimension(dimension_), gl_target(GlTextureInternal::dimensionToGlTarget(dimension))
+: render_system(render_system_), name(name_), dimension(dimension_),
+  gl_target(GlTextureInternal::dimensionToGlTarget(dimension))
 {
   if (!image || !image->isValid()) throw Error(std::string(getName()) + ": Source image must be valid");
   if (gl_target == GL_INVALID_ENUM) THEA_GL_TEXTURE_ERROR
@@ -138,7 +139,7 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage
   glGenTextures(1, &gl_id);
   THEA_CHECK_GL_OK
 
-  if (!_updateImage(image, Face::POS_X, options)) THEA_GL_TEXTURE_ERROR
+  if (!_updateImage(image, Face::POS_X, true, options)) THEA_GL_TEXTURE_ERROR
 }
 
 GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage const * images[6],
@@ -254,7 +255,7 @@ GlTexture::setInternalFormat(Format const * bytes_format, Format const * desired
     if (!bytes_format)
     {
       THEA_ERROR << getName() << ": Internal format cannot be automatically determined";
-      return false;
+      return GlCaps::setError();
     }
 
     format = bytes_format;
@@ -268,7 +269,7 @@ GlTexture::setInternalFormat(Format const * bytes_format, Format const * desired
   if (!GlCaps::supportsTexture(format))
   {
     THEA_ERROR << getName() << ": Texture format not supported";
-    return false;
+    return GlCaps::setError();
   }
 
   return true;
@@ -278,26 +279,26 @@ int8
 GlTexture::doSanityChecks()
 {
   if (dimension < 0 || dimension >= Dimension::NUM)
-  { THEA_ERROR << getName() << ": Invalid dimensionality"; return false; }
+  { THEA_ERROR << getName() << ": Invalid dimensionality"; return GlCaps::setError(); }
 
   if (dimension == Dimension::DIM_CUBE_MAP && !THEA_GL_SUPPORTS(ARB_texture_cube_map))
-  { THEA_ERROR << getName() << ": Cube map textures are not supported"; return false; }
+  { THEA_ERROR << getName() << ": Cube map textures are not supported"; return GlCaps::setError(); }
 
   if (dimension == Dimension::DIM_RECTANGLE && !THEA_GL_SUPPORTS(ARB_texture_rectangle))
-  { THEA_ERROR << getName() << ": Rectangular textures are not supported"; return false; }
+  { THEA_ERROR << getName() << ": Rectangular textures are not supported"; return GlCaps::setError(); }
 
   if (width < 1 || height < 1 || depth < 1)
-  { THEA_ERROR << getName() << ": Texture must be at least one pixel wide in each dimension"; return false; }
+  { THEA_ERROR << getName() << ": Texture must be at least one pixel wide in each dimension"; return GlCaps::setError(); }
 
   if (depth > 1 && dimension != Dimension::DIM_3D)
-  { THEA_ERROR << getName() << ": Only a 3D texture can have depth greater than one pixel"; return false; }
+  { THEA_ERROR << getName() << ": Only a 3D texture can have depth greater than one pixel"; return GlCaps::setError(); }
 
   if (dimension == Dimension::DIM_1D && (height > 1 || depth > 1))
-  { THEA_ERROR << getName() << ": A 1D texture cannot have height or depth greater than one pixel"; return false; }
+  { THEA_ERROR << getName() << ": A 1D texture cannot have height or depth greater than one pixel"; return GlCaps::setError(); }
 
   if (!(Math::isPowerOf2(width) && Math::isPowerOf2(height) && Math::isPowerOf2(depth)) && dimension != Dimension::DIM_RECTANGLE
    && !THEA_GL_SUPPORTS(ARB_texture_non_power_of_two))  // rectangular textures can be npot by the spec
-  { THEA_ERROR << getName() << ": Non-power-of-two textures are not supported"; return false; }
+  { THEA_ERROR << getName() << ": Non-power-of-two textures are not supported"; return GlCaps::setError(); }
 
   return true;
 }
@@ -308,16 +309,16 @@ GlTexture::setOptions(Options const * options)
   if (!options) options = TextureOptions::defaults();
 
   if (options->wrapMode() < 0 || options->wrapMode() >= Options::WrapMode::NUM)
-  { THEA_ERROR << getName() << ": Invalid wrap mode"; return false; }
+  { THEA_ERROR << getName() << ": Invalid wrap mode"; return GlCaps::setError(); }
 
   if (options->interpolateMode() < 0 || options->interpolateMode() >= Options::InterpolateMode::NUM)
-  { THEA_ERROR << getName() << ": Invalid interpolation mode"; return false; }
+  { THEA_ERROR << getName() << ": Invalid interpolation mode"; return GlCaps::setError(); }
 
   if (options->depthReadMode() < 0 || options->depthReadMode() >= Options::DepthReadMode::NUM)
-  { THEA_ERROR << getName() << ": Invalid depth read mode"; return false; }
+  { THEA_ERROR << getName() << ": Invalid depth read mode"; return GlCaps::setError(); }
 
-  if (dimension == Dimension::DIM_RECTANGLE && options->wrapMode() == Options::WrapMode::TILE)  // see GL_ARB_texture_rectangle spec
-  { THEA_ERROR << getName() << ": Tiling is not supported for rectangular textures"; return false; }
+  if (dimension == Dimension::DIM_RECTANGLE && options->wrapMode() == Options::WrapMode::TILE)  // see GL_ARB_texture_rectangle
+  { THEA_ERROR << getName() << ": Tiling is not supported for rectangular textures"; return GlCaps::setError(); }
 
   GLenum wrap = GL_REPEAT;
   switch (options->wrapMode())
@@ -331,7 +332,7 @@ GlTexture::setOptions(Options const * options)
       glTexParameterfv(gl_target, GL_TEXTURE_BORDER_COLOR, border_color);
       break;
     }
-    default: THEA_ERROR << getName() << ": Unsupported wrap mode"; return false;
+    default: THEA_ERROR << getName() << ": Unsupported wrap mode"; return GlCaps::setError();
   }
 
   glTexParameteri(gl_target, GL_TEXTURE_WRAP_S, wrap);
@@ -344,8 +345,8 @@ GlTexture::setOptions(Options const * options)
                    || options->interpolateMode() == Options::InterpolateMode::BILINEAR_MIPMAP
                    || options->interpolateMode() == Options::InterpolateMode::TRILINEAR);
 
-  if (dimension == Dimension::DIM_RECTANGLE && has_mipmaps)  // see GL_ARB_texture_rectangle spec
-  { THEA_ERROR << getName() << ": Mipmapping is not supported for rectangular textures"; return false; }
+  if (dimension == Dimension::DIM_RECTANGLE && has_mipmaps)  // see GL_ARB_texture_rectangle
+  { THEA_ERROR << getName() << ": Mipmapping is not supported for rectangular textures"; return GlCaps::setError(); }
 
   switch (options->interpolateMode())
   {
@@ -374,7 +375,7 @@ GlTexture::setOptions(Options const * options)
       glTexParameteri(gl_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       break;
 
-    default: THEA_ERROR << getName() << ": Unsupported texture interpolation mode"; return false;
+    default: THEA_ERROR << getName() << ": Unsupported texture interpolation mode"; return GlCaps::setError();
   }
 
   THEA_GL_OK_OR_RETURN(0)
@@ -388,7 +389,7 @@ GlTexture::setOptions(Options const * options)
     else
     {
       THEA_ERROR << getName() << ": Automatic mipmap generation not supported";
-      return false;
+      return GlCaps::setError();
       // TODO: Implement manual fallback (or replace everything with glGenerateMipmap for new versions of GL).
     }
   }
@@ -411,7 +412,7 @@ GlTexture::setOptions(Options const * options)
     }
   }
   else if (options->depthReadMode() != Options::DepthReadMode::NORMAL)
-  { THEA_ERROR << getName() << ": Comparison-based depth read modes are not supported"; return false; }
+  { THEA_ERROR << getName() << ": Comparison-based depth read modes are not supported"; return GlCaps::setError(); }
 
   THEA_GL_OK_OR_RETURN(0)
   return true;
@@ -420,14 +421,14 @@ GlTexture::setOptions(Options const * options)
 int8
 GlTexture::updateImage(IImage const * image, int32 face)
 {
-  return _updateImage(image, face, nullptr);
+  return _updateImage(image, face, /* update_options = */ false, nullptr);
 }
 
 int8
-GlTexture::_updateImage(IImage const * image, int32 face, Options const * options)
+GlTexture::_updateImage(IImage const * image, int32 face, bool update_options, Options const * options)
 {
   if (!image || !image->isValid())
-  { THEA_ERROR << getName() << ": Cannot update texture from null or invalid image"; return false; }
+  { THEA_ERROR << getName() << ": Cannot update texture from null or invalid image"; return GlCaps::setError(); }
 
   { GlScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GlClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -442,10 +443,10 @@ GlTexture::_updateImage(IImage const * image, int32 face, Options const * option
     height = image->getHeight();
     depth  = image->getDepth();
 
-    if (!doSanityChecks()) return false;
+    if (!doSanityChecks()) return GlCaps::setError();
 
-    if (options && !setOptions(options)) return false;
-    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return false;
+    if (update_options && !setOptions(options)) return GlCaps::setError();
+    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return GlCaps::setError();
 
     return glTexImage(image->getData(), bytes_format, face);
   }
@@ -462,17 +463,17 @@ GlTexture::updateSubImage(IImage const * image, int64 src_x, int64 src_y, int64 
                           int64 src_depth, int64 dst_x, int64 dst_y, int64 dst_z, int32 face)
 {
   if (!image || !image->isValid())
-  { THEA_ERROR << getName() << ": Cannot update texture from null or invalid image"; return false; }
+  { THEA_ERROR << getName() << ": Cannot update texture from null or invalid image"; return GlCaps::setError(); }
 
   if (src_x < 0 || src_y < 0 || src_z < 0
    || src_x + src_width  > image->getWidth()
    || src_y + src_height > image->getHeight()
    || src_z + src_depth  > image->getDepth())
-  { THEA_ERROR << getName() << ": All or part of subimage lies outside source image boundaries"; return false; }
+  { THEA_ERROR << getName() << ": All or part of subimage lies outside source image boundaries"; return GlCaps::setError(); }
 
   if (dst_x < 0 || dst_y < 0 || dst_z < 0
    || dst_x + src_width > width || dst_y + src_height > height || dst_z + src_depth > depth)
-  { THEA_ERROR << getName() << ": All or part of subimage lies outside texture boundaries"; return false; }
+  { THEA_ERROR << getName() << ": All or part of subimage lies outside texture boundaries"; return GlCaps::setError(); }
 
   Format const * bytes_format = TextureFormat::fromImageType(IImage::Type(image->getType()));
 
@@ -483,7 +484,7 @@ GlTexture::updateSubImage(IImage const * image, int64 src_x, int64 src_y, int64 
     glBindTexture(gl_target, gl_id);
     THEA_GL_OK_OR_RETURN(0)
 
-    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return false;
+    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return GlCaps::setError();
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image->getWidth());
     glPixelStorei(GL_UNPACK_SKIP_ROWS, src_y);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, src_x);
@@ -525,7 +526,7 @@ int8
 GlTexture::getImage(IImage * image, int32 face) const
 {
   if (!image)
-  { THEA_ERROR << getName() << ": Cannot read texture to null image"; return false; }
+  { THEA_ERROR << getName() << ": Cannot read texture to null image"; return GlCaps::setError(); }
 
   { GlScope scope(GL_TEXTURE_BIT | GL_ENABLE_BIT);  // Can we do without ENABLE_BIT? The doc is unclear.
     GlClientScope client_scope(GL_CLIENT_PIXEL_STORE_BIT);
@@ -534,16 +535,16 @@ GlTexture::getImage(IImage * image, int32 face) const
     glBindTexture(gl_target, gl_id);
     THEA_GL_OK_OR_RETURN(0)
 
-    if (depth > 1) { THEA_ERROR << getName() << ": 3D images are not currently supported"; return false; }
-    if (!image->resize(image->getType(), width, height)) return false;
+    if (depth > 1) { THEA_ERROR << getName() << ": 3D images are not currently supported"; return GlCaps::setError(); }
+    if (!image->resize(image->getType(), width, height)) return GlCaps::setError();
 
     Format const * bytes_format = TextureFormat::fromImageType(IImage::Type(image->getType()), format->isDepth());
-    if (!GlTextureInternal::setDefaultPackingOptions(image->getRowAlignment())) return false;
+    if (!GlTextureInternal::setDefaultPackingOptions(image->getRowAlignment())) return GlCaps::setError();
 
     if (gl_target == GL_TEXTURE_CUBE_MAP_ARB)
     {
       GLenum gl_face = toGlCubeMapFace(face);
-      if (gl_face == GL_INVALID_ENUM) return false;
+      if (gl_face == GL_INVALID_ENUM) return GlCaps::setError();
 
       glGetTexImage(gl_face, 0, bytes_format->openGlBaseFormat(), bytes_format->openGlDataFormat(), image->getData());
     }
@@ -562,7 +563,7 @@ GlTexture::getSubImage(IImage * image, int64 x, int64 y, int64 z, int64 subimage
 {
   // Until GL gets a GetTexSubImage function...
   THEA_ERROR << getName() << ": Reading texture subimages is not supported";
-  return false;
+  return GlCaps::setError();
 }
 
 } // namespace Gl

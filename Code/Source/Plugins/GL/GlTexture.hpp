@@ -83,14 +83,14 @@ class THEA_GL_DLL_LOCAL GlTexture : public ITexture
     /** Do a series of checks to detect invalid parameters. */
     int8 doSanityChecks();
 
-    /** Set texture parameters from user-specified options. */
+    /** Set texture parameters from user-specified options. If \a options is null, default options are set. */
     int8 setOptions(Options const * options);
 
     /** A quick selection of the appropriate glTexImage... call based on current state. */
     int8 glTexImage(void const * bytes, Format const * bytes_format, int32 face);
 
-    /** Updates the texture image and optionally sets user-specified options while doing so. */
-    int8 _updateImage(IImage const * image, int32 face, Options const * options);
+    /** Updates the texture image and optionally (if \a update_options is true) sets user-specified options while doing so. */
+    int8 _updateImage(IImage const * image, int32 face, bool update_options, Options const * options);
 
     GlRenderSystem * render_system;
     std::string name;

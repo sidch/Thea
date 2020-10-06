@@ -121,11 +121,11 @@ class THEA_API IRenderSystem : public INamedObject
     virtual char const * THEA_ICALL describeSystem() const = 0;
 
     /**
-     * Get a string describing the message corresponding to the last error. Rendersystems may choose not to implement this
-     * functionality and make this method a no-op, e.g. in a multithreaded rendersystem where it would be difficult to
-     * synchronize.
+     * Get a string with the message corresponding to the last error, or null if there has been no error. Calling this function
+     * immediately clears the error state. Rendersystems may choose not to implement this functionality and make this method a
+     * no-op, e.g. in a multithreaded rendersystem where it would be difficult to synchronize.
      */
-    virtual char const * THEA_ICALL getErrorString() const = 0;
+    virtual char const * THEA_ICALL getAndClearError() const = 0;
 
     /**
      * Create a new, blank framebuffer with nothing attached. The framebuffer must be destroyed using destroyFramebuffer().

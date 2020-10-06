@@ -34,7 +34,7 @@ class THEA_API IDrawable
     virtual ~IDrawable() = 0;
 
     /** Draw the object using the specified options via the specified rendering system. */
-    virtual void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const = 0;
+    virtual int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const = 0;
 
 }; // class IDrawable
 

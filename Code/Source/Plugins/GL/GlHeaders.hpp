@@ -141,7 +141,7 @@ theaGlErrorString(GLuint error)
 /**
  * Check if the OpenGL state is error-free and throw an error if not.
  *
- * @see THEA_GL_OK_OR_RETURN(0)
+ * @see THEA_GL_OK_OR_RETURN
  */
 #define THEA_CHECK_GL_OK \
 { \
@@ -150,6 +150,7 @@ theaGlErrorString(GLuint error)
 \
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
+    GlCaps::setError(err_code); \
     err_string = Thea::Graphics::Gl::theaGlErrorString(err_code); \
     throw Error(Thea::format("%s:%ld: OpenGL error: %s", \
                 Thea::FilePath::objectName(__FILE__).c_str(), (long)__LINE__, err_string)); \
@@ -157,18 +158,19 @@ theaGlErrorString(GLuint error)
 }
 
 /**
- * Check if the OpenGL state is error-free and return zero/false if not.
+ * Check if the OpenGL state is error-free and return an error value if not.
  *
  * @see THEA_CHECK_GL_OK
  */
-#define THEA_GL_OK_OR_RETURN(retval) \
+#define THEA_GL_OK_OR_RETURN(errval) \
 { \
   GLenum err_code; \
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
+    GlCaps::setError(err_code); \
     THEA_ERROR << Thea::FilePath::objectName(__FILE__) << ':' << __LINE__ << ": OpenGL error: " \
                << Thea::Graphics::Gl::theaGlErrorString(err_code); \
-    return (retval); \
+    return (errval); \
   } \
 }
 

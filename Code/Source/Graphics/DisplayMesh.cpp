@@ -607,10 +607,10 @@ DisplayMesh::updateBounds()
   valid_bounds = true;
 }
 
-void
+bool
 DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
-  if (changed_buffers == 0) return;
+  if (changed_buffers == 0) return true;
 
   if (changed_buffers == BufferId::ALL)
   {
@@ -626,7 +626,7 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
       }
 
       allGpuBuffersAreValid();
-      return;
+      return true;
     }
 
     static int const PADDING = 32;
@@ -655,7 +655,7 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
 
         std::string pool_name = getNameStr() + " buffer pool";
         buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
-        if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+        if (!buf_pool) return false;
       }
       // Else no need to reset buf_pool, we've done it above
     }
@@ -663,95 +663,71 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
     {
       std::string pool_name = getNameStr() + " buffer pool";
       buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
-      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+      if (!buf_pool) return false;
     }
 
-    if (!vertices.empty())
-    {
-      vertices_buf = buf_pool->createBuffer(vertex_bytes);
-      if (!vertices_buf) throw Error(getNameStr() + ": Couldn't create vertices buffer");
-    }
-
-    if (hasNormals())
-    {
-      normals_buf = buf_pool->createBuffer(normal_bytes);
-      if (!normals_buf) throw Error(getNameStr() + ": Couldn't create normals buffer");
-    }
-
-    if (hasColors())
-    {
-      colors_buf = buf_pool->createBuffer(color_bytes);
-      if (!colors_buf) throw Error(getNameStr() + ": Couldn't create colors buffer");
-    }
-
-    if (hasTexCoords())
-    {
-      texcoords_buf = buf_pool->createBuffer(texcoord_bytes);
-      if (!texcoords_buf) throw Error(getNameStr() + ": Couldn't create texcoords buffer");
-    }
+    if (!vertices.empty() && !(vertices_buf = buf_pool->createBuffer(vertex_bytes))   ) return false;
+    if (hasNormals()      && !(normals_buf = buf_pool->createBuffer(normal_bytes))    ) return false;
+    if (hasColors()       && !(colors_buf = buf_pool->createBuffer(color_bytes))      ) return false;
+    if (hasTexCoords()    && !(texcoords_buf = buf_pool->createBuffer(texcoord_bytes))) return false;
 
 #ifndef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-    if (!tris.empty())
-    {
-      tris_buf = buf_pool->createBuffer(tri_bytes);
-      if (!tris_buf) throw Error(getNameStr() + ": Couldn't create triangle indices buffer");
-    }
+    if (!tris.empty()  && !(tris_buf  = buf_pool->createBuffer(tri_bytes)))  return false;
+    if (!quads.empty() && !(quads_buf = buf_pool->createBuffer(quad_bytes))) return false;
+    if (!edges.empty() && !(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
 
-    if (!quads.empty())
-    {
-      quads_buf = buf_pool->createBuffer(quad_bytes);
-      if (!quads_buf) throw Error(getNameStr() + ": Couldn't create quad indices buffer");
-    }
-
-    if (!edges.empty())
-    {
-      edges_buf = buf_pool->createBuffer(edge_bytes);
-      if (!edges_buf) throw Error(getNameStr() + ": Couldn't create edge indices buffer");
-    }
-
-    if (!tris.empty())  tris_buf->updateIndices (0, (int64)tris.size(),  NumericType::UINT32, &tris[0]);
-    if (!quads.empty()) quads_buf->updateIndices(0, (int64)quads.size(), NumericType::UINT32, &quads[0]);
-    if (!edges.empty()) edges_buf->updateIndices(0, (int64)edges.size(), NumericType::UINT32, &edges[0]);
+    if (!tris.empty()  && !tris_buf->updateIndices (0, (int64)tris.size(),  NumericType::UINT32, &tris[0]) ) return false;
+    if (!quads.empty() && !quads_buf->updateIndices(0, (int64)quads.size(), NumericType::UINT32, &quads[0])) return false;
+    if (!edges.empty() && !edges_buf->updateIndices(0, (int64)edges.size(), NumericType::UINT32, &edges[0])) return false;
 #endif
 
-    if (!vertices.empty()) vertices_buf->updateAttributes (0, (int64)vertices.size(),  3, NumericType::REAL, &vertices[0]);
-    if (hasNormals())      normals_buf->updateAttributes  (0, (int64)normals.size(),   3, NumericType::REAL, &normals[0]);
-    if (hasColors())       colors_buf->updateAttributes   (0, (int64)colors.size(),    4, NumericType::REAL, &colors[0]);
-    if (hasTexCoords())    texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0]);
+    if (!vertices.empty() && !vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0]))
+      return false;
+
+    if (hasNormals() && !normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0]))
+      return false;
+
+    if (hasColors() && !colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0]))
+      return false;
+
+    if (hasTexCoords() && !texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0]))
+      return false;
   }
   else
   {
-    if (!gpuBufferIsValid(BufferId::VERTEX) && !vertices.empty())
-      vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX) && !vertices.empty()
+     && !vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::NORMAL) && hasNormals())
-      normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0]);
+    if (!gpuBufferIsValid(BufferId::NORMAL) && hasNormals()
+     && !normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::COLOR) && hasColors())
-      colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0]);
+    if (!gpuBufferIsValid(BufferId::COLOR) && hasColors()
+     && !colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::TEXCOORD) && hasTexCoords())
-      texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0]);
+    if (!gpuBufferIsValid(BufferId::TEXCOORD) && hasTexCoords()
+     && !texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0])) return false;
   }
 
   allGpuBuffersAreValid();
+
+  return true;
 }
 
-void
+int8
 DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options) const
 {
-  if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return; }
+  if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return false; }
   if (!options) options = RenderOptions::defaults();
 
   if (options->drawEdges() && !wireframe_enabled)
-    throw Error(getNameStr() + ": Can't draw mesh edges when wireframe mode is disabled");
+  { THEA_ERROR << getName() << ": Can't draw mesh edges when wireframe mode is disabled"; return false; }
 
-  const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(*render_system);
+  if (!const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(*render_system)) return false;
 
-  if (!vertices_buf) return;
-  if (!options->drawFaces() && !options->drawEdges()) return;
-  if (!options->drawFaces() && !edges_buf) return;
-  if (!options->drawEdges() && !tris_buf && !quads_buf) return;
+  if (!vertices_buf) return true;
+  if (!options->drawFaces() && !options->drawEdges()) return true;
+  if (!options->drawFaces() && !edges_buf) return true;
+  if (!options->drawEdges() && !tris_buf && !quads_buf) return true;
 
   render_system->beginIndexedPrimitives();
 
@@ -818,6 +794,12 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
     }
 
   render_system->endIndexedPrimitives();
+
+  char const * err = nullptr;
+  if ((err = render_system->getAndClearError()))
+  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
+
+  return true;
 }
 
 } // namespace Graphics

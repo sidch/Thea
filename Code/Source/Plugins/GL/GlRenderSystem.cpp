@@ -120,10 +120,12 @@ GlRenderSystem::describeSystem() const
 }
 
 char const *
-GlRenderSystem::getErrorString() const
+GlRenderSystem::getAndClearError() const
 {
-  GLenum err_code;
-  if ((err_code = glGetError()) != GL_NO_ERROR)
+  GLenum err_code = (GLenum)GlCaps::getAndClearError();  // check if we flagged an error
+  if (err_code == GL_NO_ERROR) err_code = glGetError();  // ... failing which, see if GL flagged an error
+
+  if (err_code != GL_NO_ERROR)
     return theaGlErrorString(err_code);
   else
     return nullptr;
@@ -154,7 +156,7 @@ GlRenderSystem::destroyFramebuffer(IFramebuffer * framebuffer)
   {
     THEA_ERROR << getName() << ": Attempting to destroy framebuffer '" << framebuffer->getName()
                << "' which was not created using this rendersystem";
-    return false;
+    return GlCaps::setError();
   }
 
   delete framebuffer;
@@ -187,7 +189,7 @@ GlRenderSystem::destroyShader(IShader * shader)
   {
     THEA_ERROR << getName() << ": Attempting to destroy shader '" << shader->getName()
                << "' which was not created using this rendersystem";
-    return false;
+    return GlCaps::setError();
   }
 
   delete shader;
@@ -253,7 +255,7 @@ GlRenderSystem::destroyTexture(ITexture * texture)
   {
     THEA_ERROR << getName() << ": Attempting to destroy texture '" << texture->getName()
                << "' which was not created using this rendersystem";
-    return false;
+    return GlCaps::setError();
   }
 
   delete texture;
@@ -286,7 +288,7 @@ GlRenderSystem::destroyBufferPool(IBufferPool * pool)
   {
     THEA_ERROR << getName() << ": Attempting to destroy buffer pool '" << pool->getName()
                << "' which was not created using this rendersystem";
-    return false;
+    return GlCaps::setError();
   }
 
   delete pool;
@@ -311,11 +313,12 @@ GlRenderSystem::setFramebuffer(IFramebuffer * framebuffer)
   if (framebuffer)
   {
     GlFramebuffer * glfb = dynamic_cast<GlFramebuffer *>(framebuffer);
-    if (!glfb) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL framebuffer with a GL rendersystem"; return false; }
+    if (!glfb) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL framebuffer with a GL rendersystem";
+                 return GlCaps::setError(); }
 
     if (glfb != current_framebuffer)
     {
-      if (!glfb->use()) return false;
+      if (!glfb->use()) return GlCaps::setError();
       current_framebuffer = glfb;
     }
   }
@@ -347,10 +350,10 @@ GlRenderSystem::getFramebuffer()
 int8
 GlRenderSystem::popFramebuffer()
 {
-  if (framebuffer_stack.empty()) { THEA_ERROR << getName() << ": No framebuffer to pop"; return false; }
+  if (framebuffer_stack.empty()) { THEA_ERROR << getName() << ": No framebuffer to pop"; return GlCaps::setError(); }
 
   if (!setFramebuffer(framebuffer_stack.top()))
-    return false;
+    return GlCaps::setError();
 
   framebuffer_stack.pop();
   glPopAttrib();
@@ -370,17 +373,17 @@ int8
 GlRenderSystem::setShader(IShader * shader)
 {
   if (!THEA_GL_SUPPORTS(ARB_shader_objects))
-  { THEA_ERROR << getName() << ": This OpenGL installation does not support shader objects"; return false; }
+  { THEA_ERROR << getName() << ": This OpenGL installation does not support shader objects"; return GlCaps::setError(); }
 
   if (shader)
   {
     GlShader * glshader = dynamic_cast<GlShader *>(shader);
     if (!glshader)
-    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL shader with a GL rendersystem"; return false; }
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL shader with a GL rendersystem"; return GlCaps::setError(); }
 
     if (glshader != current_shader)
     {
-      if (!glshader->use()) return false;
+      if (!glshader->use()) return GlCaps::setError();
       current_shader = glshader;
     }
   }
@@ -412,11 +415,11 @@ GlRenderSystem::getShader()
 int8
 GlRenderSystem::popShader()
 {
-  if (shader_stack.empty()) { THEA_ERROR << getName() << ": push/popShader calls not matched"; return false; }
+  if (shader_stack.empty()) { THEA_ERROR << getName() << ": push/popShader calls not matched"; return GlCaps::setError(); }
 
-  if (!popTextures()) return false;  // must be called before binding shader below
+  if (!popTextures()) return GlCaps::setError();  // must be called before binding shader below
 
-  if (!setShader(shader_stack.top())) return false;
+  if (!setShader(shader_stack.top())) return GlCaps::setError();
   shader_stack.pop();
 
   return true;
@@ -435,12 +438,14 @@ GlRenderSystem::setTexture(int32 texunit, ITexture * texture)
   if (THEA_GL_SUPPORTS(ARB_multitexture))
     glActiveTextureARB(GL_TEXTURE0_ARB + texunit);
   else if (texunit != 0)
-  { THEA_ERROR << getName() << ": Non-zero texture unit specified but multitexturing isn't supported by OpenGL"; return false; }
+  { THEA_ERROR << getName() << ": Non-zero texture unit specified but multitexturing isn't supported by OpenGL";
+    return GlCaps::setError(); }
 
   if (texture)
   {
     GlTexture * gltex = dynamic_cast<GlTexture *>(texture);
-    if (!gltex) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL texture with a GL rendersystem"; return false; }
+    if (!gltex)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL texture with a GL rendersystem"; return GlCaps::setError(); }
 
     GLenum target = gltex->getGlTarget();
     GLuint id     = gltex->getGlId();
@@ -496,7 +501,7 @@ GlRenderSystem::setMatrixMode(int32 mode)
   }
 
   THEA_ERROR << getName() << ": Unknown matrix mode";
-  return false;
+  return GlCaps::setError();
 }
 
 int8
@@ -523,8 +528,9 @@ GlRenderSystem::pushViewMatrices()
 int8
 GlRenderSystem::getMatrix(int32 mode, IDenseMatrix<Real> * m) const
 {
-  if (!m) { THEA_ERROR << getName() << ": No output matrix supplied for getMatrix()"; return false; }
-  if (m->rows() != 4 || m->cols() != 4) { THEA_ERROR << getName() << ": getMatrix() output matrix isn't 4x4"; return false; }
+  if (!m) { THEA_ERROR << getName() << ": No output matrix supplied for getMatrix()"; return GlCaps::setError(); }
+  if (m->rows() != 4 || m->cols() != 4)
+  { THEA_ERROR << getName() << ": getMatrix() output matrix isn't 4x4"; return GlCaps::setError(); }
 
   float32 f[16];
   glGetFloatv((mode == MatrixMode::MODELVIEW ? GL_MODELVIEW_MATRIX : GL_PROJECTION_MATRIX), f);
@@ -554,8 +560,8 @@ GlRenderSystem::getMatrix(int32 mode, IDenseMatrix<Real> * m) const
 int8
 GlRenderSystem::setMatrix(IDenseMatrix<Real> const * m)
 {
-  if (!m) { THEA_ERROR << getName() << ": Can't set null matrix"; return false; }
-  if (m->rows() != 4 || m->cols() != 4) { THEA_ERROR << getName() << ": Can't set non-4x4 matrix"; return false; }
+  if (!m) { THEA_ERROR << getName() << ": Can't set null matrix"; return GlCaps::setError(); }
+  if (m->rows() != 4 || m->cols() != 4) { THEA_ERROR << getName() << ": Can't set non-4x4 matrix"; return GlCaps::setError(); }
 
   GLfloat f[16];
   GlInternal::toArray(*m, f);
@@ -574,8 +580,9 @@ GlRenderSystem::setIdentityMatrix()
 int8
 GlRenderSystem::multMatrix(IDenseMatrix<Real> const * m)
 {
-  if (!m) { THEA_ERROR << getName() << ": Can't multiply by null matrix"; return false; }
-  if (m->rows() != 4 || m->cols() != 4) { THEA_ERROR << getName() << ": Can't multiply by non-4x4 matrix"; return false; }
+  if (!m) { THEA_ERROR << getName() << ": Can't multiply by null matrix"; return GlCaps::setError(); }
+  if (m->rows() != 4 || m->cols() != 4)
+  { THEA_ERROR << getName() << ": Can't multiply by non-4x4 matrix"; return GlCaps::setError(); }
 
   GLfloat f[16];
   GlInternal::toArray(*m, f);
@@ -622,7 +629,7 @@ GlRenderSystem::setAttributePoolFromBuffer(GlBuffer const & buf)
   if (current_buffer_state.attrib_pool && buf.getPool() != current_buffer_state.attrib_pool)
   {
     THEA_ERROR << getName() << ": Attribute arrays used in a begin/endIndexedPrimitives block must share the same BufferPool";
-    return false;
+    return GlCaps::setError();
   }
 
   if (buf.getPool() != current_buffer_state.attrib_pool)
@@ -644,7 +651,7 @@ GlRenderSystem::setIndexPoolFromBuffer(GlBuffer const & buf)
   if (current_buffer_state.index_pool && buf.getPool() != current_buffer_state.index_pool)
   {
     THEA_ERROR << getName() << ": Index arrays used in a begin/endIndexedPrimitives block must share the same BufferPool";
-    return false;
+    return GlCaps::setError();
   }
 
   if (buf.getPool() != current_buffer_state.index_pool)
@@ -665,14 +672,16 @@ GlRenderSystem::setVertexBuffer(IBuffer const * vertices)
 {
   if (vertices)
   {
-    if (!vertices->isValid()) { THEA_ERROR << getName() << ": Invalid vertex buffer"; return false; }
+    if (!vertices->isValid()) { THEA_ERROR << getName() << ": Invalid vertex buffer"; return GlCaps::setError(); }
 
     GlBuffer const * g = dynamic_cast<GlBuffer const *>(vertices);
-    if (!g) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return false; }
+    if (!g)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return GlCaps::setError(); }
     if (g->getGlType() == GL_UNSIGNED_BYTE || g->getGlType() == GL_UNSIGNED_SHORT || g->getGlType() == GL_UNSIGNED_INT)
-    { THEA_ERROR << getName() << ": Buffer has unsigned integers -- did you mean to use this an index buffer?"; return false; }
+    { THEA_ERROR << getName() << ": Buffer has unsigned integers -- did you mean to use this an index buffer?";
+      return GlCaps::setError(); }
 
-    if (!setAttributePoolFromBuffer(*g)) return false;
+    if (!setAttributePoolFromBuffer(*g)) return GlCaps::setError();
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(g->numComponents(), g->getGlType(), g->getValueSize(), g->getBasePointer());
   }
@@ -688,12 +697,13 @@ GlRenderSystem::setColorBuffer(IBuffer const * colors)
 {
   if (colors)
   {
-    if (!colors->isValid()) { THEA_ERROR << getName() << ": Invalid color buffer"; return false; }
+    if (!colors->isValid()) { THEA_ERROR << getName() << ": Invalid color buffer"; return GlCaps::setError(); }
 
     GlBuffer const * g = dynamic_cast<GlBuffer const *>(colors);
-    if (!g) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return false; }
+    if (!g)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return GlCaps::setError(); }
 
-    if (!setAttributePoolFromBuffer(*g)) return false;
+    if (!setAttributePoolFromBuffer(*g)) return GlCaps::setError();
     glEnableClientState(GL_COLOR_ARRAY);
     glColorPointer(g->numComponents(), g->getGlType(), g->getValueSize(), g->getBasePointer());
   }
@@ -710,15 +720,16 @@ GlRenderSystem::setTexCoordBuffer(int32 texunit, IBuffer const * texcoords)
   if (texcoords)
   {
     if (!THEA_GL_SUPPORTS(ARB_multitexture) && texunit != 0)
-    { THEA_ERROR << getName() << ": OpenGL system does not support multitexture"; return false; }
+    { THEA_ERROR << getName() << ": OpenGL system does not support multitexture"; return GlCaps::setError(); }
 
     GlBuffer const * g = dynamic_cast<GlBuffer const *>(texcoords);
-    if (!g) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return false; }
+    if (!g)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return GlCaps::setError(); }
 
     if (THEA_GL_SUPPORTS(ARB_multitexture))
       glClientActiveTextureARB(GL_TEXTURE0_ARB + texunit);
 
-    if (!setAttributePoolFromBuffer(*g)) return false;
+    if (!setAttributePoolFromBuffer(*g)) return GlCaps::setError();
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(g->numComponents(), g->getGlType(), g->getValueSize(), g->getBasePointer());
 
@@ -737,15 +748,17 @@ GlRenderSystem::setNormalBuffer(IBuffer const * normals)
 {
   if (normals)
   {
-    if (!normals->isValid()) { THEA_ERROR << getName() << ": Invalid normal buffer"; return false; }
+    if (!normals->isValid()) { THEA_ERROR << getName() << ": Invalid normal buffer"; return GlCaps::setError(); }
 
     GlBuffer const * g = dynamic_cast<GlBuffer const *>(normals);
-    if (!g) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return false; }
-    if (g->numComponents() != 3) { THEA_ERROR << getName() << ": Normals should be 3D"; return false; }
+    if (!g)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return GlCaps::setError(); }
+    if (g->numComponents() != 3) { THEA_ERROR << getName() << ": Normals should be 3D"; return GlCaps::setError(); }
     if (g->getGlType() == GL_UNSIGNED_BYTE || g->getGlType() == GL_UNSIGNED_SHORT || g->getGlType() == GL_UNSIGNED_INT)
-    { THEA_ERROR << getName() << ": Buffer has unsigned integers -- did you mean to use this an index buffer?"; return false; }
+    { THEA_ERROR << getName() << ": Buffer has unsigned integers -- did you mean to use this an index buffer?";
+      return GlCaps::setError(); }
 
-    if (!setAttributePoolFromBuffer(*g)) return false;
+    if (!setAttributePoolFromBuffer(*g)) return GlCaps::setError();
     glEnableClientState(GL_NORMAL_ARRAY);
     glNormalPointer(g->getGlType(), g->getValueSize(), g->getBasePointer());
   }
@@ -761,15 +774,16 @@ GlRenderSystem::setIndexBuffer(IBuffer const * indices)
 {
   if (indices)
   {
-    if (!indices->isValid()) { THEA_ERROR << getName() << ": Invalid index buffer"; return false; }
+    if (!indices->isValid()) { THEA_ERROR << getName() << ": Invalid index buffer"; return GlCaps::setError(); }
 
     GlBuffer const * g = dynamic_cast<GlBuffer const *>(indices);
-    if (!g) { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return false; }
-    if (g->numComponents() != 1) { THEA_ERROR << getName() << ": Indices should be 1D"; return false; }
+    if (!g)
+    { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL buffer with a GL rendersystem"; return GlCaps::setError(); }
+    if (g->numComponents() != 1) { THEA_ERROR << getName() << ": Indices should be 1D"; return GlCaps::setError(); }
     if (g->getGlTarget() != GL_ELEMENT_ARRAY_BUFFER_ARB)
-    { THEA_ERROR << getName() << ": Index buffer target should be GL_ELEMENT_ARRAY_BUFFER_ARB"; return false; }
+    { THEA_ERROR << getName() << ": Index buffer target should be GL_ELEMENT_ARRAY_BUFFER_ARB"; return GlCaps::setError(); }
 
-    if (!setIndexPoolFromBuffer(*g)) return false;
+    if (!setIndexPoolFromBuffer(*g)) return GlCaps::setError();
     glEnableClientState(GL_VERTEX_ARRAY);
     current_buffer_state.index_buf = *g;
   }
@@ -814,7 +828,8 @@ GlRenderSystem::sendSequentialIndices(int32 primitive, uint64 first_index, int64
 int8
 GlRenderSystem::sendIndicesFromBuffer(int32 primitive, uint64 offset, int64 num_indices)
 {
-  if (!current_buffer_state.index_buf.isValid()) { THEA_ERROR << getName() << ": No valid index array set"; return false; }
+  if (!current_buffer_state.index_buf.isValid())
+  { THEA_ERROR << getName() << ": No valid index array set"; return GlCaps::setError(); }
 
   uint8 * ptr = static_cast<uint8 *>(current_buffer_state.index_buf.getBasePointer());
   int32 elem_size = current_buffer_state.index_buf.getValueSize();
@@ -828,7 +843,8 @@ GlRenderSystem::sendIndicesFromBuffer(int32 primitive, uint64 offset, int64 num_
 int8
 GlRenderSystem::endIndexedPrimitives()
 {
-  if (buffer_stack.empty()) { THEA_ERROR << getName() << ": begin/endIndexedPrimitives calls not matched"; return false; }
+  if (buffer_stack.empty())
+  { THEA_ERROR << getName() << ": begin/endIndexedPrimitives calls not matched"; return GlCaps::setError(); }
 
   glPopClientAttrib();
 
@@ -873,7 +889,7 @@ GlRenderSystem::sendVertex(int32 dims, Real const * coords)
   }
 
   THEA_ERROR << getName() << ": Unsupported vertex dimension " << dims;
-  return false;
+  return GlCaps::setError();
 }
 
 int8
@@ -936,7 +952,7 @@ GlRenderSystem::sendTexCoord(int32 texunit, int32 dims, Real const * coords)
 {
   bool multi = THEA_GL_SUPPORTS(ARB_multitexture);
   if (!multi && texunit != 0)
-  { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+  { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
   // The conditional should be totally optimized out at compile-time
   if (sizeof(Real) == 4)
@@ -963,7 +979,7 @@ GlRenderSystem::sendTexCoord(int32 texunit, int32 dims, Real const * coords)
   }
 
   THEA_ERROR << getName() << ": Unsupported texture coordinates dimension " << dims;
-  return false;
+  return GlCaps::setError();
 }
 
 int8
@@ -976,7 +992,8 @@ GlRenderSystem::sendTexCoord(int32 texunit, Real x)
   }
   else
   {
-    if (texunit != 0) { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+    if (texunit != 0)
+    { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
     if (sizeof(Real) == 4) glTexCoord1f((GLfloat)x);
     else                   glTexCoord1d(x);
@@ -995,7 +1012,8 @@ GlRenderSystem::sendTexCoord(int32 texunit, Real x, Real y)
   }
   else
   {
-    if (texunit != 0) { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+    if (texunit != 0)
+    { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
     if (sizeof(Real) == 4) glTexCoord2f((GLfloat)x, (GLfloat)y);
     else                   glTexCoord2d(x, y);
@@ -1014,7 +1032,8 @@ GlRenderSystem::sendTexCoord(int32 texunit, Real x, Real y, Real z)
   }
   else
   {
-    if (texunit != 0) { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+    if (texunit != 0)
+    { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
     if (sizeof(Real) == 4) glTexCoord3f((GLfloat)x, (GLfloat)y, (GLfloat)z);
     else                   glTexCoord3d(x, y, z);
@@ -1033,7 +1052,8 @@ GlRenderSystem::sendTexCoord(int32 texunit, Real x, Real y, Real z, Real w)
   }
   else
   {
-    if (texunit != 0) { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+    if (texunit != 0)
+    { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
     if (sizeof(Real) == 4) glTexCoord4f((GLfloat)x, (GLfloat)y, (GLfloat)z, (GLfloat)w);
     else                   glTexCoord4d(x, y, z, w);
@@ -1066,9 +1086,9 @@ GlRenderSystem::clear(int8 color, int8 depth, int8 stencil)
 int8
 GlRenderSystem::pushState()
 {
-  if (!pushFramebuffer()) return false;
-  if (!pushShader()) return false;
-  if (!pushTextures()) return false;
+  if (!pushFramebuffer()) return GlCaps::setError();
+  if (!pushShader()) return GlCaps::setError();
+  if (!pushTextures()) return GlCaps::setError();
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
@@ -1301,9 +1321,9 @@ GlRenderSystem::popState()
 {
   glPopClientAttrib();
   glPopAttrib();
-  if (!popTextures()) return false;
-  if (!popShader()) return false;
-  if (!popFramebuffer()) return false;
+  if (!popTextures()) return GlCaps::setError();
+  if (!popShader()) return GlCaps::setError();
+  if (!popFramebuffer()) return GlCaps::setError();
 
   return true;
 }

@@ -63,6 +63,9 @@ bool GlCaps::bug_redBlueMipmapSwap     = false;
 bool GlCaps::bug_mipmapGeneration      = false;
 bool GlCaps::bug_slowVBO               = false;
 
+Spinlock GlCaps::last_error_lock;
+int64 GlCaps::last_error = GL_NO_ERROR;
+
 // Cache of values supplied to supportsImageFormat. Works on pointers since there is no way for users to construct their own
 // ImageFormats.
 static Map<ITexture::Format const *, bool> _supportedTextureFormat;
@@ -685,7 +688,8 @@ GlCaps::vendor()
   return _driverVendor;
 }
 
-std::string const & GlCaps::renderer()
+std::string const &
+GlCaps::renderer()
 {
   alwaysAssertM(_loadedExtensions, "Cannot call GlCaps::renderer before GlCaps::init()");
   static std::string _glRenderer = (char *)glGetString(GL_RENDERER);
@@ -1000,6 +1004,28 @@ GlCaps::describeSystem()
   std::ostringstream os;
   describeSystem(os);
   return os.str();
+}
+
+int8
+GlCaps::setError(int64 err, int8 retval)
+{
+  last_error_lock.lock();
+    last_error = err;
+  last_error_lock.unlock();
+
+  return retval;
+}
+
+/** Get the last error code internally flagged by the system and clear the error state. */
+int64
+GlCaps::getAndClearError()
+{
+  int64 err = 0;
+  last_error_lock.lock();
+    err = last_error;
+  last_error_lock.unlock();
+
+  return err;
 }
 
 #ifdef THEA_WINDOWS

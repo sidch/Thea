@@ -83,19 +83,20 @@ int8
 GlFramebuffer::attach(int32 ap, ITexture * texture, int32 face, int64 z_offset)
 {
   if (ap < 0 || ap >= AttachmentPoint::NUM)
-  { THEA_ERROR << getName() << ": Invalid attachment point"; return false; }
+  { THEA_ERROR << getName() << ": Invalid attachment point"; return GlCaps::setError(); }
 
   GlTexture * gl_texture = dynamic_cast<GlTexture *>(texture);
   if (!(texture && gl_texture) && !(!texture && !gl_texture))
-  { THEA_ERROR << getName() << ": Texture is not a valid OpenGL texture"; return false; }
+  { THEA_ERROR << getName() << ": Texture is not a valid OpenGL texture"; return GlCaps::setError(); }
 
   if (gl_texture)
   {
     if (gl_texture->getDimension() == ITexture::Dimension::DIM_3D && z_offset >= gl_texture->getDepth())
-    { THEA_ERROR << getName() << ": Z-offset lies outside depth range of 3D texture"; return false; }
+    { THEA_ERROR << getName() << ": Z-offset lies outside depth range of 3D texture"; return GlCaps::setError(); }
 
     if (num_attachments > 0 && (gl_texture->getWidth() != width || gl_texture->getHeight() != height))
-    { THEA_ERROR << getName() << ": Texture to attach does not have same size as existing attachments"; return false; }
+    { THEA_ERROR << getName() << ": Texture to attach does not have same size as existing attachments";
+      return GlCaps::setError(); }
   }
 
   GlTexture * current_attachment = attachment_table[ap];
@@ -175,13 +176,13 @@ GlFramebuffer::attach(int32 ap, ITexture * texture, int32 face, int64 z_offset)
   {
     THEA_ERROR << getName() << ": Could not attach texture to framebuffer (" << e.what() << ')';
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
   catch (...)
   {
     THEA_ERROR << getName() << ": Could not attach texture to framebuffer";
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
 
   // Restore the original framebuffer
@@ -198,7 +199,7 @@ int8
 GlFramebuffer::detach(int32 ap)
 {
   if (ap < 0 || ap >= AttachmentPoint::NUM)
-  { THEA_ERROR << getName() << ": Invalid attachment point"; return false; }
+  { THEA_ERROR << getName() << ": Invalid attachment point"; return GlCaps::setError(); }
 
   // Get current framebuffer
   GLuint orig_fb = (GLuint)glGetInteger(GL_FRAMEBUFFER_BINDING_EXT);
@@ -235,13 +236,13 @@ GlFramebuffer::detach(int32 ap)
   {
     THEA_ERROR << getName() << ": Could not detach texture from framebuffer (" << e.what() << ')';
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
   catch (...)
   {
     THEA_ERROR << getName() << ": Could not detach texture from framebuffer";
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
 
   // Restore the original framebuffer
@@ -291,13 +292,13 @@ GlFramebuffer::detachAll()
   {
     THEA_ERROR << getName() << ": Could not detach all textures from framebuffer (" << e.what() << ')';
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
   catch (...)
   {
     THEA_ERROR << getName() << ": Could not detach all textures from framebuffer";
     if (orig_fb != gl_fbid) glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, orig_fb);  // restore the original framebuffer
-    return false;
+    return GlCaps::setError();
   }
 
   // Restore the original framebuffer
@@ -307,7 +308,7 @@ GlFramebuffer::detachAll()
     THEA_GL_OK_OR_RETURN(0)
   }
 
-  return false;
+  return GlCaps::setError();
 }
 
 int8
@@ -321,21 +322,21 @@ GlFramebuffer::use()
 
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT:
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
-    { THEA_ERROR << getName() << ": Framebuffer is not attachment-complete"; return false; }
+    { THEA_ERROR << getName() << ": Framebuffer is not attachment-complete"; return GlCaps::setError(); }
 
     case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
-    { THEA_ERROR << getName() << ": Framebuffer attachments aren't of the same size"; return false; }
+    { THEA_ERROR << getName() << ": Framebuffer attachments aren't of the same size"; return GlCaps::setError(); }
 
     case GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT:
-    { THEA_ERROR << getName() << ": Color attachments do not all have the same format"; return false; }
+    { THEA_ERROR << getName() << ": Color attachments do not all have the same format"; return GlCaps::setError(); }
 
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT:
-    { THEA_ERROR << getName() << ": Draw buffer doesn't have a valid bound texture"; return false; }
+    { THEA_ERROR << getName() << ": Draw buffer doesn't have a valid bound texture"; return GlCaps::setError(); }
 
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT:
-    { THEA_ERROR << getName() << ": Read buffer doesn't have a valid bound texture"; return false; }
+    { THEA_ERROR << getName() << ": Read buffer doesn't have a valid bound texture"; return GlCaps::setError(); }
 
-    default: THEA_ERROR << getName() << ": Unknown/implementation-dependent framebuffer error"; return false;
+    default: THEA_ERROR << getName() << ": Unknown/implementation-dependent framebuffer error"; return GlCaps::setError();
   }
 
   glDrawBuffersARB((GLsizei)gl_draw_buffers.size(), &gl_draw_buffers[0]);

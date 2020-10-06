@@ -19,6 +19,7 @@
 #include "../../Algorithms/FastCopy.hpp"
 #include "../../Array.hpp"
 #include "../../Map.hpp"
+#include "GlCaps.hpp"
 #include "GlCommon.hpp"
 #include "GlTexture.hpp"
 #include "GlHeaders.hpp"
@@ -219,17 +220,17 @@ toCanonicalType(GLenum type)
   if (entry == uniforms.end())                                                                                                \
   {                                                                                                                           \
     THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' not found";                                                \
-    return false;                                                                                                             \
+    return GlCaps::setError();                                                                                                \
   }                                                                                                                           \
                                                                                                                               \
   if (GlShaderInternal::toCanonicalType(entry->second.type) != uniform_gl_type)                                               \
   {                                                                                                                           \
     THEA_ERROR << getName() << ": Argument does not match the declared type of uniform '" << uniform_name << '\'';            \
-    return false;                                                                                                             \
+    return GlCaps::setError();                                                                                                \
   }                                                                                                                           \
                                                                                                                               \
   if (entry->second.size != (GLint)uniform_size)                                                                              \
-  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' expects size " << uniform_size; return false; }
+  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' expects size " << uniform_size; return GlCaps::setError(); }
 
 template <typename T, typename Enable = void> struct GlType {};
 template <typename T> struct GlType<T, typename std::enable_if<  std::is_integral<T>::value >::type> { typedef GLint   type; };
@@ -306,13 +307,14 @@ GlShader::setUniformHelper(char const * uniform_name, IDenseMatrix<T> const * va
 {
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
-  if (!value) { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null value"; return false; }
+  if (!value)
+  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null value"; return GlCaps::setError(); }
 
   GLenum gl_type = GlShaderInternal::uniformTypeFromMatrix(*value);
   if (gl_type == GL_INVALID_ENUM)
   {
     THEA_ERROR << getName() << ": Matrix provided for uniform '" << uniform_name << "' doesn't correspond to a valid GLSL type";
-    return false;
+    return GlCaps::setError();
   }
 
   Uniforms::iterator entry = uniforms.find(uniform_name);
@@ -332,7 +334,8 @@ GlShader::setUniformHelper(char const * uniform_name, int64 num_values, T const 
 {
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
-  if (!values) { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null array"; return false; }
+  if (!values)
+  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null array"; return GlCaps::setError(); }
 
   Uniforms::iterator entry = uniforms.find(uniform_name);
   THEA_GLSHADER_SET_UNIFORM_CHECKS(GlShaderInternal::uniformTypeFromScalar<T>(), num_values)
@@ -349,25 +352,27 @@ GlShader::setUniformHelper(char const * uniform_name, int64 num_values, IDenseMa
 {
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
-  if (!values) { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null array"; return false; }
-  if (num_values < 1) { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' assigned empty array"; return false; }
+  if (!values)
+  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' can't be assigned a null array"; return GlCaps::setError(); }
+  if (num_values < 1)
+  { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' assigned empty array"; return GlCaps::setError(); }
 
   for (intx i = 0; i < num_values; ++i)
     if (!values[0])
-    { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' assigned null array entry"; return false; }
+    { THEA_ERROR << getName() << ": Uniform '" << uniform_name << "' assigned null array entry"; return GlCaps::setError(); }
 
   GLenum gl_type = GlShaderInternal::uniformTypeFromMatrix(*values[0]);
   if (gl_type == GL_INVALID_ENUM)
   {
     THEA_ERROR << getName() << ": Matrix provided for uniform '" << uniform_name << "' doesn't correspond to a valid GLSL type";
-    return false;
+    return GlCaps::setError();
   }
 
   for (intx i = 1; i < num_values; ++i)
     if (GlShaderInternal::uniformTypeFromMatrix(*values[1]) != gl_type)
     {
       THEA_ERROR << getName() << ": Matrices provided for uniform '" << uniform_name << "' must have identical dimensions";
-      return false;
+      return GlCaps::setError();
     }
 
   Uniforms::iterator entry = uniforms.find(uniform_name);

@@ -10,6 +10,7 @@
 #define __Thea_Graphics_Gl_GlCaps_hpp__
 
 #include "../../Graphics/ITexture.hpp"
+#include "../../Spinlock.hpp"
 #include "GlCommon.hpp"
 #include "GlHeaders.hpp"
 
@@ -142,6 +143,21 @@ class THEA_GL_DLL_LOCAL GlCaps
     /** Get a description of the OpenGL system as a (multi-line) string. */
     static std::string describeSystem();
 
+    /**
+     * Set an internal error code (stored by GlCaps as a 64-bit integer, default GL_INVALID_OPERATION) and return a specified
+     * value (default 0).
+     *
+     * @see getAndClearError()
+     */
+    static int8 setError(int64 err = GL_INVALID_OPERATION, int8 retval = 0);
+
+    /**
+     * Get the last error code internally flagged by the system and clear the error state.
+     *
+     * @see setError()
+     */
+    static int64 getAndClearError();
+
   private:
     /** Create a headless rendering context, if possible. */
     static bool createHeadlessContext();
@@ -171,11 +187,11 @@ class THEA_GL_DLL_LOCAL GlCaps
     /** Runs all of the checkBug_ methods. Called from loadExtensions(). */
     static void checkAllBugs();
 
-    /** True when init has been called. */
+    // True when init has been called.
     static bool _initialized;
 
-    static bool has_headless_context;  ///< Has a headless context been created?
-    static GlContext headless_context;  ///< Handle to headless context, if any.
+    static bool has_headless_context;  // Has a headless context been created?
+    static GlContext headless_context;  // Handle to headless context, if any.
 
 #if defined(THEA_GL_OSMESA)
     static char * headless_buffer;
@@ -187,17 +203,17 @@ class THEA_GL_DLL_LOCAL GlCaps
 #elif defined(THEA_MAC)
 #endif
 
-    /** True when loadExtensions has already been called. */
+    // True when loadExtensions has already been called.
     static bool _loadedExtensions;
 
-    /** True if this is GL 2.0 or greater, which mandates certain extensions.*/
+    // True if this is GL 2.0 or greater, which mandates certain extensions.
     static bool _hasGlMajorVersion2;
 
     static int  _numTextureCoords;
     static int  _numTextures;
     static int  _numTextureUnits;
 
-    /** True when checkAllBugs has been called. */
+    // True when checkAllBugs has been called.
     static bool _checkedForBugs;
 
     static bool bug_glMultiTexCoord3fvARB;
@@ -205,6 +221,10 @@ class THEA_GL_DLL_LOCAL GlCaps
     static bool bug_redBlueMipmapSwap;
     static bool bug_mipmapGeneration;
     static bool bug_slowVBO;
+
+    // Last error code
+    static Spinlock last_error_lock;
+    static int64 last_error;
 
 }; // class GlCaps
 

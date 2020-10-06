@@ -672,7 +672,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public IMesh
      */
     bool wireframeIsEnabled() const { return wireframe_enabled; }
 
-    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const;
+    int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const;
 
   protected:
     /** Invalidate part or all of the current GPU data for the mesh. */
@@ -685,7 +685,7 @@ class THEA_API DisplayMesh : public virtual NamedObject, public IMesh
     void allGpuBuffersAreValid() { changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
-    void uploadToGraphicsSystem(IRenderSystem & render_system);
+    bool uploadToGraphicsSystem(IRenderSystem & render_system);
 
     /** Invalidate the current bounding box of the mesh. */
     void invalidateBounds() { valid_bounds = false; }

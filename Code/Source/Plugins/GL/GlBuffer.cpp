@@ -102,18 +102,19 @@ int8
 GlBuffer::update(int64 start_value, int64 num_values_to_update, int ncomp, int32 type, GLenum gl_target_, void const * src)
 {
   if (num_values_to_update <= 0) return true;
-  if (!isValid()) { THEA_ERROR << "GlBuffer: Can't update invalid buffer"; return false; }
-  if (ncomp < 1) { THEA_ERROR << "GlBuffer: Can't update buffer with values of dimensionality <= 0"; return false; }
+  if (!isValid()) { THEA_ERROR << "GlBuffer: Can't update invalid buffer"; return GlCaps::setError(); }
+  if (ncomp < 1)
+  { THEA_ERROR << "GlBuffer: Can't update buffer with values of dimensionality <= 0"; return GlCaps::setError(); }
 
   GLenum gl_type_ = GlInternal::getGlType(NumericType(type));
-  if (gl_type_ == GL_INVALID_ENUM) { THEA_ERROR << "GlBuffer: Invalid data type"; return false; }
+  if (gl_type_ == GL_INVALID_ENUM) { THEA_ERROR << "GlBuffer: Invalid data type"; return GlCaps::setError(); }
 
   if (num_values > 0)
   {
     if (gl_type != gl_type_ || gl_target != gl_target_)
     {
       THEA_ERROR << "GlBuffer: Can't update non-empty buffer with values of a different type";
-      return false;
+      return GlCaps::setError();
     }
   }
   else
@@ -131,7 +132,7 @@ GlBuffer::update(int64 start_value, int64 num_values_to_update, int ncomp, int32
   if (total_size > capacity)
   {
     THEA_ERROR << "GlBuffer: Can't update beyond end of buffer";
-    return false;
+    return GlCaps::setError();
   }
 
   if (start_value + num_values_to_update > num_values)
@@ -143,7 +144,7 @@ GlBuffer::update(int64 start_value, int64 num_values_to_update, int ncomp, int32
 int8
 GlBuffer::uploadToGraphicsSystem(int64 offset_bytes, int64 num_bytes, void const * data)
 {
-  if (!isValid()) { THEA_ERROR << "GlBuffer: Cannot upload invalid buffer to graphics system"; return false; }
+  if (!isValid()) { THEA_ERROR << "GlBuffer: Cannot upload invalid buffer to graphics system"; return GlCaps::setError(); }
 
   void * ptr = (void *)((uint8 *)pointer + offset_bytes);
 

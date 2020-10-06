@@ -386,68 +386,6 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     if (!matcap_tex) return -1;
   }
 
-#if 0
-  IShader * background_shader = nullptr;
-  if (!background_shader)
-  {
-    background_shader = render_system->createShader("Background shader");
-
-    background_shader->attachModuleFromFile(IShader::ModuleType::VERTEX, "../Resources/Materials/FlatTextureVert.glsl");
-    background_shader->attachModuleFromFile(IShader::ModuleType::FRAGMENT, "../Resources/Materials/FlatTextureFrag.glsl");
-
-    background_shader->setUniform("texture", matcap_tex);
-  }
-
-  THEA_GL_OK_OR_RETURN(-1)
-
-  render_system->pushShader();
-    render_system->setShader(background_shader);
-
-    THEA_GL_OK_OR_RETURN(-1)
-
-    // FIXME: For some strange reason calling glActiveTextureARB (as done by IRenderSystem::sendTexCoord) within the
-    // glBegin/glEnd block below triggers a GL invalid operation error. Hence we'll just use the plain vanilla GL calls instead
-    // of the IRenderSystem wrappers (Update: this might have been fixed by the recent fix to GlTexture.)
-    glPushAttrib(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-    THEA_GL_OK_OR_RETURN(-1)
-      glDepthFunc(GL_ALWAYS);
-    THEA_GL_OK_OR_RETURN(-1)
-      glDepthMask(GL_FALSE);
-    THEA_GL_OK_OR_RETURN(-1)
-      glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    THEA_GL_OK_OR_RETURN(-1)
-
-    THEA_GL_OK_OR_RETURN(-1)
-      glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
-    THEA_GL_OK_OR_RETURN(-1)
-      glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
-    THEA_GL_OK_OR_RETURN(-1)
-
-        glBegin(GL_QUADS);
-           glTexCoord2f(0, 0); glVertex3f(-1, -1, 0.5f);
-           glTexCoord2f(1, 0); glVertex3f( 1, -1, 0.5f);
-           glTexCoord2f(1, 1); glVertex3f( 1,  1, 0.5f);
-           glTexCoord2f(0, 1); glVertex3f(-1,  1, 0.5f);
-        glEnd();
-
-      THEA_GL_OK_OR_RETURN(-1)
-
-      glMatrixMode(GL_PROJECTION); glPopMatrix();
-      glMatrixMode(GL_MODELVIEW); glPopMatrix();
-    glPopAttrib();
-
-    THEA_GL_OK_OR_RETURN(-1)
-
-  render_system->popShader();
-  render_system->destroyTexture(matcap_tex);
-
-  THEA_GL_OK_OR_RETURN(-1)
-
-  THEA_CONSOLE << "Drew background";
-
-  return 0;
-#endif
-
   // Load 2D texture, if any
   tex2d = nullptr;
   if (!tex2d_path.empty())
@@ -517,7 +455,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
           {
             render_system->multMatrix(&asLvalue(Math::wrapMatrix(transforms[0])));
-            renderModel(model, primary_color);
+            if (!renderModel(model, primary_color)) return -1;
           }
           render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
 
@@ -533,7 +471,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
             render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->pushMatrix();
             {
               render_system->multMatrix(&asLvalue(Math::wrapMatrix(transforms[i])));
-              renderModel(overlay, overlay_color);
+              if (!renderModel(overlay, overlay_color)) return -1;
             }
             render_system->setMatrixMode(IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
           }
@@ -2649,15 +2587,15 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
     {
       // First back faces...
       render_system->setCullFace(IRenderSystem::CullFace::FRONT);
-      model.mesh_group.draw(render_system, &opts);
+      if (!model.mesh_group.draw(render_system, &opts)) return false;
 
       // ... then front faces
       render_system->setCullFace(IRenderSystem::CullFace::BACK);
-      model.mesh_group.draw(render_system, &opts);
+      if (!model.mesh_group.draw(render_system, &opts)) return false;
     }
     else
     {
-      model.mesh_group.draw(render_system, &opts);
+      if (!model.mesh_group.draw(render_system, &opts)) return false;
     }
   }
 
@@ -2665,7 +2603,9 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
   render_system->popShapeFlags();
   render_system->popShader();
 
-  THEA_GL_OK_OR_RETURN(false)
+  char const * err = nullptr;
+  if ((err = render_system->getAndClearError())) { THEA_ERROR << "Rendering error (" << err << ')'; return false; }
+
   return true;
 }
 

@@ -674,15 +674,15 @@ class /* THEA_API */ DcelMesh : public virtual NamedObject, public IMesh
       packTopology();
     }
 
-    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
+    int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
     {
-      if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return; }
+      if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return false; }
       if (!options) options = RenderOptions::defaults();
 
       if (buffered_rendering)
-        drawBuffered(*render_system, *options);
+        return drawBuffered(*render_system, *options);
       else
-        drawImmediate(*render_system, *options);
+        return drawImmediate(*render_system, *options);
     }
 
   private:
@@ -1210,7 +1210,7 @@ class /* THEA_API */ DcelMesh : public virtual NamedObject, public IMesh
     }
 
     /** Draw the mesh in immediate rendering mode. */
-    void drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const;
+    int8 drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const;
 
     /**
      * Utility function to draw a face. Must be enclosed in the appropriate
@@ -1259,10 +1259,10 @@ class /* THEA_API */ DcelMesh : public virtual NamedObject, public IMesh
     void setAllGpuBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
-    void uploadToGraphicsSystem(IRenderSystem & render_system);
+    bool uploadToGraphicsSystem(IRenderSystem & render_system);
 
     /** Draw the mesh in GPU-buffered rendering mode. */
-    void drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const;
+    int8 drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
     void packVertexPositions() const
@@ -1455,10 +1455,10 @@ class /* THEA_API */ DcelMesh : public virtual NamedObject, public IMesh
 };
 
 template <typename V, typename E, typename F>
-inline void
+bool
 DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
-  if (!buffered_rendering || changed_buffers == 0) return;
+  if (!buffered_rendering || changed_buffers == 0) return true;
 
   if (!gpuBufferIsValid(BufferId::TOPOLOGY))
     invalidateGpuBuffers(BufferId::ALL);
@@ -1484,7 +1484,7 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
       }
 
       setAllGpuBuffersAreValid();
-      return;
+      return true;
     }
 
     packArrays();
@@ -1531,7 +1531,7 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
 
         std::string pool_name = getNameStr() + " buffer pool";
         buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
-        if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+        if (!buf_pool) return false;
       }
       // Else no need to reset buf_pool, we've done it above
     }
@@ -1539,59 +1539,54 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
     {
       std::string pool_name = getNameStr() + " buffer pool";
       buf_pool = render_system.createBufferPool(pool_name.c_str(), num_bytes, IBufferPool::Usage::WRITE_OCCASIONALLY, true);
-      if (!buf_pool) throw Error(getNameStr() + ": Couldn't create buffer pool");
+      if (!buf_pool) return false;
     }
 
     if (!packed_vertex_positions.empty())
     {
-      vertex_positions_buf = buf_pool->createBuffer(vertex_position_bytes);
-      if (!vertex_positions_buf) throw Error(getNameStr() + ": Couldn't create vertices buffer");
-      vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
-                                   &packed_vertex_positions[0]);
+      if (!(vertex_positions_buf = buf_pool->createBuffer(vertex_position_bytes))) return false;
+      if (!vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
+                                                  &packed_vertex_positions[0])) return false;
     }
 
     if (!packed_vertex_normals.empty())
     {
-      vertex_normals_buf = buf_pool->createBuffer(vertex_normal_bytes);
-      if (!vertex_normals_buf) throw Error(getNameStr() + ": Couldn't create normals buffer");
-      vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL, &packed_vertex_normals[0]);
+      if (!(vertex_normals_buf = buf_pool->createBuffer(vertex_normal_bytes))) return false;
+      if (!vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL,
+                                                &packed_vertex_normals[0])) return false;
     }
 
     if (!packed_vertex_colors.empty())
     {
-      vertex_colors_buf = buf_pool->createBuffer(vertex_color_bytes);
-      if (!vertex_colors_buf) throw Error(getNameStr() + ": Couldn't create colors buffer");
-      vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL, &packed_vertex_colors[0]);
+      if (!(vertex_colors_buf = buf_pool->createBuffer(vertex_color_bytes))) return false;
+      if (!vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL,
+                                               &packed_vertex_colors[0])) return false;
     }
 
     if (!packed_vertex_texcoords.empty())
     {
-      vertex_texcoords_buf = buf_pool->createBuffer(vertex_texcoord_bytes);
-      if (!vertex_texcoords_buf) throw Error(getNameStr() + ": Couldn't create texcoords buffer");
-      vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::REAL,
-                                   &packed_vertex_texcoords[0]);
+      if (!(vertex_texcoords_buf = buf_pool->createBuffer(vertex_texcoord_bytes))) return false;
+      if (!vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::REAL,
+                                                  &packed_vertex_texcoords[0])) return false;
     }
 
 #ifndef THEA_DCEL_MESH_NO_INDEX_ARRAY
     if (!packed_tris.empty())
     {
-      tris_buf = buf_pool->createBuffer(tri_bytes);
-      if (!tris_buf) throw Error(getNameStr() + ": Couldn't create triangle indices buffer");
-      tris_buf->updateIndices(0, (int64)packed_tris.size(), NumericType::UINT32, &packed_tris[0]);
+      if (!(tris_buf = buf_pool->createBuffer(tri_bytes))) return false;
+      if (!tris_buf->updateIndices(0, (int64)packed_tris.size(), NumericType::UINT32, &packed_tris[0])) return false;
     }
 
     if (!packed_quads.empty())
     {
-      quads_buf = buf_pool->createBuffer(quad_bytes);
-      if (!quads_buf) throw Error(getNameStr() + ": Couldn't create quad indices buffer");
-      quads_buf->updateIndices(0, (int64)packed_quads.size(), NumericType::UINT32, &packed_quads[0]);
+      if (!(quads_buf = buf_pool->createBuffer(quad_bytes))) return false;
+      if (!quads_buf->updateIndices(0, (int64)packed_quads.size(), NumericType::UINT32, &packed_quads[0])) return false;
     }
 
     if (!packed_edges.empty())
     {
-      edges_buf = buf_pool->createBuffer(edge_bytes);
-      if (!edges_buf) throw Error(getNameStr() + ": Couldn't create edge indices buffer");
-      edges_buf->updateIndices(0, (int64)packed_edges.size(), NumericType::UINT32, &packed_edges[0]);
+      if (!(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
+      if (!edges_buf->updateIndices(0, (int64)packed_edges.size(), NumericType::UINT32, &packed_edges[0])) return false;
     }
 #endif
   }
@@ -1599,55 +1594,48 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
   {
     packArrays();
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty())
-      vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
-                                   &packed_vertex_positions[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty()
+     && !vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
+                                                &packed_vertex_positions[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && !vertices.empty())
-      vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL, &packed_vertex_normals[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && !vertices.empty()
+     && !vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL,
+                                              &packed_vertex_normals[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasVertexColors())
-      vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL, &packed_vertex_colors[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasVertexColors()
+     && !vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL,
+                                             &packed_vertex_colors[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasVertexTexCoords())
-      vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::UINT32,
-                                   &packed_vertex_texcoords[0]);
+    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasVertexTexCoords()
+     && !vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::UINT32,
+                                                &packed_vertex_texcoords[0])) return false;
   }
 
   setAllGpuBuffersAreValid();
+
+  return true;
 }
 
 template <typename V, typename E, typename F>
-inline void
+int8
 DcelMesh<V, E, F>::drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const
 {
   if (options.drawEdges() && !buffered_wireframe)
-    throw Error(getNameStr() + ": Can't draw mesh edges with GPU-buffered wireframe disabled");
+  { THEA_ERROR << getName() << ": Can't draw mesh edges with GPU-buffered wireframe disabled"; return false; }
 
-  const_cast<DcelMesh *>(this)->uploadToGraphicsSystem(render_system);
+  if (!const_cast<DcelMesh *>(this)->uploadToGraphicsSystem(render_system)) return false;
 
-  if (!vertex_positions_buf) return;
-  if (!options.drawFaces() && !options.drawEdges()) return;
-  if (!options.drawFaces() && halfedges.size() <= 0) return;
-  if (!options.drawEdges() && faces.size() <= 0) return;
+  if (!vertex_positions_buf) return true;
+  if (!options.drawFaces() && !options.drawEdges()) return true;
+  if (!options.drawFaces() && halfedges.size() <= 0) return true;
+  if (!options.drawEdges() && faces.size() <= 0) return true;
 
   render_system.beginIndexedPrimitives();
 
-    render_system.setVertexBuffer(vertex_positions_buf);
-    if (options.sendNormals() && vertex_normals_buf)
-      render_system.setNormalBuffer(vertex_normals_buf);
-    else
-      render_system.setNormalBuffer(nullptr);
-
-    if (options.sendColors() && vertex_colors_buf)
-      render_system.setColorBuffer(vertex_colors_buf);
-    else
-      render_system.setColorBuffer(nullptr);
-
-    if (options.sendTexCoords() && vertex_texcoords_buf)
-      render_system.setTexCoordBuffer(0, vertex_texcoords_buf);
-    else
-      render_system.setTexCoordBuffer(0, nullptr);
+    render_system.setVertexBuffer  (vertex_positions_buf);
+    render_system.setNormalBuffer  (options.sendNormals()      && vertex_normals_buf    ?  vertex_normals_buf    :  nullptr);
+    render_system.setColorBuffer   (options.sendColors()       && vertex_colors_buf     ?  vertex_colors_buf     :  nullptr);
+    render_system.setTexCoordBuffer(0, options.sendTexCoords() && vertex_texcoords_buf  ?  vertex_texcoords_buf  :  nullptr);
 
     if (options.drawFaces())
     {
@@ -1720,10 +1708,16 @@ DcelMesh<V, E, F>::drawBuffered(IRenderSystem & render_system, IRenderOptions co
     }
 
   render_system.endIndexedPrimitives();
+
+  char const * err = nullptr;
+  if ((err = render_system.getAndClearError()))
+  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
+
+  return true;
 }
 
 template <typename V, typename E, typename F>
-inline void
+int8
 DcelMesh<V, E, F>::drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const
 {
   // Three separate passes over the faces is probably faster (TODO: profile) than using Primitive::POLYGON for each face
@@ -1781,6 +1775,12 @@ DcelMesh<V, E, F>::drawImmediate(IRenderSystem & render_system, IRenderOptions c
     render_system.popColorFlags();
     render_system.popShader();
   }
+
+  char const * err = nullptr;
+  if ((err = render_system.getAndClearError()))
+  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
+
+  return true;
 }
 
 } // namespace Graphics

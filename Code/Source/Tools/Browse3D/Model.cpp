@@ -1484,11 +1484,11 @@ struct DrawVertexNormals
 
 } // namespace ModelInternal
 
-void
+int8
 Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
   if (isEmpty())
-    return;
+    return true;
 
   if (!options) options = Graphics::RenderOptions::defaults();
 
@@ -1574,13 +1574,18 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
   render_system->popTextures();
   render_system->popShader();
 
-  if (point_cloud)
-    point_cloud->draw(render_system, options);
+  if (point_cloud && !point_cloud->draw(render_system, options)) return false;
 
   if (hasTransform())
   {
     render_system->setMatrixMode(Graphics::IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
   }
+
+  char const * err = nullptr;
+  if ((err = render_system->getAndClearError()))
+  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
+
+  return true;
 }
 
 } // namespace Browse3D

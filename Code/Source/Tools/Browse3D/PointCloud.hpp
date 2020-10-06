@@ -76,7 +76,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
 
     void updateBounds();
 
-    void draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
+    int8 draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options = nullptr) const;
 
   private:
     /** Invalidate the bounding box of the point cloud. */
@@ -95,7 +95,7 @@ class PointCloud : public virtual NamedObject, public GraphicsWidget
     ColorRgba getColor(size_t point_index) const;
 
     /** Upload graphics buffers etc to GPU. */
-    void uploadToGraphicsSystem(Graphics::IRenderSystem & render_system);
+    bool uploadToGraphicsSystem(Graphics::IRenderSystem & render_system);
 
     Array<Point> points;
 

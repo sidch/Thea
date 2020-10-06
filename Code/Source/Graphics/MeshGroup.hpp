@@ -293,13 +293,15 @@ class MeshGroup : public virtual NamedObject, public IDrawable, public Serializa
      */
     AxisAlignedBox3 const & getBounds() const { return bounds; }
 
-    void THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
+    int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
     {
       for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
-        if (*mi) (*mi)->draw(render_system, options);
+        if (*mi && !(*mi)->draw(render_system, options)) return false;
 
       for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
-        if (*ci) (*ci)->draw(render_system, options);
+        if (*ci && !(*ci)->draw(render_system, options)) return false;
+
+      return true;
     }
 
     using Serializable::read;   // Added to suppress a Clang warning about hidden overloaded virtual function, but is this

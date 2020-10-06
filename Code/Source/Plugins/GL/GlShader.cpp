@@ -42,11 +42,11 @@ int8
 GlShader::attachModuleFromFile(int32 type, char const * path)
 {
   std::ifstream in(path);
-  if (!in) { THEA_ERROR << getName() << ": Shader module '" << path << "' not found"; return false; }
+  if (!in) { THEA_ERROR << getName() << ": Shader module '" << path << "' not found"; return GlCaps::setError(); }
 
   std::string source;
   if (!FileSystem::readWholeFile(path, source))
-    return false;
+    return GlCaps::setError();
 
   return attachModuleFromString(type, source.c_str());
 }
@@ -66,13 +66,13 @@ GlShader::attachModuleFromString(int32 type, char const * source)
       else if (THEA_GL_SUPPORTS(ARB_geometry_shader4))
         gltype = GL_GEOMETRY_SHADER_ARB;  // this should have exactly the same value as the EXT version, but let's play safe
       else
-      { THEA_ERROR << getName() << ": This OpenGL installation does not support geometry shaders"; return false; }
+      { THEA_ERROR << getName() << ": This OpenGL installation does not support geometry shaders"; return GlCaps::setError(); }
 
       break;
     }
     default:
       THEA_ERROR << getName() << ": Unknown module type";
-      return false;
+      return GlCaps::setError();
   }
 
   GLhandleARB module_id = glCreateShaderObjectARB(gltype);
@@ -84,7 +84,7 @@ GlShader::attachModuleFromString(int32 type, char const * source)
   THEA_GL_OK_OR_RETURN(0)
 
   glCompileShaderARB(module_id);
-  if (!checkBuildStatus(module_id, GL_OBJECT_COMPILE_STATUS_ARB, "Failed to compile shader module")) return false;
+  if (!checkBuildStatus(module_id, GL_OBJECT_COMPILE_STATUS_ARB, "Failed to compile shader module")) return GlCaps::setError();
 
   glAttachObjectARB(program_id, module_id);
   THEA_GL_OK_OR_RETURN(0)
@@ -95,7 +95,7 @@ GlShader::attachModuleFromString(int32 type, char const * source)
 
   // Update the list of active shader uniforms
   if (complete && !readActiveUniforms())
-    return false;
+    return GlCaps::setError();
 
   linked = false;
 
@@ -122,7 +122,7 @@ int8
 GlShader::readActiveUniforms()
 {
   if (!complete)
-  { THEA_ERROR << getName() << ": GL will throw an error unless the shader is complete"; return false; }
+  { THEA_ERROR << getName() << ": GL will throw an error unless the shader is complete"; return GlCaps::setError(); }
 
   uniforms.clear();
   int32 last_texture_unit = 0;
@@ -136,7 +136,7 @@ GlShader::readActiveUniforms()
   GLhandleARB old_program = glGetHandleARB(GL_PROGRAM_OBJECT_ARB);
 
   // The shader must be linked before we can use it
-  if (!link()) return false;
+  if (!link()) return GlCaps::setError();
   glUseProgramObjectARB(program_id);
   THEA_GL_OK_OR_RETURN(0)
 
@@ -173,7 +173,7 @@ GlShader::readActiveUniforms()
       }
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS({ glUseProgramObjectARB(old_program); return false; },
+  THEA_STANDARD_CATCH_BLOCKS({ glUseProgramObjectARB(old_program); return GlCaps::setError(); },
                              ERROR, "%s: Error reading active shader uniforms", getName())
 
   glUseProgramObjectARB(old_program);
@@ -188,7 +188,7 @@ GlShader::bindUniforms()
   for (Uniforms::iterator ui = uniforms.begin(); ui != uniforms.end(); ++ui)
   {
     if (!ui->second.has_value)
-    { THEA_ERROR << getName() << ": Uniform '" << ui->first << "' has not been set"; return false; }
+    { THEA_ERROR << getName() << ": Uniform '" << ui->first << "' has not been set"; return GlCaps::setError(); }
 
     if (ui->second.requires_rebind)
     {
@@ -233,7 +233,7 @@ GlShader::bindUniforms()
           if (THEA_GL_SUPPORTS(ARB_multitexture))
             glActiveTextureARB(GL_TEXTURE0_ARB + ui->second.texunit);
           else if (ui->second.texunit != 0)
-          { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return false; }
+          { THEA_ERROR << getName() << ": Multitexturing not supported, texture unit must be zero"; return GlCaps::setError(); }
 
           glBindTexture(tex_type, ui->second.value.texture->getGlId());
           glUniform1iARB(ui->second.location, ui->second.texunit);
@@ -243,7 +243,7 @@ GlShader::bindUniforms()
 
         default:
           THEA_ERROR << getName() << ": Type of uniform '" << ui->first << "' not handled";
-          return false;
+          return GlCaps::setError();
       }
     }
   }
@@ -259,7 +259,7 @@ GlShader::link()
     return true;
 
   glLinkProgramARB(program_id);
-  if (!checkBuildStatus(program_id, GL_OBJECT_LINK_STATUS_ARB, "Failed to link shader")) return false;
+  if (!checkBuildStatus(program_id, GL_OBJECT_LINK_STATUS_ARB, "Failed to link shader")) return GlCaps::setError();
   linked = true;
 
   return true;
@@ -269,11 +269,11 @@ int8
 GlShader::use()
 {
   if (!complete)
-  { THEA_ERROR << getName() << ": Shader is incomplete"; return false; }
+  { THEA_ERROR << getName() << ": Shader is incomplete"; return GlCaps::setError(); }
 
-  if (!link()) return false;
+  if (!link()) return GlCaps::setError();
   glUseProgramObjectARB(program_id);
-  if (!bindUniforms()) return false;
+  if (!bindUniforms()) return GlCaps::setError();
 
   THEA_GL_OK_OR_RETURN(0)
   return true;
@@ -294,12 +294,12 @@ GlShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
       GLsizei chars_written;
       glGetInfoLogARB(obj_id, (GLsizei)infolog_length, &chars_written, &infolog[0]);
       THEA_ERROR << getName() << ": " << error_msg << " (" << &infolog[0] << ')';
-      return false;
+      return GlCaps::setError();
     }
     else
     {
       THEA_ERROR << getName() << ": " << error_msg << " (unknown error)";
-      return false;
+      return GlCaps::setError();
     }
   }
 
@@ -310,11 +310,11 @@ int8
 GlShader::setUniform(char const * uniform_name, ITexture * value)
 {
   if (!value)
-  { THEA_ERROR << getName() << ": Texture for uniform '" << uniform_name << "' must be non-null"; return false; }
+  { THEA_ERROR << getName() << ": Texture for uniform '" << uniform_name << "' must be non-null"; return GlCaps::setError(); }
 
   GlTexture * gltex = dynamic_cast<GlTexture *>(value);
   if (!gltex)
-  { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL texture with a GL rendersystem"; return false; }
+  { THEA_ERROR << getName() << ": Attempt to use a non-OpenGL texture with a GL rendersystem"; return GlCaps::setError(); }
 
   Uniforms::iterator entry = uniforms.find(uniform_name);
   THEA_GLSHADER_SET_UNIFORM_CHECKS(gltex->getGlTarget(), 1);
@@ -328,7 +328,7 @@ int8
 GlShader::setUniform(char const * uniform_name, int64 num_values, ITexture * const * values)
 {
   THEA_ERROR << getName() << ": OpenGL texture array uniforms are not supported";
-  return false;
+  return GlCaps::setError();
 }
 
 } // namespace Gl

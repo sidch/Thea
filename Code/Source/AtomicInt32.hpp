@@ -45,7 +45,7 @@ class THEA_API AtomicInt32
 {
   private:
 #if defined(THEA_WINDOWS)
-    typedef intx ImplT;
+    typedef LONG ImplT;
     volatile ImplT m_value;
 #elif defined(THEA_MAC)
     typedef int32_t ImplT;
@@ -59,13 +59,13 @@ class THEA_API AtomicInt32
     /** Initial value is undefined. */
     AtomicInt32() {}
 
-    /** Atomic set */
+    /** Atomic initialization */
     explicit AtomicInt32(int32 x)
     {
       m_value = (ImplT)x;
     }
 
-    /** Atomic set */
+    /** Atomic copy constructor. */
     AtomicInt32(AtomicInt32 const & x)
     {
       m_value = x.m_value;
@@ -166,8 +166,8 @@ class THEA_API AtomicInt32
      * Atomic test-and-set: if <code>*this == comperand</code> then <code>*this := exchange</code>, else do nothing. In both
      * cases, returns the old value of <code>*this</code>.
      *
-     * Performs an atomic comparison of the integer with the comperand value. If this is equal to the comperand, the exchange
-     * value is stored in this. Otherwise, no operation is performed.
+     * Performs an atomic comparison of the integer with the \a comperand value. If this is equal to the comperand, the
+     * \a exchange value is stored in this. Otherwise, no operation is performed.
      *
      * @note Under VC6 the sign bit may be lost.
      */
