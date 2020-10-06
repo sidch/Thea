@@ -39,11 +39,6 @@ ADD_SUBDIRECTORY(Plugins/ARPACK)
 ADD_SUBDIRECTORY(Plugins/CSPARSE)
 ADD_SUBDIRECTORY(Plugins/GL)
 
-# Omit OPT++ from the default build until we finish this module
-IF(WITH_OPTPP)
-  ADD_SUBDIRECTORY(Plugins/OPTPP)
-ENDIF()
-
 IF(NOT DEFINED WITH_TESTS)
   SET(WITH_TESTS true)
 ENDIF()
