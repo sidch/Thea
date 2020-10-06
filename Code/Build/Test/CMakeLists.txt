@@ -435,6 +435,36 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestOPTPP
+#===========================================================
+
+IF(WITH_OPTPP)
+
+# Source file lists
+SET(TheaTestOPTPPSources
+      ${SourceRoot}/Test/TestOPTPP.cpp)
+
+# Libraries to link to
+SET(TheaTestOPTPPLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestOPTPP ${TheaTestOPTPPSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestOPTPP ${TheaTestOPTPPLibraries})
+SET_TARGET_PROPERTIES(TheaTestOPTPP PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestOPTPP "${TheaTestOPTPPLibraries}")
+ENDIF()
+
+ENDIF()
+
+#===========================================================
 # TestParam
 #===========================================================
 
