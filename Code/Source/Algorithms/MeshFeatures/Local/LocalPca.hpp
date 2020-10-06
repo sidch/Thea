@@ -12,8 +12,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_Local_LocalPCA_hpp__
-#define __Thea_Algorithms_MeshFeatures_Local_LocalPCA_hpp__
+#ifndef __Thea_Algorithms_MeshFeatures_Local_LocalPca_hpp__
+#define __Thea_Algorithms_MeshFeatures_Local_LocalPca_hpp__
 
 #include "../../../Common.hpp"
 #include "../SampledSurface.hpp"
@@ -34,7 +34,7 @@ namespace Local {
  * distribution may also be returned.
  */
 template < typename ExternalSampleKdTreeT = KdTreeN<Vector3, 3> >
-class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
+class LocalPca : public SampledSurface<ExternalSampleKdTreeT>
 {
   private:
     typedef SampledSurface<ExternalSampleKdTreeT> BaseT;  ///< Base class.
@@ -51,7 +51,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    LocalPCA(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
+    LocalPca(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -65,7 +65,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
      *   diameter will be used.
      */
     template <typename MeshT>
-    LocalPCA(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
+    LocalPca(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
     : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
     {}
 
@@ -77,7 +77,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
-    LocalPCA(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
+    LocalPca(ExternalSampleKdTreeT const * sample_kdtree_, Real normalization_scale = -1)
     : BaseT(sample_kdtree_, normalization_scale)
     {}
 
@@ -107,12 +107,12 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
       else
         this->getMutableInternalKdTree()->template processRangeUntil<IntersectionTester>(range, std::ref(func));
 
-      return func.getPCAFeatures(eigenvectors);
+      return func.getPcaFeatures(eigenvectors);
     }
 
   private:
     /** Aggregates points in the neighborhood and computes PCA features. */
-    struct LocalPCAFunctor : public Noncopyable
+    struct LocalPcaFunctor : public Noncopyable
     {
       void reset() { nbd_pts.clear(); }
 
@@ -122,7 +122,7 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
         return false;
       }
 
-      Vector3 getPCAFeatures(Vector3 * eigenvectors) const
+      Vector3 getPcaFeatures(Vector3 * eigenvectors) const
       {
         Real eval[3];
         Vector3 evec[3];
@@ -140,11 +140,11 @@ class LocalPCA : public SampledSurface<ExternalSampleKdTreeT>
 
       Array<Vector3> nbd_pts;
 
-    }; // struct LocalPCAFunctor
+    }; // struct LocalPcaFunctor
 
-    mutable LocalPCAFunctor func;
+    mutable LocalPcaFunctor func;
 
-}; // class LocalPCA
+}; // class LocalPca
 
 } // namespace Local
 } // namespace MeshFeatures

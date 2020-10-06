@@ -2,7 +2,7 @@
 #include "../../Algorithms/MeshFeatures/Local/AverageDistance.hpp"
 #include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
 #include "../../Algorithms/MeshFeatures/Local/LocalDistanceHistogram.hpp"
-#include "../../Algorithms/MeshFeatures/Local/LocalPCA.hpp"
+#include "../../Algorithms/MeshFeatures/Local/LocalPca.hpp"
 #include "../../Algorithms/MeshFeatures/Local/RandomWalks.hpp"
 #include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/MeshFeatures/Local/SpinImage.hpp"
@@ -84,9 +84,9 @@ bool computeAverageDistances(MG const & mg, Array<Vector3> const & positions, in
 bool computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_bins,
                                     DistanceType dist_type, double max_distance, double reduction_ratio,
                                     MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeLocalPCA(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
+bool computeLocalPca(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
                      Array<double> & values);
-bool computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
+bool computeLocalPcaRatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
                            Array<double> & values);
 bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num_samples, int num_radial_bins,
                        int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
@@ -411,12 +411,12 @@ main(int argc, char * argv[])
       Array<double> values;
       if (pca_type == PCA_RATIO)
       {
-        if (!computeLocalPCARatios(mg, positions, num_samples, nbd_radius, values))
+        if (!computeLocalPcaRatios(mg, positions, num_samples, nbd_radius, values))
           return -1;
       }
       else
       {
-        if (!computeLocalPCA(mg, positions, num_samples, nbd_radius, (pca_type == PCA_FULL), values))
+        if (!computeLocalPca(mg, positions, num_samples, nbd_radius, (pca_type == PCA_FULL), values))
           return -1;
       }
 
@@ -830,13 +830,13 @@ computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, 
 }
 
 bool
-computeLocalPCA(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
+computeLocalPca(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius, bool pca_full,
                 Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA features";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPca<> pca(mg, num_samples, (Real)mesh_scale);
 
   Vector3 evecs[3];
   for (size_t i = 0; i < positions.size(); ++i)
@@ -863,13 +863,13 @@ computeLocalPCA(MG const & mg, Array<Vector3> const & positions, intx num_sample
 }
 
 bool
-computeLocalPCARatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
+computeLocalPcaRatios(MG const & mg, Array<Vector3> const & positions, intx num_samples, double nbd_radius,
                       Array<double> & values)
 {
   THEA_CONSOLE << "Computing local PCA ratios";
 
   values.clear();
-  MeshFeatures::Local::LocalPCA<> pca(mg, num_samples, (Real)mesh_scale);
+  MeshFeatures::Local::LocalPca<> pca(mg, num_samples, (Real)mesh_scale);
 
   for (size_t i = 0; i < positions.size(); ++i)
   {
