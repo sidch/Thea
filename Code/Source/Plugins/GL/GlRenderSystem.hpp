@@ -40,7 +40,8 @@ class THEA_GL_DLL_LOCAL GlRenderSystem : public IRenderSystem
     char const * THEA_ICALL getName() const { return name.c_str(); }
 
     char const * THEA_ICALL describeSystem() const;
-    char const * THEA_ICALL getAndClearError() const;
+    char const * THEA_ICALL getLastError() const;
+    void THEA_ICALL clearErrors();
 
     IFramebuffer * THEA_ICALL createFramebuffer(char const * name);
     int8 THEA_ICALL destroyFramebuffer(IFramebuffer * framebuffer);

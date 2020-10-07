@@ -120,15 +120,16 @@ GlRenderSystem::describeSystem() const
 }
 
 char const *
-GlRenderSystem::getAndClearError() const
+GlRenderSystem::getLastError() const
 {
-  GLenum err_code = (GLenum)GlCaps::getAndClearError();  // check if we flagged an error
-  if (err_code == GL_NO_ERROR) err_code = glGetError();  // ... failing which, see if GL flagged an error
+  auto err_code = GlCaps::getLastError();
+  return (err_code != GL_NO_ERROR ? theaGlErrorString(err_code) : nullptr);
+}
 
-  if (err_code != GL_NO_ERROR)
-    return theaGlErrorString(err_code);
-  else
-    return nullptr;
+void
+GlRenderSystem::clearErrors()
+{
+  GlCaps::clearErrors();
 }
 
 IFramebuffer *

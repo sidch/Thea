@@ -113,21 +113,18 @@ struct THEA_GL_DLL_LOCAL GlClientScope
 
 /** Replacement for deprecated gluErrorString(). */
 inline char const *
-theaGlErrorString(GLuint error)
+theaGlErrorString(GLenum error)
 {
   switch (error)
   {
-#define THEA_GL_ERROR_STRING_BRANCH(p) case(p): return #p;
-    THEA_GL_ERROR_STRING_BRANCH(GL_NO_ERROR)
-    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_ENUM)
-    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_VALUE)
-    THEA_GL_ERROR_STRING_BRANCH(GL_INVALID_OPERATION)
-    THEA_GL_ERROR_STRING_BRANCH(GL_STACK_OVERFLOW)
-    THEA_GL_ERROR_STRING_BRANCH(GL_STACK_UNDERFLOW)
-    THEA_GL_ERROR_STRING_BRANCH(GL_OUT_OF_MEMORY)
-    THEA_GL_ERROR_STRING_BRANCH(GL_TABLE_TOO_LARGE)
-    default: break;
-#undef THEA_GL_ERROR_STRING_BRANCH
+    case GL_NO_ERROR           : return "no error";
+    case GL_INVALID_ENUM       : return "invalid enum";
+    case GL_INVALID_VALUE      : return "invalid value";
+    case GL_INVALID_OPERATION  : return "invalid operation";
+    case GL_STACK_OVERFLOW     : return "stack overflow";
+    case GL_STACK_UNDERFLOW    : return "stack underflow";
+    case GL_OUT_OF_MEMORY      : return "out of memory";
+    case GL_TABLE_TOO_LARGE    : return "table too large";
   }
 
   if ((error >= GLU_NURBS_ERROR1) && (error <= GLU_NURBS_ERROR37))
@@ -146,12 +143,10 @@ theaGlErrorString(GLuint error)
 #define THEA_CHECK_GL_OK \
 { \
   GLenum err_code; \
-  char const * err_string; \
-\
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
-    GlCaps::setError(err_code); \
-    err_string = Thea::Graphics::Gl::theaGlErrorString(err_code); \
+    Thea::Graphics::Gl::GlCaps::setError(err_code); \
+    char const * err_string = Thea::Graphics::Gl::theaGlErrorString(err_code); \
     throw Error(Thea::format("%s:%ld: OpenGL error: %s", \
                 Thea::FilePath::objectName(__FILE__).c_str(), (long)__LINE__, err_string)); \
   } \
@@ -167,7 +162,7 @@ theaGlErrorString(GLuint error)
   GLenum err_code; \
   if ((err_code = glGetError()) != GL_NO_ERROR) \
   { \
-    GlCaps::setError(err_code); \
+    Thea::Graphics::Gl::GlCaps::setError(err_code); \
     THEA_ERROR << Thea::FilePath::objectName(__FILE__) << ':' << __LINE__ << ": OpenGL error: " \
                << Thea::Graphics::Gl::theaGlErrorString(err_code); \
     return (errval); \

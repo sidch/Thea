@@ -64,7 +64,7 @@ bool GlCaps::bug_mipmapGeneration      = false;
 bool GlCaps::bug_slowVBO               = false;
 
 Spinlock GlCaps::last_error_lock;
-int64 GlCaps::last_error = GL_NO_ERROR;
+GLenum GlCaps::last_error = GL_NO_ERROR;
 
 // Cache of values supplied to supportsImageFormat. Works on pointers since there is no way for users to construct their own
 // ImageFormats.
@@ -1007,7 +1007,7 @@ GlCaps::describeSystem()
 }
 
 int8
-GlCaps::setError(int64 err, int8 retval)
+GlCaps::setError(GLenum err, int8 retval)
 {
   last_error_lock.lock();
     last_error = err;
@@ -1016,16 +1016,26 @@ GlCaps::setError(int64 err, int8 retval)
   return retval;
 }
 
-/** Get the last error code internally flagged by the system and clear the error state. */
-int64
-GlCaps::getAndClearError()
+GLenum
+GlCaps::getLastError()
 {
-  int64 err = 0;
   last_error_lock.lock();
-    err = last_error;
+    if (last_error == GL_NO_ERROR)
+      last_error = glGetError();  // glGetError() clears the GL error state, so we cache it
+
+    GLenum err = last_error;
   last_error_lock.unlock();
 
   return err;
+}
+
+void
+GlCaps::clearErrors()
+{
+  last_error_lock.lock();
+    last_error = GL_NO_ERROR;
+    (void)glGetError();  // force clear of GL error state
+  last_error_lock.unlock();
 }
 
 #ifdef THEA_WINDOWS

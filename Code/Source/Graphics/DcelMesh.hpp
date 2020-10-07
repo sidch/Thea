@@ -1709,8 +1709,7 @@ DcelMesh<V, E, F>::drawBuffered(IRenderSystem & render_system, IRenderOptions co
 
   render_system.endIndexedPrimitives();
 
-  char const * err = nullptr;
-  if ((err = render_system.getAndClearError()))
+  if (char const * err = render_system.getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;
@@ -1776,8 +1775,7 @@ DcelMesh<V, E, F>::drawImmediate(IRenderSystem & render_system, IRenderOptions c
     render_system.popShader();
   }
 
-  char const * err = nullptr;
-  if ((err = render_system.getAndClearError()))
+  if (char const * err = render_system.getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;

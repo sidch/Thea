@@ -2603,8 +2603,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
   render_system->popShapeFlags();
   render_system->popShader();
 
-  char const * err = nullptr;
-  if ((err = render_system->getAndClearError())) { THEA_ERROR << "Rendering error (" << err << ')'; return false; }
+  if (char const * err = render_system->getLastError())
+  { THEA_ERROR << "Rendering error (" << err << ')'; return false; }
 
   return true;
 }

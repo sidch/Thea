@@ -144,19 +144,21 @@ class THEA_GL_DLL_LOCAL GlCaps
     static std::string describeSystem();
 
     /**
-     * Set an internal error code (stored by GlCaps as a 64-bit integer, default GL_INVALID_OPERATION) and return a specified
-     * value (default 0).
+     * Set an internal error code (default GL_INVALID_OPERATION) and return a specified value (default 0).
      *
-     * @see getAndClearError()
+     * @see getLastError(), clearErrors()
      */
-    static int8 setError(int64 err = GL_INVALID_OPERATION, int8 retval = 0);
+    static int8 setError(GLenum err = GL_INVALID_OPERATION, int8 retval = 0);
 
     /**
-     * Get the last error code internally flagged by the system and clear the error state.
-     *
-     * @see setError()
+     * Get the last error code internally flagged by the system, either via setError() or by OpenGL. Calling this function
+     * repeatedly returns the same code (i.e. it does not clear the error state like glGetError()), unless a new error has been
+     * raised meanwhile. To clear the error state, call clearErrors().
      */
-    static int64 getAndClearError();
+    static GLenum getLastError();
+
+    /** Clear all error states. After calling this function, getLastError() will return null until a new error is raised. */
+    static void clearErrors();
 
   private:
     /** Create a headless rendering context, if possible. */
@@ -224,7 +226,7 @@ class THEA_GL_DLL_LOCAL GlCaps
 
     // Last error code
     static Spinlock last_error_lock;
-    static int64 last_error;
+    static GLenum last_error;
 
 }; // class GlCaps
 

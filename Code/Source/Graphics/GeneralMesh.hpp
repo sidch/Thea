@@ -1996,8 +1996,7 @@ GeneralMesh<V, E, F, A>::drawBuffered(IRenderSystem & render_system, IRenderOpti
 
   render_system.endIndexedPrimitives();
 
-  char const * err = nullptr;
-  if ((err = render_system.getAndClearError()))
+  if (char const * err = render_system.getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;
@@ -2063,8 +2062,7 @@ GeneralMesh<V, E, F, A>::drawImmediate(IRenderSystem & render_system, IRenderOpt
     render_system.popShader();
   }
 
-  char const * err = nullptr;
-  if ((err = render_system.getAndClearError()))
+  if (char const * err = render_system.getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;

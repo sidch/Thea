@@ -1581,8 +1581,7 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
     render_system->setMatrixMode(Graphics::IRenderSystem::MatrixMode::MODELVIEW); render_system->popMatrix();
   }
 
-  char const * err = nullptr;
-  if ((err = render_system->getAndClearError()))
+  if (char const * err = render_system->getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;
