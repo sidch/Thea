@@ -301,7 +301,7 @@ trimWhitespace(std::string const & s)
 // If your platform does not have vsnprintf, you can find a
 // implementation at http://www.ijs.si/software/snprintf/
 
-std::string __cdecl
+std::string THEA_CDECL
 format(char const * fmt, ...)
 {
   va_list arg_list;

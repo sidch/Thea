@@ -149,7 +149,7 @@ isQuote(char c)
  * makes it easy to use the result functionally.  This function is fast when the resulting string is under 160 characters (not
  * including terminator) and slower when the string is longer.
  */
-THEA_API std::string __cdecl format(char const * fmt, ...) THEA_CHECK_PRINTF_ARGS;
+THEA_API std::string THEA_CDECL format(char const * fmt, ...) THEA_CHECK_PRINTF_ARGS;
 
 /**
  * Produces a string from arguments in the style of printf, can be called with the argument list from a function that itself
