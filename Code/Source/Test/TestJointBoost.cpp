@@ -58,7 +58,7 @@ class ExampleSet : public JointBoost::TrainingData
     void addExample(double const * example_features, intx example_class)
     {
       features.conservativeResize(features.rows() + 1, Eigen::NoChange);
-      features.row(features.rows() - 1) = RowVectorXdConstMap(example_features, features.cols());
+      features.row(features.rows() - 1) = RowVectorXd::Map(example_features, features.cols());
       classes.push_back(example_class);
     }
 
@@ -68,7 +68,7 @@ class ExampleSet : public JointBoost::TrainingData
     void getFeature(intx feature_index, Array<double> & values) const
     {
       values.resize((size_t)features.rows());
-      VectorXdMap(&values[0], features.rows()) = features.col(feature_index);
+      VectorXd::Map(&values[0], features.rows()) = features.col(feature_index);
     }
 
     void getClasses(Array<intx> & classes_) const
@@ -78,7 +78,7 @@ class ExampleSet : public JointBoost::TrainingData
 
     void getExampleFeatures(intx example, double * f) const
     {
-      RowVectorXdMap(f, features.cols()) = features.row(example);
+      RowVectorXd::Map(f, features.cols()) = features.row(example);
     }
 
     intx getExampleClass(intx example) const

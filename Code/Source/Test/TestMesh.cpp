@@ -309,7 +309,7 @@ saveIMesh(string const & model_path, string const & out_path)
 {
   MeshGroup<MeshT> in_mg(FilePath::objectName(model_path));
   in_mg.load(model_path);
-  auto mesh = *in_mg.meshesBegin();
+  typename MeshT::ConstPtr mesh = *in_mg.meshesBegin();
   auto verts = Math::mapTo< Matrix3X const >(*mesh->getVertexMatrix());
   auto tris  = Math::mapTo< Matrix<3, Eigen::Dynamic, uint32> const >(*mesh->getTriangleMatrix());
   auto quads = Math::mapTo< Matrix<4, Eigen::Dynamic, uint32> const >(*mesh->getQuadMatrix());

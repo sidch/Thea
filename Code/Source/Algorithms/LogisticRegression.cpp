@@ -85,7 +85,7 @@ LogisticRegression::solve(double tolerance)
     has_solution = llsq.solve(&a_wrap, &llsq_consts[0]);
 
     if (has_solution)
-      solution = VectorXdMap(const_cast<double *>(llsq.getSolution()), ndims);
+      solution = VectorXd::Map(const_cast<double *>(llsq.getSolution()), ndims);
     else
       solution.resize(0);
   }

@@ -69,7 +69,7 @@ namespace Math {
  * E.g.:
  * \code
  *   IDenseMatrix<Real> const * d = <... get a matrix e.g. from across a DLL boundary ...>
- *   MatrixXConstMap<> m = Math::mapTo<MatrixX<> const>(*d);
+ *   auto m = Math::mapTo<MatrixX<> const>(*d);
  *   ... treat m as a normal Eigen dynamic-size matrix ...
  * \endcode
  */

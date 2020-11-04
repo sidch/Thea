@@ -112,7 +112,7 @@ testLB(int argc, char * argv[])
     eig->getEigenvector(i, &eigvec_re, &eigvec_im);
 
     THEA_CONSOLE << "eig[" << i << "] = ((" << eigval_re << ", " << eigval_im << "), "
-                 << "(re: " << toString(VectorXdConstMap(eigvec_re, n))
-                 << ", im: " << toString(VectorXdConstMap(eigvec_im, n)) << "))";
+                 << "(re: " << toString(VectorXd::Map(eigvec_re, n))
+                 << ", im: " << toString(VectorXd::Map(eigvec_im, n)) << "))";
   }
 }

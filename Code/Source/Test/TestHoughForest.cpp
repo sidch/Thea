@@ -97,9 +97,9 @@ class ExampleSet: public HoughForest::TrainingData
     {
       alwaysAssertM(example_index >= 0 && example_index < (intx)classes.size(), "Example index out of bounds");
 
-      features.col(example_index) = VectorXdConstMap(example_features, features.rows());
+      features.col(example_index) = VectorXd::Map(example_features, features.rows());
       classes[(size_t)example_index] = example_class;
-      votes.col(example_index) = VectorXdConstMap(example_self_vote, features.rows());
+      votes.col(example_index) = VectorXd::Map(example_self_vote, features.rows());
     }
 
     /** Convert an input class ID (read from file) to a Hough class ID in the range [0, num_classes - 1]. */

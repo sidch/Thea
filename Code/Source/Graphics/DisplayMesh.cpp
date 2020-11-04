@@ -93,25 +93,43 @@ DisplayMesh::clear()
 IDenseMatrix<Real> const *
 DisplayMesh::getVertexMatrix() const
 {
-  // Assume Vector3 is tightly packed and has no padding
-  Vector3 const * buf = (vertices.empty() ? nullptr : &vertices[0]);
-  new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(const_cast<Vector3 *>(buf)), 3, numVertices());
-  return &vertex_wrapper;
+  return const_cast<DisplayMesh *>(this)->getVertexMatrix();
 }
 
 IDenseMatrix<uint32> const *
 DisplayMesh::getTriangleMatrix() const
 {
-  uint32 const * buf = (tris.empty() ? nullptr : &tris[0]);
-  new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, numTriangles());
-  return &tri_wrapper;
+  return const_cast<DisplayMesh *>(this)->getTriangleMatrix();
 }
 
 IDenseMatrix<uint32> const *
 DisplayMesh::getQuadMatrix() const
 {
-  uint32 const * buf = (quads.empty() ? nullptr : &quads[0]);
-  new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, numQuads());
+  return const_cast<DisplayMesh *>(this)->getQuadMatrix();
+}
+
+IDenseMatrix<Real> *
+DisplayMesh::getVertexMatrix()
+{
+  // Assume Vector3 is tightly packed and has no padding
+  Vector3 * buf = (vertices.empty() ? nullptr : vertices.data());
+  new (&vertex_matrix) VertexMatrix(reinterpret_cast<Real *>(buf), 3, numVertices());
+  return &vertex_wrapper;
+}
+
+IDenseMatrix<uint32> *
+DisplayMesh::getTriangleMatrix()
+{
+  uint32 * buf = (tris.empty() ? nullptr : tris.data());
+  new (&tri_matrix) TriangleMatrix(buf, 3, numTriangles());
+  return &tri_wrapper;
+}
+
+IDenseMatrix<uint32> *
+DisplayMesh::getQuadMatrix()
+{
+  uint32 * buf = (quads.empty() ? nullptr : quads.data());
+  new (&quad_matrix) QuadMatrix(buf, 4, numQuads());
   return &quad_wrapper;
 }
 

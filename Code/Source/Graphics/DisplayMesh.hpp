@@ -364,6 +364,18 @@ class THEA_API DisplayMesh : public virtual NamedObject, public IMesh
     IDenseMatrix<uint32> const * THEA_ICALL getTriangleMatrix() const;
     IDenseMatrix<uint32> const * THEA_ICALL getQuadMatrix() const;
 
+    /** Get a read-write handle to the 3xN column-major matrix of vertex positions. The matrix is not resizable. */
+    IDenseMatrix<Real> * getVertexMatrix();
+
+    /**
+     * Get a read-write handle to the 3 x #triangles column-major matrix of triangle vertex indices. The matrix is not
+     * resizable.
+     */
+    IDenseMatrix<uint32> * getTriangleMatrix();
+
+    /** Get a read-write handle to the 4 x #quads column-major matrix of quad vertex indices. The matrix is not resizable. */
+    IDenseMatrix<uint32> * getQuadMatrix();
+
     /** Get the set of vertex positions. */
     VertexArray const & getVertices() const { return vertices; }
 
