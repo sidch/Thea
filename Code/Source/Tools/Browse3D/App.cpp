@@ -40,7 +40,7 @@ static Vector4    const  DEFAULT_MATERIAL(0.3f, 0.7f, 0.2f, 25);
 
 App::Options::Options()
 : accentuate_features(false), color_cube_features(false), show_normals(false), show_graph(false),
-  color(AppInternal::DEFAULT_COLOR), bg_plain(false), bg_color(ColorRgb::black()), two_sided(true), flat(false),
+  color(AppInternal::DEFAULT_COLOR), bg_plain(false), bg_color(ColorRgb::black()), two_sided(true), flat(false), edges(false),
   material(AppInternal::DEFAULT_MATERIAL), fancy_points(false), fancy_colors(false), point_scale(1), no_axes(false)
 {
 }
@@ -70,13 +70,14 @@ App::optsToString() const
       << "\n  elem-labels = " << opts.elem_labels
       << "\n  emph-features = " << opts.accentuate_features
       << "\n  color-cube = " << opts.color_cube_features
-      << "\n  show-normals = " << opts.show_normals
-      << "\n  show-graph = " << opts.show_graph
+      << "\n  normals = " << opts.show_normals
+      << "\n  graph = " << opts.show_graph
       << "\n  color = " << opts.color.toString()
       << "\n  bg-plain = " << opts.bg_plain
       << "\n  bg-color = " << opts.bg_color.toString()
       << "\n  two-sided = " << opts.two_sided
       << "\n  flat = " << opts.flat
+      << "\n  edges = " << opts.edges
       << "\n  material = " << toString(opts.material)
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
@@ -214,7 +215,8 @@ App::parseOptions(std::vector<std::string> const & args)
           ("color,c",              po::value<std::string>(&s_color), "Model color")
           ("bg-color,b",           po::value<std::string>(&s_bg_color), "Background color")
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
-          ("flat,0",               "Flat shade all meshes")
+          ("flat,0",               "Flat shade meshes")
+          ("edges,j",              "Show mesh edges")
           ("material,k",           po::value<std::string>(&s_material), "Surface material coefficients (ka, kd, ks, ksp)")
           ("fancy-points",         "Draw points as shaded spheres")
           ("fancy-colors",         "Color points by a function of position")
@@ -304,6 +306,7 @@ App::parseOptions(std::vector<std::string> const & args)
   opts.show_normals         =  (vm.count("normals") > 0);
   opts.show_graph           =  (vm.count("graph") > 0);
   opts.flat                 =  (vm.count("flat") > 0);
+  opts.edges                =  (vm.count("edges") > 0);
   opts.fancy_points         =  (vm.count("fancy-points") > 0);
   opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
   opts.no_axes              =  (vm.count("no-axes") > 0);

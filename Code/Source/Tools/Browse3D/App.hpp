@@ -68,7 +68,8 @@ class App : public wxApp
       bool bg_plain;                                        ///< Draw the background in a single plain color?
       ColorRgba bg_color;                                   ///< Background color.
       bool two_sided;                                       ///< Use two-sided lighting?
-      bool flat;                                            ///< Flat-shade all meshes?
+      bool flat;                                            ///< Flat-shade meshes by default?
+      bool edges;                                           ///< Show mesh edges by default?
       Vector4 material;                                     ///< Surface material coefficients (kd, ka, ks, ksp).
       bool fancy_points;                                    ///< Draw points as shaded spheres?
       bool fancy_colors;                                    ///< Color points by a function of position?

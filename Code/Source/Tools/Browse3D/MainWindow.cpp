@@ -317,8 +317,12 @@ MainWindow::init()
   //==========================================================================================================================
 
   // We have to both set the menu item and call the function since wxEVT_MENU is not generated without actually clicking
-  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false);   setToolboxVisible(false);
-  rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true);  ui.model_display->renderShaded();
+  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false); setToolboxVisible(false);
+
+  if (app().options().edges)
+  { rendering_menu->FindItem(ID_VIEW_SHADED_WIREFRAME)->Check(true); ui.model_display->renderShadedWireframe(); }
+  else
+  { rendering_menu->FindItem(ID_VIEW_SHADED)->Check(true); ui.model_display->renderShaded(); }
 
   rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(app().options().two_sided);
   ui.model_display->setTwoSided(app().options().two_sided);
