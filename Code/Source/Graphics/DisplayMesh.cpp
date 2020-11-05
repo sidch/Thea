@@ -444,7 +444,7 @@ DisplayMesh::computeAveragedVertexNormals()
   for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = normals[i].normalized();
 
-  invalidateGpuBuffers(topo_change ? BufferId::ALL : BufferId::NORMAL);
+  invalidateGpuBuffers(topo_change ? BufferId::ALL : BufferId::VERTEX_NORMAL);
 }
 
 void
@@ -453,7 +453,7 @@ DisplayMesh::flipNormals()
   for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = -normals[i];
 
-  invalidateGpuBuffers(BufferId::NORMAL);
+  invalidateGpuBuffers(BufferId::VERTEX_NORMAL);
 }
 
 void
@@ -713,16 +713,16 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
   }
   else
   {
-    if (!gpuBufferIsValid(BufferId::VERTEX) && !vertices.empty()
+    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty()
      && !vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::NORMAL) && hasNormals()
+    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && hasNormals()
      && !normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::COLOR) && hasColors()
+    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasColors()
      && !colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::TEXCOORD) && hasTexCoords()
+    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasTexCoords()
      && !texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0])) return false;
   }
 
