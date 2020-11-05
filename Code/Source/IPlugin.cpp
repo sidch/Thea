@@ -134,8 +134,8 @@ PluginManager::install(IPlugin * plugin)
 void
 PluginManager::install(IPlugin * plugin, DynLib * dynlib, std::string const & path)
 {
-  alwaysAssertM(plugin, "PluginManager: IPlugin pointer cannot be null");
-  alwaysAssertM(!dynlib || !path.empty(), "PluginManager: IPlugin loaded from a dynamic library must have a non-empty path");
+  alwaysAssertM(plugin, "PluginManager: Plugin pointer cannot be null");
+  alwaysAssertM(!dynlib || !path.empty(), "PluginManager: Plugin loaded from a dynamic library must have a non-empty path");
 
   for (PluginList::iterator pi = plugins.begin(); pi != plugins.end(); ++pi)
     if (*pi == plugin)  // already installed

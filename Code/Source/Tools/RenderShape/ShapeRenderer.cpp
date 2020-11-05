@@ -367,7 +367,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     return -1;
   }
 
-  fb = render_system->createFramebuffer("IFramebuffer");
+  fb = render_system->createFramebuffer("Framebuffer");
   if (!fb)
   {
     THEA_ERROR << "Could not create offscreen framebuffer";
@@ -2632,7 +2632,7 @@ ShapeRendererImpl::loadPlugins(int argc, char ** argv)
     return false;
   }
 
-  render_system = render_system_factory->createRenderSystem("OpenGL IRenderSystem");
+  render_system = render_system_factory->createRenderSystem("OpenGL RenderSystem");
   if (!render_system)
   {
     THEA_ERROR << "Could not create OpenGL rendersystem";
