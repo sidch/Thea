@@ -124,7 +124,7 @@ class THEA_API IFactoryRegistry
 inline IFactoryRegistry::~IFactoryRegistry() {}
 
 /** Manages set of installed plugins (static or dynamic). There should be exactly one active PluginManager per application. */
-class THEA_API PluginManager : public IFactoryRegistry
+class THEA_API PluginManager : public virtual IFactoryRegistry
 {
   public:
     /** Destructor. */

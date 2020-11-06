@@ -27,7 +27,7 @@ namespace Gl {
 class GlRenderSystem;
 
 /** An OpenGL texture. */
-class THEA_GL_DLL_LOCAL GlTexture : public ITexture
+class THEA_GL_DLL_LOCAL GlTexture : public virtual ITexture
 {
   public:
     /** Constructs an empty texture of the specified format and size. */
@@ -49,6 +49,7 @@ class THEA_GL_DLL_LOCAL GlTexture : public ITexture
     GlRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
 
     int64 THEA_ICALL getWidth() const { return width; }
     int64 THEA_ICALL getHeight() const { return height; }

@@ -26,7 +26,7 @@ namespace Gl {
 class GlRenderSystemFactory;
 
 /** An OpenGL rendering plugin. */
-class THEA_GL_DLL_LOCAL GlPlugin : public IPlugin
+class THEA_GL_DLL_LOCAL GlPlugin : public virtual IPlugin
 {
   public:
     /** Constructor. */
@@ -36,6 +36,8 @@ class THEA_GL_DLL_LOCAL GlPlugin : public IPlugin
     ~GlPlugin();
 
     char const * THEA_ICALL getName() const;
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
+
     void THEA_ICALL install();
     void THEA_ICALL startup();
     void THEA_ICALL shutdown();

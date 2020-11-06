@@ -58,7 +58,7 @@ THE SOFTWARE.
 namespace Thea {
 
 /** A dynamically loaded library. */
-class THEA_API DynLib : public virtual NamedObject
+class THEA_API DynLib : public NamedObject
 {
   public:
     /**

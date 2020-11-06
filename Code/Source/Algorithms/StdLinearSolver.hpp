@@ -34,7 +34,7 @@ namespace StdLinearSolverInternal { class StdLinearSolverImpl; }
  * Solve dense and sparse linear systems of the form Ax = b for x. This class implements the ILinearSolver interface to provide a
  * variety of built-in algorithms. Other solvers may be provided by plugins implementing the ILinearSolver interface.
  */
-class THEA_API StdLinearSolver : public ILinearSolver, public virtual NamedObject
+class THEA_API StdLinearSolver : public virtual ILinearSolver, public NamedObject
 {
   public:
     THEA_DECL_SMART_POINTERS(StdLinearSolver)

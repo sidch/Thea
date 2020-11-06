@@ -28,7 +28,7 @@ namespace Graphics {
 namespace Gl {
 
 /** An OpenGL rendersystem. <b>Not threadsafe</b>. */
-class THEA_GL_DLL_LOCAL GlRenderSystem : public IRenderSystem
+class THEA_GL_DLL_LOCAL GlRenderSystem : public virtual IRenderSystem
 {
   public:
     /** Constructor. Creates a headless context for rendering if no rendering context currently exists. */
@@ -38,6 +38,7 @@ class THEA_GL_DLL_LOCAL GlRenderSystem : public IRenderSystem
     ~GlRenderSystem();
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
 
     char const * THEA_ICALL describeSystem() const;
     char const * THEA_ICALL getLastError() const;
@@ -206,7 +207,7 @@ class THEA_GL_DLL_LOCAL GlRenderSystem : public IRenderSystem
 }; // class GlRenderSystem
 
 /** Factory for creating OpenGL rendersystems. */
-class THEA_GL_DLL_LOCAL GlRenderSystemFactory : public IRenderSystemFactory
+class THEA_GL_DLL_LOCAL GlRenderSystemFactory : public virtual IRenderSystemFactory
 {
   public:
     /** Destructor. */

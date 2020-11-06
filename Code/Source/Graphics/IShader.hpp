@@ -30,7 +30,7 @@ class ITexture;
  *
  * @todo Make this an interface, safe for passing across shared library boundaries.
  */
-class THEA_API IShader : public INamedObject
+class THEA_API IShader : public virtual INamedObject
 {
   public:
     /** Shader module types (enum class). */

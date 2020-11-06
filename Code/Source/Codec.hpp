@@ -30,7 +30,7 @@ class BinaryOutputStream;
  * A serialization codec. Identified by an ID that is unique for a given run of the program (it is <b>not</b> guaranteed to
  * retain its value over different runs).
  */
-class THEA_API Codec : public INamedObject
+class THEA_API Codec : public virtual INamedObject
 {
   public:
     THEA_DECL_SMART_POINTERS(Codec)
@@ -120,6 +120,8 @@ class THEA_API Codec : public INamedObject
 
     /** Destructor. */
     virtual ~Codec() = 0;
+
+    int8 THEA_ICALL setName(char const * s) { return false; /* codec name is read-only by default */ }
 
     /** Get the magic string for the codec, if it has one (else a string of all zeros). */
     virtual MagicString const & getMagic() const { static MagicString const ZERO = zeroMagic(); return ZERO; }

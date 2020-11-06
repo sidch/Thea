@@ -25,7 +25,7 @@ namespace Algorithms {
 class ArpackEigenSolverFactory;
 
 /** An ARPACK-based eigensolver plugin. */
-class THEA_ARPACK_DLL_LOCAL ArpackPlugin : public IPlugin
+class THEA_ARPACK_DLL_LOCAL ArpackPlugin : public virtual IPlugin
 {
   public:
     /** Constructor. */

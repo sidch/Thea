@@ -33,7 +33,7 @@ namespace Gl {
 class GlRenderSystem;
 
 /** An OpenGL shader. */
-class THEA_GL_DLL_LOCAL GlShader : public IShader
+class THEA_GL_DLL_LOCAL GlShader : public virtual IShader
 {
   public:
     /** Constructor. */
@@ -46,6 +46,8 @@ class THEA_GL_DLL_LOCAL GlShader : public IShader
     GlRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
+
     int8 THEA_ICALL isComplete() const { return complete; }
     int8 THEA_ICALL attachModuleFromFile(int32 type, char const * path);
     int8 THEA_ICALL attachModuleFromString(int32 type, char const * source);

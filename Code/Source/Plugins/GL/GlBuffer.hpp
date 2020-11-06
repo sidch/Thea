@@ -28,7 +28,7 @@ namespace Gl {
  * An OpenGL buffer, which may be in main or GPU memory. A GlBuffer object is safe to copy, all copies reference the same memory
  * area.
  */
-class THEA_GL_DLL_LOCAL GlBuffer : public IBuffer
+class THEA_GL_DLL_LOCAL GlBuffer : public virtual IBuffer
 {
   public:
     /** Default constructor. Creates an empty, invalid buffer. */

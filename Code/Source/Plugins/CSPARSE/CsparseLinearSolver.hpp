@@ -29,7 +29,7 @@ namespace Algorithms {
  *
  * @see http://www.cise.ufl.edu/research/sparse/CSparse/
  */
-class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolver : public ILinearSolver, public virtual NamedObject
+class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolver : public virtual ILinearSolver, public NamedObject
 {
   private:
     typedef ILinearSolver BaseType;
@@ -73,7 +73,7 @@ class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolver : public ILinearSolver, public 
 }; // class CsparseLinearSolver
 
 /** Factory for creating CSPARSE linear solvers. */
-class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolverFactory : public ILinearSolverFactory
+class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolverFactory : public virtual ILinearSolverFactory
 {
   public:
     /** Destructor. */

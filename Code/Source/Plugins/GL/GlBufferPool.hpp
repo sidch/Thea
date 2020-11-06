@@ -28,7 +28,7 @@ namespace Gl {
 class GlRenderSystem;
 
 /** An OpenGL buffer pool in either main or GPU memory. Not threadsafe even when using main memory. */
-class THEA_GL_DLL_LOCAL GlBufferPool : public IBufferPool
+class THEA_GL_DLL_LOCAL GlBufferPool : public virtual IBufferPool
 {
   public:
     /** Constructor. */
@@ -44,6 +44,8 @@ class THEA_GL_DLL_LOCAL GlBufferPool : public IBufferPool
     std::string toString() const;
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
+
     int8 THEA_ICALL reset();
     int64 THEA_ICALL getCapacity() const { return capacity; }
     int64 THEA_ICALL getAllocatedSize() const { return allocated_size; }

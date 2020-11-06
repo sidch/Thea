@@ -34,7 +34,7 @@ namespace Thea {
 
 /** A container holding either a dense or a sparse matrix (or null). */
 template < typename T = Real, typename DenseMatrixT = MatrixX<T>, typename SparseMatrixT = SparseColumnMatrix<T> >
-class VariantMatrix : public IDenseMatrix<T>, public ICompressedSparseMatrix<T>, public Serializable
+class VariantMatrix : public virtual IDenseMatrix<T>, public virtual ICompressedSparseMatrix<T>, public Serializable
 {
   private:
     static_assert(std::is_base_of< Eigen::DenseBase<DenseMatrixT>, DenseMatrixT >::value,

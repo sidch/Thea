@@ -333,6 +333,7 @@ class THEA_API TextureFormat : public virtual ITextureFormat
     int32 THEA_ICALL openGlDataFormat() const    { return gl_data_format;     }
 
     char const * THEA_ICALL getName() const;
+    int8 THEA_ICALL setName(char const * s) { return false;  /* format name is read-only by default */ }
 
     /** L8 format. */
     static TextureFormat const * L8();

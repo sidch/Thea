@@ -61,7 +61,7 @@ namespace Graphics {
 template < typename VertexAttribute    =  Graphics::NullAttribute,
            typename HalfedgeAttribute  =  Graphics::NullAttribute,
            typename FaceAttribute      =  Graphics::NullAttribute >
-class /* THEA_API */ DcelMesh : public virtual NamedObject, public IMesh
+class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(DcelMesh)

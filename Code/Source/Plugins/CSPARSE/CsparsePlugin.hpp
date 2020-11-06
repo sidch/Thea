@@ -25,7 +25,7 @@ namespace Algorithms {
 class CsparseLinearSolverFactory;
 
 /** A CSPARSE-based plugin for solving sparse systems of linear equations. */
-class THEA_CSPARSE_DLL_LOCAL CsparsePlugin : public IPlugin
+class THEA_CSPARSE_DLL_LOCAL CsparsePlugin : public virtual IPlugin
 {
   public:
     /** Default constructor. */

@@ -26,7 +26,7 @@ namespace Thea {
  * must be an instance of the Eigen::SparseMatrix template.
  */
 template <typename MatrixT>
-class /* THEA_API */ SparseMatrixWrapper : public ICompressedSparseMatrix<typename MatrixT::value_type>
+class /* THEA_API */ SparseMatrixWrapper : public virtual ICompressedSparseMatrix<typename MatrixT::value_type>
 {
   private:
     static_assert(std::is_base_of<Eigen::SparseMatrixBase<MatrixT>, MatrixT>::value,

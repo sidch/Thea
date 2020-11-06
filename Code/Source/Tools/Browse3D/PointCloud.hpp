@@ -31,7 +31,7 @@ class IBuffer;
 namespace Browse3D {
 
 /** The model manipulated by the user. */
-class PointCloud : public virtual NamedObject, public GraphicsWidget
+class PointCloud : public NamedObject, public GraphicsWidget
 {
   private:
     /** A point on the surface. */

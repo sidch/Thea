@@ -64,7 +64,7 @@ namespace Thea {
  *
  * @todo Reimplement using %<iostream%> for arbitrary seeking and safer performance?
  */
-class THEA_API BinaryOutputStream : public virtual NamedObject, private Noncopyable
+class THEA_API BinaryOutputStream : public NamedObject, private Noncopyable
 {
   private:
     /** Is the file big or little endian? */

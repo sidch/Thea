@@ -23,7 +23,7 @@ namespace Thea {
 namespace Graphics {
 
 /** Interface for a framebuffer. */
-class THEA_API IFramebuffer : public INamedObject
+class THEA_API IFramebuffer : public virtual INamedObject
 {
   public:
     /** Attachment points (enum class). These are guaranteed to be consecutive integers starting from 0. */

@@ -26,7 +26,7 @@ namespace Thea {
  * must be an instance of the Eigen::Matrix template.
  */
 template <typename MatrixT>
-class /* THEA_API */ MatrixWrapper : public IDenseMatrix<typename MatrixT::value_type>
+class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename MatrixT::value_type>
 {
   private:
     static_assert(std::is_base_of<Eigen::MatrixBase<MatrixT>, MatrixT>::value,

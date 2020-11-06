@@ -270,7 +270,7 @@ class THEA_API ParseError : public std::runtime_error
  * double height = ti.readNumber();
  * </pre>
  */
-class THEA_API TextInputStream : public virtual NamedObject, private Noncopyable
+class THEA_API TextInputStream : public NamedObject, private Noncopyable
 {
   public:
     /** Extract a number from a string. Includes MSVC specials parsing */

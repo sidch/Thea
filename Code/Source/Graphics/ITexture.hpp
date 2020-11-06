@@ -100,7 +100,7 @@ class THEA_API ITextureOptions
 inline ITextureOptions::~ITextureOptions() {}
 
 /** Texture options. */
-class THEA_API TextureOptions : public ITextureOptions
+class THEA_API TextureOptions : public virtual ITextureOptions
 {
   public:
     /** Constructor. Initializes with default options. */
@@ -128,7 +128,7 @@ class THEA_API TextureOptions : public ITextureOptions
 }; // class TextureOptions
 
 /** Interface for a texture. */
-class THEA_API ITexture : public INamedObject
+class THEA_API ITexture : public virtual INamedObject
 {
   public:
     /** Texture dimensionality (enum class). */

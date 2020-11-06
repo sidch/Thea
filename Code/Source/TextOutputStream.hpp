@@ -53,7 +53,7 @@ namespace Thea {
  *
  * Derived from the G3D library: http://g3d.sourceforge.net
  */
-class THEA_API TextOutputStream : public virtual NamedObject, private Noncopyable
+class THEA_API TextOutputStream : public NamedObject, private Noncopyable
 {
   public:
     /**

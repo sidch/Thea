@@ -29,7 +29,7 @@ namespace Graphics {
 
 /** A collection of meshes and subgroups. */
 template <typename MeshT>
-class MeshGroup : public virtual NamedObject, public IDrawable, public Serializable
+class MeshGroup : public NamedObject, public virtual IDrawable, public Serializable
 {
   public:
     THEA_DECL_SMART_POINTERS(MeshGroup)

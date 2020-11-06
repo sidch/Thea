@@ -29,6 +29,13 @@ class THEA_API INamedObject
     /** Get the name of the object. */
     virtual char const * THEA_ICALL getName() const = 0;
 
+    /**
+     * Set the name of the object.
+     *
+     * @return True if the name was successfully set, else false (e.g. if the name is read-only).
+     */
+    virtual int8 THEA_ICALL setName(char const * s) = 0;
+
 }; // class INamedObject
 
 inline INamedObject::~INamedObject() {}
@@ -39,7 +46,7 @@ inline INamedObject::~INamedObject() {}
  * <b>IMPORTANT:</b> Always inherit virtually from this class, i.e. use:
  *
  * \code
- * class MyClass : public virtual NamedObject
+ * class MyClass : public NamedObject
  * {
  *   ...
  * };
@@ -70,8 +77,21 @@ class THEA_API NamedObject : public virtual INamedObject
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
 
-    /** Set the name of the object. */
-    void setName(std::string const & name_) { name = name_; }
+    /**
+     * Set the name of the object from a C-style string.
+     *
+     * @return True if the name was successfully set, else false (e.g. if the name is read-only). In the default implementation,
+     *   the function always returns true.
+     */
+    int8 THEA_ICALL setName(char const * s) { name = s; return true; }
+
+    /**
+     * Set the name of the object from a <tt>std::string</tt>.
+     *
+     * @return True if the name was successfully set, else false (e.g. if the name is read-only). In the default implementation,
+     *   the function always returns true.
+     */
+    virtual int8 setName(std::string const & s) { name = s; return true; }
 
   protected:
     /** Access the name string directly, for efficiency. */

@@ -29,7 +29,7 @@ namespace Gl {
 class GlRenderSystem;
 
 /** An OpenGL framebuffer. */
-class THEA_GL_DLL_LOCAL GlFramebuffer : public IFramebuffer
+class THEA_GL_DLL_LOCAL GlFramebuffer : public virtual IFramebuffer
 {
   public:
     /** Constructor. */
@@ -42,6 +42,8 @@ class THEA_GL_DLL_LOCAL GlFramebuffer : public IFramebuffer
     GlRenderSystem * getRenderSystem() const { return render_system; }
 
     char const * THEA_ICALL getName() const { return name.c_str(); }
+    int8 THEA_ICALL setName(char const * s) { return false;  /* name is read-only */ }
+
     int8 THEA_ICALL attach(int32 ap, ITexture * texture, int32 face = ITexture::Face::POS_X, int64 z_offset = 0);
     int8 THEA_ICALL detach(int32 ap);
     int8 THEA_ICALL detachAll();

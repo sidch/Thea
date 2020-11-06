@@ -28,7 +28,7 @@ class fipImage;
 namespace Thea {
 
 /** A 2D image. */
-class THEA_API Image : public IImage, public Serializable
+class THEA_API Image : public virtual IImage, public Serializable
 {
   public:
     THEA_DECL_SMART_POINTERS(Image)

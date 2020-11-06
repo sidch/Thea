@@ -252,7 +252,7 @@ class THEA_API DisplayMeshFace
 }; // class DisplayMeshFace
 
 /** A class for storing meshes for display, without detailed topology information. */
-class THEA_API DisplayMesh : public virtual NamedObject, public IMesh
+class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(DisplayMesh)

@@ -52,7 +52,7 @@ template < typename VertexAttributeT               =  Graphics::NullAttribute,
            typename EdgeAttributeT                 =  Graphics::NullAttribute,
            typename FaceAttributeT                 =  Graphics::NullAttribute,
            template <typename T> class AllocatorT  =  std::allocator >
-class /* THEA_API */ GeneralMesh : public virtual NamedObject, public IMesh
+class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 {
   public:
     THEA_DECL_SMART_POINTERS(GeneralMesh)

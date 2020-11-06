@@ -29,7 +29,7 @@ class IBuffer;
  *
  * @see IBuffer
  */
-class THEA_API IBufferPool : public INamedObject
+class THEA_API IBufferPool : public virtual INamedObject
 {
   public:
     /** How the storage will be used (enum class). */

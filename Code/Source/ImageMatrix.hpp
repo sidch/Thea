@@ -29,7 +29,7 @@ namespace Thea {
  * when custom types are involved.
  */
 template <typename T>
-class /* THEA_API */ ImageMatrix : public IAddressableMatrix<T>
+class /* THEA_API */ ImageMatrix : public virtual IAddressableMatrix<T>
 {
   public:
     THEA_DECL_SMART_POINTERS(ImageMatrix)

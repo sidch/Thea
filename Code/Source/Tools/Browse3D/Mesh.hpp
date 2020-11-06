@@ -74,7 +74,7 @@ class Mesh : public Graphics::GeneralMesh<VertexAttribute, Graphics::NullAttribu
     THEA_DECL_SMART_POINTERS(Mesh)
 
     Mesh(std::string const & name = "AnonymousMesh")
-    : NamedObject(name), BaseType(name), parent(nullptr), valid_features(false) {}
+    : BaseType(name), parent(nullptr), valid_features(false) {}
 
     typedef BaseType::Vertex Vertex;
     typedef BaseType::Face Face;

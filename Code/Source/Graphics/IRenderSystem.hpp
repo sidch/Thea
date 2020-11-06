@@ -39,7 +39,7 @@ namespace Graphics {
  * rendering if possible. In this case, you must explicitly create and attach a framebuffer to the rendersystem before you can
  * call any drawing functions.
  */
-class THEA_API IRenderSystem : public INamedObject
+class THEA_API IRenderSystem : public virtual INamedObject
 {
   public:
     /** Basic drawing primitives (enum class). */

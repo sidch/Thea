@@ -91,7 +91,7 @@ class THEA_API IRenderOptions
 inline IRenderOptions::~IRenderOptions() {}
 
 /** %Options controlling the display of a IDrawable. */
-class THEA_API RenderOptions : public IRenderOptions
+class THEA_API RenderOptions : public virtual IRenderOptions
 {
   private:
     int8       send_normals;

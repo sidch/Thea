@@ -27,7 +27,7 @@ namespace Thea {
 namespace Algorithms {
 
 /** ARPACK-based eigensystem solver. */
-class THEA_ARPACK_DLL_LOCAL ArpackEigenSolver : public IEigenSolver, public virtual NamedObject
+class THEA_ARPACK_DLL_LOCAL ArpackEigenSolver : public virtual IEigenSolver, public NamedObject
 {
   private:
     typedef IEigenSolver BaseType;
@@ -88,7 +88,7 @@ class THEA_ARPACK_DLL_LOCAL ArpackEigenSolver : public IEigenSolver, public virt
 }; // class ArpackEigenSolver
 
 /** Factory for creating ARPACK eigensolvers. */
-class THEA_ARPACK_DLL_LOCAL ArpackEigenSolverFactory : public IEigenSolverFactory
+class THEA_ARPACK_DLL_LOCAL ArpackEigenSolverFactory : public virtual IEigenSolverFactory
 {
   public:
     /** Destructor. */
