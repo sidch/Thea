@@ -371,13 +371,13 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     IDenseMatrix<Real> * getVertexMatrix();
 
     /**
-     * Get a read-write handle to the 3 x #triangles column-major matrix of triangle vertex indices. The matrix is not
+     * Get a read-write handle to the 3 x &#35;triangles column-major matrix of triangle vertex indices. The matrix is not
      * resizable. Remember to call invalidateGpuBuffers(BufferId::TRIANGLE) after making any changes to the indices.
      */
     IDenseMatrix<uint32> * getTriangleMatrix();
 
     /**
-     * Get a read-write handle to the 4 x #quads column-major matrix of quad vertex indices. The matrix is not resizable.
+     * Get a read-write handle to the 4 x &#35;quads column-major matrix of quad vertex indices. The matrix is not resizable.
      * Remember to call invalidateGpuBuffers(BufferId::QUAD) after making any changes to the indices.
      */
     IDenseMatrix<uint32> * getQuadMatrix();

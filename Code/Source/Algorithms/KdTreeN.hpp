@@ -25,6 +25,7 @@
 #include "../Transformable.hpp"
 #include "BoundedTraitsN.hpp"
 #include "Filter.hpp"
+#include "MetricL2.hpp"
 #include "ProximityQueryStructureN.hpp"
 #include "RangeQueryStructure.hpp"
 #include "RayQueryStructureN.hpp"
@@ -603,6 +604,37 @@ class /* THEA_API */ KdTreeN
         createTree(root, false, &index_pool, nullptr);
 
       invalidateBounds();
+    }
+
+    /**
+     * Recompute the bounding box of every node in the tree (or a specific subtree) from the element data at the leaves. The
+     * tree topology is unchanged. This function is useful for quickly updating the tree when relative element sizes and
+     * element-to-element proximity do not change much (e.g. under character articulations). Of course, this also requires that
+     * the leaf elements (objects of type <tt>T</tt>) be pointers or other handles to external data that can be changed outside
+     * this object.
+     *
+     * @param start The root of the subtree to update. If null, the entire tree is updated.
+     */
+    void updateNodeBounds(Node * start = nullptr)
+    {
+      if (!start)
+      {
+        if (!root) return;  // nothing to process
+        start = root;
+      }
+
+      updateNodeBoundsRecursive(start);
+
+      if (accelerate_nn_queries && valid_acceleration_structure && acceleration_structure)
+      {
+        // Would be nicer to touch only the smallest subtree of points from updated elements, but this is too complicated for
+        // now, so we'll just resample all the points
+
+        // Ok to cast away the const, this is a privately held object and we have full control over it
+        samplePointsFromElements(acceleration_structure->numElements(),
+                                 const_cast<ElementSample *>(acceleration_structure->getElements()));
+        acceleration_structure->updateNodeBounds();
+      }
     }
 
     /** Destructor. */
@@ -1201,6 +1233,41 @@ class /* THEA_API */ KdTreeN
       }
     }
 
+    /**
+     * Recompute the bounding box of a leaf node from its elements. Can be overriden in derived classes for additional speed if
+     * possible.
+     *
+     * @param leaf A pointer to a leaf node. This is guaranteed to be non-null, and an actual leaf without children.
+     */
+    virtual void updateLeafBounds(Node * leaf)
+    {
+      leaf->bounds.setNull();
+
+      AxisAlignedBoxT elem_bounds;
+      for (ElementIndex i = 0; i < leaf->num_elems; ++i)
+      {
+        BoundedTraitsT::getBounds(elems[leaf->elems[i]], elem_bounds);
+        leaf->bounds.merge(elem_bounds);
+      }
+
+      // Expand the bounding box slightly to handle numerical error
+      leaf->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+    }
+
+  private:
+    /** Recursively applied helper function for updateNodeBounds(). */
+    void updateNodeBoundsRecursive(Node * start)
+    {
+      if (!start->lo)  // leaf
+        updateLeafBounds(start);
+      else  // recurse
+      {
+        updateNodeBoundsRecursive(start->lo);
+        updateNodeBoundsRecursive(start->hi);
+      }
+    }
+
+  protected:
     /** Mark that the bounding box requires an update. */
     void invalidateBounds()
     {
@@ -1736,6 +1803,26 @@ class /* THEA_API */ KdTreeN
       }
     }
 
+  protected:
+    /**
+     * Given a preallocated array of ElementSample objects, each pointing to a valid element, assign each object a point
+     * (randomly or deterministically) sampled from the corresponding element. The default implementation finds the point
+     * closest to the bounding box center of each element: subclasses can override this with faster sampling methods.
+     *
+     * @note This version finds nearest neighbors on elements using the L2 distance. Hence MetricL2 must support NN queries with
+     *   the element type T.
+     */
+    virtual void samplePointsFromElements(intx num_samples, ElementSample * samples) const
+    {
+      VectorT src_cp;
+      for (intx i = 0; i < num_samples; ++i)
+      {
+        T const * elem = static_cast<T const *>(samples[i].element);
+        VectorT p = BoundedTraitsT::getCenter(*elem);
+        MetricL2::closestPoints<N, ScalarT>(p, *elem, src_cp, samples[i].position);  // snap point to element
+      }
+    }
+
   private:
     /** Build a structure to accelerate nearest neighbor queries. */
     template <typename MetricT> void buildAccelerationStructure() const
@@ -1746,18 +1833,11 @@ class /* THEA_API */ KdTreeN
 
       static int const DEFAULT_NUM_ACCELERATION_SAMPLES = 250;
       Array<ElementSample> acceleration_samples(num_acceleration_samples <= 0 ? DEFAULT_NUM_ACCELERATION_SAMPLES
-                                                                                  : num_acceleration_samples);
-      VectorT src_cp, dst_cp;
+                                                                              : num_acceleration_samples);
       for (size_t i = 0; i < acceleration_samples.size(); ++i)
-      {
-        intx elem_index = Random::common().integer(0, (int32)num_elems - 1);
-        VectorT p = BoundedTraitsT::getCenter(elems[elem_index]);
+        acceleration_samples[i].element = &elems[Random::common().integer(0, (int32)num_elems - 1)];
 
-        // Snap point to element, else it's not a valid NN proxy
-        MetricT::template closestPoints<N, ScalarT>(p, elems[elem_index], src_cp, dst_cp);
-
-        acceleration_samples[i] = ElementSample(dst_cp, &elems[elem_index]);
-      }
+      samplePointsFromElements((intx)acceleration_samples.size(), acceleration_samples.data());
 
       acceleration_structure = new NearestNeighborAccelerationStructure;
       acceleration_structure->disableNearestNeighborAcceleration();

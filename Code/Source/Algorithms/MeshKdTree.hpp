@@ -114,6 +114,13 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
       tris.clear();
     }
 
+  protected:
+    void samplePointsFromElements(intx num_samples, typename BaseT::ElementSample * samples) const
+    {
+      for (intx i = 0; i < num_samples; ++i)
+        samples[i].position = static_cast<Triangle const *>(samples[i].element)->randomPoint();
+    }
+
   private:
     Triangles tris;  ///< Internal cache of triangles used to initialize the tree.
 
