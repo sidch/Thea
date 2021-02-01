@@ -9,7 +9,7 @@
 PROJECT(Thea CXX C)
 
 # Set the minimum required CMake version
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
 # See cmake --help-policy CMP0003 for details on this one
 IF(POLICY CMP0003)
