@@ -956,6 +956,7 @@ EXCLUDE_PATTERNS       = */Source/Test/* \
                          */Source/Plugins/ARPACK/arpackpp/* \
                          */Source/Plugins/GL/glew.c \
                          */Source/Plugins/GL/glew.h \
+                         */Source/Plugins/GL/eglew.h \
                          */Source/Plugins/GL/wglew.h \
                          */Source/Plugins/GL/glxew.h \
                          */Source/Plugins/CSPARSE/csparse.c \
