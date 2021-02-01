@@ -34,7 +34,7 @@
 // made about the suitability of this software for any purpose.  It is
 // provided "as is" without express or implied warranty.
 
-__inline intx int
+__inline intx
 lrint(double flt)
 {
 #ifdef _M_X64
@@ -52,7 +52,7 @@ lrint(double flt)
 #endif
 }
 
-__inline intx int
+__inline intx
 lrintf(float flt)
 {
 #ifdef _M_X64
