@@ -57,6 +57,12 @@ class BoundedArrayN
     /** Check if the array has reached maximum capacity or not. */
     bool isFull() const { return num_elems >= N; }
 
+    /** Get a pointer to the data buffer. */
+    T const * data() const { return values; }
+
+    /** Get a pointer to the data buffer. */
+    T * data() { return values; }
+
     /** Get the first element in the array. */
     T const & first() const
     {

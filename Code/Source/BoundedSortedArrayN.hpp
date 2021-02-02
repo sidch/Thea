@@ -60,6 +60,9 @@ class BoundedSortedArrayN
     /** Check if the array is empty or not. */
     bool isEmpty() const { return num_elems <= 0; }
 
+    /** Get a pointer to the data buffer. */
+    T const * data() const { return values; }
+
     /** Get the first element in the sorted sequence. */
     T const & first() const
     {
