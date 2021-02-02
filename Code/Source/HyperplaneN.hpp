@@ -46,11 +46,27 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
     /** Default constructor. */
     HyperplaneNBase() : normal(VectorT::Zero()), dist(0) {}
 
-    /** Construct a hyperplane from a point on it, and the direction vector of the hyperplane (need not be a unit vector). */
-    static HyperplaneT fromPointAndNormal(VectorT const & point_, VectorT const & normal_)
+    /**
+     * Construct a hyperplane from its signed distance from the origin, and its normal vector (need not be a unit vector). The
+     * \a normalize argument suppresses rescaling of the normal to unit length if set to false.
+     */
+    static HyperplaneT fromDistanceAndNormal(T dist_, VectorT const & normal_, bool normalize = true)
     {
       HyperplaneT hyperplane;
-      hyperplane.normal  =  normal_.normalized();
+      hyperplane.normal  =  normal_; if (normalize) hyperplane.normal.normalize();
+      hyperplane.dist    =  dist_;
+
+      return hyperplane;
+    }
+
+    /**
+     * Construct a hyperplane from a point on it, and its normal vector (need not be a unit vector). The \a normalize argument
+     * suppresses rescaling of the normal to unit length if set to false.
+     */
+    static HyperplaneT fromPointAndNormal(VectorT const & point_, VectorT const & normal_, bool normalize = true)
+    {
+      HyperplaneT hyperplane;
+      hyperplane.normal  =  normal_; if (normalize) hyperplane.normal.normalize();
       hyperplane.dist    =  hyperplane.normal.dot(point_);
 
       return hyperplane;
@@ -80,6 +96,12 @@ class /* THEA_DLL_LOCAL */ HyperplaneNBase : public RayIntersectableN<N, T>
       hyperplane.normal  =  -(a * VectorT::Ones()).normalized();
       hyperplane.dist    =  hyperplane.normal.dot(points[0]);
       return hyperplane;
+    }
+
+    /** Cast the hyperplane to a different scalar type. */
+    template <typename U> HyperplaneN<N, U> cast() const
+    {
+      return HyperplaneN<N, U>::fromDistanceAndNormal(static_cast<U>(dist), normal.template cast<U>(), /* normalize = */ false);
     }
 
     /** Get a point on the hyperplane. */

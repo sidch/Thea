@@ -40,6 +40,9 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     BoxN(AxisAlignedBoxT const & aab_, CoordinateFrameT const & frame_ = CoordinateFrameT::identity())
     : aab(aab_), frame(frame_) {}
 
+    /** Cast the box to a different scalar type. */
+    template <typename U> BoxN<N, U> cast() const { return BoxN<N, U>(aab.template cast<U>(), frame.template cast<U>()); }
+
     /** Get the axis-aligned box in the local frame for the box. */
     AxisAlignedBoxT const & getLocalAAB() const { return aab; }
 

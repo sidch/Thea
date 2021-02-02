@@ -48,6 +48,12 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformNBase(MatrixT const & linear_, VectorT const & translation_) : linear(linear_), trans(translation_) {}
 
+    /** Cast the transform to a different scalar type. */
+    template <typename U> AffineTransformN<N, U> cast() const
+    {
+      return AffineTransformN<N, U>(linear.template cast<U>(), trans.template cast<U>());
+    }
+
     /** Construct a scaling transform. */
     static AffineTransformT scaling(VectorT const & s)
     {

@@ -58,6 +58,23 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     : point(point1), direction(point2 - point1)
     {}
 
+    /**
+     * Construct the line segment from its first endpoint and its direction vector, with length equal to that of the segment.
+     */
+    static LineSegmentT fromPointAndDirection(VectorT const & point_, VectorT const & direction_)
+    {
+      LineSegmentT seg;
+      seg.point = point_;
+      seg.direction = direction_;
+      return seg;
+    }
+
+    /** Cast the line segment to a different scalar type. */
+    template <typename U> LineSegmentN<N, U> cast() const
+    {
+      return LineSegmentN<N, U>::fromPointAndDirection(point.template cast<U>(), direction.template cast<U>());
+    }
+
     /** Get an endpoint of the line segment: 0 returns the first endpoint and 1 returns the second. */
     VectorT getEndpoint(int i) const { return i == 0 ? point : point + direction; }
 

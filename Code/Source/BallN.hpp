@@ -46,6 +46,9 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Copy constructor. */
     BallN(BallN const & src) : center(src.center), radius(src.radius) {}
 
+    /** Cast the ball to a different scalar type. */
+    template <typename U> BallN<N, U> cast() const { return BallN<N, U>(center.template cast<U>(), static_cast<U>(radius)); }
+
     /** Get the center of the ball. */
     VectorT const & getCenter() const { return center; }
 

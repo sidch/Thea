@@ -41,15 +41,18 @@ class /* THEA_DLL_LOCAL */ LineNBase
 
     THEA_DECL_SMART_POINTERS(LineT)
 
-    /** Construct a line from a point on it, and the direction vector of the line (need not be a unit vector). */
-    static LineT fromPointAndDirection(VectorT const & point_, VectorT const & direction_)
+    /**
+     * Construct a line from a point on it, and the direction vector of the line (need not be a unit vector). The \a normalize
+     * argument suppresses rescaling of the direction vector to unit length if set to false.
+     */
+    static LineT fromPointAndDirection(VectorT const & point_, VectorT const & direction_, bool normalize = true)
     {
       if (Math::fuzzyEq(direction_.squaredNorm(), static_cast<T>(0)))
         throw Error("LineN: Direction vector has zero (or nearly zero) length");
 
       LineT line;
       line.point = point_;
-      line.direction = direction_.normalized();
+      line.direction = direction_; if (normalize) line.direction.normalize();
       return line;
     }
 
@@ -57,6 +60,13 @@ class /* THEA_DLL_LOCAL */ LineNBase
     static LineT fromTwoPoints(VectorT const & point1, VectorT const & point2)
     {
       return fromPointAndDirection(point1, point2 - point1);
+    }
+
+    /** Cast the line to a different scalar type. */
+    template <typename U> LineN<N, U> cast() const
+    {
+      return LineN<N, U>::fromPointAndDirection(point.template cast<U>(), direction.template cast<U>(),
+                                                /* normalize = */ false);
     }
 
     /** Get a point on the line. */

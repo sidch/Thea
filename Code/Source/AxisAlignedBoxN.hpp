@@ -59,6 +59,12 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     /** Constructor. Sets the extents of the box. */
     AxisAlignedBoxNBase(VectorT const & lo_, VectorT const & hi_) : lo(lo_), hi(hi_), is_null(false) {}
 
+    /** Cast the box to a different scalar type. */
+    template <typename U> AxisAlignedBoxN<N, U> cast() const
+    {
+      return AxisAlignedBoxN<N, U>(lo.template cast<U>(), hi.template cast<U>());
+    }
+
     /** Check if two boxes are equal. Null boxes are considered to be equal to each other. */
     bool operator==(AxisAlignedBoxNBase const & other) const
     {

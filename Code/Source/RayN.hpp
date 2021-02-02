@@ -39,6 +39,12 @@ class /* THEA_API */ RayN
     /** Copy constructor. */
     RayN(RayN const & src) : origin(src.origin), direction(src.direction) {}
 
+    /** Cast the ray to a different scalar type. */
+    template <typename U> RayN<N, U> cast() const
+    {
+      return RayN<N, U>(origin.template cast<U>(), direction.template cast<U>());
+    }
+
     /** Get the origin of the ray. */
     VectorT const & getOrigin() const { return origin; }
 

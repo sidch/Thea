@@ -66,6 +66,12 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
       return rt;
     }
 
+    /** Cast the transform to a different scalar type. */
+    template <typename U> RigidTransformN<N, U> cast() const
+    {
+      return RigidTransformN<N, U>::_fromAffine(aff.template cast<U>());
+    }
+
     /** Get rotation component. */
     MatrixT const & getRotation() const { return aff.getLinear(); }
 
