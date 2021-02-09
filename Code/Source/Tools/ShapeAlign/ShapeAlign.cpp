@@ -26,6 +26,7 @@ Vector3d initial_from_position(0, 0, 0);
 bool prealign_centroids = false;
 bool rotate_axis_aligned = false;
 bool rotate_arbitrary = false;
+intx num_rotations = -1;
 bool has_up_vector = false;
 Vector3d up_vector;
 
@@ -40,8 +41,9 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "  -t x y z            :  Initial location for centroid of <from>";
   THEA_CONSOLE << "  -c                  :  Align shape centroids before starting ICP";
   THEA_CONSOLE << "  -x                  :  Test over various axis-aligned rotations";
-  THEA_CONSOLE << "  -r                  :  Test over various rotations (currently requires -u)";
-  THEA_CONSOLE << "  -u                  :  Up vector";
+  THEA_CONSOLE << "  -r <#rotations>     :  Test over rotations around an up vector (requires -u).";
+  THEA_CONSOLE << "                         <#rotations> <= 0 picks a default number.";
+  THEA_CONSOLE << "  -u x y z            :  Up vector";
   return -1;
 }
 
@@ -397,17 +399,18 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       double rot_error;
       bool first = true;
 
-      static int const NUM_ROTATIONS = 16;
-      for (int i = 0; i < NUM_ROTATIONS; ++i)
+      static intx const DEFAULT_NUM_ROTATIONS = 16;
+      intx nr = (num_rotations > 0 ? num_rotations : DEFAULT_NUM_ROTATIONS);
+      for (intx i = 0; i < nr; ++i)
       {
-        double angle = i * (Math::twoPi() / NUM_ROTATIONS);
+        double angle = i * (Math::twoPi() / nr);
         Matrix3d rot = Math::rotationAxisAngle(up_vector, angle);
         AffineTransform3d rot_tr = AffineTransform3d::translation(from_center)
                                  * AffineTransform3d(rot)
                                  * AffineTransform3d::translation(-from_center);
 
-        for (size_t i = 0; i < from_pts.size(); ++i)
-          rot_from_pts[i] = rot_tr * from_pts[i];
+        for (size_t j = 0; j < from_pts.size(); ++j)
+          rot_from_pts[j] = rot_tr * from_pts[j];
 
         AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
         rot_error = normalizeError(rot_error, to_scale, (intx)from_pts.size());
@@ -551,8 +554,21 @@ main(int argc, char * argv[])
       }
       else if (arg == "-r")
       {
+        if (i >= argc - 1)
+          return usage(argc, argv);
+
+        istringstream iss(argv[++i]);
+        if (!(iss >> num_rotations))
+        {
+          THEA_ERROR << "Could not parse number of rotations sampled around up vector";
+          return -1;
+        }
+
         rotate_arbitrary = true;
-        THEA_CONSOLE << "Alignment will search over rotations";
+        if (num_rotations <= 0)
+          THEA_CONSOLE << "Alignment will search over rotations around up vector";
+        else
+          THEA_CONSOLE << "Alignment will search over " << num_rotations << " rotation(s) around up vector";
       }
       else
         return usage(argc, argv);
