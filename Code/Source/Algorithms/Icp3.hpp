@@ -196,7 +196,8 @@ class Icp3
                            PlaneT const * to_symmetry_plane, ScalarT * error = nullptr) const
     {
       if (verbose)
-        THEA_CONSOLE << "Icp3(fractional_error_change = " << fractional_error_threshold
+        THEA_CONSOLE << "Icp3(fractional_error_threshold = " << fractional_error_threshold
+                     <<    ", min_iterations = " << min_iterations
                      <<    ", max_iterations = " << max_iterations << ')';
 
       if (from_num_pts <= 0)
