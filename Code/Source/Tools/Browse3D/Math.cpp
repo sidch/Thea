@@ -384,7 +384,7 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
         corr(r, c) += src_pt[r] * dst_pt[c];
   }
 
-  Eigen::JacobiSVD<Matrix3> svd(corr);
+  Eigen::JacobiSVD<Matrix3> svd(corr, Eigen::ComputeFullU | Eigen::ComputeFullV);
   Matrix3 U_T = svd.matrixU().transpose();
   Matrix3 V = svd.matrixV();
   Matrix3 rotation = V * U_T;

@@ -50,18 +50,19 @@ class Icp3
     /**
      * Constructor.
      *
-     * @param fractional_error_threshold_ The maximum fractional change in error to determine convergence.
-     * @param max_iterations_ The maximum number of iterations.
+     * @param fractional_error_threshold_ The maximum fractional change in error to determine convergence (negative for
+     *   default).
+     * @param min_iterations_ The minimum number of iterations (negative for default).
+     * @param max_iterations_ The maximum number of iterations (negative for default).
      * @param verbose_ If true, print extra debugging information.
      */
-    Icp3(ScalarT fractional_error_threshold_ = -1, intx max_iterations_ = -1, bool verbose_ = false)
-    : fractional_error_threshold(fractional_error_threshold_), max_iterations(max_iterations_), has_up(false), verbose(verbose_)
+    Icp3(ScalarT fractional_error_threshold_ = -1, intx min_iterations_ = -1, intx max_iterations_ = -1, bool verbose_ = false)
+    : fractional_error_threshold(fractional_error_threshold_), min_iterations(min_iterations_), max_iterations(max_iterations_),
+      has_up(false), verbose(verbose_)
     {
-      if (fractional_error_threshold < 0)
-        fractional_error_threshold = 0.0001;
-
-      if (max_iterations < 1)
-        max_iterations = 10;
+      if (fractional_error_threshold < 0) fractional_error_threshold = 0.0001;
+      if (min_iterations < 0) min_iterations = 3;
+      if (max_iterations < 0) max_iterations = 10;
     }
 
     /** Set the up vector. Subsequent alignments will only rotate around the up vector. */
@@ -241,7 +242,7 @@ class Icp3
           if (verbose)
             THEA_CONSOLE << "[Icp3] Iteration " << i << " error: " << new_error << " (fractional change: " << frac_change << ')';
 
-          if (frac_change < fractional_error_threshold)
+          if (i >= min_iterations && frac_change < fractional_error_threshold)
           {
             if (frac_change > 0)  // we improved slightly
             {
@@ -364,7 +365,7 @@ class Icp3
         cov += (dp * dq.transpose());  // outer product
       }
 
-      Eigen::JacobiSVD<MatrixT> svd(cov);
+      Eigen::JacobiSVD<MatrixT> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
       MatrixT rot = svd.matrixU() * svd.matrixV().transpose();
 
       if (use_symmetry && rot.determinant() < 0)  // matching two planar projections can cause flips in the symmetry plane
@@ -462,6 +463,7 @@ class Icp3
     }
 
     double fractional_error_threshold;  ///< Maximum fractional change in error to determine convergence.
+    intx min_iterations;  ///< Minimum number of iterations.
     intx max_iterations;  ///< Maximum number of iterations.
     bool has_up;
     VectorT up;

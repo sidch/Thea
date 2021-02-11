@@ -55,7 +55,7 @@ testSVD()
 
   // Make sure things work with more columns than rows
   a = a.transpose();
-  Eigen::JacobiSVD<MatrixXf> svd(a);
+  Eigen::JacobiSVD<MatrixXf> svd(a, Eigen::ComputeFullU | Eigen::ComputeFullV);
   MatrixXf u = svd.matrixU();
   MatrixXf v = svd.matrixV();
   VectorXf d = svd.singularValues();

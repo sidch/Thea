@@ -340,7 +340,10 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
 
     if (rotate_axis_aligned)
     {
-      Icp3<double> icp(-1, -1, false);
+      Icp3<double> icp(/* fractional_error_thresold = */ -1,
+                       /* min_iterations = */ -1,
+                       /* max_iterations = */ -1,
+                       /* verbose = */ false);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
@@ -391,7 +394,10 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         return -1;
       }
 
-      Icp3<double> icp(-1, -1, false);
+      Icp3<double> icp(/* fractional_error_thresold = */ -1,
+                       /* min_iterations = */ -1,
+                       /* max_iterations = */ -1,
+                       /* verbose = */ false);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
@@ -432,7 +438,10 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
     }
     else
     {
-      Icp3<double> icp(-1, -1, true);
+      Icp3<double> icp(/* fractional_error_thresold = */ -1,
+                       /* min_iterations = */ -1,
+                       /* max_iterations = */ -1,
+                       /* verbose = */ true);
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
