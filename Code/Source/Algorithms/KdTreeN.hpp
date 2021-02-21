@@ -424,8 +424,10 @@ class /* THEA_API */ KdTreeN
   public:
     /** Default constructor. */
     KdTreeN()
-    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
-      valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
+    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0),
+      transform_inverse(AffineTransformN<N, ScalarT>::identity()),
+      transform_inverse_transpose(Matrix<N, N, ScalarT>::Identity()),
+      accelerate_nn_queries(false), valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {}
 
     /**
@@ -443,8 +445,10 @@ class /* THEA_API */ KdTreeN
     template <typename InputIterator>
     KdTreeN(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
             bool save_memory = false)
-    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0), accelerate_nn_queries(false),
-      valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
+    : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0),
+      transform_inverse(AffineTransformN<N, ScalarT>::identity()),
+      transform_inverse_transpose(Matrix<N, N, ScalarT>::Identity()),
+      accelerate_nn_queries(false), valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {
       init(begin, end, max_elems_per_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
     }
@@ -720,6 +724,12 @@ class /* THEA_API */ KdTreeN
       if (valid_acceleration_structure)
         acceleration_structure->clearTransform();
     }
+
+    /** Get the inverse of the transform applied to the kd-tree. */
+    AffineTransformN<N, ScalarT> const & getTransformInverse() const { return transform_inverse; }
+
+    /** Get the transpose of the inverse of the linear part of the transform applied to the kd-tree. */
+    Matrix<N, N, ScalarT> const & getLinearTransformInverseTranspose() const { return transform_inverse_transpose; }
 
     /**
      * Clear the tree. If \a deallocate_all_memory is false, memory allocated in pools is held to be reused if possible by the
@@ -1097,12 +1107,6 @@ class /* THEA_API */ KdTreeN
     typedef Array<SampleFilter> SampleFilterStack;  ///< A stack of point sample filters.
 
   protected:
-    /** Get the inverse of the transform applied to the kd-tree. */
-    AffineTransformN<N, ScalarT> const & getTransformInverse() const { return transform_inverse; }
-
-    /** Get the transpose of the inverse of the linear part of the transform applied to the kd-tree. */
-    Matrix<N, N, ScalarT> const & getTransformInverseTranspose() const { return transform_inverse_transpose; }
-
     /** Get the main memory pool for nodes. */
     NodePool & getNodePool() { return node_pool; }
 
