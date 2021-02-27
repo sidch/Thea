@@ -189,7 +189,7 @@ main(int argc, char * argv[])
       }
       else if (arg == "--rescale")
       {
-        if (i > argc - 4)
+        if (i > argc - 5)
           return usage(argc, argv);
 
         arg = toLower(argv[++i]);

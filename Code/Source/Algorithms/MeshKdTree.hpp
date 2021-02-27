@@ -114,6 +114,19 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
       tris.clear();
     }
 
+    void updateElements(typename BaseT::Node const * start = nullptr)
+    {
+      // Recompute triangle cached properties in case vertex positions have changed
+      if (!start || start == this->getRoot())  // non-recursive loop avoids double-processing elements spanning multiple leaves
+      {
+        auto const * all_elems = this->getElements();
+        for (auto ei = all_elems, all_elems_end = all_elems + BaseT::numElements(); ei != all_elems_end; ++ei)
+          ei->update();
+      }
+      else
+        updateElementsRecursive(start);
+    }
+
   protected:
     void samplePointsFromElements(intx num_samples, typename BaseT::ElementSample * samples) const
     {
@@ -122,6 +135,22 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
     }
 
   private:
+    /** Recursive helper function for updateElements(). */
+    void updateElementsRecursive(typename BaseT::Node const * start)
+    {
+      if (start->isLeaf())
+      {
+        auto const * all_elems = BaseT::getElements();
+        for (auto ei = start->elementIndicesBegin(), ei_end = start->elementIndicesEnd(); ei != ei_end; ++ei)
+          all_elems[*ei].update();
+      }
+      else
+      {
+        updateElementsRecursive(start->getLowChild());
+        updateElementsRecursive(start->getHighChild());
+      }
+    }
+
     Triangles tris;  ///< Internal cache of triangles used to initialize the tree.
 
 }; // class MeshKdTree

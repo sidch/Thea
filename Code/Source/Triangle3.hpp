@@ -158,7 +158,7 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
      * Update the properties of the triangle, assuming the positions of its three corners have changed. Useful for external
      * callers if the mutable positions are not locally stored within the triangle.
      */
-    void update()
+    void update() const
     {
       Vector3 v0 = getVertex(0), v1 = getVertex(1), v2 = getVertex(2);
 
@@ -599,13 +599,15 @@ class /* THEA_DLL_LOCAL */ Triangle3Base : public RayIntersectable3
       return d2;
     }
 
-    VertexTriple  vertices;      ///< The vertices of the triangle.
-    Plane3        plane;         ///< Plane of the triangle.
-    int           primary_axis;  ///< Primary axis (closest to normal).
-    Vector3       centroid;      ///< Centroid of the triangle (mean of three vertices).
-    Vector3       edge01;        ///< vertices[1] - vertices[0]
-    Vector3       edge02;        ///< vertices[2] - vertices[0]
-    Real          area;          ///< Triangle area.
+    VertexTriple  vertices;  ///< The vertices of the triangle.
+
+    // Cached properties computed from the vertices
+    mutable Plane3   plane;         ///< Plane of the triangle.
+    mutable int      primary_axis;  ///< Primary axis (closest to normal).
+    mutable Vector3  centroid;      ///< Centroid of the triangle (mean of three vertices).
+    mutable Vector3  edge01;        ///< vertices[1] - vertices[0]
+    mutable Vector3  edge02;        ///< vertices[2] - vertices[0]
+    mutable Real     area;          ///< Triangle area.
 
 }; // class Triangle3Base
 

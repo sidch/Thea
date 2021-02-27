@@ -611,6 +611,12 @@ class /* THEA_API */ KdTreeN
     }
 
     /**
+     * Update cached properties of all elements in the kd-tree, or in one of its subtrees. In this base class, this function
+     * does nothing, but see MeshKdTree for a non-trivial override.
+     */
+    virtual void updateElements(Node const * start = nullptr) {}
+
+    /**
      * Recompute the bounding box of every node in the tree (or a specific subtree) from the element data at the leaves. The
      * tree topology is unchanged. This function is useful for quickly updating the tree when relative element sizes and
      * element-to-element proximity do not change much (e.g. under character articulations). Of course, this also requires that
@@ -618,8 +624,11 @@ class /* THEA_API */ KdTreeN
      * this object.
      *
      * @param start The root of the subtree to update. If null, the entire tree is updated.
+     *
+     * @note Since this function is meaningful only if the elements have changed, you may need to call updateElements() before
+     *   calling this.
      */
-    void updateNodeBounds(Node * start = nullptr)
+    virtual void updateNodeBounds(Node * start = nullptr)
     {
       if (!start)
       {
@@ -634,9 +643,7 @@ class /* THEA_API */ KdTreeN
         // Would be nicer to touch only the smallest subtree of points from updated elements, but this is too complicated for
         // now, so we'll just resample all the points
 
-        // Ok to cast away the const, this is a privately held object and we have full control over it
-        samplePointsFromElements(acceleration_structure->numElements(),
-                                 const_cast<ElementSample *>(acceleration_structure->getElements()));
+        samplePointsFromElements(acceleration_structure->numElements(), acceleration_structure->getElements());
         acceleration_structure->updateNodeBounds();
       }
     }
@@ -760,6 +767,16 @@ class /* THEA_API */ KdTreeN
     /** Get a pointer to an array of the elements in the tree. The number of elements can be obtained with numElements(). */
     T const * getElements() const { return &elems[0]; }
 
+    /**
+     * Get a pointer to an array of the elements in the tree. The number of elements can be obtained with numElements().
+     *
+     * @warning This non-const version of the function can be used to change the elements of the tree, which can invalidate the
+     *  tree and necessitate either a call to updateNodeBounds() or a complete tree re-initialization. It should be used with
+     *  extreme caution.
+     */
+    T * getElements() { return &elems[0]; }
+
+  public:
     /**
      * Get the node corresponding to the root of the kd-tree. This function is provided so that users can implement their own
      * tree traversal procedures.
