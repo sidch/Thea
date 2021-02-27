@@ -28,7 +28,8 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * A set of three vertices of a single face of a mesh. Works for general and DCEL meshes.
+ * A set of three vertices of a single face of a mesh. If the mesh vertices change, so does this triplet. This base template
+ * works for general and DCEL meshes.
  *
  * @see GeneralMesh, DcelMesh
  */
@@ -47,13 +48,9 @@ class MeshVertexTriple
 
     /** Constructs the triple from three vertices of a mesh face. */
     MeshVertexTriple(MeshVertexHandle v0, MeshVertexHandle v1, MeshVertexHandle v2, MeshFaceHandle face_, Mesh * mesh_)
+    : mesh(mesh_), vertices{ v0, v1, v2 }, face(face_)
     {
       debugAssertM(v0 && v1 && v2, "Mesh triangle: Null vertex provided");
-      vertices[0] = v0;
-      vertices[1] = v1;
-      vertices[2] = v2;
-      face = face_;
-      mesh = mesh_;
     }
 
     /** Get the position of any one of the three vertices. */
@@ -96,14 +93,14 @@ class MeshVertexTriple
     Mesh * getMesh() { return mesh; }
 
   private:
+    Mesh * mesh;                   ///< The mesh containing the triangle.
     MeshVertexHandle vertices[3];  ///< The vertices of the triangle.
     MeshFaceHandle face;           ///< The mesh face containing the triangle.
-    Mesh * mesh;                   ///< The mesh containing the triangle.
 
 }; // class MeshVertexTriple
 
 /**
- * A set of three vertices of a single face of a display mesh.
+ * A set of three vertices of a single face of a display mesh. If the mesh vertices change, so does this triplet.
  *
  * @see DisplayMesh
  */
@@ -157,23 +154,20 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     /** Constructs the triple from three mesh vertices. */
     template <typename IntegerT>
     MeshVertexTriple(IntegerT vi0, IntegerT vi1, IntegerT vi2, Mesh * mesh_, intx face_index_, FaceType face_type_)
-    : mesh(mesh_), face_index(face_index_), face_type(face_type_)
+    : mesh(mesh_), mesh_vertices(mesh->getVertices().data()), vertex_indices{ (intx)vi0, (intx)vi1, (intx)vi2 },
+      face_index(face_index_), face_type(face_type_)
     {
-      typename Mesh::VertexArray const & mv = mesh->getVertices();
-      vertices[0] = mv[(size_t)vi0];
-      vertices[1] = mv[(size_t)vi1];
-      vertices[2] = mv[(size_t)vi2];
-
-      vertex_indices[0] = (intx)vi0;
-      vertex_indices[1] = (intx)vi1;
-      vertex_indices[2] = (intx)vi2;
+      debugAssertM(vi0 >= 0 && vi0 < mesh->numVertices()
+                && vi1 >= 0 && vi1 < mesh->numVertices()
+                && vi2 >= 0 && vi2 < mesh->numVertices(), "Display mesh triangle: Mesh vertex index out of bounds");
     }
 
     /** Get the position of any one of the three vertices. */
     Vector3 const & getVertex(int i) const
     {
       debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index must be 0, 1 or 2");
-      return vertices[i];
+
+      return mesh_vertices[(size_t)vertex_indices[i]];
     }
 
     /**
@@ -185,7 +179,10 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
       if (mesh->hasNormals())
         return mesh->getIndexedVertex(vertex_indices[i]).getNormal();
       else
-        return (vertices[1] - vertices[0]).cross(vertices[2] - vertices[0]).normalized();
+      {
+        return (mesh_vertices[(size_t)vertex_indices[1]] - mesh_vertices[(size_t)vertex_indices[0]])
+               .cross(mesh_vertices[(size_t)vertex_indices[2]] - mesh_vertices[(size_t)vertex_indices[0]]).normalized();
+      }
     }
 
     /** Get the index of any one of the three mesh vertices. */
@@ -210,11 +207,11 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     Mesh * getMesh() const { return mesh; }
 
   private:
-    Vector3 vertices[3];     ///< The positions of the vertices of the mesh triangle.
-    Mesh * mesh;             ///< The mesh containing the triangle.
-    intx vertex_indices[3];  ///< The indices of the vertices of the mesh triangle.
-    intx face_index;         ///< The index of the face containing the triangle.
-    FaceType face_type;      ///< Type of face (triangle/quad).
+    Mesh * mesh;                    ///< The mesh containing the triangle.
+    Vector3 const * mesh_vertices;  ///< A direct reference to the vertex memory block of the mesh.
+    intx vertex_indices[3];         ///< The indices of the vertices of the mesh triangle.
+    intx face_index;                ///< The index of the face containing the triangle.
+    FaceType face_type;             ///< Type of face (triangle/quad).
 
 }; // class MeshVertexTriple<DisplayMesh>
 
