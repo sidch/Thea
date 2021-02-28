@@ -636,7 +636,7 @@ class /* THEA_API */ KdTreeN
         start = root;
       }
 
-      updateNodeBoundsRecursive(start);
+      (void)updateNodeBoundsRecursive(start);
 
       if (accelerate_nn_queries && valid_acceleration_structure && acceleration_structure)
       {
@@ -1259,32 +1259,44 @@ class /* THEA_API */ KdTreeN
      * possible.
      *
      * @param leaf A pointer to a leaf node. This is guaranteed to be non-null, and an actual leaf without children.
+     *
+     * @return The updated bounding box of \a leaf, <b>without</b> any padding. The bounding box actually stored in \a leaf
+     *   <b>will</b> be padded.
      */
-    virtual void updateLeafBounds(Node * leaf)
+    virtual AxisAlignedBoxT updateLeafBounds(Node * leaf)
     {
-      leaf->bounds.setNull();
-
-      AxisAlignedBoxT elem_bounds;
+      AxisAlignedBoxT unpadded_bounds, elem_bounds;
       for (ElementIndex i = 0; i < leaf->num_elems; ++i)
       {
         BoundedTraitsT::getBounds(elems[leaf->elems[i]], elem_bounds);
-        leaf->bounds.merge(elem_bounds);
+        unpadded_bounds.merge(elem_bounds);
       }
 
       // Expand the bounding box slightly to handle numerical error
-      leaf->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+      leaf->bounds = unpadded_bounds.scaleCenteredCopy(BOUNDS_EXPANSION_FACTOR);
+
+      return unpadded_bounds;
     }
 
   private:
-    /** Recursively applied helper function for updateNodeBounds(). */
-    void updateNodeBoundsRecursive(Node * start)
+    /**
+     * Recursively applied helper function for updateNodeBounds().
+     *
+     * @return The updated bounding box of \a start, <b>without</b> any padding. The bounding box actually stored in \a start
+     *   <b>will</b> be padded.
+     */
+    AxisAlignedBoxT updateNodeBoundsRecursive(Node * start)
     {
-      if (!start->lo)  // leaf
-        updateLeafBounds(start);
+      if (start->isLeaf())
+        return updateLeafBounds(start);
       else  // recurse
       {
-        updateNodeBoundsRecursive(start->lo);
-        updateNodeBoundsRecursive(start->hi);
+        AxisAlignedBoxT unpadded_bounds = updateNodeBoundsRecursive(start->lo);
+        unpadded_bounds.merge(            updateNodeBoundsRecursive(start->hi));
+
+        start->bounds = unpadded_bounds.scaleCenteredCopy(BOUNDS_EXPANSION_FACTOR);
+
+        return unpadded_bounds;
       }
     }
 
@@ -1381,7 +1393,7 @@ class /* THEA_API */ KdTreeN
     void closestPair(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds, NeighborPair & pair,
                      bool get_closest_points) const
     {
-      if (!start->lo)  // leaf
+      if (start->isLeaf())
         closestPairLeaf<MetricT>(start, query, pair, get_closest_points);
       else  // not leaf
       {
@@ -1484,7 +1496,7 @@ class /* THEA_API */ KdTreeN
                        BoundedNeighborPairSet & k_closest_pairs, double dist_bound, bool get_closest_points,
                        intx use_as_query_index_and_swap) const
     {
-      if (!start->lo)  // leaf
+      if (start->isLeaf())
         kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, get_closest_points, use_as_query_index_and_swap);
       else  // not leaf
       {
@@ -1649,7 +1661,7 @@ class /* THEA_API */ KdTreeN
             return static_cast<intx>(index);
         }
       }
-      else if (!start->lo)  // leaf
+      else if (start->isLeaf())
       {
         for (size_t i = 0; i < start->num_elems; ++i)
         {
@@ -1705,7 +1717,7 @@ class /* THEA_API */ KdTreeN
     template <typename RayIntersectionTesterT>
     Real rayIntersectionTime(Node const * start, RayT const & ray, Real max_time) const
     {
-      if (!start->lo)  // leaf
+      if (start->isLeaf())
       {
         Real best_time = max_time;
         bool found = false;
@@ -1766,7 +1778,7 @@ class /* THEA_API */ KdTreeN
     template <typename RayIntersectionTesterT>
     RayStructureIntersectionT rayStructureIntersection(Node const * start, RayT const & ray, Real max_time) const
     {
-      if (!start->lo)  // leaf
+      if (start->isLeaf())
       {
         RayStructureIntersectionT best_isec(max_time);
         bool found = false;
@@ -1963,6 +1975,8 @@ class /* THEA_API */ KdTreeN
     mutable bool valid_bounds;
     mutable AxisAlignedBoxT bounds;
 
+  protected:
+    /** A factor by which node bounding boxes are upscaled to add a little padding for protection against numerical error. */
     static Real const BOUNDS_EXPANSION_FACTOR;
 
 }; // class KdTreeN
