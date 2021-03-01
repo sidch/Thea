@@ -733,10 +733,10 @@ class /* THEA_API */ KdTreeN
     }
 
     /** Get the inverse of the transform applied to the kd-tree. */
-    AffineTransformN<N, ScalarT> const & getTransformInverse() const { return transform_inverse; }
+    AffineTransformN<N, ScalarT> const & getTransformInv() const { return transform_inverse; }
 
     /** Get the transpose of the inverse of the linear part of the transform applied to the kd-tree. */
-    Matrix<N, N, ScalarT> const & getLinearTransformInverseTranspose() const { return transform_inverse_transpose; }
+    Matrix<N, N, ScalarT> const & getLinearTransformInvTr() const { return transform_inverse_transpose; }
 
     /**
      * Clear the tree. If \a deallocate_all_memory is false, memory allocated in pools is held to be reused if possible by the
