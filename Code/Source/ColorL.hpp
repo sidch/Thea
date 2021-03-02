@@ -49,6 +49,8 @@ class THEA_API ColorL
     Real val;  ///< Luminance value.
 
   public:
+    typedef Real value_type;  ///< The numerical type of the luminance value.
+
     /** Default constructor, initializes color to 0. */
     ColorL() : val(0) {}
 

@@ -39,8 +39,8 @@ class ColorL;
 class ColorRgba;
 
 /**
- * Monochrome color represented as a single byte value in [0, 255], with automatic scaling by 255 when switching between integer
- * (ColorL8) and floating point (ColorL) formats. Derived from the G3D library: http://g3d.sourceforge.net
+ * Monochrome luminance value represented as a single byte value in [0, 255], with automatic scaling by 255 when switching
+ * between integer (ColorL8) and floating point (ColorL) formats. Derived from the G3D library: http://g3d.sourceforge.net
  */
 THEA_BEGIN_PACKED_CLASS(1)
 class THEA_API ColorL8
@@ -49,6 +49,8 @@ class THEA_API ColorL8
     uint8 val;  ///< Luminance value.
 
   public:
+    typedef uint8 value_type;  ///< The numerical type of the luminance value.
+
     /** Default constructor, initializes color to 0. */
     ColorL8() : val(0) {}
 

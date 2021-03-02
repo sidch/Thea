@@ -50,6 +50,8 @@ class THEA_API ColorRgba8
     uint8 c[4];  ///< Four components: red, green, blue and alpha.
 
   public:
+    typedef uint8 value_type;  ///< The numerical type of each channel.
+
     /** Default constructor. Does not initialize fields. */
     ColorRgba8() {}
 
