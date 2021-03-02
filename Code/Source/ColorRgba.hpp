@@ -55,6 +55,8 @@ class THEA_API ColorRgba
     Real c[4];  ///< Four components: red, gree, blue and alpha.
 
   public:
+    typedef Real value_type;  ///< The numerical type of each channel.
+
     /** Default constructor. Does not initialize fields. */
     ColorRgba() {}
 

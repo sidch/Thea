@@ -54,6 +54,8 @@ class THEA_API ColorRgb
     Real c[3];  ///< Three components: red, green and blue.
 
   public:
+    typedef Real value_type;  ///< The numerical type of each channel.
+
     /** Default constructor. Does not initialize fields. */
     ColorRgb() {}
 
