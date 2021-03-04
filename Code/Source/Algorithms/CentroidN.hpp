@@ -18,7 +18,7 @@
 #include "../Common.hpp"
 #include "../Math.hpp"
 #include "../MatVec.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "PointTraitsN.hpp"
 
 namespace Thea {
@@ -52,8 +52,8 @@ class /* THEA_API */ CentroidN
      * @return The weighted centroid of the objects (or the origin if the weights sum to zero).
      */
     template <typename ObjectInputIterator, typename WeightInputIterator>
-    static VectorT compute(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
-                           WeightInputIterator weights_begin);
+    static VectorT computeWeighted(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
+                                   WeightInputIterator weights_begin);
 
 }; // class CentroidN
 
@@ -78,8 +78,8 @@ class /* THEA_API */ CentroidN<T, N, ScalarT, typename std::enable_if< IsNonRefe
     }
 
     template <typename ObjectInputIterator, typename WeightInputIterator>
-    static VectorT compute(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
-                           WeightInputIterator weights_begin)
+    static VectorT computeWeighted(ObjectInputIterator objects_begin, ObjectInputIterator objects_end,
+                                   WeightInputIterator weights_begin)
     {
       VectorT sum_points = VectorT::Zero();
       double sum_weights = 0;

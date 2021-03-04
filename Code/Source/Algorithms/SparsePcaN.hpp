@@ -17,7 +17,7 @@
 
 #include "../Common.hpp"
 #include "CentroidN.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "PcaN.hpp"
 #include "PointTraitsN.hpp"
 #include "../Math.hpp"

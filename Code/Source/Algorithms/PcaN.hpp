@@ -18,7 +18,7 @@
 #include "../Common.hpp"
 #include "../Math.hpp"
 #include "../MatVec.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "PointTraitsN.hpp"
 #include "CentroidN.hpp"
 #include <Eigen/Eigenvalues>
@@ -34,17 +34,33 @@ class /* THEA_API */ PcaN
     typedef Vector<N, ScalarT> VectorT;  ///< N-D vector used to represent points and directions.
 
     /**
-     * Compute the PCA axes of a set of N-D objects. InputIterator must dereference to type T or pointer-to-T.
+     * Compute the PCA axes of a set of N-D objects. ObjectInputIterator must dereference to type T or pointer-to-T.
      *
-     * @param begin The first object in the set.
-     * @param end One position beyond the last object in the set.
+     * @param begin Iterator pointing to the first object in the set.
+     * @param end Iterator pointing to one position beyond the last object in the set.
      * @param eigenvalues The eigenvalues of the covariance matrix, ordered from largest to smallest.
      * @param eigenvectors The unit-length eigenvectors of the covariance matrix, ordered from largest to smallest eigenvalue.
      * @param centroid If non-null, used to return the centroid of the objects, which is computed during PCA.
      */
-    template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
-                                                          ScalarT eigenvalues[N], VectorT eigenvectors[N],
-                                                          VectorT * centroid = nullptr);
+    template <typename ObjectInputIterator>
+    static void compute(ObjectInputIterator begin, ObjectInputIterator end,
+                        ScalarT eigenvalues[N], VectorT eigenvectors[N], VectorT * centroid = nullptr);
+
+    /**
+     * Compute the PCA axes of a set of N-D objects with per-object weights. ObjectInputIterator must dereference to type T or
+     * pointer-to-T. WeightInputIterator must dereference to a scalar.
+     *
+     * @param begin Iterator pointing to the first object in the set.
+     * @param end Iterator pointing to one position beyond the last object in the set.
+     * @param weights_begin Iterator pointing to the weight of the first object.
+     * @param eigenvalues The eigenvalues of the weighted covariance matrix, ordered from largest to smallest.
+     * @param eigenvectors The unit-length eigenvectors of the weighted covariance matrix, ordered from largest to smallest
+     *    eigenvalue.
+     * @param centroid If non-null, used to return the weighted centroid of the objects, which is computed during PCA.
+     */
+    template <typename ObjectInputIterator, typename WeightInputIterator>
+    static void computeWeighted(ObjectInputIterator begin, ObjectInputIterator end, WeightInputIterator weights_begin,
+                                ScalarT eigenvalues[N], VectorT eigenvectors[N], VectorT * centroid = nullptr);
 
 }; // class PcaN
 
@@ -55,21 +71,29 @@ class PcaN<T, 2, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 2>::
   public:
     typedef Vector<2, ScalarT> VectorT;
 
-    template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
-                                                          ScalarT eigenvalues[2], VectorT eigenvectors[2],
-                                                          VectorT * centroid = nullptr)
+    template <typename ObjectInputIterator>
+    static void compute(ObjectInputIterator begin, ObjectInputIterator end,
+                        ScalarT eigenvalues[2], VectorT eigenvectors[2], VectorT * centroid = nullptr)
+    {
+      computeWeighted(begin, end, FixedPointIterator<ScalarT const>(1), eigenvalues, eigenvectors, centroid);
+    }
+
+    template <typename ObjectInputIterator, typename WeightInputIterator>
+    static void computeWeighted(ObjectInputIterator begin, ObjectInputIterator end, WeightInputIterator weights_begin,
+                                ScalarT eigenvalues[2], VectorT eigenvectors[2], VectorT * centroid = nullptr)
     {
       typedef Matrix<2, 2, ScalarT> MatrixT;
 
       // Compute centroid
-      VectorT ctr = CentroidN<T, 2>::compute(begin, end);
+      VectorT ctr = CentroidN<T, 2>::computeWeighted(begin, end, weights_begin);
 
       // Construct covariance matrix
       MatrixT cov(0, 0, 0, 0);
       intx n = 0;
-      for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++n)
+      auto wi = weights_begin;
+      for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++wi, ++n)
       {
-        VectorT p = PointTraitsN<T, 2, ScalarT>::getPosition(*i) - ctr;
+        VectorT p = static_cast<ScalarT>(*wi) * PointTraitsN<T, 2, ScalarT>::getPosition(*i) - ctr;
 
         for (int r = 0; r < 2; ++r)
           for (int c = 0; c < 2; ++c)
@@ -121,21 +145,29 @@ class PcaN<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>::
   public:
     typedef Vector<3, ScalarT> VectorT;
 
-    template <typename InputIterator> static void compute(InputIterator begin, InputIterator end,
-                                                          ScalarT eigenvalues[3], VectorT eigenvectors[3],
-                                                          VectorT * centroid = nullptr)
+    template <typename ObjectInputIterator>
+    static void compute(ObjectInputIterator begin, ObjectInputIterator end,
+                        ScalarT eigenvalues[3], VectorT eigenvectors[3], VectorT * centroid = nullptr)
+    {
+      computeWeighted(begin, end, FixedPointIterator<ScalarT const>(1), eigenvalues, eigenvectors, centroid);
+    }
+
+    template <typename ObjectInputIterator, typename WeightInputIterator>
+    static void computeWeighted(ObjectInputIterator begin, ObjectInputIterator end, WeightInputIterator weights_begin,
+                                ScalarT eigenvalues[2], VectorT eigenvectors[2], VectorT * centroid = nullptr)
     {
       typedef Matrix<3, 3, ScalarT> MatrixT;
 
       // Compute centroid
-      VectorT ctr = CentroidN<T, 3, ScalarT>::compute(begin, end);
+      VectorT ctr = CentroidN<T, 3, ScalarT>::computeWeighted(begin, end, weights_begin);
 
       // Construct covariance matrix
       MatrixT cov = MatrixT::Zero();
       intx n = 0;
+      auto wi = weights_begin;
       for (auto i = makeRefIterator(begin); i != makeRefIterator(end); ++i, ++n)
       {
-        VectorT p = PointTraitsN<T, 3, ScalarT>::getPosition(*i) - ctr;
+        VectorT p = static_cast<ScalarT>(*wi) * PointTraitsN<T, 3, ScalarT>::getPosition(*i) - ctr;
 
         for (int r = 0; r < 3; ++r)
           for (int c = 0; c < 3; ++c)

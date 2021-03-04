@@ -147,6 +147,9 @@ class THEA_API ColorRgb
       c[2] = b_;
     }
 
+    /** Set all channels to the same value. */
+    void fill(Real v) { c[0] = c[1] = c[2] = v; }
+
     /** Addition. */
     ColorRgb operator+(ColorRgb const & rhs) const
     {

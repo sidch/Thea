@@ -21,7 +21,7 @@
 #include "../MatVec.hpp"
 #include "../Plane3.hpp"
 #include "CentroidN.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "PointTraitsN.hpp"
 #include <Eigen/Eigenvalues>
 

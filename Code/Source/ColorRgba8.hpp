@@ -126,6 +126,9 @@ class THEA_API ColorRgba8
       c[3] = a_;
     }
 
+    /** Set all channels to the same value. */
+    void fill(uint8 v) { c[0] = c[1] = c[2] = c[3] = v; }
+
     /** Addition. Upper-bounds channels to 255. */
     ColorRgba8 operator+(ColorRgba8 const & rhs) const
     {

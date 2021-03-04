@@ -1,7 +1,7 @@
 #include "../../Common.hpp"
 #include "../../FilePath.hpp"
 #include "../../Algorithms/Filter.hpp"
-#include "../../Algorithms/IteratorModifiers.hpp"
+#include "../../Algorithms/Iterators.hpp"
 #include "../../Algorithms/KdTreeN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"

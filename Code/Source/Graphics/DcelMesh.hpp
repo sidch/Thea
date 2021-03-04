@@ -17,7 +17,7 @@
 // #define THEA_DCELMESH_VERBOSE
 
 #include "../Common.hpp"
-#include "../Algorithms/IteratorModifiers.hpp"
+#include "../Algorithms/Iterators.hpp"
 #include "../Array.hpp"
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
