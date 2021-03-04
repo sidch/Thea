@@ -18,7 +18,7 @@
 #include "../Common.hpp"
 #include "CentroidN.hpp"
 #include "GeodesicSphere3.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "PointTraitsN.hpp"
 #include "../Math.hpp"
 #include "../UnorderedSet.hpp"

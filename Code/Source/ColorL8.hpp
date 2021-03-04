@@ -89,6 +89,9 @@ class THEA_API ColorL8
       return val;
     }
 
+    /** Set the luminance value, for consistency with multi-channel colors. */
+    void fill(uint8 v) { val = v; }
+
     /** Addition operator. Upper-bounds result to 255. */
     ColorL8 operator+(ColorL8 const & other) const
     {

@@ -89,6 +89,9 @@ class THEA_API ColorL
       return val;
     }
 
+    /** Set the luminance value, for consistency with multi-channel colors. */
+    void fill(Real v) { val = v; }
+
     /** Negation operator. */
     ColorL operator-() const
     {

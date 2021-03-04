@@ -335,7 +335,7 @@ class Icp3
       p_mean /= sum_weights;
       q_mean /= sum_weights;
 
-      // Find covariance matrix
+      // Find cross-covariance matrix
       MatrixT cov; cov.setZero();
       for (intx i = 0; i < num_pts; ++i)
       {

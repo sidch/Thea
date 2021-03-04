@@ -12,8 +12,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_IteratorModifiers_hpp__
-#define __Thea_Algorithms_IteratorModifiers_hpp__
+#ifndef __Thea_Algorithms_Iterators_hpp__
+#define __Thea_Algorithms_Iterators_hpp__
 
 #include "../Common.hpp"
 #include <iterator>
@@ -21,6 +21,67 @@
 
 namespace Thea {
 namespace Algorithms {
+
+/**
+ * Iterates repeatedly over a single object. If T is a non-const type, this object can be modified (e.g. if it expresses a
+ * count), though this feature is probably of limited value, and is especially brittle if copies of the iterator are involved.
+ * This class satisfies the RandomAccessIterator specification. However, some functions such as the &lt;, &gt; &lt;=, &gt;= etc
+ * operators are inconsistent and should not be used.
+ */
+template <typename T>
+class FixedPointIterator
+{
+  public:
+    typedef std::random_access_iterator_tag  iterator_category;  ///< Iterator category.
+    typedef std::ptrdiff_t                   difference_type;    ///< Type for expressing difference of two iterators.
+    typedef T                                value_type;         ///< Type of values being iterated over.
+    typedef T *                              pointer;            ///< Pointer to a value.
+    typedef T &                              reference;          ///< Reference to a value.
+
+    /** Default constructor, wraps an undefined value. */
+    FixedPointIterator() {}
+
+    /**
+     * Construct with a value. A copy of the value is stored in the iterator, so T should be a reference or pointer type if
+     * large objects are involved.
+     */
+    FixedPointIterator(T const & value_) : value(value_) {}
+
+    /** Copy constructor. */
+    FixedPointIterator(FixedPointIterator const & src) : value(src.value) {}
+
+    /** Dereference the iterator. */
+    reference operator*() const { return value; }
+
+    /** Arrow operator. */
+    pointer operator->() { return &value; }
+
+    FixedPointIterator & operator++() { return *this; }
+    FixedPointIterator   operator++(int) { return *this; }
+    FixedPointIterator & operator--() { return *this; }
+    FixedPointIterator   operator--(int) { return *this; }
+
+    FixedPointIterator & operator=(FixedPointIterator const & src) { value = src.value; return *this; }
+    FixedPointIterator & operator+=(difference_type n) { return *this; }
+    FixedPointIterator & operator-=(difference_type n) { return *this; }
+
+    FixedPointIterator operator+(difference_type n) const { return *this; }
+    FixedPointIterator operator-(difference_type n) const { return *this; }
+    difference_type operator-(FixedPointIterator const & rhs) const { return std::numeric_limits<difference_type>::max(); }
+
+    bool operator==(FixedPointIterator const & rhs) const { return false; }  // infinite list
+    bool operator!=(FixedPointIterator const & rhs) const { return true; }
+
+    // Defined for completeness but should not be used since they are inconsistent if the left and right sides are swapped.
+    bool operator< (FixedPointIterator const & rhs) const { return true; }
+    bool operator> (FixedPointIterator const & rhs) const { return false; }
+    bool operator<=(FixedPointIterator const & rhs) const { return true; }
+    bool operator>=(FixedPointIterator const & rhs) const { return false; }
+
+  private:
+    T value;  ///< The value returned by dereferencing the iterator.
+
+}; // struct FixedPointIterator
 
 /**
  * Converts an iterator dereferencing to a pointer to T, to an iterator dereferencing to T. The new iterator supports the
@@ -51,7 +112,7 @@ class RefIterator : public IteratorT
 
 }; // class RefIterator
 
-#define THEA_RANDOM_ACCESS_ITERATOR_BODY(class_name)                                                                          \
+#define THEA_RANDOM_ACCESS_ITERATOR_BODY(class_name, difference_type)                                                         \
     class_name(class_name const & src) : ii(src.ii) {}                                                                        \
                                                                                                                               \
     class_name & operator++() { ++ii; return *this; }                                                                         \
@@ -60,11 +121,12 @@ class RefIterator : public IteratorT
     class_name   operator--(int) { class_name tmp(*this); operator--(); return tmp; }                                         \
                                                                                                                               \
     class_name & operator=(class_name const & src) { ii = src.ii; return *this; }                                             \
-    template <typename IntegerT> class_name & operator+=(IntegerT n) { ii += n; return *this; }                               \
-    template <typename IntegerT> class_name & operator-=(IntegerT n) { ii -= n; return *this; }                               \
+    class_name & operator+=(difference_type n) { ii += n; return *this; }                                                     \
+    class_name & operator-=(difference_type n) { ii -= n; return *this; }                                                     \
                                                                                                                               \
-    template <typename IntegerT> class_name operator+(IntegerT n) const { return class_name(ii + n); }                        \
-    template <typename IntegerT> class_name operator-(IntegerT n) const { return class_name(ii - n); }                        \
+    class_name operator+(difference_type n) const { return class_name(ii + n); }                                              \
+    class_name operator-(difference_type n) const { return class_name(ii - n); }                                              \
+    difference_type operator-(class_name const & rhs) const { return ii - rhs.ii; }                                           \
                                                                                                                               \
     bool operator==(class_name const & rhs) const { return ii == rhs.ii; }                                                    \
     bool operator!=(class_name const & rhs) const { return ii != rhs.ii; }                                                    \
@@ -96,7 +158,7 @@ class RefIterator< T *, typename std::enable_if< ! std::is_pointer< typename std
   public:
     RefIterator(T * ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
 
     T & operator*() const { return *ii; }
     T * operator->() const { return ii; }
@@ -113,7 +175,7 @@ class RefIterator<T **> : public std::iterator<std::random_access_iterator_tag, 
   public:
     explicit RefIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
 
     T & operator*() const { return **ii; }
     T * operator->() const { return *ii; }
@@ -132,7 +194,7 @@ class RefIterator<T const * const *>
   public:
     explicit RefIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
 
     T const & operator*() const { return **ii; }
     T const * operator->() const { return *ii; }
@@ -196,7 +258,7 @@ class PtrIterator<T *>
   public:
     PtrIterator(T * ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)
 
     T * operator*() const { return ii; }
     template <typename IntegerT> T * operator[](IntegerT n) { return ii + n; }
@@ -213,7 +275,7 @@ class PtrIterator<T **>
   public:
     PtrIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)
 
     T * operator*() const { return *ii; }
     T ** operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }
@@ -231,7 +293,7 @@ class PtrIterator<T const * const *>
   public:
     PtrIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
-    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator)
+    THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)
 
     T const * operator*() const { return *ii; }
     T const * const * operator->() const { alwaysAssertM(false, "PtrIterator: Can't call '->' on iterator-over-pointers"); }

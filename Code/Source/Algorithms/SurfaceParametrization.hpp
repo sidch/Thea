@@ -22,7 +22,7 @@
 #include "../SparseMatVec.hpp"
 #include "../UnorderedMap.hpp"
 #include "../UnorderedSet.hpp"
-#include "IteratorModifiers.hpp"
+#include "Iterators.hpp"
 #include "StdLinearSolver.hpp"
 #include <iterator>
 #include <type_traits>
