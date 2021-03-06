@@ -42,7 +42,7 @@ class /* THEA_API */ SparsePcaN
      *
      * @param begin The first object in the set.
      * @param end One position beyond the last object in the set.
-     * @param variances The variances of the data along the sparse PCA axes, sorted from maxium variances to least.
+     * @param variances The variances of the data along the sparse PCA axes, sorted from maximum variance to minimum.
      * @param axes The sparse PCA axes, sorted from maximum variance to least.
      * @param centroid If non-null, used to return the centroid of the objects, which is computed during PCA.
      * @param lambda The bias towards sparsity. A negative value selects a default bias.
@@ -248,7 +248,7 @@ class SparsePcaN<T, N, ScalarT, typename std::enable_if< IsNonReferencedPointN<T
         }
     }
 
-}; // class SparsePcaN<Point3>
+}; // class SparsePcaN<PointN>
 
 } // namespace Algorithms
 } // namespace Thea
