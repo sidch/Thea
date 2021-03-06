@@ -185,13 +185,13 @@ class PcaN<T, 3, ScalarT, typename std::enable_if< IsNonReferencedPointN<T, 3>::
 
       // Find eigenvalues of covariance matrix
       Eigen::SelfAdjointEigenSolver<MatrixT> eigensolver;
-      if (eigensolver.computeDirect(cov).info() != Eigen::Success)
+      if (eigensolver.computeDirect(cov, Eigen::ComputeEigenvectors).info() != Eigen::Success)
         throw Error("Pca3: Could not eigensolve covariance matrix");
 
       for (int i = 0; i < 3; ++i)
       {
-        eigenvalues[i]  = eigensolver.eigenvalues()[i];
-        eigenvectors[i] = eigensolver.eigenvectors().col(i).normalized();
+        eigenvalues[i]  = eigensolver.eigenvalues()[2 - i];  // SelfAdjointEigenSolver sorts eigenvalues in increasing order
+        eigenvectors[i] = eigensolver.eigenvectors().col(2 - i).normalized();
       }
 
       if (centroid)
