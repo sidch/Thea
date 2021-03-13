@@ -323,8 +323,23 @@ GlTexture::setOptions(Options const * options)
   GLenum wrap = GL_REPEAT;
   switch (options->wrapMode())
   {
-    case Options::WrapMode::CLAMP: wrap = THEA_GL_SUPPORTS(EXT_texture_edge_clamp) ? GL_CLAMP_TO_EDGE : GL_CLAMP; break;
+    case Options::WrapMode::CLAMP:
+    {
+#ifdef GL_VERSION_1_2
+      wrap = GL_CLAMP_TO_EDGE;
+#else
+      if (THEA_GL_SUPPORTS(EXT_texture_edge_clamp))
+        wrap = GL_CLAMP_TO_EDGE_EXT;
+      else if (THEA_GL_SUPPORTS(SGIS_texture_edge_clamp))
+        wrap = GL_CLAMP_TO_EDGE_SGIS;
+      else
+        wrap = GL_CLAMP;
+#endif
+      break;
+    }
+
     case Options::WrapMode::TILE: wrap = GL_REPEAT; break;
+
     case Options::WrapMode::ZERO:
     {
       wrap = THEA_GL_SUPPORTS(ARB_texture_border_clamp) ? GL_CLAMP_TO_BORDER_ARB : GL_CLAMP;

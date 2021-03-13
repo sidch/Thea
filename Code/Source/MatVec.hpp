@@ -17,8 +17,16 @@
 
 #include "Common.hpp"
 #include "MatrixFormat.hpp"
+
+// Resolve a conflict between X.h (which #defines Success) and Eigen (which has an enum called Success). Fortunately both
+// headers currently assign the same value to Success (0) so the #undef should be all that's needed.
+// https://stackoverflow.com/questions/22400905/eigen-and-cimg-compatibility-issues
+#ifdef Success
+#  undef Success
+#endif
 #include <Eigen/Core>
 #include <Eigen/Geometry>  // for some weird reason Eigen defines cross() here
+
 #include <complex>
 
 namespace Thea {

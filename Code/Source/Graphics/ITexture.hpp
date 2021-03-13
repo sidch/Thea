@@ -33,7 +33,7 @@ class THEA_API ITextureOptions
       /** Supported values. */
       enum Value
       {
-        CLAMP,  ///< Clamp out-of-range pixels to the border color.
+        CLAMP,  ///< Clamp out-of-range pixels to the nearest image pixels (equivalent to GL_CLAMP_TO_EDGE).
         TILE,   ///< Tile the image to assign colors to out-of-range pixels.
         ZERO,   ///< Out-of-range pixels are all set to zero.
         NUM     ///< [Internal] Number of allowed wrap modes.
@@ -202,7 +202,8 @@ class THEA_API ITexture : public virtual INamedObject
      *
      * @return True on success, false on error.
      */
-    virtual int8 THEA_ICALL updateSubImage(IImage const * image, int64 dst_x, int64 dst_y, int64 dst_z = 0, int32 face = Face::POS_X) = 0;
+    virtual int8 THEA_ICALL updateSubImage(IImage const * image, int64 dst_x, int64 dst_y, int64 dst_z = 0,
+                                           int32 face = Face::POS_X) = 0;
 
     /**
      * Update a part of (a face of) the texture from a portion of a pixel buffer. The block of the source image with corner
