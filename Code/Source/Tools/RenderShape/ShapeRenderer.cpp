@@ -2371,8 +2371,8 @@ initMeshShader(IShader & shader, Vector4 const & material, bool two_sided = true
 "}\n";
 
   static string const FRAGMENT_SHADER_BODY_MATCAP =
-"  vec2 matcap_uv = N.xy * (two_sided > 0.5 ? sign(N.z) : 1.0);\n"
-"  vec4 matcap_color = texture2D(matcap_tex, 0.5 * (matcap_uv + vec2(1.0, 1.0)));\n"
+"  vec2 matcap_uv = (two_sided < 0.5 && N.z < 0.0 ? normalize(N.xy) : N.xy);\n"
+"  vec4 matcap_color = texture2D(matcap_tex, 0.495 * matcap_uv + 0.5);\n"
 "  gl_FragColor = vec4(color.rgb * matcap_color.rgb, color.a);\n"
 "}\n";
 
