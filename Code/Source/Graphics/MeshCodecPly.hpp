@@ -161,14 +161,14 @@ class CodecPly : public CodecPlyBase<MeshT>
         bool store_vertex_indices;
         bool store_face_indices;
         bool strict;
-        bool verbose;
+        int  verbose;
 
         friend class CodecPly;
 
       public:
         /** Constructor. Sets default values. */
         ReadOptions()
-        : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), strict(false), verbose(false)
+        : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), strict(false), verbose(1)
         {}
 
         /** Skip meshes with no faces? */
@@ -183,12 +183,12 @@ class CodecPly : public CodecPlyBase<MeshT>
         /** Treat warnings as errors */
         ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
-        /** Print debugging information? */
-        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * ReadOptions().setSkipEmptyMeshes(true).setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
+         * ReadOptions().setSkipEmptyMeshes(true).setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -199,21 +199,21 @@ class CodecPly : public CodecPlyBase<MeshT>
     {
       private:
         bool binary;
-        bool verbose;
+        int  verbose;
 
         friend class CodecPly;
 
       public:
         /** Constructor. Sets default values. */
-        WriteOptions() : binary(false), verbose(false) {}
+        WriteOptions() : binary(false), verbose(1) {}
 
         /** Write in the binary format? */
         WriteOptions & setBinary(bool value) { binary = value; return *this; }
 
-        /** Print debugging information? */
-        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
-        /** The set of default options. The default options correspond to WriteOptions().setBinary(false).setVerbose(false). */
+        /** The set of default options. The default options correspond to WriteOptions().setBinary(false).setVerbose(1). */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
     }; // class WriteOptions
@@ -534,7 +534,8 @@ class CodecPly : public CodecPlyBase<MeshT>
       if (builder.numVertices() > 0 || builder.numFaces() > 0)
         mesh_group.addMesh(mesh);
 
-      THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
+      if (read_opts.verbose >= 1)
+        THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
     }
 
     /** Read a binary-encoded number and return it as a specified type. */
@@ -692,7 +693,8 @@ class CodecPly : public CodecPlyBase<MeshT>
       if (builder.numVertices() > 0 || builder.numFaces() > 0)
         mesh_group.addMesh(mesh);
 
-      THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
+      if (read_opts.verbose >= 1)
+        THEA_CONSOLE << getName() << ": Read mesh with " << num_vertices << " vertices and " << num_faces << " faces";
     }
 
     /** Count the number of vertices and faces in a mesh. */

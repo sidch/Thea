@@ -64,14 +64,14 @@ class CodecOff : public CodecOffBase<MeshT>
         bool store_vertex_indices;
         bool store_face_indices;
         bool strict;
-        bool verbose;
+        int  verbose;
 
         friend class CodecOff;
 
       public:
         /** Constructor. Sets default values. */
         ReadOptions()
-        : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), strict(false), verbose(false)
+        : skip_empty_meshes(true), store_vertex_indices(true), store_face_indices(true), strict(false), verbose(1)
         {}
 
         /** Skip meshes with no faces? */
@@ -86,12 +86,12 @@ class CodecOff : public CodecOffBase<MeshT>
         /** Treat warnings as errors */
         ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
-        /** Print debugging information? */
-        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * ReadOptions().setSkipEmptyMeshes(true).setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
+         * ReadOptions().setSkipEmptyMeshes(true).setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -102,21 +102,21 @@ class CodecOff : public CodecOffBase<MeshT>
     {
       private:
         bool binary;
-        bool verbose;
+        int  verbose;
 
         friend class CodecOff;
 
       public:
         /** Constructor. Sets default values. */
-        WriteOptions() : binary(false), verbose(false) {}
+        WriteOptions() : binary(false), verbose(1) {}
 
         /** Write in the binary format? */
         WriteOptions & setBinary(bool value) { binary = value; return *this; }
 
-        /** Print debugging information? */
-        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
-        /** The set of default options. The default options correspond to WriteOptions().setBinary(false).setVerbose(false). */
+        /** The set of default options. The default options correspond to WriteOptions().setBinary(false).setVerbose(1). */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
     }; // class WriteOptions
@@ -202,8 +202,11 @@ class CodecOff : public CodecOffBase<MeshT>
       if (!(counts >> num_vertices >> num_faces >> num_edges))
         throw Error(std::string(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
 
-      THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
-                   << " edges";
+      if (read_opts.verbose >= 1)
+      {
+        THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
+                     << " edges";
+      }
 
       if (read_opts.skip_empty_meshes && num_vertices <= 0)
         return;
@@ -330,8 +333,11 @@ class CodecOff : public CodecOffBase<MeshT>
       intx num_faces = (intx)in.readInt32();
       intx num_edges = (intx)in.readInt32();
 
-      THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
-                   << " edges";
+      if (read_opts.verbose >= 1)
+      {
+        THEA_CONSOLE << getName() << ": Mesh has " << num_vertices << " vertices, " << num_faces << " faces and " << num_edges
+                     << " edges";
+      }
 
       if (read_opts.skip_empty_meshes && num_vertices <= 0)
         return;

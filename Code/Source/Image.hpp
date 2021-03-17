@@ -263,44 +263,44 @@ class THEA_API ImageCodec : public Codec
 // TODO: Add options to all the ones that support them
 
 // 2D formats
-THEA_DEF_IMAGE_CODEC(CodecBMP,     "BMP",     "Windows or OS/2 Bitmap File (*.BMP)")
-THEA_DEF_IMAGE_CODEC(CodecCUT,     "CUT",     "Dr. Halo (*.CUT)")
-THEA_DEF_IMAGE_CODEC(CodecDDS,     "DDS",     "DirectDraw Surface (*.DDS)")
-THEA_DEF_IMAGE_CODEC(CodecEXR,     "EXR",     "ILM OpenEXR (*.EXR)")
-THEA_DEF_IMAGE_CODEC(CodecFAXG3,   "FAXG3",   "Raw Fax format CCITT G3 (*.G3)")
-THEA_DEF_IMAGE_CODEC(CodecGIF,     "GIF",     "Graphics Interchange Format (*.GIF)")
-THEA_DEF_IMAGE_CODEC(CodecHDR,     "HDR",     "High Dynamic Range (*.HDR)")
-THEA_DEF_IMAGE_CODEC(CodecICO,     "ICO",     "Windows Icon (*.ICO)")
-THEA_DEF_IMAGE_CODEC(CodecIFF,     "IFF",     "Amiga IFF (*.IFF, *.LBM)")
-THEA_DEF_IMAGE_CODEC(CodecJ2K,     "J2K",     "JPEG-2000 codestream (*.J2K, *.J2C)")
-THEA_DEF_IMAGE_CODEC(CodecJNG,     "JNG",     "JPEG Network Graphics (*.JNG)")
-THEA_DEF_IMAGE_CODEC(CodecJP2,     "JP2",     "JPEG-2000 File Format (*.JP2)")
-THEA_DEF_IMAGE_CODEC(CodecKOALA,   "KOALA",   "Commodore 64 Koala format (*.KOA)")
-THEA_DEF_IMAGE_CODEC(CodecMNG,     "MNG",     "Multiple Network Graphics (*.MNG)")
-THEA_DEF_IMAGE_CODEC(CodecPBM,     "PBM",     "Portable Bitmap (ASCII) (*.PBM)")
-THEA_DEF_IMAGE_CODEC(CodecPBMRAW,  "PBMRAW",  "Portable Bitmap (BINARY) (*.PBM)")
-THEA_DEF_IMAGE_CODEC(CodecPCD,     "PCD",     "Kodak PhotoCD (*.PCD)")
-THEA_DEF_IMAGE_CODEC(CodecPCX,     "PCX",     "Zsoft Paintbrush PCX bitmap format (*.PCX)")
-THEA_DEF_IMAGE_CODEC(CodecPFM,     "PFM",     "Portable Floatmap (*.PFM)")
-THEA_DEF_IMAGE_CODEC(CodecPGM,     "PGM",     "Portable Graymap (ASCII) (*.PGM)")
-THEA_DEF_IMAGE_CODEC(CodecPGMRAW,  "PGMRAW",  "Portable Graymap (BINARY) (*.PGM)")
-THEA_DEF_IMAGE_CODEC(CodecPNG,     "PNG",     "Portable Network Graphics (*.PNG)")
-THEA_DEF_IMAGE_CODEC(CodecPPM,     "PPM",     "Portable Pixelmap (ASCII) (*.PPM)")
-THEA_DEF_IMAGE_CODEC(CodecPPMRAW,  "PPMRAW",  "Portable Pixelmap (BINARY) (*.PPM)")
-THEA_DEF_IMAGE_CODEC(CodecPSD,     "PSD",     "Adobe Photoshop (*.PSD)")
-THEA_DEF_IMAGE_CODEC(CodecRAS,     "RAS",     "Sun Rasterfile (*.RAS)")
-THEA_DEF_IMAGE_CODEC(CodecSGI,     "SGI",     "Silicon Graphics SGI image format (*.SGI)")
-THEA_DEF_IMAGE_CODEC(CodecTARGA,   "TARGA",   "Truevision Targa files (*.TGA, *.TARGA)")
-THEA_DEF_IMAGE_CODEC(CodecTIFF,    "TIFF",    "Tagged Image File Format (*.TIF, *.TIFF)")
-THEA_DEF_IMAGE_CODEC(CodecWBMP,    "WBMP",    "Wireless Bitmap (*.WBMP)")
-THEA_DEF_IMAGE_CODEC(CodecXBM,     "XBM",     "X11 Bitmap Format (*.XBM)")
-THEA_DEF_IMAGE_CODEC(CodecXPM,     "XPM",     "X11 Pixmap Format (*.XPM)")
+THEA_DEF_IMAGE_CODEC(CodecBmp,     "BMP",     "Windows or OS/2 Bitmap File (*.bmp)")
+THEA_DEF_IMAGE_CODEC(CodecCut,     "CUT",     "Dr. Halo (*.cut)")
+THEA_DEF_IMAGE_CODEC(CodecDds,     "DDS",     "DirectDraw Surface (*.dds)")
+THEA_DEF_IMAGE_CODEC(CodecExr,     "EXR",     "ILM OpenEXR (*.exr)")
+THEA_DEF_IMAGE_CODEC(CodecFaxg3,   "FAXG3",   "Raw Fax format CCITT G3 (*.g3)")
+THEA_DEF_IMAGE_CODEC(CodecGif,     "GIF",     "Graphics Interchange Format (*.gif)")
+THEA_DEF_IMAGE_CODEC(CodecHdr,     "HDR",     "High Dynamic Range (*.hdr)")
+THEA_DEF_IMAGE_CODEC(CodecIco,     "ICO",     "Windows Icon (*.ico)")
+THEA_DEF_IMAGE_CODEC(CodecIff,     "IFF",     "Amiga IFF (*.iff, *.lbm)")
+THEA_DEF_IMAGE_CODEC(CodecJ2k,     "J2K",     "JPEG-2000 codestream (*.j2k, *.j2c)")
+THEA_DEF_IMAGE_CODEC(CodecJng,     "JNG",     "JPEG Network Graphics (*.jng)")
+THEA_DEF_IMAGE_CODEC(CodecJp2,     "JP2",     "JPEG-2000 File Format (*.jp2)")
+THEA_DEF_IMAGE_CODEC(CodecKoala,   "KOALA",   "Commodore 64 Koala format (*.koa)")
+THEA_DEF_IMAGE_CODEC(CodecMng,     "MNG",     "Multiple Network Graphics (*.mng)")
+THEA_DEF_IMAGE_CODEC(CodecPbm,     "PBM",     "Portable Bitmap (ASCII) (*.pbm)")
+THEA_DEF_IMAGE_CODEC(CodecPbmraw,  "PBMRAW",  "Portable Bitmap (BINARY) (*.pbm)")
+THEA_DEF_IMAGE_CODEC(CodecPcd,     "PCD",     "Kodak PhotoCD (*.pcd)")
+THEA_DEF_IMAGE_CODEC(CodecPcx,     "PCX",     "Zsoft Paintbrush PCX bitmap format (*.pcx)")
+THEA_DEF_IMAGE_CODEC(CodecPfm,     "PFM",     "Portable Floatmap (*.pfm)")
+THEA_DEF_IMAGE_CODEC(CodecPgm,     "PGM",     "Portable Graymap (ASCII) (*.pgm)")
+THEA_DEF_IMAGE_CODEC(CodecPgmraw,  "PGMRAW",  "Portable Graymap (BINARY) (*.pgm)")
+THEA_DEF_IMAGE_CODEC(CodecPng,     "PNG",     "Portable Network Graphics (*.png)")
+THEA_DEF_IMAGE_CODEC(CodecPpm,     "PPM",     "Portable Pixelmap (ASCII) (*.ppm)")
+THEA_DEF_IMAGE_CODEC(CodecPpmraw,  "PPMRAW",  "Portable Pixelmap (BINARY) (*.ppm)")
+THEA_DEF_IMAGE_CODEC(CodecPsd,     "PSD",     "Adobe Photoshop (*.psd)")
+THEA_DEF_IMAGE_CODEC(CodecRas,     "RAS",     "Sun Rasterfile (*.ras)")
+THEA_DEF_IMAGE_CODEC(CodecSgi,     "SGI",     "Silicon Graphics SGI image format (*.sgi)")
+THEA_DEF_IMAGE_CODEC(CodecTarga,   "TARGA",   "Truevision Targa files (*.tga, *.targa)")
+THEA_DEF_IMAGE_CODEC(CodecTiff,    "TIFF",    "Tagged Image File Format (*.tif, *.tiff)")
+THEA_DEF_IMAGE_CODEC(CodecWbmp,    "WBMP",    "Wireless Bitmap (*.wbmp)")
+THEA_DEF_IMAGE_CODEC(CodecXbm,     "XBM",     "X11 Bitmap Format (*.xbm)")
+THEA_DEF_IMAGE_CODEC(CodecXpm,     "XPM",     "X11 Pixmap Format (*.xpm)")
 
 // 3D formats
-THEA_DEF_IMAGE_CODEC(Codec3BM,     "3BM",     "3D Bitmap (*.3BM)")
+THEA_DEF_IMAGE_CODEC(Codec3bm,     "3BM",     "3D Bitmap (*.3bm)")
 
 /** JPEG image codec. */
-class THEA_API CodecJPEG : public ImageCodec
+class THEA_API CodecJpeg : public ImageCodec
 {
   public:
     /** %Options for JPEG encoding. */
@@ -320,12 +320,12 @@ class THEA_API CodecJPEG : public ImageCodec
     };
 
     /** Default constructor. Sets default options (quality 75, non-progressive encoding). */
-    CodecJPEG() : options(Options::defaults()) {}
+    CodecJpeg() : options(Options::defaults()) {}
 
     /** Constructor to set encoding options. */
-    CodecJPEG(Options const & options_) : options(options_) {}
+    CodecJpeg(Options const & options_) : options(options_) {}
 
-    THEA_DEF_IMAGE_CODEC_BODY(CodecJPEG, "JPEG", "Independent JPEG Group (*.JPG, *.JIF, *.JPEG, *.JPE)")
+    THEA_DEF_IMAGE_CODEC_BODY(CodecJpeg, "JPEG", "Independent JPEG Group (*.jpg, *.jif, *.jpeg, *.jpe)")
 
   private:
     Options options;

@@ -147,48 +147,48 @@ codecFromPath(std::string const & path)
   if (codec_map.empty())  // only on the first call
   {
     // 2D formats
-    codec_map["BMP"  ] = ICPtr(new CodecBMP());
-    codec_map["CUT"  ] = ICPtr(new CodecCUT());
-    codec_map["DDS"  ] = ICPtr(new CodecDDS());
-    codec_map["EXR"  ] = ICPtr(new CodecEXR());
-    codec_map["GIF"  ] = ICPtr(new CodecGIF());
-    codec_map["HDR"  ] = ICPtr(new CodecHDR());
-    codec_map["ICO"  ] = ICPtr(new CodecICO());
-    codec_map["IFF"  ] = ICPtr(new CodecIFF());
-    codec_map["LBM"  ] = ICPtr(new CodecIFF());
-    codec_map["J2K"  ] = ICPtr(new CodecJ2K());
-    codec_map["J2C"  ] = ICPtr(new CodecJ2K());
-    codec_map["JNG"  ] = ICPtr(new CodecJNG());
-    codec_map["JP2"  ] = ICPtr(new CodecJP2());
-    codec_map["JPG"  ] = ICPtr(new CodecJPEG());
-    codec_map["JIF"  ] = ICPtr(new CodecJPEG());
-    codec_map["JPEG" ] = ICPtr(new CodecJPEG());
-    codec_map["JPE"  ] = ICPtr(new CodecJPEG());
-    codec_map["KOA"  ] = ICPtr(new CodecKOALA());
-    codec_map["MNG"  ] = ICPtr(new CodecMNG());
-    codec_map["PBM"  ] = ICPtr(new CodecPBM());
-    codec_map["PBM"  ] = ICPtr(new CodecPBMRAW());
-    codec_map["PCD"  ] = ICPtr(new CodecPCD());
-    codec_map["PCX"  ] = ICPtr(new CodecPCX());
-    codec_map["PFM"  ] = ICPtr(new CodecPFM());
-    codec_map["PGM"  ] = ICPtr(new CodecPGM());
-    codec_map["PGM"  ] = ICPtr(new CodecPGMRAW());
-    codec_map["PNG"  ] = ICPtr(new CodecPNG());
-    codec_map["PPM"  ] = ICPtr(new CodecPPM());
-    codec_map["PPM"  ] = ICPtr(new CodecPPMRAW());
-    codec_map["PSD"  ] = ICPtr(new CodecPSD());
-    codec_map["RAS"  ] = ICPtr(new CodecRAS());
-    codec_map["SGI"  ] = ICPtr(new CodecSGI());
-    codec_map["TGA"  ] = ICPtr(new CodecTARGA());
-    codec_map["TARGA"] = ICPtr(new CodecTARGA());
-    codec_map["TIF"  ] = ICPtr(new CodecTIFF());
-    codec_map["TIFF" ] = ICPtr(new CodecTIFF());
-    codec_map["WBMP" ] = ICPtr(new CodecWBMP());
-    codec_map["XBM"  ] = ICPtr(new CodecXBM());
-    codec_map["XPM"  ] = ICPtr(new CodecXPM());
+    codec_map["BMP"  ] = ICPtr(new CodecBmp());
+    codec_map["CUT"  ] = ICPtr(new CodecCut());
+    codec_map["DDS"  ] = ICPtr(new CodecDds());
+    codec_map["EXR"  ] = ICPtr(new CodecExr());
+    codec_map["GIF"  ] = ICPtr(new CodecGif());
+    codec_map["HDR"  ] = ICPtr(new CodecHdr());
+    codec_map["ICO"  ] = ICPtr(new CodecIco());
+    codec_map["IFF"  ] = ICPtr(new CodecIff());
+    codec_map["LBM"  ] = ICPtr(new CodecIff());
+    codec_map["J2K"  ] = ICPtr(new CodecJ2k());
+    codec_map["J2C"  ] = ICPtr(new CodecJ2k());
+    codec_map["JNG"  ] = ICPtr(new CodecJng());
+    codec_map["JP2"  ] = ICPtr(new CodecJp2());
+    codec_map["JPG"  ] = ICPtr(new CodecJpeg());
+    codec_map["JIF"  ] = ICPtr(new CodecJpeg());
+    codec_map["JPEG" ] = ICPtr(new CodecJpeg());
+    codec_map["JPE"  ] = ICPtr(new CodecJpeg());
+    codec_map["KOA"  ] = ICPtr(new CodecKoala());
+    codec_map["MNG"  ] = ICPtr(new CodecMng());
+    codec_map["PBM"  ] = ICPtr(new CodecPbm());
+    codec_map["PBM"  ] = ICPtr(new CodecPbmraw());
+    codec_map["PCD"  ] = ICPtr(new CodecPcd());
+    codec_map["PCX"  ] = ICPtr(new CodecPcx());
+    codec_map["PFM"  ] = ICPtr(new CodecPfm());
+    codec_map["PGM"  ] = ICPtr(new CodecPgm());
+    codec_map["PGM"  ] = ICPtr(new CodecPgmraw());
+    codec_map["PNG"  ] = ICPtr(new CodecPng());
+    codec_map["PPM"  ] = ICPtr(new CodecPpm());
+    codec_map["PPM"  ] = ICPtr(new CodecPpmraw());
+    codec_map["PSD"  ] = ICPtr(new CodecPsd());
+    codec_map["RAS"  ] = ICPtr(new CodecRas());
+    codec_map["SGI"  ] = ICPtr(new CodecSgi());
+    codec_map["TGA"  ] = ICPtr(new CodecTarga());
+    codec_map["TARGA"] = ICPtr(new CodecTarga());
+    codec_map["TIF"  ] = ICPtr(new CodecTiff());
+    codec_map["TIFF" ] = ICPtr(new CodecTiff());
+    codec_map["WBMP" ] = ICPtr(new CodecWbmp());
+    codec_map["XBM"  ] = ICPtr(new CodecXbm());
+    codec_map["XPM"  ] = ICPtr(new CodecXpm());
 
     // 3D formats
-    codec_map["3BM"  ] = ICPtr(new Codec3BM());
+    codec_map["3BM"  ] = ICPtr(new Codec3bm());
   }
 
   CodecMap::const_iterator existing = codec_map.find(toUpper(FilePath::extension(path)));
@@ -202,7 +202,7 @@ codecFromPath(std::string const & path)
 ImageCodec const *
 codecFromMagic(int64 num_bytes, uint8 const * buf)
 {
-  static Codec3BM const CODEC_3BM;
+  static Codec3bm const CODEC_3BM;
 
   if (num_bytes >= 4 && buf[0] == (uint8)'3' && buf[1] == (uint8)'B' && buf[2] == (uint8)'M' && buf[3] == (uint8)'\0')
     return &CODEC_3BM;
@@ -250,38 +250,38 @@ codec::readImage(Image & image, BinaryInputStream & input, bool read_block_heade
 }
 
 // TODO: Add options to all the ones that support them
-THEA_DEF_DESERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecBmp,     FIF_BMP,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecCut,     FIF_CUT,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecDds,     FIF_DDS,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecExr,     FIF_EXR,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecGif,     FIF_GIF,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecHdr,     FIF_HDR,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecIco,     FIF_ICO,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecIff,     FIF_IFF,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJ2k,     FIF_J2K,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJng,     FIF_JNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJp2,     FIF_JP2,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecJpeg,    FIF_JPEG,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecKoala,   FIF_KOALA,   0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecMng,     FIF_MNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPbm,     FIF_PBM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPbmraw,  FIF_PBMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPcd,     FIF_PCD,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPcx,     FIF_PCX,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPfm,     FIF_PFM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPgm,     FIF_PGM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPgmraw,  FIF_PGMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPng,     FIF_PNG,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPpm,     FIF_PPM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPpmraw,  FIF_PPMRAW,  0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecPsd,     FIF_PSD,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecRas,     FIF_RAS,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecSgi,     FIF_SGI,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecTarga,   FIF_TARGA,   0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecTiff,    FIF_TIFF,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecWbmp,    FIF_WBMP,    0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecXbm,     FIF_XBM,     0)
+THEA_DEF_DESERIALIZE_IMAGE(CodecXpm,     FIF_XPM,     0)
 
 // Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
 #define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
@@ -307,45 +307,45 @@ codec::writeImage(Image const & image, BinaryOutputStream & output, bool write_b
 }
 
 // TODO: Add options to all the ones that support them
-THEA_DEF_SERIALIZE_IMAGE(CodecBMP,     FIF_BMP,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecCUT,     FIF_CUT,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecDDS,     FIF_DDS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecEXR,     FIF_EXR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecGIF,     FIF_GIF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecHDR,     FIF_HDR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecICO,     FIF_ICO,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecIFF,     FIF_IFF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJ2K,     FIF_J2K,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJNG,     FIF_JNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJP2,     FIF_JP2,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJPEG,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
-THEA_DEF_SERIALIZE_IMAGE(CodecKOALA,   FIF_KOALA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecMNG,     FIF_MNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPBM,     FIF_PBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPBMRAW,  FIF_PBMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPCD,     FIF_PCD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPCX,     FIF_PCX,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPFM,     FIF_PFM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPGM,     FIF_PGM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPGMRAW,  FIF_PGMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPNG,     FIF_PNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPPM,     FIF_PPM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPPMRAW,  FIF_PPMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPSD,     FIF_PSD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecRAS,     FIF_RAS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecSGI,     FIF_SGI,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTARGA,   FIF_TARGA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTIFF,    FIF_TIFF,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecWBMP,    FIF_WBMP,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXBM,     FIF_XBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXPM,     FIF_XPM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecBmp,     FIF_BMP,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecCut,     FIF_CUT,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecDds,     FIF_DDS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecExr,     FIF_EXR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecGif,     FIF_GIF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecHdr,     FIF_HDR,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecIco,     FIF_ICO,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecIff,     FIF_IFF,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJ2k,     FIF_J2K,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJng,     FIF_JNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJp2,     FIF_JP2,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecJpeg,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
+THEA_DEF_SERIALIZE_IMAGE(CodecKoala,   FIF_KOALA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecMng,     FIF_MNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPbm,     FIF_PBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPbmraw,  FIF_PBMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPcd,     FIF_PCD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPcx,     FIF_PCX,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPfm,     FIF_PFM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPgm,     FIF_PGM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPgmraw,  FIF_PGMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPng,     FIF_PNG,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPpm,     FIF_PPM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPpmraw,  FIF_PPMRAW,  0)
+THEA_DEF_SERIALIZE_IMAGE(CodecPsd,     FIF_PSD,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecRas,     FIF_RAS,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecSgi,     FIF_SGI,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTarga,   FIF_TARGA,   0)
+THEA_DEF_SERIALIZE_IMAGE(CodecTiff,    FIF_TIFF,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecWbmp,    FIF_WBMP,    0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXbm,     FIF_XBM,     0)
+THEA_DEF_SERIALIZE_IMAGE(CodecXpm,     FIF_XPM,     0)
 
 //=============================================================================================================================
 // 3D formats
 //=============================================================================================================================
 
 void
-Codec3BM::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const
+Codec3bm::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const
 {
   // Get the size of the image block in bytes
   uint64 prefixed_size = (read_block_header ? BlockHeader(input).data_size : 0);
@@ -459,7 +459,7 @@ Codec3BM::readImage(Image & image, BinaryInputStream & input, bool read_block_he
 }
 
 void
-Codec3BM::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const
+Codec3bm::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const
 {
   if (!image.isValid())
     throw Error(std::string(getName()) + ": Cannot write an invalid image");

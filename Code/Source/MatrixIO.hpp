@@ -84,9 +84,9 @@ isSparse(Codec::BlockHeader const & block_header)
  * field of the header) for this read, and the character specified when constructing the codec is ignored.
  */
 template <typename MatrixT, typename Enable = void>
-class CodecCSV : public MatrixCodec<MatrixT> {};
+class CodecCsv : public MatrixCodec<MatrixT> {};
 
-namespace CodecCSVInternal {
+namespace CodecCsvInternal {
 
 // CSV parameters that are stored in the custom field of the block header.
 struct Params
@@ -143,11 +143,11 @@ isSparse(BinaryInputStream & input, char sep)
   return (n1 == 1 && n2 == 2);  // a non-empty sparse matrix has "#rows,#cols" on the first line, and a triplet on the second
 }
 
-} // namespace CodecCSVInternal
+} // namespace CodecCsvInternal
 
-// Specialization of CodecCSV for dense matrices.
+// Specialization of CodecCsv for dense matrices.
 template <typename MatrixT>
-class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseBase<MatrixT>, MatrixT >::value >::type >
+class CodecCsv< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseBase<MatrixT>, MatrixT >::value >::type >
 : public MatrixCodec<MatrixT>
 {
   public:
@@ -157,7 +157,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
      * @param separator_ Field separation character, typically comma, tab or space. If negative, it will be auto-detected
      *   (independently) from each input stream.
      */
-    CodecCSV(char separator_ = -1) : separator(separator_) {}
+    CodecCsv(char separator_ = -1) : separator(separator_) {}
 
     char const * getName() const { static char const * my_name = "CSV"; return my_name; }
     Codec::MagicString const & getMagic() const { static Codec::MagicString const magic = Codec::toMagic("CSV"); return magic; }
@@ -166,14 +166,14 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
     {
       return block_header ? (block_header->magic == getMagic() && !MatrixIOInternal::isSparse(*block_header))
                           : (toLower(FilePath::extension(input.getName())) == "csv"
-                          && !CodecCSVInternal::isSparse(input, separator));
+                          && !CodecCsvInternal::isSparse(input, separator));
     }
 
     void readMatrix(MatrixT & m, BinaryInputStream & input, Codec::BlockHeader const * block_header) const
     {
       BinaryInputStream * in = &input;
-      CodecCSVInternal::Params params{ /* is_sparse = */ false, /* separator = */ separator };
-      auto tmp_in = CodecCSVInternal::parseHeader(input, block_header, params);
+      CodecCsvInternal::Params params{ /* is_sparse = */ false, /* separator = */ separator };
+      auto tmp_in = CodecCsvInternal::parseHeader(input, block_header, params);
       if (tmp_in) { in = tmp_in.get(); }
 
       if (params.is_sparse)
@@ -188,7 +188,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
         // If the separator is still not set, try to autodetect it from the first line
         if (lines.size() == 1 && params.separator < 0)
         {
-          params.separator = CodecCSVInternal::detectSeparatorFromLine(lines[0], '\n');  // assume entire line is one field
+          params.separator = CodecCsvInternal::detectSeparatorFromLine(lines[0], '\n');  // assume entire line is one field
           if (params.separator < 0)
             throw Error(format("%s: Could not autodetect the field separator from the stream '%s'",
                                getName(), input.getName()));
@@ -248,11 +248,11 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::DenseB
   private:
     char separator;  ///< Field separator character.
 
-}; // class CodecCSV< Eigen::DenseBase<MatrixT> >
+}; // class CodecCsv< Eigen::DenseBase<MatrixT> >
 
-// Specialization of CodecCSV for sparse matrices.
+// Specialization of CodecCsv for sparse matrices.
 template <typename MatrixT>
-class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::SparseMatrixBase<MatrixT>, MatrixT >::value >::type >
+class CodecCsv< MatrixT, typename std::enable_if< std::is_base_of< Eigen::SparseMatrixBase<MatrixT>, MatrixT >::value >::type >
 : public MatrixCodec<MatrixT>
 {
   public:
@@ -262,7 +262,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
      * @param separator_ Field separation character, typically comma, tab or space. If negative, it will be auto-detected
      *   (independently) from each input stream.
      */
-    CodecCSV(char separator_ = -1) : separator(separator_) {}
+    CodecCsv(char separator_ = -1) : separator(separator_) {}
 
     char const * getName() const { static char const * my_name = "CSV"; return my_name; }
     Codec::MagicString const & getMagic() const { static Codec::MagicString const magic = Codec::toMagic("CSV"); return magic; }
@@ -271,14 +271,14 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
     {
       return block_header ? (block_header->magic == getMagic() && MatrixIOInternal::isSparse(*block_header))
                           : (toLower(FilePath::extension(input.getName())) == "csv"
-                          && CodecCSVInternal::isSparse(input, separator));
+                          && CodecCsvInternal::isSparse(input, separator));
     }
 
     void readMatrix(MatrixT & m, BinaryInputStream & input, Codec::BlockHeader const * block_header) const
     {
       BinaryInputStream * in = &input;
-      CodecCSVInternal::Params params{ /* is_sparse = */ true, /* separator = */ separator };
-      auto tmp_in = CodecCSVInternal::parseHeader(input, block_header, params);
+      CodecCsvInternal::Params params{ /* is_sparse = */ true, /* separator = */ separator };
+      auto tmp_in = CodecCsvInternal::parseHeader(input, block_header, params);
       if (tmp_in) { in = tmp_in.get(); }
 
       if (!params.is_sparse)
@@ -300,7 +300,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
         // If the separator is still not set, try to autodetect it from the first line
         if (params.separator < 0)
         {
-          params.separator = CodecCSVInternal::detectSeparatorFromLine(line, -1);
+          params.separator = CodecCsvInternal::detectSeparatorFromLine(line, -1);
           if (params.separator < 0)
             throw Error(format("%s: Could not autodetect the field separator from the stream '%s'",
                                getName(), input.getName()));
@@ -373,7 +373,7 @@ class CodecCSV< MatrixT, typename std::enable_if< std::is_base_of< Eigen::Sparse
   private:
     char separator;  ///< Field separator character.
 
-}; // class CodecCSV
+}; // class CodecCsv
 
 template <typename MatrixT>
 intx
@@ -389,7 +389,7 @@ BinaryInputStream::readMatrix(bool read_block_header, MatrixT & m, Codec const &
   if (codec == CodecAuto())
   {
     // Default codecs
-    static CodecCSV<MatrixT> const codec_csv;
+    static CodecCsv<MatrixT> const codec_csv;
     static MatrixCodec<MatrixT> const * default_codecs[] = { &codec_csv };
 
     for (size_t i = 0; i < sizeof(default_codecs) / sizeof(MatrixCodec<MatrixT> const *); ++i)

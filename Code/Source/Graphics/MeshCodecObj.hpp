@@ -112,7 +112,7 @@ class CodecObj : public CodecObjBase<MeshT>
         bool store_vertex_indices;
         bool store_face_indices;
         bool strict;
-        bool verbose;
+        int  verbose;
 
         friend class CodecObj;
 
@@ -120,7 +120,7 @@ class CodecObj : public CodecObjBase<MeshT>
         /* Constructor. Sets default values. */
         ReadOptions()
         : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
-          store_face_indices(true), strict(false), verbose(false) {}
+          store_face_indices(true), strict(false), verbose(1) {}
 
         /**
          * Ignore texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
@@ -150,13 +150,13 @@ class CodecObj : public CodecObjBase<MeshT>
         /** Treat warnings as errors */
         ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
-        /** Print debugging information? */
-        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
          * ReadOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false)
-         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -170,13 +170,13 @@ class CodecObj : public CodecObjBase<MeshT>
         bool ignore_normals;
         bool skip_empty_meshes;
         bool flatten;
-        bool verbose;
+        int  verbose;
 
         friend class CodecObj;
 
       public:
         /* Constructor. Sets default values. */
-        WriteOptions() : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), verbose(false)
+        WriteOptions() : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), verbose(1)
         {}
 
         /**
@@ -197,12 +197,13 @@ class CodecObj : public CodecObjBase<MeshT>
         /** Flatten mesh hierarchy into a single mesh? */
         WriteOptions & setFlatten(bool value) { flatten = value; return *this; }
 
-        /** Print debugging information? */
-        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * WriteOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false).setVerbose(false).
+         * WriteOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false)
+         *               .setVerbose(1).
          */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
@@ -463,8 +464,11 @@ class CodecObj : public CodecObjBase<MeshT>
           mesh_group.addMesh(mesh);
       }
 
-      THEA_CONSOLE << getName() << ": Read " << mesh_group.numMeshes() << " submesh(es) with a total of " << vertices.size()
-                   << " vertices (before duplication) and " << num_faces << " faces";
+      if (read_opts.verbose >= 1)
+      {
+        THEA_CONSOLE << getName() << ": Read " << mesh_group.numMeshes() << " submesh(es) with a total of " << vertices.size()
+                     << " vertices (before duplication) and " << num_faces << " faces";
+      }
     }
 
     void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
@@ -532,7 +536,7 @@ class CodecObj : public CodecObjBase<MeshT>
 
       builder.end();
 
-      if (read_opts.verbose)
+      if (read_opts.verbose >= 2)
       {
         THEA_CONSOLE << getName() << ": Mesh " << mesh->getName() << " has " << submesh_vertices.size()
                      << " vertices and " << face_starts.size() << " faces";

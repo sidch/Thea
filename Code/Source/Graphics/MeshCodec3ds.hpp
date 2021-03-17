@@ -64,7 +64,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         bool store_vertex_indices;
         bool store_face_indices;
         bool strict;
-        bool verbose;
+        int  verbose;
 
         friend class Codec3ds;
 
@@ -72,7 +72,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         /** Constructor. Sets default values. */
         ReadOptions()
         : use_transforms(false), ignore_texcoords(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
-          store_face_indices(true), strict(false), verbose(false)
+          store_face_indices(true), strict(false), verbose(1)
         {}
 
         /** Apply node transforms embedded in the 3DS file? */
@@ -96,13 +96,13 @@ class Codec3ds : public Codec3dsBase<MeshT>
         /** Treat warnings as errors */
         ReadOptions & setStrict(bool value) { strict = value; return *this; }
 
-        /** Print debugging information? */
-        ReadOptions & setVerbose(bool value) { verbose = value; return *this; }
+        /** Level of debugging information to print (0: disable, 1: normal, 2: high). */
+        ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
          * ReadOptions().setUseTransforms(false).setIgnoreTexCoords(false).setSkipEmptyMeshes(true).setFlatten(false).
-         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(false).
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -112,21 +112,21 @@ class Codec3ds : public Codec3dsBase<MeshT>
     class WriteOptions
     {
       private:
-        bool verbose;
+        int verbose;
 
         friend class Codec3ds;
 
       public:
         /** Constructor. Sets default values. */
-        WriteOptions() : verbose(false)
+        WriteOptions() : verbose(1)
         {}
 
         /** Print debugging information? */
-        WriteOptions & setVerbose(bool value) { verbose = value; return *this; }
+        WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
          * The set of default options. The default options correspond to
-         * WriteOptions().setVerbose(false).
+         * WriteOptions().setVerbose(1).
          */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
@@ -202,8 +202,11 @@ class Codec3ds : public Codec3dsBase<MeshT>
       else
         convert3DSSubtree(file3ds->meshes, file3ds->nodes, &mesh_group, Matrix4::Identity(), nullptr, callback);
 
-      THEA_CONSOLE << getName() << ": Read a total of " << vertex_count << " vertices and " << face_count
-                   << " faces (including malformed faces which may have been dropped from the final mesh)";
+      if (read_opts.verbose >= 1)
+      {
+        THEA_CONSOLE << getName() << ": Read a total of " << vertex_count << " vertices and " << face_count
+                     << " faces (including malformed faces which may have been dropped from the final mesh)";
+      }
 
       lib3ds_file_free(file3ds);
     }
@@ -229,7 +232,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
           continue;
 
         intx num_faces = (intx)m->faces;
-        if (read_opts.verbose)
+        if (read_opts.verbose >= 2)
         {
           THEA_CONSOLE << getName() << ": Mesh " << m->name << " has " << num_vertices << " vertices and " << num_faces
                        << " faces";
