@@ -598,7 +598,9 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -c <argb>             (shape color; or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID; or 'leaf' to assign a random";
   THEA_CONSOLE << "                         color to each leaf submesh; or 'leafname' to derive";
-  THEA_CONSOLE << "                         the leaf submesh color from its name)";
+  THEA_CONSOLE << "                         the leaf submesh color from its name, searching for";
+  THEA_CONSOLE << "                         'RGB(r,g,b)' if it exists, else hashing the entire";
+  THEA_CONSOLE << "                         name to a color)";
   THEA_CONSOLE << "  -i <shift>            (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
@@ -1421,15 +1423,27 @@ struct FaceColorizer
 
   bool operator()(Mesh & mesh)
   {
-    mesh.isolateFaces();
-    if (labels) mesh.computeAveragedVertexNormals();
+    if (!parent->color_by_leaf && !parent->color_by_leafname)
+      mesh.isolateFaces();
+
+    if (labels || parent->color_by_leaf || parent->color_by_leafname)
+      mesh.computeAveragedVertexNormals();
+
     mesh.addColors();
 
     ColorRgba8 color;
     if (parent->color_by_leaf)
       color = parent->getPaletteColor(Random::common().integer());
     else if (parent->color_by_leafname)
-      color = parent->getLabelColor((intx)labelHash(mesh.getName()));
+    {
+      string const & name = mesh.getName();
+      auto loc = name.find("RGB(");
+      float r, g, b;
+      if (loc != string::npos && sscanf(name.substr(loc).c_str(), "RGB( %f , %f , %f )", &r, &g, &b) == 3)
+        color = ColorRgba8(ColorRgba(r, g, b, 1.0));
+      else
+        color = parent->getLabelColor((intx)labelHash(mesh.getName()));
+    }
     else
       alwaysAssertM(tri_ids && quad_ids, "FaceColorizer: Triangle and quad ID maps must both be non-null");
 
@@ -2061,7 +2075,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     {
       typedef MeshSampler<Mesh>::Triangle MeshTriangle;
       MeshSampler<Mesh> sampler(model.mesh_group);
- 	  Array<MeshTriangle const *> sampled_tris;
+      Array<MeshTriangle const *> sampled_tris;
 
       double out_scale = min(out_width, out_height);
       intx max_samples = (intx)ceil(10 * out_scale);
@@ -2095,7 +2109,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       {
         FaceColorizer colorizer(this, &tri_ids, &quad_ids);
         model.mesh_group.forEachMeshUntil(colorizer);
-        needs_normals = false;
+        needs_normals = false;  // FaceColorizer has already computed as needed
       }
       else if (color_by_label)
       {
