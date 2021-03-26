@@ -38,38 +38,39 @@
 namespace Thea {
 namespace Algorithms {
 
+// Forward declaration
+template <typename T, int N, typename S, typename A> class KdTreeN;
+
 namespace KdTreeNInternal {
 
-/** A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries. */
-template <int N, typename ScalarT>
+// A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries.
+template <typename T, int N, typename ScalarT>
 struct ElementSample
 {
   Vector<N, ScalarT> position;
-  void const * element;  // this cannot be pointer-to-T, else we get recursive instantiation overflow
+  T const * element;
 
   /** Default constructor. */
   ElementSample() {}
 
   /** Initialize a sample at point \a p drawn from an element \a e. */
-  ElementSample(Vector<N, ScalarT> const & p, void const * e) : position(p), element(e) {}
+  ElementSample(Vector<N, ScalarT> const & p, T const * e) : position(p), element(e) {}
 
 }; // struct ElementSample
 
-/**
- * A filter that passes or rejects a sample point, depending on whether a base filter passes or rejects the point's parent
- * element.
- */
+// A filter that passes or rejects a sample point, depending on whether a base filter passes or rejects the point's parent
+// element.
 template <typename T, int N, typename ScalarT>
-class SampleFilter : public Filter< ElementSample<N, ScalarT> >
+class SampleFilter : public Filter< ElementSample<T, N, ScalarT> >
 {
   public:
     /** Constructor. */
     SampleFilter(Filter<T> * base_filter_) : base_filter(base_filter_) {}
 
-    bool allows(ElementSample<N, ScalarT> const & sample) const
+    bool allows(ElementSample<T, N, ScalarT> const & sample) const
     {
       // Assume null pointer case won't happen by construction
-      return base_filter->allows(*static_cast<T const *>(sample.element));
+      return base_filter->allows(*sample.element);
     }
 
   private:
@@ -77,21 +78,62 @@ class SampleFilter : public Filter< ElementSample<N, ScalarT> >
 
 }; // struct SampleFilter
 
+// A dummy class with a subset of the interface of KdTreeN, whose functions are all no-ops. Used as the acceleration structure
+// for acceleration structures, to avoid recursive instantiation overflow.
+template <typename T, int N, typename ScalarT>
+struct DummyAccelerationStructure
+{
+  intx numElements() const { return 0; }
+  ElementSample<T, N, ScalarT> * getElements() const { return nullptr; }
+  void updateNodeBounds() {}
+  template <typename TransformT> void setTransform(TransformT const & trans_) {}
+  void clearTransform() {}
+  template <typename FilterT> void pushFilter(FilterT * filter) {}
+  void popFilter() {}
+  void disableNearestNeighborAcceleration() {}
+  template <typename SampleIteratorT> void init(SampleIteratorT begin, SampleIteratorT end) {}
+
+  template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+  double
+  distance(QueryT const & query, double dist_bound = -1, CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
+  {
+    return Math::inf<double>();
+  }
+
+}; // DummyAccelerationStructure
+
+// Defines the acceleration structure for a kd-tree.
+template <typename T, int N, typename ScalarT, typename NodeAttributeT>
+struct AccelerationTraits
+{
+  /** Structure to speed up nearest neighbor queries. */
+  typedef KdTreeN< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT > NearestNeighborAccelerationStructure;
+
+}; // class AccelerationTraits
+
+// Defines a dummy acceleration structure for a kd-tree that is itself an acceleration structure.
+template <typename T, int N, typename ScalarT, typename NodeAttributeT>
+struct AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT >
+{
+  typedef DummyAccelerationStructure< ElementSample<T, N, ScalarT>, N, ScalarT > NearestNeighborAccelerationStructure;
+
+}; // class AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT >
+
 } // namespace KdTreeNInternal
 
-template <int N, typename ScalarT>
-class IsPointN< KdTreeNInternal::ElementSample<N, ScalarT>, N >
+template <typename T, int N, typename ScalarT>
+class IsPointN< KdTreeNInternal::ElementSample<T, N, ScalarT>, N >
 {
   public:
     static bool const value = true;
 };
 
-template <int N, typename ScalarT>
-class PointTraitsN< KdTreeNInternal::ElementSample<N, ScalarT>, N, ScalarT >
+template <typename T, int N, typename ScalarT>
+class PointTraitsN< KdTreeNInternal::ElementSample<T, N, ScalarT>, N, ScalarT >
 {
   public:
     typedef Vector<N, ScalarT> VectorT;
-    static VectorT getPosition(KdTreeNInternal::ElementSample<N, ScalarT> const & sample) { return sample.position; }
+    static VectorT getPosition(KdTreeNInternal::ElementSample<T, N, ScalarT> const & sample) { return sample.position; }
 };
 
 /**
@@ -116,11 +158,12 @@ class /* THEA_API */ KdTreeN
   private Noncopyable
 {
   private:
-    typedef RangeQueryStructure<T>                         RangeQueryBaseT;
-    typedef ProximityQueryStructureN<N, ScalarT>           ProximityQueryBaseT;
-    typedef RayQueryStructureN<N, ScalarT>                 RayQueryBaseT;
-    typedef Transformable< AffineTransformN<N, ScalarT> >  TransformableBaseT;
-    typedef BoundedTraitsN<T, N, ScalarT>                  BoundedTraitsT;
+    typedef RangeQueryStructure<T>                                              RangeQueryBaseT;
+    typedef ProximityQueryStructureN<N, ScalarT>                                ProximityQueryBaseT;
+    typedef RayQueryStructureN<N, ScalarT>                                      RayQueryBaseT;
+    typedef Transformable< AffineTransformN<N, ScalarT> >                       TransformableBaseT;
+    typedef KdTreeNInternal::AccelerationTraits<T, N, ScalarT, NodeAttributeT>  AccelerationTraitsT;
+    typedef BoundedTraitsN<T, N, ScalarT>                                       BoundedTraitsT;
 
   public:
     typedef size_t ElementIndex;  ///< Index of an element in the kd-tree.
@@ -349,10 +392,11 @@ class /* THEA_API */ KdTreeN
     typedef typename RayQueryBaseT::RayStructureIntersectionT  RayStructureIntersectionT;  /**< Ray intersection structure in
                                                                                                 N-space. */
 
-    typedef KdTreeNInternal::ElementSample<N, ScalarT> ElementSample;  /**< A point sample drawn from a kd-tree element, used
-                                                                            for accelerating nearest neighbor queries. */
-    typedef KdTreeN<ElementSample, N, ScalarT> NearestNeighborAccelerationStructure;  /**< Structure to speed up nearest
-                                                                                           neighbor queries. */
+    /** A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries. */
+    typedef KdTreeNInternal::ElementSample<T, N, ScalarT> ElementSample;
+
+    /** Structure to speed up nearest neighbor queries. */
+    typedef typename AccelerationTraitsT::NearestNeighborAccelerationStructure NearestNeighborAccelerationStructure;
 
     /** A node of the kd-tree. Only immutable objects of this class should be exposed by the external kd-tree interface. */
     class Node : public AttributedObject<NodeAttributeT>
@@ -842,30 +886,23 @@ class /* THEA_API */ KdTreeN
     }
 
     /** Get the minimum distance between this structure and a query object. */
-    template <typename MetricT, typename QueryT> double distance(QueryT const & query, double dist_bound = -1) const
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    double distance(QueryT const & query, double dist_bound = -1, CompatibilityFunctorT compatibility = CompatibilityFunctorT())
+           const
     {
       double result = -1;
-      if (closestElement<MetricT>(query, dist_bound, &result) >= 0)
+      if (closestElement<MetricT>(query, dist_bound, compatibility, &result) >= 0)
         return result;
       else
         return -1;
     }
 
-    /**
-     * Get the closest element in this structure to a query object, within a specified distance bound.
-     *
-     * @param query Query object.
-     * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
-     * @param dist The distance to the query object is placed here. Ignored if null.
-     * @param closest_point The coordinates of the closest point are placed here. Ignored if null.
-     *
-     * @return A non-negative handle to the closest element, if one was found, else a negative number.
-     */
-    template <typename MetricT, typename QueryT>
-    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = nullptr,
-                        VectorT * closest_point = nullptr) const
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    intx closestElement(QueryT const & query, double dist_bound = -1,
+                        CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                        double * dist = nullptr, VectorT * closest_point = nullptr) const
     {
-      NeighborPair pair = closestPair<MetricT>(query, dist_bound, closest_point != nullptr);
+      NeighborPair pair = closestPair<MetricT>(query, dist_bound, compatibility, closest_point != nullptr);
 
       if (pair.isValid())
       {
@@ -882,14 +919,21 @@ class /* THEA_API */ KdTreeN
      *
      * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
      *   and stored in the returned structure.
      *
      * @return Non-negative handles to the closest pair of elements in their respective objects, if such a pair was found. Else
      *   returns a pair of negative numbers.
      */
-    template <typename MetricT, typename QueryT>
-    NeighborPair closestPair(QueryT const & query, double dist_bound = -1, bool get_closest_points = false) const
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    NeighborPair closestPair(QueryT const & query, double dist_bound = -1,
+                             CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                             bool get_closest_points = false) const
     {
       if (!root) return NeighborPair(-1);
 
@@ -905,7 +949,7 @@ class /* THEA_API */ KdTreeN
       }
 
       // If acceleration is enabled, set an upper limit to the distance to the nearest object
-      double accel_bound = accelerationBound<MetricT>(query, dist_bound);
+      double accel_bound = accelerationBound<MetricT>(query, dist_bound, compatibility);
       if (accel_bound >= 0)
       {
         double fudge = 0.001 * getBoundsWorldSpace(*root).getExtent().norm();
@@ -913,7 +957,7 @@ class /* THEA_API */ KdTreeN
       }
 
       NeighborPair pair(-1, -1, mon_approx_dist_bound);
-      closestPair<MetricT>(root, query, query_bounds, pair, get_closest_points);
+      closestPair<MetricT>(root, query, query_bounds, pair, compatibility, get_closest_points);
 
       return pair;
     }
@@ -921,11 +965,16 @@ class /* THEA_API */ KdTreeN
     /**
      * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (k). The template
      * type BoundedNeighborPairSetT should typically be BoundedSortedArray<NeighborPair> or BoundedSortedArrayN<k, NeighborPair>
-     * if only a few neighbors are requested. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
+     * if only a few neighbors are requested.
      *
      * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
      * @param k_closest_pairs The k (or fewer) nearest neighbors are placed here.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
      * @param clear_set If true (default), this function discards prior data in \a k_closest_pairs. This is chiefly for internal
@@ -935,12 +984,11 @@ class /* THEA_API */ KdTreeN
      *   is chiefly for internal use and the default value of -1 should normally be left as is.
      *
      * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
-     *
-     * @note k-closest pairs <b>cannot</b> be accelerated by the auxiliary structure created by
-     *   enableNearestNeighborAcceleration().
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
+    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT,
+              typename CompatibilityFunctorT = UniversalCompatibility>
     intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
+                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
                        bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const
     {
       if (clear_set) k_closest_pairs.clear();
@@ -964,21 +1012,12 @@ class /* THEA_API */ KdTreeN
         }
       }
 
-      kClosestPairs<MetricT>(root, query, query_bounds, k_closest_pairs, dist_bound, get_closest_points,
+      kClosestPairs<MetricT>(root, query, query_bounds, k_closest_pairs, dist_bound, compatibility, get_closest_points,
                              use_as_query_index_and_swap);
 
       return k_closest_pairs.size();
     }
 
-    /**
-     * Get all objects intersecting a range.
-     *
-     * @param range The range to search in.
-     * @param result The objects intersecting the range are stored here.
-     * @param discard_prior_results If true, the contents of \a results are cleared before the range query proceeds. If false,
-     *   the previous results are retained and new objects are appended to the array (this is useful for range queries over a
-     *   union of simpler ranges).
-     */
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const
     {
@@ -986,15 +1025,6 @@ class /* THEA_API */ KdTreeN
       if (root) const_cast<KdTreeN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryFunctor(result));
     }
 
-    /**
-     * Get the indices of all objects intersecting a range.
-     *
-     * @param range The range to search in.
-     * @param result The indices of objects intersecting the range are stored here.
-     * @param discard_prior_results If true, the contents of \a results are cleared before the range query proceeds. If false,
-     *   the previous results are retained and indices of new objects are appended to the array (this is useful for range
-     *   queries over a union of simpler ranges).
-     */
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const
     {
@@ -1012,11 +1042,11 @@ class /* THEA_API */ KdTreeN
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
      * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
-     * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
-     * AxisAlignedBoxT.
-     *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
+     *
+     * @note The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
+     * AxisAlignedBoxT.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     intx processRangeUntil(RangeT const & range, FunctorT functor) const
@@ -1034,11 +1064,11 @@ class /* THEA_API */ KdTreeN
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
      * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
-     * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
-     * AxisAlignedBoxT.
-     *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
+     *
+     * @note The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
+     * AxisAlignedBoxT.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     intx processRangeUntil(RangeT const & range, FunctorT functor)
@@ -1389,12 +1419,12 @@ class /* THEA_API */ KdTreeN
      * minimum distance (as stored in \a pair) will be considered. If \a get_closest_points is true, the positions of the
      * closest pair of points will be stored in \a pair, not just the distance between them.
      */
-    template <typename MetricT, typename QueryT>
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT>
     void closestPair(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds, NeighborPair & pair,
-                     bool get_closest_points) const
+                     CompatibilityFunctorT compatibility, bool get_closest_points) const
     {
       if (start->isLeaf())
-        closestPairLeaf<MetricT>(start, query, pair, get_closest_points);
+        closestPairLeaf<MetricT>(start, query, pair, compatibility, get_closest_points);
       else  // not leaf
       {
         // Figure out which child is closer (optimize for point queries?)
@@ -1411,23 +1441,41 @@ class /* THEA_API */ KdTreeN
 
         for (int i = 0; i < 2; ++i)
           if (pair.getMonotoneApproxDistance() < 0 || mad[i] <= pair.getMonotoneApproxDistance())
-            closestPair<MetricT>(n[i], query, query_bounds, pair, get_closest_points);
+            closestPair<MetricT>(n[i], query, query_bounds, pair, compatibility, get_closest_points);
       }
     }
 
   private:
+    /** A utility class that exchanges the arguments to a compatibility functor. */
+    template <typename CompatibilityFunctorT> class SwappedCompatibility
+    {
+      public:
+        /** Constructor. */
+        SwappedCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
+
+        /** Check if (\a u, \a v) are compatible by calling the wrapped functor with (\a v, \a u). */
+        template <typename U, typename V> bool operator()(U const & u, V const & v) const { return compatibility(v, u); }
+
+      private:
+        CompatibilityFunctorT compatibility;
+
+    }; // class SwappedCompatibility
+
     /**
      * Search the elements in a leaf node for the one closest to another element, when the latter is a proximity query
      * structure.
      */
-    template < typename MetricT, typename QueryT,
+    template < typename MetricT, typename QueryT, typename CompatibilityFunctorT,
                typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void closestPairLeaf(
       Node const * leaf,
       QueryT const & query,
       NeighborPair & pair,
+      CompatibilityFunctorT compatibility,
       bool get_closest_points) const
     {
+      SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
@@ -1439,9 +1487,11 @@ class /* THEA_API */ KdTreeN
         NeighborPair swapped;
         if (TransformableBaseT::hasTransform())
           swapped = query.template closestPair<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                        pair.getMonotoneApproxDistance(), get_closest_points);
+                                                        pair.getMonotoneApproxDistance(), swapped_compatibility,
+                                                        get_closest_points);
         else
-          swapped = query.template closestPair<MetricT>(elem, pair.getMonotoneApproxDistance(), get_closest_points);
+          swapped = query.template closestPair<MetricT>(elem, pair.getMonotoneApproxDistance(), swapped_compatibility,
+                                                        get_closest_points);
 
         if (swapped.isValid())
         {
@@ -1455,12 +1505,13 @@ class /* THEA_API */ KdTreeN
      * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
      * structure.
      */
-    template < typename MetricT, typename QueryT,
+    template < typename MetricT, typename QueryT, typename CompatibilityFunctorT,
                typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void closestPairLeaf(
       Node const * leaf,
       QueryT const & query,
       NeighborPair & pair,
+      CompatibilityFunctorT compatibility,
       bool get_closest_points) const
     {
       VectorT qp = VectorT::Zero(), tp = VectorT::Zero();  // initialize to squash uninitialized variable warning
@@ -1475,10 +1526,20 @@ class /* THEA_API */ KdTreeN
           continue;
 
         if (TransformableBaseT::hasTransform())
-          mad = MetricT::template closestPoints<N, ScalarT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                            query, tp, qp);
+        {
+          auto transformed_elem = makeTransformedObject(&elem, &TransformableBaseT::getTransform());
+          if (!compatibility(query, transformed_elem))
+            continue;
+
+          mad = MetricT::template closestPoints<N, ScalarT>(transformed_elem, query, tp, qp);
+        }
         else
+        {
+          if (!compatibility(query, elem))
+            continue;
+
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
+        }
 
         if (pair.getMonotoneApproxDistance() < 0 || mad <= pair.getMonotoneApproxDistance())
           pair = NeighborPair(0, (intx)index, mad, qp, tp);
@@ -1491,13 +1552,14 @@ class /* THEA_API */ KdTreeN
      * \a dist_bound will be considered. If \a get_closest_points is true, the positions of the closest pair of points will be
      * stored with each pair, not just the distance between them.
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet>
+    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT>
     void kClosestPairs(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds,
-                       BoundedNeighborPairSet & k_closest_pairs, double dist_bound, bool get_closest_points,
-                       intx use_as_query_index_and_swap) const
+                       BoundedNeighborPairSet & k_closest_pairs, double dist_bound, CompatibilityFunctorT compatibility,
+                       bool get_closest_points, intx use_as_query_index_and_swap) const
     {
       if (start->isLeaf())
-        kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, get_closest_points, use_as_query_index_and_swap);
+        kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, compatibility, get_closest_points,
+                                   use_as_query_index_and_swap);
       else  // not leaf
       {
         // Figure out which child is closer (optimize for point queries?)
@@ -1518,7 +1580,7 @@ class /* THEA_API */ KdTreeN
           if ((mon_approx_dist_bound < 0 || mad[i] <= mon_approx_dist_bound)
             && k_closest_pairs.isInsertable(NeighborPair(0, 0, mad[i])))
           {
-            kClosestPairs<MetricT>(n[i], query, query_bounds, k_closest_pairs, dist_bound, get_closest_points,
+            kClosestPairs<MetricT>(n[i], query, query_bounds, k_closest_pairs, dist_bound, compatibility, get_closest_points,
                                    use_as_query_index_and_swap);
           }
         }
@@ -1530,16 +1592,19 @@ class /* THEA_API */ KdTreeN
      * Search the elements in a leaf node for the k nearest neighbors of an object, when the latter is a proximity query
      * structure of compatible type.
      */
-    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet,
+    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT,
                typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void kClosestPairsLeaf(
       Node const * leaf,
       QueryT const & query,
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
+      CompatibilityFunctorT compatibility,
       bool get_closest_points,
       intx use_as_query_index_and_swap) const
     {
+      SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
@@ -1550,10 +1615,11 @@ class /* THEA_API */ KdTreeN
 
         if (TransformableBaseT::hasTransform())
           query.template kClosestPairs<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                                      k_closest_pairs, dist_bound, get_closest_points, false,
-                                                                      (intx)index);
+                                                k_closest_pairs, dist_bound, swapped_compatibility, get_closest_points, false,
+                                                (intx)index);
         else
-          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, get_closest_points, false, (intx)index);
+          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, swapped_compatibility, get_closest_points,
+                                                false, (intx)index);
       }
     }
 
@@ -1561,13 +1627,14 @@ class /* THEA_API */ KdTreeN
      * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
      * structure.
      */
-    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet,
+    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT,
                typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void kClosestPairsLeaf(
       Node const * leaf,
       QueryT const & query,
       BoundedNeighborPairSet & k_closest_pairs,
       double dist_bound,
+      CompatibilityFunctorT compatibility,
       bool get_closest_points,
       intx use_as_query_index_and_swap) const
     {
@@ -1592,10 +1659,20 @@ class /* THEA_API */ KdTreeN
           continue;
 
         if (TransformableBaseT::hasTransform())
-          mad = MetricT::template closestPoints<N, ScalarT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                            query, tp, qp);
+        {
+          auto transformed_elem = makeTransformedObject(&elem, &TransformableBaseT::getTransform());
+          if (!compatibility(query, transformed_elem))
+            continue;
+
+          mad = MetricT::template closestPoints<N, ScalarT>(transformed_elem, query, tp, qp);
+        }
         else
+        {
+          if (!compatibility(query, elem))
+            continue;
+
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
+        }
 
         if (mon_approx_dist_bound < 0 || mad <= mon_approx_dist_bound)
         {
@@ -1850,7 +1927,7 @@ class /* THEA_API */ KdTreeN
       VectorT src_cp;
       for (intx i = 0; i < num_samples; ++i)
       {
-        T const * elem = static_cast<T const *>(samples[i].element);
+        T const * elem = samples[i].element;
         VectorT p = BoundedTraitsT::getCenter(*elem);
         MetricL2::closestPoints<N, ScalarT>(p, *elem, src_cp, samples[i].position);  // snap point to element
       }
@@ -1903,20 +1980,56 @@ class /* THEA_API */ KdTreeN
       }
     }
 
+    /** A utility class that evaluates the compatibility of samples in terms of the compatibility of their parent elements. */
+    template <typename CompatibilityFunctorT> class SampleCompatibility
+    {
+      public:
+        SampleCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
+
+        template <typename U, typename V> bool operator()(U const & u, V const & v) const
+        {
+          return compatibility(getObject(u), getObject(v));
+        }
+
+      private:
+        template <typename U> static U const & getObject(U const & u) { return u; }
+
+        template <typename U, int M, typename ScalarU>
+        static U const & getObject(KdTreeNInternal::ElementSample<U, M, ScalarU> const & u)
+        {
+          return *u.element;
+        }
+
+        template <typename U, int M, typename ScalarU, typename TransformU>
+        static TransformedObject<U, TransformU> getObject(
+          TransformedObject< KdTreeNInternal::ElementSample<U, M, ScalarU>, TransformU > const & u)
+        {
+          return makeTransformedObject(u.getObject().element, &u.getTransform());
+        }
+
+        CompatibilityFunctorT compatibility;
+
+    }; // class SampleCompatibility
+
     /** Get an upper bound on the distance to a query object, using the acceleration structure if it exists. */
-    template <typename MetricT, typename QueryT>
-    double accelerationBound(QueryT const & query, double dist_bound) const
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    double accelerationBound(QueryT const & query, double dist_bound,
+                             CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
-      return accel ? accel->template distance<MetricT>(query, dist_bound) : -1;
+      return accel ? accel->template distance<MetricT>(query, dist_bound,
+                                                       SampleCompatibility<CompatibilityFunctorT>(compatibility))
+                   : -1;
     }
 
     /**
      * Get an upper bound on the distance to a query kd-tree, using the acceleration structures of both the query and of this
      * object if they exist.
      */
-    template <typename MetricT, typename E, typename S, typename A, typename B>
-    double accelerationBound(KdTreeN<E, N, S, A> const & query, double dist_bound) const
+    template <typename MetricT, typename E, typename S, typename A, typename B,
+              typename CompatibilityFunctorT = UniversalCompatibility>
+    double accelerationBound(KdTreeN<E, N, S, A> const & query, double dist_bound,
+                             CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
       if (accel)
@@ -1927,10 +2040,11 @@ class /* THEA_API */ KdTreeN
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
-            return accel->template distance<MetricT>(*query_accel, dist_bound);
+            return accel->template distance<MetricT>(*query_accel, dist_bound,
+                                                     SampleCompatibility<CompatibilityFunctorT>(compatibility));
         }
 
-        return accel->template distance<MetricT>(query, dist_bound);
+        return accel->template distance<MetricT>(query, dist_bound, SampleCompatibility<CompatibilityFunctorT>(compatibility));
       }
       else
       {
@@ -1940,7 +2054,7 @@ class /* THEA_API */ KdTreeN
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
-            return distance<MetricT>(*query_accel, dist_bound);
+            return distance<MetricT>(*query_accel, dist_bound, compatibility);
         }
 
         return -1;

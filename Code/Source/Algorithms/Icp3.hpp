@@ -285,8 +285,8 @@ class Icp3
     {
       for (intx i = 0; i < from_num_pts; ++i)
       {
-        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, nullptr,
-                                                          &to_points[i]);
+        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1,
+                                                          UniversalCompatibility(), nullptr, &to_points[i]);
         if (index < 0)
           throw Error(format("Icp3: Couldn't get nearest neighbor of source point %ld", i));
       }
@@ -394,8 +394,8 @@ class Icp3
 
       for (intx i = 0; i < from_num_pts; ++i)
       {
-        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1, nullptr,
-                                                                                                       &to_points[i]);
+        intx index = to.template closestElement<MetricL2>(PointTraitsN<FromT, 3, ScalarT>::getPosition(from[i]), -1,
+                                                          UniversalCompatibility(), nullptr, &to_points[i]);
         if (index < 0)
           throw Error(format("Icp3: Couldn't get nearest neighbor of source point %ld", i));
       }

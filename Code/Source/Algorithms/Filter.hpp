@@ -21,8 +21,8 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * Interface for all object filters. A filter has an allows() function that takes an object argument and returns a boolean value
- * indicating whether the filter allows the object to pass through or not.
+ * Interface for all single-object filters. A filter has an allows() function that takes an object argument and returns a
+ * boolean value indicating whether the filter allows the object to pass through or not.
  */
 template <typename T>
 class Filter
@@ -59,6 +59,18 @@ class AlwaysBlockFilter : public Filter<T>
     bool allows(T const & t) const { return false; }
 
 }; // class AlwaysPassFilter
+
+/**
+ * A compatibility functor that always returns true for any two objects. A compatibility functor has a
+ * <tt>bool operator()(u, v) const</tt> function that returns true if the two objects <tt>u</tt> and <tt>v</tt> are compatible
+ * with each other.
+ */
+class UniversalCompatibility
+{
+  public:
+    template <typename U, typename V> bool operator()(U const & u, V const & v) const { return true; }
+
+}; // class UniversalCompatibility
 
 } // namespace Algorithms
 } // namespace Thea

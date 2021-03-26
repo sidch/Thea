@@ -42,7 +42,7 @@ class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolver : public virtual ILinearSolver,
     ~CsparseLinearSolver();
 
     /**
-     * @copydoc ILinearSolver::solve()
+     * \copydoc ILinearSolver::solve()
      *
      * Valid options for the CSPARSE backend are:
      * - <b>method</b>: Solution method to use

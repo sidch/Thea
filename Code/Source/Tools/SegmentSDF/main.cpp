@@ -568,7 +568,8 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
         size_t nnbrs = 0;
         for (size_t j = 0; j < cj->second.positions.size(); ++j)
         {
-          intx nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j], INTERSECTION_THRESHOLD);
+          intx nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j],
+                                                                      /* dist_bound = */ INTERSECTION_THRESHOLD);
           if (nn_index >= 0)
           {
             if (++nnbrs >= min(min(ci->second.positions.size(), cj->second.positions.size()), NNBRS_THRESHOLD))

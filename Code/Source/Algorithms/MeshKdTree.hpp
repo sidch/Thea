@@ -131,7 +131,7 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
     void samplePointsFromElements(intx num_samples, typename BaseT::ElementSample * samples) const
     {
       for (intx i = 0; i < num_samples; ++i)
-        samples[i].position = static_cast<typename BaseT::Element const *>(samples[i].element)->randomPoint();
+        samples[i].position = samples[i].element->randomPoint();
     }
 
   private:

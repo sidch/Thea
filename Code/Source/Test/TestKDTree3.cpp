@@ -190,7 +190,7 @@ testPointKdTree()
   Vector3 query(0.5f, 0.5f, 0.5f);
   double dist_bound = 0.25;  // we'll limit the search to all points within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the returned point
-  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist);
+  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist);
   if (nn_index >= 0)
     cout << "\nThe point nearest the query " << query.transpose() << " is " << kdtree.getElements()[nn_index].name
          << " at distance " << dist << endl;
@@ -203,7 +203,7 @@ testPointKdTree()
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
   BoundedSortedArrayN<3, KdTree::NeighborPair> nbrs;
-  intx num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound);
+  intx num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound, UniversalCompatibility());
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.transpose() << ':' << endl;
@@ -232,9 +232,10 @@ testPointKdTree()
   KdTree new_kdtree(new_points.begin(), new_points.end());
 
   typedef KdTree::NeighborPair NeighborPair;
-  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, true);  // -1 means there's no limit on the maximum
-                                                                              // allowed separation. Setting a (small) positive
-                                                                              // value can make this query run *much* faster.
+
+  // -1 means there's no limit on the maximum allowed separation. Setting a (small) positive value can make this query run
+  // *much* faster.
+  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, UniversalCompatibility(), true);
   if (nn_pair.isValid())
   {
     cout << "\nThe nearest neighbors are "
@@ -254,7 +255,7 @@ testPointKdTree()
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
   nbrs.clear();  // not necessary but let's do this anyway
-  num_nbrs = kdtree.kClosestPairs<MetricL2>(new_kdtree, nbrs, -1, true);
+  num_nbrs = kdtree.kClosestPairs<MetricL2>(new_kdtree, nbrs, -1, UniversalCompatibility(), true);
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " pairs of nearest neighbors (max 3) found for query point set:" << endl;
@@ -319,7 +320,7 @@ testTriangleKdTree()
   double dist_bound = 0.25;  // we'll limit the search to all triangles within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the nearest triangle
   Vector3 closest_point;  // this will contain the closest point on the nearest triangle
-  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, &dist, &closest_point);
+  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist, &closest_point);
   if (nn_index >= 0)
     cout << "\nThe triangle nearest the query " << query.transpose() << " is "
          << kdtree.getElements()[nn_index].getVertices().name
@@ -352,9 +353,10 @@ testTriangleKdTree()
   new_kdtree.enableNearestNeighborAcceleration();
 
   typedef KdTree::NeighborPair NeighborPair;
-  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, true);  // -1 means there's no limit on the maximum
-                                                                              // allowed separation. Setting a (small) positive
-                                                                              // value can make this query run *much* faster.
+
+  // -1 means there's no limit on the maximum allowed separation. Setting a (small) positive value can make this query run
+  // *much* faster.
+  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, UniversalCompatibility(), true);
   if (nn_pair.isValid())
     cout << "\nThe nearest neighbors are "
          << new_kdtree.getElements()[nn_pair.getQueryIndex()].getVertices().name << " and "

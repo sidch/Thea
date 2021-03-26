@@ -872,7 +872,7 @@ tJuncts(Mesh & mesh)
 
       VertexFilter filter(edge);
       kdtree.pushFilter(&filter);
-        intx index = kdtree.closestElement<MetricL2>(boundary_segs[i], 2 * tol);  // add 2 for a little safety margin
+        intx index = kdtree.closestElement<MetricL2>(boundary_segs[i], /* dist_bound = */ 2 * tol);  // a little safety margin
       kdtree.popFilter();
 
       if (index < 0)

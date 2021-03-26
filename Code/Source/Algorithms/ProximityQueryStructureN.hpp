@@ -32,6 +32,8 @@ namespace Algorithms {
 template <int N, typename T = Real>
 class /* THEA_API */ ProximityQueryStructureN
 {
+  private:
+
   public:
     THEA_DECL_SMART_POINTERS(ProximityQueryStructureN)
 
@@ -143,22 +145,40 @@ class /* THEA_API */ ProximityQueryStructureN
     /** Get a bounding box for the structure. */
     AxisAlignedBox3 const & getBounds() const;
 
-    /** Get the minimum distance between this structure and a query object. */
-    template <typename MetricT, typename QueryT> double distance(QueryT const & query, double dist_bound = -1) const;
+    /**
+     * Get the minimum distance between this structure and a query object.
+     *
+     * @param query Query object.
+     * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     */
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    double distance(QueryT const & query, double dist_bound = -1, CompatibilityFunctorT compatibility = CompatibilityFunctorT())
+           const;
 
     /**
      * Get the closest element in this structure to a query object, within a specified distance bound.
      *
      * @param query Query object.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param dist The distance to the query object is placed here. Ignored if null.
      * @param closest_point The coordinates of the closest point are placed here. Ignored if null.
      *
      * @return A non-negative handle to the closest element, if one was found, else a negative number.
      */
-    template <typename MetricT, typename QueryT>
-    intx closestElement(QueryT const & query, double dist_bound = -1, double * dist = nullptr,
-                        VectorT * closest_point = nullptr) const;
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    intx closestElement(QueryT const & query, double dist_bound = -1,
+                        CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                        double * dist = nullptr, VectorT * closest_point = nullptr) const;
 
     /**
      * Get the closest pair of elements between this structure and another structure, whose separation is less than a specified
@@ -166,14 +186,21 @@ class /* THEA_API */ ProximityQueryStructureN
      *
      * @param query Query object.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
      *   and stored in the returned structure.
      *
      * @return Non-negative handles to the closest pair of elements in their respective objects, if such a pair was found. Else
      *   returns a pair of negative numbers.
      */
-    template <typename MetricT, typename QueryT>
-    NeighborPair closestPair(QueryT const & query, double dist_bound = -1, bool get_closest_points = false) const;
+    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
+    NeighborPair closestPair(QueryT const & query, double dist_bound = -1,
+                             CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                             bool get_closest_points = false) const;
 
     /**
      * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (k). The template
@@ -183,6 +210,11 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param query Query object.
      * @param k_closest_pairs The k (or fewer) nearest neighbors are placed here.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
      * @param clear_set If true (default), this function discards prior data in \a k_closest_pairs. This is chiefly for internal
@@ -193,8 +225,10 @@ class /* THEA_API */ ProximityQueryStructureN
      *
      * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
      */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT>
+    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT,
+              typename CompatibilityFunctorT = UniversalCompatibility>
     intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
+                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
                        bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const;
 
 }; // class ProximityQueryStructureN

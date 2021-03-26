@@ -40,7 +40,7 @@ class THEA_ARPACK_DLL_LOCAL ArpackEigenSolver : public virtual IEigenSolver, pub
     ~ArpackEigenSolver();
 
     /**
-     * @copydoc IEigenSolver::solve()
+     * \copydoc IEigenSolver::solve()
      *
      * Valid options for the ARPACK backend, where n is the size of the operator matrix, are:
      * - <b>which</b>: Part of eigenvalue spectrum to be returned

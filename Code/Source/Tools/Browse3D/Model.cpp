@@ -381,14 +381,15 @@ Model::closestPoint(Vector3 const & query, Real distance_bound, Real * min_dist,
       // Tighten the bound as much as we can with a fast initial query on the set of vertices
       updateVertexKdTree();
       double fast_distance_bound = 0;
-      intx vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, &fast_distance_bound);
+      intx vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(),
+                                                                  &fast_distance_bound);
       if (vertex_index >= 0)
         distance_bound = (Real)fast_distance_bound;
     }
 
     updateKdTree();
     double d = 0;
-    intx index = kdtree->closestElement<MetricL2>(query, distance_bound, &d, closest_pt);
+    intx index = kdtree->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(), &d, closest_pt);
     if (index >= 0)
     {
       if (min_dist) *min_dist = (Real)d;
@@ -414,7 +415,7 @@ Model::pick(Ray3 const & ray)
   }
   else
   {
-    KdTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, true);
+    KdTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, Algorithms::UniversalCompatibility(), true);
     if (cp.isValid())
     {
       t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().normalized());
