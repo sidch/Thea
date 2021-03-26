@@ -119,6 +119,49 @@ struct AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttribu
 
 }; // class AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT >
 
+// A utility class that exchanges the arguments to a compatibility functor.
+template <typename CompatibilityFunctorT> class SwappedCompatibility
+{
+  public:
+    SwappedCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
+
+    template <typename U, typename V> bool operator()(U const & u, V const & v) const { return compatibility(v, u); }
+
+  private:
+    CompatibilityFunctorT compatibility;
+
+}; // class SwappedCompatibility
+
+// A utility class that evaluates the compatibility of samples in terms of the compatibility of their parent elements.
+template <typename CompatibilityFunctorT> class SampleCompatibility
+{
+  public:
+    SampleCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
+
+    template <typename U, typename V> bool operator()(U const & u, V const & v) const
+    {
+      return compatibility(getObject(u), getObject(v));
+    }
+
+  private:
+    template <typename T> static T const & getObject(T const & t) { return t; }
+
+    template <typename T, int N, typename ScalarT>
+    static T const & getObject(ElementSample<T, N, ScalarT> const & t)
+    {
+      return *t.element;
+    }
+
+    template <typename T, int N, typename ScalarT, typename TransformT>
+    static TransformedObject<T, TransformT> getObject(TransformedObject< ElementSample<T, N, ScalarT>, TransformT > const & t)
+    {
+      return makeTransformedObject(t.getObject().element, &t.getTransform());
+    }
+
+    CompatibilityFunctorT compatibility;
+
+}; // class SampleCompatibility
+
 } // namespace KdTreeNInternal
 
 template <typename T, int N, typename ScalarT>
@@ -1446,21 +1489,6 @@ class /* THEA_API */ KdTreeN
     }
 
   private:
-    /** A utility class that exchanges the arguments to a compatibility functor. */
-    template <typename CompatibilityFunctorT> class SwappedCompatibility
-    {
-      public:
-        /** Constructor. */
-        SwappedCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
-
-        /** Check if (\a u, \a v) are compatible by calling the wrapped functor with (\a v, \a u). */
-        template <typename U, typename V> bool operator()(U const & u, V const & v) const { return compatibility(v, u); }
-
-      private:
-        CompatibilityFunctorT compatibility;
-
-    }; // class SwappedCompatibility
-
     /**
      * Search the elements in a leaf node for the one closest to another element, when the latter is a proximity query
      * structure.
@@ -1474,7 +1502,7 @@ class /* THEA_API */ KdTreeN
       CompatibilityFunctorT compatibility,
       bool get_closest_points) const
     {
-      SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+      KdTreeNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1603,7 +1631,7 @@ class /* THEA_API */ KdTreeN
       bool get_closest_points,
       intx use_as_query_index_and_swap) const
     {
-      SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+      KdTreeNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1980,46 +2008,16 @@ class /* THEA_API */ KdTreeN
       }
     }
 
-    /** A utility class that evaluates the compatibility of samples in terms of the compatibility of their parent elements. */
-    template <typename CompatibilityFunctorT> class SampleCompatibility
-    {
-      public:
-        SampleCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
-
-        template <typename U, typename V> bool operator()(U const & u, V const & v) const
-        {
-          return compatibility(getObject(u), getObject(v));
-        }
-
-      private:
-        template <typename U> static U const & getObject(U const & u) { return u; }
-
-        template <typename U, int M, typename ScalarU>
-        static U const & getObject(KdTreeNInternal::ElementSample<U, M, ScalarU> const & u)
-        {
-          return *u.element;
-        }
-
-        template <typename U, int M, typename ScalarU, typename TransformU>
-        static TransformedObject<U, TransformU> getObject(
-          TransformedObject< KdTreeNInternal::ElementSample<U, M, ScalarU>, TransformU > const & u)
-        {
-          return makeTransformedObject(u.getObject().element, &u.getTransform());
-        }
-
-        CompatibilityFunctorT compatibility;
-
-    }; // class SampleCompatibility
-
     /** Get an upper bound on the distance to a query object, using the acceleration structure if it exists. */
     template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
     double accelerationBound(QueryT const & query, double dist_bound,
                              CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
-      return accel ? accel->template distance<MetricT>(query, dist_bound,
-                                                       SampleCompatibility<CompatibilityFunctorT>(compatibility))
-                   : -1;
+      return accel
+             ? accel->template distance<MetricT>(query, dist_bound,
+                                                 KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility))
+             : -1;
     }
 
     /**
@@ -2040,11 +2038,12 @@ class /* THEA_API */ KdTreeN
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
-            return accel->template distance<MetricT>(*query_accel, dist_bound,
-                                                     SampleCompatibility<CompatibilityFunctorT>(compatibility));
+            return accel->template distance<MetricT>(
+                       *query_accel, dist_bound, KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
         }
 
-        return accel->template distance<MetricT>(query, dist_bound, SampleCompatibility<CompatibilityFunctorT>(compatibility));
+        return accel->template distance<MetricT>(query, dist_bound,
+                                                 KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
       }
       else
       {
