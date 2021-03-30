@@ -1512,14 +1512,16 @@ class /* THEA_API */ KdTreeN
         if (!elementPassesFilters(elem))
           continue;
 
+        // sqrt unavoidable or at least (hopefully) insignificant compared to NN search in query structure
+        auto elem_dist_bound = (pair.getMonotoneApproxDistance() >= 0
+                              ? MetricT::invertMonotoneApprox(pair.getMonotoneApproxDistance()) : -1);
+
         NeighborPair swapped;
         if (TransformableBaseT::hasTransform())
           swapped = query.template closestPair<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                        pair.getMonotoneApproxDistance(), swapped_compatibility,
-                                                        get_closest_points);
+                                                        elem_dist_bound, swapped_compatibility, get_closest_points);
         else
-          swapped = query.template closestPair<MetricT>(elem, pair.getMonotoneApproxDistance(), swapped_compatibility,
-                                                        get_closest_points);
+          swapped = query.template closestPair<MetricT>(elem, elem_dist_bound, swapped_compatibility, get_closest_points);
 
         if (swapped.isValid())
         {
