@@ -109,6 +109,17 @@ class THEA_API FilePath
     /** Returns true if a path does not uniquely identify a file or directory. */
     static bool isRelative(std::string const & path);
 
+    /**
+     * Get the path of an object relative to a reference directory.
+     *
+     * @param path The path to be made relative.
+     * @param ref_dir The path to the reference directory.
+     *
+     * @note This function does not do any transformations that would involve touching the filesystem, such as resolving
+     *   symlinks or checking if files/directories exist.
+     */
+    static std::string getRelative(std::string const & path, std::string const & ref_dir);
+
 }; // class FilePath
 
 } // namespace Thea

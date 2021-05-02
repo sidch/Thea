@@ -30,7 +30,7 @@ class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename Matrix
 {
   private:
     static_assert(std::is_base_of<Eigen::MatrixBase<MatrixT>, MatrixT>::value,
-                  "MatrixWrapper: Wrapped matrix must be Eigen::Matrix");
+                  "MatrixWrapper: Wrapped matrix must be an Eigen matrix or matrix expression");
 
     typedef IDenseMatrix<typename MatrixT::value_type> BaseT;  ///< The base type
 
@@ -43,13 +43,10 @@ class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename Matrix
 
     /**
      * Constructor. The passed matrix must persist as long as this class is being actively used, since it is accessed via a
-     * pointer.
+     * pointer. If a null pointer is supplied, the functions of this class will have undefined behavior until a valid matrix is
+     * supplied via setMatrix or the copy constructor.
      */
-    MatrixWrapper(MatrixT * mat)
-    : m(mat)
-    {
-      alwaysAssertM(mat, "MatrixWrapper: Must be initialized with an existing matrix");
-    }
+    MatrixWrapper(MatrixT * mat = nullptr) : m(mat) {}
 
     /** Destructor. */
     ~MatrixWrapper() {}
@@ -60,6 +57,9 @@ class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename Matrix
     /** Get the wrapped matrix. */
     MatrixT & getMatrix() { return *m; }
 
+    /** Set the wrapped matrix. */
+    void setMatrix(MatrixT * mat) { m = mat; }
+
     // Functions from IMatrix
     int64 THEA_ICALL rows() const { return (int64)m->rows(); }
     int64 THEA_ICALL cols() const { return (int64)m->cols(); }
@@ -67,11 +67,16 @@ class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename Matrix
 
     int8 THEA_ICALL isResizable() const
     {
-      return MatrixT::RowsAtCompileTime == Eigen::Dynamic || MatrixT::ColsAtCompileTime == Eigen::Dynamic;
+      return std::is_base_of<Eigen::PlainObjectBase<MatrixT>, MatrixT>::value  // plain objects (Matrix/Array) own their storage
+          && (MatrixT::RowsAtCompileTime == Eigen::Dynamic || MatrixT::ColsAtCompileTime == Eigen::Dynamic);
     }
 
     int8 THEA_ICALL resize(int64 nrows, int64 ncols)
     {
+      if (!isResizable()) { return (m->rows() == nrows && m->cols() == ncols); }
+      if (MatrixT::RowsAtCompileTime != Eigen::Dynamic && m->rows() != nrows) { return false; }
+      if (MatrixT::ColsAtCompileTime != Eigen::Dynamic && m->cols() != ncols) { return false; }
+
       try  // no exceptions should cross shared library boundaries
       {
         m->resize(nrows, ncols);

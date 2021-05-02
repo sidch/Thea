@@ -811,8 +811,8 @@ class /* THEA_API */ KdTreeN
     void clearTransform()
     {
       TransformableBaseT::clearTransform();
-      transform_inverse = AffineTransformN<N, ScalarT>::identity();
-      transform_inverse_transpose = Matrix<N, N, ScalarT>::Identity();
+      transform_inverse.setIdentity();
+      transform_inverse_transpose.setIdentity();
       invalidateBounds();
 
       if (valid_acceleration_structure)

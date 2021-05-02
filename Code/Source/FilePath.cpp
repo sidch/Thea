@@ -111,4 +111,41 @@ FilePath::isRelative(std::string const & path)
   return boost::filesystem::path(path).is_relative();
 }
 
+std::string
+FilePath::getRelative(std::string const & path, std::string const & ref_dir)
+{
+  // Copied verbatim from https://stackoverflow.com/a/29221546
+
+  boost::filesystem::path from(ref_dir), to(path);
+
+  // Start at the root path and while they are the same then do nothing then when they first diverge take the entire from path,
+  // swap it with '..' segments, and then append the remainder of the to path.
+  auto from_iter = from.begin();
+  auto to_iter = to.begin();
+
+  // Loop through both while they are the same to find nearest common directory
+  while (from_iter != from.end() && to_iter != to.end() && *to_iter == *from_iter)
+  {
+    ++to_iter;
+    ++from_iter;
+  }
+
+  // Replace from path segments with '..' (from => nearest common directory)
+  auto final_path = boost::filesystem::path{};
+  while (from_iter != from.end())
+  {
+    final_path /= "..";
+    ++from_iter;
+  }
+
+  // Append the remainder of the to path (nearest common directory => to)
+  while (to_iter != to.end())
+  {
+    final_path /= *to_iter;
+    ++to_iter;
+  }
+
+  return final_path.string();
+}
+
 } // namespace Thea

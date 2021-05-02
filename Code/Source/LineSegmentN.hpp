@@ -213,6 +213,14 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
       return box;
     }
 
+    /** Get a textual representation of the line segment. */
+    std::string toString() const
+    {
+      std::ostringstream oss;
+      oss << '[' << Thea::toString(getEndpoint(0)) << ", " << Thea::toString(getEndpoint(1)) << ']';
+      return oss.str();
+    }
+
   private:
     VectorT point;      ///< A point on the line.
     VectorT direction;  ///< A unit vector along the direction of the line.

@@ -105,7 +105,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
       return std::max((p - center).norm() - radius, static_cast<T>(0));
     }
 
-    /** Get the distance of the ball from a point. */
+    /** Get the distance of the ball from another ball. */
     T distance(BallN const & other) const
     {
       return std::max((other.center - center).norm() - radius - other.radius, static_cast<T>(0));

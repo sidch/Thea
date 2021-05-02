@@ -133,9 +133,7 @@ parseModel(std::string const & str, std::string & path, AffineTransform3 & trans
                                  Vector3(m[0][3], m[1][3], m[2][3]));
   }
   else
-  {
-    transform = AffineTransform3::identity();
-  }
+    transform.setIdentity();
 
   return true;
 }

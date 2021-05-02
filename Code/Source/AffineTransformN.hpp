@@ -72,6 +72,9 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
       return AffineTransformT(MatrixT::Identity(), v);
     }
 
+    /** Set the transform to identity. */
+    void setIdentity() { *this = identity(); }
+
     /** Get linear transform component. */
     MatrixT const & getLinear() const { return linear; }
 

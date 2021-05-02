@@ -72,6 +72,9 @@ class /* THEA_DLL_LOCAL */ RigidTransformNBase
       return RigidTransformN<N, U>::_fromAffine(aff.template cast<U>());
     }
 
+    /** Set the transform to identity. */
+    void setIdentity() { *this = identity(); }
+
     /** Get rotation component. */
     MatrixT const & getRotation() const { return aff.getLinear(); }
 

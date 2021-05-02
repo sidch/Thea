@@ -16,6 +16,7 @@
 #define __Thea_RayN_hpp__
 
 #include "Common.hpp"
+#include "AffineTransformN.hpp"
 #include "CoordinateFrameN.hpp"
 #include "MatVec.hpp"
 
@@ -34,7 +35,7 @@ class /* THEA_API */ RayN
     RayN() {}
 
     /** Initialize with an origin and a direction. The direction will <b>NOT</b> be normalized. */
-    RayN(VectorT const & origin_, VectorT direction_) : origin(origin_), direction(direction_) {}
+    RayN(VectorT const & origin_, VectorT const & direction_) : origin(origin_), direction(direction_) {}
 
     /** Copy constructor. */
     RayN(RayN const & src) : origin(src.origin), direction(src.direction) {}
@@ -70,6 +71,12 @@ class /* THEA_API */ RayN
     RayN toObjectSpace(CoordinateFrameN<N, T> const & frame) const
     {
       return RayN(frame.pointToObjectSpace(origin), frame.vectorToObjectSpace(direction));
+    }
+
+    /** Apply an arbitrary affine transform to the ray. */
+    RayN transform(AffineTransformN<N, T> const & tr) const
+    {
+      return RayN(tr * origin, tr.getLinear() * direction);
     }
 
     /**
