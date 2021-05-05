@@ -1277,7 +1277,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       setPackedArrayIsValid(BufferId::VERTEX_POSITION);
     }
 
-    /** Pack vertex positions densely in an array. */
+    /** Pack vertex normals densely in an array. */
     void packVertexNormals() const
     {
       if (packedArrayIsValid(BufferId::VERTEX_NORMAL)) return;

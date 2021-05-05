@@ -370,7 +370,7 @@ App::loadPlugins()
   THEA_CONSOLE << "Loading OpenGL plugin: " << plugin_path;
   gl_plugin = Application::getPluginManager().load(plugin_path);
 
-  // Start up the plugin (a GL context should already exist in a QGLWidget)
+  // Start up the plugin (a GL context should already exist in a UI widget)
   gl_plugin->startup();
 }
 
@@ -380,6 +380,8 @@ App::createRenderSystem()
   render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
   render_system = render_system_factory->createRenderSystem("OpenGL");
   has_render_system = 1;
+
+  THEA_CONSOLE << "\nRenderSystem: " << render_system->describeSystem();
 }
 
 //=============================================================================================================================
