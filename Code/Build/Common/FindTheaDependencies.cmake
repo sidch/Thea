@@ -18,8 +18,9 @@
 #   Thea_DEPS_LDFLAGS         Extra linker flags
 #
 # To specify an additional directory to search, set THEA_DEPS_ROOT.
-# To specify a custom set of Boost components, set Thea_FIND_Boost_COMPONENTS.
 # To suppress searching/linking optional dependencies from the command line, set WITH_<PACKAGENAME> to false.
+# To specify additional Boost components to search for (filesystem, system and thread are always included), set
+#   Thea_FIND_Boost_ADDITIONAL_COMPONENTS.
 #
 # Copyright (C) Siddhartha Chaudhuri, 2011
 #
@@ -66,10 +67,7 @@ IF(Thea_FIND_Boost)
   ELSE()
     SET(BOOST_ROOT ${THEA_DEPS_ROOT})
   ENDIF()
-  IF(NOT Thea_FIND_Boost_COMPONENTS)
-    SET(Thea_FIND_Boost_COMPONENTS filesystem system thread)
-  ENDIF(NOT Thea_FIND_Boost_COMPONENTS)
-  FIND_PACKAGE(Boost COMPONENTS ${Thea_FIND_Boost_COMPONENTS} REQUIRED)
+  FIND_PACKAGE(Boost COMPONENTS filesystem system thread ${Thea_FIND_Boost_ADDITIONAL_COMPONENTS} REQUIRED)
 
   SET(Thea_DEPS_LIBRARIES ${Thea_DEPS_LIBRARIES} ${Boost_LIBRARIES})
   SET(Thea_DEPS_INCLUDE_DIRS ${Thea_DEPS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})

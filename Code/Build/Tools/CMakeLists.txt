@@ -11,7 +11,7 @@ PROJECT(TheaTools CXX C)
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
-SET(Thea_FIND_Boost_COMPONENTS  filesystem program_options system thread)
+SET(Thea_FIND_Boost_ADDITIONAL_COMPONENTS program_options)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 # Dependency: OpenGL
