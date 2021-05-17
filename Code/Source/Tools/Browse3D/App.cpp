@@ -228,8 +228,7 @@ App::parseOptions(std::vector<std::string> const & args)
 
   if (argc < 1)
   {
-    THEA_CONSOLE << usage;
-    std::cerr << visible;  // should be intercepted by out
+    THEA_CONSOLE << usage << "\n\n" << visible;
     return 0;
   }
 
@@ -258,16 +257,14 @@ App::parseOptions(std::vector<std::string> const & args)
 
   if (vm.count("version") > 0)
   {
-    THEA_CONSOLE << "Browse3D version 2.0";
-    THEA_CONSOLE << "Siddhartha Chaudhuri, 2016";
+    THEA_CONSOLE << "Browse3D version 2.0\n"
+                 << "Siddhartha Chaudhuri, 2016";
     quit = true;
   }
 
   if (vm.count("help") > 0)
   {
-    if (quit) THEA_CONSOLE << "";
-    THEA_CONSOLE << usage;
-    THEA_CONSOLE << visible;  // should be intercepted by THEA_CONSOLE
+    THEA_CONSOLE << '\n' << usage << "\n\n" << visible;
     quit = true;
   }
 
@@ -394,8 +391,7 @@ App::OnInit()
   if (!parseOptions(this->argc, this->argv))
     return false;
 
-  THEA_CONSOLE << "Started Browse3D\n";
-  THEA_CONSOLE << optsToString();
+  THEA_CONSOLE << "Started Browse3D\n" << optsToString();
 
   wxImage::AddHandler(new wxPNGHandler);
 

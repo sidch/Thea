@@ -511,6 +511,24 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     virtual intx addTriangle(intx vi0, intx vi1, intx vi2, intx src_face_index = -1);
 
     /**
+     * Add a quadrilateral face to the mesh, specified by four vertex indices and an optional source face index (typically the
+     * index of the face in the mesh source file). The quad will be triangulated to (at most) 2 triangles internally.
+     *
+     * @return The index of the new face in the mesh, i.e. a valid argument to getFace(), or a negative number on error. This is
+     *   not necessarily the same as \a src_face_index.
+     */
+    virtual intx addQuad(intx vi0, intx vi1, intx vi2, intx vi3, intx src_face_index = -1)
+    {
+      face_vertex_indices.resize(4);  // no realloc unless size increases, by std::vector spec
+      face_vertex_indices[0] = vi0;
+      face_vertex_indices[1] = vi1;
+      face_vertex_indices[2] = vi2;
+      face_vertex_indices[3] = vi3;
+
+      return addFace(4, &face_vertex_indices[0], src_face_index);
+    }
+
+    /**
      * Add a polygonal face to the mesh, specified as a sequence of vertex indices and an optional source face index (typically
      * the index of the face in the mesh source file). Polygons with less than 3 vertices are ignored. If the polygon has 3
      * vertices, it is added to the triangle list. If it has more than 3 vertices, it is triangulated and added to the triangle
@@ -532,7 +550,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
      */
     template <typename IndexIterator> intx addFace(IndexIterator vi_begin, IndexIterator vi_end, intx src_face_index = -1)
     {
-      face_vertex_indices.clear();
+      face_vertex_indices.clear();  // no realloc, by std::vector spec
       for (IndexIterator vi = vi_begin; vi != vi_end; ++vi)
         face_vertex_indices.push_back((intx)*vi);
 

@@ -322,14 +322,8 @@ saveIMesh(string const & model_path, string const & out_path)
 
   auto out_mesh = std::make_shared<DisplayMesh>("Abstract mesh data");
   for (intx i = 0; i < verts.cols(); ++i) out_mesh->addVertex(verts.col(i));
-  for (intx i = 0; i < tris.cols(); ++i) out_mesh->addTriangle(tris(0, i), tris(1, i), tris(2, i));
-
-  uint32 q[4];
-  for (intx i = 0; i < quads.cols(); ++i)
-  {
-    q[0] = quads(0, i); q[1] = quads(1, i); q[2] = quads(2, i); q[3] = quads(3, i);
-    out_mesh->addFace(q, q + 4);
-  }
+  for (intx i = 0; i < tris.cols();  ++i) out_mesh->addTriangle(tris(0, i), tris(1, i), tris(2, i));
+  for (intx i = 0; i < quads.cols(); ++i) out_mesh->addQuad(quads(0, i), quads(1, i), quads(2, i), quads(3, i));
 
   MeshGroup<DisplayMesh> out_mg("Abstract mesh data");
   out_mg.addMesh(out_mesh);
