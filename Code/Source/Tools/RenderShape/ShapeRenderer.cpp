@@ -38,8 +38,6 @@ using namespace Graphics;
 
 typedef DisplayMesh Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef std::pair<Mesh const *, intx> FaceRef;
-typedef UnorderedMap<FaceRef, uint32> FaceIndexMap;
 
 struct View
 {
@@ -139,7 +137,7 @@ class ShapeRendererImpl
     int parseVector(string const & str, Vector4 & v);
     void resetArgs();
     bool loadModel(Model & model, string const & path);
-    bool loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids);
+    bool loadLabels(Model & model);
     bool loadFeatures(Model & model);
     bool renderModel(Model const & model, ColorRgba const & color);
     void colorizeMeshSelection(MG & mg, uint32 parent_id);
@@ -1328,44 +1326,6 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   return true;
 }
 
-struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
-{
-  FaceIndexMap & tri_ids;
-  FaceIndexMap & quad_ids;
-  intx max_id;
-
-  MeshReadCallback(FaceIndexMap & tri_ids_, FaceIndexMap & quad_ids_) : tri_ids(tri_ids_), quad_ids(quad_ids_), max_id(-1) {}
-
-  void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face)
-  {
-    if (face.hasTriangles())
-    {
-      intx base_tri = face.getFirstTriangle();
-      for (intx i = 0; i < face.numTriangles(); ++i)
-      {
-        FaceRef ref(mesh, base_tri + i);
-        tri_ids[ref] = (uint32)index;
-
-        // THEA_CONSOLE << ref.first->getName() << ": Triangle " << ref.second << " has id " << index;
-      }
-    }
-
-    if (face.hasQuads())
-    {
-      intx base_quad = face.getFirstQuad();
-      for (intx i = 0; i < face.numQuads(); ++i)
-      {
-        FaceRef ref(mesh, base_quad + i);
-        quad_ids[ref] = (uint32)index;
-
-        // THEA_CONSOLE << ref.first->getName() << ": Quad " << ref.second << " has id " << index;
-      }
-    }
-
-    max_id = std::max(max_id, index);
-  }
-};
-
 bool
 enableWireframe(Mesh & mesh)
 {
@@ -1376,7 +1336,7 @@ enableWireframe(Mesh & mesh)
 bool
 flattenFaces(Mesh & mesh)
 {
-  mesh.isolateFaces();
+  mesh.isolateTriangles();
   mesh.computeAveragedVertexNormals();
   return false;
 }
@@ -1412,22 +1372,19 @@ indexToColor(uint32 index, bool is_point)
 struct FaceColorizer
 {
   ShapeRendererImpl const * parent;
-  FaceIndexMap const * tri_ids;
-  FaceIndexMap const * quad_ids;
   Array<int> const * labels;
 
-  FaceColorizer(ShapeRendererImpl const * parent_, FaceIndexMap const * tri_ids_, FaceIndexMap const * quad_ids_,
-                Array<int> const * labels_ = nullptr)
-  : parent(parent_), tri_ids(tri_ids_), quad_ids(quad_ids_), labels(labels_)
+  FaceColorizer(ShapeRendererImpl const * parent_, Array<int> const * labels_ = nullptr)
+  : parent(parent_), labels(labels_)
   {}
 
   bool operator()(Mesh & mesh)
   {
-    if (!parent->color_by_leaf && !parent->color_by_leafname)
-      mesh.isolateFaces();
-
     if (labels || parent->color_by_leaf || parent->color_by_leafname)
       mesh.computeAveragedVertexNormals();
+
+    if (!parent->color_by_leaf && !parent->color_by_leafname)
+      mesh.isolateTriangles();
 
     mesh.addColors();
 
@@ -1444,20 +1401,13 @@ struct FaceColorizer
       else
         color = parent->getLabelColor((intx)labelHash(mesh.getName()));
     }
-    else
-      alwaysAssertM(tri_ids && quad_ids, "FaceColorizer: Triangle and quad ID maps must both be non-null");
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
     for (size_t i = 0; i < tris.size(); i += 3)
     {
       if (!parent->color_by_leaf && !parent->color_by_leafname)
       {
-        FaceRef face(&mesh, (intx)i / 3);
-        FaceIndexMap::const_iterator existing = tri_ids->find(face);
-        if (existing == tri_ids->end())
-          throw Error(format("Could not find index of triangle %ld in mesh '%s'", (intx)i / 3, mesh.getName()));
-
-        uint32 id = existing->second;
+        auto id = mesh.getTriangleSourceFaceIndex((intx)i / 3);
         if (labels)
         {
           if ((size_t)id >= labels->size())
@@ -1466,7 +1416,7 @@ struct FaceColorizer
             color = parent->getLabelColor((*labels)[(size_t)id]);
         }
         else
-          color = indexToColor(id, false);
+          color = indexToColor((uint32)id, false);
       }
 
       mesh.setColor((intx)tris[i    ], color);
@@ -1474,32 +1424,42 @@ struct FaceColorizer
       mesh.setColor((intx)tris[i + 2], color);
     }
 
-    Mesh::IndexArray const & quads = mesh.getQuadIndices();
-    for (size_t i = 0; i < quads.size(); i += 4)
+    return false;
+  }
+};
+
+struct FaceCounter
+{
+  intx num_faces;
+
+  FaceCounter() : num_faces(0) {}
+  bool operator()(Mesh & mesh) { num_faces += mesh.numFaces(); return false; }
+};
+
+struct MeshToFaceLabels
+{
+  UnorderedMap<intx, int> const & input_face_labels;
+  Array<int> & all_face_labels;
+
+  MeshToFaceLabels(UnorderedMap<intx, int> const & input_face_labels_, Array<int> & all_face_labels_)
+  : input_face_labels(input_face_labels_), all_face_labels(all_face_labels_)
+  {
+    std::fill(all_face_labels_.begin(), all_face_labels_.end(), -1);
+  }
+
+  bool operator()(Mesh & mesh)
+  {
+    intx nt = mesh.numTriangles();
+    for (intx i = 0; i < nt; ++i)
     {
-      if (!parent->color_by_leaf && !parent->color_by_leafname)
+      auto loc = input_face_labels.find(mesh.getTriangleSourceFaceIndex(i));
+      if (loc != input_face_labels.end())
       {
-        FaceRef face(&mesh, (intx)i / 4);
-        FaceIndexMap::const_iterator existing = quad_ids->find(face);
-        if (existing == quad_ids->end())
-          throw Error(format("Could not find index of quad %ld in mesh '%s'", (intx)i / 4, mesh.getName()));
+        for (intx j = 0; j < nt; ++j)
+          all_face_labels[(size_t)mesh.getTriangleSourceFaceIndex(j)] = loc->second;
 
-        uint32 id = existing->second;
-        if (labels)
-        {
-          if ((size_t)id >= labels->size())
-            color = ColorRgba8(255, 0, 0, 255);
-          else
-            color = parent->getLabelColor((*labels)[(size_t)id]);
-        }
-        else
-          color = indexToColor(id, false);
+        break;  // found the label for this mesh
       }
-
-      mesh.setColor((intx)quads[i    ], color);
-      mesh.setColor((intx)quads[i + 1], color);
-      mesh.setColor((intx)quads[i + 2], color);
-      mesh.setColor((intx)quads[i + 3], color);
     }
 
     return false;
@@ -1507,7 +1467,7 @@ struct FaceColorizer
 };
 
 bool
-ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceIndexMap const * quad_ids)
+ShapeRendererImpl::loadLabels(Model & model)
 {
   if (labels_path.empty())
   {
@@ -1597,17 +1557,11 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       return false;
     }
 
-    // Build mapping from face indices to their parent meshes
-    Array<Mesh const *> face_meshes((size_t)(tri_ids->size() + quad_ids->size()), nullptr);
-    for (FaceIndexMap::const_iterator fi = tri_ids->begin(); fi != tri_ids->end(); ++fi)
-      face_meshes[(size_t)fi->second] = fi->first.first;
+    FaceCounter face_counter;
+    model.mesh_group.forEachMeshUntil(std::ref(face_counter));
 
-    for (FaceIndexMap::const_iterator fi = quad_ids->begin(); fi != quad_ids->end(); ++fi)
-      face_meshes[(size_t)fi->second] = fi->first.first;
-
-    // Build map from meshes to their labels
-    typedef UnorderedMap<Mesh const *, int> MeshLabelMap;
-    MeshLabelMap mesh_labels;
+    typedef UnorderedMap<intx, int> FaceLabelMap;
+    FaceLabelMap input_face_labels;
 
     typedef UnorderedMap<string, int> LabelIndexMap;
     LabelIndexMap label_indices;
@@ -1639,33 +1593,20 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
       intx rep_index;
       while (line_in >> rep_index)
       {
-        if (rep_index < 0)
+        if (rep_index < 0 || rep_index >= face_counter.num_faces)
         {
           THEA_ERROR << "Index " << rep_index << " of element to be labeled is out of bounds";
           return false;
         }
 
-        Mesh const * mesh = face_meshes[rep_index];
-        if (!mesh)
-        {
-          THEA_ERROR << "Face " << rep_index << " not associated with a parent mesh";
-          return false;
-        }
-
-        mesh_labels[mesh] = label_index;
+        input_face_labels[rep_index] = label_index;
       }
     }
 
     // Map from mesh labels to face labels
-    labels.resize(face_meshes.size(), -1);
-    for (size_t i = 0; i < labels.size(); ++i)
-    {
-      if (face_meshes[i])
-      {
-        MeshLabelMap::const_iterator existing = mesh_labels.find(face_meshes[i]);
-        labels[i] = (existing != mesh_labels.end() ? existing->second : -1);
-      }
-    }
+    labels.resize((size_t)face_counter.num_faces);
+    MeshToFaceLabels m2f(input_face_labels, labels);
+    model.mesh_group.forEachMeshUntil(m2f);
   }
   else
   {
@@ -1717,8 +1658,7 @@ ShapeRendererImpl::loadLabels(Model & model, FaceIndexMap const * tri_ids, FaceI
   }
   else
   {
-    alwaysAssertM(tri_ids && quad_ids, "Face IDs necessary for coloring by label");
-    FaceColorizer label_colorizer(this, tri_ids, quad_ids, &labels);
+    FaceColorizer label_colorizer(this, &labels);
     model.mesh_group.forEachMeshUntil(label_colorizer);
   }
 
@@ -1970,7 +1910,7 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     else
       color = (mesh_id == 0 ? ColorRgba8(primary_color) : ColorRgba8(selected_color));
 
-    if (selected_binary_mask) mesh.isolateFaces();
+    if (selected_binary_mask) mesh.isolateTriangles();
     mesh.addColors();
 
     Mesh::IndexArray const & tris = mesh.getTriangleIndices();
@@ -1979,15 +1919,6 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
       mesh.setColor((intx)tris[i    ], color);
       mesh.setColor((intx)tris[i + 1], color);
       mesh.setColor((intx)tris[i + 2], color);
-    }
-
-    Mesh::IndexArray const & quads = mesh.getQuadIndices();
-    for (size_t i = 0; i < quads.size(); i += 4)
-    {
-      mesh.setColor((intx)quads[i    ], color);
-      mesh.setColor((intx)quads[i + 1], color);
-      mesh.setColor((intx)quads[i + 2], color);
-      mesh.setColor((intx)quads[i + 3], color);
     }
   }
 
@@ -2004,6 +1935,14 @@ ShapeRendererImpl::colorizeMeshSelection(MG & mg, uint32 parent_id)
     colorizeMeshSelection(child, child_id);
   }
 }
+
+struct MeshReadCallback : public MeshCodec<Mesh>::ReadCallback
+{
+  intx max_id;
+
+  MeshReadCallback() : max_id(-1) {}
+  void faceRead(Mesh * mesh, intx index, Mesh::FaceHandle face) { max_id = std::max(max_id, index); }
+};
 
 bool
 ShapeRendererImpl::loadModel(Model & model, string const & path)
@@ -2043,7 +1982,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
     if (color_by_label)
     {
-      if (!loadLabels(model, nullptr, nullptr))
+      if (!loadLabels(model))
         return false;
     }
     else if (color_by_features)
@@ -2062,10 +2001,9 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
   }
   else
   {
-    FaceIndexMap tri_ids, quad_ids;
     try
     {
-      MeshReadCallback callback(tri_ids, quad_ids);
+      MeshReadCallback callback;
       model.mesh_group.load(path, CodecAuto(), &callback);
       model.max_id = callback.max_id;
     }
@@ -2094,9 +2032,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
         for (size_t i = 0; i < model.points.size(); ++i)
         {
           MeshTriangle::VertexTriple const & tverts = sampled_tris[i]->getVertices();
-          FaceRef fref(tverts.getMesh(), tverts.getMeshFaceIndex());
-          intx face_id = (tverts.getMeshFaceType() == MeshTriangle::VertexTriple::FaceType::TRIANGLE
-                       ? tri_ids.find(fref)->second : quad_ids.find(fref)->second);
+          intx face_id = tverts.getMesh()->getTriangleSourceFaceIndex(tverts.getMeshTriangleIndex());
           model.point_colors[i] = indexToColor((uint32)face_id, true);
         }
       }
@@ -2107,13 +2043,13 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
       if (color_by_id || color_by_leaf || color_by_leafname)
       {
-        FaceColorizer colorizer(this, &tri_ids, &quad_ids);
+        FaceColorizer colorizer(this);
         model.mesh_group.forEachMeshUntil(colorizer);
         needs_normals = false;  // FaceColorizer has already computed as needed
       }
       else if (color_by_label)
       {
-        if (!loadLabels(model, &tri_ids, &quad_ids))
+        if (!loadLabels(model))
           return false;
 
         needs_normals = false;
@@ -2592,7 +2528,6 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
     }
 
     RenderOptions opts;
-    opts.setUseVertexData(true);
     opts.setSendNormals(true);
     opts.setSendColors(true);
     opts.setSendTexCoords((bool)tex2d);

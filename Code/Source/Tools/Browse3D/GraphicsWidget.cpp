@@ -27,6 +27,7 @@ Vector3 GraphicsWidget::light_dir       =  Vector3(-1, -1, -2);
 ColorRgb GraphicsWidget::light_color    =  ColorRgb(1, 1, 1);
 ColorRgb GraphicsWidget::ambient_color  =  ColorRgb(1, 1, 1);
 bool GraphicsWidget::two_sided          =  true;
+bool GraphicsWidget::flat_shaded        =  false;
 
 Graphics::IShader *
 GraphicsWidget::getPhongShader(Graphics::IRenderSystem & render_system)
@@ -65,6 +66,7 @@ GraphicsWidget::setLightingUniforms(Graphics::IShader * s)
   s->setUniform("light_color", &asLvalue(Math::wrapMatrix(v_light_color)));
   s->setUniform("ambient_color", &asLvalue(Math::wrapMatrix(v_ambient_color)));
   s->setUniform("two_sided", two_sided ? (Real)1 : (Real)0);
+  s->setUniform("flat_shaded", flat_shaded ? (Real)1 : (Real)0);
 }
 
 void
@@ -96,6 +98,13 @@ void
 GraphicsWidget::setTwoSided(bool value)
 {
   two_sided = value;
+  setLightingUniforms();
+}
+
+void
+GraphicsWidget::setFlatShaded(bool value)
+{
+  flat_shaded = value;
   setLightingUniforms();
 }
 

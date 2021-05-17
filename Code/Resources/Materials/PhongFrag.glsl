@@ -3,13 +3,14 @@ uniform vec3 light_dir;  // must be specified in camera space, pointing towards 
 uniform vec3 light_color;
 uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]
 uniform float two_sided;
+uniform float flat_shaded;
 
 varying vec3 position;  // position in camera space
 varying vec3 normal;  // normal in camera space
 
 void main()
 {
-  vec3 N = normalize(normal);
+  vec3 N = normalize(flat_shaded > 0.5 ? cross(dFdx(position), dFdy(position)) : normal);
   vec3 L = normalize(light_dir);
 
   vec3 ambt_color = material[0] * gl_Color.rgb * ambient_color;

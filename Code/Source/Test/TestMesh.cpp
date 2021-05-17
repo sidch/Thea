@@ -315,8 +315,7 @@ saveIMesh(string const & model_path, string const & out_path)
   auto quads = Math::mapTo< Matrix<4, Eigen::Dynamic, uint32> const >(*mesh->getQuadMatrix());
 
   THEA_CONSOLE << in_mg.getName() << ": Input mesh has " << mesh->numVertices() << " vertices and " << mesh->numFaces()
-                                  << " faces, of which " << mesh->numTriangles() << " are triangles and " << mesh->numQuads()
-                                  << " are quads";
+                                  << " faces";
   THEA_CONSOLE << in_mg.getName() << ": Abstract mesh verts " << verts.rows() << 'x' << verts.cols()
                                   << ", tris " << tris.rows() << 'x' << tris.cols()
                                   << ", quads " << quads.rows() << 'x' << quads.cols();
@@ -324,7 +323,13 @@ saveIMesh(string const & model_path, string const & out_path)
   auto out_mesh = std::make_shared<DisplayMesh>("Abstract mesh data");
   for (intx i = 0; i < verts.cols(); ++i) out_mesh->addVertex(verts.col(i));
   for (intx i = 0; i < tris.cols(); ++i) out_mesh->addTriangle(tris(0, i), tris(1, i), tris(2, i));
-  for (intx i = 0; i < quads.cols(); ++i) out_mesh->addQuad(quads(0, i), quads(1, i), quads(2, i), quads(3, i));
+
+  uint32 q[4];
+  for (intx i = 0; i < quads.cols(); ++i)
+  {
+    q[0] = quads(0, i); q[1] = quads(1, i); q[2] = quads(2, i); q[3] = quads(3, i);
+    out_mesh->addFace(q, q + 4);
+  }
 
   MeshGroup<DisplayMesh> out_mg("Abstract mesh data");
   out_mg.addMesh(out_mesh);

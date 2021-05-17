@@ -862,46 +862,40 @@ class CodecPly : public CodecPlyBase<MeshT>
     {
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 
-      for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
+      intx num_faces = mesh.numFaces();
+      for (intx i = 0; i < num_faces; ++i)
       {
-        typename Mesh::IndexArray indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
-        size_t degree = (type == 0 ? 3 : 4);
+        auto f = const_cast<_MeshT &>(mesh).getFace(i); if (!f) continue;
+        auto nfv = f.numVertices();
 
-        for (size_t i = 0; i < indices.size(); i += degree)
+        if (write_opts.binary)
         {
-          if (write_opts.binary)
+          output.writeInt32((int32)nfv);
+          for (int j = 0; j < nfv; ++j)
           {
-            output.writeInt32((int32)degree);
-            for (size_t j = 0; j < degree; ++j)
-            {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
-              alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
-              output.writeInt32((int32)ii->second);
-            }
-          }
-          else
-          {
-            std::ostringstream os; os << degree;
-
-            for (size_t j = 0; j < degree; ++j)
-            {
-              typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
-              alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-              os << ' ' << ii->second;
-            }
-
-            os << '\n';
-            output.writeBytes((int64)os.str().length(), os.str().data());
-          }
-
-          if (callback)
-          {
-            typename Mesh::Face face(const_cast<Mesh *>(&mesh), degree, (type == 0), (intx)i, 1);
-            callback->faceWritten(&mesh, next_index++, face);
+            output.writeInt32((int32)ii->second);
           }
         }
+        else
+        {
+          std::ostringstream os; os << nfv;
+
+          for (int j = 0; j < nfv; ++j)
+          {
+            typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
+            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+
+            os << ' ' << ii->second;
+          }
+
+          os << '\n';
+          output.writeBytes((int64)os.str().length(), os.str().data());
+        }
+
+        if (callback) callback->faceWritten(&mesh, next_index++, i);
       }
     }
 

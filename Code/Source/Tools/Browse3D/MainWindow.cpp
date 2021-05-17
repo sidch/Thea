@@ -84,7 +84,7 @@ MainWindow::init()
     rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe");
     rendering_menu->AppendSeparator();
     rendering_menu->AppendCheckItem(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
-    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADING,      "&Flat shading");
+    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADED,      "&Flat shading");
   view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
   view_menu->Append(ID_VIEW_FIT,            "&Fit view to model");
   menubar->Append(view_menu, "&View");
@@ -229,7 +229,7 @@ MainWindow::init()
   Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
   Bind(wxEVT_MENU, &ModelDisplay::renderShadedWireframe, ui.model_display, ID_VIEW_SHADED_WIREFRAME);
   Bind(wxEVT_MENU, &ModelDisplay::setTwoSided, ui.model_display, ID_VIEW_TWO_SIDED);
-  Bind(wxEVT_MENU, &ModelDisplay::setFlatShading, ui.model_display, ID_VIEW_FLAT_SHADING);
+  Bind(wxEVT_MENU, &ModelDisplay::setFlatShaded, ui.model_display, ID_VIEW_FLAT_SHADED);
   Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
 
   Bind(wxEVT_MENU, &MainWindow::loadPreviousModel, this, ID_GO_PREV);
@@ -327,8 +327,8 @@ MainWindow::init()
   rendering_menu->FindItem(ID_VIEW_TWO_SIDED)->Check(app().options().two_sided);
   ui.model_display->setTwoSided(app().options().two_sided);
 
-  rendering_menu->FindItem(ID_VIEW_FLAT_SHADING)->Check(app().options().flat);
-  ui.model_display->setFlatShading(app().options().flat);
+  rendering_menu->FindItem(ID_VIEW_FLAT_SHADED)->Check(app().options().flat);
+  ui.model_display->setFlatShaded(app().options().flat);
 
 /*
   setPickSegments(false);

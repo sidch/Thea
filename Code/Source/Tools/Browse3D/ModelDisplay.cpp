@@ -90,8 +90,6 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
   render_opts.setSendNormals(true)
              .setSendColors(false)
              .setSendTexCoords(false)
-             .setUseVertexNormals(true)
-             .setUseVertexData(true)
              .setDrawFaces(true)
              .setDrawEdges(true)
              .setOverrideEdgeColor(true)
@@ -272,12 +270,18 @@ ModelDisplay::setTwoSided(wxCommandEvent & event)
   setTwoSided(event.IsChecked());
 }
 
-void
-ModelDisplay::setFlatShading(bool value)
+bool
+ModelDisplay::flatShaded() const
 {
-  if (!render_opts.useVertexNormals() != value)
+  return GraphicsWidget::isFlatShaded();
+}
+
+void
+ModelDisplay::setFlatShaded(bool value)
+{
+  if (GraphicsWidget::isFlatShaded() != value)
   {
-    render_opts.setUseVertexNormals(!value);
+    GraphicsWidget::setFlatShaded(value);
     Refresh();
 
     THEA_CONSOLE << "Flat shading = " << value;
@@ -285,9 +289,9 @@ ModelDisplay::setFlatShading(bool value)
 }
 
 void
-ModelDisplay::setFlatShading(wxCommandEvent & event)
+ModelDisplay::setFlatShaded(wxCommandEvent & event)
 {
-  setFlatShading(event.IsChecked());
+  setFlatShaded(event.IsChecked());
 }
 
 void

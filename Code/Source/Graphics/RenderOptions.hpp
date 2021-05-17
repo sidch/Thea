@@ -46,20 +46,6 @@ class THEA_API IRenderOptions
     /** Set whether texture coordinates will be sent to the rendersystem. */
     virtual IRenderOptions & THEA_ICALL setSendTexCoords(int8 value) = 0;
 
-    /** Use vertex normals instead of face normals (for smooth shading)? */
-    virtual int8 THEA_ICALL useVertexNormals() const = 0;
-
-    /** Set whether vertex normals be used instead of face normals (for smooth shading). */
-    virtual IRenderOptions & THEA_ICALL setUseVertexNormals(int8 value) = 0;
-
-    /** Use data at vertices instead of faces? Does <b>not</b> apply to normals, see useVertexNormals(). */
-    virtual int8 THEA_ICALL useVertexData() const = 0;
-
-    /**
-     * Set whether data at vertices will be used instead of faces. Does <b>not</b> apply to normals, see setUseVertexNormals().
-     */
-    virtual IRenderOptions & THEA_ICALL setUseVertexData(int8 value) = 0;
-
     /** Draw mesh faces? */
     virtual int8 THEA_ICALL drawFaces() const = 0;
 
@@ -97,8 +83,6 @@ class THEA_API RenderOptions : public virtual IRenderOptions
     int8       send_normals;
     int8       send_colors;
     int8       send_texcoords;
-    int8       use_vertex_normals;
-    int8       use_vertex_data;
     int8       draw_faces;
     int8       draw_edges;
     int8       override_edge_color;
@@ -110,8 +94,6 @@ class THEA_API RenderOptions : public virtual IRenderOptions
     : send_normals(true),
       send_colors(true),
       send_texcoords(false),
-      use_vertex_normals(true),
-      use_vertex_data(true),
       draw_faces(true),
       draw_edges(false),
       override_edge_color(false),
@@ -127,8 +109,6 @@ class THEA_API RenderOptions : public virtual IRenderOptions
       send_normals         =  rhs.sendNormals();
       send_colors          =  rhs.sendColors();
       send_texcoords       =  rhs.sendTexCoords();
-      use_vertex_normals   =  rhs.useVertexNormals();
-      use_vertex_data      =  rhs.useVertexData();
       draw_faces           =  rhs.drawFaces();
       draw_edges           =  rhs.drawEdges();
       override_edge_color  =  rhs.overrideEdgeColor();
@@ -146,10 +126,6 @@ class THEA_API RenderOptions : public virtual IRenderOptions
     IRenderOptions & THEA_ICALL setSendNormals(int8 value) { send_normals = value; return *this; }
     int8 THEA_ICALL sendTexCoords() const { return send_texcoords; }
     IRenderOptions & THEA_ICALL setSendTexCoords(int8 value) { send_texcoords = value; return *this; }
-    int8 THEA_ICALL useVertexNormals() const { return use_vertex_normals; }
-    IRenderOptions & THEA_ICALL setUseVertexNormals(int8 value) { use_vertex_normals = value; return *this; }
-    int8 THEA_ICALL useVertexData() const { return use_vertex_data; }
-    IRenderOptions & THEA_ICALL setUseVertexData(int8 value) { use_vertex_data = value; return *this; }
     int8 THEA_ICALL drawFaces() const { return draw_faces; }
     IRenderOptions & THEA_ICALL setDrawFaces(int8 value) { draw_faces = value; return *this; }
     int8 THEA_ICALL drawEdges() const { return draw_edges; }

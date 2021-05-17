@@ -687,45 +687,39 @@ class CodecObj : public CodecObjBase<MeshT>
 
       typedef std::pair<_MeshT const *, intx> DisplayMeshVRef;
 
-      for (int type = 0; type < 2; ++type)  // 0: triangles, 1: quads
+      intx num_faces = mesh.numFaces();
+      for (intx i = 0; i < num_faces; ++i)
       {
-        typename Mesh::IndexArray const & indices = (type == 0 ? mesh.getTriangleIndices() : mesh.getQuadIndices());
-        size_t degree = (type == 0 ? 3 : 4);
+        auto f = const_cast<_MeshT &>(mesh).getFace(i); if (!f) continue;
+        auto nfv = f.numVertices();
 
-        for (size_t i = 0; i < indices.size(); i += degree)
+        std::ostringstream os; os << 'f';
+
+        for (int j = 0; j < nfv; ++j)
         {
-          std::ostringstream os; os << 'f';
+          typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
+          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
 
-          for (size_t j = 0; j < degree; ++j)
+          if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
           {
-            typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)indices[i + j]));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
-
-            if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
-            {
-              if (!write_opts.ignore_normals && mesh.hasNormals())
-                os << ' ' << ii->second << '/' << ii->second << '/' << ii->second;
-              else
-                os << ' ' << ii->second << '/' << ii->second;
-            }
+            if (!write_opts.ignore_normals && mesh.hasNormals())
+              os << ' ' << ii->second << '/' << ii->second << '/' << ii->second;
             else
-            {
-              if (!write_opts.ignore_normals && mesh.hasNormals())
-                os << ' ' << ii->second << "//" << ii->second;
-              else
-                os << ' ' << ii->second;
-            }
+              os << ' ' << ii->second << '/' << ii->second;
           }
-
-          os << '\n';
-          output.writeBytes((int64)os.str().length(), os.str().data());
-
-          if (callback)
+          else
           {
-            typename Mesh::Face face(const_cast<Mesh *>(&mesh), (int)degree, (type == 0), (intx)i, 1);
-            callback->faceWritten(&mesh, next_index++, face);
+            if (!write_opts.ignore_normals && mesh.hasNormals())
+              os << ' ' << ii->second << "//" << ii->second;
+            else
+              os << ' ' << ii->second;
           }
         }
+
+        os << '\n';
+        output.writeBytes((int64)os.str().length(), os.str().data());
+
+        if (callback) callback->faceWritten(&mesh, next_index++, i);
       }
     }
 

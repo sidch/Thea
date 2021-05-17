@@ -38,12 +38,14 @@ namespace Thea {
 namespace Graphics {
 
 /**
- * A class for storing meshes with arbitrary topologies. Optionally allows GPU-buffered rendering (see important note below).
+ * A class for storing meshes with arbitrary topologies, with pointer-based cross-references between vertices, faces and edges.
+ * Topology changes are generally fast as a result, since most of the data structure is not invalidated by local changes.
+ * GPU-buffered rendering is performed with lazy element-packing as required.
  *
- * @note When using GPU-buffered rendering, any methods of this class which change the mesh will automatically re-initialize the
- * buffers. <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the GeneralMeshVertex,
- * GeneralMeshEdge and GeneralMeshFace classes, then the user <i>must</i> manually indicate that the mesh needs to be
- * resynchronized with the GPU. The invalidateGpuBuffers() function should be used for this.
+ * @note Any methods of this class which change the mesh will automatically (and lazily) re-initialize the GPU buffers.
+ * <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the GeneralMeshVertex, GeneralMeshEdge and
+ * GeneralMeshFace classes, then the user <i>must</i> manually indicate that the mesh needs to be resynchronized with the GPU.
+ * The invalidateGpuBuffers() function should be used for this.
  *
  * @todo Add support for GPU-buffered texture coordinates with 1, 3 or 4 dimensions.
  * @todo Instantiate different types of GPU buffers for different types of colors/texture coordinates.
@@ -113,26 +115,19 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       max_vertex_index(-1),
       max_face_index(-1),
       changed_packed(BufferId::ALL),
-      has_large_polys(false),
-      buffered_rendering(false),
-      buffered_wireframe(false),
       changed_buffers(BufferId::ALL),
       num_tri_indices(0),
-      num_quad_indices(0),
       buf_pool(nullptr),
       vertex_positions_buf(nullptr),
       vertex_normals_buf(nullptr),
       vertex_colors_buf(nullptr),
       vertex_texcoords_buf(nullptr),
       tris_buf(nullptr),
-      quads_buf(nullptr),
       edges_buf(nullptr),
       vertex_matrix(nullptr, 3, 0),
       tri_matrix(nullptr, 3, 0),
-      quad_matrix(nullptr, 4, 0),
       vertex_wrapper(&vertex_matrix),
-      tri_wrapper(&tri_matrix),
-      quad_wrapper(&quad_matrix)
+      tri_wrapper(&tri_matrix)
     {}
 
     /**
@@ -220,9 +215,6 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       dst.max_vertex_index = max_vertex_index;
       dst.max_face_index = max_face_index;
       dst.bounds = bounds;
-      dst.buffered_rendering = buffered_rendering;
-      dst.buffered_wireframe = buffered_wireframe;
-      dst.has_large_polys = has_large_polys;
     }
 
     // Abstract mesh interface
@@ -245,10 +237,13 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 
     IDenseMatrix<uint32> const * THEA_ICALL getQuadMatrix() const
     {
-      packTopology();
-      uint32 const * buf = (packed_quads.empty() ? nullptr : &packed_quads[0]);
-      new (&quad_matrix) QuadMatrix(const_cast<uint32 *>(buf), 4, num_quad_indices / 4);
-      return &quad_wrapper;
+      // FIXME: Even if the mesh has quads, we pack everything as triangles (for compatibility with modern OpenGL) so we
+      // currently have no efficient way of returning the quads. In the future, we can consider packing the quads on-demand in
+      // this function (call packTopology(), which should set a flag to turn trigger the quad-packing here).
+      typedef Matrix<4, 0, uint32, MatrixLayout::COLUMN_MAJOR> EmptyQuadMatrix;
+      static EmptyQuadMatrix EMPTY_QUAD_MATRIX;
+      static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
+      return &EMPTY_QUAD_WRAPPER;
     }
 
     /** Get an iterator pointing to the first vertex. */
@@ -302,10 +297,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       packed_vertex_colors.clear();
       packed_vertex_texcoords.clear();
       packed_tris.clear();
-      packed_quads.clear();
       packed_edges.clear();
-
-      has_large_polys = false;
 
       invalidateGpuBuffers();
     }
@@ -1080,61 +1072,12 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       return ntris;
     }
 
-    /**
-     * Check if GPU-buffered rendering is on or off. If it is on, you <b>must manually call</b> invalidateGpuBuffers() every
-     * time the mesh changes, to make sure the GPU buffers are update when the mesh is next rendered.
-     *
-     * @see setGpuBufferedRendering()
-     */
-    bool renderingIsGpuBuffered() const { return buffered_rendering; }
-
-    /**
-     * Turn GPU-buffered rendering on/off. If you enable this function, you <b>must manually call</b> invalidateGpuBuffers()
-     * every time the mesh changes, to make sure the GPU buffers are synchronized when the mesh is next rendered.
-     *
-     * @see renderingIsGpuBuffered()
-     */
-    void setGpuBufferedRendering(bool value)
-    {
-      if (value == buffered_rendering)
-        return;
-
-      buffered_rendering = value;
-      invalidateGpuBuffers();
-    }
-
     /** Invalidate part or all of the current GPU data for the mesh. */
     void invalidateGpuBuffers(int changed_buffers_ = BufferId::ALL)
     {
       changed_buffers |= changed_buffers_;
       changed_packed  |= changed_buffers_;
     }
-
-    /**
-     * Enable/disable drawing the edges of the mesh in GPU-buffered mode. Enabling this function will <b>not</b> draw any edges
-     * unless you turn on the appropriate RenderOptions flag. The edges will be uploaded to the graphics system on the next call
-     * to uploadToGraphicsSystem().
-     *
-     * Wireframe mode is initially disabled to save video memory. This flag is ignored in non-buffered (immediate) mode.
-     *
-     * @see wireframeIsGpuBuffered()
-     */
-    void setGpuBufferedWireframe(bool value)
-    {
-      if (value == buffered_wireframe)
-        return;
-
-      buffered_wireframe = value;
-      invalidateGpuBuffers();
-    }
-
-    /**
-     * Check if wireframe drawing is enabled in GPU-buffered mode. This is initially disabled to save video memory. This flag is
-     * ignored in non-buffered (immediate) mode.
-     *
-     * @see setGpuBufferedWireframe()
-     */
-    bool wireframeIsGpuBuffered() const { return buffered_wireframe; }
 
     /**
      * Pack all mesh data to arrays that can be directly transferred to the GPU. Packed arrays that are already synchronized
@@ -1149,16 +1092,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       packTopology();
     }
 
-    int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
-    {
-      if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return false; }
-      if (!options) options = RenderOptions::defaults();
-
-      if (buffered_rendering)
-        return drawBuffered(*render_system, *options);
-      else
-        return drawImmediate(*render_system, *options);
-    }
+    int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const;
 
   private:
     /**
@@ -1502,35 +1436,6 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       return true;
     }
 
-    /** Draw the mesh in immediate rendering mode. */
-    int8 drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const;
-
-    /**
-     * Utility function to draw a face. Must be enclosed in the appropriate
-     * IRenderSystem::beginPrimitive()/IRenderSystem::endPrimitive() block.
-     */
-    void drawFace(Face const & face, IRenderSystem & render_system, IRenderOptions const & options) const
-    {
-      if (!options.useVertexNormals() && options.sendNormals())
-        face.drawNormal(render_system, options);
-
-      if (!options.useVertexData())
-        face.attr().draw(render_system, options);
-
-      for (auto vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
-      {
-        Vertex const & vertex = **vi;
-
-        if (options.useVertexNormals() && options.sendNormals())
-          vertex.drawNormal(render_system, options);
-
-        if (options.useVertexData())  // vertex attributes (per-vertex color, texcoord etc)
-          vertex.attr().draw(render_system, options);
-
-        vertex.drawPosition(render_system, options);  // finally send the position of the vertex
-      }
-    }
-
     /** Check if a packed array is synchronized with the mesh or not. */
     bool packedArrayIsValid(BufferId buffer) const { return (changed_packed & (int)buffer) == 0; }
 
@@ -1548,9 +1453,6 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 
     /** Upload GPU resources to the graphics system. */
     bool uploadToGraphicsSystem(IRenderSystem & render_system);
-
-    /** Draw the mesh in GPU-buffered rendering mode. */
-    int8 drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const;
 
     /** Pack vertex positions densely in an array. */
     void packVertexPositions() const
@@ -1634,13 +1536,14 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       if (packedArrayIsValid(BufferId::TOPOLOGY)) return;
 
       packed_tris.clear();
-      packed_quads.clear();
 
       uint32 packing_index = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
         vi->setPackingIndex(packing_index++);
 
-      has_large_polys = false;
+      Array<Vertex const *> face_vertices;
+      Array<intx> tri_indices;
+      Polygon3 poly;  // hopefully doesn't realloc on clear() as well
       for (auto fi = faces.begin(); fi != faces.end(); ++fi)
       {
         if (fi->isTriangle())
@@ -1650,36 +1553,57 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
           packed_tris.push_back((*(vi++))->getPackingIndex());
           packed_tris.push_back((*vi)->getPackingIndex());
         }
-        else if (fi->isQuad())
+        else if (fi->numVertices() > 3)  // ignore degenerate faces with < 3 vertices
         {
-          auto vi = fi->verticesBegin();
-          packed_quads.push_back((*(vi++))->getPackingIndex());
-          packed_quads.push_back((*(vi++))->getPackingIndex());
-          packed_quads.push_back((*(vi++))->getPackingIndex());
-          packed_quads.push_back((*vi)->getPackingIndex());
-        }
-        else
-        {
-          has_large_polys = true;
-          THEA_DEBUG << getName() << ": Mesh has polygons with 5 or more vertices. These will not be drawn with GPU buffers.";
+          face_vertices.resize((size_t)fi->numVertices());  // no reallocs if shrinking, according to std::vector spec
+          intx ntris = 0;
+
+          if (fi->isQuad())
+          {
+            size_t j = 0;
+            for (auto fvj = fi->verticesBegin(); fvj != fi->verticesEnd(); ++fvj, ++j)
+              face_vertices[j] = *fvj;
+
+            tri_indices.resize(6);  // no realloc except on the first call
+            ntris = Polygon3::triangulateQuad(face_vertices[0]->getPosition(),
+                                              face_vertices[1]->getPosition(),
+                                              face_vertices[2]->getPosition(),
+                                              face_vertices[3]->getPosition(),
+                                              tri_indices[0], tri_indices[1], tri_indices[2],
+                                              tri_indices[3], tri_indices[4], tri_indices[5]);
+          }
+          else
+          {
+            poly.clear();  // hopefully no realloc if poly uses std::vector-spec storage
+            size_t j = 0;
+            for (auto fvj = fi->verticesBegin(); fvj != fi->verticesEnd(); ++fvj, ++j)
+            {
+              face_vertices[j] = *fvj;
+              poly.addVertex((*fvj)->getPosition());  // no realloc except when poly is larger than all previous polys
+            }
+
+            ntris = poly.triangulate(tri_indices);
+          }
+
+          size_t base = 0;
+          for (intx j = 0; j < ntris; ++j)
+          {
+            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
+            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
+            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
+          }
         }
       }
 
-      if (buffered_wireframe)
+      packed_edges.resize(2 * edges.size());
+      size_t i = 0;
+      for (auto ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
       {
-        packed_edges.resize(2 * edges.size());
-        size_t i = 0;
-        for (auto ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
-        {
-          packed_edges[i    ] = ei->getEndpoint(0)->getPackingIndex();
-          packed_edges[i + 1] = ei->getEndpoint(1)->getPackingIndex();
-        }
+        packed_edges[i    ] = ei->getEndpoint(0)->getPackingIndex();
+        packed_edges[i + 1] = ei->getEndpoint(1)->getPackingIndex();
       }
-      else
-        packed_edges.clear();
 
-      num_tri_indices   =  (intx)packed_tris.size();
-      num_quad_indices  =  (intx)packed_quads.size();
+      num_tri_indices = (intx)packed_tris.size();
 
       setPackedArrayIsValid(BufferId::TOPOLOGY);
     }
@@ -1699,21 +1623,16 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 
     AxisAlignedBox3 bounds;   ///< Mesh bounding box.
 
-    mutable int changed_packed;    ///< A bitwise OR of the flags of the packed arrays that need to be updated.
-    mutable bool has_large_polys;  ///< Does the mesh have polygons with more than 4 vertices?
-    bool buffered_rendering;       ///< Should the mesh be rendered using GPU buffers?
-    bool buffered_wireframe;       ///< Can edges be drawn in GPU-buffered mode?
-    int changed_buffers;           ///< A bitwise OR of the flags of the buffers that need to be updated.
+    mutable int changed_packed;  ///< A bitwise OR of the flags of the packed arrays that need to be updated.
+    int changed_buffers;         ///< A bitwise OR of the flags of the buffers that need to be updated.
 
     mutable PositionArray  packed_vertex_positions;  ///< Array containing packed set of vertex positions.
     mutable NormalArray    packed_vertex_normals;    ///< Array containing packed set of vertex normals.
     mutable ColorArray     packed_vertex_colors;     ///< Array containing packed set of vertex colors.
     mutable TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
     mutable IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
-    mutable IndexArray     packed_quads;             ///< Array containing packed set of quad indices.
     mutable IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
     mutable intx           num_tri_indices;          ///< Number of triangle indices in the mesh.
-    mutable intx           num_quad_indices;         ///< Number of quad indices in the mesh.
 
     IBufferPool * buf_pool;          ///< GPU buffer pool.
     IBuffer * vertex_positions_buf;  ///< GPU buffer for vertex positions.
@@ -1721,7 +1640,6 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     IBuffer * vertex_colors_buf;     ///< GPU buffer for vertex colors.
     IBuffer * vertex_texcoords_buf;  ///< GPU buffer for texture coordinates.
     IBuffer * tris_buf;              ///< GPU buffer for triangle indices.
-    IBuffer * quads_buf;             ///< GPU buffer for quad indices.
     IBuffer * edges_buf;             ///< GPU buffer for edges.
 
     mutable Array<Vertex *> face_vertices;  ///< Internal cache of vertex pointers for a face.
@@ -1729,15 +1647,12 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     // Map the packed vertex and index buffers as matrices for the IMesh API
     typedef MatrixMap<3, Eigen::Dynamic, Real,   MatrixLayout::COLUMN_MAJOR>  VertexMatrix;    ///< Wraps vertices as a matrix.
     typedef MatrixMap<3, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  TriangleMatrix;  ///< Wraps triangles as a matrix.
-    typedef MatrixMap<4, Eigen::Dynamic, uint32, MatrixLayout::COLUMN_MAJOR>  QuadMatrix;      ///< Wraps quads as a matrix.
 
     mutable VertexMatrix    vertex_matrix;  ///< Vertex data as a dense 3xN column-major matrix.
     mutable TriangleMatrix  tri_matrix;     ///< Triangle indices as a dense 3xN column-major matrix.
-    mutable QuadMatrix      quad_matrix;    ///< Quad indices as a dense 4xN column-major matrix.
 
     mutable MatrixWrapper<VertexMatrix>    vertex_wrapper;
     mutable MatrixWrapper<TriangleMatrix>  tri_wrapper;
-    mutable MatrixWrapper<QuadMatrix>      quad_wrapper;
 
 }; // class GeneralMesh
 
@@ -1745,7 +1660,7 @@ template <typename V, typename E, typename F, template <typename T> class A>
 bool
 GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
-  if (!buffered_rendering || changed_buffers == 0) return true;
+  if (changed_buffers == 0) return true;
 
   if (!gpuBufferIsValid(BufferId::TOPOLOGY))
     invalidateGpuBuffers(BufferId::ALL);
@@ -1759,7 +1674,6 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
     vertex_colors_buf     =  nullptr;
     vertex_texcoords_buf  =  nullptr;
     tris_buf              =  nullptr;
-    quads_buf             =  nullptr;
     edges_buf             =  nullptr;
 
     if (vertices.empty() || (faces.empty() && edges.empty()))
@@ -1786,7 +1700,6 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
     intx num_bytes = vertex_position_bytes + vertex_normal_bytes + vertex_color_bytes + vertex_texcoord_bytes + PADDING;
 #else
     intx tri_bytes   =  !packed_tris.empty()   ?  4 * (intx)packed_tris.size()   +  PADDING : 0;  // uint32
-    intx quad_bytes  =  !packed_quads.empty()  ?  4 * (intx)packed_quads.size()  +  PADDING : 0;  // uint32
     intx edge_bytes  =  !packed_edges.empty()  ?  4 * (intx)packed_edges.size()  +  PADDING : 0;  // uint32
 
     intx num_bytes = vertex_position_bytes
@@ -1794,7 +1707,6 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
                    + vertex_color_bytes
                    + vertex_texcoord_bytes
                    + tri_bytes
-                   + quad_bytes
                    + edge_bytes
                    + PADDING;
 #endif
@@ -1805,10 +1717,8 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
     // THEA_CONSOLE << "packed_vertex_colors.size() = " << packed_vertex_colors.size();
     // THEA_CONSOLE << "packed_vertex_texcoords.size() = " << packed_vertex_texcoords.size();
     // THEA_CONSOLE << "packed_tris.size() = " << packed_tris.size();
-    // THEA_CONSOLE << "packed_quads.size() = " << packed_quads.size();
     // THEA_CONSOLE << "packed_edges.size() = " << packed_edges.size();
     // THEA_CONSOLE << "num_tri_indices = " << num_tri_indices;
-    // THEA_CONSOLE << "num_quad_indices = " << num_quad_indices;
 
     if (buf_pool)
     {
@@ -1864,12 +1774,6 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
       if (!tris_buf->updateIndices(0, (int64)packed_tris.size(), NumericType::UINT32, &packed_tris[0])) return false;
     }
 
-    if (!packed_quads.empty())
-    {
-      if (!(quads_buf = buf_pool->createBuffer(quad_bytes))) return false;
-      if (!quads_buf->updateIndices(0, (int64)packed_quads.size(), NumericType::UINT32, &packed_quads[0])) return false;
-    }
-
     if (!packed_edges.empty())
     {
       if (!(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
@@ -1905,164 +1809,75 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
 
 template <typename V, typename E, typename F, template <typename T> class A>
 int8
-GeneralMesh<V, E, F, A>::drawBuffered(IRenderSystem & render_system, IRenderOptions const & options) const
+GeneralMesh<V, E, F, A>::draw(IRenderSystem * render_system, IRenderOptions const * options) const
 {
-  if (options.drawEdges() && !buffered_wireframe)
-  { THEA_ERROR << getName() << ": Can't draw mesh edges with GPU-buffered wireframe disabled"; return false; }
+  if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return false; }
+  if (!options) options = RenderOptions::defaults();
 
-  if (!const_cast<GeneralMesh *>(this)->uploadToGraphicsSystem(render_system)) return false;
+  if (!const_cast<GeneralMesh *>(this)->uploadToGraphicsSystem(*render_system)) return false;
 
   if (!vertex_positions_buf) return true;
-  if (!options.drawFaces() && !options.drawEdges()) return true;
-  if (!options.drawFaces() && edges.size() <= 0) return true;
-  if (!options.drawEdges() && faces.size() <= 0) return true;
+  if (!options->drawFaces() && !options->drawEdges()) return true;
+  if (!options->drawFaces() && edges.size() <= 0) return true;
+  if (!options->drawEdges() && faces.size() <= 0) return true;
 
-  render_system.beginIndexedPrimitives();
+  render_system->beginIndexedPrimitives();
 
-    render_system.setVertexBuffer  (vertex_positions_buf);
-    render_system.setNormalBuffer  (options.sendNormals()      && vertex_normals_buf    ?  vertex_normals_buf    :  nullptr);
-    render_system.setColorBuffer   (options.sendColors()       && vertex_colors_buf     ?  vertex_colors_buf     :  nullptr);
-    render_system.setTexCoordBuffer(0, options.sendTexCoords() && vertex_texcoords_buf  ?  vertex_texcoords_buf  :  nullptr);
+    render_system->setVertexBuffer  (vertex_positions_buf);
+    render_system->setNormalBuffer  (options->sendNormals()      && vertex_normals_buf    ?  vertex_normals_buf    :  nullptr);
+    render_system->setColorBuffer   (options->sendColors()       && vertex_colors_buf     ?  vertex_colors_buf     :  nullptr);
+    render_system->setTexCoordBuffer(0, options->sendTexCoords() && vertex_texcoords_buf  ?  vertex_texcoords_buf  :  nullptr);
 
-    if (options.drawFaces())
+    if (options->drawFaces())
     {
-      if (options.drawEdges())
+      if (options->drawEdges())
       {
-        render_system.pushShapeFlags();
-        render_system.setPolygonOffset(true, 2);
+        render_system->pushShapeFlags();
+        render_system->setPolygonOffset(true, 2);
       }
 
-#ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
-        if (num_tri_indices > 0)
-          render_system.sendIndices(IRenderSystem::Primitive::TRIANGLES, num_tri_indices, &packed_tris[0]);
-
-        if (num_quad_indices > 0)
-          render_system.sendIndices(IRenderSystem::Primitive::QUADS, num_quad_indices, &packed_quads[0]);
-#else
         if (num_tri_indices > 0)
         {
-          render_system.setIndexBuffer(tris_buf);
-          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, num_tri_indices);
-        }
-
-        if (num_quad_indices > 0)
-        {
-          render_system.setIndexBuffer(quads_buf);
-          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::QUADS, 0, num_quad_indices);
-        }
-#endif
-
-        // Finish off with all larger polygons
-        if (has_large_polys)
-        {
-          for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
-            if (fi->numEdges() > 4)
-            {
-              render_system.beginPrimitive(IRenderSystem::Primitive::POLYGON);
-                drawFace(*fi, render_system, options);
-              render_system.endPrimitive();
-            }
-        }
-
-      if (options.drawEdges())
-        render_system.popShapeFlags();
-    }
-
-    if (options.drawEdges())
-    {
-      render_system.pushShader();
-      render_system.pushColorFlags();
-
-        render_system.setShader(nullptr);
-        render_system.setColorBuffer(nullptr);
-        render_system.setTexCoordBuffer(0, nullptr);
-        render_system.setNormalBuffer(nullptr);
-        render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
-
 #ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
-        if (!edges.empty())
-          render_system.sendIndices(IRenderSystem::Primitive::LINES, 2 * (int64)edges.size(), &packed_edges[0]);
+          render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, num_tri_indices, &packed_tris[0]);
 #else
+          render_system->setIndexBuffer(tris_buf);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, num_tri_indices);
+#endif
+        }
+
+      if (options->drawEdges())
+        render_system->popShapeFlags();
+    }
+
+    if (options->drawEdges())
+    {
+      render_system->pushShader();
+      render_system->pushColorFlags();
+
+        render_system->setShader(nullptr);
+        render_system->setColorBuffer(nullptr);
+        render_system->setTexCoordBuffer(0, nullptr);
+        render_system->setNormalBuffer(nullptr);
+        render_system->setColor(options->edgeColor());  // set default edge color (TODO: handle per-edge colors)
+
         if (!edges.empty())
         {
-          render_system.setIndexBuffer(edges_buf);
-          render_system.sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, 2 * (int64)edges.size());
-        }
+#ifdef THEA_GENERAL_MESH_NO_INDEX_ARRAY
+          render_system->sendIndices(IRenderSystem::Primitive::LINES, 2 * (int64)edges.size(), &packed_edges[0]);
+#else
+          render_system->setIndexBuffer(edges_buf);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, 2 * (int64)edges.size());
 #endif
-
-      render_system.popColorFlags();
-      render_system.popShader();
-    }
-
-  render_system.endIndexedPrimitives();
-
-  if (char const * err = render_system.getLastError())
-  { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
-
-  return true;
-}
-
-template <typename V, typename E, typename F, template <typename T> class A>
-int8
-GeneralMesh<V, E, F, A>::drawImmediate(IRenderSystem & render_system, IRenderOptions const & options) const
-{
-  // Three separate passes over the faces is probably faster (TODO: profile) than using Primitive::POLYGON for each face
-
-  if (options.drawFaces())
-  {
-    if (options.drawEdges())
-    {
-      render_system.pushShapeFlags();
-      render_system.setPolygonOffset(true, 1);
-    }
-
-    // First try to render as much stuff using triangles as possible
-    render_system.beginPrimitive(IRenderSystem::Primitive::TRIANGLES);
-      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
-        if (fi->isTriangle()) drawFace(*fi, render_system, options);
-    render_system.endPrimitive();
-
-    // Now render all quads
-    render_system.beginPrimitive(IRenderSystem::Primitive::QUADS);
-      for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
-        if (fi->isQuad()) drawFace(*fi, render_system, options);
-    render_system.endPrimitive();
-
-    // Finish off with all larger polygons
-    for (auto fi = facesBegin(); fi != facesEnd(); ++fi)
-      if (fi->numEdges() > 4)
-      {
-        render_system.beginPrimitive(IRenderSystem::Primitive::POLYGON);
-          drawFace(*fi, render_system, options);
-        render_system.endPrimitive();
-      }
-
-    if (options.drawEdges())
-      render_system.popShapeFlags();
-  }
-
-  if (options.drawEdges())
-  {
-    render_system.pushShader();
-    render_system.pushColorFlags();
-
-      render_system.setShader(nullptr);
-      render_system.setColor(options.edgeColor());  // set default edge color (TODO: handle per-edge colors)
-
-      render_system.beginPrimitive(IRenderSystem::Primitive::LINES);
-        for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei)
-        {
-          ei->attr().draw(render_system, options);
-          ei->getEndpoint(0)->drawPosition(render_system, options);
-          ei->getEndpoint(1)->drawPosition(render_system, options);
         }
-      render_system.endPrimitive();
 
-    render_system.popColorFlags();
-    render_system.popShader();
-  }
+      render_system->popColorFlags();
+      render_system->popShader();
+    }
 
-  if (char const * err = render_system.getLastError())
+  render_system->endIndexedPrimitives();
+
+  if (char const * err = render_system->getLastError())
   { THEA_ERROR << getName() << ": Rendering error (" << err << ')'; return false; }
 
   return true;

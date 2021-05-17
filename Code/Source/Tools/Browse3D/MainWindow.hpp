@@ -64,7 +64,7 @@ class MainWindow : public wxFrame
       ID_VIEW_WIREFRAME,
       ID_VIEW_SHADED_WIREFRAME,
       ID_VIEW_TWO_SIDED,
-      ID_VIEW_FLAT_SHADING,
+      ID_VIEW_FLAT_SHADED,
       ID_VIEW_FIT,
       ID_GO_PREV,
       ID_GO_NEXT,

@@ -30,12 +30,6 @@ class VertexAttribute : public Graphics::ColorAttribute<ColorRgba>
   public:
     VertexAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr) {}
 
-    void draw(Graphics::IRenderSystem & render_system, Graphics::IRenderOptions const & options) const
-    {
-      if (options.sendColors() && options.useVertexData())
-        Graphics::ColorAttribute<ColorRgba>::draw(render_system, options);
-    }
-
     void setParent(Mesh * p) { parent = p; }
     Mesh * getParent() const { return parent; }
 
@@ -47,12 +41,6 @@ class FaceAttribute : public Graphics::ColorAttribute<ColorRgba>
 {
   public:
     FaceAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr) {}
-
-    void draw(Graphics::IRenderSystem & render_system, Graphics::IRenderOptions const & options) const
-    {
-      if (options.sendColors() && !options.useVertexData())
-        Graphics::ColorAttribute<ColorRgba>::draw(render_system, options);
-    }
 
     void setParent(Mesh * p) { parent = p; }
     Mesh * getParent() const { return parent; }

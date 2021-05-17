@@ -289,16 +289,16 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     bool hasFeatures() const { return has_features; }
 
     //========================================================================================================================
-    // Face labels
+    // Element (face or point) labels
     //========================================================================================================================
 
-    /** Load face labels from a file. */
+    /** Load element (face or point) labels from a file. */
     bool loadElementLabels(std::string const & path_);
 
-    /** Get the path of the currently loaded face labels. */
+    /** Get the path of the currently loaded element (face or point) labels. */
     std::string const & getElementLabelsPath() const { return elem_labels_path; }
 
-    /** Check if the model has currently loaded face labels. */
+    /** Check if the model has currently loaded element (face or point) labels. */
     bool hasElementLabels() const { return has_elem_labels; }
 
     //========================================================================================================================

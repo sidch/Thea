@@ -75,8 +75,7 @@ main(int argc, char * argv[])
 bool
 initMesh(Mesh & mesh)
 {
-  cout << "Loaded mesh with " << mesh.numVertices() << " vertices, " << mesh.numTriangles() << " triangles and "
-       << mesh.numQuads() << " quads" << endl;
+  cout << "Loaded mesh with " << mesh.numVertices() << " vertices and " << mesh.numTriangles() << " triangles" << endl;
 
 // #define WIREFRAME
 

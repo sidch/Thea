@@ -108,54 +108,16 @@ template <typename MeshT>
 class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
   public:
-    /** Type of face (enum class). */
-    struct FaceType
-    {
-      /** Supported values. */
-      enum Value
-      {
-        TRIANGLE,
-        QUAD
-      };
-
-      THEA_ENUM_CLASS_BODY(FaceType)
-    };
-
-    /** A handle, in the form of an index/face type pair, to a mesh face. */
-    class MeshFaceHandle
-    {
-      public:
-        /** Default constructor. */
-        MeshFaceHandle() {}
-
-        /** Construct from an index/type pair. */
-        MeshFaceHandle(intx index_, FaceType type_) : index(index_), type(type_) {}
-
-        /** Get the index of the face in the source mesh. */
-        intx getIndex() const { return index; }
-
-        /** Get the type of the face (quad/triangle). */
-        FaceType getType() const { return type; }
-
-      private:
-        intx index;
-        FaceType type;
-
-    }; // class MeshFaceHandle
-
-    typedef MeshT           Mesh;                   ///< The mesh type.
-    typedef intx            MeshVertexHandle;       ///< A handle to a vertex of the mesh.
-    typedef intx            MeshVertexConstHandle;  ///< A const handle to a vertex of the mesh.
-    typedef MeshFaceHandle  MeshFaceConstHandle;    ///< A const handle to a face of the mesh.
+    typedef MeshT Mesh;  ///< The mesh type.
 
     /** Default constructor. */
     MeshVertexTriple() {}
 
     /** Constructs the triple from three mesh vertices. */
     template <typename IntegerT>
-    MeshVertexTriple(IntegerT vi0, IntegerT vi1, IntegerT vi2, Mesh * mesh_, intx face_index_, FaceType face_type_)
+    MeshVertexTriple(IntegerT vi0, IntegerT vi1, IntegerT vi2, Mesh * mesh_, intx tri_index_)
     : mesh(mesh_), mesh_vertices(mesh->getVertices().data()), vertex_indices{ (intx)vi0, (intx)vi1, (intx)vi2 },
-      face_index(face_index_), face_type(face_type_)
+      tri_index(tri_index_)
     {
       debugAssertM(vi0 >= 0 && vi0 < mesh->numVertices()
                 && vi1 >= 0 && vi1 < mesh->numVertices()
@@ -185,23 +147,15 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
       }
     }
 
-    /** Get the index of any one of the three mesh vertices. */
-    MeshVertexHandle getMeshVertex(int i) const
+    /** Get index in the mesh of any one of the three vertices. */
+    intx getMeshVertexIndex(int i) const
     {
       debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index out of bounds");
       return vertex_indices[i];
     }
 
-    /** Get the index, in the source mesh, of the associated mesh face from which the vertices were obtained. */
-    intx getMeshFaceIndex() const { return face_index; }
-
-    /** Check if the associated mesh face is a triangle or a quad. */
-    FaceType getMeshFaceType() const { return face_type; }
-
-    /**
-     * Get a handle, in the form of an index/face type pair, of the associated mesh face from which the vertices were obtained.
-     */
-    MeshFaceHandle getMeshFace() const { return MeshFaceHandle(face_index, face_type); }
+    /** Get the index, in the source mesh, of the mesh triangle. */
+    intx getMeshTriangleIndex() const { return tri_index; }
 
     /** Get the parent mesh. */
     Mesh * getMesh() const { return mesh; }
@@ -210,8 +164,7 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     Mesh * mesh;                    ///< The mesh containing the triangle.
     Vector3 const * mesh_vertices;  ///< A direct reference to the vertex memory block of the mesh.
     intx vertex_indices[3];         ///< The indices of the vertices of the mesh triangle.
-    intx face_index;                ///< The index of the face containing the triangle.
-    FaceType face_type;             ///< Type of face (triangle/quad).
+    intx tri_index;                 ///< The index of the triangle in the mesh.
 
 }; // class MeshVertexTriple<DisplayMesh>
 
@@ -362,51 +315,12 @@ addFace(MeshT & mesh, typename MeshT::Face & face, Array<TriangleT> & tris)
 {
   typedef typename TriangleT::VertexTriple VertexTriple;
 
-  if (face.hasTriangles())
+  typename MeshT::IndexArray const & tri_indices = mesh.getTriangleIndices();
+  size_t beg = 3 * (size_t)face.getFirstTriangle();
+  size_t end = beg + 3 * (size_t)face.numTriangles();
+  for (size_t i = beg; i < end; i += 3)
   {
-    typename MeshT::IndexArray const & tri_indices = mesh.getTriangleIndices();
-    size_t beg = 3 * (size_t)face.getFirstTriangle();
-    size_t end = beg + 3 * (size_t)face.numTriangles();
-    for (size_t i = beg; i < end; i += 3)
-    {
-      tris.push_back(TriangleT(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3,
-                                            VertexTriple::FaceType::TRIANGLE)));
-    }
-  }
-
-  if (face.hasQuads())
-  {
-    typename MeshT::VertexArray const & vertices = mesh.getVertices();
-    typename MeshT::IndexArray const & quad_indices = mesh.getQuadIndices();
-    size_t beg = 4 * (size_t)face.getFirstQuad();
-    size_t end = beg + 4 * (size_t)face.numQuads();
-    for (size_t i = beg; i < end; i += 4)
-    {
-      intx i0, j0, k0;
-      intx i1, j1, k1;
-      int num_tris = Polygon3::triangulateQuad(vertices[(size_t)quad_indices[i    ]],
-                                               vertices[(size_t)quad_indices[i + 1]],
-                                               vertices[(size_t)quad_indices[i + 2]],
-                                               vertices[(size_t)quad_indices[i + 3]],
-                                               i0, j0, k0, i1, j1, k1);
-
-      intx quad = (intx)i / 4;
-      if (num_tris > 0)
-      {
-        tris.push_back(TriangleT(VertexTriple(quad_indices[(size_t)(i + i0)],
-                                              quad_indices[(size_t)(i + j0)],
-                                              quad_indices[(size_t)(i + k0)],
-                                              &mesh, quad, VertexTriple::FaceType::QUAD)));
-
-        if (num_tris > 1)
-        {
-          tris.push_back(TriangleT(VertexTriple(quad_indices[(size_t)(i + i1)],
-                                                quad_indices[(size_t)(i + j1)],
-                                                quad_indices[(size_t)(i + k1)],
-                                                &mesh, quad, VertexTriple::FaceType::QUAD)));
-        }
-      }
-    }
+    tris.push_back(TriangleT(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3)));
   }
 }
 
@@ -421,19 +335,7 @@ buildTriangleList(MeshT & mesh, Array<TriangleT> & tris)
 
   typename Mesh::IndexArray const & tri_indices = mesh.getTriangleIndices();
   for (size_t i = 0; i < tri_indices.size(); i += 3)
-    tris.push_back(Triangle(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3,
-                            VertexTriple::FaceType::TRIANGLE)));
-
-  // FIXME: Handle non-convex faces
-  typename Mesh::IndexArray const & quad_indices = mesh.getQuadIndices();
-  for (size_t i = 0; i < quad_indices.size(); i += 4)
-  {
-    intx quad = (intx)i / 4;
-    tris.push_back(Triangle(VertexTriple(quad_indices[i], quad_indices[i + 1], quad_indices[i + 2], &mesh, quad,
-                            VertexTriple::FaceType::QUAD)));
-    tris.push_back(Triangle(VertexTriple(quad_indices[i], quad_indices[i + 2], quad_indices[i + 3], &mesh, quad,
-                            VertexTriple::FaceType::QUAD)));
-  }
+    tris.push_back(Triangle(VertexTriple(tri_indices[i], tri_indices[i + 1], tri_indices[i + 2], &mesh, (intx)i / 3)));
 }
 
 } // namespace MeshTrianglesInternal

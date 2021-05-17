@@ -27,17 +27,16 @@ DisplayMesh::DisplayMesh(std::string const & name)
   buf_pool(nullptr),
   vertices_buf(nullptr),
   tris_buf(nullptr),
-  quads_buf(nullptr),
   normals_buf(nullptr),
   colors_buf(nullptr),
   texcoords_buf(nullptr),
   vertex_matrix(nullptr, 3, 0),
   tri_matrix(nullptr, 3, 0),
-  quad_matrix(nullptr, 4, 0),
   vertex_wrapper(&vertex_matrix),
-  tri_wrapper(&tri_matrix),
-  quad_wrapper(&quad_matrix)
-{}
+  tri_wrapper(&tri_matrix)
+{
+  face_starting_tris.resize(1); face_starting_tris[0] = 0;
+}
 
 DisplayMesh::DisplayMesh(DisplayMesh const & src)
 : NamedObject(src),
@@ -46,7 +45,8 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   colors(src.colors),
   texcoords(src.texcoords),
   tris(src.tris),
-  quads(src.quads),
+  face_starting_tris(src.face_starting_tris),
+  large_poly_verts(src.large_poly_verts),
   valid_bounds(src.valid_bounds),
   bounds(src.bounds),
   wireframe_enabled(src.wireframe_enabled),
@@ -54,16 +54,13 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   buf_pool(nullptr),
   vertices_buf(nullptr),
   tris_buf(nullptr),
-  quads_buf(nullptr),
   normals_buf(nullptr),
   colors_buf(nullptr),
   texcoords_buf(nullptr),
   vertex_matrix(nullptr, 3, 0),
   tri_matrix(nullptr, 3, 0),
-  quad_matrix(nullptr, 4, 0),
   vertex_wrapper(&vertex_matrix),
-  tri_wrapper(&tri_matrix),
-  quad_wrapper(&quad_matrix)
+  tri_wrapper(&tri_matrix)
 {}
 
 void
@@ -74,12 +71,12 @@ DisplayMesh::clear()
   colors.clear();
   texcoords.clear();
   tris.clear();
-  quads.clear();
   edges.clear();
 
-  vertex_source_indices.clear();
-  tri_source_face_indices.clear();
-  quad_source_face_indices.clear();
+  vertex_src_indices.clear();
+  tri_src_face_indices.clear();
+  face_starting_tris.resize(1); face_starting_tris[0] = 0;
+  large_poly_verts.clear();
 
   face_vertex_indices.clear();
   triangulated_indices.clear();
@@ -105,7 +102,12 @@ DisplayMesh::getTriangleMatrix() const
 IDenseMatrix<uint32> const *
 DisplayMesh::getQuadMatrix() const
 {
-  return const_cast<DisplayMesh *>(this)->getQuadMatrix();
+  // FIXME: Even if the mesh has quads, we pack everything as triangles (for compatibility with modern OpenGL) so we
+  // currently have no efficient way of returning the quads.
+  typedef Matrix<4, 0, uint32, MatrixLayout::COLUMN_MAJOR> EmptyQuadMatrix;
+  static EmptyQuadMatrix EMPTY_QUAD_MATRIX;
+  static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
+  return &EMPTY_QUAD_WRAPPER;
 }
 
 IDenseMatrix<Real> *
@@ -123,14 +125,6 @@ DisplayMesh::getTriangleMatrix()
   uint32 * buf = (tris.empty() ? nullptr : tris.data());
   new (&tri_matrix) TriangleMatrix(buf, 3, numTriangles());
   return &tri_wrapper;
-}
-
-IDenseMatrix<uint32> *
-DisplayMesh::getQuadMatrix()
-{
-  uint32 * buf = (quads.empty() ? nullptr : quads.data());
-  new (&quad_matrix) QuadMatrix(buf, 4, numQuads());
-  return &quad_wrapper;
 }
 
 DisplayMesh::Vertex
@@ -157,21 +151,6 @@ DisplayMesh::getTriangle(intx tri_index) const
   tri[2] = (intx)tris[base_index + 2];
 
   return tri;
-}
-
-DisplayMesh::IndexQuad
-DisplayMesh::getQuad(intx quad_index) const
-{
-  debugAssertM(quad_index >= 0 && 4 * quad_index < (intx)quads.size(), getNameStr() + ": Quad index out of bounds");
-
-  size_t base_index = (size_t)(4 * quad_index);
-  IndexQuad quad;
-  quad[0] = (intx)quads[base_index];
-  quad[1] = (intx)quads[base_index + 1];
-  quad[2] = (intx)quads[base_index + 2];
-  quad[3] = (intx)quads[base_index + 3];
-
-  return quad;
 }
 
 void
@@ -205,11 +184,11 @@ DisplayMesh::addTexCoords()
 }
 
 intx
-DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const * normal, ColorRgba const * color,
+DisplayMesh::addVertex(Vector3 const & point, intx src_index, Vector3 const * normal, ColorRgba const * color,
                        Vector2 const * texcoord)
 {
-  alwaysAssertM((source_index >= 0 && vertex_source_indices.size() == vertices.size())
-             || (source_index < 0 && vertex_source_indices.empty()),
+  alwaysAssertM((src_index >= 0 && vertex_src_indices.size() == vertices.size())
+             || (src_index < 0 && vertex_src_indices.empty()),
                 getNameStr() + ": Mesh must have all or no vertex source indices");
   alwaysAssertM((normal && normals.size() == vertices.size()) || (!normal && normals.empty()),
                 getNameStr() + ": Mesh must have all or no normals");
@@ -224,10 +203,10 @@ DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const *
     bounds.merge(point);
 
   vertices.push_back(point);
-  if (source_index >= 0)  vertex_source_indices.push_back(source_index);
-  if (normal)             normals.push_back(*normal);
-  if (color)              colors.push_back(*color);
-  if (texcoord)           texcoords.push_back(*texcoord);
+  if (src_index >= 0)  vertex_src_indices.push_back(src_index);
+  if (normal)          normals.push_back(*normal);
+  if (color)           colors.push_back(*color);
+  if (texcoord)        texcoords.push_back(*texcoord);
 
   invalidateGpuBuffers();
 
@@ -235,171 +214,141 @@ DisplayMesh::addVertex(Vector3 const & point, intx source_index, Vector3 const *
 }
 
 intx
-DisplayMesh::addTriangle(intx vi0, intx vi1, intx vi2, intx source_face_index)
+DisplayMesh::addTriangle(intx vi0, intx vi1, intx vi2, intx src_face_index)
 {
   debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0
             && vi0 < (intx)vertices.size()
             && vi1 < (intx)vertices.size()
             && vi2 < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
-  alwaysAssertM((source_face_index >= 0 && 3 * tri_source_face_indices.size() == tris.size())
-             || (source_face_index < 0 && tri_source_face_indices.empty()),
+  alwaysAssertM((src_face_index >= 0 && 3 * tri_src_face_indices.size() == tris.size())
+             || (src_face_index < 0 && tri_src_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
-  intx index = (intx)(tris.size() / 3);
+  debugAssertM(face_starting_tris.back() == numTriangles(), getNameStr() + ": Last entry of face_starting_tris is invalid");
 
   tris.push_back((uint32)vi0);
   tris.push_back((uint32)vi1);
   tris.push_back((uint32)vi2);
 
-  if (source_face_index >= 0)
-    tri_source_face_indices.push_back(source_face_index);
+  intx face_index = numFaces();
+  face_starting_tris.push_back(numTriangles());  // old final entry of face_starting_tris is index of first new triangle
+
+  if (src_face_index >= 0)
+    tri_src_face_indices.push_back(src_face_index);
 
   invalidateGpuBuffers();
 
-  return index;
+  return face_index;
 }
 
 intx
-DisplayMesh::addQuad(intx vi0, intx vi1, intx vi2, intx vi3, intx source_face_index)
-{
-  debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0 && vi3 >= 0
-            && vi0 < (intx)vertices.size()
-            && vi1 < (intx)vertices.size()
-            && vi2 < (intx)vertices.size()
-            && vi3 < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
-
-  alwaysAssertM((source_face_index >= 0 && 4 * quad_source_face_indices.size() == quads.size())
-             || (source_face_index < 0 && quad_source_face_indices.empty()),
-                getNameStr() + ": Mesh must have all or no quad face source indices");
-
-  intx index = (intx)(quads.size() / 4);
-
-  quads.push_back((uint32)vi0);
-  quads.push_back((uint32)vi1);
-  quads.push_back((uint32)vi2);
-  quads.push_back((uint32)vi3);
-
-  if (source_face_index >= 0)
-    quad_source_face_indices.push_back(source_face_index);
-
-  invalidateGpuBuffers();
-
-  return index;
-}
-
-DisplayMesh::Face
-DisplayMesh::addFace(int num_vertices, intx const * face_vertex_indices_, intx source_face_index)
+DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_face_index)
 {
   if (num_vertices < 3)
   {
     THEA_DEBUG << getName() << ": Skipping face -- too few vertices (" << num_vertices << ')';
-    return Face();
+    return -1;
   }
 
   if (num_vertices == 3)
-    return Face(this, 3, true,
-                addTriangle(face_vertex_indices_[0], face_vertex_indices_[1], face_vertex_indices_[2], source_face_index), 1);
+    return addTriangle(vertex_indices[0], vertex_indices[1], vertex_indices[2], src_face_index);
 
-  if (num_vertices == 4)
-    return Face(this, 4, false,
-                addQuad(face_vertex_indices_[0], face_vertex_indices_[1], face_vertex_indices_[2], face_vertex_indices_[3],
-                        source_face_index),
-                1);
-
-  Polygon3 poly;
+#ifdef THEA_DEBUG
   for (int i = 0; i < num_vertices; ++i)
   {
-    intx vi = face_vertex_indices_[i];
+    intx vi = vertex_indices[i];
     debugAssertM(vi >= 0 && vi < (intx)vertices.size(), getName() + format(": Vertex index %ld out of bounds", vi));
+  }
+#endif
 
-    poly.addVertex(vertices[vi], vi);
+  intx num_tris = 0;
+  if (num_vertices == 4)
+  {
+    triangulated_indices.resize(6);  // std::vector spec minimizes reallocs by never shrinking storage
+    num_tris = Polygon3::triangulateQuad(vertices[(size_t)vertex_indices[0]],
+                                         vertices[(size_t)vertex_indices[1]],
+                                         vertices[(size_t)vertex_indices[2]],
+                                         vertices[(size_t)vertex_indices[3]],
+                                         triangulated_indices[0], triangulated_indices[1], triangulated_indices[2],
+                                         triangulated_indices[3], triangulated_indices[4], triangulated_indices[5]);
+  }
+  else
+  {
+    Polygon3 poly;
+    for (int i = 0; i < num_vertices; ++i)
+      poly.addVertex(vertices[(size_t)vertex_indices[i]]);
+
+    num_tris = poly.triangulate(triangulated_indices);
   }
 
-  intx num_tris = poly.triangulate(triangulated_indices);
   if (num_tris <= 0)
-    return Face();
+  {
+    THEA_DEBUG << getName() << ": Skipping degenerate face -- no triangles produced";
+    return -1;
+  }
 
   // debugAssertM(num_tris == 3 * (num_vertices - 2),
   //              getName() + format(": Triangulation of polygonal face yielded %l triangles, whereas %l were expected",
   //                                 num_tris, num_vertices - 2));
 
-  alwaysAssertM((source_face_index >= 0 && 3 * tri_source_face_indices.size() == tris.size())
-             || (source_face_index < 0 && tri_source_face_indices.empty()),
+  alwaysAssertM((src_face_index >= 0 && 3 * tri_src_face_indices.size() == tris.size())
+             || (src_face_index < 0 && tri_src_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
-  intx starting_index = numTriangles();
+#ifdef THEA_DEBUG
+  intx first_tri = numTriangles();
+  debugAssertM(face_starting_tris.back() == first_tri, getNameStr() + ": Last entry of face_starting_tris is invalid");
+#endif
+
   size_t num_tri_verts = (size_t)(3 * num_tris);
   for (size_t i = 0; i < num_tri_verts; i += 3)
   {
-    tris.push_back((uint32)triangulated_indices[i    ]);
-    tris.push_back((uint32)triangulated_indices[i + 1]);
-    tris.push_back((uint32)triangulated_indices[i + 2]);
-    if (source_face_index >= 0) tri_source_face_indices.push_back(source_face_index);
+    tris.push_back((uint32)vertex_indices[triangulated_indices[i    ]]);
+    tris.push_back((uint32)vertex_indices[triangulated_indices[i + 1]]);
+    tris.push_back((uint32)vertex_indices[triangulated_indices[i + 2]]);
+    if (src_face_index >= 0) tri_src_face_indices.push_back(src_face_index);
   }
 
-  invalidateGpuBuffers();
+  intx face_index = numFaces();
+  face_starting_tris.push_back(numTriangles());  // old final entry of face_starting_tris is index of first new triangle
 
-  return Face(this, num_vertices, true, starting_index, num_tris);
-}
-
-void
-DisplayMesh::removeTriangle(intx tri_index)
-{
-  debugAssertM(tri_index >= 0 && 3 * tri_index < (intx)tris.size(), getNameStr() + ": Triangle index out of bounds");
-
-  IndexArray::iterator ii = tris.begin() + 3 * tri_index;
-  tris.erase(ii, ii + 3);
+  if (num_vertices >= 5 && num_tris >= 2)  // bona fide higher-degree poly which does not reduce to a single triangle
+    large_poly_verts[first_tri].assign(vertex_indices, vertex_indices + num_vertices);
 
   invalidateGpuBuffers();
+
+  return face_index;
 }
 
-void
-DisplayMesh::removeTriangles(intx begin, intx num_triangles)
+DisplayMesh::Face
+DisplayMesh::getFace(intx face_index)
 {
-  debugAssertM(begin >= 0 && 3 * begin < (intx)tris.size(), getNameStr() + ": Triangle index out of bounds");
+  if (face_index < 0 || face_index + 1 >= (intx)face_starting_tris.size())
+    return Face();
 
-  IndexArray::iterator ii = tris.begin() + 3 * begin;
-  tris.erase(ii, ii + 3 * num_triangles);
+  auto begin = face_starting_tris[(size_t)face_index], end = face_starting_tris[(size_t)face_index + 1];
+  auto num_tris = end - begin;
 
-  invalidateGpuBuffers();
-}
+  switch (num_tris)
+  {
+    case 1: return Face(this, 3, begin, 1);  // simple triangle
 
-void
-DisplayMesh::removeQuad(intx quad_index)
-{
-  debugAssertM(quad_index >= 0 && 4 * quad_index < (intx)quads.size(), getNameStr() + ": Quad index out of bounds");
+    case 2:  // actual quad or larger degenerate poly which only produced two valid triangles
+    {
+      auto loc = large_poly_verts.find(begin);
+      return Face(this, (loc == large_poly_verts.end() ? 4 : (int)loc->second.size()), begin, 2);
+    }
 
-  IndexArray::iterator ii = quads.begin() + 4 * quad_index;
-  quads.erase(ii, ii + 4);
+    case 0: return Face();  // totally degenerate, produced no triangles
 
-  invalidateGpuBuffers();
-}
-
-void
-DisplayMesh::removeQuads(intx begin, intx num_quads)
-{
-  debugAssertM(begin >= 0 && 4 * begin < (intx)quads.size(), getNameStr() + ": Quad index out of bounds");
-
-  IndexArray::iterator ii = quads.begin() + 4 * begin;
-  quads.erase(ii, ii + 4 * num_quads);
-
-  invalidateGpuBuffers();
-}
-
-void
-DisplayMesh::removeFace(Face const & face)
-{
-  if (!face)
-    return;
-
-  alwaysAssertM(face.getMesh() == this, getNameStr() + ": Face belongs to a different mesh");
-
-  if (face.hasTriangles())
-    removeTriangles(face.getFirstTriangle(), face.numTriangles());
-
-  if (face.hasQuads())
-    removeQuads(face.getFirstQuad(), face.numQuads());
+    default:  // higher-degree polygon
+    {
+      auto loc = large_poly_verts.find(begin);
+      debugAssertM(loc != large_poly_verts.end(), getNameStr() + format(": Vertices of face %ld not found", (long)face_index));
+      return Face(this, (int)loc->second.size(), begin, num_tris);
+    }
+  }
 }
 
 void
@@ -412,33 +361,17 @@ DisplayMesh::computeAveragedVertexNormals()
     normals[i] = Vector3::Zero();
 
   // TODO: weight normals by face area?
-  Vector3 n;
-  uint32 i0, i1, i2, i3;
   for (size_t i = 0; i < tris.size(); i += 3)
   {
-    i0 = tris[i], i1 = tris[i + 1], i2 = tris[i + 2];
+    uint32 i0 = tris[i], i1 = tris[i + 1], i2 = tris[i + 2];
     Vector3 const & v0 = vertices[i0];
     Vector3 const & v1 = vertices[i1];
     Vector3 const & v2 = vertices[i2];
 
-    n = (v2 - v1).cross(v0 - v1).normalized();
+    Vector3 n = (v2 - v1).cross(v0 - v1).normalized();
     normals[i0] += n;
     normals[i1] += n;
     normals[i2] += n;
-  }
-
-  for (size_t i = 0; i < quads.size(); i += 4)
-  {
-    i0 = quads[i], i1 = quads[i + 1], i2 = quads[i + 2], i3 = quads[i + 3];
-    Vector3 const & v0 = vertices[i0];
-    Vector3 const & v1 = vertices[i1];
-    Vector3 const & v2 = vertices[i2];
-
-    n = (v2 - v1).cross(v0 - v1).normalized();
-    normals[i0] += n;
-    normals[i1] += n;
-    normals[i2] += n;
-    normals[i3] += n;
   }
 
   for (size_t i = 0; i < normals.size(); ++i)
@@ -461,27 +394,30 @@ DisplayMesh::updateEdges()
 {
   edges.clear();
 
-  if (wireframe_enabled)
+  if (!wireframe_enabled)
+    return;
+
+  typedef std::pair<uint32, uint32> Edge;
+  typedef UnorderedSet<Edge> EdgeSet;
+
+  EdgeSet added_edges;
+  Edge edge;
+
+  intx num_faces = numFaces();
+  for (intx i = 0; i < num_faces; ++i)
   {
-    typedef std::pair<uint32, uint32> Edge;
-    typedef UnorderedSet<Edge> EdgeSet;
-
-    EdgeSet added_edges;
-    Edge edge;
-
-    for (size_t i = 0; i < tris.size(); i += 3)
-      for (size_t j = 0; j < 3; ++j)
+    if (isTriangle(i))
+    {
+      intx tri_base = 3 * face_starting_tris[(size_t)i];
+      for (uint32 j = 0; j < 3; ++j)
       {
-        uint32 ei0 = tris[i + j];
-        uint32 ei1 = tris[j == 2 ? i : (i + j + 1)];
+        uint32 ei0 = tris[tri_base + j];
+        uint32 ei1 = tris[j == 2 ? tri_base : (tri_base + j + 1)];
 
         // Order so lower index is first, since we're considering edges to be undirected
-        if (ei0 < ei1)
-          edge = Edge(ei0, ei1);
-        else
-          edge = Edge(ei1, ei0);
+        edge = (ei0 < ei1 ? Edge(ei0, ei1) : Edge(ei1, ei0));
 
-        EdgeSet::iterator existing = added_edges.find(edge);
+        auto existing = added_edges.find(edge);
         if (existing == added_edges.end())
         {
           edges.push_back(ei0);
@@ -489,35 +425,44 @@ DisplayMesh::updateEdges()
           added_edges.insert(edge);
         }
       }
+    }
+    else
+    {
+      auto f = getFace(i);
+      if (!f) continue;
 
-    for (size_t i = 0; i < quads.size(); i += 4)
-      for (size_t j = 0; j < 4; ++j)
+      auto nv = f.numVertices();
+      if (nv <= 0) continue;
+
+      uint32 ei0 = f.getVertexIndex(nv - 1);
+      for (int i = 0; i < nv; ++i)
       {
-        uint32 ei0 = quads[i + j];
-        uint32 ei1 = quads[j == 3 ? i : (i + j + 1)];
+        uint32 ei1 = f.getVertexIndex(i);
 
         // Order so lower index is first, since we're considering edges to be undirected
-        if (ei0 < ei1)
-          edge = Edge(ei0, ei1);
-        else
-          edge = Edge(ei1, ei0);
+        edge = (ei0 < ei1 ? Edge(ei0, ei1) : Edge(ei1, ei0));
 
-        EdgeSet::iterator existing = added_edges.find(edge);
+        auto existing = added_edges.find(edge);
         if (existing == added_edges.end())
         {
           edges.push_back(ei0);
           edges.push_back(ei1);
           added_edges.insert(edge);
         }
+
+        ei0 = ei1;
       }
+    }
   }
 
   THEA_DEBUG << getName() << ": Mesh has " << edges.size() / 2 << " edges";
 }
 
 void
-DisplayMesh::isolateFaces()
+DisplayMesh::isolateTriangles()
 {
+  // Note: does not change face_starting_tris
+
   VertexArray    new_vertices;
   NormalArray    new_normals;
   ColorArray     new_colors;
@@ -561,50 +506,6 @@ DisplayMesh::isolateFaces()
     tris[i + 2]  =  new_vindex + 2;
   }
 
-  for (size_t i = 0; i < quads.size(); i += 4)
-  {
-    size_t i0 = (size_t)quads[i    ];
-    size_t i1 = (size_t)quads[i + 1];
-    size_t i2 = (size_t)quads[i + 2];
-    size_t i3 = (size_t)quads[i + 3];
-
-    uint32 new_vindex = (uint32)new_vertices.size();
-
-    new_vertices.push_back(vertices[i0]);
-    new_vertices.push_back(vertices[i1]);
-    new_vertices.push_back(vertices[i2]);
-    new_vertices.push_back(vertices[i3]);
-
-    if (!normals.empty())
-    {
-      new_normals.push_back(normals[i0]);
-      new_normals.push_back(normals[i1]);
-      new_normals.push_back(normals[i2]);
-      new_normals.push_back(normals[i3]);
-    }
-
-    if (!colors.empty())
-    {
-      new_colors.push_back(colors[i0]);
-      new_colors.push_back(colors[i1]);
-      new_colors.push_back(colors[i2]);
-      new_colors.push_back(colors[i3]);
-    }
-
-    if (!texcoords.empty())
-    {
-      new_texcoords.push_back(texcoords[i0]);
-      new_texcoords.push_back(texcoords[i1]);
-      new_texcoords.push_back(texcoords[i2]);
-      new_texcoords.push_back(texcoords[i3]);
-    }
-
-    quads[i    ]  =  new_vindex;
-    quads[i + 1]  =  new_vindex + 1;
-    quads[i + 2]  =  new_vindex + 2;
-    quads[i + 3]  =  new_vindex + 3;
-  }
-
   vertices   =  new_vertices;
   normals    =  new_normals;
   colors     =  new_colors;
@@ -633,9 +534,9 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
   if (changed_buffers == BufferId::ALL)
   {
     if (buf_pool) buf_pool->reset();
-    vertices_buf = normals_buf = colors_buf = texcoords_buf = tris_buf = quads_buf = edges_buf = nullptr;
+    vertices_buf = normals_buf = colors_buf = texcoords_buf = tris_buf = edges_buf = nullptr;
 
-    if (vertices.empty() || (tris.empty() && quads.empty()))
+    if (vertices.empty() || tris.empty())
     {
       if (buf_pool)
       {
@@ -659,10 +560,9 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
     intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + PADDING;
 #else
     intx tri_bytes   =  !tris.empty()   ?  4 * (intx)tris.size()   +  PADDING : 0;  // uint32
-    intx quad_bytes  =  !quads.empty()  ?  4 * (intx)quads.size()  +  PADDING : 0;  // uint32
     intx edge_bytes  =  !edges.empty()  ?  4 * (intx)edges.size()  +  PADDING : 0;  // uint32
 
-    intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + tri_bytes + quad_bytes + edge_bytes + PADDING;
+    intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + tri_bytes + edge_bytes + PADDING;
 #endif
 
     if (buf_pool)
@@ -691,11 +591,9 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
 
 #ifndef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
     if (!tris.empty()  && !(tris_buf  = buf_pool->createBuffer(tri_bytes)))  return false;
-    if (!quads.empty() && !(quads_buf = buf_pool->createBuffer(quad_bytes))) return false;
     if (!edges.empty() && !(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
 
     if (!tris.empty()  && !tris_buf->updateIndices (0, (int64)tris.size(),  NumericType::UINT32, &tris[0]) ) return false;
-    if (!quads.empty() && !quads_buf->updateIndices(0, (int64)quads.size(), NumericType::UINT32, &quads[0])) return false;
     if (!edges.empty() && !edges_buf->updateIndices(0, (int64)edges.size(), NumericType::UINT32, &edges[0])) return false;
 #endif
 
@@ -745,7 +643,7 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
   if (!vertices_buf) return true;
   if (!options->drawFaces() && !options->drawEdges()) return true;
   if (!options->drawFaces() && !edges_buf) return true;
-  if (!options->drawEdges() && !tris_buf && !quads_buf) return true;
+  if (!options->drawEdges() && !tris_buf) return true;
 
   render_system->beginIndexedPrimitives();
 
@@ -762,22 +660,15 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
         render_system->setPolygonOffset(true, 2);
       }
 
-#ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-        if (!tris.empty()) render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, (int64)tris.size(), &tris[0]);
-        if (!quads.empty()) render_system->sendIndices(IRenderSystem::Primitive::QUADS, (int64)quads.size(), &quads[0]);
-#else
         if (!tris.empty())
         {
+#ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
+          render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, (int64)tris.size(), &tris[0]);
+#else
           render_system->setIndexBuffer(tris_buf);
           render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, (int64)tris.size());
-        }
-
-        if (!quads.empty())
-        {
-          render_system->setIndexBuffer(quads_buf);
-          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::QUADS, 0, (int64)quads.size());
-        }
 #endif
+        }
 
       if (options->drawEdges())
         render_system->popShapeFlags();
@@ -796,15 +687,15 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
         render_system->setColor(options->edgeColor());  // set default edge color (TODO: handle per-edge colors)
         render_system->setTexture(0, nullptr);
 
-#ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-        if (!edges.empty()) render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)edges.size(), &edges[0]);
-#else
         if (!edges.empty())
         {
+#ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
+          render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)edges.size(), &edges[0]);
+#else
           render_system->setIndexBuffer(edges_buf);
           render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)edges.size());
-        }
 #endif
+        }
 
       render_system->popTextures();
       render_system->popColorFlags();

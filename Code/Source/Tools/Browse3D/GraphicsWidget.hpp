@@ -53,6 +53,9 @@ class GraphicsWidget : public Graphics::IDrawable
     /** Set two-sided lighting on/off. */
     static void setTwoSided(bool value);
 
+    /** Set flat shading on/off. */
+    static void setFlatShaded(bool value);
+
     /** Get the direction of incident light. */
     static Vector3 const & getLightDirection() { return light_dir; }
 
@@ -64,6 +67,9 @@ class GraphicsWidget : public Graphics::IDrawable
 
     /** Check if two-sided lighting is on or off. */
     static bool isTwoSided() { return two_sided; }
+
+    /** Check if flat shading is on or off. */
+    static bool isFlatShaded() { return flat_shaded; }
 
   private:
     /** Set shader uniforms related to lighting. */
@@ -77,6 +83,7 @@ class GraphicsWidget : public Graphics::IDrawable
     static ColorRgb light_color;
     static ColorRgb ambient_color;
     static bool two_sided;
+    static bool flat_shaded;
 
 }; // class GraphicsWidget
 

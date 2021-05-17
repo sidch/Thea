@@ -54,22 +54,6 @@ getWorkingDir()
   return std::string();
 }
 
-bool
-enableGpuRendering(Mesh & mesh)
-{
-  mesh.setGpuBufferedRendering(true);
-  mesh.setGpuBufferedWireframe(true);
-  return false;
-}
-
-bool
-disableGpuRendering(Mesh & mesh)
-{
-  mesh.setGpuBufferedRendering(false);
-  mesh.setGpuBufferedWireframe(false);
-  return false;
-}
-
 void
 linkMeshesToParent(MeshGroupPtr mesh_group)
 {
@@ -169,6 +153,8 @@ Model::load(std::string path_)
 
     bounds = point_cloud->getBounds();
     path = path_;
+
+    loadElementLabels(getDefaultElementLabelsPath());
   }
   else
   {
@@ -203,9 +189,13 @@ Model::load(std::string path_)
     loadSamples(getSamplesPath());
     loadSegments(getSegmentsPath());
     loadFeatures(getDefaultFeaturesPath());
-  }
 
-  loadElementLabels(getDefaultElementLabelsPath());
+    // FIXME: GeneralMesh must support rendering per-face colors again
+    if (!app().options().elem_labels.empty())
+      THEA_WARNING << "Visualizing per-face labels currently disabled because of changes to the mesh class";
+
+    // loadElementLabels(getDefaultElementLabelsPath());
+  }
 
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_PATH_CHANGED));
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_GEOMETRY_CHANGED));
@@ -1542,17 +1532,8 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
       {
         Graphics::RenderOptions ro = dynamic_cast<Graphics::RenderOptions const &>(*options);  // make a copy
 
-        if (has_features)
-          ro.setSendColors(true).setUseVertexData(true);
-        else if (has_elem_labels)
-          ro.setSendColors(true).setUseVertexData(false);
-
-        bool smooth_shading = (ro.useVertexNormals() && ro.useVertexData());
-
-        if (smooth_shading)
-          mesh_group->forEachMeshUntil(ModelInternal::enableGpuRendering);
-        else
-          mesh_group->forEachMeshUntil(ModelInternal::disableGpuRendering);
+        if (has_features || has_elem_labels)
+          ro.setSendColors(true);
 
         mesh_group->draw(render_system, &ro);
 
@@ -1562,11 +1543,10 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
           render_system->setColor(ColorRgba(0, 1, 0).data());
 
           Real normal_scale = 0.025f * getBounds().getExtent().norm();
-
-          if (smooth_shading)
-            mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(render_system, normal_scale));
-          else
+          if (isFlatShaded())
             mesh_group->forEachMeshUntil(ModelInternal::DrawFaceNormals(render_system, normal_scale));
+          else
+            mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(render_system, normal_scale));
         }
       }
     }
