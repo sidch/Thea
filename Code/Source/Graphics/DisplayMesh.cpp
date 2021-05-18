@@ -657,7 +657,7 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
       if (options->drawEdges())
       {
         render_system->pushShapeFlags();
-        render_system->setPolygonOffset(true, 2);
+        render_system->setPolygonOffset(true, 1);
       }
 
         if (!tris.empty())

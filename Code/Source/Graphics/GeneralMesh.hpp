@@ -1833,7 +1833,7 @@ GeneralMesh<V, E, F, A>::draw(IRenderSystem * render_system, IRenderOptions cons
       if (options->drawEdges())
       {
         render_system->pushShapeFlags();
-        render_system->setPolygonOffset(true, 2);
+        render_system->setPolygonOffset(true, 1);
       }
 
         if (num_tri_indices > 0)

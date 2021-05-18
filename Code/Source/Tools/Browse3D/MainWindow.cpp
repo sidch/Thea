@@ -70,8 +70,8 @@ MainWindow::init()
 
   // File Menu
   wxMenu * file_menu = new wxMenu();
-  file_menu->Append(wxID_OPEN,    "&Open");
-  file_menu->Append(wxID_SAVEAS,  "&Save");
+  file_menu->Append(wxID_OPEN,    "&Open\tCtrl+O");
+  file_menu->Append(wxID_SAVEAS,  "&Save\tCtrl+S");
   file_menu->AppendSeparator();
   file_menu->Append(wxID_EXIT,    "&Quit");
   menubar->Append(file_menu, "&File");
@@ -79,29 +79,29 @@ MainWindow::init()
   // View menu
   wxMenu * view_menu = new wxMenu();
   wxMenu * rendering_menu = new wxMenu();
-    rendering_menu->AppendRadioItem(ID_VIEW_SHADED,            "&Shaded");
-    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe");
-    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED,            "&Shaded\tAlt+1");
+    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe\tAlt+2");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe\tAlt+3");
     rendering_menu->AppendSeparator();
     rendering_menu->AppendCheckItem(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
-    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADED,      "&Flat shading");
+    rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADED,       "&Flat shading\tAlt+0");
   view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
-  view_menu->Append(ID_VIEW_FIT,            "&Fit view to model");
+  view_menu->Append(ID_VIEW_FIT,            "&Fit view to model\tCtrl+0");
   menubar->Append(view_menu, "&View");
 
   // Go menu
   wxMenu * go_menu = new wxMenu();
-  go_menu->Append(ID_GO_PREV,           "&Previous model");
-  go_menu->Append(ID_GO_NEXT,           "&Next model");
+  go_menu->Append(ID_GO_PREV,           "&Previous model\tCtrl+,");
+  go_menu->Append(ID_GO_NEXT,           "&Next model\tCtrl+.");
   go_menu->AppendSeparator();
-  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features");
-  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features");
+  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features\tCtrl+[");
+  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features\tCtrl+]");
   menubar->Append(go_menu, "&Go");
 
   // Tools menu
   wxMenu * tools_menu = new wxMenu();
-  tools_menu->Append(ID_TOOLS_SCREENSHOT,        "&Save screenshot");
-  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX,  "&Toolbox");
+  tools_menu->Append(ID_TOOLS_SCREENSHOT,        "&Save screenshot\tCtrl+G");
+  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX,  "&Toolbox\tCtrl+T");
   menubar->Append(tools_menu, "&Tools");
 
   // About menu
@@ -238,7 +238,7 @@ MainWindow::init()
   Bind(wxEVT_MENU, &MainWindow::loadNextFeatures, this, ID_GO_NEXT_FEATURES);
 
   Bind(wxEVT_MENU, &ModelDisplay::saveScreenshot, ui.model_display, ID_TOOLS_SCREENSHOT);
-  Bind(wxEVT_MENU, &MainWindow::toggleToolboxVisible, this, ID_TOOLS_TOOLBOX);
+  Bind(wxEVT_MENU, &MainWindow::setShowToolbox, this, ID_TOOLS_TOOLBOX);
 
   Bind(wxEVT_BUTTON, &MainWindow::expandPickedSegment, this, ID_SEGMENT_EXPAND);
   Bind(wxEVT_BUTTON, &MainWindow::contractPickedSegment, this, ID_SEGMENT_CONTRACT);
@@ -269,21 +269,8 @@ MainWindow::init()
   Bind(wxEVT_UPDATE_UI, &MainWindow::updateUI, this);  // synchronize menu and toolbar buttons
 
   //==========================================================================================================================
-  // Keyboard shortcuts for menu items
+  // Initial view
   //==========================================================================================================================
-
-  wxAcceleratorEntry accel[] = {
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)'0', ID_VIEW_FIT),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)',', ID_GO_PREV),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)'.', ID_GO_NEXT),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)'G', ID_TOOLS_SCREENSHOT),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)'T', ID_TOOLS_TOOLBOX),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)'[', ID_GO_PREV_FEATURES),
-    wxAcceleratorEntry(wxACCEL_CTRL, (int)']', ID_GO_NEXT_FEATURES),
-  };
-  int num_accel = (int)(sizeof(accel) / sizeof(wxAcceleratorEntry));
-  wxAcceleratorTable accel_table(num_accel, accel);
-  SetAcceleratorTable(accel_table);
 
   // Load the initial model, if any
   bool loaded = model->load(app().options().model);
@@ -312,12 +299,8 @@ MainWindow::init()
     }
   }
 
-  //==========================================================================================================================
-  // Initial view
-  //==========================================================================================================================
-
   // We have to both set the menu item and call the function since wxEVT_MENU is not generated without actually clicking
-  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false); setToolboxVisible(false);
+  tools_menu->FindItem(ID_TOOLS_TOOLBOX)->Check(false); setShowToolbox(false);
 
   if (app().options().edges)
   { rendering_menu->FindItem(ID_VIEW_SHADED_WIREFRAME)->Check(true); ui.model_display->renderShadedWireframe(); }
@@ -681,19 +664,13 @@ MainWindow::pickSegments() const
 }
 
 void
-MainWindow::toggleToolboxVisible(wxEvent & event)
+MainWindow::setShowToolbox(wxCommandEvent & event)
 {
-  setToolboxVisible(!ui.toolbox->IsShown());
+  setShowToolbox(event.IsChecked());
 }
 
 void
-MainWindow::setToolboxVisible(wxCommandEvent & event)
-{
-  setToolboxVisible(event.IsChecked());
-}
-
-void
-MainWindow::setToolboxVisible(bool value)
+MainWindow::setShowToolbox(bool value)
 {
   if (ui.toolbox->IsShown() == value)
     return;

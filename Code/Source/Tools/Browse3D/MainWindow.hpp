@@ -173,11 +173,8 @@ class MainWindow : public wxFrame
     /** Sync the displayed list of segments with the model. */
     void syncSegments(wxEvent & event = DUMMY_EVENT);
 
-    /** Toggle the visibility state of the toolbox. */
-    void toggleToolboxVisible(wxEvent & event = DUMMY_EVENT);
-
     /** Show/hide the toolbox. */
-    void setToolboxVisible(wxCommandEvent & event);
+    void setShowToolbox(wxCommandEvent & event);
 
     /** Called when the toolbox panel changes. */
     void toolboxPanelChanged(wxEvent & event = DUMMY_EVENT);
@@ -193,7 +190,7 @@ class MainWindow : public wxFrame
     void clearOverlays();
 
     /** Show or hide the toolbox. */
-    void setToolboxVisible(bool value);
+    void setShowToolbox(bool value);
 
     // Models
     Model * model;
