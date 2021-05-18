@@ -82,6 +82,9 @@ class THEA_GL_DLL_LOCAL GlRenderSystem : public virtual IRenderSystem
     int8 THEA_ICALL setTexture(int32 texunit, ITexture * texture);
     int8 THEA_ICALL popTextures();
 
+    int8 THEA_ICALL getViewport(int64 * xmin, int64 * ymin, int64 * width, int64 * height) const;
+    int8 THEA_ICALL setViewport(int64 xmin, int64 ymin, int64 width, int64 height);
+
     int32 THEA_ICALL getMatrixMode() const;
     int8 THEA_ICALL setMatrixMode(int32 mode);
     int8 THEA_ICALL pushMatrix();

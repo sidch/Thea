@@ -282,6 +282,20 @@ class THEA_API IRenderSystem : public virtual INamedObject
      */
     virtual int8 THEA_ICALL popTextures() = 0;
 
+    /**
+     * Get the viewport, in output pixel coordinates, to which all drawn content will be clipped.
+     *
+     * @return True on success, false on error.
+     */
+    virtual int8 THEA_ICALL getViewport(int64 * xmin, int64 * ymin, int64 * width, int64 * height) const = 0;
+
+    /**
+     * Set the viewport, in output pixel coordinates, to which all drawn content will be clipped.
+     *
+     * @return True on success, false on error.
+     */
+    virtual int8 THEA_ICALL setViewport(int64 xmin, int64 ymin, int64 width, int64 height) = 0;
+
     /** Get the current matrix mode, as a value from the MatrixMode enum. */
     virtual int32 THEA_ICALL getMatrixMode() const = 0;
 

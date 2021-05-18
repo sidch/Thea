@@ -475,6 +475,26 @@ GlRenderSystem::popTextures()
   return true;
 }
 
+int8
+GlRenderSystem::getViewport(int64 * xmin, int64 * ymin, int64 * width, int64 * height) const
+{
+  GLint viewport[4];
+  glGetIntegerv(GL_VIEWPORT, viewport);
+  if (xmin)   *xmin    =  viewport[0];
+  if (ymin)   *ymin    =  viewport[1];
+  if (width)  *width   =  viewport[2];
+  if (height) *height  =  viewport[3];
+
+  return true;  // should not normally fail
+}
+
+int8
+GlRenderSystem::setViewport(int64 xmin, int64 ymin, int64 width, int64 height)
+{
+  glViewport((GLint)xmin, (GLint)ymin, (GLsizei)width, (GLsizei)height);
+  THEA_GL_OK_OR_RETURN(0)
+}
+
 int32
 GlRenderSystem::getMatrixMode() const
 {
