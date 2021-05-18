@@ -544,7 +544,7 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
         buf_pool = nullptr;
       }
 
-      allGpuBuffersAreValid();
+      setAllGpuBuffersValid();
       return true;
     }
 
@@ -611,20 +611,20 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
   }
   else
   {
-    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty()
+    if (!isGpuBufferValid(BufferId::VERTEX_POSITION) && !vertices.empty()
      && !vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && hasNormals()
+    if (!isGpuBufferValid(BufferId::VERTEX_NORMAL) && hasNormals()
      && !normals_buf->updateAttributes(0, (int64)normals.size(), 3, NumericType::REAL, &normals[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasColors()
+    if (!isGpuBufferValid(BufferId::VERTEX_COLOR) && hasColors()
      && !colors_buf->updateAttributes(0, (int64)colors.size(), 4, NumericType::REAL, &colors[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasTexCoords()
+    if (!isGpuBufferValid(BufferId::VERTEX_TEXCOORD) && hasTexCoords()
      && !texcoords_buf->updateAttributes(0, (int64)texcoords.size(), 2, NumericType::REAL, &texcoords[0])) return false;
   }
 
-  allGpuBuffersAreValid();
+  setAllGpuBuffersValid();
 
   return true;
 }

@@ -1437,19 +1437,19 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     }
 
     /** Check if a packed array is synchronized with the mesh or not. */
-    bool packedArrayIsValid(BufferId buffer) const { return (changed_packed & (int)buffer) == 0; }
+    bool isPackedArrayValid(BufferId buffer) const { return (changed_packed & (int)buffer) == 0; }
 
     /** Mark a specific packed array as being synchronized with the mesh. */
-    void setPackedArrayIsValid(BufferId buffer) const { changed_packed &= (~(int)buffer); }
+    void setPackedArrayValid(BufferId buffer) const { changed_packed &= (~(int)buffer); }
 
     /** Clear the set of changed packed arrays. */
-    void setAllPackedArraysAreValid() const { changed_packed = 0; }
+    void setAllPackedArraysValid() const { changed_packed = 0; }
 
     /** Check if a GPU buffer is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
+    bool isGpuBufferValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void setAllGpuBuffersAreValid() { setAllPackedArraysAreValid(); changed_buffers = 0; }
+    void setAllGpuBuffersValid() { setAllPackedArraysValid(); changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
     bool uploadToGraphicsSystem(IRenderSystem & render_system);
@@ -1457,51 +1457,51 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /** Pack vertex positions densely in an array. */
     void packVertexPositions() const
     {
-      if (packedArrayIsValid(BufferId::VERTEX_POSITION)) return;
+      if (isPackedArrayValid(BufferId::VERTEX_POSITION)) return;
 
       packed_vertex_positions.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_positions[i] = vi->getPosition();
 
-      setPackedArrayIsValid(BufferId::VERTEX_POSITION);
+      setPackedArrayValid(BufferId::VERTEX_POSITION);
     }
 
     /** Pack vertex normals densely in an array. */
     void packVertexNormals() const
     {
-      if (packedArrayIsValid(BufferId::VERTEX_NORMAL)) return;
+      if (isPackedArrayValid(BufferId::VERTEX_NORMAL)) return;
 
       packed_vertex_normals.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_normals[i] = vi->getNormal();
 
-      setPackedArrayIsValid(BufferId::VERTEX_NORMAL);
+      setPackedArrayValid(BufferId::VERTEX_NORMAL);
     }
 
     /** Pack vertex colors densely in an array. */
     template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
     void packVertexColors() const
     {
-      if (packedArrayIsValid(BufferId::VERTEX_COLOR)) return;
+      if (isPackedArrayValid(BufferId::VERTEX_COLOR)) return;
 
       packed_vertex_colors.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_colors[i] = ColorRgba(vi->attr().getColor());
 
-      setPackedArrayIsValid(BufferId::VERTEX_COLOR);
+      setPackedArrayValid(BufferId::VERTEX_COLOR);
     }
 
     /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
     template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
     void packVertexColors() const
     {
-      if (!packedArrayIsValid(BufferId::VERTEX_COLOR))
+      if (!isPackedArrayValid(BufferId::VERTEX_COLOR))
       {
         packed_vertex_colors.clear();
-        setPackedArrayIsValid(BufferId::VERTEX_COLOR);
+        setPackedArrayValid(BufferId::VERTEX_COLOR);
       }
     }
 
@@ -1509,31 +1509,31 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
     void packVertexTexCoords() const
     {
-      if (packedArrayIsValid(BufferId::VERTEX_TEXCOORD)) return;
+      if (isPackedArrayValid(BufferId::VERTEX_TEXCOORD)) return;
 
       packed_vertex_texcoords.resize(vertices.size());
       size_t i = 0;
       for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
         packed_vertex_texcoords[i] = vi->attr().getTexCoord();
 
-      setPackedArrayIsValid(BufferId::VERTEX_TEXCOORD);
+      setPackedArrayValid(BufferId::VERTEX_TEXCOORD);
     }
 
     /** Clear the array of packed vertex texture coordinates (called when vertices don't have attached texture coordinates). */
     template < typename VertexT, typename std::enable_if< !HasTexCoord<VertexT>::value, int >::type = 0 >
     void packVertexTexCoords() const
     {
-      if (!packedArrayIsValid(BufferId::VERTEX_TEXCOORD))
+      if (!isPackedArrayValid(BufferId::VERTEX_TEXCOORD))
       {
         packed_vertex_texcoords.clear();
-        setPackedArrayIsValid(BufferId::VERTEX_TEXCOORD);
+        setPackedArrayValid(BufferId::VERTEX_TEXCOORD);
       }
     }
 
     /** Pack face and edge indices densely in an array. */
     void packTopology() const
     {
-      if (packedArrayIsValid(BufferId::TOPOLOGY)) return;
+      if (isPackedArrayValid(BufferId::TOPOLOGY)) return;
 
       packed_tris.clear();
 
@@ -1605,7 +1605,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 
       num_tri_indices = (intx)packed_tris.size();
 
-      setPackedArrayIsValid(BufferId::TOPOLOGY);
+      setPackedArrayValid(BufferId::TOPOLOGY);
     }
 
     typedef Array<Vector3>    PositionArray;  ///< Array of vertex positions.
@@ -1662,7 +1662,7 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
   if (changed_buffers == 0) return true;
 
-  if (!gpuBufferIsValid(BufferId::TOPOLOGY))
+  if (!isGpuBufferValid(BufferId::TOPOLOGY))
     invalidateGpuBuffers(BufferId::ALL);
 
   if (changed_buffers == BufferId::ALL)
@@ -1684,7 +1684,7 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
         buf_pool = nullptr;
       }
 
-      setAllGpuBuffersAreValid();
+      setAllGpuBuffersValid();
       return true;
     }
 
@@ -1785,24 +1785,24 @@ GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
   {
     packArrays();
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_POSITION) && !vertices.empty()
+    if (!isGpuBufferValid(BufferId::VERTEX_POSITION) && !vertices.empty()
      && !vertex_positions_buf->updateAttributes(0, (int64)packed_vertex_positions.size(), 3, NumericType::REAL,
                                                 &packed_vertex_positions[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_NORMAL) && !vertices.empty()
+    if (!isGpuBufferValid(BufferId::VERTEX_NORMAL) && !vertices.empty()
      && !vertex_normals_buf->updateAttributes(0, (int64)packed_vertex_normals.size(), 3, NumericType::REAL,
                                               &packed_vertex_normals[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_COLOR) && hasVertexColors()
+    if (!isGpuBufferValid(BufferId::VERTEX_COLOR) && hasVertexColors()
      && !vertex_colors_buf->updateAttributes(0, (int64)packed_vertex_colors.size(), 4, NumericType::REAL,
                                              &packed_vertex_colors[0])) return false;
 
-    if (!gpuBufferIsValid(BufferId::VERTEX_TEXCOORD) && hasVertexTexCoords()
+    if (!isGpuBufferValid(BufferId::VERTEX_TEXCOORD) && hasVertexTexCoords()
      && !vertex_texcoords_buf->updateAttributes(0, (int64)packed_vertex_texcoords.size(), 2, NumericType::REAL,
                                                 &packed_vertex_texcoords[0])) return false;
   }
 
-  setAllGpuBuffersAreValid();
+  setAllGpuBuffersValid();
 
   return true;
 }

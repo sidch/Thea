@@ -648,7 +648,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
      *
      * Wireframe mode is initially disabled to save video memory.
      *
-     * @see wireframeIsEnabled()
+     * @see isWireframeEnabled()
      */
     void setWireframeEnabled(bool value)
     {
@@ -665,7 +665,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
      *
      * @see setWireframeEnabled()
      */
-    bool wireframeIsEnabled() const { return wireframe_enabled; }
+    bool isWireframeEnabled() const { return wireframe_enabled; }
 
     /** Invalidate part or all of the current GPU data for the mesh. */
     void invalidateGpuBuffers(int changed_buffers_ = BufferId::ALL) { changed_buffers |= changed_buffers_; }
@@ -677,10 +677,10 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
 
   protected:
     /** Check if a buffer has is synchronized with the mesh or not. */
-    bool gpuBufferIsValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
+    bool isGpuBufferValid(BufferId buffer) const { return (changed_buffers & (int)buffer) == 0; }
 
     /** Clear the set of changed buffers. */
-    void allGpuBuffersAreValid() { changed_buffers = 0; }
+    void setAllGpuBuffersValid() { changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
     bool uploadToGraphicsSystem(IRenderSystem & render_system);
