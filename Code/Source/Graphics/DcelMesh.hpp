@@ -1384,7 +1384,7 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
   if (changed_buffers == 0) return true;
 
   if (!isGpuBufferValid(BufferId::TOPOLOGY))
-    invalidateGpuBuffers(BufferId::ALL);
+    invalidateGpuBuffers(BufferId::ALL);  // need to reallocate pool
 
   if (changed_buffers == BufferId::ALL)
   {

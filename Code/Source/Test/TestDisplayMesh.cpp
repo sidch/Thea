@@ -77,8 +77,6 @@ initMesh(Mesh & mesh)
 {
   cout << "Loaded mesh with " << mesh.numVertices() << " vertices and " << mesh.numTriangles() << " triangles" << endl;
 
-// #define WIREFRAME
-
 #ifdef USE_GENERAL_MESH
 
   if (mesh.hasVertexColors())
@@ -94,12 +92,6 @@ initMesh(Mesh & mesh)
   for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     vi->attr().setColor(ColorRgb::random());
 
-  mesh.setGpuBufferedRendering(true);
-
-#ifdef WIREFRAME
-  mesh.setGpuBufferedWireframe(true);
-#endif
-
 #else
 
   if (!mesh.hasNormals())
@@ -107,10 +99,6 @@ initMesh(Mesh & mesh)
     cout << "Computing normals for mesh " << mesh.getName() << endl;
     mesh.computeAveragedVertexNormals();
   }
-
-#ifdef WIREFRAME
-  mesh.setWireframeEnabled(true);
-#endif
 
 #endif
 

@@ -1327,13 +1327,6 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 }
 
 bool
-enableWireframe(Mesh & mesh)
-{
-  mesh.setWireframeEnabled(true);
-  return false;
-}
-
-bool
 flattenFaces(Mesh & mesh)
 {
   mesh.isolateTriangles();
@@ -2072,9 +2065,6 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
         else
           model.mesh_group.forEachMeshUntil(averageNormals);
       }
-
-      if (show_edges)
-        model.mesh_group.forEachMeshUntil(enableWireframe);
     }
   }
 

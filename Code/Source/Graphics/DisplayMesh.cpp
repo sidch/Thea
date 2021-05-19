@@ -22,7 +22,6 @@ namespace Graphics {
 DisplayMesh::DisplayMesh(std::string const & name)
 : NamedObject(name),
   valid_bounds(true),
-  wireframe_enabled(false),
   changed_buffers(BufferId::ALL),
   buf_pool(nullptr),
   vertices_buf(nullptr),
@@ -49,7 +48,6 @@ DisplayMesh::DisplayMesh(DisplayMesh const & src)
   large_poly_verts(src.large_poly_verts),
   valid_bounds(src.valid_bounds),
   bounds(src.bounds),
-  wireframe_enabled(src.wireframe_enabled),
   changed_buffers(BufferId::ALL),
   buf_pool(nullptr),
   vertices_buf(nullptr),
@@ -237,7 +235,11 @@ DisplayMesh::addTriangle(intx vi0, intx vi1, intx vi2, intx src_face_index)
   if (src_face_index >= 0)
     tri_src_face_indices.push_back(src_face_index);
 
-  invalidateGpuBuffers();
+  addEdge((uint32)vi0, (uint32)vi1);
+  addEdge((uint32)vi1, (uint32)vi2);
+  addEdge((uint32)vi2, (uint32)vi0);
+
+  invalidateGpuBuffers(BufferId::TOPOLOGY);
 
   return face_index;
 }
@@ -316,7 +318,17 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
   if (num_vertices >= 5 && num_tris >= 2)  // bona fide higher-degree poly which does not reduce to a single triangle
     large_poly_verts[first_tri].assign(vertex_indices, vertex_indices + num_vertices);
 
-  invalidateGpuBuffers();
+  // Add edges of original polygon
+  {
+    uint32 i = (uint32)(num_vertices - 1);
+    for (uint32 j = 0; j < (uint32)num_vertices; ++j)
+    {
+      addEdge(i, j);
+      i = j;
+    }
+  }
+
+  invalidateGpuBuffers(BufferId::TOPOLOGY);
 
   return face_index;
 }
@@ -377,7 +389,7 @@ DisplayMesh::computeAveragedVertexNormals()
   for (size_t i = 0; i < normals.size(); ++i)
     normals[i] = normals[i].normalized();
 
-  invalidateGpuBuffers(topo_change ? BufferId::ALL : BufferId::VERTEX_NORMAL);
+  invalidateGpuBuffers((topo_change ? BufferId::TOPOLOGY : 0) | BufferId::VERTEX_NORMAL);
 }
 
 void
@@ -390,18 +402,9 @@ DisplayMesh::flipNormals()
 }
 
 void
-DisplayMesh::updateEdges()
+DisplayMesh::recomputeEdges()
 {
   edges.clear();
-
-  if (!wireframe_enabled)
-    return;
-
-  typedef std::pair<uint32, uint32> Edge;
-  typedef UnorderedSet<Edge> EdgeSet;
-
-  EdgeSet added_edges;
-  Edge edge;
 
   intx num_faces = numFaces();
   for (intx i = 0; i < num_faces; ++i)
@@ -410,21 +413,7 @@ DisplayMesh::updateEdges()
     {
       intx tri_base = 3 * face_starting_tris[(size_t)i];
       for (uint32 j = 0; j < 3; ++j)
-      {
-        uint32 ei0 = tris[tri_base + j];
-        uint32 ei1 = tris[j == 2 ? tri_base : (tri_base + j + 1)];
-
-        // Order so lower index is first, since we're considering edges to be undirected
-        edge = (ei0 < ei1 ? Edge(ei0, ei1) : Edge(ei1, ei0));
-
-        auto existing = added_edges.find(edge);
-        if (existing == added_edges.end())
-        {
-          edges.push_back(ei0);
-          edges.push_back(ei1);
-          added_edges.insert(edge);
-        }
-      }
+        addEdge(tris[tri_base + j], tris[tri_base + (j + 1) % 3]);
     }
     else
     {
@@ -435,27 +424,30 @@ DisplayMesh::updateEdges()
       if (nv <= 0) continue;
 
       uint32 ei0 = f.getVertexIndex(nv - 1);
-      for (int i = 0; i < nv; ++i)
+      for (int j = 0; j < nv; ++j)
       {
-        uint32 ei1 = f.getVertexIndex(i);
-
-        // Order so lower index is first, since we're considering edges to be undirected
-        edge = (ei0 < ei1 ? Edge(ei0, ei1) : Edge(ei1, ei0));
-
-        auto existing = added_edges.find(edge);
-        if (existing == added_edges.end())
-        {
-          edges.push_back(ei0);
-          edges.push_back(ei1);
-          added_edges.insert(edge);
-        }
-
+        uint32 ei1 = f.getVertexIndex(j);
+        addEdge(ei0, ei1);
         ei0 = ei1;
       }
     }
   }
 
+  invalidateGpuBuffers(BufferId::TOPOLOGY);
+
   THEA_DEBUG << getName() << ": Mesh has " << edges.size() / 2 << " edges";
+}
+
+void
+DisplayMesh::packEdges() const
+{
+  packed_edges.resize(2 * edges.size());
+  size_t i = 0;
+  for (auto ei = edges.begin(); ei != edges.end(); ++ei, i += 2)
+  {
+    packed_edges[i    ] = ei->first;
+    packed_edges[i + 1] = ei->second;
+  }
 }
 
 void
@@ -511,7 +503,9 @@ DisplayMesh::isolateTriangles()
   colors     =  new_colors;
   texcoords  =  new_texcoords;
 
-  invalidateGpuBuffers(BufferId::ALL);
+  recomputeEdges();
+
+  invalidateGpuBuffers();
 }
 
 void
@@ -527,16 +521,19 @@ DisplayMesh::updateBounds()
 }
 
 bool
-DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
+DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system, IRenderOptions const & options)
 {
   if (changed_buffers == 0) return true;
+
+  if (!isGpuBufferValid(BufferId::TOPOLOGY) || (options.drawEdges() == packed_edges.empty() && !edges.empty()))
+    invalidateGpuBuffers(BufferId::ALL);  // need to reallocate pool
 
   if (changed_buffers == BufferId::ALL)
   {
     if (buf_pool) buf_pool->reset();
     vertices_buf = normals_buf = colors_buf = texcoords_buf = tris_buf = edges_buf = nullptr;
 
-    if (vertices.empty() || tris.empty())
+    if (vertices.empty() || (tris.empty() && edges.empty()))
     {
       if (buf_pool)
       {
@@ -554,13 +551,18 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
     intx color_bytes     =  hasColors()        ?  4 * 4 * (intx)colors.size()     +  PADDING : 0;  // 4 * float
     intx texcoord_bytes  =  hasTexCoords()     ?  2 * 4 * (intx)texcoords.size()  +  PADDING : 0;  // 2 * float
 
-    updateEdges();
+    // Create the edge buffer only if we need it, else save GPU memory. We assume toggling the edge display on/off will be a
+    // relatively rare occurrence.
+    if (options.drawEdges())  packEdges();
+    else                      packed_edges.clear();
+
+    // After this, options.drawEdges() != packed_edges.empty() except in the trivial case of edges.empty().
 
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
     intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + PADDING;
 #else
-    intx tri_bytes   =  !tris.empty()   ?  4 * (intx)tris.size()   +  PADDING : 0;  // uint32
-    intx edge_bytes  =  !edges.empty()  ?  4 * (intx)edges.size()  +  PADDING : 0;  // uint32
+    intx tri_bytes   =  !tris.empty()          ?  4 * (intx)tris.size()          +  PADDING : 0;  // uint32
+    intx edge_bytes  =  !packed_edges.empty()  ?  4 * (intx)packed_edges.size()  +  PADDING : 0;  // uint32
 
     intx num_bytes = vertex_bytes + normal_bytes + color_bytes + texcoord_bytes + tri_bytes + edge_bytes + PADDING;
 #endif
@@ -591,10 +593,14 @@ DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system)
 
 #ifndef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
     if (!tris.empty()  && !(tris_buf  = buf_pool->createBuffer(tri_bytes)))  return false;
-    if (!edges.empty() && !(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
+    if (!packed_edges.empty() && !(edges_buf = buf_pool->createBuffer(edge_bytes))) return false;
 
-    if (!tris.empty()  && !tris_buf->updateIndices (0, (int64)tris.size(),  NumericType::UINT32, &tris[0]) ) return false;
-    if (!edges.empty() && !edges_buf->updateIndices(0, (int64)edges.size(), NumericType::UINT32, &edges[0])) return false;
+    if (!tris.empty() && !tris_buf->updateIndices (0, (int64)tris.size(), NumericType::UINT32, &tris[0]))
+      return false;
+
+    if (!packed_edges.empty()
+     && !edges_buf->updateIndices(0, (int64)packed_edges.size(), NumericType::UINT32, &packed_edges[0]))
+      return false;
 #endif
 
     if (!vertices.empty() && !vertices_buf->updateAttributes(0, (int64)vertices.size(), 3, NumericType::REAL, &vertices[0]))
@@ -635,15 +641,12 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
   if (!render_system) { THEA_ERROR << getName() << ": Can't display mesh on a null rendersystem"; return false; }
   if (!options) options = RenderOptions::defaults();
 
-  if (options->drawEdges() && !wireframe_enabled)
-  { THEA_ERROR << getName() << ": Can't draw mesh edges when wireframe mode is disabled"; return false; }
-
-  if (!const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(*render_system)) return false;
+  if (!const_cast<DisplayMesh *>(this)->uploadToGraphicsSystem(*render_system, *options)) return false;
 
   if (!vertices_buf) return true;
   if (!options->drawFaces() && !options->drawEdges()) return true;
-  if (!options->drawFaces() && !edges_buf) return true;
-  if (!options->drawEdges() && !tris_buf) return true;
+  if (!options->drawFaces() && edges.empty()) return true;
+  if (!options->drawEdges() && tris.empty()) return true;
 
   render_system->beginIndexedPrimitives();
 
@@ -687,13 +690,13 @@ DisplayMesh::draw(IRenderSystem * render_system, IRenderOptions const * options)
         render_system->setColor(options->edgeColor());  // set default edge color (TODO: handle per-edge colors)
         render_system->setTexture(0, nullptr);
 
-        if (!edges.empty())
+        if (!packed_edges.empty())
         {
 #ifdef THEA_DISPLAY_MESH_NO_INDEX_ARRAY
-          render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)edges.size(), &edges[0]);
+          render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)packed_edges.size(), &packed_edges[0]);
 #else
           render_system->setIndexBuffer(edges_buf);
-          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)edges.size());
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)packed_edges.size());
 #endif
         }
 

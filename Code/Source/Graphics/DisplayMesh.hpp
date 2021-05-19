@@ -264,6 +264,9 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     typedef DisplayMeshIndexedVertex IndexedVertex;  ///< A reference to a vertex's properties via its index.
     typedef DisplayMeshFace Face;  ///< A convenience wrapper for accessing a face's properties.
 
+    typedef std::pair<uint32, uint32> Edge;  ///< A pair of vertex indices defining an edge.
+    typedef UnorderedSet<Edge> EdgeSet;      ///< A set of edges.
+
     typedef std::array<intx, 3> IndexTriple;  ///< Vertex indices of a single triangle.
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
@@ -278,12 +281,12 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
       /** Supported values. */
       enum Value
       {
-        ALL              =  0xFFFF,  // handles upto 31 buffers, should be enough
-        VERTEX_POSITION  =  0x0001,
-        VERTEX_NORMAL    =  0x0002,
-        VERTEX_COLOR     =  0x0004,
-        VERTEX_TEXCOORD  =  0x0008,
-        TRIANGLE         =  0x0010,
+        ALL              =  0xFFFF,  ///< Shorthand for a bitwise OR of all buffers.
+        VERTEX_POSITION  =  0x0001,  ///< Buffer of vertex positions, use ALL instead if the vertex count changes.
+        VERTEX_NORMAL    =  0x0002,  ///< Buffer of vertex normals, use ALL instead if the vertex count changes.
+        VERTEX_COLOR     =  0x0004,  ///< Buffer of vertex colors, use ALL instead if the vertex count changes.
+        VERTEX_TEXCOORD  =  0x0008,  ///< Buffer of vertex texture coordinates, use ALL instead if the vertex count changes.
+        TOPOLOGY         =  0x0010,  ///< All mesh topology-related buffers, should be set if element counts change.
       };
 
       THEA_ENUM_CLASS_BODY(BufferId)
@@ -301,7 +304,8 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     IndexArray tris;   ///< Triangle indices (in triplets).
 
     // Edge data
-    IndexArray edges;  ///< Edge indices (in pairs).
+    EdgeSet edges;                    ///< Edge index pairs.
+    mutable IndexArray packed_edges;  ///< Edge indices (tightly packed as consecutive pairs).
 
     // Element source indices (typically from source files)
     Array<intx> vertex_src_indices;     ///< Index in source file of each vertex.
@@ -318,8 +322,6 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
 
     bool valid_bounds;  ///< Is the bounding box valid?
     AxisAlignedBox3 bounds;  ///< Bounding box.
-
-    bool wireframe_enabled;  ///< If true, mesh edges will be packed in buffers and sent to the GPU.
 
     int changed_buffers;        ///< A bitwise OR of the flags of the buffers that have changed.
     IBufferPool * buf_pool;     ///< GPU buffer pool.
@@ -355,6 +357,29 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     /** Destructor. */
     virtual ~DisplayMesh() {}
 
+    /** Deletes all data in the mesh. */
+    virtual void clear();
+
+    /** True if and only if the mesh contains no objects. */
+    bool isEmpty() const { return vertices.empty() && tris.empty(); }
+
+    /** Get the number of vertices of the mesh. */
+    intx numVertices() const { return (intx)vertices.size(); };
+
+    /**
+     * Get the number of mesh triangles, obtained <i>after</i> triangulating any higher-degree faces.
+     *
+     * @see numFaces()
+     */
+    intx numTriangles() const { return (intx)(tris.size() / 3); };
+
+    /**
+     * Get the number of polygonal faces in the mesh.
+     *
+     * @see numTriangles()
+     */
+    intx numFaces() const { return (intx)face_starting_tris.size() - 1; };
+
     // Abstract mesh interface
     IDenseMatrix<Real> const * THEA_ICALL getVertexMatrix() const;
     IDenseMatrix<uint32> const * THEA_ICALL getTriangleMatrix() const;
@@ -368,7 +393,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
 
     /**
      * Get a read-write handle to the 3 x &#35;triangles column-major matrix of triangle vertex indices. The matrix is not
-     * resizable. Remember to call invalidateGpuBuffers(BufferId::TRIANGLE) after making any changes to the indices.
+     * resizable. Remember to call invalidateGpuBuffers(BufferId::TOPOLOGY) after making any changes to the indices.
      */
     IDenseMatrix<uint32> * getTriangleMatrix();
 
@@ -406,6 +431,47 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     IndexTriple getTriangle(intx tri_index) const;
 
     /**
+     * Get a handle to a polygonal face which may comprise several triangles.
+     *
+     * @param face_index The index of the face in the mesh, as returned by the call to addFace() which added the face.
+     */
+    Face getFace(intx face_index);
+
+    /** Check if a particular face consists of a single triangle or not. */
+    bool isTriangle(intx face_index) const
+    {
+      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
+                   getNameStr() + ": Face index out of bounds");
+
+      return face_starting_tris[(size_t)face_index + 1] - face_starting_tris[(size_t)face_index] == 1;
+    }
+
+    /**
+     * Check if a particular face is a non-degenerate quad or not. This requires that it was created (addFace()) with 4
+     * vertices, and that it produced two triangles.
+     */
+    bool isQuad(intx face_index) const
+    {
+      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
+                   getNameStr() + ": Face index out of bounds");
+
+      auto begin = face_starting_tris[(size_t)face_index], end = face_starting_tris[(size_t)face_index + 1];
+      return end - begin == 2 && large_poly_verts.find(begin) == large_poly_verts.end();
+    }
+
+    /** Get the set of all edges, as pairs of vertex indices. */
+    EdgeSet const & getEdges() const { return edges; }
+
+    /** Check if an edge exists between two vertices. */
+    bool hasEdge(intx i, intx j) const
+    {
+      debugAssertM(i >= 0 && i < (intx)vertices.size() && j >= 0 && j < (intx)vertices.size(),
+                   getNameStr() + ": Vertex index out of bounds");
+
+      return edges.find(i < j ? Edge((uint32)i, (uint32)j) : Edge((uint32)j, (uint32)i)) != edges.end();
+    }
+
+    /**
      * Get the source index of a given vertex, or negative if none exists. This is typically the index of the vertex in the
      * source mesh file.
      */
@@ -422,29 +488,6 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     {
       return tri_index >= 0 && tri_index < (intx)tri_src_face_indices.size() ? tri_src_face_indices[(size_t)tri_index] : -1;
     }
-
-    /** Deletes all data in the mesh. */
-    virtual void clear();
-
-    /** True if and only if the mesh contains no objects. */
-    bool isEmpty() const { return vertices.empty() && tris.empty(); }
-
-    /** Get the number of vertices of the mesh. */
-    intx numVertices() const { return (intx)vertices.size(); };
-
-    /**
-     * Get the number of mesh triangles, obtained <i>after</i> triangulating any higher-degree faces.
-     *
-     * @see numFaces()
-     */
-    intx numTriangles() const { return (intx)(tris.size() / 3); };
-
-    /**
-     * Get the number of polygonal faces in the mesh.
-     *
-     * @see numTriangles()
-     */
-    intx numFaces() const { return (intx)face_starting_tris.size() - 1; };
 
     /** Recompute and cache the bounding box for the mesh. Make sure this has been called before calling getBounds(). */
     void updateBounds();
@@ -557,35 +600,6 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
       return addFace((int)face_vertex_indices.size(), &face_vertex_indices[0], src_face_index);
     }
 
-    /**
-     * Get a handle to a polygonal face which may comprise several triangles.
-     *
-     * @param face_index The index of the face in the mesh, as returned by the call to addFace() which added the face.
-     */
-    Face getFace(intx face_index);
-
-    /** Check if a particular face consists of a single triangle or not. */
-    bool isTriangle(intx face_index) const
-    {
-      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
-                   getNameStr() + ": Face index out of bounds");
-
-      return face_starting_tris[(size_t)face_index + 1] - face_starting_tris[(size_t)face_index] == 1;
-    }
-
-    /**
-     * Check if a particular face is a non-degenerate quad or not. This requires that it was created (addFace()) with 4
-     * vertices, and that it produced two triangles.
-     */
-    bool isQuad(intx face_index) const
-    {
-      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
-                   getNameStr() + ": Face index out of bounds");
-
-      auto begin = face_starting_tris[(size_t)face_index], end = face_starting_tris[(size_t)face_index + 1];
-      return end - begin == 2 && large_poly_verts.find(begin) == large_poly_verts.end();
-    }
-
     /** Set the position of a mesh vertex. */
     virtual void setVertex(intx vertex_index, Vector3 const & position)
     {
@@ -641,32 +655,6 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
      */
     virtual void isolateTriangles();
 
-    /**
-     * Enable/disable drawing the edges of the mesh. Enabling this function will <b>not</b> draw any edges unless you turn on
-     * the appropriate RenderOptions flag. The edges will be uploaded to the graphics system on the next call to
-     * uploadToGraphicsSystem().
-     *
-     * Wireframe mode is initially disabled to save video memory.
-     *
-     * @see isWireframeEnabled()
-     */
-    void setWireframeEnabled(bool value)
-    {
-      if (value && !wireframe_enabled)
-        wireframe_enabled = true;
-      else if (!value && wireframe_enabled)
-        wireframe_enabled = false;
-
-      invalidateGpuBuffers();
-    }
-
-    /**
-     * Check if wireframe drawing is enabled. Wireframe mode is initially disabled.
-     *
-     * @see setWireframeEnabled()
-     */
-    bool isWireframeEnabled() const { return wireframe_enabled; }
-
     /** Invalidate part or all of the current GPU data for the mesh. */
     void invalidateGpuBuffers(int changed_buffers_ = BufferId::ALL) { changed_buffers |= changed_buffers_; }
 
@@ -683,11 +671,23 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     void setAllGpuBuffersValid() { changed_buffers = 0; }
 
     /** Upload GPU resources to the graphics system. */
-    bool uploadToGraphicsSystem(IRenderSystem & render_system);
+    bool uploadToGraphicsSystem(IRenderSystem & render_system, IRenderOptions const & options);
 
   private:
-    /** Update the set of edge indices from face data. */
-    void updateEdges();
+    /** Add a single edge between a pair of vertices. */
+    void addEdge(uint32 i, uint32 j)
+    {
+      debugAssertM(i < vertices.size() && j < vertices.size(), getNameStr() + ": Vertex index out of bounds");
+
+      // Smaller index first, for consistent searching
+      edges.insert(i < j ? Edge(i, j) : Edge(j, i));
+    }
+
+    /** Recompute the set of edges from face data. */
+    void recomputeEdges();
+
+    /** Pack the set of edges into an array of consecutive index pairs. */
+    void packEdges() const;
 
     // Temporary storage for triangulating polygons with more than 4 vertices
     Array<intx> face_vertex_indices;
