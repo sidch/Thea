@@ -430,7 +430,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
           return RayIntersectionN<N, T>(-1);
       }
 
-      VectorT max_t(-1), location;
+      VectorT max_t, location; max_t.fill(-1);
       VectorT const & origin = ray.getOrigin();
       VectorT const & dir = ray.getDirection();
       bool inside = true;
