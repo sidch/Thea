@@ -147,8 +147,8 @@ class /* THEA_API */ Cone3 : public RayIntersectable3
       if (len > 0 && base_radius > 0)
       {
         unit_dir = getDirection().stableNormalized();
-        auto lin = Math::scaling(Vector3(1 / base_radius, 1 / base_radius, 1 / len))
-                 * Math::rotationArc(unit_dir, Vector3(0, 0, 1), /* normalize_dirs = */ false);
+        Matrix3 lin = Math::scaling(Vector3(1 / base_radius, 1 / base_radius, 1 / len))
+                    * Math::rotationArc(unit_dir, Vector3(0, 0, 1), /* normalize_dirs = */ false);
         world2local = AffineTransform3(lin, -(lin * getBaseCenter()));
       }
       else

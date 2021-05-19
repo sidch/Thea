@@ -124,7 +124,7 @@ class /* THEA_API */ Torus3 : public RayIntersectable3
     void updateTransform()
     {
       // Transform is orthonormal -- we exploit this in other places
-      auto lin = Math::rotationArc(axis, Vector3(0, 0, 1), /* normalize_dirs = */ false);
+      Matrix3 lin = Math::rotationArc(axis, Vector3(0, 0, 1), /* normalize_dirs = */ false);
       world2local = AffineTransform3(lin, -(lin * center));
     }
 
