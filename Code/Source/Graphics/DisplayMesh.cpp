@@ -320,11 +320,12 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
 
   // Add edges of original polygon
   {
-    uint32 i = (uint32)(num_vertices - 1);
-    for (uint32 j = 0; j < (uint32)num_vertices; ++j)
+    uint32 prev = (uint32)vertex_indices[num_vertices - 1];
+    for (int j = 0; j < num_vertices; ++j)
     {
-      addEdge(i, j);
-      i = j;
+      uint32 curr = (uint32)vertex_indices[j];
+      addEdge(prev, curr);
+      prev = curr;
     }
   }
 
