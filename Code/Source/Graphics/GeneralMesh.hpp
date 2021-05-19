@@ -1660,10 +1660,10 @@ template <typename V, typename E, typename F, template <typename T> class A>
 bool
 GeneralMesh<V, E, F, A>::uploadToGraphicsSystem(IRenderSystem & render_system)
 {
-  if (changed_buffers == 0) return true;
-
   if (!isGpuBufferValid(BufferId::TOPOLOGY))
     invalidateGpuBuffers(BufferId::ALL);  // need to reallocate pool
+
+  if (changed_buffers == 0) return true;
 
   if (changed_buffers == BufferId::ALL)
   {

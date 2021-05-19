@@ -524,10 +524,10 @@ DisplayMesh::updateBounds()
 bool
 DisplayMesh::uploadToGraphicsSystem(IRenderSystem & render_system, IRenderOptions const & options)
 {
-  if (changed_buffers == 0) return true;
-
-  if (!isGpuBufferValid(BufferId::TOPOLOGY) || (options.drawEdges() == packed_edges.empty() && !edges.empty()))
+  if (!isGpuBufferValid(BufferId::TOPOLOGY) || ((bool)options.drawEdges() == packed_edges.empty() && !edges.empty()))
     invalidateGpuBuffers(BufferId::ALL);  // need to reallocate pool
+
+  if (changed_buffers == 0) return true;
 
   if (changed_buffers == BufferId::ALL)
   {
