@@ -126,18 +126,9 @@ hmul(Eigen::Matrix<T, N,     N, O1, R1, C1> const & m,
 
 /**
  * Get the one-hot vector with all entries 0 except a single entry which is 1. Values of the CoordinateAxis enum may be used as
- * arguments. This version creates and returns a fixed-length vector.
+ * arguments. This version returns a fixed-length vector, and is equivalent to <tt>Vector<N, T>::Unit(coord)</tt>.
  */
-template <int N, typename T = Real>
-Vector<N, T>
-oneHot(int coord)
-{
-  debugAssertM(coord >= 0 && coord < N, "Math::oneHot: Coordinate index out of bounds");
-
-  Vector<N, T> v;
-  v.fill(0); v[coord] = 1;
-  return v;
-}
+template <int N, typename T = Real> Vector<N, T> oneHot(int coord) { return Vector<N, T>::Unit(coord); }
 
 /**
  * Get the one-hot vector with all entries 0 except a single entry which is 1. Values of the CoordinateAxis enum may be used as
@@ -181,12 +172,6 @@ oneCold(int coord, Eigen::MatrixBase<Derived> & v)
 
   v.fill(1); v[coord] = 0;
 }
-
-/**
- * Get the vector along a particular (positive) coordinate axis. Values of the CoordinateAxis enum may be used as arguments.
- * This function has identical behavior to oneHot(int).
- */
-template <int N, typename T = Real> Vector<N, T> coordinateVector(int axis) { return oneHot<N, T>(axis); }
 
 /**
  * Given a 2D vector \a v, get the vector <tt>u</tt> perpendicular to it and of the same length, forming a right-handed basis
