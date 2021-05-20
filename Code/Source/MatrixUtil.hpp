@@ -125,6 +125,70 @@ hmul(Eigen::Matrix<T, N,     N, O1, R1, C1> const & m,
 }
 
 /**
+ * Get the one-hot vector with all entries 0 except a single entry which is 1. Values of the CoordinateAxis enum may be used as
+ * arguments. This version creates and returns a fixed-length vector.
+ */
+template <int N, typename T = Real>
+Vector<N, T>
+oneHot(int coord)
+{
+  debugAssertM(coord >= 0 && coord < N, "Math::oneHot: Coordinate index out of bounds");
+
+  Vector<N, T> v;
+  v.fill(0); v[coord] = 1;
+  return v;
+}
+
+/**
+ * Get the one-hot vector with all entries 0 except a single entry which is 1. Values of the CoordinateAxis enum may be used as
+ * arguments. This version initializes a provided vector to be one-hot.
+ */
+template <typename Derived>
+void
+oneHot(int coord, Eigen::MatrixBase<Derived> & v)
+{
+  static_assert(Derived::IsVectorAtCompileTime != 0, "Math::oneHot: Output must be compile-time vector");
+  debugAssertM(coord >= 0 && coord < v.size(), "Math::oneHot: Coordinate index out of bounds");
+
+  v.fill(0); v[coord] = 1;
+}
+
+/**
+ * Get the one-cold vector with all entries 1 except a single entry which is 0. Values of the CoordinateAxis enum may be used as
+ * arguments. This version creates and returns a fixed-length vector.
+ */
+template <int N, typename T = Real>
+Vector<N, T>
+oneCold(int coord)
+{
+  debugAssertM(coord >= 0 && coord < N, "Math::oneCold: Coordinate index out of bounds");
+
+  Vector<N, T> v;
+  v.fill(1); v[coord] = 0;
+  return v;
+}
+
+/**
+ * Get the one-cold vector with all entries 1 except a single entry which is 0. Values of the CoordinateAxis enum may be used as
+ * arguments. This version initializes a provided vector to be one-cold.
+ */
+template <typename Derived>
+void
+oneCold(int coord, Eigen::MatrixBase<Derived> & v)
+{
+  static_assert(Derived::IsVectorAtCompileTime != 0, "Math::oneCold: Output must be compile-time vector");
+  debugAssertM(coord >= 0 && coord < v.size(), "Math::oneCold: Coordinate index out of bounds");
+
+  v.fill(1); v[coord] = 0;
+}
+
+/**
+ * Get the vector along a particular (positive) coordinate axis. Values of the CoordinateAxis enum may be used as arguments.
+ * This function has identical behavior to oneHot(int).
+ */
+template <int N, typename T> Vector<N, T> coordinateVector(int axis) { return oneHot<N, T>(axis); }
+
+/**
  * Given a 2D vector \a v, get the vector <tt>u</tt> perpendicular to it and of the same length, forming a right-handed basis
  * <tt>(u, v)</tt>.
  */
