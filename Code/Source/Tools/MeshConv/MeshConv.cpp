@@ -17,8 +17,6 @@ using namespace Graphics;
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
 
-enum Axis { X_AXIS = 0, Y_AXIS = 1, Z_AXIS = 2 };
-
 bool
 splitMesh(MG::Ptr mg)
 {
@@ -113,7 +111,7 @@ centerMesh(MG & mg)
 }
 
 bool
-rescaleMesh(MG & mg, Axis axis, Real len)
+rescaleMesh(MG & mg, CoordinateAxis axis, Real len)
 {
   mg.updateBounds();
   Real ext = mg.getBounds().getExtent()[axis];
@@ -165,7 +163,7 @@ main(int argc, char * argv[])
     bool do_split = false;
     bool do_center = false;
     bool do_rescale = false;
-    Axis rescale_axis = X_AXIS;
+    CoordinateAxis rescale_axis = CoordinateAxis::X;
     Real rescale_len = 1;
 
     intx num_mg = 0;
@@ -193,9 +191,9 @@ main(int argc, char * argv[])
           return usage(argc, argv);
 
         arg = toLower(argv[++i]);
-        if      (arg == "x") rescale_axis = X_AXIS;
-        else if (arg == "y") rescale_axis = Y_AXIS;
-        else if (arg == "z") rescale_axis = Z_AXIS;
+        if      (arg == "x") rescale_axis = CoordinateAxis::X;
+        else if (arg == "y") rescale_axis = CoordinateAxis::Y;
+        else if (arg == "z") rescale_axis = CoordinateAxis::Z;
         else
         {
           THEA_ERROR << "Invalid rescale axis: " << arg;
