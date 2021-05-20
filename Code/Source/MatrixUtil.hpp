@@ -186,7 +186,7 @@ oneCold(int coord, Eigen::MatrixBase<Derived> & v)
  * Get the vector along a particular (positive) coordinate axis. Values of the CoordinateAxis enum may be used as arguments.
  * This function has identical behavior to oneHot(int).
  */
-template <int N, typename T> Vector<N, T> coordinateVector(int axis) { return oneHot<N, T>(axis); }
+template <int N, typename T = Real> Vector<N, T> coordinateVector(int axis) { return oneHot<N, T>(axis); }
 
 /**
  * Given a 2D vector \a v, get the vector <tt>u</tt> perpendicular to it and of the same length, forming a right-handed basis
