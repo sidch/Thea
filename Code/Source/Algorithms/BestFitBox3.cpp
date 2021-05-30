@@ -15,7 +15,7 @@
 #include "BestFitBox3.hpp"
 #include "CentroidN.hpp"
 #include "LinearLeastSquares3.hpp"
-#include "../Quat.hpp"
+#include "../Math.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -71,18 +71,6 @@ namespace BestFitBox3Internal {
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-static Quat
-rotationArc(Vector3 const & v0, Vector3 const & v1)
-{
-  Vector3 cross = v0.cross(v1);
-  Real d = v0.dot(v1);
-  Real s = std::sqrt((1 + d) * 2);
-  Real recip = 1.0f / s;
-
-  Vector3 rc = recip * cross;
-  return Quat(rc, 0.5f * s);
-}
-
 // Convert a plane equation to a rigid transform.
 static void
 planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 & cframe)
@@ -99,10 +87,7 @@ planeToCFrame(Plane3 const & plane, Vector3 const & centroid, CoordinateFrame3 &
            0,  0, -1;
   }
   else
-  {
-    Quat quat = rotationArc(Vector3::UnitY(), n);
-    rot = quat.toRotationMatrix();
-  }
+    rot = Math::rotationArc(Vector3(0, 1, 0), n, /* normalize_dirs = */ false);
 
   cframe = CoordinateFrame3::_fromAffine(AffineTransform3(rot, centroid));
 }

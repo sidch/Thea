@@ -25,7 +25,7 @@
 #  undef Success
 #endif
 #include <Eigen/Core>
-#include <Eigen/Geometry>  // for some weird reason Eigen defines cross() here
+#include <Eigen/Geometry>  // for Quaternion, and because for some weird reason Eigen defines cross() here
 
 #include <complex>
 
@@ -323,6 +323,13 @@ template <typename T = Real,
           int Options = MatrixLayout::ROW_MAJOR,
           int MaxColsAtCompileTime = Eigen::Dynamic>
 using RowVectorXConstMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> const >;
+
+//=============================================================================================================================
+// Typedef other useful Eigen classes.
+//=============================================================================================================================
+
+/** Alias for Eigen::Quaternion<...>. */
+template <typename T = Real> using Quaternion = Eigen::Quaternion<T>;
 
 } // namespace Thea
 

@@ -439,40 +439,12 @@ rotationEulerAnglesZYX(Real yaw_radians, Real pitch_radians, Real roll_radians)
   return zmat * (ymat * xmat);
 }
 
-/** Construct a rotation matrix from a quaternion. */
-template <typename T>
-Matrix<3, 3, T>
-rotationQuat(T const & x, T const & y, T const & z, T const & w)
-{
-  // From G3D::Matrix3:
-  // Implementation from Watt and Watt, pg 362
-  // See also http://www.flipcode.com/documents/matrfaq.html#Q54
-
-  Vector<4, T> q(x, y, z, w);
-  q.normalize();
-
-  T xx = 2 * q.x() * q.x();
-  T xy = 2 * q.x() * q.y();
-  T xz = 2 * q.x() * q.z();
-  T xw = 2 * q.x() * q.w();
-
-  T yy = 2 * q.y() * q.y();
-  T yz = 2 * q.y() * q.z();
-  T yw = 2 * q.y() * q.w();
-
-  T zz = 2 * q.z() * q.z();
-  T zw = 2 * q.z() * q.w();
-
-  Matrix<3, 3, T> ret;
-  ret << 1 - yy - zz,      xy - zw,      xz + yw,
-             xy + zw,  1 - xx - zz,      yz - xw,
-             xz - yw,      yz + xw,  1 - xx - yy;
-
-  return ret;
-}
-
 /**
- * Return the matrix corresponding to the rotation from one direction vector to another.
+ * Return the quaternion corresponding to the rotation from one direction vector to another.
+ *
+ * Use this instead of Eigen's Quaternion::FromTwoVectors() when the input vectors are pre-normalized, since the latter function
+ * will always normalize the input vectors, wasting two sqrt's. However, for most other practical purposes the two functions
+ * should have the same behavior.
  *
  * @param start_dir The vector to rotate from.
  * @param end_dir The vector to rotate to.
@@ -480,8 +452,8 @@ rotationQuat(T const & x, T const & y, T const & z, T const & w)
  *   passed to this function.
  */
 template <typename T>
-Matrix<3, 3, T>
-rotationArc(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool normalize_dirs = true)
+Quaternion<T>
+rotationArcQuat(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool normalize_dirs = true)
 {
   // From John Ratcliff's Code Suppository.
   //
@@ -509,19 +481,34 @@ rotationArc(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool n
     Vector<3, T> perp;
     switch (maxAbsAxis(u))
     {
-      case 0:           perp = Vector<3, T>(u.y(),  -u.x(),       0); break;
-      case 1:           perp = Vector<3, T>(u.y(),  -u.x(),       0); break;
-      default /* 2 */:  perp = Vector<3, T>(u.z(),       0,  -u.x());
+      case 0:           perp = Vector<3, T>(u.y(),  -u.x(),       0).normalized(); break;
+      case 1:           perp = Vector<3, T>(u.y(),  -u.x(),       0).normalized(); break;
+      default /* 2 */:  perp = Vector<3, T>(u.z(),       0,  -u.x()).normalized();
     }
 
-    return rotationAxisAngle(perp, (Real)Math::pi());
+    return Quaternion<T>(Eigen::AngleAxis<T>(static_cast<T>(Math::pi()), perp));
   }
 
   T s = std::sqrt((1 + d) * 2);
   T recip = 1 / s;
   Vector<3, T> rcc = recip * u.cross(v);
 
-  return rotationQuat(rcc.x(), rcc.y(), rcc.z(), static_cast<T>(0.5 * s));
+  return Quaternion<T>(static_cast<T>(0.5 * s), rcc.x(), rcc.y(), rcc.z());
+}
+
+/**
+ * Return the matrix corresponding to the rotation from one direction vector to another.
+ *
+ * @param start_dir The vector to rotate from.
+ * @param end_dir The vector to rotate to.
+ * @param normalize_dirs If false, the directions will be assumed to have been pre-normalized to unit length before being
+ *   passed to this function.
+ */
+template <typename T>
+Matrix<3, 3, T>
+rotationArc(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool normalize_dirs = true)
+{
+  return rotationArcQuat(start_dir, end_dir, normalize_dirs).toRotationMatrix();
 }
 
 /**
