@@ -45,14 +45,15 @@ class /* THEA_API */ IMatrix
     /** Set all elements to zero. */
     virtual void THEA_ICALL setZero() = 0;
 
-    /** Check if the matrix can be resized. */
+    /** Check if the matrix can be freely resized. */
     virtual int8 THEA_ICALL isResizable() const = 0;
 
     /**
-     * Resize the matrix to new dimensions, if isResizable() returns true. Existing entries will in general <b>not</b> be
-     * preserved in the resized matrix.
+     * Resize the matrix to new dimensions, if isResizable() returns true. Else, if the new dimensions are identical to the old
+     * dimensions, do nothing and return true, else return false. If the dimensions are changed, existing entries will in
+     * general <b>not</b> be preserved in the resized matrix.
      *
-     * @return True if the matrix was successfully resized, else false.
+     * @return True if the final dimensions of the matrix are identical to the desired dimensions, else false.
      */
     virtual int8 THEA_ICALL resize(int64 nrows, int64 ncols) = 0;
 
