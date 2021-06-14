@@ -94,8 +94,8 @@ solveCubic(double c0, double c1, double c2, double c3, double * roots)
 {
   using namespace MathInternal;
 
-  static double const RAD_120 = degreesToRadians(120);
-  static double const RAD_240 = degreesToRadians(240);
+  static double const RAD_120 = degreesToRadians(120.0);
+  static double const RAD_240 = degreesToRadians(240.0);
 
   int num_roots = 0;
 

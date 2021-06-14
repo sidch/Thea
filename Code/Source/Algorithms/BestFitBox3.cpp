@@ -165,7 +165,7 @@ computeBestFitOBB(Array<Vector3> const & points, Box3 & result, bool has_up, Vec
   OBB best_obb;
   computeOBB(points, cframe, best_obb, true);
 
-  Matrix3 rot = Math::rotationAxisAngle((has_up ? up : Vector3::UnitY()), Math::degreesToRadians(10));
+  Matrix3 rot = Math::rotationAxisAngle((has_up ? up : Vector3::UnitY()), Math::degreesToRadians((Real)10));
   for (int a = 10;  a < 180; a += 10)
   {
     cframe._setRotation(cframe.getRotation() * rot);

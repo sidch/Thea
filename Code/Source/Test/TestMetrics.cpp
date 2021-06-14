@@ -55,12 +55,12 @@ testMetrics(int argc, char * argv[])
   cout << MetricL2::distance<3, Real>(tri, ball) << endl;
   cout << MetricL2::distance<3, Real>(ball, tri) << endl;
 
-  Matrix4 m1 = RigidTransform3::rotationEulerAnglesXYZ(Math::degreesToRadians(30),
-                                                       Math::degreesToRadians(30),
-                                                       Math::degreesToRadians(30)).homogeneous();
+  Matrix4 m1 = RigidTransform3::rotationEulerAnglesXYZ(Math::degreesToRadians((Real)30),
+                                                       Math::degreesToRadians((Real)30),
+                                                       Math::degreesToRadians((Real)30)).homogeneous();
   Matrix4 m2 = RigidTransform3::translation(Vector3(1, 1, 1)).homogeneous();
   RigidTransform3 rt = RigidTransform3::translation(Vector3(5, 5, 5))
-                     * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), Math::degreesToRadians(45));
+                     * RigidTransform3::rotationAxisAngle(Vector3(-1, 1, -1), Math::degreesToRadians((Real)45));
   cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     makeTransformedObject(&p, &m2)) << endl;
   cout << MetricL2::distance<3, Real>(p,                                  makeTransformedObject(&p, &m2)) << endl;
   cout << MetricL2::distance<3, Real>(makeTransformedObject(&p, &m1),     p) << endl;

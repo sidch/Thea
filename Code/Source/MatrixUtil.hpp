@@ -18,6 +18,7 @@
 #include "Common.hpp"
 #include "Math.hpp"
 #include "MatVec.hpp"
+#include <type_traits>
 
 namespace Thea {
 namespace Math {
@@ -238,7 +239,7 @@ scaling(Vector<N, T> const & s)
 }
 
 /** Matrix to uniformaly scale a point by a scaling factor \a s. */
-template <int N, typename T>
+template < int N, typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<N, N, T>
 scaling(T const & s)
 {
@@ -247,7 +248,7 @@ scaling(T const & s)
 }
 
 /** Matrix to rotate a 2D vector about the origin by an angle (in radians). */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<2, 2, T>
 rotation(T const & radians)
 {
@@ -262,12 +263,12 @@ rotation(T const & radians)
 /** Rotate around the given 3D axis (need not be a unit vector) by a given angle. */
 template <typename T>
 Matrix<3, 3, T>
-rotationAxisAngle(Vector<3, T> const & axis, Real radians)
+rotationAxisAngle(Vector<3, T> const & axis, T const & radians)
 {
   Vector<3, T> uaxis = axis.normalized();
 
-  T cos_val = static_cast<T>(std::cos(radians));
-  T sin_val = static_cast<T>(std::sin(radians));
+  T cos_val = std::cos(radians);
+  T sin_val = std::sin(radians);
   T one_minus_cos = 1 - cos_val;
   T x2   = uaxis[0] * uaxis[0];
   T y2   = uaxis[1] * uaxis[1];
@@ -298,22 +299,22 @@ rotationAxisAngle(Vector<3, T> const & axis, Real radians)
 /**
  * Rotate about the Z axis by the roll angle, then the Y axis by the pitch angle, and finally the X axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesXYZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesXYZ(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0.0, sin_val, cos_val;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
   return xmat * (ymat * zmat);
@@ -322,22 +323,22 @@ rotationEulerAnglesXYZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
 /**
  * Rotate about the Y axis by the roll angle, then the Z axis by the pitch angle, and finally the X axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesXZY(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesXZY(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0, sin_val, cos_val;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
   return xmat * (zmat * ymat);
@@ -346,22 +347,22 @@ rotationEulerAnglesXZY(Real yaw_radians, Real pitch_radians, Real roll_radians)
 /**
  * Rotate about the Z axis by the roll angle, then the X axis by the pitch angle, and finally the Y axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesYXZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesYXZ(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0, sin_val, cos_val;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
   return ymat * (xmat * zmat);
@@ -370,22 +371,22 @@ rotationEulerAnglesYXZ(Real yaw_radians, Real pitch_radians, Real roll_radians)
 /**
  * Rotate about the X axis by the roll angle, then the Z axis by the pitch angle, and finally the Y axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesYZX(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesYZX(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0, sin_val, cos_val;
 
   return ymat * (zmat * xmat);
@@ -394,22 +395,22 @@ rotationEulerAnglesYZX(Real yaw_radians, Real pitch_radians, Real roll_radians)
 /**
  * Rotate about the Y axis by the roll angle, then the X axis by the pitch angle, and finally the Z axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesZXY(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesZXY(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0, sin_val, cos_val;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
   return zmat * (xmat * ymat);
@@ -418,22 +419,22 @@ rotationEulerAnglesZXY(Real yaw_radians, Real pitch_radians, Real roll_radians)
 /**
  * Rotate about the X axis by the roll angle, then the Y axis by the pitch angle, and finally the Z axis by the yaw angle.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<3, 3, T>
-rotationEulerAnglesZYX(Real yaw_radians, Real pitch_radians, Real roll_radians)
+rotationEulerAnglesZYX(T const & yaw_radians, T const & pitch_radians, T const & roll_radians)
 {
   T cos_val, sin_val;
 
-  cos_val = static_cast<T>(std::cos(yaw_radians));
-  sin_val = static_cast<T>(std::sin(yaw_radians));
+  cos_val = std::cos(yaw_radians);
+  sin_val = std::sin(yaw_radians);
   Matrix<3, 3, T> zmat; zmat << cos_val, -sin_val, 0, sin_val, cos_val, 0, 0, 0, 1;
 
-  cos_val = static_cast<T>(std::cos(pitch_radians));
-  sin_val = static_cast<T>(std::sin(pitch_radians));
+  cos_val = std::cos(pitch_radians);
+  sin_val = std::sin(pitch_radians);
   Matrix<3, 3, T> ymat; ymat << cos_val, 0, sin_val, 0, 1, 0, -sin_val, 0, cos_val;
 
-  cos_val = static_cast<T>(std::cos(roll_radians));
-  sin_val = static_cast<T>(std::sin(roll_radians));
+  cos_val = std::cos(roll_radians);
+  sin_val = std::sin(roll_radians);
   Matrix<3, 3, T> xmat; xmat << 1, 0, 0, 0, cos_val, -sin_val, 0, sin_val, cos_val;
 
   return zmat * (ymat * xmat);
@@ -516,7 +517,7 @@ rotationArc(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bool n
  * the  near and far plane Z values (to follow OpenGL conventions). Set \a y_increases_upwards to false if Y increases downwards
  * instead, e.g. for screen pixel space.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<4, 4, T>
 orthogonalProjection(T const & left, T const & right, T const & bottom, T const & top, T const & nearval, T const & farval,
                      bool y_increases_upwards = true)
@@ -549,7 +550,7 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
  * the near and far plane Z values (to follow OpenGL conventions). Set \a y_increases_upwards to false if Y increases downwards
  * instead, e.g. for screen pixel space.
  */
-template <typename T>
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
 Matrix<4, 4, T>
 perspectiveProjection(T const & left, T const & right, T const & bottom, T const & top, T const & nearval, T const & farval,
                       bool y_increases_upwards = true)

@@ -19,6 +19,7 @@
 #include "Random.hpp"
 #include <cmath>
 #include <limits>
+#include <type_traits>
 
 // lrint and lrintf routines
 #ifdef THEA_WINDOWS
@@ -344,22 +345,24 @@ template <typename T, typename S>
 T
 lerp(T const & a, T const & b, S const & f)
 {
-  return a + (f * (b - a));
+  return static_cast<T>(a + (f * (b - a)));
 }
 
 /** Convert an angle from degrees to radians. */
-inline double
-degreesToRadians(double deg)
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
+T
+degreesToRadians(T const & deg)
 {
-  static double const CONV_FACTOR = pi() / 180.0;
+  static T const CONV_FACTOR = static_cast<T>(pi() / 180.0);
   return CONV_FACTOR * deg;
 }
 
 /** Convert an angle from radians to degrees. */
-inline double
-radiansToDegrees(double rad)
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
+T
+radiansToDegrees(T const & rad)
 {
-  static double const CONV_FACTOR = 180.0 / pi();
+  static T const CONV_FACTOR = static_cast<T>(180.0 / pi());
   return CONV_FACTOR * rad;
 }
 
