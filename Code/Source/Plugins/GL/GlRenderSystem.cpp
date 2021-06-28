@@ -493,6 +493,8 @@ GlRenderSystem::setViewport(int64 xmin, int64 ymin, int64 width, int64 height)
 {
   glViewport((GLint)xmin, (GLint)ymin, (GLsizei)width, (GLsizei)height);
   THEA_GL_OK_OR_RETURN(0)
+
+  return true;
 }
 
 int32

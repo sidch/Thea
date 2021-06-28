@@ -98,7 +98,7 @@ System::initTime()
 
 #ifdef THEA_MAC
   SInt32 cpu_speed;
-  Gestalt('pclk', &cpu_speed);
+  Gestalt('pclk', &cpu_speed);  // FIXME: Deprecated
 
   m_OSXCPUSpeed = (int32)cpu_speed;
   m_secondsPerNS = 1.0 / 1.0e9;
@@ -178,7 +178,7 @@ System::getCycleCount()
 {
   // Note: To put off extra processing until the end, this does not return the actual clock cycle count. It is a bus cycle
   // count. When endCycleCount() is called, it converts the two into a difference of clock cycles.
-  return (uint64)UnsignedWideToUInt64(UpTime());
+  return (uint64)UnsignedWideToUInt64(UpTime());  // FIXME: Deprecated
   // return (uint64) mach_absolute_time();
 }
 
@@ -194,8 +194,8 @@ void
 System::endCycleCount(uint64 & cycle_count)
 {
 #ifdef THEA_MAC
-  AbsoluteTime end = UpTime();
-  Nanoseconds diffNS = AbsoluteDeltaToNanoseconds(end, UInt64ToUnsignedWide(cycle_count));
+  AbsoluteTime end = UpTime();  // FIXME: Deprecated
+  Nanoseconds diffNS = AbsoluteDeltaToNanoseconds(end, UInt64ToUnsignedWide(cycle_count));  // FIXME: Deprecated
   cycle_count = (uint64)((double)instance().m_OSXCPUSpeed
                        * (double)UnsignedWideToUInt64(diffNS)
                        * instance().m_secondsPerNS);
