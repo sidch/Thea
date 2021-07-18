@@ -26,6 +26,8 @@
 
 #include "Common.hpp"
 #include "AxisAlignedBoxN.hpp"
+#include <array>
+#include <utility>
 
 namespace Thea {
 
@@ -145,35 +147,92 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
     }
 
     /**
-     * Get edge number \a i of the box, where i is between 0 and 11.
+     * Get the endpoint indices of edge number \a i of the box, where i is between 0 and 11.
      *
      * @param i Index of edge, between 0 and 11 inclusive.
-     * @param start Used to return the starting point of the edge.
-     * @param end Used to return the endpoint of the edge.
+     *
+     * @return A pair containing the vertex indices of the edge. The indices can be mapped to vertex positions using
+     *   getVertex().
+     *
+     * @see getVertex(), getFace()
      */
-    void getEdge(int i, VectorT & start, VectorT & end) const
+    std::pair<uintx, uintx> const & getEdge(intx i) const
     {
-      static int const INDICES[12][6] = {
-        { 0, 0, 0, 0, 0, 1 },
-        { 0, 0, 0, 0, 1, 0 },
-        { 0, 0, 0, 1, 0, 0 },
+      static std::pair<uintx, uintx> const EDGES[12] = {
+        { 0b000, 0b100 },
+        { 0b000, 0b010 },
+        { 0b000, 0b001 },
 
-        { 1, 1, 0, 1, 1, 1 },
-        { 1, 1, 0, 1, 0, 0 },
-        { 1, 1, 0, 0, 1, 0 },
+        { 0b011, 0b111 },
+        { 0b011, 0b001 },
+        { 0b011, 0b010 },
 
-        { 1, 0, 1, 0, 0, 1 },
-        { 1, 0, 1, 1, 1, 1 },
-        { 1, 0, 1, 1, 0, 0 },
+        { 0b101, 0b100 },
+        { 0b101, 0b111 },
+        { 0b101, 0b001 },
 
-        { 0, 1, 1, 1, 1, 1 },
-        { 0, 1, 1, 0, 0, 1 },
-        { 0, 1, 1, 0, 1, 0 }
+        { 0b110, 0b111 },
+        { 0b110, 0b100 },
+        { 0b110, 0b010 }
       };
 
-      VectorT const * v[2] = { &this->getLow(), &this->getHigh() };
-      start  =  VectorT((*v[INDICES[i][0]])[0], (*v[INDICES[i][1]])[1], (*v[INDICES[i][2]])[2]);
-      end    =  VectorT((*v[INDICES[i][3]])[0], (*v[INDICES[i][4]])[1], (*v[INDICES[i][5]])[2]);
+      debugAssertM(i >= 0 && i < 12, "AxisAlignedBox3: Edge index out of bounds");
+
+      return EDGES[i];
+    }
+
+    /**
+     * Get the vertex indices of face number \a i of the box, where i is between 0 and 5.
+     *
+     * @param i Index of face, between 0 and 5 inclusive.
+     *
+     * @return A 4-tuple containing the vertex indices of the face, in counter-clockwise order when viewing the box outside-in.
+     *   The indices can be mapped to vertex positions using getVertex().
+     *
+     * @see getVertex(), getEdge(), getFaceNormal()
+     */
+    std::array<uintx, 4> const & getFace(intx i) const
+    {
+      static std::array<uintx, 4> const FACES[6] = {
+        { 0, 4, 6, 2 },  // -X
+        { 1, 3, 7, 5 },  // +X
+
+        { 0, 1, 5, 4 },  // -Y
+        { 2, 6, 7, 3 },  // +Y
+
+        { 0, 2, 3, 1 },  // -Z
+        { 4, 5, 7, 6 }   // +Z
+      };
+
+      debugAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
+
+      return FACES[i];
+    }
+
+    /**
+     * Get the outward unit normal vector for face number \a i of the box, where i is between 0 and 5.
+     *
+     * @param i Index of face, between 0 and 5 inclusive.
+     *
+     * @see getFace()
+     */
+    VectorT const & getFaceNormal(intx i) const
+    {
+      // Synced with the face order in getFace()
+      static VectorT const NORMALS[6] = {
+        -VectorT::UnitX(),
+         VectorT::UnitX(),
+
+        -VectorT::UnitY(),
+         VectorT::UnitY(),
+
+        -VectorT::UnitZ(),
+         VectorT::UnitZ()
+      };
+
+      debugAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
+
+      return NORMALS[i];
     }
 
     using BaseT::distance;

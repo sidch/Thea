@@ -77,10 +77,10 @@ struct Sector
     if (rect.squaredDistance(center) < min_radius * min_radius)
       return false;
 
-    return (contains(rect.getCorner(0))
-         && contains(rect.getCorner(1))
-         && contains(rect.getCorner(2))
-         && contains(rect.getCorner(3)));
+    return (contains(rect.getVertex(0))
+         && contains(rect.getVertex(1))
+         && contains(rect.getVertex(2))
+         && contains(rect.getVertex(3)));
   }
 
   // A conservative intersection test -- can return true even when the shapes don't intersect
@@ -99,24 +99,24 @@ struct Sector
       return false;
 
     // Any rectangle corner inside sector ==> intersect
-    if (contains(rect.getCorner(0))
-     || contains(rect.getCorner(1))
-     || contains(rect.getCorner(2))
-     || contains(rect.getCorner(3)))
+    if (contains(rect.getVertex(0))
+     || contains(rect.getVertex(1))
+     || contains(rect.getVertex(2))
+     || contains(rect.getVertex(3)))
       return true;
 
     // Test against min_angle separating ray
-    if (min_space.negativeHalfSpaceContains(rect.getCorner(0))
-     && min_space.negativeHalfSpaceContains(rect.getCorner(1))
-     && min_space.negativeHalfSpaceContains(rect.getCorner(2))
-     && min_space.negativeHalfSpaceContains(rect.getCorner(3)))
+    if (min_space.negativeHalfSpaceContains(rect.getVertex(0))
+     && min_space.negativeHalfSpaceContains(rect.getVertex(1))
+     && min_space.negativeHalfSpaceContains(rect.getVertex(2))
+     && min_space.negativeHalfSpaceContains(rect.getVertex(3)))
       return false;
 
     // Test against max_angle separating ray
-    if (max_space.negativeHalfSpaceContains(rect.getCorner(0))
-     && max_space.negativeHalfSpaceContains(rect.getCorner(1))
-     && max_space.negativeHalfSpaceContains(rect.getCorner(2))
-     && max_space.negativeHalfSpaceContains(rect.getCorner(3)))
+    if (max_space.negativeHalfSpaceContains(rect.getVertex(0))
+     && max_space.negativeHalfSpaceContains(rect.getVertex(1))
+     && max_space.negativeHalfSpaceContains(rect.getVertex(2))
+     && max_space.negativeHalfSpaceContains(rect.getVertex(3)))
       return false;
 
     return true;

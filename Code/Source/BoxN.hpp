@@ -71,9 +71,9 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
      * Get the i'th corner of the box, for \a i in the range [0, 2^N - 1]. This function works as expected only if
      * N <= sizeof(uintx).
      */
-    VectorT getCorner(uintx i) const
+    VectorT getVertex(uintx i) const
     {
-      return frame.pointToWorldSpace(aab.getCorner(i));
+      return frame.pointToWorldSpace(aab.getVertex(i));
     }
 
     /** Check if the box intersects (i.e. contains) a point. */
@@ -102,7 +102,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
     {
       // FIXME: Currently works only for N < sizeof(uintx)
       for (uintx i = 0; i < (1 << N); ++i)
-        if (!contains(aab_.getCorner(i)))
+        if (!contains(aab_.getVertex(i)))
           return false;
 
       return true;
@@ -115,7 +115,7 @@ class /* THEA_API */ BoxN : public RayIntersectableN<N, T>
 
       // FIXME: Currently works only for N < sizeof(uintx)
       for (uintx i = 0; i < (1 << N); ++i)
-        if (!aab.contains(combined_transform * other.aab.getCorner(i)))
+        if (!aab.contains(combined_transform * other.aab.getVertex(i)))
           return false;
 
       return true;

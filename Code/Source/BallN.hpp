@@ -93,7 +93,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     {
       // FIXME: Currently works only for N < sizeof(uintx)
       for (uintx i = 0; i < (1 << N); ++i)
-        if (!contains(aab.getCorner(i)))
+        if (!contains(aab.getVertex(i)))
           return false;
 
       return true;

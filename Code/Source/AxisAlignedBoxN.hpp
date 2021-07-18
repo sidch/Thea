@@ -103,11 +103,11 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     }
 
     /**
-     * Get the i'th corner of the box, for \a i in the range [0, 2^N - 1]. This function works as expected only if
+     * Get the i'th corner vertex of the box, for \a i in the range [0, 2^N - 1]. This function works as expected only if
      * N <= sizeof(uintx). The d'th coordinate of the returned point is assigned the d'th coordinate of the maximum corner of
-     * the box if the d'th bit of i (where the 0'th bit is the least significant) is 1, and the minimum corner if it is 0.
+     * the box if the d'th bit of i (where the 0'th bit is the least significant) is 1, and of the minimum corner if it is 0.
      */
-    VectorT getCorner(uintx i) const
+    VectorT getVertex(uintx i) const
     {
       VectorT ret;
       for (intx j = 0; j < N; ++j)
