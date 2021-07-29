@@ -249,80 +249,107 @@ THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS(i)
 #undef THEA_DECL_RESIZABLE_MATRIX_MAP_TYPEDEFS
 
 /** Alias for Eigen::Map< Matrix<...> >. */
-template <int Rows, int Cols, typename T = Real,
-          int Options = DEFAULT_MATRIX_LAYOUT,
-          int MaxRowsAtCompileTime = Rows,
-          int MaxColsAtCompileTime = Cols>
-using MatrixMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> >;
+template < int Rows, int Cols, typename T = Real,
+           int Options = DEFAULT_MATRIX_LAYOUT,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int MaxRowsAtCompileTime = Rows,
+           int MaxColsAtCompileTime = Cols >
+using MatrixMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>,
+                              MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< Matrix<...> const >. */
-template <int Rows, int Cols, typename T = Real,
-          int Options = DEFAULT_MATRIX_LAYOUT,
-          int MaxRowsAtCompileTime = Rows,
-          int MaxColsAtCompileTime = Cols>
-using MatrixConstMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const >;
+template < int Rows, int Cols, typename T = Real,
+           int Options = DEFAULT_MATRIX_LAYOUT,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int MaxRowsAtCompileTime = Rows,
+           int MaxColsAtCompileTime = Cols >
+using MatrixConstMap = Eigen::Map< Matrix<Rows, Cols, T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const,
+                                   MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< Vector<...> >. */
-template <int Size, typename T = Real,
-          int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Size>
-using VectorMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime> >;
+template < int Size, typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::COLUMN_MAJOR,
+           int MaxRowsAtCompileTime = Size >
+using VectorMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime>, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< Vector<...> const >. */
-template <int Size, typename T = Real,
-          int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Size>
-using VectorConstMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime> const >;
+template < int Size, typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::COLUMN_MAJOR,
+           int MaxRowsAtCompileTime = Size >
+using VectorConstMap = Eigen::Map< Vector<Size, T, Options, MaxRowsAtCompileTime> const, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< RowVector<...> >. */
-template <int Size, typename T = Real,
-          int Options = MatrixLayout::ROW_MAJOR,
-          int MaxColsAtCompileTime = Size>
-using RowVectorMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime> >;
+template < int Size, typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::ROW_MAJOR,
+           int MaxColsAtCompileTime = Size >
+using RowVectorMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime>, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< RowVector<...> const >. */
-template <int Size, typename T = Real,
-          int Options = MatrixLayout::ROW_MAJOR,
-          int MaxColsAtCompileTime = Size>
-using RowVectorConstMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime> const >;
+template < int Size, typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::ROW_MAJOR,
+           int MaxColsAtCompileTime = Size >
+using RowVectorConstMap = Eigen::Map< RowVector<Size, T, Options, MaxColsAtCompileTime> const, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< MatrixX<...> >. */
-template <typename T = Real,
-          int Options = DEFAULT_MATRIX_LAYOUT,
-          int MaxRowsAtCompileTime = Eigen::Dynamic,
-          int MaxColsAtCompileTime = Eigen::Dynamic>
-using MatrixXMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> >;
+template < typename T = Real,
+           int Options = DEFAULT_MATRIX_LAYOUT,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int MaxRowsAtCompileTime = Eigen::Dynamic,
+           int MaxColsAtCompileTime = Eigen::Dynamic >
+using MatrixXMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime>, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< MatrixX<...> const >. */
-template <typename T = Real,
-          int Options = DEFAULT_MATRIX_LAYOUT,
-          int MaxRowsAtCompileTime = Eigen::Dynamic,
-          int MaxColsAtCompileTime = Eigen::Dynamic>
-using MatrixXConstMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const >;
+template < typename T = Real,
+           int Options = DEFAULT_MATRIX_LAYOUT,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int MaxRowsAtCompileTime = Eigen::Dynamic,
+           int MaxColsAtCompileTime = Eigen::Dynamic >
+using MatrixXConstMap = Eigen::Map< MatrixX<T, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> const,
+                                    MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< VectorX<...> >. */
-template <typename T = Real,
-          int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Eigen::Dynamic>
-using VectorXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> >;
+template < typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::COLUMN_MAJOR,
+           int MaxRowsAtCompileTime = Eigen::Dynamic >
+using VectorXMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime>, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< VectorX<...> const >. */
-template <typename T = Real,
-          int Options = MatrixLayout::COLUMN_MAJOR,
-          int MaxRowsAtCompileTime = Eigen::Dynamic>
-using VectorXConstMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> const >;
+template < typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::COLUMN_MAJOR,
+           int MaxRowsAtCompileTime = Eigen::Dynamic >
+using VectorXConstMap = Eigen::Map< VectorX<T, Options, MaxRowsAtCompileTime> const, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< RowVectorX<...> >. */
-template <typename T = Real,
-          int Options = MatrixLayout::ROW_MAJOR,
-          int MaxColsAtCompileTime = Eigen::Dynamic>
-using RowVectorXMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> >;
+template < typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::ROW_MAJOR,
+           int MaxColsAtCompileTime = Eigen::Dynamic >
+using RowVectorXMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime>, MapOptions, StrideType >;
 
 /** Alias for Eigen::Map< RowVectorX<...> const >. */
-template <typename T = Real,
-          int Options = MatrixLayout::ROW_MAJOR,
-          int MaxColsAtCompileTime = Eigen::Dynamic>
-using RowVectorXConstMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> const >;
+template < typename T = Real,
+           typename StrideType = Eigen::Stride<0, 0>,
+           int MapOptions = Eigen::Unaligned,
+           int Options = MatrixLayout::ROW_MAJOR,
+           int MaxColsAtCompileTime = Eigen::Dynamic >
+using RowVectorXConstMap = Eigen::Map< RowVectorX<T, Options, MaxColsAtCompileTime> const, MapOptions, StrideType >;
 
 //=============================================================================================================================
 // Typedef other useful Eigen classes.
