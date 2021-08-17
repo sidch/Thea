@@ -82,52 +82,9 @@ template <typename ExternalSampleKdTreeT>
 class SampledSurface
 {
   public:
-    typedef ExternalSampleKdTreeT ExternalSampleKdTree;  ///< A precomputed kd-tree on mesh samples.
+    typedef ExternalSampleKdTreeT ExternalSampleKdTree;      ///< An externally precomputed kd-tree on mesh samples.
+    typedef KdTreeN<SurfaceSample, 3> InternalSampleKdTree;  ///< An internally computed kd-tree on mesh samples.
 
-  protected:
-    typedef KdTreeN<SurfaceSample, 3> InternalSampleKdTree;  ///< A kd-tree on mesh samples.
-
-  private:
-    /** Get the smoothed normal at a point on a triangle with vertex normals. */
-    template <typename TriangleT>
-    Vector3 smoothNormal(TriangleT const & tri, Vector3 const & p)
-    {
-      Vector3 b = tri.barycentricCoordinates(p);
-
-      Vector3 n0 = tri.getVertices().getVertexNormal(0);
-      Vector3 n1 = tri.getVertices().getVertexNormal(1);
-      Vector3 n2 = tri.getVertices().getVertexNormal(2);
-
-      return b[0] * n0 + b[1] * n1 + b[2] * n2;
-    }
-
-    /** Compute sample points with normals on the mesh. */
-    template <typename MeshT>
-    void computeSamples(MeshSampler<MeshT> & sampler, intx num_samples, Array<SurfaceSample> & samples)
-    {
-      typedef typename MeshSampler<MeshT>::Triangle Triangle;
-
-      static intx const DEFAULT_NUM_SAMPLES = 5000;
-      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
-
-      Array<Vector3> positions;
-      Array<Triangle const *> tris;
-      sampler.sampleEvenlyByArea(num_samples, positions, nullptr, &tris);
-
-      samples.clear();
-      for (size_t i = 0; i < positions.size(); ++i)
-        samples.push_back(SurfaceSample(positions[i], smoothNormal(*tris[i], positions[i])));
-    }
-
-    /** Compute the scale of the shape as the diameter of the bounding sphere of the samples. */
-    void computeScaleFromSamples()
-    {
-      BestFitSphere3 bsphere;
-      PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(samples.begin(), samples.end());
-      scale = bsphere.getDiameter();
-    }
-
-  protected:
     /**
      * Initializes the object from a set of precomputed samples.
      *
@@ -141,7 +98,7 @@ class SampledSurface
     : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
       scale(normalization_scale)
     {
-      alwaysAssertM(num_samples >= 0,   "SampledSurface: Number of precomputed samples must be non-negative");
+      alwaysAssertM(num_samples >= 0,      "SampledSurface: Number of precomputed samples must be non-negative");
       alwaysAssertM(positions != nullptr,  "SampledSurface: Null array of sample positions");
       alwaysAssertM(normals != nullptr,    "SampledSurface: Null array of sample normals");
 
@@ -158,16 +115,18 @@ class SampledSurface
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape. If zero, no samples are generated.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
     template <typename MeshT>
-    SampledSurface(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
+    SampledSurface(MeshT const & mesh, intx num_samples = -1, bool smooth = false, Real normalization_scale = -1)
     : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
       scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh);
-      computeSamples(sampler, num_samples, samples);
+      computeSamples(sampler, num_samples, smooth, samples);
 
       if (scale <= 0)
       {
@@ -182,16 +141,19 @@ class SampledSurface
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape. If zero, no samples are generated.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
     template <typename MeshT>
-    SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
+    SampledSurface(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, bool smooth = false,
+                   Real normalization_scale = -1)
     : sample_kdtree(nullptr), precomp_kdtree(nullptr), owns_sample_graph(true), sample_graph(nullptr),
       scale(normalization_scale)
     {
       MeshSampler<MeshT> sampler(mesh_group);
-      computeSamples(sampler, num_samples, samples);
+      computeSamples(sampler, num_samples, smooth, samples);
 
       if (scale <= 0)
       {
@@ -249,12 +211,23 @@ class SampledSurface
       SampleGraph::SampleArray const & ext_samples = sample_graph->getSamples();
       samples.resize(ext_samples.size());
       for (size_t i = 0; i < samples.size(); ++i)
-      {
         samples[i] = SurfaceSample(ext_samples[i].getPosition(), ext_samples[i].getNormal());
-      }
 
       if (scale <= 0)
         computeScaleFromSamples();
+    }
+
+    /** Destructor. */
+    ~SampledSurface()
+    {
+      delete sample_kdtree;
+      if (owns_sample_graph) delete sample_graph;
+    }
+
+    /** Get the number of surface samples. */
+    intx numSamples() const
+    {
+      return (intx)samples.size();
     }
 
     /** Get the array of samples. */
@@ -267,7 +240,27 @@ class SampledSurface
       return samples[(size_t)index];
     }
 
-    /** Get a non-const reference to the kd-tree on internally generated samples, or null if no such samples exist. */
+    /** Get the position of the surface sample with index \a index. */
+    Vector3 getSamplePosition(intx index) const
+    {
+      debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
+      return samples[(size_t)index].getPosition();
+    }
+
+    /** Get the normal of the surface sample with index \a index. */
+    Vector3 getSampleNormal(intx index) const
+    {
+      debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
+      return samples[(size_t)index].getNormal();
+    }
+
+    /** Get the normalization scale of the shape. */
+    Real getNormalizationScale() const { return scale; }
+
+    /**
+     * Get a non-const reference to the internally created kd-tree, or null if no such kd-tree exists. <b>Use with caution</b>
+     * -- you should never actually change the tree even if you have a non-const handle to it!
+     */
     InternalSampleKdTree * getMutableInternalKdTree() const
     {
       if (!sample_kdtree && !samples.empty())
@@ -276,23 +269,20 @@ class SampledSurface
       return sample_kdtree;
     }
 
-    /**
-     * Get the kd-tree on internally generated samples, or null if no such samples exist. <b>Use with caution</b> -- you should
-     * never actually change the tree even if you have a non-const handle to it!
-     */
+    /** Get the internally created kd-tree, or null if no such kd-tree exists. */
     InternalSampleKdTree const * getInternalKdTree() const
     {
       return const_cast<SampledSurface *>(this)->getMutableInternalKdTree();
     }
 
-    /** Check if the shape has a kd-tree on externally generated samples. */
+    /** Check if the shape has an externally precomputed kd-tree. */
     bool hasExternalKdTree() const
     {
       return (bool)precomp_kdtree;
     }
 
     /**
-     * Get a non-const reference to the kd-tree on externally generated samples, or null if no such samples exist. <b>Use with
+     * Get a non-const reference to the externally precomputed kd-tree, or null if no such kd-tree exists. <b>Use with
      * caution</b> -- you should never actually change the tree even if you have a non-const handle to it!
      */
     ExternalSampleKdTree * getMutableExternalKdTree() const
@@ -300,7 +290,7 @@ class SampledSurface
       return const_cast<ExternalSampleKdTree *>(precomp_kdtree);
     }
 
-    /** Get the kd-tree on externally generated samples, or null if no such kd-tree exists. */
+    /** Get the externally precomputed kd-tree, or null if no such kd-tree exists. */
     ExternalSampleKdTree const * getExternalKdTree() const
     {
       return precomp_kdtree;
@@ -332,44 +322,52 @@ class SampledSurface
       return sample_graph;
     }
 
-  public:
-    /** Destructor. */
-    ~SampledSurface()
-    {
-      delete sample_kdtree;
-      if (owns_sample_graph) delete sample_graph;
-    }
-
-    /** Get the number of surface samples. */
-    intx numSamples() const
-    {
-      return (intx)samples.size();
-    }
-
-    /** Get the position of the surface sample with index \a index. */
-    Vector3 getSamplePosition(intx index) const
-    {
-      debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
-      return samples[(size_t)index].getPosition();
-    }
-
-    /** Get the normal of the surface sample with index \a index. */
-    Vector3 getSampleNormal(intx index) const
-    {
-      debugAssertM(index >= 0 && index < numSamples(), format("SampledSurface: Sample index %ld out of bounds", index));
-      return samples[(size_t)index].getNormal();
-    }
-
-    /** Get the normalization scale of the shape. */
-    Real getNormalizationScale() const { return scale; }
-
   private:
-    Array<SurfaceSample> samples;  ///< Set of internally-generated surface samples.
-    mutable InternalSampleKdTree * sample_kdtree;  ///< kd-tree on surface samples.
-    ExternalSampleKdTree const * precomp_kdtree;  ///< Precomputed kd-tree on surface samples.
-    bool owns_sample_graph;  ///< Was the sample graph precomputed?
-    mutable SampleGraph * sample_graph;  ///< Precomputed or internally computed graph on surface samples.
-    Real scale;  ///< The normalization length.
+    /** Get the smoothed normal at a point on a triangle with vertex normals. */
+    template <typename TriangleT>
+    Vector3 smoothNormal(TriangleT const & tri, Vector3 const & p)
+    {
+      Vector3 b = tri.barycentricCoordinates(p);
+
+      Vector3 n0 = tri.getVertices().getVertexNormal(0);
+      Vector3 n1 = tri.getVertices().getVertexNormal(1);
+      Vector3 n2 = tri.getVertices().getVertexNormal(2);
+
+      return b[0] * n0 + b[1] * n1 + b[2] * n2;
+    }
+
+    /** Compute sample points with normals on the mesh. */
+    template <typename MeshT>
+    void computeSamples(MeshSampler<MeshT> & sampler, intx num_samples, bool smooth, Array<SurfaceSample> & samples)
+    {
+      typedef typename MeshSampler<MeshT>::Triangle Triangle;
+
+      static intx const DEFAULT_NUM_SAMPLES = 5000;
+      if (num_samples < 0) num_samples = DEFAULT_NUM_SAMPLES;
+
+      Array<Vector3> positions;
+      Array<Triangle const *> tris;
+      sampler.sampleEvenlyByArea(num_samples, positions, nullptr, &tris);
+
+      samples.clear();
+      for (size_t i = 0; i < positions.size(); ++i)
+        samples.push_back(SurfaceSample(positions[i], (smooth ? smoothNormal(*tris[i], positions[i]) : tris[i]->getNormal())));
+    }
+
+    /** Compute the scale of the shape as the diameter of the bounding sphere of the samples. */
+    void computeScaleFromSamples()
+    {
+      BestFitSphere3 bsphere;
+      PointCollectorN<BestFitSphere3, 3>(&bsphere).addPoints(samples.begin(), samples.end());
+      scale = bsphere.getDiameter();
+    }
+
+    Array<SurfaceSample>            samples;            ///< Set of internally-generated surface samples.
+    mutable InternalSampleKdTree *  sample_kdtree;      ///< kd-tree on surface samples.
+    ExternalSampleKdTree const *    precomp_kdtree;     ///< Precomputed kd-tree on surface samples.
+    bool                            owns_sample_graph;  ///< Was the sample graph precomputed?
+    mutable SampleGraph *           sample_graph;       ///< Precomputed or internally computed graph on surface samples.
+    Real                            scale;              ///< The normalization length.
 
 }; // class SampledSurface
 

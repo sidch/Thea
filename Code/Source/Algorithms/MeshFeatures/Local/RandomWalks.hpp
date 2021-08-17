@@ -46,10 +46,12 @@ class RandomWalks : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      */
     template <typename MeshT>
-    RandomWalks(MeshT const & mesh, intx num_samples = -1)
-    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples))
+    RandomWalks(MeshT const & mesh, intx num_samples = -1, bool smooth = false)
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth)
     {}
 
     /**
@@ -58,10 +60,12 @@ class RandomWalks : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      */
     template <typename MeshT>
-    RandomWalks(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1)
-    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples))
+    RandomWalks(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, bool smooth = false)
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth)
     {}
 
     /**

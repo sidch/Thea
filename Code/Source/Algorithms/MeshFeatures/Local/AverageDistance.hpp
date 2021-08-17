@@ -46,12 +46,14 @@ class AverageDistance : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used as the default way to normalize the average distance (an actual
      *   distance of \a normalization_scale will be mapped to 1). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    AverageDistance(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
-    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    AverageDistance(MeshT const & mesh, intx num_samples = -1, bool smooth = false, Real normalization_scale = -1)
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth, normalization_scale)
     {}
 
     /**
@@ -60,12 +62,15 @@ class AverageDistance : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used as the default way to normalize the average distance (an actual
      *   distance of \a normalization_scale will be mapped to 1). If <= 0, the bounding sphere diameter will be used.
      */
     template <typename MeshT>
-    AverageDistance(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
-    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    AverageDistance(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, bool smooth = false,
+                    Real normalization_scale = -1)
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth, normalization_scale)
     {}
 
     /**

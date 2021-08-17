@@ -43,12 +43,14 @@ class Curvature : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh The mesh representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
     template <typename MeshT>
-    Curvature(MeshT const & mesh, intx num_samples = -1, Real normalization_scale = -1)
-    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    Curvature(MeshT const & mesh, intx num_samples = -1, bool smooth = false, Real normalization_scale = -1)
+    : BaseT(mesh, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth, normalization_scale)
     {}
 
     /**
@@ -57,12 +59,15 @@ class Curvature : public SampledSurface<ExternalSampleKdTreeT>
      *
      * @param mesh_group The mesh group representing the shape.
      * @param num_samples The number of samples to compute on the shape.
+     * @param smooth If true, sample normals will be computed by averaging vertex normals rather than by using piecewise
+     *   constant triangle normals.
      * @param normalization_scale The scale of the shape, used to define neighborhood sizes. If <= 0, the bounding sphere
      *   diameter will be used.
      */
     template <typename MeshT>
-    Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, Real normalization_scale = -1)
-    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), normalization_scale)
+    Curvature(Graphics::MeshGroup<MeshT> const & mesh_group, intx num_samples = -1, bool smooth = false,
+              Real normalization_scale = -1)
+    : BaseT(mesh_group, (num_samples < 0 ? DEFAULT_NUM_SAMPLES : num_samples), smooth, normalization_scale)
     {}
 
     /**
