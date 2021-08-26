@@ -27,10 +27,10 @@ namespace Algorithms {
 //=============================================================================================================================
 
 /**
- * Has boolean member <code>value = true</code> if <code>T</code> can be identified with a single point in n-D space, else
+ * Has boolean member <code>value = true</code> if <code>T</code> can be identified with a single point in N-D space, else
  * <code>value = false</code>. Unless you specialize the class to set the value to true, it is false by default.
  *
- * @see TraitsN
+ * @see PointTraitsN
  */
 template <typename T, int N, typename Enable = void>
 class /* THEA_API */ IsPointN
@@ -73,46 +73,51 @@ class /* THEA_API */ IsNonReferencedPointN
 };
 
 //=============================================================================================================================
-// Traits class to get position of a point-like object
+// Traits class to get the position of a point-like object
 //=============================================================================================================================
 
 /**
- * Traits for an object which can be identified with a single point in N-space.
+ * Traits for an object which can be identified with a single point in N-space. If IsPointN<T>::value is false, then the
+ * getPosition() function returns some arbitrary value by default. The default implementation for IsPointN<T>::value == true
+ * handles Vector and types implicitly convertible to it. Specialize as needed for other classes.
  *
  * @see IsPointN
  */
-template <typename PointT, int N, typename ScalarT = Real>
+template <typename T, int N, typename ScalarT = Real, typename Enable = void>
 class /* THEA_API */ PointTraitsN
 {
   public:
-    typedef Vector<N, ScalarT> VectorT;  ///< A vector in N-space.
-
-    /** Get the position of the "point". The default implementation is for Vector and types implicitly convertible to it. */
-    static VectorT getPosition(PointT const & p) { return p; }
+    /** Get the position of the point. */
+    static Vector<N, ScalarT> getPosition(T const & t) { return t; }
 
 }; // class PointTraitsN
 
-// Partial specialization of PointTraitsN for const types
-template <typename PointT, int N, typename ScalarT>
-class /* THEA_API */ PointTraitsN<PointT const, N, ScalarT>
+// Default specialization for all classes T with IsPointN<T>::value == false
+template <typename T, int N, typename ScalarT>
+class PointTraitsN< T, N, ScalarT, typename std::enable_if< !IsPointN<T, N>::value >::type >
 {
   public:
-    typedef Vector<N, ScalarT> VectorT;
+    static Vector<N, ScalarT> getPosition(T const & t) { return Vector<N, ScalarT>::Zero(); }
 
-    static VectorT getPosition(PointT const & p) { return PointTraitsN<PointT, N, ScalarT>::getPosition(p); }
+}; // class PointTraitsN<T, N, ScalarT, IsPointN<T, N>::value == false>
 
-}; // class PointTraitsN<PointT const, N, ScalarT>
+// Partial specialization of PointTraitsN for const types
+template <typename T, int N, typename ScalarT>
+class /* THEA_API */ PointTraitsN<T const, N, ScalarT>
+{
+  public:
+    static Vector<N, ScalarT> getPosition(T const & t) { return PointTraitsN<T, N, ScalarT>::getPosition(t); }
+
+}; // class PointTraitsN<T const, N, ScalarT>
 
 // Partial specialization of PointTraitsN for pointer types
-template <typename PointT, int N, typename ScalarT>
-class /* THEA_API */ PointTraitsN<PointT *, N, ScalarT>
+template <typename T, int N, typename ScalarT>
+class /* THEA_API */ PointTraitsN<T *, N, ScalarT>
 {
   public:
-    typedef Vector<N, ScalarT> VectorT;
+    static Vector<N, ScalarT> getPosition(T * t) { return PointTraitsN<T, N, ScalarT>::getPosition(*t); }
 
-    static VectorT getPosition(PointT * p) { return PointTraitsN<PointT, N, ScalarT>::getPosition(*p); }
-
-}; // class PointTraitsN<PointT *, N, ScalarT>
+}; // class PointTraitsN<T *, N, ScalarT>
 
 } // namespace Algorithms
 } // namespace Thea

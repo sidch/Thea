@@ -1,16 +1,17 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshFeatures/Local/AverageDistance.hpp"
-#include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
-#include "../../Algorithms/MeshFeatures/Local/LocalDistanceHistogram.hpp"
-#include "../../Algorithms/MeshFeatures/Local/LocalPca.hpp"
-#include "../../Algorithms/MeshFeatures/Local/RandomWalks.hpp"
-#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
-#include "../../Algorithms/MeshFeatures/Local/SpinImage.hpp"
-#include "../../Algorithms/MeshFeatures/Local/Visibility.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/AverageDistance.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/Curvature.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/LocalDistanceHistogram.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/LocalPca.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/RandomWalks.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/SpinImage.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/Visibility.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
+#include "../../Algorithms/PointCloud3.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -740,7 +741,7 @@ computeSDF(KdTree const & kdtree, Array<Vector3> const & positions, Array<Vector
   THEA_CONSOLE << "Computing SDF features";
 
   values.resize(positions.size());
-  MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree, (Real)mesh_scale);
+  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree, (Real)mesh_scale);
   double scaling = (normalize_by_mesh_scale ? 1 : mesh_scale);
 
   for (size_t i = 0; i < positions.size(); ++i)
@@ -774,7 +775,11 @@ computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Arra
   THEA_CONSOLE << "Computing projected curvatures";
 
   values.resize(positions.size());
-  MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::Curvature projcurv(&surf);
 
   for (size_t i = 0; i < positions.size(); ++i)
     values[i] = projcurv.computeProjectedCurvature(positions[i], normals[i], (Real)nbd_radius);
@@ -791,7 +796,11 @@ computeAverageDistances(MG const & mg, Array<Vector3> const & positions, intx nu
   THEA_CONSOLE << "Computing average " << dist_type.toString() << " distances";
 
   values.resize(positions.size());
-  MeshFeatures::Local::AverageDistance<> avgd(mg, num_samples, (Real)mesh_scale);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::AverageDistance avgd(&surf);
 
   for (size_t i = 0; i < positions.size(); ++i)
     values[i] = avgd.compute(positions[i], dist_type, (Real)max_distance);
@@ -815,7 +824,11 @@ computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, 
   }
 
   values.resize((intx)positions.size(), num_bins);
-  MeshFeatures::Local::LocalDistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::LocalDistanceHistogram dh(&surf);
 
   for (size_t i = 0; i < positions.size(); ++i)
   {
@@ -836,7 +849,11 @@ computeLocalPca(MG const & mg, Array<Vector3> const & positions, intx num_sample
   THEA_CONSOLE << "Computing local PCA features";
 
   values.clear();
-  MeshFeatures::Local::LocalPca<> pca(mg, num_samples, (Real)mesh_scale);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::LocalPca pca(&surf);
 
   Vector3 evecs[3];
   for (size_t i = 0; i < positions.size(); ++i)
@@ -869,7 +886,11 @@ computeLocalPcaRatios(MG const & mg, Array<Vector3> const & positions, intx num_
   THEA_CONSOLE << "Computing local PCA ratios";
 
   values.clear();
-  MeshFeatures::Local::LocalPca<> pca(mg, num_samples, (Real)mesh_scale);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::LocalPca pca(&surf);
 
   for (size_t i = 0; i < positions.size(); ++i)
   {
@@ -900,7 +921,10 @@ computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num_samp
   intx num_features = num_radial_bins * num_height_bins;
   values.resize((intx)positions.size(), num_features);
 
-  MeshFeatures::Local::SpinImage<> spin_image(mg, num_samples, (Real)mesh_scale);
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::SpinImage spin_image(&surf);
 
   MatrixX<double> f;
   for (size_t i = 0; i < positions.size(); ++i)
@@ -924,7 +948,11 @@ computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_sam
   THEA_CONSOLE << "Computing random walks";
 
   values.resize((intx)positions.size(), 3 * (size_t)num_steps);
-  MeshFeatures::Local::RandomWalks<> rw(mg, num_samples);
+
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::RandomWalks rw(&surf);
 
   for (size_t i = 0; i < positions.size(); ++i)
     rw.compute(positions[i], num_steps, &values((intx)i, 0), num_walks);
@@ -940,7 +968,7 @@ computeVisibilities(KdTree const & kdtree, Array<Vector3> const & positions, int
   THEA_CONSOLE << "Computing external visibilities";
 
   values.resize(positions.size());
-  MeshFeatures::Local::Visibility<Mesh> vis(&kdtree);
+  SurfaceFeatures::Local::Visibility<Mesh> vis(&kdtree);
 
   for (size_t i = 0; i < positions.size(); ++i)
     values[i] = vis.compute(positions[i], num_rays);

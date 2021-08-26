@@ -1,7 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
-#include "../../Algorithms/SampleGraph.hpp"
+#include "../../Algorithms/PointCloud3.hpp"
 #include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -54,7 +54,8 @@ struct DistanceCallback : public Noncopyable
 {
   DistanceCallback(intx n) : m(n, n), current_source(-1) { m.fill(-1); }
 
-  bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
+  bool operator()(PointCloud3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
+                  PointCloud3::SampleGraph::VertexHandle pred)
   {
     if (!vertex)
       return false;
@@ -134,15 +135,15 @@ main(int argc, char * argv[])
   if (curr_opt != 3)
   {
     THEA_CONSOLE << "";
-    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points> <points> <graph-file>";
+    THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh|dense-points> <points> <surf-file>";
     THEA_CONSOLE << "";
     THEA_CONSOLE << "Options:";
-    THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity graph";
+    THEA_CONSOLE << "  --max-nbrs=N          Maximum degree of proximity surf";
     THEA_CONSOLE << "  --min-samples=N       Minimum number of original plus generated samples";
     THEA_CONSOLE << "  --normals | -n        Run extra tests assuming consistently oriented mesh normals";
     THEA_CONSOLE << "  --reachability | -r   Reachability test for adjacency (requires -n)";
     THEA_CONSOLE << "  --distances | -d      Output distances b/w all pairs of points as a .dist file";
-    THEA_CONSOLE << "                        Requires graph to already exist";
+    THEA_CONSOLE << "                        Requires surf to already exist";
     THEA_CONSOLE << "";
 
     return -1;
@@ -155,27 +156,28 @@ main(int argc, char * argv[])
   }
 
   //===========================================================================================================================
-  // Load graph if it already exists, compute and write all pairwise distances, and quit
+  // Load sample graph if it already exists, compute and write all pairwise distances, and quit
   //===========================================================================================================================
 
   if (pairwise_distances)
   {
-    SampleGraph graph;
-    if (!graph.load(out_path, samples_path))
+    PointCloud3 surf;
+    if (!surf.load(samples_path, out_path))
     {
       THEA_CONSOLE << "Could not load graph from file " << out_path;
       return -1;
     }
 
-    SampleGraph::SampleArray const & samples = graph.getSamples();
+    auto const & samples = surf.getSamples();
     DistanceCallback distance_callback((intx)samples.size());
-    ShortestPaths<SampleGraph> shortest_paths;
+    ShortestPaths<PointCloud3::SampleGraph> shortest_paths;
 
     distance_callback.m(0, 0) = 0;
     for (size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
     {
       distance_callback.current_source = (intx)i;
-      shortest_paths.dijkstraWithCallback(graph, const_cast<SampleGraph::VertexHandle>(&samples[i]),
+      shortest_paths.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()),
+                                          const_cast<PointCloud3::SampleGraph::VertexHandle>(&samples[i]),
                                           std::ref(distance_callback));
     }
 
@@ -324,24 +326,24 @@ main(int argc, char * argv[])
   // Create adjacency graph on samples
   //===========================================================================================================================
 
-  SampleGraph::Options opts;
+  PointCloud3::Options opts;
   opts.setMaxDegree(max_nbrs);
-  SampleGraph graph(opts);
-  graph.setSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : nullptr));
-  graph.setOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : nullptr));
-  graph.init(reachability && !kdtree.isEmpty() ? &kdtree : nullptr);
+  PointCloud3 surf(opts);
+  surf.addSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : nullptr));
+  surf.addOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : nullptr));
+  surf.updateGraph(reachability && !kdtree.isEmpty() ? &kdtree : nullptr);
 
   THEA_CONSOLE << "Computed sample graph";
 
   //===========================================================================================================================
-  // Write graph to file
+  // Write surf to file
   //===========================================================================================================================
 
-  if (!graph.save(out_path, "", true))
+  if (!surf.save(/* samples_path = */ "", out_path, true))
     return -1;
 
   double sum_degrees = 0;
-  SampleGraph::SampleArray const & samples = graph.getSamples();
+  PointCloud3::SampleArray const & samples = surf.getSamples();
   for (size_t i = 0; i < samples.size(); ++i)
     sum_degrees += samples[i].getNeighbors().size();
 

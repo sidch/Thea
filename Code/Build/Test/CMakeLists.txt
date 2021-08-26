@@ -552,7 +552,6 @@ SET(TheaTestsDependencies
     TheaTestMath
     TheaTestMesh
     TheaTestMetrics
-    TheaTestOPTPP
     TheaTestPCA
     TheaTestPyramidMatch
     TheaTestZernike)

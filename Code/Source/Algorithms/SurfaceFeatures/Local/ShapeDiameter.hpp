@@ -12,8 +12,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_Local_ShapeDiameter_hpp__
-#define __Thea_Algorithms_MeshFeatures_Local_ShapeDiameter_hpp__
+#ifndef __Thea_Algorithms_SurfaceFeatures_Local_ShapeDiameter_hpp__
+#define __Thea_Algorithms_SurfaceFeatures_Local_ShapeDiameter_hpp__
 
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
@@ -28,15 +28,13 @@
 
 namespace Thea {
 namespace Algorithms {
+namespace SurfaceFeatures {
 
-/** Namespace for classes that compute mesh features. */
-namespace MeshFeatures {
-
-/** Namespace for classes that compute local features on a mesh. */
+/** Namespace for classes that compute local features on a surface. */
 namespace Local {
 
 /**
- * Compute the shape diameter function (SDF) at a point on a mesh.
+ * Compute the shape diameter function (SDF) at a point on a surface.
  *
  * Gal, Shamir and Cohen-Or, "Pose-Oblivious Shape Signature", IEEE TVCG 2007.
  */
@@ -128,13 +126,13 @@ class ShapeDiameter
      * Get the normalization scale. This is the length by which ray intersection distances will be divided to get the normalized
      * shape diameter values.
      */
-    Real getNormalizationScale() const { return scale; }
+    Real getScale() const { return scale; }
 
     /**
      * Compute the shape diameter function at a query point on the mesh. This explicitly computes the normal at the sample point
      * point -- the other version of the function should be used if the normal is known in advance. The shape diameter will be
-     * normalized to [0, 1] by dividing by the mesh scale, as returned by getNormalizationScale(). If absolutely no query ray
-     * intersects the object, a negative value is returned.
+     * normalized to [0, 1] by dividing by the mesh scale, as returned by getScale(). If absolutely no query ray intersects the
+     * object, a negative value is returned.
      *
      * @param position The position of the query point.
      * @param only_hit_interior_surfaces Only consider ray intersections with surfaces whose normals are in the same direction
@@ -159,8 +157,8 @@ class ShapeDiameter
 
     /**
      * Compute the shape diameter function at a query point with a known (outwards-pointing) normal on the mesh. The shape
-     * diameter will be normalized to [0, 1] by dividing by the mesh scale, as returned by getNormalizationScale(). If
-     * absolutely no query ray intersects the object, a negative value is returned.
+     * diameter will be normalized to [0, 1] by dividing by the mesh scale, as returned by getScale(). If absolutely no query
+     * ray intersects the object, a negative value is returned.
      *
      * @param position The position of the query point.
      * @param normal The normal of the query point.
@@ -267,7 +265,7 @@ class ShapeDiameter
 }; // class ShapeDiameter
 
 } // namespace Local
-} // namespace MeshFeatures
+} // namespace SurfaceFeatures
 } // namespace Algorithms
 } // namespace Thea
 

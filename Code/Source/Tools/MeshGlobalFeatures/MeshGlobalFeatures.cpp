@@ -1,10 +1,11 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshFeatures/Global/DistanceHistogram.hpp"
-#include "../../Algorithms/MeshFeatures/Local/Curvature.hpp"
-#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/SurfaceFeatures/Global/DistanceHistogram.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/Curvature.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
+#include "../../Algorithms/PointCloud3.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -472,7 +473,10 @@ computeDistanceHistogram(MG const & mg, intx num_bins, intx num_samples, Distanc
 {
   THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histogram";
 
-  MeshFeatures::Global::DistanceHistogram<> dh(mg, num_samples, (Real)mesh_scale);
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Global::DistanceHistogram dh(&surf);
 
   values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0]);
@@ -493,10 +497,13 @@ computeCurvatureHistogram(MG const & mg, intx num_bins, intx num_samples, double
   values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0], (abs_values ? 0.0 : -1.0), 1.0);
 
-  MeshFeatures::Local::Curvature<> projcurv(mg, num_samples, (Real)mesh_scale);
+  PointCloud3 surf;
+  surf.addSamples(mg, num_samples);
+  surf.setScale((Real)mesh_scale);
+  SurfaceFeatures::Local::Curvature projcurv(&surf);
 
   if (num_samples < 0)
-    num_samples = projcurv.numSamples();
+    num_samples = surf.numSamples();
 
   if (reduction_ratio < 0)
     reduction_ratio = 5000.0 / num_samples;
@@ -508,8 +515,8 @@ computeCurvatureHistogram(MG const & mg, intx num_bins, intx num_samples, double
   for (size_t i = 0; i < query_indices.size(); ++i)
   {
     intx index = query_indices[i];
-    Vector3 p = projcurv.getSamplePosition(index);
-    Vector3 n = projcurv.getSampleNormal(index);
+    Vector3 p = surf.getSample(index).getPosition();
+    Vector3 n = surf.getSample(index).getNormal();
 
     double curv = projcurv.computeProjectedCurvature(p, n);
     if (abs_values)
@@ -533,7 +540,7 @@ computeSDFHistogram(MG const & mg, intx num_bins, intx num_samples, Array<double
   values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0], 0.0, 1.0);
 
-  MeshFeatures::Local::ShapeDiameter<Mesh> sdf(mg, (Real)mesh_scale);
+  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(mg, (Real)mesh_scale);
 
   if (num_samples < 0)
     num_samples = 5000;

@@ -210,8 +210,8 @@ class RefIterator<T const * const *>
  * increment and comparison) of the original iterator. If the iterator already dereferences to a pointer, the wrapper exactly
  * mimics the behavior of the original iterator.
  *
- * @note Currently the implementation produces a read-only iterator because an iterator's <tt>value_type</tt> may not be
- * const-qualified even if it is a <tt>const_iterator</tt>, but a read-write version would probably not be very useful anyway.
+ * @note Currently the implementation produces a read-only iterator <i>unless</i> IteratorT is a raw pointer. This is because an
+ *   iterator's <tt>value_type</tt> may not be const-qualified even if it is a <tt>const_iterator</tt>.
  */
 template <typename IteratorT, typename Enable = void>
 class PtrIterator : public IteratorT

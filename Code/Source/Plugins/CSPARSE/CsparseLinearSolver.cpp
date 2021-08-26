@@ -189,7 +189,7 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptio
       indicesToInt(sm.getInnerIndexType(), sm.numStoredElements(), sm.getInnerIndices(), irow);
 
       Array<int32> pcol;
-      indicesToInt(sm.getOuterIndexType(), sm.outerSize(), sm.getOuterIndices(), pcol);
+      indicesToInt(sm.getOuterIndexType(), sm.outerSize() + 1, sm.getOuterIndices(), pcol);
 
       int32 nnz = (int32)sm.numStoredElements();
       alwaysAssertM(nnz == pcol[pcol.size() - 1],

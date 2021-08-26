@@ -14,7 +14,7 @@
 
 #include "../Common.hpp"
 #include "FurthestPointSampling.hpp"
-#include "SampleGraph.hpp"
+#include "PointCloud3.hpp"
 #include "ShortestPaths.hpp"
 #include "../Noncopyable.hpp"
 #include "../UnorderedMap.hpp"
@@ -33,13 +33,14 @@ struct DijkstraCallback : public Noncopyable
 {
   DijkstraCallback() : furthest_sample(nullptr) {}
 
-  bool operator()(SampleGraph::VertexHandle vertex, double distance, bool has_pred, SampleGraph::VertexHandle pred)
+  bool operator()(PointCloud3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
+                  PointCloud3::SampleGraph::VertexHandle pred)
   {
     furthest_sample = vertex;  // the callback is always called in order of increasing distance
     return false;
   }
 
-  SampleGraph::VertexHandle furthest_sample;
+  PointCloud3::SampleGraph::VertexHandle furthest_sample;
 };
 
 } // namespace FurthestPointSamplingInternal
@@ -58,33 +59,32 @@ FurthestPointSampling::subsample(intx num_orig_points, Vector3 const * orig_poin
     return 0;
 
   // Compute proximity graph
-  SampleGraph graph;
-  graph.setSamples(num_orig_points, orig_points);
-  graph.init();
+  PointCloud3 surf;
+  surf.addSamples(num_orig_points, orig_points);
 
   if (verbose)
   {
-    THEA_CONSOLE << "FurthestPointSampling: Computed proximity graph";
+    THEA_CONSOLE << "FurthestPointSampling: Constructed point-sampled surface";
     std::cout << "FurthestPointSampling: Selecting samples: " << std::flush;
   }
 
   // Repeatedly add the furthest sample from the selected set to the selected set
-  ShortestPaths<SampleGraph> shortest_paths;
-  UnorderedMap<SampleGraph::VertexHandle, double> src_region;
+  ShortestPaths<PointCloud3::SampleGraph> shortest_paths;
+  UnorderedMap<PointCloud3::SampleGraph::VertexHandle, double> src_region;
   int prev_percent = 0;
   for (intx i = 0; i < num_desired_points; ++i)
   {
-    SampleGraph::VertexHandle furthest_sample = nullptr;
+    PointCloud3::SampleGraph::VertexHandle furthest_sample = nullptr;
     if (src_region.empty())
     {
       // Just pick the first sample
-      furthest_sample = const_cast<SampleGraph::VertexHandle>(&graph.getSample(0));
+      furthest_sample = const_cast<PointCloud3::SampleGraph::VertexHandle>(&surf.getSample(0));
     }
     else
     {
       FurthestPointSamplingInternal::DijkstraCallback callback;
-      shortest_paths.dijkstraWithCallback(graph, nullptr, std::ref(callback), -1, &src_region,
-                                          /* include_unreachable = */ true);
+      shortest_paths.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()), nullptr, std::ref(callback),
+                                          -1, &src_region, /* include_unreachable = */ true);
       if (!callback.furthest_sample || src_region.find(callback.furthest_sample) != src_region.end())
       {
         THEA_ERROR << "FurthestPointSampling: Could not return enough uniformly separated points";

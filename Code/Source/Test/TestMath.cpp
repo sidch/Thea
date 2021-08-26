@@ -99,27 +99,49 @@ testSVD()
   // Linear least squares
   //====================================================================
 
+  static double const EPSILON = 1e-4;
+
   // First, unconstrained (expected result [-3.5, 1.4])
   StdLinearSolver lsq;
-  MatrixXd coeffs; coeffs << -1, 1,
-                             -1, 2,
-                             -1, 3,
-                             -1, 4;
-  VectorXd consts; consts << 6, 5, 7, 10;
-
+  MatrixXd coeffs(4, 2); coeffs << -1, 1,
+                                   -1, 2,
+                                   -1, 3,
+                                   -1, 4;
+  VectorXd consts(4); consts << 6, 5, 7, 10;
   cout << endl;
   if (lsq.solve(&asLvalue(Math::wrapMatrix(coeffs)), consts.data()))
-    cout << "Unconstrained linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
-         << endl;
+  {
+    VectorXdConstMap sol(lsq.getSolution(), 2);
+    cout << "Unconstrained linear least squares solution: " << toString(sol) << endl;
+
+    VectorXd expected(2); expected << -3.5, 1.4;
+    if ((expected - sol).squaredNorm() > EPSILON)
+    {
+      THEA_ERROR << "Test failed: expected solution = " << toString(expected);
+      return false;
+    }
+  }
   else
+  {
     cout << "Unconstrained linear least squares problem has no solution" << endl;
+    return false;
+  }
 
   // Next, non-negative solution only (expected result [0, 2.57] (CHECK!))
   cout << endl;
   StdLinearSolver lsq_nneg(StdLinearSolver::Method::DEFAULT, StdLinearSolver::Constraint::NON_NEGATIVE);
-  if (lsq.solve(&asLvalue(Math::wrapMatrix(coeffs)), consts.data()))
-    cout << "Non-negative linear least squares solution: [" << lsq.getSolution()[0] << ", " << lsq.getSolution()[1] << "]"
-         << endl;
+  if (lsq_nneg.solve(&asLvalue(Math::wrapMatrix(coeffs)), consts.data()))
+  {
+    VectorXdConstMap sol(lsq_nneg.getSolution(), 2);
+    cout << "Non-negative linear least squares solution: " << toString(sol) << endl;
+
+    VectorXd expected(2); expected << 0, 2.56667;
+    if ((expected - sol).squaredNorm() > EPSILON)
+    {
+      THEA_ERROR << "Test failed: expected solution = " << toString(expected);
+      return false;
+    }
+  }
   else
     cout << "Non-negative linear least squares problem has no solution" << endl;
 

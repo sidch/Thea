@@ -73,8 +73,8 @@ class /* THEA_API */ ICompressedSparseMatrix : public virtual ISparseMatrix<T>, 
     virtual void const * THEA_ICALL getOuterIndices() const = 0;
 
     /**
-     * Get the array of outer indices. The array has outerSize() + 1 entries. Convert to the correct integer type using
-     * getOuterIndexType().
+     * Get the array of outer indices. The array has outerSize() + 1 entries: if isFullyCompressed() is true, the last entry is
+     * the total number of non-zeros in the matrix. Convert to the correct integer type using getOuterIndexType().
      */
     virtual void * THEA_ICALL getOuterIndices() = 0;
 

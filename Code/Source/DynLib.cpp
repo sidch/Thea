@@ -108,7 +108,7 @@ DynLib::load()
   }
 
   std::string name = DynLib_addExtension(getName());
-  THEA_LOG << "Loading library '" << getName() << '\'';
+  THEA_LOG << "DynLib: Loading library '" << getName() << '\'';
 
   h_inst = (THEA_DYNLIB_HANDLE)THEA_DYNLIB_LOAD(name.c_str());
 
@@ -123,7 +123,7 @@ DynLib::unload()
 {
   if (!h_inst) return;
 
-  THEA_LOG << "Unloading library '" << getName() << '\'';
+  THEA_LOG << "DynLib: Unloading library '" << getName() << '\'';
 
   if (THEA_DYNLIB_UNLOAD(h_inst))
     throw Error("Could not unload dynamic library '" + getNameStr() + "' (" + dynlibError() + ')');

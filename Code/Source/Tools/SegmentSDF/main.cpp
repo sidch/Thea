@@ -1,6 +1,6 @@
 #include "Graph.hpp"
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/Clustering.hpp"
 #include "../../Algorithms/ConvexHull3.hpp"
 #include "../../Algorithms/MeshKdTree.hpp"
@@ -135,7 +135,7 @@ segmentSDF(int argc, char * argv[])
 
   // Compute SDF values
   Array<Real> sdf_values(positions.size());
-  MeshFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
+  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
   for (size_t i = 0; i < positions.size(); ++i)
     sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
 

@@ -13,7 +13,7 @@
 //============================================================================
 
 #include "DiscreteExponentialMap.hpp"
-#include "SampleGraph.hpp"
+#include "PointCloud3.hpp"
 #include "ShortestPaths.hpp"
 #include "../AffineTransform3.hpp"
 #include "../Map.hpp"
@@ -41,27 +41,28 @@ class Impl
       Vector3 proj_p;
     };
 
-    typedef SampleGraph::SurfaceSample SurfaceSample;
-    typedef ShortestPaths<SampleGraph> Geodesics;
+    typedef PointCloud3::Sample Sample;
+    typedef ShortestPaths<PointCloud3::SampleGraph> Geodesics;
     typedef Map<Geodesics::VertexHandle, ParamData> ParamDataMap;  // FIXME: Can we use UnorderedMap?
 
   public:
     Impl(Options const & options_) : options(options_), radius(0) {}
 
-    void parametrize(SampleGraph const & sample_graph, intx origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
+    void parametrize(PointCloud3 const & surf, intx origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
                      Real radius_)
     {
       clear();
 
-      SurfaceSample * origin_sample = const_cast<SurfaceSample *>(&sample_graph.getSamples()[(size_t)origin_index_]);
+      Sample * origin_sample = const_cast<Sample *>(&surf.getSamples()[(size_t)origin_index_]);
       origin = origin_sample->getPosition();
       u_axis = u_axis_.normalized();  // renormalize to be safe
       v_axis = v_axis_.normalized();
       tangent_plane = Plane3::fromPointAndNormal(origin, u_axis.cross(v_axis));
       radius = radius_;
-      blend_bandwidth_squared = (options.blendUpwind() ? Math::square(3 * sample_graph.getAverageSeparation()) : 0);
+      blend_bandwidth_squared = (options.blendUpwind() ? Math::square(3 * surf.getAverageSeparation()) : 0);
 
-      geodesics.dijkstraWithCallback(const_cast<SampleGraph &>(sample_graph), origin_sample, std::ref(*this), radius);
+      geodesics.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()), origin_sample, std::ref(*this),
+                                     radius);
     }
 
     Vector2 getParameters(intx sample_index, bool & has_parameters) const
@@ -108,7 +109,7 @@ class Impl
       if (has_pred)
       {
         ParamDataMap::const_iterator existing_pred = param_data.find(pred);
-        alwaysAssertM(existing_pred != param_data.end(), "SampleGraph: No parametrization data associated with predecessor");
+        alwaysAssertM(existing_pred != param_data.end(), "PointCloud3: No parametrization data associated with predecessor");
         ParamData const & pred_data = existing_pred->second;
 
         Vector3 p = vertex->getPosition();
@@ -119,10 +120,10 @@ class Impl
         {
           // Blend in the positions of nearby upwind points (the predecessor's visited neighbors) to make the estimate a bit
           // more robust
-          SurfaceSample::NeighborSet const & pred_nbrs = pred->getNeighbors();
+          auto const & pred_nbrs = pred->getNeighbors();
           for (int i = 0; i < pred_nbrs.size(); ++i)
           {
-            SurfaceSample::Neighbor const & pred_nbr = pred_nbrs[i];
+            auto const & pred_nbr = pred_nbrs[i];
             ParamDataMap::const_iterator existing_nbr = param_data.find(pred_nbr.getSample());
             if (existing_nbr != param_data.end())  // already assigned parameters
             {
@@ -251,10 +252,10 @@ DiscreteExponentialMap::~DiscreteExponentialMap()
 }
 
 void
-DiscreteExponentialMap::parametrize(SampleGraph const & sample_graph, intx origin_index, Vector3 const & u_axis,
-                                    Vector3 const & v_axis, Real radius)
+DiscreteExponentialMap::parametrize(PointCloud3 const & surf, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis,
+                                    Real radius)
 {
-  impl->parametrize(sample_graph, origin_index, u_axis, v_axis, radius);
+  impl->parametrize(surf, origin_index, u_axis, v_axis, radius);
 }
 
 Vector2

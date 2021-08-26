@@ -44,7 +44,8 @@ FILE(GLOB TheaSources
      ${SourceRoot}/Triangle/*.c
      ${SourceRoot}/Algorithms/*.cpp
      ${SourceRoot}/Algorithms/ImageFeatures/*.cpp
-     ${SourceRoot}/Algorithms/MeshFeatures/*.cpp
+     ${SourceRoot}/Algorithms/SurfaceFeatures/Global/*.cpp
+     ${SourceRoot}/Algorithms/SurfaceFeatures/Local/*.cpp
      ${SourceRoot}/Algorithms/BloomenthalPolygonizer/*.cpp
      ${SourceRoot}/Algorithms/dx/*.c
      ${SourceRoot}/Algorithms/fibheap/*.cpp

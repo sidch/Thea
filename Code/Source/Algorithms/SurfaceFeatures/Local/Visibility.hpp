@@ -12,8 +12,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshFeatures_Local_Visibility_hpp__
-#define __Thea_Algorithms_MeshFeatures_Local_Visibility_hpp__
+#ifndef __Thea_Algorithms_SurfaceFeatures_Local_Visibility_hpp__
+#define __Thea_Algorithms_SurfaceFeatures_Local_Visibility_hpp__
 
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
@@ -28,7 +28,7 @@ namespace Thea {
 namespace Algorithms {
 
 /** Namespace for classes that compute mesh features. */
-namespace MeshFeatures {
+namespace SurfaceFeatures {
 
 /** Namespace for classes that compute local features on a mesh. */
 namespace Local {
@@ -133,7 +133,7 @@ class Visibility
 }; // class Visibility
 
 } // namespace Local
-} // namespace MeshFeatures
+} // namespace SurfaceFeatures
 } // namespace Algorithms
 } // namespace Thea
 

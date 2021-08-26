@@ -1,5 +1,5 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshFeatures/Local/ShapeDiameter.hpp"
+#include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
 #include "../../Algorithms/KdTreeN.hpp"
@@ -28,7 +28,7 @@
 using namespace std;
 using namespace Thea;
 using namespace Algorithms;
-using namespace MeshFeatures;
+using namespace SurfaceFeatures;
 using namespace Graphics;
 
 int meshFix(int argc, char * argv[]);
