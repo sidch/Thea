@@ -142,7 +142,7 @@ GlRenderSystem::createFramebuffer(char const * name_)
     if (fb)
       created_framebuffers.insert(fb);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL framebuffer", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL framebuffer", getName())
 
   return fb;
 }
@@ -175,7 +175,7 @@ GlRenderSystem::createShader(char const * name_)
     if (shader)
       created_shaders.insert(shader);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL shader", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL shader", getName())
 
   return shader;
 }
@@ -209,7 +209,7 @@ GlRenderSystem::createTexture(char const * name_, int64 width, int64 height, int
     if (tex)
       created_textures.insert(tex);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL texture", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL texture", getName())
 
   return tex;
 }
@@ -225,7 +225,7 @@ GlRenderSystem::createTexture(char const * name_, IImage const * image, ITexture
     if (tex)
       created_textures.insert(tex);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL texture", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL texture", getName())
 
   return tex;
 }
@@ -241,7 +241,7 @@ GlRenderSystem::createTexture(char const * name_, IImage const * images[6], ITex
     if (tex)
       created_textures.insert(tex);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL cubemap texture", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL cubemap texture", getName())
 
   return tex;
 }
@@ -274,7 +274,7 @@ GlRenderSystem::createBufferPool(char const * name_, int64 num_bytes, int32 usag
     if (bufpool)
       created_bufpools.insert(bufpool);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s: Could not create new OpenGL buffer pool", getName())
+  THEA_CATCH(return nullptr;, ERROR, "%s: Could not create new OpenGL buffer pool", getName())
 
   return bufpool;
 }
@@ -1379,7 +1379,7 @@ GlRenderSystemFactory::createRenderSystem(char const * name)
   {
     singleton = new GlRenderSystem(name);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return nullptr;, ERROR, "%s", "Could not create new OpenGL rendersystem")
+  THEA_CATCH(return nullptr;, ERROR, "%s", "Could not create new OpenGL rendersystem")
 
   singleton_created = true;
   return singleton;

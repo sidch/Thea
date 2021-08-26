@@ -583,7 +583,7 @@ main(int argc, char * argv[])
   {
     image.load(config.in_path);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load input image %s", config.in_path.c_str())
+  THEA_CATCH(return -1;, ERROR, "Could not load input image %s", config.in_path.c_str())
 
   if (!config.ops.empty())
   {
@@ -657,7 +657,7 @@ main(int argc, char * argv[])
   {
     image.save(config.out_path);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not save output image %s", config.out_path.c_str())
+  THEA_CATCH(return -1;, ERROR, "Could not save output image %s", config.out_path.c_str())
 }
 
 //=============================================================================================================================

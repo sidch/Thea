@@ -171,7 +171,7 @@ Model::load(std::string path_)
       else
         new_mesh_group->load(path_);
     }
-    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Couldn't load model '%s'", path_.c_str())
+    THEA_CATCH(return false;, ERROR, "Couldn't load model '%s'", path_.c_str())
 
     invalidateAll();
 
@@ -614,7 +614,7 @@ Model::loadSamples(std::string const & path_)
       samples[(size_t)i] = Sample(mesh, face_index, pos, type, label);
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
+  THEA_CATCH(status = false;, WARNING, "Couldn't load model samples from '%s'", path_.c_str())
 
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_SYNC_SAMPLES));
 
@@ -914,7 +914,7 @@ Model::loadSegments(std::string const & path_)
         segments.push_back(seg);
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS(status = false;, WARNING, "Couldn't load model segments from '%s'", path_.c_str())
+  THEA_CATCH(status = false;, WARNING, "Couldn't load model segments from '%s'", path_.c_str())
 
   if (!status)
     segments.clear();
@@ -1180,7 +1180,7 @@ Model::loadFeatures(std::string const & path_)
                                  feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
     mesh_group->forEachMeshUntil(visitor);
   }
-  THEA_STANDARD_CATCH_BLOCKS(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
+  THEA_CATCH(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())
 
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_NEEDS_REDRAW));
 
@@ -1251,7 +1251,7 @@ Model::loadElementLabels(std::string const & path_)
     {
       mesh_group->forEachMeshUntil(ModelInternal::FaceLabeler(elem_colors));
     }
-    THEA_STANDARD_CATCH_BLOCKS(return has_elem_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
+    THEA_CATCH(return has_elem_labels;, WARNING, "Couldn't load model face labels from '%s'", path_.c_str())
   }
   else
     if (!point_cloud->setPointColors(elem_colors))

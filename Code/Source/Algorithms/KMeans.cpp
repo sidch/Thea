@@ -34,7 +34,7 @@ KMeans::Options::load(std::string const & path)
     TextInputStream in(path, Serializable::configReadSettings());
     read(in);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load options from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "KMeans: Could not load options from input file '%s'", path.c_str())
 
   return true;
 }
@@ -47,7 +47,7 @@ KMeans::Options::save(std::string const & path) const
     TextOutputStream out(path, Serializable::configWriteSettings());
     write(out);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not save options to output file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "KMeans: Could not save options to output file '%s'", path.c_str())
 
   return true;
 }
@@ -127,7 +127,7 @@ KMeans::load(std::string const & path)
     TextInputStream in(path.c_str(), Serializable::configReadSettings());
     read(in);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
 
   return true;
 }
@@ -140,7 +140,7 @@ KMeans::save(std::string const & path) const
     TextOutputStream out(path.c_str(), Serializable::configWriteSettings());
     write(out);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "KMeans: Could not load model from input file '%s'", path.c_str())
 
   return true;
 }

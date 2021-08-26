@@ -155,7 +155,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
             throw Error("Unsupported constraint");
         }
       }
-      THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s",
+      THEA_CATCH(return false;, ERROR, "%s",
                                  "StdLinearSolver: Error solving dense linear least-squares system")
 
       return has_solution;
@@ -192,7 +192,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
             throw Error("Unsupported constraint");
         }
       }
-      THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s",
+      THEA_CATCH(return false;, ERROR, "%s",
                                  "StdLinearSolver: Error solving sparse linear least-squares system")
 
       return has_solution;

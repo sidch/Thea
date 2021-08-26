@@ -27,7 +27,7 @@ main(int argc, char * argv[])
   {
     ok = testCSPARSE(argc, argv);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return cleanup(-1);, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return cleanup(-1);, ERROR, "%s", "An error occurred")
 
   if (ok)  // hooray, all tests passed
     cout << "Test passed" << endl;

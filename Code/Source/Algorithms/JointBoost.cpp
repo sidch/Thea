@@ -793,7 +793,7 @@ JointBoost::Options::load(std::string const & path)
     TextInputStream in(path, Serializable::configReadSettings());
     return read(in);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "JointBoost: Could not load options from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "JointBoost: Could not load options from input file '%s'", path.c_str())
 }
 
 bool
@@ -819,7 +819,7 @@ JointBoost::Options::save(std::string const & path) const
 
     out.commit();
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "JointBoost: Could not save options to output file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "JointBoost: Could not save options to output file '%s'", path.c_str())
 
   return true;
 }

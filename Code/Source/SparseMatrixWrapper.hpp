@@ -72,7 +72,7 @@ class /* THEA_API */ SparseMatrixWrapper : public virtual ICompressedSparseMatri
         m->resize(nrows, ncols);
         return (m->rows() == nrows && m->cols() == ncols);  // check if it failed without throwing an exception
       }
-      THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "SparseMatrixWrapper: Could not resize matrix")
+      THEA_CATCH(return false;, ERROR, "%s", "SparseMatrixWrapper: Could not resize matrix")
     }
 
     // Functions from ISparseMatrix

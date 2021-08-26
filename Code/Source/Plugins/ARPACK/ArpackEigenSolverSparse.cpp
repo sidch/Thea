@@ -117,7 +117,7 @@ ArpackEigenSolver::solveSparse(ICompressedSparseMatrix<float64> const & m, int32
 
     return (int64)nconv;
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s: Error solving dense eigensystem", getName())
+  THEA_CATCH(return -1;, ERROR, "%s: Error solving dense eigensystem", getName())
 
 #else
 

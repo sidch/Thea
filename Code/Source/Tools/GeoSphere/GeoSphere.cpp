@@ -53,7 +53,7 @@ main(int argc, char * argv[])
   {
     mg.save(out_path);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not save geodesic sphere to '%s'", out_path.c_str())
+  THEA_CATCH(return -1;, ERROR, "Could not save geodesic sphere to '%s'", out_path.c_str())
 
   return 0;
 }

@@ -54,7 +54,7 @@ main(int argc, char * argv[])
   {
     image.load(image_path);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load image %s", image_path.c_str())
+  THEA_CATCH(return -1;, ERROR, "Could not load image %s", image_path.c_str())
 
   if (invert && !image.invert())
   {
@@ -175,7 +175,7 @@ computeShapeContext(Image const & image, intx num_radial_bins, intx num_polar_bi
     ImageFeatures::ShapeContext sc(image);
     sc.compute(num_radial_bins, num_polar_bins, values);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not compute shape context")
+  THEA_CATCH(return false;, ERROR, "%s", "Could not compute shape context")
 
   THEA_CONSOLE << "  -- done";
 

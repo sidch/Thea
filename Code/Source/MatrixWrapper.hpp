@@ -82,7 +82,7 @@ class /* THEA_API */ MatrixWrapper : public virtual IDenseMatrix<typename Matrix
         m->resize(nrows, ncols);
         return (m->rows() == nrows && m->cols() == ncols);  // check if it failed without throwing an exception
       }
-      THEA_STANDARD_CATCH_BLOCKS(return 0;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
+      THEA_CATCH(return 0;, ERROR, "%s", "MatrixWrapper: Could not resize matrix")
     }
 
     // Functions from IAddressableMatrix

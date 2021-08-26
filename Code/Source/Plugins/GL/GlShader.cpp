@@ -173,7 +173,7 @@ GlShader::readActiveUniforms()
       }
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS({ glUseProgramObjectARB(old_program); return GlCaps::setError(); },
+  THEA_CATCH({ glUseProgramObjectARB(old_program); return GlCaps::setError(); },
                              ERROR, "%s: Error reading active shader uniforms", getName())
 
   glUseProgramObjectARB(old_program);

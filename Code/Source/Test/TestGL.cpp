@@ -36,7 +36,7 @@ main(int argc, char * argv[])
   {
     testGL(argc, argv);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return cleanup(-1);, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return cleanup(-1);, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
   cout << "Test completed" << endl;

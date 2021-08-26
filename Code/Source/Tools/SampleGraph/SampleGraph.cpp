@@ -238,7 +238,7 @@ main(int argc, char * argv[])
       {
         mg.load(mesh_path);
       }
-      THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
+      THEA_CATCH(return -1;, ERROR, "Could not load mesh %s", mesh_path.c_str())
 
       THEA_CONSOLE << "Loaded mesh from " << mesh_path;
 

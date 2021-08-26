@@ -1033,7 +1033,7 @@ HoughForest::Options::load(std::string const & path)
     TextInputStream in(path, configReadSettings());
     read(in);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load options from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "HoughForest: Could not load options from input file '%s'", path.c_str())
 
   return true;
 }
@@ -1058,7 +1058,7 @@ HoughForest::Options::save(std::string const & path) const
     write(out);
     out.commit();
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save options to output file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "HoughForest: Could not save options to output file '%s'", path.c_str())
 
   return true;
 }
@@ -1349,7 +1349,7 @@ HoughForest::load(std::string const & path)
     BinaryInputStream in(path, Endianness::LITTLE);
     read(in);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not load from input file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "HoughForest: Could not load from input file '%s'", path.c_str())
 
   return true;
 }
@@ -1368,7 +1368,7 @@ HoughForest::save(std::string const & path) const
     write(out);
     out.commit();
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "HoughForest: Could not save to output file '%s'", path.c_str())
+  THEA_CATCH(return false;, ERROR, "HoughForest: Could not save to output file '%s'", path.c_str())
 
   return true;
 }

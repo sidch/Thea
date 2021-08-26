@@ -22,7 +22,7 @@ main(int argc, char * argv[])
   {
     testMetrics(argc, argv);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return -1;, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
   cout << "Metrics: Test completed" << endl;

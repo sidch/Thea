@@ -407,7 +407,7 @@ PointCloud::loadFeatures(std::string const & filename_)
       }
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS({ features.clear(); status = false; }, WARNING, "Couldn't load point features from '%s'",
+  THEA_CATCH({ features.clear(); status = false; }, WARNING, "Couldn't load point features from '%s'",
                              filename_.c_str())
 
   return status;

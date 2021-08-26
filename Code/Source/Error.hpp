@@ -54,10 +54,10 @@ class THEA_API FatalError
  *
  * Example:
  * <pre>
- *   THEA_STANDARD_CATCH_BLOCKS(continue;, WARNING, "A non-fatal error occurred in iteration %d", i)
+ *   THEA_CATCH(continue;, WARNING, "A non-fatal error occurred in iteration %d", i)
  * </pre>
  */
-#define THEA_STANDARD_CATCH_BLOCKS(action__, stream__, message__, ...) \
+#define THEA_CATCH(action__, stream__, message__, ...) \
     catch (FatalError const & e__) \
     { \
       THEA_ERROR << format( "A fatal error occurred (%s)", e__.what() ); \

@@ -411,7 +411,7 @@ App::OnExceptionInMainLoop()
   {
     throw; // Rethrow the current exception.
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return -1;, ERROR, "%s", "An error occurred")
 
   // Exit the main loop and thus terminate the program.
   return false;

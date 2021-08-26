@@ -550,7 +550,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
       render_system->popFramebuffer();
     }
-    THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "Could not render view %ld of shape", (intx)v)
+    THEA_CATCH(return -1;, ERROR, "Could not render view %ld of shape", (intx)v)
   }
 
   render_system->destroyTexture(tex3d);
@@ -1851,7 +1851,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
       }
     }
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, WARNING, "Couldn't load model features from '%s'", features_path.c_str())
+  THEA_CATCH(return false;, WARNING, "Couldn't load model features from '%s'", features_path.c_str())
 
   if (model.is_point_cloud)
   {
@@ -2000,7 +2000,7 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
       model.mesh_group.load(path, CodecAuto(), &callback);
       model.max_id = callback.max_id;
     }
-    THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "Could not load model from '%s'", path.c_str())
+    THEA_CATCH(return false;, ERROR, "Could not load model from '%s'", path.c_str())
 
     if (model.convert_to_points)
     {
@@ -2239,7 +2239,7 @@ initPointShader(IShader & shader)
     shader.attachModuleFromString(IShader::ModuleType::VERTEX, VERTEX_SHADER.c_str());
     shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, FRAGMENT_SHADER.c_str());
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "Could not attach point shader module")
+  THEA_CATCH(return false;, ERROR, "%s", "Could not attach point shader module")
 
   return true;
 }

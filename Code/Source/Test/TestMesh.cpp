@@ -54,7 +54,7 @@ main(int argc, char * argv[])
 #endif
     testMesh(argc, argv);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return -1;, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return -1;, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
   cout << "Mesh: Test completed" << endl;

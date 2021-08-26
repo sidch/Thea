@@ -66,7 +66,7 @@ sampleMesh(string const & mesh_path, Array<Vector3d> & samples)
     for (size_t i = 0; i < samples.size(); ++i)
       samples[i] = pts[i].cast<double>();
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return false;, ERROR, "%s", "An error occurred")
 
   THEA_CONSOLE << "Sampled " << samples.size() << " points from mesh " << mesh_path;
 

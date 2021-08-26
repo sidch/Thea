@@ -272,7 +272,7 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptio
     else
        throw Error("Unsupported coefficient matrix format: only compressed column (CSC) allowed)");
   }
-  THEA_STANDARD_CATCH_BLOCKS(return false;, ERROR, "%s: Error solving linear system", getName())
+  THEA_CATCH(return false;, ERROR, "%s: Error solving linear system", getName())
 
   return has_solution;
 }

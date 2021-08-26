@@ -64,7 +64,7 @@ main(int argc, char * argv[])
   {
     status = testDisplayMesh(argc, argv);
   }
-  THEA_STANDARD_CATCH_BLOCKS(return cleanup(-1);, ERROR, "%s", "An error occurred")
+  THEA_CATCH(return cleanup(-1);, ERROR, "%s", "An error occurred")
 
   // Check if tests passed
   if (status == 0) cout << "Test completed" << endl;
