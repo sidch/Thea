@@ -42,7 +42,7 @@ namespace Algorithms {
  * (and optionally normals) via setSamples(). Then, specify an optional dense oversampling via setOversampling() -- the
  * oversampling makes it easier to verify if two samples are actually adjacent on the underlying manifold (if there is one) when
  * computing its proximity graph. This graph is lazily computed by getGraph(): it can be improved if a representation of the
- * underlying surface is provided via an explicit call to updateGraph().
+ * underlying surface is provided via an explicit call to <tt>updateGraph(RayQueryStructureT const *)</tt>.
  */
 class PointSet3
 {
