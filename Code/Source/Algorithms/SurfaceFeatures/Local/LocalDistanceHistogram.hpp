@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_LocalDistanceHistogram_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_LocalDistanceHistogram_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 #include "../../Histogram.hpp"
 
 namespace Thea {
@@ -31,10 +31,10 @@ class LocalDistanceHistogram
      * Constructs the object to compute the histogram of distances to sample points on a given surface. The sampled surface must
      * persist as long as this object does.
      */
-    LocalDistanceHistogram(PointCloud3 const * surf_);
+    LocalDistanceHistogram(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the histogram of distances from a query point to sample points on the shape. The histogram bins uniformly
@@ -56,7 +56,7 @@ class LocalDistanceHistogram
                  Real max_distance = -1, Real sample_reduction_ratio = -1) const;
 
   private:
-    PointCloud3 const * surf;  ///< The point-sampled surface.
+    PointSet3 const * surf;  ///< The point-sampled surface.
 
 }; // class LocalDistanceHistogram
 

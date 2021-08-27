@@ -25,7 +25,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-LocalDistanceHistogram::LocalDistanceHistogram(PointCloud3 const * surf_)
+LocalDistanceHistogram::LocalDistanceHistogram(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "LocalDistanceHistogram: Cannot construct with a null surface");
@@ -58,7 +58,7 @@ struct EuclideanCallback
 }; // struct EuclideanCallback
 
 void
-computeEuclidean(PointCloud3 const & surf, Vector3 const & position, Histogram & histogram, Real max_distance,
+computeEuclidean(PointSet3 const & surf, Vector3 const & position, Histogram & histogram, Real max_distance,
                  Real sample_reduction_ratio)
 {
   if (sample_reduction_ratio < 0)
@@ -82,7 +82,7 @@ computeEuclidean(PointCloud3 const & surf, Vector3 const & position, Histogram &
   else
   {
     Ball3 ball(position, max_distance);
-    const_cast<PointCloud3::SampleKdTree &>(surf.getKdTree()).processRangeUntil<IntersectionTester>(ball, callback);
+    const_cast<PointSet3::SampleKdTree &>(surf.getKdTree()).processRangeUntil<IntersectionTester>(ball, callback);
   }
 }
 
@@ -93,8 +93,8 @@ struct GeodesicCallback
   : histogram(histogram_), acceptance_probability(acceptance_probability_)
   {}
 
-  bool operator()(PointCloud3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
-                  PointCloud3::SampleGraph::VertexHandle pred)
+  bool operator()(PointSet3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
+                  PointSet3::SampleGraph::VertexHandle pred)
   {
     if (acceptance_probability < 1 && Random::common().uniform01() > acceptance_probability)
       return false;
@@ -109,7 +109,7 @@ struct GeodesicCallback
 
 }; // struct GeodesicCallback
 
-void computeGeodesic(PointCloud3 const & surf, Vector3 const & position, Histogram & histogram, Real max_distance,
+void computeGeodesic(PointSet3 const & surf, Vector3 const & position, Histogram & histogram, Real max_distance,
                      Real sample_reduction_ratio)
 {
   if (sample_reduction_ratio < 0)
@@ -127,11 +127,11 @@ void computeGeodesic(PointCloud3 const & surf, Vector3 const & position, Histogr
   alwaysAssertM(seed_index >= 0, "LocalDistanceHistogram: Seed sample for geodesic distances not found");
 
   // Assume the graph and the kd-tree have samples in the same sequence
-  PointCloud3::SampleGraph::VertexHandle seed_sample = const_cast<SamplePoint3 *>(&surf.getSample(seed_index));
+  PointSet3::SampleGraph::VertexHandle seed_sample = const_cast<SamplePoint3 *>(&surf.getSample(seed_index));
 
-  ShortestPaths<PointCloud3::SampleGraph> shortest_paths;
+  ShortestPaths<PointSet3::SampleGraph> shortest_paths;
   GeodesicCallback callback(histogram, sample_reduction_ratio);
-  shortest_paths.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()), seed_sample, callback,
+  shortest_paths.dijkstraWithCallback(const_cast<PointSet3::SampleGraph &>(surf.getGraph()), seed_sample, callback,
                                       (process_all ? -1 : max_distance));
 }
 

@@ -26,7 +26,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-AverageDistance::AverageDistance(PointCloud3 const * surf_)
+AverageDistance::AverageDistance(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "AverageDistance: Cannot construct with a null surface");
@@ -60,7 +60,7 @@ struct EuclideanCallback : private Noncopyable
 }; // struct EuclideanCallback
 
 double
-computeEuclidean(PointCloud3 const & surf, Vector3 const & position, Real max_distance)
+computeEuclidean(PointSet3 const & surf, Vector3 const & position, Real max_distance)
 {
   bool process_all = (max_distance < 0);
   if (process_all)
@@ -77,7 +77,7 @@ computeEuclidean(PointCloud3 const & surf, Vector3 const & position, Real max_di
   else
   {
     Ball3 ball(position, max_distance);
-    const_cast<PointCloud3::SampleKdTree &>(surf.getKdTree()).processRangeUntil<IntersectionTester>(ball, std::ref(callback));
+    const_cast<PointSet3::SampleKdTree &>(surf.getKdTree()).processRangeUntil<IntersectionTester>(ball, std::ref(callback));
   }
 
   return callback.getAverageDistance() / max_distance;
@@ -88,8 +88,8 @@ struct GeodesicCallback : private Noncopyable
 {
   GeodesicCallback() : sum_distances(0), num_points(0) {}
 
-  bool operator()(PointCloud3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
-                  PointCloud3::SampleGraph::VertexHandle pred)
+  bool operator()(PointSet3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
+                  PointSet3::SampleGraph::VertexHandle pred)
   {
     sum_distances += distance;
     num_points++;
@@ -108,7 +108,7 @@ struct GeodesicCallback : private Noncopyable
 }; // struct GeodesicCallback
 
 double
-computeGeodesic(PointCloud3 const & surf, Vector3 const & position, Real max_distance)
+computeGeodesic(PointSet3 const & surf, Vector3 const & position, Real max_distance)
 {
   bool process_all = (max_distance < 0);
   if (process_all)
@@ -119,11 +119,11 @@ computeGeodesic(PointCloud3 const & surf, Vector3 const & position, Real max_dis
   alwaysAssertM(seed_index >= 0, "AverageDistance: Seed sample for geodesic distances not found");
 
   // Assume the graph and the kd-tree have samples in the same sequence
-  PointCloud3::SampleGraph::VertexHandle seed_sample = const_cast<SamplePoint3 *>(&surf.getSample(seed_index));
+  PointSet3::SampleGraph::VertexHandle seed_sample = const_cast<SamplePoint3 *>(&surf.getSample(seed_index));
 
-  ShortestPaths<PointCloud3::SampleGraph> shortest_paths;
+  ShortestPaths<PointSet3::SampleGraph> shortest_paths;
   GeodesicCallback callback;
-  shortest_paths.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()), seed_sample, std::ref(callback),
+  shortest_paths.dijkstraWithCallback(const_cast<PointSet3::SampleGraph &>(surf.getGraph()), seed_sample, std::ref(callback),
                                       (process_all ? -1 : max_distance));
 
   return callback.getAverageDistance() / max_distance;

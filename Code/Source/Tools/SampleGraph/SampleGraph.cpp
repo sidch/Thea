@@ -1,7 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
-#include "../../Algorithms/PointCloud3.hpp"
+#include "../../Algorithms/PointSet3.hpp"
 #include "../../Algorithms/ShortestPaths.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -54,8 +54,8 @@ struct DistanceCallback : public Noncopyable
 {
   DistanceCallback(intx n) : m(n, n), current_source(-1) { m.fill(-1); }
 
-  bool operator()(PointCloud3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
-                  PointCloud3::SampleGraph::VertexHandle pred)
+  bool operator()(PointSet3::SampleGraph::VertexHandle vertex, double distance, bool has_pred,
+                  PointSet3::SampleGraph::VertexHandle pred)
   {
     if (!vertex)
       return false;
@@ -161,7 +161,7 @@ main(int argc, char * argv[])
 
   if (pairwise_distances)
   {
-    PointCloud3 surf;
+    PointSet3 surf;
     if (!surf.load(samples_path, out_path))
     {
       THEA_CONSOLE << "Could not load graph from file " << out_path;
@@ -170,14 +170,14 @@ main(int argc, char * argv[])
 
     auto const & samples = surf.getSamples();
     DistanceCallback distance_callback((intx)samples.size());
-    ShortestPaths<PointCloud3::SampleGraph> shortest_paths;
+    ShortestPaths<PointSet3::SampleGraph> shortest_paths;
 
     distance_callback.m(0, 0) = 0;
     for (size_t i = 1; i < samples.size(); ++i)  // matrix is symmetric so no need to have 0 as source
     {
       distance_callback.current_source = (intx)i;
-      shortest_paths.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()),
-                                          const_cast<PointCloud3::SampleGraph::VertexHandle>(&samples[i]),
+      shortest_paths.dijkstraWithCallback(const_cast<PointSet3::SampleGraph &>(surf.getGraph()),
+                                          const_cast<PointSet3::SampleGraph::VertexHandle>(&samples[i]),
                                           std::ref(distance_callback));
     }
 
@@ -326,9 +326,9 @@ main(int argc, char * argv[])
   // Create adjacency graph on samples
   //===========================================================================================================================
 
-  PointCloud3::Options opts;
+  PointSet3::Options opts;
   opts.setMaxDegree(max_nbrs);
-  PointCloud3 surf(opts);
+  PointSet3 surf(opts);
   surf.addSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : nullptr));
   surf.addOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : nullptr));
   surf.updateGraph(reachability && !kdtree.isEmpty() ? &kdtree : nullptr);
@@ -343,7 +343,7 @@ main(int argc, char * argv[])
     return -1;
 
   double sum_degrees = 0;
-  PointCloud3::SampleArray const & samples = surf.getSamples();
+  PointSet3::SampleArray const & samples = surf.getSamples();
   for (size_t i = 0; i < samples.size(); ++i)
     sum_degrees += samples[i].getNeighbors().size();
 

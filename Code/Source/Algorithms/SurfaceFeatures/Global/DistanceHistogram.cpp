@@ -21,7 +21,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Global {
 
-DistanceHistogram::DistanceHistogram(PointCloud3 const * surf_)
+DistanceHistogram::DistanceHistogram(PointSet3 const * surf_)
 : ldh(surf_)
 {}
 

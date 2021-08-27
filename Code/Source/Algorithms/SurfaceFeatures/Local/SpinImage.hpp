@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_SpinImage_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_SpinImage_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 #include "../../../MatVec.hpp"
 
 namespace Thea {
@@ -38,10 +38,10 @@ class SpinImage
      * Constructs the object to compute spin images at points on a given surface. The sampled surface must persist as long as
      * this object does.
      */
-    SpinImage(PointCloud3 const * surf_);
+    SpinImage(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the spin image at a query point on the mesh.
@@ -72,7 +72,7 @@ class SpinImage
                  MatrixX<double> & spin_image) const;
 
   private:
-    PointCloud3 const * surf;  ///< The point-sampled surface.
+    PointSet3 const * surf;  ///< The point-sampled surface.
 
 }; // class SpinImage
 

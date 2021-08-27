@@ -20,7 +20,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-SpinImage::SpinImage(PointCloud3 const * surf_)
+SpinImage::SpinImage(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "SpinImage: Cannot construct with a null surface");

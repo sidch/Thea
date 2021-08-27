@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_LocalPca_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_LocalPca_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 #include "../../PointTraitsN.hpp"
 #include "../../../Noncopyable.hpp"
 
@@ -36,10 +36,10 @@ class LocalPca
      * Constructs the object to compute PCA features at points on a given surface. The sampled surface must persist as long as
      * this object does.
      */
-    LocalPca(PointCloud3 const * surf_);
+    LocalPca(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the PCA features at a query point on the surface.
@@ -74,7 +74,7 @@ class LocalPca
 
     }; // struct LocalPcaFunctor
 
-    PointCloud3 const * surf;   ///< The point-sampled surface.
+    PointSet3 const * surf;   ///< The point-sampled surface.
     mutable LocalPcaFunctor func;  ///< Functor that is constructed just once to reduce array reallocation costs.
 
 }; // class LocalPca

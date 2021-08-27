@@ -5,7 +5,7 @@
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
-#include "../../Algorithms/PointCloud3.hpp"
+#include "../../Algorithms/PointSet3.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -473,7 +473,7 @@ computeDistanceHistogram(MG const & mg, intx num_bins, intx num_samples, Distanc
 {
   THEA_CONSOLE << "Computing " << dist_type.toString() << " distance histogram";
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Global::DistanceHistogram dh(&surf);
@@ -497,7 +497,7 @@ computeCurvatureHistogram(MG const & mg, intx num_bins, intx num_samples, double
   values.resize((size_t)num_bins);
   Histogram histogram(num_bins, &values[0], (abs_values ? 0.0 : -1.0), 1.0);
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::Curvature projcurv(&surf);

@@ -12,7 +12,7 @@
 //
 //============================================================================
 
-#include "PointCloud3.hpp"
+#include "PointSet3.hpp"
 #include "ShortestPaths.hpp"
 #include <fstream>
 #include <sstream>
@@ -20,19 +20,19 @@
 namespace Thea {
 namespace Algorithms {
 
-PointCloud3::PointCloud3(PointCloud3 const & src)
+PointSet3::PointSet3(PointSet3 const & src)
 : graph(samples)
 {
   *this = src;
 }
 
-namespace PointCloud3Internal {
+namespace PointSet3Internal {
 
 void
-updateNeighborPointers(PointCloud3::SampleArray & samples, PointCloud3::SampleArray const & src_samples)
+updateNeighborPointers(PointSet3::SampleArray & samples, PointSet3::SampleArray const & src_samples)
 {
   alwaysAssertM(samples.size() == src_samples.size(),
-                "PointCloud3: Can't update sample neighbor pointers from source array of different size");
+                "PointSet3: Can't update sample neighbor pointers from source array of different size");
 
   for (size_t i = 0; i < samples.size(); ++i)
   {
@@ -40,19 +40,19 @@ updateNeighborPointers(PointCloud3::SampleArray & samples, PointCloud3::SampleAr
     for (int j = 0; j < nbrs.size(); ++j)
     {
       size_t index = nbrs[j].getSample() - &src_samples[0];  // take advantage of array storage (this is NOT getIndex())
-      debugAssertM(index >= 0 && index < samples.size(), "PointCloud3: Can't get array index of neighboring sample");
+      debugAssertM(index >= 0 && index < samples.size(), "PointSet3: Can't get array index of neighboring sample");
 
       // Again, because of array storage, this should not break the relative ordering of neighbors with equal separation, since
       // pointer less-than is preserved
-      const_cast<PointCloud3::Sample::Neighbor &>(nbrs[j]).setSample(&samples[index]);
+      const_cast<PointSet3::Sample::Neighbor &>(nbrs[j]).setSample(&samples[index]);
     }
   }
 }
 
-} // namespace PointCloud3Internal
+} // namespace PointSet3Internal
 
-PointCloud3 &
-PointCloud3::operator=(PointCloud3 const & src)
+PointSet3 &
+PointSet3::operator=(PointSet3 const & src)
 {
   options = src.options;
   has_normals = src.has_normals;
@@ -65,14 +65,14 @@ PointCloud3::operator=(PointCloud3 const & src)
   valid_kdtree = false;  // this must be recomputed
 
   // Update neighbor pointers
-  PointCloud3Internal::updateNeighborPointers(samples, src.samples);
-  PointCloud3Internal::updateNeighborPointers(dense_samples, src.dense_samples);
+  PointSet3Internal::updateNeighborPointers(samples, src.samples);
+  PointSet3Internal::updateNeighborPointers(dense_samples, src.dense_samples);
 
   return *this;
 }
 
 void
-PointCloud3::clear()
+PointSet3::clear()
 {
   has_normals = false;
   samples.clear();
@@ -84,13 +84,13 @@ PointCloud3::clear()
   valid_kdtree = false;
 }
 
-namespace PointCloud3Internal {
+namespace PointSet3Internal {
 
 // A graph on samples specified as pointers, using the adjacency information already in the samples.
 class SamplePointerGraph
 {
   public:
-    typedef PointCloud3::Sample Sample;
+    typedef PointSet3::Sample Sample;
     typedef Sample * VertexHandle;
     typedef Sample const * VertexConstHandle;
     typedef Sample ** VertexIterator;
@@ -132,7 +132,7 @@ class SamplePointerGraph
 // Callback for shortest paths algorithm.
 struct DijkstraCallback
 {
-  DijkstraCallback(PointCloud3::Sample * sample_, intx num_orig_samples_, int max_nbrs_)
+  DijkstraCallback(PointSet3::Sample * sample_, intx num_orig_samples_, int max_nbrs_)
   : sample(sample_), num_orig_samples(num_orig_samples_), max_nbrs(max_nbrs_)
   {
     sample->getNeighbors().clear();
@@ -142,27 +142,27 @@ struct DijkstraCallback
                   SamplePointerGraph::VertexHandle pred)
   {
     if (vertex->getIndex() != sample->getIndex() && vertex->getIndex() < num_orig_samples)
-      sample->getNeighbors().insert(PointCloud3::Sample::Neighbor(vertex, (Real)distance));
+      sample->getNeighbors().insert(PointSet3::Sample::Neighbor(vertex, (Real)distance));
 
     return sample->getNeighbors().size() >= max_nbrs;
   }
 
-  PointCloud3::Sample * sample;
+  PointSet3::Sample * sample;
   intx num_orig_samples;
   int max_nbrs;
 };
 
-} // namespace PointCloud3Internal
+} // namespace PointSet3Internal
 
 void
-PointCloud3::extractOriginalAdjacencies(intx num_samples, Sample ** sample_ptrs) const
+PointSet3::extractOriginalAdjacencies(intx num_samples, Sample ** sample_ptrs) const
 {
-  using namespace PointCloud3Internal;
+  using namespace PointSet3Internal;
 
   SamplePointerGraph graph(num_samples, sample_ptrs);
   ShortestPaths<SamplePointerGraph> shortest_paths;
 
-  // The graph is considered a mutable property of the point cloud so the const_casts below are ok because only neighbors are
+  // The graph is considered a mutable property of the point set so the const_casts below are ok because only neighbors are
   // modified
   SampleArray samples_with_new_nbrs((size_t)num_samples);
   for (intx i = 0; i < num_samples; ++i)
@@ -177,7 +177,7 @@ PointCloud3::extractOriginalAdjacencies(intx num_samples, Sample ** sample_ptrs)
 }
 
 bool
-PointCloud3::load(std::string const & samples_path, std::string const & graph_path)
+PointSet3::load(std::string const & samples_path, std::string const & graph_path)
 {
   clear();
 
@@ -185,7 +185,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
   std::ifstream sin(samples_path.c_str());
   if (!sin)
   {
-    THEA_ERROR << "PointCloud3: Could not open samples file '" << samples_path << "' for reading";
+    THEA_ERROR << "PointSet3: Could not open samples file '" << samples_path << "' for reading";
     return false;
   }
 
@@ -207,7 +207,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
       has_normals = sample_has_normal;
     else if (has_normals != sample_has_normal)
     {
-      THEA_ERROR << "PointCloud3: Some samples in '" << samples_path << "' have normals and some don't";
+      THEA_ERROR << "PointSet3: Some samples in '" << samples_path << "' have normals and some don't";
       return false;
     }
 
@@ -225,7 +225,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
   std::ifstream gin(graph_path.c_str());
   if (!gin)
   {
-    THEA_ERROR << "PointCloud3: Could not open graph file '" << graph_path << "' for reading";
+    THEA_ERROR << "PointSet3: Could not open graph file '" << graph_path << "' for reading";
     return false;
   }
 
@@ -235,7 +235,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
     intx max_nbrs;
     if (!(line_in >> max_nbrs) || max_nbrs < 0)
     {
-      THEA_ERROR << "PointCloud3: Could not read valid maximum degree from '" << graph_path << '\'';
+      THEA_ERROR << "PointSet3: Could not read valid maximum degree from '" << graph_path << '\'';
       return false;
     }
 
@@ -243,7 +243,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
   }
   else
   {
-    THEA_ERROR << "PointCloud3: Could not read maximum degree from '" << graph_path << '\'';
+    THEA_ERROR << "PointSet3: Could not read maximum degree from '" << graph_path << '\'';
     return false;
   }
 
@@ -253,14 +253,14 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
   {
     if (!std::getline(gin, line))
     {
-      THEA_ERROR << "PointCloud3: Could not read neighbors of vertex " << i << " from '" << graph_path << '\'';
+      THEA_ERROR << "PointSet3: Could not read neighbors of vertex " << i << " from '" << graph_path << '\'';
       return false;
     }
 
     std::istringstream line_in(line);
     if (!(line_in >> num_nbrs) || num_nbrs < 0)
     {
-      THEA_ERROR << "PointCloud3: Could not read valid degree of vertex " << i << " from '" << graph_path << '\'';
+      THEA_ERROR << "PointSet3: Could not read valid degree of vertex " << i << " from '" << graph_path << '\'';
       return false;
     }
 
@@ -268,7 +268,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
     {
       if (!(line_in >> nbr_index) || nbr_index < 0 || nbr_index >= (intx)samples.size())
       {
-        THEA_ERROR << "PointCloud3: Could not read valid neighbor " << j << " of vertex " << i << " from '" << graph_path
+        THEA_ERROR << "PointSet3: Could not read valid neighbor " << j << " of vertex " << i << " from '" << graph_path
                    << '\'';
         return false;
       }
@@ -287,7 +287,7 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
         {
           if (!(line_in >> nbr_sep))
           {
-            THEA_ERROR << "PointCloud3: Could not read separation of neighbor " << j << " of vertex " << i << " from '"
+            THEA_ERROR << "PointSet3: Could not read separation of neighbor " << j << " of vertex " << i << " from '"
                        << graph_path << '\'';
             return false;
           }
@@ -317,13 +317,13 @@ PointCloud3::load(std::string const & samples_path, std::string const & graph_pa
 }
 
 bool
-PointCloud3::save(std::string const & graph_path, std::string const & samples_path, bool write_distances) const
+PointSet3::save(std::string const & graph_path, std::string const & samples_path, bool write_distances) const
 {
   // Save graph
   std::ofstream gout(graph_path.c_str(), std::ios::binary);
   if (!gout)
   {
-    THEA_ERROR << "PointCloud3: Could not open graph file '" << graph_path << "' for writing";
+    THEA_ERROR << "PointSet3: Could not open graph file '" << graph_path << "' for writing";
     return false;
   }
 
@@ -352,7 +352,7 @@ PointCloud3::save(std::string const & graph_path, std::string const & samples_pa
     std::ofstream sout(samples_path.c_str(), std::ios::binary);
     if (!sout)
     {
-      THEA_ERROR << "PointCloud3: Could not open samples file '" << samples_path << "' for writing";
+      THEA_ERROR << "PointSet3: Could not open samples file '" << samples_path << "' for writing";
       return false;
     }
 

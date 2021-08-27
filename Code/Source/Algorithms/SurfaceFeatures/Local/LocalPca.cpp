@@ -22,7 +22,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-LocalPca::LocalPca(PointCloud3 const * surf_)
+LocalPca::LocalPca(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "LocalPca: Cannot construct with a null surface");
@@ -55,7 +55,7 @@ LocalPca::compute(Vector3 const & position, Vector3 * eigenvectors, Real nbd_rad
 
   Ball3 range(position, nbd_radius);
   func.reset();
-  const_cast<PointCloud3::SampleKdTree &>(surf->getKdTree()).processRangeUntil<IntersectionTester>(range, std::ref(func));
+  const_cast<PointSet3::SampleKdTree &>(surf->getKdTree()).processRangeUntil<IntersectionTester>(range, std::ref(func));
 
   return func.getPcaFeatures(eigenvectors);
 }

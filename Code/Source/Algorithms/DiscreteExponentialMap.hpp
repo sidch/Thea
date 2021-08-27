@@ -27,7 +27,7 @@ namespace Algorithms {
 namespace DiscreteExponentialMapInternal { class Impl; }
 
 // Forward declarations
-class PointCloud3;
+class PointSet3;
 
 /**
  * Compute the discrete exponential map of a surface around a point. Based (roughly) on:
@@ -84,7 +84,7 @@ class DiscreteExponentialMap : private Noncopyable
      *
      * @see getParameters(), getParameterMap()
      */
-    void parametrize(PointCloud3 const & surf, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis, Real radius);
+    void parametrize(PointSet3 const & surf, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis, Real radius);
 
     /**
      * Get the exponential map parameters of a particular sample.

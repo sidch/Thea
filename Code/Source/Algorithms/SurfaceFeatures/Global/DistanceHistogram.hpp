@@ -35,10 +35,10 @@ class DistanceHistogram
      * Constructs the object to compute the histogram of distances between sample points on a given surface. The sampled surface
      * must persist as long as this object does.
      */
-    DistanceHistogram(PointCloud3 const * surf_);
+    DistanceHistogram(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return ldh.getSurface(); }
+    PointSet3 const * getSurface() const { return ldh.getSurface(); }
 
     /**
      * Compute the histogram of distances between sample points on the shape. The histogram bins uniformly subdivide the range

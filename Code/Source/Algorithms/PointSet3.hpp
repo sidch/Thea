@@ -12,8 +12,8 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_PointCloud3_hpp__
-#define __Thea_Algorithms_PointCloud3_hpp__
+#ifndef __Thea_Algorithms_PointSet3_hpp__
+#define __Thea_Algorithms_PointSet3_hpp__
 
 #include "../Common.hpp"
 #include "../Graphics/MeshGroup.hpp"
@@ -38,16 +38,16 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * A 3D point cloud, with a proximity graph and kd-tree on the samples. Typical usage is to first specify the sample positions
+ * A set of 3D points, with a proximity graph and kd-tree on the samples. Typical usage is to first specify the sample positions
  * (and optionally normals) via setSamples(). Then, specify an optional dense oversampling via setOversampling() -- the
  * oversampling makes it easier to verify if two samples are actually adjacent on the underlying manifold (if there is one) when
  * computing its proximity graph. This graph is lazily computed by getGraph(): it can be improved if a representation of the
  * underlying surface is provided via an explicit call to updateGraph().
  */
-class PointCloud3
+class PointSet3
 {
   public:
-    /** %Options for constructing the sampled surface. */
+    /** %Options for constructing and processing the point set. */
     class Options
     {
       public:
@@ -63,7 +63,7 @@ class PointCloud3
       private:
         int max_degree;  ///< Maximum degree of the proximity graph.
 
-        friend class PointCloud3;
+        friend class PointSet3;
 
     }; // class Options
 
@@ -140,7 +140,7 @@ class PointCloud3
 
         SampleArray & samples;  ///< The referenced set of samples which are the vertices of the graph.
 
-        friend class PointCloud3;
+        friend class PointSet3;
 
     }; // class SampleGraph
 
@@ -151,18 +151,18 @@ class PointCloud3
     //=========================================================================================================================
 
     /** Construct with a set of options for creating the graph. */
-    PointCloud3(Options const & options_ = Options::defaults())
+    PointSet3(Options const & options_ = Options::defaults())
     : options(options_), has_normals(false), valid_graph(true), graph(samples), avg_separation(0), valid_scale(true), scale(0),
       valid_kdtree(true)
     {
-      alwaysAssertM(options.max_degree >= 0, "PointCloud3: Maximum degree must be non-negative");
+      alwaysAssertM(options.max_degree >= 0, "PointSet3: Maximum degree must be non-negative");
     }
 
     /** Copy constructor. */
-    PointCloud3(PointCloud3 const & src);
+    PointSet3(PointSet3 const & src);
 
     /** Assignment operator. */
-    PointCloud3 & operator=(PointCloud3 const & src);
+    PointSet3 & operator=(PointSet3 const & src);
 
     /** Check if the samples have normals. The return value is arbitrary if there are no samples (or oversamples) at all. */
     bool hasNormals() const { return has_normals; }
@@ -176,7 +176,7 @@ class PointCloud3
     /** Get a sample by its index. */
     Sample const & getSample(intx index) const
     {
-      debugAssertM(index >= 0 && index < (intx)samples.size(), "PointCloud3: Sample index out of bounds");
+      debugAssertM(index >= 0 && index < (intx)samples.size(), "PointSet3: Sample index out of bounds");
       return samples[(size_t)index];
     }
 
@@ -366,7 +366,7 @@ class PointCloud3
         FilterSelf filter(k_elems[index]);
         k->pushFilter(&filter);
           intx nn_index = k->closestElement<MetricL2>(k_elems[index]->getPosition());
-          alwaysAssertM(nn_index >= 0, "PointCloud3: Nearest neighbor of sample not found");
+          alwaysAssertM(nn_index >= 0, "PointSet3: Nearest neighbor of sample not found");
           avg_separation += (k_elems[nn_index]->getPosition() - k_elems[index]->getPosition()).squaredNorm();
         k->popFilter();
       }
@@ -478,10 +478,10 @@ class PointCloud3
     /** Helper function for adding new sample positions and (optionally) normals. */
     void addSamples(intx num_samples, Vector3 const * positions, Vector3 const * normals, SampleArray & arr)
     {
-      alwaysAssertM(num_samples >= 0, "PointCloud3: Cannot specify a negative number of samples");
-      alwaysAssertM(num_samples == 0 || positions, "PointCloud3: Sample positions must be specified");
+      alwaysAssertM(num_samples >= 0, "PointSet3: Cannot specify a negative number of samples");
+      alwaysAssertM(num_samples == 0 || positions, "PointSet3: Sample positions must be specified");
       alwaysAssertM(!(hasAtLeastOneSampleNormal(arr) && !normals),
-                    "PointCloud3: Existing samples have normals, so new ones must have normals too");
+                    "PointSet3: Existing samples have normals, so new ones must have normals too");
 
       updateHasNormals(arr, (bool)normals);
 
@@ -507,7 +507,7 @@ class PointCloud3
       typedef typename std::iterator_traits<SampleIteratorT>::value_type SampleT;
 
       alwaysAssertM(!(hasAtLeastOneSampleNormal(arr) && !HasNormalN<SampleT, 3>::value),
-                    "PointCloud3: Existing samples have normals, so new ones must have normals too");
+                    "PointSet3: Existing samples have normals, so new ones must have normals too");
 
       updateHasNormals(arr, HasNormalN<SampleT, 3>::value);
 
@@ -588,7 +588,7 @@ class PointCloud3
         NeighborFunctor(Sample * sample_, bool has_normals_, RayQueryStructureT const * surface_)
         : sample(sample_), has_normals(has_normals_), surface(surface_)
         {
-          debugAssertM(sample, "PointCloud3: Can't create neighbor functor without valid source sample");
+          debugAssertM(sample, "PointSet3: Can't create neighbor functor without valid source sample");
         }
 
         /** Called for every candidate neighbor. */
@@ -733,7 +733,7 @@ class PointCloud3
     mutable bool valid_kdtree;    ///< Has the sample kd-tree been initialized?
     mutable SampleKdTree kdtree;  ///< kd-tree on surface samples.
 
-}; // class PointCloud3
+}; // class PointSet3
 
 } // namespace Algorithms
 } // namespace Thea

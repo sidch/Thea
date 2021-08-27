@@ -21,7 +21,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-RandomWalks::RandomWalks(PointCloud3 const * surf_)
+RandomWalks::RandomWalks(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "RandomWalks: Cannot construct with a null surface");
@@ -32,7 +32,7 @@ namespace RandomWalksInternal {
 // Do a random walk upto \a num_steps steps, and return the number of steps actually taken (= \a num_steps except in corner
 // cases).
 intx
-walk(PointCloud3 const & surf, intx seed_index, intx num_steps, double * features)
+walk(PointSet3 const & surf, intx seed_index, intx num_steps, double * features)
 {
   SamplePoint3 const * sample = &surf.getSample(seed_index);
   intx base_index = 0;

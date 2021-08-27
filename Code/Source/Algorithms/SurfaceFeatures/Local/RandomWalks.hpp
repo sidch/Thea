@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_RandomWalks_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_RandomWalks_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -30,10 +30,10 @@ class RandomWalks
      * Constructs the object to compute random walk patterns on a given surface. The sampled surface must persist as long as
      * this object does.
      */
-    RandomWalks(PointCloud3 const * surf_);
+    RandomWalks(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the average offset, from the query position, after each step of an n-step random walk on the shape's sample
@@ -47,7 +47,7 @@ class RandomWalks
     void compute(Vector3 const & position, intx num_steps, double * features, intx num_walks = -1) const;
 
   private:
-    PointCloud3 const * surf;  ///< The point-sampled surface.
+    PointSet3 const * surf;  ///< The point-sampled surface.
 
 }; // class RandomWalks
 

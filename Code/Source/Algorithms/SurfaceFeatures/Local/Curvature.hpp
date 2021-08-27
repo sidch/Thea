@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_Curvature_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_Curvature_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -30,10 +30,10 @@ class Curvature
      * Constructs the object to compute curvature measures at points on a given surface. The sampled surface must persist as
      * long as this object does.
      */
-    Curvature(PointCloud3 const * surf_);
+    Curvature(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the <em>projected</em> curvature at a query point on the mesh. The projected curvature is an approximation to the
@@ -68,7 +68,7 @@ class Curvature
     double computeProjectedCurvature(Vector3 const & position, Vector3 const & normal, Real nbd_radius = -1) const;
 
   private:
-    PointCloud3 const * surf;  ///< The point-sampled surface.
+    PointSet3 const * surf;  ///< The point-sampled surface.
 
 }; // class Curvature
 

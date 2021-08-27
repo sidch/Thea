@@ -13,7 +13,7 @@
 //============================================================================
 
 #include "DiscreteExponentialMap.hpp"
-#include "PointCloud3.hpp"
+#include "PointSet3.hpp"
 #include "ShortestPaths.hpp"
 #include "../AffineTransform3.hpp"
 #include "../Map.hpp"
@@ -41,14 +41,14 @@ class Impl
       Vector3 proj_p;
     };
 
-    typedef PointCloud3::Sample Sample;
-    typedef ShortestPaths<PointCloud3::SampleGraph> Geodesics;
+    typedef PointSet3::Sample Sample;
+    typedef ShortestPaths<PointSet3::SampleGraph> Geodesics;
     typedef Map<Geodesics::VertexHandle, ParamData> ParamDataMap;  // FIXME: Can we use UnorderedMap?
 
   public:
     Impl(Options const & options_) : options(options_), radius(0) {}
 
-    void parametrize(PointCloud3 const & surf, intx origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
+    void parametrize(PointSet3 const & surf, intx origin_index_, Vector3 const & u_axis_, Vector3 const & v_axis_,
                      Real radius_)
     {
       clear();
@@ -61,7 +61,7 @@ class Impl
       radius = radius_;
       blend_bandwidth_squared = (options.blendUpwind() ? Math::square(3 * surf.getAverageSeparation()) : 0);
 
-      geodesics.dijkstraWithCallback(const_cast<PointCloud3::SampleGraph &>(surf.getGraph()), origin_sample, std::ref(*this),
+      geodesics.dijkstraWithCallback(const_cast<PointSet3::SampleGraph &>(surf.getGraph()), origin_sample, std::ref(*this),
                                      radius);
     }
 
@@ -109,7 +109,7 @@ class Impl
       if (has_pred)
       {
         ParamDataMap::const_iterator existing_pred = param_data.find(pred);
-        alwaysAssertM(existing_pred != param_data.end(), "PointCloud3: No parametrization data associated with predecessor");
+        alwaysAssertM(existing_pred != param_data.end(), "PointSet3: No parametrization data associated with predecessor");
         ParamData const & pred_data = existing_pred->second;
 
         Vector3 p = vertex->getPosition();
@@ -252,7 +252,7 @@ DiscreteExponentialMap::~DiscreteExponentialMap()
 }
 
 void
-DiscreteExponentialMap::parametrize(PointCloud3 const & surf, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis,
+DiscreteExponentialMap::parametrize(PointSet3 const & surf, intx origin_index, Vector3 const & u_axis, Vector3 const & v_axis,
                                     Real radius)
 {
   impl->parametrize(surf, origin_index, u_axis, v_axis, radius);

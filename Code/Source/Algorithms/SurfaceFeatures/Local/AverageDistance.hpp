@@ -15,7 +15,7 @@
 #ifndef __Thea_Algorithms_SurfaceFeatures_Local_AverageDistance_hpp__
 #define __Thea_Algorithms_SurfaceFeatures_Local_AverageDistance_hpp__
 
-#include "../../PointCloud3.hpp"
+#include "../../PointSet3.hpp"
 
 namespace Thea {
 namespace Algorithms {
@@ -30,10 +30,10 @@ class AverageDistance
      * Constructs the object to compute the histogram of distances to sample points on a given surface. The sampled surface must
      * persist as long as this object does.
      */
-    AverageDistance(PointCloud3 const * surf_);
+    AverageDistance(PointSet3 const * surf_);
 
     /** Get the underlying point-sampled surface. */
-    PointCloud3 const * getSurface() const { return surf; }
+    PointSet3 const * getSurface() const { return surf; }
 
     /**
      * Compute the average distance from a query point to sample points on the shape. The returned distance is normalized by
@@ -48,7 +48,7 @@ class AverageDistance
     double compute(Vector3 const & position, DistanceType dist_type = DistanceType::EUCLIDEAN, Real max_distance = -1) const;
 
   private:
-    PointCloud3 const * surf;  ///< The point-sampled surface.
+    PointSet3 const * surf;  ///< The point-sampled surface.
 
 }; // class AverageDistance
 

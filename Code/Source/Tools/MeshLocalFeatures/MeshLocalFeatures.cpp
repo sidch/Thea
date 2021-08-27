@@ -11,7 +11,7 @@
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/MeshKdTree.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
-#include "../../Algorithms/PointCloud3.hpp"
+#include "../../Algorithms/PointSet3.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Array.hpp"
@@ -776,7 +776,7 @@ computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Arra
 
   values.resize(positions.size());
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::Curvature projcurv(&surf);
@@ -797,7 +797,7 @@ computeAverageDistances(MG const & mg, Array<Vector3> const & positions, intx nu
 
   values.resize(positions.size());
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::AverageDistance avgd(&surf);
@@ -825,7 +825,7 @@ computeLocalDistanceHistograms(MG const & mg, Array<Vector3> const & positions, 
 
   values.resize((intx)positions.size(), num_bins);
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::LocalDistanceHistogram dh(&surf);
@@ -850,7 +850,7 @@ computeLocalPca(MG const & mg, Array<Vector3> const & positions, intx num_sample
 
   values.clear();
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::LocalPca pca(&surf);
@@ -887,7 +887,7 @@ computeLocalPcaRatios(MG const & mg, Array<Vector3> const & positions, intx num_
 
   values.clear();
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::LocalPca pca(&surf);
@@ -921,7 +921,7 @@ computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num_samp
   intx num_features = num_radial_bins * num_height_bins;
   values.resize((intx)positions.size(), num_features);
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::SpinImage spin_image(&surf);
@@ -949,7 +949,7 @@ computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_sam
 
   values.resize((intx)positions.size(), 3 * (size_t)num_steps);
 
-  PointCloud3 surf;
+  PointSet3 surf;
   surf.addSamples(mg, num_samples);
   surf.setScale((Real)mesh_scale);
   SurfaceFeatures::Local::RandomWalks rw(&surf);

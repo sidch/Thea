@@ -25,7 +25,7 @@ namespace Algorithms {
 namespace SurfaceFeatures {
 namespace Local {
 
-Curvature::Curvature(PointCloud3 const * surf_)
+Curvature::Curvature(PointSet3 const * surf_)
 : surf(surf_)
 {
   alwaysAssertM(surf_, "Curvature: Cannot construct with a null surface");
@@ -89,7 +89,7 @@ Curvature::computeProjectedCurvature(Vector3 const & position, Vector3 const & n
 
   CurvatureInternal::ProjectedCurvatureFunctor func(position, normal);
   Ball3 range(position, nbd_radius);
-  const_cast<PointCloud3::SampleKdTree &>(surf->getKdTree()).processRangeUntil<IntersectionTester>(range, std::ref(func));
+  const_cast<PointSet3::SampleKdTree &>(surf->getKdTree()).processRangeUntil<IntersectionTester>(range, std::ref(func));
 
   return func.getCurvature();
 }
