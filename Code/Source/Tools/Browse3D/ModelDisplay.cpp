@@ -309,8 +309,9 @@ ModelDisplay::paintGL(wxPaintEvent & event)
   glEnable(GL_MULTISAMPLE);
 #endif
 
-  wxSize size = GetSize();
-  glViewport(0, 0, size.GetWidth(), size.GetHeight());
+  // wxGLCanvas uses physical pixels, unlike the rest of the framework which mostly uses logical pixels
+  wxSize physical_size = GetClientSize() * GetContentScaleFactor();
+  glViewport(0, 0, physical_size.GetWidth(), physical_size.GetHeight());
 
   IRenderSystem & rs = *app().getRenderSystem();
 

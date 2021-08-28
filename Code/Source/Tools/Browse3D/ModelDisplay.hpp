@@ -201,10 +201,10 @@ class ModelDisplay : public wxGLCanvas
     void drawBackground(Graphics::IRenderSystem & rs);
 
     /** Get the width of the widget. */
-    int width() const { return GetSize().GetWidth(); }
+    int width() const { return GetClientSize().GetWidth(); }
 
     /** Get the height of the widget. */
-    int height() const { return GetSize().GetHeight(); }
+    int height() const { return GetClientSize().GetHeight(); }
 
     Model * model;
 
