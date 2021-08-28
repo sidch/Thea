@@ -141,6 +141,7 @@ struct DijkstraCallback
   bool operator()(SamplePointerGraph::VertexHandle vertex, double distance, bool has_pred,
                   SamplePointerGraph::VertexHandle pred)
   {
+    // Assume original samples are at the head of the list
     if (vertex->getIndex() != sample->getIndex() && vertex->getIndex() < num_orig_samples)
       sample->getNeighbors().insert(PointSet3::Sample::Neighbor(vertex, (Real)distance));
 
@@ -164,16 +165,16 @@ PointSet3::extractOriginalAdjacencies(intx num_samples, Sample ** sample_ptrs) c
 
   // The graph is considered a mutable property of the point set so the const_casts below are ok because only neighbors are
   // modified
-  SampleArray samples_with_new_nbrs((size_t)num_samples);
-  for (intx i = 0; i < num_samples; ++i)
+  SampleArray samples_with_new_nbrs(samples.size());
+  for (size_t i = 0; i < samples.size(); ++i)
   {
-    samples_with_new_nbrs[(size_t)i] = samples[i];
-    DijkstraCallback callback(&samples_with_new_nbrs[(size_t)i], num_samples, options.max_degree);
+    samples_with_new_nbrs[i] = samples[i];
+    DijkstraCallback callback(&samples_with_new_nbrs[i], (intx)samples.size(), options.max_degree);
     shortest_paths.dijkstraWithCallback(graph, const_cast<Sample *>(&samples[i]), callback);
   }
 
-  for (intx i = 0; i < num_samples; ++i)
-    const_cast<Sample &>(samples[i]).getNeighbors() = samples_with_new_nbrs[(size_t)i].getNeighbors();
+  for (size_t i = 0; i < samples.size(); ++i)
+    const_cast<Sample &>(samples[i]).getNeighbors() = samples_with_new_nbrs[i].getNeighbors();
 }
 
 bool
