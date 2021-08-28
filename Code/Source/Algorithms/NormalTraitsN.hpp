@@ -77,7 +77,7 @@ class NormalTraitsN< T, N, ScalarT, typename std::enable_if< !HasNormalN<T, N>::
 
 // Partial specialization of NormalTraitsN for const types
 template <typename T, int N, typename ScalarT>
-class /* THEA_API */ NormalTraitsN<T const, N, ScalarT>
+class /* THEA_API */ NormalTraitsN< T const, N, ScalarT, typename std::enable_if< HasNormalN<T, N>::value >::type >
 {
   public:
     static Vector<N, ScalarT> getNormal(T const & t) { return NormalTraitsN<T, N, ScalarT>::getNormal(t); }
@@ -86,7 +86,7 @@ class /* THEA_API */ NormalTraitsN<T const, N, ScalarT>
 
 // Partial specialization of NormalTraitsN for pointer types
 template <typename T, int N, typename ScalarT>
-class /* THEA_API */ NormalTraitsN<T *, N, ScalarT>
+class /* THEA_API */ NormalTraitsN< T *, N, ScalarT, typename std::enable_if< HasNormalN<T, N>::value >::type >
 {
   public:
     static Vector<N, ScalarT> getNormal(T * t) { return NormalTraitsN<T, N, ScalarT>::getNormal(*t); }

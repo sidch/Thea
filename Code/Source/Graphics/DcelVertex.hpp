@@ -16,6 +16,7 @@
 #define __Thea_Graphics_DcelVertex_hpp__
 
 #include "../Common.hpp"
+#include "../Algorithms/NormalTraitsN.hpp"
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../AttributedObject.hpp"
 #include "DcelHalfedge.hpp"
@@ -257,6 +258,22 @@ class PointTraitsN<Graphics::DcelVertex<VT, HT, FT>, 3>
 {
   public:
     static Vector3 const & getPosition(Graphics::DcelVertex<VT, HT, FT> const & t) { return t.getPosition(); }
+};
+
+// Specify that a mesh vertex has a normal vector. */
+template <typename VT, typename HT, typename FT>
+class HasNormalN<Graphics::DcelVertex<VT, HT, FT>, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+// Map a mesh vertex to its normal vector. */
+template <typename VT, typename HT, typename FT>
+class NormalTraitsN<Graphics::DcelVertex<VT, HT, FT>, 3>
+{
+  public:
+    static Vector3 const & getNormal(Graphics::DcelVertex<VT, HT, FT> const & t) { return t.getNormal(); }
 };
 
 } // namespace Algorithms

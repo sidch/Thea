@@ -103,7 +103,7 @@ class PointTraitsN< T, N, ScalarT, typename std::enable_if< !IsPointN<T, N>::val
 
 // Partial specialization of PointTraitsN for const types
 template <typename T, int N, typename ScalarT>
-class /* THEA_API */ PointTraitsN<T const, N, ScalarT>
+class /* THEA_API */ PointTraitsN< T const, N, ScalarT, typename std::enable_if< IsPointN<T, N>::value >::type >
 {
   public:
     static Vector<N, ScalarT> getPosition(T const & t) { return PointTraitsN<T, N, ScalarT>::getPosition(t); }
@@ -112,7 +112,7 @@ class /* THEA_API */ PointTraitsN<T const, N, ScalarT>
 
 // Partial specialization of PointTraitsN for pointer types
 template <typename T, int N, typename ScalarT>
-class /* THEA_API */ PointTraitsN<T *, N, ScalarT>
+class /* THEA_API */ PointTraitsN< T *, N, ScalarT, typename std::enable_if< IsPointN<T, N>::value >::type >
 {
   public:
     static Vector<N, ScalarT> getPosition(T * t) { return PointTraitsN<T, N, ScalarT>::getPosition(*t); }

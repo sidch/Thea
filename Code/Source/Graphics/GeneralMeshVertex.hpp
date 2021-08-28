@@ -16,6 +16,7 @@
 #define __Thea_Graphics_GeneralMeshVertex_hpp__
 
 #include "../Common.hpp"
+#include "../Algorithms/NormalTraitsN.hpp"
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../AttributedObject.hpp"
 #include "../List.hpp"
@@ -396,6 +397,22 @@ class PointTraitsN<Graphics::GeneralMeshVertex<VT, ET, FT, AT>, 3>
 {
   public:
     static Vector3 const & getPosition(Graphics::GeneralMeshVertex<VT, ET, FT, AT> const & t) { return t.getPosition(); }
+};
+
+// Specify that a mesh vertex has a normal vector. */
+template <typename VT, typename ET, typename FT, template <typename T> class AT>
+class HasNormalN<Graphics::GeneralMeshVertex<VT, ET, FT, AT>, 3>
+{
+  public:
+    static bool const value = true;
+};
+
+// Map a mesh vertex to its normal vector. */
+template <typename VT, typename ET, typename FT, template <typename T> class AT>
+class NormalTraitsN<Graphics::GeneralMeshVertex<VT, ET, FT, AT>, 3>
+{
+  public:
+    static Vector3 const & getNormal(Graphics::GeneralMeshVertex<VT, ET, FT, AT> const & t) { return t.getNormal(); }
 };
 
 } // namespace Algorithms
