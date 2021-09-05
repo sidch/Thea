@@ -37,6 +37,16 @@ namespace Thea {
 extern THEA_API char const * NEWLINE;
 
 /**
+ * Convert a C-string to a <tt>std::string</tt> object, returning an empty string if the input is a null pointer. The
+ * std::string constructor itself has undefined behavior in this case.
+ */
+inline std::string
+toString(char const * s)
+{
+  return std::string(s ? s : "");
+}
+
+/**
  * Finds the index of the first '\\' or '/' character, starting at index \a start.
  *
  * @return The index of the first slash if one is found, else a negative number.

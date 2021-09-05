@@ -159,8 +159,8 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptio
 
   try
   {
-    alwaysAssertM(a, std::string(getName()) + ": Coefficient matrix is null");
-    alwaysAssertM(b, std::string(getName()) + ": Constant matrix is null");
+    alwaysAssertM(a, toString(getName()) + ": Coefficient matrix is null");
+    alwaysAssertM(b, toString(getName()) + ": Constant matrix is null");
 
     if (a->asSparse() && a->asSparse()->asCompressed())
     {
@@ -175,14 +175,14 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptio
 
       // Only QR factorization allows rectangular matrices, returning least-squares solutions
       alwaysAssertM(method == "QR" || Math::isSquare(*a),
-                    std::string(getName()) + ": Coefficient matrix for method '" + method + "' must be square");
+                    toString(getName()) + ": Coefficient matrix for method '" + method + "' must be square");
 
       ICompressedSparseMatrix<float64> const & sm = *a->asSparse()->asCompressed();
 
       // Convert the coefficient matrix to CSPARSE format
       alwaysAssertM(sm.isColumnMajor(),
-                    std::string(getName()) + ": Coefficient matrix is not in compressed column (CSC) format");
-      alwaysAssertM(sm.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
+                    toString(getName()) + ": Coefficient matrix is not in compressed column (CSC) format");
+      alwaysAssertM(sm.isFullyCompressed(), toString(getName()) + ": Operator matrix is not fully compressed");
 
       // TODO: avoid the copy when the input indices are actually ints
       Array<int32> irow;
@@ -193,7 +193,7 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptio
 
       int32 nnz = (int32)sm.numStoredElements();
       alwaysAssertM(nnz == pcol[pcol.size() - 1],
-                    std::string(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
+                    toString(getName()) + ": (n + 1)th entry of pcol array should be number of non-zeros");
 
       // Create the coefficient matrix
       cs C;
@@ -285,7 +285,7 @@ CsparseLinearSolverFactory::~CsparseLinearSolverFactory()
 ILinearSolver *
 CsparseLinearSolverFactory::createLinearSolver(char const * name)
 {
-  CsparseLinearSolver * ls = new CsparseLinearSolver(name);
+  CsparseLinearSolver * ls = new CsparseLinearSolver(toString(name));
   linear_solvers.insert(ls);
   return ls;
 }

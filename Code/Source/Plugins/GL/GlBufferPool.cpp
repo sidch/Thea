@@ -21,10 +21,11 @@ namespace Graphics {
 namespace Gl {
 
 GlBufferPool::GlBufferPool(GlRenderSystem * render_system_, char const * name_, int64 capacity_, int32 usage, int8 gpu_memory_)
-: render_system(render_system_), name(name_), capacity(capacity_), gpu_memory(gpu_memory_), generation(0), allocated_size(0)
+: render_system(render_system_), name(Thea::toString(name_)), capacity(capacity_), gpu_memory(gpu_memory_), generation(0),
+  allocated_size(0)
 {
   if (gpu_memory && !THEA_GL_SUPPORTS(ARB_vertex_buffer_object))
-    throw Error(std::string(getName()) + ": OpenGL vertex/index buffers in GPU memory are not supported");
+    throw Error(name + ": OpenGL vertex/index buffers in GPU memory are not supported");
 
   assert(capacity > 0);
 

@@ -142,7 +142,7 @@ class CodecOff : public CodecOffBase<MeshT>
 
       std::string header = trimWhitespace(in->readLine());
       if (header != "OFF" && !beginsWith(header, "OFF "))
-        throw Error(std::string(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
+        throw Error(toString(getName()) + ": Invalid OFF stream (does not start with 'OFF')");
 
       bool binary = (header == "OFF BINARY" || beginsWith(header, "OFF BINARY "));
       if (binary)
@@ -194,13 +194,13 @@ class CodecOff : public CodecOffBase<MeshT>
         if (in.hasMore())
           line = trimWhitespace(in.readLine());
         else
-          throw Error(std::string(getName()) + ": Unexpected end of input");
+          throw Error(toString(getName()) + ": Unexpected end of input");
       }
 
       std::istringstream counts(line);
       intx num_vertices, num_faces, num_edges;
       if (!(counts >> num_vertices >> num_faces >> num_edges))
-        throw Error(std::string(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
+        throw Error(toString(getName()) + ": Could not read mesh statistics on line '" + line + '\'');
 
       if (read_opts.verbose >= 1)
       {
@@ -212,7 +212,7 @@ class CodecOff : public CodecOffBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
+      MeshPtr mesh(new Mesh(toString(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -231,12 +231,12 @@ class CodecOff : public CodecOffBase<MeshT>
           if (in.hasMore())
             line = trimWhitespace(in.readLine());
           else
-            throw Error(std::string(getName()) + ": Unexpected end of input");
+            throw Error(toString(getName()) + ": Unexpected end of input");
         }
 
         std::istringstream vstr(line);
         if (!(vstr >> x >> y >> z))
-          throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
+          throw Error(toString(getName()) + ": Could not read vertex on line '" + line + '\'');
 
         typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z),
                                                                 (read_opts.store_vertex_indices ? v : -1));
@@ -257,12 +257,12 @@ class CodecOff : public CodecOffBase<MeshT>
           if (in.hasMore())
             line = trimWhitespace(in.readLine());
           else
-            throw Error(std::string(getName()) + ": Unexpected end of input");
+            throw Error(toString(getName()) + ": Unexpected end of input");
         }
 
         std::istringstream vstr(line);
         if (!(vstr >> num_face_vertices))
-          throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
+          throw Error(toString(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
 
         if (num_face_vertices > 0)
         {
@@ -274,7 +274,7 @@ class CodecOff : public CodecOffBase<MeshT>
             if (!(vstr >> index))
             {
               if (read_opts.strict)
-                throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+                throw Error(toString(getName()) + ": Could not read vertex index on line '" + line + '\'');
               else
               {
                 THEA_WARNING << getName() << ": Skipping face, could not read vertex index on line '" << line << '\'';
@@ -301,7 +301,7 @@ class CodecOff : public CodecOffBase<MeshT>
               if (face[w] == face[v])  // face has repeated vertices
               {
                 if (read_opts.strict)
-                  throw Error(std::string(getName()) + ": Face has repeated vertices on line '" + line + '\'');
+                  throw Error(toString(getName()) + ": Face has repeated vertices on line '" + line + '\'');
                 else
                 {
                   THEA_WARNING << getName() << ": Skipping face with repeated vertices on line '" << line << '\'';
@@ -343,7 +343,7 @@ class CodecOff : public CodecOffBase<MeshT>
         return;
 
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
+      MeshPtr mesh(new Mesh(toString(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -546,7 +546,7 @@ class CodecOff : public CodecOffBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
           }
@@ -559,7 +559,7 @@ class CodecOff : public CodecOffBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
           }
@@ -591,7 +591,7 @@ class CodecOff : public CodecOffBase<MeshT>
           for (int j = 0; j < nfv; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
           }
@@ -605,7 +605,7 @@ class CodecOff : public CodecOffBase<MeshT>
           for (int j = 0; j < nfv; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
           }

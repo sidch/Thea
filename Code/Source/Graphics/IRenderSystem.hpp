@@ -684,6 +684,13 @@ class THEA_API IRenderSystem : public virtual INamedObject
     virtual int8 THEA_ICALL setCullFace(int32 cull) = 0;
 
     /**
+     * Set smoothing of rasterized polygons on/off.
+     *
+     * @return True on success, false on error.
+     */
+    virtual int8 THEA_ICALL setPolygonSmooth(int8 enable) = 0;
+
+    /**
      * Set the depth offset, if any, to be applied to polygon faces. The supplied value is scaled by an implementation-specific
      * offset.
      *
@@ -692,18 +699,18 @@ class THEA_API IRenderSystem : public virtual INamedObject
     virtual int8 THEA_ICALL setPolygonOffset(int8 enable, float64 offset = 1) = 0;
 
     /**
-     * Set smoothing of rasterized polygons on/off.
-     *
-     * @return True on success, false on error.
-     */
-    virtual int8 THEA_ICALL setPolygonSmooth(int8 enable) = 0;
-
-    /**
      * Set smoothing of rasterized lines on/off.
      *
      * @return True on success, false on error.
      */
     virtual int8 THEA_ICALL setLineSmooth(int8 enable) = 0;
+
+    /**
+     * Set the width of rasterized lines.
+     *
+     * @return True on success, false on error.
+     */
+    virtual int8 THEA_ICALL setLineWidth(Real size = 1) = 0;
 
     /**
      * Set smoothing of rasterized points on/off.

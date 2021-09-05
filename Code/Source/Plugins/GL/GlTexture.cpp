@@ -22,7 +22,7 @@ namespace Gl {
 
 namespace GlTextureInternal {
 
-#define THEA_GL_TEXTURE_ERROR { throw Error(std::string(getName()) + ": GlTexture: Error constructing texture"); }
+#define THEA_GL_TEXTURE_ERROR { throw Error(toString(getName()) + ": GlTexture: Error constructing texture"); }
 
 static int8
 setDefaultUnpackingOptions(int64 row_alignment)
@@ -89,7 +89,7 @@ GlTexture::toGlCubeMapFace(int32 face)
 
 GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, int64 width_, int64 height_, int64 depth_,
                      Format const * desired_format, int32 dimension_, Options const * options)
-: render_system(render_system_), name(name_), width(width_), height(height_), depth(depth_), dimension(dimension_)
+: render_system(render_system_), name(toString(name_)), width(width_), height(height_), depth(depth_), dimension(dimension_)
 {
   if (!setInternalFormat(nullptr, desired_format)) THEA_GL_TEXTURE_ERROR
   if (!doSanityChecks()) THEA_GL_TEXTURE_ERROR
@@ -125,13 +125,13 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, int64 
 
 GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage const * image,
                      Format const * desired_format, int32 dimension_, Options const * options)
-: render_system(render_system_), name(name_), dimension(dimension_),
+: render_system(render_system_), name(toString(name_)), dimension(dimension_),
   gl_target(GlTextureInternal::dimensionToGlTarget(dimension))
 {
-  if (!image || !image->isValid()) throw Error(std::string(getName()) + ": Source image must be valid");
+  if (!image || !image->isValid()) throw Error(toString(getName()) + ": Source image must be valid");
   if (gl_target == GL_INVALID_ENUM) THEA_GL_TEXTURE_ERROR
   if (dimension == Dimension::DIM_CUBE_MAP)
-    throw Error(std::string(getName()) + ": This constructor cannot be used to create a cube map");
+    throw Error(toString(getName()) + ": This constructor cannot be used to create a cube map");
 
   Format const * bytes_format = TextureFormat::fromImageType(IImage::Type(image->getType()));
   if (!setInternalFormat(bytes_format, desired_format)) THEA_GL_TEXTURE_ERROR
@@ -144,14 +144,14 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage
 
 GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage const * images[6],
                      Format const * desired_format, Options const * options)
-: render_system(render_system_), name(name_), dimension(Dimension::DIM_CUBE_MAP),
+: render_system(render_system_), name(toString(name_)), dimension(Dimension::DIM_CUBE_MAP),
   gl_target(GlTextureInternal::dimensionToGlTarget(dimension))
 {
   if (!images[0] || !images[0]->isValid())
-    throw Error(std::string(getName()) + ": All source images must be valid");
+    throw Error(toString(getName()) + ": All source images must be valid");
 
   if (images[0]->getDepth() != 1)
-    throw Error(std::string(getName()) + ": Cube-mapped textures cannot be 3D");
+    throw Error(toString(getName()) + ": Cube-mapped textures cannot be 3D");
 
   IImage::Type type = IImage::Type(images[0]->getType());
   width  = images[0]->getWidth();
@@ -161,12 +161,12 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage
   for (int i = 1; i < 6; ++i)
   {
     if (!images[i] || !images[i]->isValid())
-      throw Error(std::string(getName()) + ": All source images must be valid");
+      throw Error(toString(getName()) + ": All source images must be valid");
 
     if (images[i]->getType() != type
      || images[i]->getWidth() != width || images[i]->getHeight() != height || images[i]->getDepth() != depth)
     {
-      throw Error(std::string(getName()) + ": All source images must have identical type and dimensions");
+      throw Error(toString(getName()) + ": All source images must have identical type and dimensions");
     }
   }
 

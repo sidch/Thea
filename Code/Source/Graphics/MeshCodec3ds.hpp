@@ -153,7 +153,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
 
       Lib3dsFile * file3ds = lib3ds_file_new();
       if (!file3ds)
-        throw Error(std::string(getName()) + ": Couldn't create lib3ds file object");
+        throw Error(toString(getName()) + ": Couldn't create lib3ds file object");
 
 #if THEA_LIB3DS_VERSION_MAJOR >= 2
 
@@ -168,18 +168,18 @@ class Codec3ds : public Codec3dsBase<MeshT>
       io.log_func    =  log;
 
       if (!lib3ds_file_read(file3ds, &io))
-        throw Error(std::string(getName()) + ": Error reading 3DS file");
+        throw Error(toString(getName()) + ": Error reading 3DS file");
 
 #else
 
       Lib3dsIo * io = lib3ds_io_new(static_cast<void *>(in), errorInput, seekInput, tellInput, read, nullptr);
       if (!io)
-        throw Error(std::string(getName()) + ": Couldn't create lib3ds IO object");
+        throw Error(toString(getName()) + ": Couldn't create lib3ds IO object");
 
       if (lib3ds_file_read(file3ds, io) != LIB3DS_TRUE)
       {
         lib3ds_io_free(io);
-        throw Error(std::string(getName()) + ": Error reading 3DS file");
+        throw Error(toString(getName()) + ": Error reading 3DS file");
       }
 
       lib3ds_io_free(io);
@@ -190,7 +190,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
 
       if (read_opts.flatten)
       {
-        MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/FlattenedMesh"));
+        MeshPtr mesh(new Mesh(toString(mesh_group.getName()) + "/FlattenedMesh"));
         Builder flat_builder(mesh);
         flat_builder.begin();
 
@@ -214,7 +214,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
     void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
                         WriteCallback * callback) const
     {
-      throw Error(std::string(getName()) + ": Not implemented");
+      throw Error(toString(getName()) + ": Not implemented");
     }
 
   private:
@@ -244,7 +244,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         if (!builder)
         {
           std::string name = m->name;
-          mesh = MeshPtr(new Mesh(std::string(mesh_group->getName()) + '/' + name));
+          mesh = MeshPtr(new Mesh(toString(mesh_group->getName()) + '/' + name));
 
           local_builder = BuilderPtr(new Builder(mesh));
           builder = local_builder.get();
@@ -383,7 +383,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         case LIB3DS_SEEK_SET: abs_pos = (int64)offset; break;
         case LIB3DS_SEEK_CUR: abs_pos = (int64)(in.getPosition() + offset); break;
         case LIB3DS_SEEK_END: abs_pos = (int64)(in.size() + offset); break;
-        default: throw Error(std::string(_getName()) + ": Invalid enum value specified to seekInput");
+        default: throw Error(toString(_getName()) + ": Invalid enum value specified to seekInput");
       }
 
       if (abs_pos >= 0 && abs_pos <= in.size())
@@ -407,7 +407,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         case LIB3DS_SEEK_SET: abs_pos = (int64)offset; break;
         case LIB3DS_SEEK_CUR: abs_pos = (int64)(out.getPosition() + offset); break;
         case LIB3DS_SEEK_END: abs_pos = (int64)(out.size() + offset); break;
-        default: throw Error(std::string(_getName()) + ": Invalid enum value specified to seekOutput");
+        default: throw Error(toString(_getName()) + ": Invalid enum value specified to seekOutput");
       }
 
       if (abs_pos >= 0 && abs_pos <= out.size())
@@ -465,7 +465,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
         case LIB3DS_LOG_WARN:  THEA_WARNING << indent_str << msg; break;
         case LIB3DS_LOG_DEBUG: THEA_DEBUG   << indent_str << msg; break;
         case LIB3DS_LOG_INFO:  THEA_CONSOLE << indent_str << msg; break;
-        default: throw Error(std::string(_getName()) + ": Invalid enum value specified to log");
+        default: throw Error(toString(_getName()) + ": Invalid enum value specified to log");
       }
     }
 #else

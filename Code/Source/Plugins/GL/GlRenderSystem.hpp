@@ -142,9 +142,10 @@ class THEA_GL_DLL_LOCAL GlRenderSystem : public virtual IRenderSystem
     int8 THEA_ICALL setClearStencil(int64 value);
     int8 THEA_ICALL setDepthTest(int32 test);
     int8 THEA_ICALL setCullFace(int32 cull);
-    int8 THEA_ICALL setPolygonOffset(int8 enable, float64 offset = 1);
     int8 THEA_ICALL setPolygonSmooth(int8 enable);
+    int8 THEA_ICALL setPolygonOffset(int8 enable, float64 offset = 1);
     int8 THEA_ICALL setLineSmooth(int8 enable);
+    int8 THEA_ICALL setLineWidth(Real size = 1);
     int8 THEA_ICALL setPointSmooth(int8 enable);
     int8 THEA_ICALL setPointSize(Real size = 1);
     int8 THEA_ICALL popColorFlags();

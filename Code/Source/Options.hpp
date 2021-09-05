@@ -71,19 +71,26 @@ class THEA_API Options : public virtual IOptions, private Map<std::string, boost
     ~Options() {}
 
     // Functions from abstract interface
-    int8 THEA_ICALL hasOption(char const * option_name) const { return find(option_name) != end(); }
+    int8 THEA_ICALL hasOption(char const * option_name) const { return find(toString(option_name)) != end(); }
     void THEA_ICALL setInteger(char const * option_name, int64 value) { set<int64>(option_name, value); }
     void THEA_ICALL setFloat(char const * option_name, float64 value) { set<float64>(option_name, value); }
-    void THEA_ICALL setString(char const * option_name, char const * value) { set<std::string>(option_name, std::string(value)); }
-    int64 THEA_ICALL getInteger(char const * option_name, int64 default_value) const { return get<int64>(option_name, default_value); }
-    float64 THEA_ICALL getFloat(char const * option_name, float64 default_value) const { return get<float64>(option_name, default_value); }
+
+    void THEA_ICALL setString(char const * option_name, char const * value)
+    { set<std::string>(option_name, toString(value)); }
+
+    int64 THEA_ICALL getInteger(char const * option_name, int64 default_value) const
+    { return get<int64>(option_name, default_value); }
+
+    float64 THEA_ICALL getFloat(char const * option_name, float64 default_value) const
+    { return get<float64>(option_name, default_value); }
+
     char const * THEA_ICALL getString(char const * option_name, char const * default_value) const;
 
     /** Set the value of an option. */
-    template <typename T> void set(char const * option_name, T const & value) { (*this)[option_name] = value; }
+    template <typename T> void set(char const * option_name, T const & value) { (*this)[toString(option_name)] = value; }
 
     /** Set the value of an option from a C-style string. It is stored and can be read back as a <code>std::string</code>. */
-    void set(char const * option_name, char const * value) { (*this)[option_name] = std::string(value); }
+    void set(char const * option_name, char const * value) { (*this)[toString(option_name)] = toString(value); }
 
     /**
      * Get the value of an option. If the option has not been set, the default value specified by the last parameter is
@@ -91,7 +98,7 @@ class THEA_API Options : public virtual IOptions, private Map<std::string, boost
      */
     template <typename T> T get(char const * option_name, T const & default_value) const
     {
-      const_iterator existing = find(option_name);
+      const_iterator existing = find(toString(option_name));
       if (existing != end())
         return boost::any_cast<T>(existing->second);
       else
@@ -109,7 +116,7 @@ template <>
 inline char const *
 Options::get<char const *>(char const * option_name, char const * const & default_value) const
 {
-  const_iterator existing = find(option_name);
+  const_iterator existing = find(toString(option_name));
   if (existing != end())
   {
     // any_cast with reference type returns handle to held value

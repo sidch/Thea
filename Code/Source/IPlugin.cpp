@@ -176,49 +176,49 @@ PluginManager::uninstall(IPlugin * plugin)
 void
 PluginManager::addEigenSolverFactory(char const * name, Algorithms::IEigenSolverFactory * factory)
 {
-  Application::getEigenSolverManager().installFactory(name, factory);
+  Application::getEigenSolverManager().installFactory(toString(name), factory);
 }
 
 void
 PluginManager::removeEigenSolverFactory(char const * name)
 {
-  Application::getEigenSolverManager().uninstallFactory(name);
+  Application::getEigenSolverManager().uninstallFactory(toString(name));
 }
 
 void
 PluginManager::addLinearSolverFactory(char const * name, Algorithms::ILinearSolverFactory * factory)
 {
-  Application::getLinearSolverManager().installFactory(name, factory);
+  Application::getLinearSolverManager().installFactory(toString(name), factory);
 }
 
 void
 PluginManager::removeLinearSolverFactory(char const * name)
 {
-  Application::getLinearSolverManager().uninstallFactory(name);
+  Application::getLinearSolverManager().uninstallFactory(toString(name));
 }
 
 void
 PluginManager::addRenderSystemFactory(char const * name, Graphics::IRenderSystemFactory * factory)
 {
-  Application::getRenderSystemManager().installFactory(name, factory);
+  Application::getRenderSystemManager().installFactory(toString(name), factory);
 }
 
 void
 PluginManager::removeRenderSystemFactory(char const * name)
 {
-  Application::getRenderSystemManager().uninstallFactory(name);
+  Application::getRenderSystemManager().uninstallFactory(toString(name));
 }
 
 void
 PluginManager::addNumericalOptimizerFactory(char const * name, Algorithms::INumericalOptimizerFactory * factory)
 {
-  Application::getNumericalOptimizerManager().installFactory(name, factory);
+  Application::getNumericalOptimizerManager().installFactory(toString(name), factory);
 }
 
 void
 PluginManager::removeNumericalOptimizerFactory(char const * name)
 {
-  Application::getNumericalOptimizerManager().uninstallFactory(name);
+  Application::getNumericalOptimizerManager().uninstallFactory(toString(name));
 }
 
 } // namespace Thea

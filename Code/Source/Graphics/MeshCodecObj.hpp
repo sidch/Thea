@@ -242,7 +242,7 @@ class CodecObj : public CodecObjBase<MeshT>
       // The current submesh being processed
       MeshPtr mesh;
 
-      std::string submesh_name = std::string(mesh_group.getName()) + (read_opts.flatten ? "/FlattenedMesh" : "/AnonymousMesh0");
+      std::string submesh_name = toString(mesh_group.getName()) + (read_opts.flatten ? "/FlattenedMesh" : "/AnonymousMesh0");
       int anon_index = 0;
 
       intx num_faces = 0;
@@ -277,7 +277,7 @@ class CodecObj : public CodecObjBase<MeshT>
             {
               vstr.get();
               if (!(vstr >> x >> y))
-                throw Error(std::string(getName()) + ": Could not read texture coordinate on line '" + line + '\'');
+                throw Error(toString(getName()) + ": Could not read texture coordinate on line '" + line + '\'');
 
               texcoords.push_back(Vector2((Real)x, (Real)y));
             }
@@ -288,7 +288,7 @@ class CodecObj : public CodecObjBase<MeshT>
             {
               vstr.get();
               if (!(vstr >> x >> y >> z))
-                throw Error(std::string(getName()) + ": Could not read normal on line '" + line + '\'');
+                throw Error(toString(getName()) + ": Could not read normal on line '" + line + '\'');
 
               normals.push_back(Vector3((Real)x, (Real)y, (Real)z));
             }
@@ -296,7 +296,7 @@ class CodecObj : public CodecObjBase<MeshT>
           else if (line[1] == ' ' || line[1] == '\t')  // vertex
           {
             if (!(vstr >> x >> y >> z))
-              throw Error(std::string(getName()) + ": Could not read vertex position on line '" + line + '\'');
+              throw Error(toString(getName()) + ": Could not read vertex position on line '" + line + '\'');
 
             vertices.push_back(Vector3((Real)x, (Real)y, (Real)z));
           }
@@ -420,7 +420,7 @@ class CodecObj : public CodecObjBase<MeshT>
           if (bad_face)
           {
             if (read_opts.strict)
-              throw Error(std::string(getName()) + ": Malformed face: '" + line + '\'');
+              throw Error(toString(getName()) + ": Malformed face: '" + line + '\'');
 
             faces.erase(faces.begin() + face_starts.back(), faces.end());
             face_starts.pop_back();
@@ -600,7 +600,7 @@ class CodecObj : public CodecObjBase<MeshT>
       {
         typename Mesh::TexCoordArray const & texcoords = mesh.getTexCoords();
         alwaysAssertM(texcoords.size() == vertices.size(),
-                      std::string(getName()) + ": Mesh has unequal numbers of vertices and texture coordinates");
+                      toString(getName()) + ": Mesh has unequal numbers of vertices and texture coordinates");
 
         for (size_t i = 0; i < texcoords.size(); ++i)
         {
@@ -613,7 +613,7 @@ class CodecObj : public CodecObjBase<MeshT>
       {
         typename Mesh::NormalArray const & normals = mesh.getNormals();
         alwaysAssertM(normals.size() == vertices.size(),
-                      std::string(getName()) + ": Mesh has unequal numbers of vertices and normals");
+                      toString(getName()) + ": Mesh has unequal numbers of vertices and normals");
 
         for (size_t i = 0; i < normals.size(); ++i)
         {
@@ -659,7 +659,7 @@ class CodecObj : public CodecObjBase<MeshT>
         for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
         {
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+          alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
           if (!write_opts.ignore_normals)
             os << ' ' << ii->second << "//" << ii->second;
@@ -698,7 +698,7 @@ class CodecObj : public CodecObjBase<MeshT>
         for (int j = 0; j < nfv; ++j)
         {
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
-          alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+          alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
           if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
           {

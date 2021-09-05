@@ -149,7 +149,7 @@ TextOutputStream::_commit(bool flush, bool force)
 void
 TextOutputStream::commitToString(std::string & out)
 {
-  out = std::string(&data[0], data.size());
+  out = std::string(data.data(), data.size());
 }
 
 std::string

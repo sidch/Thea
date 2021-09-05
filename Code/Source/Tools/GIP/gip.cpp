@@ -673,7 +673,7 @@ createKernel(char const * prog, char const * caller_name, cl_program & program, 
   // Create a program from the source
   cl_int ret;
   program = clCreateProgramWithSource(CL::context, 1, (char const **)&prog, (size_t const *)&prog_size, &ret);
-  checkCL(ret, (std::string(caller_name) + "::createProgramWithSource").c_str());
+  checkCL(ret, (toString(caller_name) + "::createProgramWithSource").c_str());
 
   // Build the program
   ret = clBuildProgram(program, 1, &CL::device_id, nullptr, nullptr, nullptr);
@@ -692,12 +692,12 @@ createKernel(char const * prog, char const * caller_name, cl_program & program, 
       std::exit(-1);
     }
     else
-      checkCL(ret, (std::string(caller_name) + "::buildProgram").c_str());
+      checkCL(ret, (toString(caller_name) + "::buildProgram").c_str());
   }
 
   // Create the OpenCL kernel
   kernel = clCreateKernel(program, caller_name, &ret);
-  checkCL(ret, (std::string(caller_name) + "::createKernel").c_str());
+  checkCL(ret, (toString(caller_name) + "::createKernel").c_str());
 }
 
 void
@@ -708,7 +708,7 @@ setDefaultKernelArgs(cl_kernel kernel, cl_mem inbuf, cl_mem outbuf, char const *
   ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), &inbuf);
   ret = ret | clSetKernelArg(kernel, 1, sizeof(cl_mem), &outbuf);
   ret = ret | clSetKernelArg(kernel, 2, sizeof(int),    &globals.image_aligned_width);
-  checkCL(ret, (std::string(caller_name) + "::setKernelArg").c_str());
+  checkCL(ret, (toString(caller_name) + "::setKernelArg").c_str());
 }
 
 void
@@ -717,7 +717,7 @@ runKernel(cl_kernel kernel, char const * caller_name)
   // Execute the OpenCL kernel on the list
   size_t global_work_size[2] = { (size_t)globals.image_width, (size_t)globals.image_height };
   cl_int ret = clEnqueueNDRangeKernel(CL::command_queue, kernel, 2, nullptr, global_work_size, nullptr, 0, nullptr, nullptr);
-  checkCL(ret, (std::string(caller_name) + "::enqueueNDRangeKernel").c_str());
+  checkCL(ret, (toString(caller_name) + "::enqueueNDRangeKernel").c_str());
 }
 
 //=============================================================================================================================

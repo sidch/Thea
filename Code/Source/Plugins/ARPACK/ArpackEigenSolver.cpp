@@ -137,7 +137,7 @@ ArpackEigenSolverFactory::~ArpackEigenSolverFactory()
 IEigenSolver *
 ArpackEigenSolverFactory::createEigenSolver(char const * name)
 {
-  ArpackEigenSolver * es = new ArpackEigenSolver(name);
+  ArpackEigenSolver * es = new ArpackEigenSolver(toString(name));
   eigen_solvers.insert(es);
   return es;
 }

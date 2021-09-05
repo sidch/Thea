@@ -1249,20 +1249,6 @@ GlRenderSystem::setCullFace(int32 cull)
 }
 
 int8
-GlRenderSystem::setPolygonOffset(int8 enable, float64 offset)
-{
-  if (enable)
-  {
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset((GLfloat)offset, (GLfloat)offset);
-  }
-  else
-    glDisable(GL_POLYGON_OFFSET_FILL);
-
-  return true;
-}
-
-int8
 GlRenderSystem::setPolygonSmooth(int8 enable)
 {
   if (enable)
@@ -1272,6 +1258,20 @@ GlRenderSystem::setPolygonSmooth(int8 enable)
     glDisable(GL_POLYGON_SMOOTH);
     glDisable(GL_MULTISAMPLE);
   }
+
+  return true;
+}
+
+int8
+GlRenderSystem::setPolygonOffset(int8 enable, float64 offset)
+{
+  if (enable)
+  {
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset((GLfloat)offset, (GLfloat)offset);
+  }
+  else
+    glDisable(GL_POLYGON_OFFSET_FILL);
 
   return true;
 }
@@ -1287,6 +1287,13 @@ GlRenderSystem::setLineSmooth(int8 enable)
     glDisable(GL_MULTISAMPLE);
   }
 
+  return true;
+}
+
+int8
+GlRenderSystem::setLineWidth(Real size)
+{
+  glLineWidth((GLfloat)size);
   return true;
 }
 

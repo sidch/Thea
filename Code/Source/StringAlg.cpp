@@ -60,10 +60,8 @@ parseCommaSeparated(std::string const & s, Array<std::string> & array, bool stri
 {
   array.clear();
 
-  if (s == "")
-  {
+  if (s.empty())
     return;
-  }
 
   size_t begin = 0;
   char const delimiter = ',';
@@ -168,6 +166,8 @@ endsWith(std::string const & test, std::string const & pattern)
 std::string
 wordWrap(std::string const & input, intx num_cols, char const * newline)
 {
+  alwaysAssertM(newline, "wordWrap: Newline string cannot be a null pointer");
+
   std::ostringstream output;
 
   size_t  c = 0;
@@ -320,6 +320,8 @@ format(char const * fmt, ...)
 std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
+  alwaysAssertM(fmt, "vformat: Format string cannot be a null pointer");
+
   // We draw the line at a 1MB string.
   static intx const MAX_SIZE = 1000000;
 
@@ -363,6 +365,8 @@ vformat(char const * fmt, va_list arg_ptr)
 std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
+  alwaysAssertM(fmt, "vformat: Format string cannot be a null pointer");
+
   // We draw the line at a 1MB string.
   static intx const MAX_SIZE = 1000000;
 
@@ -409,6 +413,8 @@ vformat(char const * fmt, va_list arg_ptr)
 std::string
 vformat(char const * fmt, va_list arg_ptr)
 {
+  alwaysAssertM(fmt, "vformat: Format string cannot be a null pointer");
+
   // If the string is less than 161 characters,
   // allocate it on the stack because this saves
   // the malloc/free time.  The number 161 is chosen
@@ -522,6 +528,8 @@ rangeMatch(char const * pattern, char test, int flags, char ** newp)
 int
 fnmatch(char const * pattern, char const * query, int flags)
 {
+  alwaysAssertM(pattern && query, "fnmatch: Pattern and query strings cannot be null pointers");
+
   char const * stringstart;
   char * newp;
   char c, test;

@@ -232,10 +232,10 @@ codec::readImage(Image & image, BinaryInputStream & input, bool read_block_heade
   fipMemoryIO mem((BYTE *)img_block.data(), (DWORD)size);                                                                     \
   FIBITMAP * bitmap = mem.load(fip_format, flags);                                                                            \
   if (!bitmap)                                                                                                                \
-    throw Error(std::string(getName()) + ": Could not decode image from memory stream");                                      \
+    throw Error(toString(getName()) + ": Could not decode image from memory stream");                                      \
                                                                                                                               \
   fipImage * fip_img = image._getFreeImage();                                                                                 \
-  debugAssertM(fip_img, std::string(getName()) + ": Image does not wrap a valid FreeImage bitmap");                           \
+  debugAssertM(fip_img, toString(getName()) + ": Image does not wrap a valid FreeImage bitmap");                           \
                                                                                                                               \
   *fip_img = bitmap;  /* the FIP object will now manage the destruction of the bitmap */                                      \
                                                                                                                               \
@@ -243,7 +243,7 @@ codec::readImage(Image & image, BinaryInputStream & input, bool read_block_heade
   if (type == Image::Type::UNKNOWN)                                                                                           \
   {                                                                                                                           \
     image.clear();                                                                                                            \
-    throw Error(std::string(getName())                                                                                        \
+    throw Error(toString(getName())                                                                                        \
             + ": Image was successfully decoded but it has a format for which this library does not provide an interface");   \
   }                                                                                                                           \
   image._setType(type);                                                                                                       \
@@ -295,7 +295,7 @@ codec::writeImage(Image const & image, BinaryOutputStream & output, bool write_b
   BYTE * data;                                                                                                                \
   DWORD size_in_bytes;                                                                                                        \
   if (!mem.acquire(&data, &size_in_bytes))                                                                                    \
-    throw Error(std::string(getName()) + ": Error accessing the FreeImage memory stream");                                    \
+    throw Error(toString(getName()) + ": Error accessing the FreeImage memory stream");                                    \
                                                                                                                               \
   if (write_block_header)                                                                                                     \
   {                                                                                                                           \
@@ -364,12 +364,12 @@ Codec3bm::readImage(Image & image, BinaryInputStream & input, bool read_block_he
   uint8 magic[4];
   input.readBytes(4, &magic);
   if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'\0')
-    throw Error(std::string(getName()) + ": Image is not in 3BM format");
+    throw Error(toString(getName()) + ": Image is not in 3BM format");
 
   input.skip(4);
   uint64 size = input.readUInt64();
   if (prefixed_size > 0 && size != prefixed_size)
-    throw Error(std::string(getName()) + ": Prefixed size does not match image size from header");
+    throw Error(toString(getName()) + ": Prefixed size does not match image size from header");
 
   input.skip(8);
   uint64 bitmap_offset = input.readUInt64();
@@ -393,16 +393,16 @@ Codec3bm::readImage(Image & image, BinaryInputStream & input, bool read_block_he
 
   int bpp = (int)input.readUInt32();
   if (bpp != 8 && bpp != 24 && bpp != 32)
-    throw Error(std::string(getName()) + ": Only 8, 24 and 32-bit bitmaps currently supported");
+    throw Error(toString(getName()) + ": Only 8, 24 and 32-bit bitmaps currently supported");
 
   uint32 compression = input.readUInt32();
   if (compression != 0)
-    throw Error(std::string(getName()) + ": Unsupported compression method");
+    throw Error(toString(getName()) + ": Unsupported compression method");
 
   int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
   uint64 data_size = input.readUInt64();
   if (data_size != (uint64)stream_scan_width * (uint64)height * (uint64)depth)
-    throw Error(std::string(getName()) + ": Pixel data block size does not match image dimensions");
+    throw Error(toString(getName()) + ": Pixel data block size does not match image dimensions");
 
   // Read image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
   input.setPosition(start_position + (int64)bitmap_offset);
@@ -462,7 +462,7 @@ void
 Codec3bm::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const
 {
   if (!image.isValid())
-    throw Error(std::string(getName()) + ": Cannot write an invalid image");
+    throw Error(toString(getName()) + ": Cannot write an invalid image");
 
   Image::Type type(image.getType());
   int64 width   =  image.getWidth();
@@ -472,7 +472,7 @@ Codec3bm::writeImage(Image const & image, BinaryOutputStream & output, bool writ
   if (type != Image::Type::LUMINANCE_8U
    && type != Image::Type::RGB_8U
    && type != Image::Type::RGBA_8U)
-    throw Error(std::string(getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
+    throw Error(toString(getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
 
   int bpp = image.getBitsPerPixel();
   int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility

@@ -220,7 +220,7 @@ DynLibManager::unload(DynLib * lib)
     if (loaded != libs.end())
     {
       alwaysAssertM(loaded->second == lib,
-                    "DynLibManager: A different library was loaded with the same name (" + std::string(lib->getName()) + ')');
+                    "DynLibManager: A different library was loaded with the same name (" + toString(lib->getName()) + ')');
       libs.erase(loaded);
     }
 

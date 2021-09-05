@@ -61,7 +61,7 @@ isDrawBuffer(int32 ap)
 } // namespace GlFramebufferInternal
 
 GlFramebuffer::GlFramebuffer(GlRenderSystem * render_system_, char const * name_)
-: render_system(render_system_), name(name_), gl_fbid(0), num_attachments(0), width(0), height(0)
+: render_system(render_system_), name(toString(name_)), gl_fbid(0), num_attachments(0), width(0), height(0)
 {
   if (!THEA_GL_SUPPORTS(EXT_framebuffer_object))
     throw Error("OpenGL framebuffer objects are not supported");

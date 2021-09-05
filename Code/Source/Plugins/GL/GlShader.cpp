@@ -23,7 +23,7 @@ namespace Graphics {
 namespace Gl {
 
 GlShader::GlShader(GlRenderSystem * render_system_, char const * name_)
-: render_system(render_system_), name(name_), complete(false), linked(true), has_vertex_module(false),
+: render_system(render_system_), name(toString(name_)), complete(false), linked(true), has_vertex_module(false),
   has_fragment_module(false)
 {
   if (!THEA_GL_SUPPORTS(ARB_shader_objects))
@@ -41,6 +41,8 @@ GlShader::~GlShader()
 int8
 GlShader::attachModuleFromFile(int32 type, char const * path)
 {
+  alwaysAssertM(path, toString(getName()) + "Shader module source path cannot be a null pointer");
+
   std::ifstream in(path);
   if (!in) { THEA_ERROR << getName() << ": Shader module '" << path << "' not found"; return GlCaps::setError(); }
 
@@ -54,6 +56,8 @@ GlShader::attachModuleFromFile(int32 type, char const * path)
 int8
 GlShader::attachModuleFromString(int32 type, char const * source)
 {
+  alwaysAssertM(source, toString(getName()) + "Shader module source code cannot be a null pointer");
+
   GLenum gltype;
   switch (type)
   {
@@ -164,7 +168,7 @@ GlShader::readActiveUniforms()
         if (GlShaderInternal::isSamplerType(data.type))
         {
           if (data.size > 1)
-            throw Error(std::string(getName()) + ": Arrays of samplers are not supported");
+            throw Error(toString(getName()) + ": Arrays of samplers are not supported");
 
           data.texunit = last_texture_unit++;
         }
@@ -309,6 +313,8 @@ GlShader::checkBuildStatus(GLhandleARB obj_id, GLenum status_field, std::string 
 int8
 GlShader::setUniform(char const * uniform_name, ITexture * value)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   if (!value)
   { THEA_ERROR << getName() << ": Texture for uniform '" << uniform_name << "' must be non-null"; return GlCaps::setError(); }
 
@@ -327,6 +333,8 @@ GlShader::setUniform(char const * uniform_name, ITexture * value)
 int8
 GlShader::setUniform(char const * uniform_name, int64 num_values, ITexture * const * values)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   THEA_ERROR << getName() << ": OpenGL texture array uniforms are not supported";
   return GlCaps::setError();
 }

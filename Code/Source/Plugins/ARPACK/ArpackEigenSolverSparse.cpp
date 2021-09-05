@@ -69,8 +69,8 @@ ArpackEigenSolver::solveSparse(ICompressedSparseMatrix<float64> const & m, int32
   try
   {
     // Create the matrix
-    alwaysAssertM(m.isColumnMajor(), std::string(getName()) + ": Operator matrix is not in compressed column (CSC) format");
-    alwaysAssertM(m.isFullyCompressed(), std::string(getName()) + ": Operator matrix is not fully compressed");
+    alwaysAssertM(m.isColumnMajor(), toString(getName()) + ": Operator matrix is not in compressed column (CSC) format");
+    alwaysAssertM(m.isFullyCompressed(), toString(getName()) + ": Operator matrix is not fully compressed");
 
     Array<int32> irow;
     ArpackEigenSolverInternal::indicesToInt(m.getInnerIndexType(), m.numStoredElements(), m.getInnerIndices(), irow);

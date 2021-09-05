@@ -278,22 +278,22 @@ class CodecPly : public CodecPlyBase<MeshT>
       // Assume first word "property" has already been extracted
       std::string field;
       if (!(in >> field))
-        throw Error(std::string(getName()) + ": Could not read property type");
+        throw Error(toString(getName()) + ": Could not read property type");
 
       if (!prop.type.fromString(field))
-        throw Error(std::string(getName()) + ": Unknown property type '" + field + '\'');
+        throw Error(toString(getName()) + ": Unknown property type '" + field + '\'');
 
       if (prop.type == PropertyType::LIST)
       {
         std::string count_str, item_str;
         if (!(in >> count_str >> item_str))
-          throw Error(std::string(getName()) + ": Could not read list item and count types");
+          throw Error(toString(getName()) + ": Could not read list item and count types");
 
         if (!prop.count_type.fromString(count_str))
-          throw Error(std::string(getName()) + ": Unknown list count type '" + count_str + '\'');
+          throw Error(toString(getName()) + ": Unknown list count type '" + count_str + '\'');
 
         if (!prop.item_type.fromString(item_str))
-          throw Error(std::string(getName()) + ": Unknown list item type '" + item_str + '\'');
+          throw Error(toString(getName()) + ": Unknown list item type '" + item_str + '\'');
       }
     }
 
@@ -302,7 +302,7 @@ class CodecPly : public CodecPlyBase<MeshT>
     {
       std::string magic = trimWhitespace(in.readLine());
       if (magic != "ply")
-        throw Error(std::string(getName()) + ": Invalid PLY stream (does not start with 'ply')");
+        throw Error(toString(getName()) + ": Invalid PLY stream (does not start with 'ply')");
 
       header = Header();  // reset
 
@@ -320,14 +320,14 @@ class CodecPly : public CodecPlyBase<MeshT>
 
         std::istringstream line_in(line);
         if (!(line_in >> field))
-          throw Error(std::string(getName()) + ": Could not read first word of line");
+          throw Error(toString(getName()) + ": Could not read first word of line");
 
         if (field == "format")
         {
           if (first)
           {
             if (!(line_in >> field))
-              throw Error(std::string(getName()) + ": Could not read ascii/binary specifier");
+              throw Error(toString(getName()) + ": Could not read ascii/binary specifier");
 
             // Don't bother looking for the version number at the end of the line
             if (field == "ascii")
@@ -343,21 +343,21 @@ class CodecPly : public CodecPlyBase<MeshT>
               header.endianness = Endianness::BIG;
             }
             else
-              throw Error(std::string(getName()) + ": Invalid format specifier");
+              throw Error(toString(getName()) + ": Invalid format specifier");
 
             first = false;
           }
           else
-            throw Error(std::string(getName()) + ": Format specifier must be first line after magic string");
+            throw Error(toString(getName()) + ": Format specifier must be first line after magic string");
         }
         else if (field == "element")
         {
           if (!(line_in >> field))
-            throw Error(std::string(getName()) + ": Could not read element type");
+            throw Error(toString(getName()) + ": Could not read element type");
 
           ElementBlock block;
           if (!(line_in >> block.num_elems))
-            throw Error(std::string(getName()) + ": Could not read number of elements of type '" + field + '\'');
+            throw Error(toString(getName()) + ": Could not read number of elements of type '" + field + '\'');
 
           if (field == "vertex")
             block.type = ElementType::VERTEX;
@@ -371,18 +371,18 @@ class CodecPly : public CodecPlyBase<MeshT>
         else if (field == "property")
         {
           if (header.elem_blocks.empty())
-            throw Error(std::string(getName()) + ": Property specification outside an element block");
+            throw Error(toString(getName()) + ": Property specification outside an element block");
 
           Property prop;
           readPropertyHeader(prop, line_in);
           if (prop.type == PropertyType::INVALID)
-            throw Error(std::string(getName()) + ": Invalid property type");
+            throw Error(toString(getName()) + ": Invalid property type");
 
           header.elem_blocks.back().props.push_back(prop);
         }
       }
 
-      throw Error(std::string(getName()) + ": No end_header token, header not closed");
+      throw Error(toString(getName()) + ": No end_header token, header not closed");
     }
 
     /** Sanity checks for an element block. */
@@ -394,7 +394,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           || block.props[0].type == PropertyType::LIST
           || block.props[1].type == PropertyType::LIST
           || block.props[2].type == PropertyType::LIST)
-          throw Error(std::string(getName()) + ": Vertex element must start with three numerical coordinates");
+          throw Error(toString(getName()) + ": Vertex element must start with three numerical coordinates");
       }
       else if (block.type == ElementType::FACE)
       {
@@ -402,7 +402,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           || block.props[0].type != PropertyType::LIST
           || (block.props[0].count_type & 0xF000)
           || (block.props[0].item_type  & 0xF000))
-          throw Error(std::string(getName()) + ": Face element must start with a list of integer indices");
+          throw Error(toString(getName()) + ": Face element must start with a list of integer indices");
       }
     }
 
@@ -410,7 +410,7 @@ class CodecPly : public CodecPlyBase<MeshT>
     void readAscii(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
     {
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
+      MeshPtr mesh(new Mesh(toString(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -431,7 +431,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           do
           {
             if (!in.hasMore())
-              throw Error(std::string(getName()) + ": Unexpected end of input");
+              throw Error(toString(getName()) + ": Unexpected end of input");
 
             line = trimWhitespace(in.readLine());
 
@@ -444,7 +444,7 @@ class CodecPly : public CodecPlyBase<MeshT>
               double x, y, z;
               std::istringstream vstr(line);
               if (!(vstr >> x >> y >> z))
-                throw Error(std::string(getName()) + ": Could not read vertex on line '" + line + '\'');
+                throw Error(toString(getName()) + ": Could not read vertex on line '" + line + '\'');
 
               typename Builder::VertexHandle vref = builder.addVertex(Vector3((Real)x, (Real)y, (Real)z),
                                                                       (read_opts.store_vertex_indices ? num_vertices : -1));
@@ -462,7 +462,7 @@ class CodecPly : public CodecPlyBase<MeshT>
               intx index, num_face_vertices;
               std::istringstream vstr(line);
               if (!(vstr >> num_face_vertices))
-                throw Error(std::string(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
+                throw Error(toString(getName()) + ": Could not read number of vertices in face on line '" + line + '\'');
 
               if (num_face_vertices > 0)
               {
@@ -474,7 +474,7 @@ class CodecPly : public CodecPlyBase<MeshT>
                   if (!(vstr >> index))
                   {
                     if (read_opts.strict)
-                      throw Error(std::string(getName()) + ": Could not read vertex index on line '" + line + '\'');
+                      throw Error(toString(getName()) + ": Could not read vertex index on line '" + line + '\'');
                     else
                     {
                       THEA_WARNING << getName() << ": Skipping face, could not read vertex index on line '" << line << '\'';
@@ -501,7 +501,7 @@ class CodecPly : public CodecPlyBase<MeshT>
                     if (face[w] == face[v])  // face has repeated vertices
                     {
                       if (read_opts.strict)
-                        throw Error(std::string(getName()) + ": Face has repeated vertices on line '" + line + '\'');
+                        throw Error(toString(getName()) + ": Face has repeated vertices on line '" + line + '\'');
                       else
                       {
                         THEA_WARNING << getName() << ": Skipping face with repeated vertices on line '" << line << '\'';
@@ -551,18 +551,18 @@ class CodecPly : public CodecPlyBase<MeshT>
         case PropertyType::UINT32:    return static_cast<T>(in.readUInt32());
         case PropertyType::FLOAT32:   return static_cast<T>(in.readFloat32());
         case PropertyType::FLOAT64:   return static_cast<T>(in.readFloat64());
-        default: throw Error(std::string(getName()) + ": Unknown property type");
+        default: throw Error(toString(getName()) + ": Unknown property type");
       }
     }
 
     /** Return a binary-encoded list of elements of a specified type. */
     template <typename T> void readBinaryList(BinaryInputStream & in, Property const & prop, Array<T> & items) const
     {
-      debugAssertM(prop.type == PropertyType::LIST, std::string(getName()) + ": Can't read non-list property as list");
+      debugAssertM(prop.type == PropertyType::LIST, toString(getName()) + ": Can't read non-list property as list");
 
       intx num_items = readBinaryNumber<intx>(in, prop.count_type);
       if (num_items < 0)
-        throw Error(std::string(getName()) + ": List has negative size");
+        throw Error(toString(getName()) + ": List has negative size");
 
       items.resize((size_t)num_items);
       for (size_t i = 0; i < items.size(); ++i)
@@ -586,7 +586,7 @@ class CodecPly : public CodecPlyBase<MeshT>
     void readBinary(MeshGroup & mesh_group, BinaryInputStream & in, Header const & header, ReadCallback * callback) const
     {
       // Create new mesh
-      MeshPtr mesh(new Mesh(std::string(mesh_group.getName()) + "/Mesh"));
+      MeshPtr mesh(new Mesh(toString(mesh_group.getName()) + "/Mesh"));
 
       // Create a builder for the mesh
       Builder builder(mesh);
@@ -831,7 +831,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
           }
@@ -842,7 +842,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           for (typename Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
           }
@@ -874,7 +874,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           for (int j = 0; j < nfv; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             output.writeInt32((int32)ii->second);
           }
@@ -886,7 +886,7 @@ class CodecPly : public CodecPlyBase<MeshT>
           for (int j = 0; j < nfv; ++j)
           {
             typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
-            alwaysAssertM(ii != vertex_indices.end(), std::string(getName()) + ": Vertex index not found");
+            alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
             os << ' ' << ii->second;
           }

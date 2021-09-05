@@ -294,6 +294,8 @@ template <typename T>
 int8
 GlShader::setUniformHelper(char const * uniform_name, T value)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
   Uniforms::iterator entry = uniforms.find(uniform_name);
@@ -307,6 +309,8 @@ template <typename T>
 int8
 GlShader::setUniformHelper(char const * uniform_name, IDenseMatrix<T> const * value)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
   if (!value)
@@ -334,6 +338,8 @@ template <typename T>
 int8
 GlShader::setUniformHelper(char const * uniform_name, int64 num_values, T const * values)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
   if (!values)
@@ -352,6 +358,8 @@ template <typename T>
 int8
 GlShader::setUniformHelper(char const * uniform_name, int64 num_values, IDenseMatrix<T> const * const * values)
 {
+  alwaysAssertM(uniform_name, toString(getName()) + "Uniform name cannot be a null pointer");
+
   typedef typename GlShaderInternal::GlType<T>::type GT;
 
   if (!values)

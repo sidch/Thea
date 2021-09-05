@@ -840,7 +840,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
           {
             if (*fei == edge)
             {
-              alwaysAssertM(*fvi == edge->getEndpoint(0), std::string(getName()) + ": Edge and vertex sequences out of sync");
+              alwaysAssertM(*fvi == edge->getEndpoint(0), toString(getName()) + ": Edge and vertex sequences out of sync");
 
               fei = face->removeEdge(fei);
               fvi = face->removeVertex(fvi);
