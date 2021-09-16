@@ -209,9 +209,10 @@ orthogonalDirection(Vector<3, T> const & v)
 }
 
 /**
- * Given a 3D vector \a w, construct a rotation matrix whose last column is the normalized direction of \a w. The first two
- * columns are arbitrarily chosen to be unit vectors perpendicular to each other and to \a w. Thus, the columns define a local
- * coordinate frame with Z axis along \a w.
+ * Given a 3D vector \a w (need not be unit length), construct a 3x3 rotation matrix whose last column is the normalized
+ * direction of \a w. The first two columns are arbitrarily chosen to be unit vectors perpendicular to each other and to \a w.
+ * The columns define a local right-handed coordinate frame with Z axis along \a w, and X and Y axes along the first and second
+ * columns respectively (X x Y == Z).
  */
 template <typename T>
 Matrix<3, 3, T>
@@ -221,9 +222,40 @@ orthonormalBasis(Vector<3, T> const & w)
   Vector<3, T>  u = orthogonalDirection(w);
   Vector<3, T>  v = wnrm.cross(u);
 
-  Matrix<3, 3, T> m;
-  m << u, v, wnrm;
+  Matrix<3, 3, T> m; m << u, v, wnrm;
   return m;
+}
+
+/**
+ * Given three 3D vectors \a u, \a v and \a w (need not be unit length), construct a 3x3 rotation matrix whose last column is
+ * the normalized direction of \a w, and whose first and second columns are "close to" the normalized directions of \a u and
+ * \a v respectively. The columns of the returned matrix will form a right-handed orthonormal basis. If the input approximates a
+ * left-handed basis, one of the first two columns of the returned matrix will oppose the corresponding input vector.
+ */
+template <typename T>
+Matrix<3, 3, T>
+orthonormalBasis(Vector<3, T> const & u, Vector<3, T> const & v, Vector<3, T> const & w)
+{
+  Vector<3, T> w2 = w.normalized();
+  Vector<3, T> u2 = v.cross(w2).normalized();
+  Vector<3, T> v2 = w2.cross(u2);
+
+  Matrix<3, 3, T> m; m << u2, v2, w2;
+  return m;
+}
+
+/**
+ * Given an arbitrary input 3x3 matrix \a m, construct another 3x3 rotation matrix whose last column is
+ * the normalized direction of the last column of \a m, and whose first and second columns are "close to" the normalized
+ * directions of the first and second columns respectively of \a m. The columns of the returned matrix will form a right-handed
+ * orthonormal basis. If the input approximates a left-handed basis, one of the first two columns of the returned matrix will
+ * oppose the corresponding input column.
+ */
+template <typename T>
+Matrix<3, 3, T>
+orthonormalBasis(Matrix<3, 3, T> const & m)
+{
+  return orthonormalBasis(Vector<3, T>(m.col(0)), Vector<3, T>(m.col(1)), Vector<3, T>(m.col(2)));
 }
 
 /**
