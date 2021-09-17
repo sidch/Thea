@@ -181,31 +181,33 @@ template <class T> T inf() { return std::numeric_limits<T>::infinity(); }
 /** Representation of NaN (not-a-number). Don't compare against this value directly. */
 template <class T> T nan() { return std::numeric_limits<T>::quiet_NaN(); }
 
-/** Computes an appropriate epsilon for comparing a number to zero. */
-template <typename T>
-T
-eps()
-{
-  static T const FUZZY_EPSILON = (sizeof(T) == sizeof(float32) ? static_cast<T>(1.0e-6) : static_cast<T>(1.0e-30));
-  return FUZZY_EPSILON;
-}
+/**
+ * An "epsilon" threshold for comparing a number to zero.
+ *
+ * @see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ */
+template <typename T> T eps() { return std::numeric_limits<T>::epsilon(); }
 
-/** Computes an appropriate epsilon for comparing two numbers \a a and \a b. */
+/**
+ * An "epsilon" threshold for comparing two numbers \a a and \a b.
+ *
+ * @see https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ */
 template <typename T>
 T
 eps(T const & a, T const & b)
 {
-  static T const FUZZY_EPSILON = eps<T>();
+  static T const FUZZY_EPSILON = std::numeric_limits<T>::epsilon();
 
-  // For a and b to be nearly equal, they must have nearly the same magnitude.  This means that we can ignore b since it either
-  // has the same magnitude or the comparison will fail anyway.
-  (void)b;
-  T aa = std::abs(a) + 1;
-  return isInfinite(aa) ? FUZZY_EPSILON : FUZZY_EPSILON * aa;
+  if (isInfinite(a) || isInfinite(b))
+    return FUZZY_EPSILON;
+
+  T larger = std::max(std::abs(a), std::abs(b));
+  return (larger > 1 ? larger * FUZZY_EPSILON : FUZZY_EPSILON);
 }
 
 /** Check if two numbers are approximately equal, with a given tolerance. */
-template <typename T> bool fuzzyEq(T const & a, T const & b, T const & tol) { return (a == b) || std::abs(a - b) < tol; }
+template <typename T> bool fuzzyEq(T const & a, T const & b, T const & tol) { return (a == b) || std::abs(a - b) <= tol; }
 
 /** Check if two numbers are approximately equal, with default tolerance. */
 template <typename T> bool fuzzyEq(T const & a, T const & b) { return fuzzyEq(a, b, eps(a, b)); }

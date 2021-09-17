@@ -272,7 +272,7 @@ class THEA_API Polygon3
       }
 
       // Check for degenerate triangles
-      T e2 = (epsilon < 0 ? Math::eps<T>() * Math::eps<T>() : epsilon * epsilon);
+      T e2 = Math::square(epsilon < 0 ? Math::eps<T>() : epsilon);
       if (n0.squaredNorm() < e2)
       {
         if (n1.squaredNorm() < e2)
