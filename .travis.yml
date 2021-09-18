@@ -22,6 +22,6 @@ deploy:
   provider: pages
   skip_cleanup: true
   local_dir: Code/Documentation/html
-  github_token: $GITHUB_TOKEN
+  token: $GITHUB_TOKEN
   on:
     branch: master
