@@ -928,7 +928,10 @@ class /* THEA_API */ KdTreeN
       }
     }
 
-    /** Get the minimum distance between this structure and a query object. */
+    /**
+     * Get the minimum distance between this structure and a query object, or a negative number if no such distance can be
+     * computed, for instance if the structure is empty.
+     */
     template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
     double distance(QueryT const & query, double dist_bound = -1, CompatibilityFunctorT compatibility = CompatibilityFunctorT())
            const
