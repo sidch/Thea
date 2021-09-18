@@ -18,6 +18,7 @@ script:
 deploy:
   provider: pages
   local_dir: Code/Documentation/html
+  skip_cleanup: true
   token: $GITHUB_TOKEN
   on:
     branch: master
