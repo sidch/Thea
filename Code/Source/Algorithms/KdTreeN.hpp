@@ -616,7 +616,7 @@ class /* THEA_API */ KdTreeN
       if (num_elems <= 0)
         return;
 
-      static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 10;
+      static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 5;
       max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
 
       // The fraction of elements held by the larger node at each split is 0.5
@@ -2013,11 +2013,18 @@ class /* THEA_API */ KdTreeN
       }
     }
 
-    /** Get an upper bound on the distance to a query object, using the acceleration structure if it exists. */
+    /**
+     * Get an upper bound on the distance to a query object, using the acceleration structure if it exists. If a non-negative
+     * distance upper bound has been specified, the function just returns that value instead of using the acceleration
+     * structure.
+     */
     template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
     double accelerationBound(QueryT const & query, double dist_bound,
                              CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
     {
+      if (dist_bound >= 0)
+        return dist_bound;
+
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
       return accel
              ? accel->template distance<MetricT>(query, dist_bound,
