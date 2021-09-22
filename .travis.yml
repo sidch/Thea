@@ -1,6 +1,3 @@
-# This will run on Travis' 'new' container-based infrastructure
-sudo: false
-
 # Blacklist
 branches:
   only:
@@ -20,8 +17,8 @@ script:
 # Generate and deploy documentation
 deploy:
   provider: pages
-  skip_cleanup: true
   local_dir: Code/Documentation/html
-  github_token: $GH_REPO_TOKEN
+  skip_cleanup: true
+  token: $GITHUB_TOKEN
   on:
     branch: master
