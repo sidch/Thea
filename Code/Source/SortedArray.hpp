@@ -41,7 +41,7 @@ class SortedArray
     intx size() const { return (intx)values.size(); }
 
     /** Check if the array is empty or not. */
-    bool isEmpty() const { return values.empty(); }
+    bool empty() const { return values.empty(); }
 
     /** Get the first element in the sorted sequence. */
     T const & first() const

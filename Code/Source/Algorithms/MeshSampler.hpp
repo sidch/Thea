@@ -123,7 +123,7 @@ class MeshSampler
       }
       else
       {
-        if (tris.isEmpty())
+        if (tris.empty())
         {
           THEA_CONSOLE << "MeshSampler: Selected 0 sample(s) uniformly by area";
           return 0;

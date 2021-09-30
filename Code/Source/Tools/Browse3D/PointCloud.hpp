@@ -54,7 +54,7 @@ class PointCloud : public NamedObject, public GraphicsWidget
     ~PointCloud();
 
     /** Is the model empty? */
-    bool isEmpty() const { return points.empty(); }
+    bool empty() const { return points.empty(); }
 
     /** Clear the point cloud. */
     void clear();

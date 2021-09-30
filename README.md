@@ -21,7 +21,7 @@ If you find a bug, please let me know promptly. Thank you!
 * **Polygon mesh classes** with arbitrary per-element attributes, including heavyweight ones that store full mesh topology and a lightweight one designed only for rendering.
 * General **linear algebra** via [Eigen](http://eigen.tuxfamily.org), **geometric transformations** (e.g. rigid transforms), several additional convenience functions and classes (e.g. to wrap raw buffers as matrices), and easy-to-use interfaces to various **solver packages** (Eigen, NNLS, CSPARSE, ARPACK).
 * 2, 3 and N-dimensional **geometric primitives**, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
-* An eclectic **collection of algorithms**, including a fast N-dimensional KD-tree (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, surface parametrization (global and local), discrete Laplace-Beltrami operators, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
+* An eclectic **collection of algorithms**, including fast N-dimensional bounding volume hierarchies (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, surface parametrization (global and local), discrete Laplace-Beltrami operators, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
 * Basic **image processing** (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
 * A **plugin architecture** and included plugins providing easy interfaces to [OpenGL](https://www.opengl.org/), [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an [OSMesa](https://www.mesa3d.org/osmesa.html) driver to automatically create a headless CPU-only context.
 * **Pure virtual wrappers** for several common classes (e.g. dense and sparse matrices, images) that allow safely passing such objects across shared library boundaries.
@@ -45,7 +45,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 * Except where some complexity is unavoidable for speed
   * Even then, keep thing simple
 * Reuse code as much possible
-  * E.g. with minimal external support (simple traits classes), a single kd-tree class (`KDTreeN`) can efficiently support any bounded objects in any-dimensional space under any metric
+  * E.g. with minimal external support (simple traits classes), a single BVH class (`BvhN`) can efficiently support any bounded objects in any-dimensional space under any metric
 * Templates are ok, but only if tastefully used
   * Use when every other option is much worse
   * Provide sensible defaults
@@ -60,7 +60,7 @@ There are a few more specific design choices that apply to specific submodules. 
 * GPU updates are fine-grained (but could be more so)
   * Only affected buffers are updated, in lazy batches
 
-Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`). In conjunction, *Thea*'s kd-tree class (`KDTreeN`), used to detect UI interactions with a mesh, tries to minimize the latency of recomputing the tree after the underlying geometry is changed.
+Contrast this with libraries optimized for static geometry and/or global processing passes, e.g. [trimesh2](https://gfx.cs.princeton.edu/proj/trimesh2) or [libigl](https://libigl.github.io), which represent meshes as dense arrays of elements, referenced by integer indices. Of course, *Thea* also has another mesh class (`DisplayMesh`) which has similar behaviour and is a good choice for more static applications, as well as a halfedge data structure (`DCELMesh`). In conjunction, *Thea*'s bounding volume hierarchy class (`BvhN`), used to detect UI interactions with a mesh, tries to minimize the latency of recomputing the tree after the underlying geometry is changed.
 
 ### Examples
 
@@ -112,9 +112,9 @@ class SignedDistance
     // Constructor.
     SignedDistance(MeshGroup<Mesh> & m) : num_calls(0)
     {
-      kdtree.add(m);
-      kdtree.init();
-      kdtree.enableNearestNeighborAcceleration();
+      bvh.add(m);
+      bvh.init();
+      bvh.enableNearestNeighborAcceleration();
     }
 
     // Evaluate the signed distance from a given point.
@@ -123,20 +123,20 @@ class SignedDistance
       num_calls++;
 
       double d; Vector3 cp;
-      auto index = kdtree.closestElement<MetricL2>(p, -1, &d, &cp);
-      Vector3 cn = kdtree.getElements()[index].getNormal();
+      auto index = bvh.closestElement<MetricL2>(p, -1, &d, &cp);
+      Vector3 cn = bvh.getElements()[index].getNormal();
       return cn.dot(cp - p) < 0 ? d : -d;
     }
 
-    // How many times was the kdtree queried?
+    // How many times was the bvh queried?
     intx numCalls() const { return num_calls; }
 
   private:
-    MeshKDTree<Mesh> kdtree;
+    MeshBvh<Mesh> bvh;
     mutable intx num_calls;
 };
 ```
-Note that we are using a convenient specialization of the general kd-tree class (`KDTreeN`) for polygon meshes, for which we enable acceleration of nearest neighbor queries using a proxy kd-tree of sample points. The computation and use of this internal acceleration structure is abstracted away behind a single function call. Also, *Thea* supports the L2 distance metric by default, but the kd-tree can take any other metric as a template argument, and limit the search to a maximum distance. `intx` is *Thea*'s default integer type used for indexing, defined as `std::ptrdiff_t`.
+Note that we are using a convenient specialization of the general bounding volume hierarchy class (`BvhN`) for polygon meshes, for which we enable acceleration of nearest neighbor queries using a proxy BVH of sample points. The computation and use of this internal acceleration structure is abstracted away behind a single function call. Also, *Thea* supports the L2 distance metric by default, but the BVH can take any other metric as a template argument, and limit the search to a maximum distance. `intx` is *Thea*'s default integer type used for indexing, defined as `std::ptrdiff_t`.
 
 Now, we'll do the actual remeshing:
 ```cpp
@@ -168,7 +168,7 @@ timer.tick();
     *remeshed);
 
 timer.tock();
-THEA_CONSOLE << sd.numCalls() << " kdtree NN queries in "
+THEA_CONSOLE << sd.numCalls() << " BVH NN queries in "
              << 1000000 * timer.elapsedTime() / sd.numCalls() << "ns each";
 ```
 `Stopwatch` is one of many utility classes. `ImplicitSurfaceMesher` also optionally wraps CGAL's Boissonnat-Oudot polygonizer. `THEA_CONSOLE` is an object that behaves exactly like `std::cout` but automatically adds a newline at the end. `THEA_WARNING` and `THEA_ERROR` also prefix the line with the current time, source filename, line number, and a warning/error flag.

@@ -12,31 +12,35 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_MeshKdTree_hpp__
-#define __Thea_Algorithms_MeshKdTree_hpp__
+#ifndef __Thea_Algorithms_MeshBvh_hpp__
+#define __Thea_Algorithms_MeshBvh_hpp__
 
 #include "../Common.hpp"
 #include "../Graphics/MeshGroup.hpp"
-#include "KdTreeN.hpp"
+#include "BvhN.hpp"
 #include "MeshTriangles.hpp"
 
 namespace Thea {
 namespace Algorithms {
 
 /**
- * A kd-tree on mesh triangles. Implemented for general, DCEL and display meshes.
+ * A bounding volume hierarchy on mesh triangles. Implemented for general, DCEL and display meshes.
  *
  * @see GeneralMesh, DcelMesh, DisplayMesh
  */
-template <typename MeshT, typename NodeAttributeT = NullAttribute>
-class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT >
+template < typename MeshT,
+           typename NodeAttributeT = NullAttribute,
+           int MaxDegree = 2,
+           typename BoundingVolumeT = AxisAlignedBox3 >
+class MeshBvh
+: public Algorithms::BvhN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 >
 {
   private:
-    typedef KdTreeN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT > BaseT;
+    typedef BvhN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 > BaseT;
     typedef MeshTriangles<MeshT> Triangles;
 
   public:
-    THEA_DECL_SMART_POINTERS(MeshKdTree)
+    THEA_DECL_SMART_POINTERS(MeshBvh)
 
     typedef MeshT Mesh;                                       ///< The mesh type.
     typedef Graphics::MeshGroup<Mesh> MeshGroup;              ///< A group of meshes.
@@ -45,7 +49,7 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
     typedef typename Triangles::TriangleArray TriangleArray;  ///< An array of mesh triangles.
 
     /**
-     * Add a mesh to the kd-tree. The mesh is converted to triangles which are cached internally. The tree is <b>not</b>
+     * Add a mesh to the BVH. The mesh is converted to triangles which are cached internally. The tree is <b>not</b>
      * actually constructed until you call init().
      */
     void add(Mesh & mesh)
@@ -54,7 +58,7 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
     }
 
     /**
-     * Add a group of meshes to the kd-tree. The meshes are converted to triangles which are cached internally. The tree is
+     * Add a group of meshes to the BVH. The meshes are converted to triangles which are cached internally. The tree is
      * <b>not</b> actually constructed until you call init().
      */
     void add(MeshGroup & mg)
@@ -62,20 +66,20 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
       tris.add(mg);
     }
 
-    /** Add a mesh face to the kd-tree. The tree is <b>not</b> updated until you call init(). */
+    /** Add a mesh face to the BVH. The tree is <b>not</b> updated until you call init(). */
     void addFace(Mesh & mesh, typename Mesh::Face & face)
     {
       tris.addFace(mesh, face);
     }
 
-    /** Add a single triangle to the kd-tree. The tree is <b>not</b> updated until you call init(). */
+    /** Add a single triangle to the BVH. The tree is <b>not</b> updated until you call init(). */
     void addTriangle(Triangle const & tri)
     {
       tris.addTriangle(tri);
     }
 
     /**
-     * Add a set of triangles to the kd-tree. TriangleIterator must dereference to Triangle. The tree is <b>not</b> updated
+     * Add a set of triangles to the BVH. TriangleIterator must dereference to Triangle. The tree is <b>not</b> updated
      * until you call init().
      */
     template <typename TriangleIterator> void addTriangles(TriangleIterator tris_begin, TriangleIterator tris_end)
@@ -94,13 +98,15 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
     TriangleArray & getTriangles() { return tris.getTriangles(); }
 
     /**
-     * Compute the kd-tree from the added meshes. You <b>must</b> call this function to construct (or recompute) the tree after
+     * Compute the BVH from the added meshes. You <b>must</b> call this function to construct (or recompute) the tree after
      * any addMesh() or addMeshGroup() calls. Clears the triangle cache.
      */
-    void init(int max_depth = -1, int max_elems_in_leaf = -1, bool save_memory = false, bool deallocate_previous_memory = true)
+    void init(typename BaseT::Method method = BaseT::Method::AUTO, int max_depth = -1, int max_elems_in_leaf = -1,
+              bool save_memory = false, bool deallocate_previous_memory = true)
     {
       TriangleArray const & tri_array = tris.getTriangles();
-      BaseT::init(tri_array.begin(), tri_array.end(), max_depth, max_elems_in_leaf, save_memory, deallocate_previous_memory);
+      BaseT::init(tri_array.begin(), tri_array.end(), method,
+                  max_depth, max_elems_in_leaf, save_memory, deallocate_previous_memory);
       tris.clear();
     }
 
@@ -146,14 +152,17 @@ class MeshKdTree : public Algorithms::KdTreeN< Triangle3< MeshVertexTriple<MeshT
       }
       else
       {
-        updateElementsRecursive(start->getLowChild());
-        updateElementsRecursive(start->getHighChild());
+        for (intx i = 0; i < start->maxDegree(); ++i)
+        {
+          auto c = start->getChild(i);
+          if (c) { updateElementsRecursive(c); }
+        }
       }
     }
 
     Triangles tris;  ///< Internal cache of triangles used to initialize the tree.
 
-}; // class MeshKdTree
+}; // class MeshBvh
 
 } // namespace Algorithms
 } // namespace Thea

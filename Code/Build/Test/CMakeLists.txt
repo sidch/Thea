@@ -134,6 +134,32 @@ IF(APPLE)
 ENDIF()
 
 #===========================================================
+# TestBvh
+#===========================================================
+
+# Source file lists
+SET(TheaTestBvhSources
+      ${SourceRoot}/Test/TestBvh.cpp)
+
+# Libraries to link to
+SET(TheaTestBvhLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
+
+# Build products
+ADD_EXECUTABLE(TheaTestBvh ${TheaTestBvhSources})
+
+# Additional libraries to be linked
+TARGET_LINK_LIBRARIES(TheaTestBvh ${TheaTestBvhLibraries})
+SET_TARGET_PROPERTIES(TheaTestBvh PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
+
+# Fix library install names on OS X
+IF(APPLE)
+  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+  OSX_FIX_DYLIB_REFERENCES(TheaTestBvh "${TheaTestBvhLibraries}")
+ENDIF()
+
+#===========================================================
 # TestCSPARSE
 #===========================================================
 
@@ -302,32 +328,6 @@ SET_TARGET_PROPERTIES(TheaTestJointBoost PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFL
 IF(APPLE)
   INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
   OSX_FIX_DYLIB_REFERENCES(TheaTestJointBoost "${TheaTestJointBoostLibraries}")
-ENDIF()
-
-#===========================================================
-# TestKDTree3
-#===========================================================
-
-# Source file lists
-SET(TheaTestKDTree3Sources
-      ${SourceRoot}/Test/TestKDTree3.cpp)
-
-# Libraries to link to
-SET(TheaTestKDTree3Libraries
-      Thea
-      ${Thea_DEPS_LIBRARIES})
-
-# Build products
-ADD_EXECUTABLE(TheaTestKDTree3 ${TheaTestKDTree3Sources})
-
-# Additional libraries to be linked
-TARGET_LINK_LIBRARIES(TheaTestKDTree3 ${TheaTestKDTree3Libraries})
-SET_TARGET_PROPERTIES(TheaTestKDTree3 PROPERTIES LINK_FLAGS "${Thea_DEPS_LDFLAGS}")
-
-# Fix library install names on OS X
-IF(APPLE)
-  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
-  OSX_FIX_DYLIB_REFERENCES(TheaTestKDTree3 "${TheaTestKDTree3Libraries}")
 ENDIF()
 
 #===========================================================
@@ -544,11 +544,12 @@ ENDIF()
 
 SET(TheaTestsDependencies
     TheaTestBagOfWords
+    TheaTestBezier
+    TheaTestBvh
     TheaTestCSPARSE
     TheaTestDisplayMesh
     TheaTestGL
     TheaTestJointBoost
-    TheaTestKDTree3
     TheaTestMath
     TheaTestMesh
     TheaTestMetrics

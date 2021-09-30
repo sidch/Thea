@@ -1,6 +1,6 @@
 #include "ShapeRenderer.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"
 #include "../../Algorithms/MetricL2.hpp"
@@ -1686,35 +1686,35 @@ featToColor(Real f0, Real const * f1, Real const * f2)
     return ColorRgb(f0, *f1, *f2);
 }
 
-typedef KdTreeN<Vector3, 3> PointKdTree;
+typedef BvhN<Vector3, 3> PointBvh;
 
 struct VertexColorizer
 {
-  VertexColorizer(PointKdTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
-  : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
+  VertexColorizer(PointBvh * fbvh_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  : fbvh(fbvh_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
   {
     static int const MAX_NBRS = 8;  // ok to have a few neighbors for output quality -- this is an offline renderer
-    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().norm(), (Real)1.0e-8);
+    Real scale = std::max(0.2f * fbvh->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
     mesh.addColors();
 
     Mesh::VertexArray const & vertices = mesh.getVertices();
-    BoundedSortedArrayN<MAX_NBRS, PointKdTree::NeighborPair> nbrs;
+    BoundedSortedArrayN<MAX_NBRS, PointBvh::NeighborPair> nbrs;
     for (size_t i = 0; i < vertices.size(); ++i)
     {
       nbrs.clear();
-      intx num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
+      intx num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
       if (num_nbrs <= 0)
-        num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs);
+        num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs);
 
       if (num_nbrs > 0)
       {
         ColorRgb c(0, 0, 0);
         double sum_weights = 0;
-        for (int j = 0; j < num_nbrs; ++j)
+        for (size_t j = 0; j < nbrs.size(); ++j)
         {
           double dist = nbrs[j].getDistance<MetricL2>();
           double weight = Math::fastMinusExp(dist * dist / scale2);
@@ -1737,7 +1737,7 @@ struct VertexColorizer
     return false;
   }
 
-  PointKdTree * fkdtree;
+  PointBvh * fbvh;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
@@ -1871,8 +1871,8 @@ ShapeRendererImpl::loadFeatures(Model & model)
   }
   else
   {
-    PointKdTree fkdtree(feat_pts.begin(), feat_pts.end());
-    VertexColorizer visitor(&fkdtree,
+    PointBvh fbvh(feat_pts.begin(), feat_pts.end());
+    VertexColorizer visitor(&fbvh,
                             &feat_vals[0][0],
                             feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
                             feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);

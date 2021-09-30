@@ -13,6 +13,7 @@
 //============================================================================
 
 #include "ImlsSurface.hpp"
+#include "../BoundedSortedArrayN.hpp"
 #include "../Math.hpp"
 #include <algorithm>
 #include <functional>
@@ -34,17 +35,17 @@ intx   const ImlsSurface::DEFAULT_MAX_TRIS_PER_LEAF  =  3;
 
 namespace ImlsSurfaceInternal {
 
-// A kd-tree node and an associated scalar value.
+// A BVH node and an associated scalar value.
 struct NodeValuePair
 {
   NodeValuePair() {}
-  NodeValuePair(TriangleKdTree::Node const * node_, double value_) : node(node_), value(value_) {}
+  NodeValuePair(TriangleBvh::Node const * node_, double value_) : node(node_), value(value_) {}
 
   // Susceptible to floating point error?
   bool operator<(NodeValuePair const & rhs) const { return value < rhs.value; }
   bool operator>(NodeValuePair const & rhs) const { return value > rhs.value; }
 
-  TriangleKdTree::Node const * node;
+  TriangleBvh::Node const * node;
   double value;
 
 }; // struct NodeValuePair
@@ -52,15 +53,14 @@ struct NodeValuePair
 // Traverse the tree looking for leaf nodes that contain the query. Returns a vector of leaf nodes paired with min square
 // distance to the node's bounding box. Also returns a vector of the unexplored internal node-distance^2 pairs. Resulting
 // vectors are unsorted.
-void traverseKdTree(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & leaves,
-                    Array<NodeValuePair> & internal_nodes);
+void traverseBvh(TriangleBvh const & bvh, Vector3 const & query, Array<NodeValuePair> & leaves,
+                 Array<NodeValuePair> & internal_nodes);
 
-// Compute the minimum squared distance between a query point and the triangles in a kd-tree node.
-double triSquaredDistance(TriangleKdTree const & kdtree, TriangleKdTree::Node const & node, Vector3 const & query);
+// Compute the minimum squared distance between a query point and the triangles in a BVH node.
+double triSquaredDistance(TriangleBvh const & bvh, TriangleBvh::Node const & node, Vector3 const & query);
 
 // Find the leaf node closest to a query point (w.r.t. the triangles in the node), and queue all explored nodes.
-TriangleKdTree::Node const * closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query,
-                                         Array<NodeValuePair> & explored);
+TriangleBvh::Node const * closestLeaf(TriangleBvh const & bvh, Vector3 const & query, Array<NodeValuePair> & explored);
 
 // Integrals of f(x) dx and x * f(x) dx over [0, 1] where f(x) = 1 / ((x + k1)^2 + k2)^2.
 void lineIntegrals(double k1, double k2, double & I1, double & Ix);
@@ -227,7 +227,7 @@ ImlsSurface::computeEnclosingPhi()
     for (Array<PairId>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
       phi[oi->first] -= s * oi->second;
 
-    computeUnweightedRec(kdtree.getRoot());
+    computeUnweightedRec(bvh.getRoot());
 
     Array<PairId> next_outside;
     for (Array<PairId>::const_iterator oi = outside.begin(); oi != outside.end(); ++oi)
@@ -242,7 +242,7 @@ ImlsSurface::computeEnclosingPhi()
 }
 
 void
-ImlsSurface::computeCentroidsRec(TriangleKdTree::Node const * start)
+ImlsSurface::computeCentroidsRec(TriangleBvh::Node const * start)
 {
   using namespace ImlsSurfaceInternal;
 
@@ -256,43 +256,54 @@ ImlsSurface::computeCentroidsRec(TriangleKdTree::Node const * start)
     my_attrib.centroid  =  Vector3d::Zero();
     my_attrib.normal    =  Vector3d::Zero();
 
-    for (TriangleKdTree::Node::ElementIndexConstIterator ei = start->elementIndicesBegin(); ei != start->elementIndicesEnd();
-         ++ei)
+    for (auto ei = start->elementIndicesBegin(); ei != start->elementIndicesEnd(); ++ei)
     {
-      IndexedTriangle const & tri = kdtree.getElements()[*ei];
+      IndexedTriangle const & tri = bvh.getElements()[*ei];
 
       my_attrib.area      +=  tri.getArea();
       my_attrib.centroid  +=  tri.getArea() * tri.getCentroid().cast<double>();
-      my_attrib.normal    +=  tri.getNormal().cast<double>();
+      my_attrib.normal    +=  tri.getNormal().cast<double>();  // FIXME: Should normals be area-weighted?
     }
 
-    if (my_attrib.area > 0) my_attrib.centroid /= my_attrib.area;
+    if (my_attrib.area > 0) { my_attrib.centroid /= my_attrib.area; }
     my_attrib.normal_len = my_attrib.normal.norm();
   }
   else
   {
-    TriangleKdTree::Node const * lo = start->getLowChild();
-    TriangleKdTree::Node const * hi = start->getHighChild();
+    my_attrib.area = 0;
+    for (int i = 0; i < start->maxDegree(); ++i)
+    {
+      auto c = start->getChild(i);
+      if (c)
+      {
+        computeCentroidsRec(c);
+        my_attrib.area += c->attr().area;
+      }
+    }
 
-    computeCentroidsRec(lo);
-    computeCentroidsRec(hi);
-
-    NodeAttribute const & lo_attrib = lo->attr();
-    NodeAttribute const & hi_attrib = hi->attr();
-
-    my_attrib.area = lo_attrib.area + hi_attrib.area;
+    my_attrib.centroid = Vector3d::Zero();
+    my_attrib.normal = Vector3d::Zero();
     if (my_attrib.area > 0)
-      my_attrib.centroid = (lo_attrib.area * lo_attrib.centroid + hi_attrib.area * hi_attrib.centroid) / my_attrib.area;
-    else
-      my_attrib.centroid = Vector3d::Zero();
+    {
+      for (int i = 0; i < start->maxDegree(); ++i)
+      {
+        auto c = start->getChild(i);
+        if (c)
+        {
+          my_attrib.centroid += c->attr().area * c->attr().centroid;
+          my_attrib.normal   += c->attr().normal;  // FIXME: Should normals be area-weighted?
+        }
+      }
 
-    my_attrib.normal      =  lo_attrib.normal + hi_attrib.normal;
-    my_attrib.normal_len  =  my_attrib.normal.norm();
+      my_attrib.centroid /= my_attrib.area;
+    }
+
+    my_attrib.normal_len = my_attrib.normal.norm();
   }
 }
 
 void
-ImlsSurface::computeUnweightedRec(TriangleKdTree::Node const * start)
+ImlsSurface::computeUnweightedRec(TriangleBvh::Node const * start)
 {
   if (!start) return;
 
@@ -304,10 +315,9 @@ ImlsSurface::computeUnweightedRec(TriangleKdTree::Node const * start)
 
     if (my_attrib.area > 0)
     {
-      for (TriangleKdTree::Node::ElementIndexConstIterator ei = start->elementIndicesBegin(); ei != start->elementIndicesEnd();
-           ++ei)
+      for (auto ei = start->elementIndicesBegin(); ei != start->elementIndicesEnd(); ++ei)
       {
-        IndexedTriangle const & tri = kdtree.getElements()[*ei];
+        IndexedTriangle const & tri = bvh.getElements()[*ei];
         my_attrib.unweighted += ((phi[tri.getVertices().getIndex(0)]
                                 + phi[tri.getVertices().getIndex(1)]
                                 + phi[tri.getVertices().getIndex(2)]) / 3) * tri.getArea();
@@ -318,20 +328,23 @@ ImlsSurface::computeUnweightedRec(TriangleKdTree::Node const * start)
   }
   else
   {
-    TriangleKdTree::Node const * lo = start->getLowChild();
-    TriangleKdTree::Node const * hi = start->getHighChild();
-
-    computeUnweightedRec(lo);
-    computeUnweightedRec(hi);
-
-    my_attrib.unweighted = lo->attr().unweighted + hi->attr().unweighted;
+    my_attrib.unweighted = 0;
+    for (int i = 0; i < start->maxDegree(); ++i)
+    {
+      auto c = start->getChild(i);
+      if (c)
+      {
+        computeUnweightedRec(c);
+        my_attrib.unweighted += c->attr().unweighted;
+      }
+    }
   }
 }
 
 AxisAlignedBox3 const &
 ImlsSurface::getInputBounds() const
 {
-  return kdtree.getBounds();
+  return bvh.getBounds();
 }
 
 void
@@ -345,7 +358,7 @@ ImlsSurface::setSmoothness(double eps_)
   for (size_t i = 0;         i < num_verts;  ++i) phi[i] = 0.0;
   for (size_t i = num_verts; i < phi.size(); ++i) phi[i] = 1.0;
 
-  computeUnweightedRec(kdtree.getRoot());
+  computeUnweightedRec(bvh.getRoot());
   computeEnclosingPhi();
 }
 
@@ -362,10 +375,10 @@ ImlsSurface::eval(Vector3 const & p, Functor & functor) const
 
   // Find the nodes that need to be evaluated
   Array<NodeValuePair> remain;
-  closestLeaf(kdtree, p, remain);
+  closestLeaf(bvh, p, remain);
 
   // Compute the (negative) maximum error of integration -- stored negative so that the max error is first when sorted by <
-  for (Array<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
+  for (auto ri = remain.begin(); ri != remain.end(); ++ri)
   {
     double max_w2 = weight2(ri->value);
     double min_w2 = weight2(ri->node->getBounds().squaredMaxDistance(p));
@@ -376,75 +389,67 @@ ImlsSurface::eval(Vector3 const & p, Functor & functor) const
   std::make_heap(remain.begin(), remain.end());
 
   // Now add up the contributions from the queued nodes
-  IndexedTriangle const * tris = kdtree.getElements();
+  IndexedTriangle const * tris = bvh.getElements();
   while (!remain.empty() && !functor.acceptableError(remain.front().value))
   {
-    TriangleKdTree::Node const * current = remain.front().node;
+    auto current = remain.front().node;
     std::pop_heap(remain.begin(), remain.end());
     remain.pop_back();
 
     if (current->isLeaf())
     {
-      for (TriangleKdTree::Node::ElementIndexConstIterator ii = current->elementIndicesBegin();
-           ii != current->elementIndicesEnd(); ++ii)
+      for (auto ii = current->elementIndicesBegin(); ii != current->elementIndicesEnd(); ++ii)
         functor.evalTri(p, tris[*ii]);
     }
     else
     {
-      TriangleKdTree::Node const * lo = current->getLowChild();
-      double max_w2 = weight2(lo->getBounds().squaredDistance(p));
-      double min_w2 = weight2(lo->getBounds().squaredMaxDistance(p));
-      remain.push_back(NodeValuePair(lo, (max_w2 - min_w2) * lo->attr().area));
-      std::push_heap(remain.begin(), remain.end());
-
-      TriangleKdTree::Node const * hi = current->getHighChild();
-      max_w2 = weight2(hi->getBounds().squaredDistance(p));
-      min_w2 = weight2(hi->getBounds().squaredMaxDistance(p));
-      remain.push_back(NodeValuePair(hi, (max_w2 - min_w2) * hi->attr().area));
-      std::push_heap(remain.begin(), remain.end());
+      for (int i = 0; i < current->maxDegree(); ++i)
+      {
+        auto c = current->getChild(i);
+        double max_w2 = weight2(c->getBounds().squaredDistance(p));
+        double min_w2 = weight2(c->getBounds().squaredMaxDistance(p));
+        remain.push_back(NodeValuePair(c, (max_w2 - min_w2) * c->attr().area));
+        std::push_heap(remain.begin(), remain.end());
+      }
     }
   }
 
   // Approximate the contribution from the remaining nodes
-  for (Array<NodeValuePair>::iterator ri = remain.begin(); ri != remain.end(); ++ri)
+  for (auto ri = remain.begin(); ri != remain.end(); ++ri)
     functor.evalNode(p, *ri->node);
 }
 
 void
-ImlsSurface::evalRec(Vector3 const & p, TriangleKdTree::Node const * start, Functor & functor) const
+ImlsSurface::evalRec(Vector3 const & p, TriangleBvh::Node const * start, Functor & functor) const
 {
   if (!start) return;
 
   if (start->isLeaf())
   {
-    IndexedTriangle const * tris = kdtree.getElements();
-    for (TriangleKdTree::Node::ElementIndexConstIterator ii = start->elementIndicesBegin(); ii != start->elementIndicesEnd();
-         ++ii)
+    IndexedTriangle const * tris = bvh.getElements();
+    for (auto ii = start->elementIndicesBegin(); ii != start->elementIndicesEnd(); ++ii)
       functor.evalTri(p, tris[*ii]);
   }
   else
   {
-    TriangleKdTree::Node const * c[2] = { start->getLowChild(), start->getHighChild() };
-
-    // Make sure c[1] is the further child
-    double d[2] = { c[0]->getBounds().squaredDistance(p), c[1]->getBounds().squaredDistance(p) };
-    if (d[0] > d[1])
+    // Nearer children first, since they're likely to have larger error
+    BoundedSortedArrayN< TriangleBvh::maxDegree(), ImlsSurfaceInternal::NodeValuePair > c;
+    for (int i = 0; i < start->maxDegree(); ++i)
     {
-      std::swap(c[0], c[1]);
-      std::swap(d[0], d[1]);
+      auto n = start->getChild(i);
+      if (n) { c.insert(ImlsSurfaceInternal::NodeValuePair(n, n->getBounds().squaredDistance(p))); }
     }
 
-    // Nearer child first, since it's likely to have larger error
-    for (int i = 0; i < 2; ++i)
+    for (size_t i = 0; i < c.size(); ++i)
     {
-      double max_w2 = weight2(d[i]);
-      double min_w2 = weight2(c[i]->getBounds().squaredMaxDistance(p));
-      double err = (max_w2 - min_w2) * c[i]->attr().area;
+      double max_w2 = weight2(c[i].value);
+      double min_w2 = weight2(c[i].node->getBounds().squaredMaxDistance(p));
+      double err = (max_w2 - min_w2) * c[i].node->attr().area;
 
       if (functor.acceptableError(err))
-        functor.evalNode(p, *c[i]);
+        functor.evalNode(p, *c[i].node);
       else
-        evalRec(p, c[i], functor);
+        evalRec(p, c[i].node, functor);
     }
   }
 }
@@ -462,7 +467,7 @@ ImlsSurface::operator()(Vector3 const & p) const
   EvalFunctor efunc(*this);
 
 #ifdef IMLS_SURFACE_EVAL_RECURSIVE
-  evalRec(p, kdtree.getRoot(), efunc);
+  evalRec(p, bvh.getRoot(), efunc);
 #else
   eval(p, efunc);
 #endif
@@ -486,7 +491,7 @@ ImlsSurface::deriv(Vector3 const & p, Vector3d & dp) const
   DerivFunctor dfunc(*this);
 
 #ifdef IMLS_SURFACE_EVAL_RECURSIVE
-  evalRec(p, kdtree.getRoot(), dfunc);
+  evalRec(p, bvh.getRoot(), dfunc);
 #else
   eval(p, dfunc);
 #endif
@@ -520,7 +525,7 @@ ImlsSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
 }
 
 void
-ImlsSurface::EvalFunctor::evalNode(Vector3 const & p, TriangleKdTree::Node const & node)
+ImlsSurface::EvalFunctor::evalNode(Vector3 const & p, TriangleBvh::Node const & node)
 {
   using namespace ImlsSurfaceInternal;
 
@@ -565,7 +570,7 @@ ImlsSurface::DerivFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tr
 }
 
 void
-ImlsSurface::DerivFunctor::evalNode(Vector3 const & p, TriangleKdTree::Node const & node)
+ImlsSurface::DerivFunctor::evalNode(Vector3 const & p, TriangleBvh::Node const & node)
 {
   using namespace ImlsSurfaceInternal;
 
@@ -617,44 +622,43 @@ ImlsSurface::deriv2(Vector3 const & p, Vector3d & dp, Matrix3d & ddp) const
 namespace ImlsSurfaceInternal {
 
 void
-traverseKdTree(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & leaves,
+traverseBvh(TriangleBvh const & bvh, Vector3 const & query, Array<NodeValuePair> & leaves,
                Array<NodeValuePair> & internal_nodes)
 {
   internal_nodes.clear();
   leaves.clear();
 
-  if (kdtree.isEmpty())
+  if (bvh.empty())
     return;
 
-  Array<TriangleKdTree::Node const *> to_examine;
-  to_examine.push_back(kdtree.getRoot());
+  Array<TriangleBvh::Node const *> to_examine;
+  to_examine.push_back(bvh.getRoot());
 
   for (size_t i = 0; i < to_examine.size(); ++i)
   {
-    TriangleKdTree::Node const * current = to_examine[i];
+    auto current = to_examine[i];
     if (current->isLeaf())
       leaves.push_back(NodeValuePair(current, current->getBounds().squaredDistance(query)));
     else
     {
-      if (current->getLowChild()->getBounds().contains(query))
-        to_examine.push_back(current->getLowChild());
-      else
-        internal_nodes.push_back(NodeValuePair(current, current->getLowChild()->getBounds().squaredDistance(query)));
-
-      if (current->getHighChild()->getBounds().contains(query))
-        to_examine.push_back(current->getHighChild());
-      else
-        internal_nodes.push_back(NodeValuePair(current, current->getHighChild()->getBounds().squaredDistance(query)));
+      for (int i = 0; i < current->maxDegree(); ++i)
+      {
+        auto c = current->getChild(i);
+        if (c->getBounds().contains(query))
+          to_examine.push_back(c);
+        else
+          internal_nodes.push_back(NodeValuePair(current, c->getBounds().squaredDistance(query)));
+      }
     }
   }
 }
 
 double
-triSquaredDistance(TriangleKdTree const & kdtree, TriangleKdTree::Node const & node, Vector3 const & query)
+triSquaredDistance(TriangleBvh const & bvh, TriangleBvh::Node const & node, Vector3 const & query)
 {
-  IndexedTriangle const * tris = kdtree.getElements();
+  IndexedTriangle const * tris = bvh.getElements();
   double min_dist2 = std::numeric_limits<double>::infinity();
-  for (TriangleKdTree::Node::ElementIndexConstIterator ii = node.elementIndicesBegin(); ii != node.elementIndicesEnd(); ++ii)
+  for (auto ii = node.elementIndicesBegin(); ii != node.elementIndicesEnd(); ++ii)
   {
     double dist2 = tris[*ii].squaredDistance(query);
     if (dist2 < min_dist2)
@@ -664,12 +668,12 @@ triSquaredDistance(TriangleKdTree const & kdtree, TriangleKdTree::Node const & n
   return min_dist2;
 }
 
-TriangleKdTree::Node const *
-closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValuePair> & explored)
+TriangleBvh::Node const *
+closestLeaf(TriangleBvh const & bvh, Vector3 const & query, Array<NodeValuePair> & explored)
 {
   // Find the leaves containing the query point, if any
   Array<NodeValuePair> leaf_queue, internal_queue;
-  traverseKdTree(kdtree, query, leaf_queue, internal_queue);
+  traverseBvh(bvh, query, leaf_queue, internal_queue);
 
   explored.clear();
 
@@ -677,7 +681,7 @@ closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValu
   std::greater<NodeValuePair> cmp;
 
   double closest_dist2 = std::numeric_limits<double>::infinity();
-  TriangleKdTree::Node const * closest_node = nullptr;
+  TriangleBvh::Node const * closest_node = nullptr;
 
   // Find the closest leaf (at triangle level) in the leaf queue
   if (!leaf_queue.empty())
@@ -689,7 +693,7 @@ closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValu
     while (num_remaining > 0 && leaf_queue.front().value < closest_dist2)
     {
       NodeValuePair const & first = leaf_queue.front();
-      double new_dist2 = triSquaredDistance(kdtree, *first.node, query);
+      double new_dist2 = triSquaredDistance(bvh, *first.node, query);
       if (new_dist2 < closest_dist2)
       {
         closest_node = first.node;
@@ -716,7 +720,7 @@ closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValu
 
     if (first.node->isLeaf())  // queued node is a leaf, check if it is the closest by examining triangles
     {
-      double new_dist2 = triSquaredDistance(kdtree, *first.node, query);
+      double new_dist2 = triSquaredDistance(bvh, *first.node, query);
       if (new_dist2 < closest_dist2)
       {
         closest_node = first.node;
@@ -727,23 +731,18 @@ closestLeaf(TriangleKdTree const & kdtree, Vector3 const & query, Array<NodeValu
     }
     else  // queued node is internal, check if its children could be closer than the current minimum
     {
-      double lo_dist2 = first.node->getLowChild()->getBounds().squaredDistance(query);
-      if (lo_dist2 < closest_dist2)
+      for (int i = 0; i < first.node->maxDegree(); ++i)
       {
-        internal_queue.push_back(NodeValuePair(first.node->getLowChild(), lo_dist2));
-        std::push_heap(internal_queue.begin(), internal_queue.end(), cmp);
+        auto c = first.node->getChild(i);
+        double dist2 = c->getBounds().squaredDistance(query);
+        if (dist2 < closest_dist2)
+        {
+          internal_queue.push_back(NodeValuePair(c, dist2));
+          std::push_heap(internal_queue.begin(), internal_queue.end(), cmp);
+        }
+        else
+          explored.push_back(NodeValuePair(c, dist2));
       }
-      else
-        explored.push_back(NodeValuePair(first.node->getLowChild(), lo_dist2));
-
-      double hi_dist2 = first.node->getHighChild()->getBounds().squaredDistance(query);
-      if (hi_dist2 < closest_dist2)
-      {
-        internal_queue.push_back(NodeValuePair(first.node->getHighChild(), hi_dist2));
-        std::push_heap(internal_queue.begin(), internal_queue.end(), cmp);
-      }
-      else
-        explored.push_back(NodeValuePair(first.node->getHighChild(), hi_dist2));
     }
   }
 

@@ -17,7 +17,7 @@
 
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
-#include "../../MeshKdTree.hpp"
+#include "../../MeshBvh.hpp"
 #include "../../RayIntersectionTester.hpp"
 #include "../../../Math.hpp"
 #include "../../../MatVec.hpp"
@@ -34,15 +34,15 @@ namespace SurfaceFeatures {
 namespace Local {
 
 /** Compute the external visibility of a point on a mesh, by shooting rays outwards from it and checking how many escape. */
-template < typename MeshT, typename ExternalKdTreeT = MeshKdTree<MeshT> >
+template < typename MeshT, typename ExternalBvhT = MeshBvh<MeshT> >
 class Visibility
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
-    typedef ExternalKdTreeT ExternalKdTree;  ///< A precomputed kd-tree on the mesh.
+    typedef ExternalBvhT ExternalBvh;  ///< A precomputed BVH on the mesh.
 
   private:
-    typedef MeshKdTree<Mesh> KdTree;  ///< A kd-tree on the mesh.
+    typedef MeshBvh<Mesh> Bvh;  ///< A BVH on the mesh.
 
   public:
     /**
@@ -52,11 +52,11 @@ class Visibility
      * @param mesh The mesh representing the shape.
      */
     Visibility(Mesh const & mesh)
-    : kdtree(new KdTree), precomp_kdtree(nullptr)
+    : bvh(new Bvh), precomp_bvh(nullptr)
     {
-      kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
-      kdtree->init();
-      scale = kdtree->getBounds().getExtent().norm();
+      bvh->add(const_cast<Mesh &>(mesh));  // safe -- the BVH won't be used to modify the mesh
+      bvh->init();
+      scale = bvh->getBounds().getExtent().norm();
     }
 
     /**
@@ -66,31 +66,31 @@ class Visibility
      * @param mesh_group The mesh group representing the shape.
      */
     Visibility(Graphics::MeshGroup<Mesh> const & mesh_group)
-    : kdtree(new KdTree), precomp_kdtree(nullptr)
+    : bvh(new Bvh), precomp_bvh(nullptr)
     {
-      kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
-      kdtree->init();
-      scale = kdtree->getBounds().getExtent().norm();
+      bvh->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the BVH won't be used to modify the mesh
+      bvh->init();
+      scale = bvh->getBounds().getExtent().norm();
     }
 
     /**
-     * Constructs the object to evaluate visibility of points on a shape with a precomputed kd-tree. The kd-tree must persist as
+     * Constructs the object to evaluate visibility of points on a shape with a precomputed BVH. The BVH must persist as
      * long as this object does.
      *
-     * @param kdtree_ The precomputed kd-tree representing the shape.
+     * @param bvh_ The precomputed BVH representing the shape.
      */
-    Visibility(ExternalKdTree const * kdtree_)
-    : kdtree(nullptr), precomp_kdtree(kdtree_)
+    Visibility(ExternalBvh const * bvh_)
+    : bvh(nullptr), precomp_bvh(bvh_)
     {
-      alwaysAssertM(precomp_kdtree, "Visibility: Precomputed KD-tree cannot be null");
+      alwaysAssertM(precomp_bvh, "Visibility: Precomputed BVH cannot be null");
 
-      scale = precomp_kdtree->getBounds().getExtent().norm();
+      scale = precomp_bvh->getBounds().getExtent().norm();
     }
 
     /** Destructor. */
     ~Visibility()
     {
-      delete kdtree;
+      delete bvh;
     }
 
     /**
@@ -116,8 +116,8 @@ class Visibility
         Vector3 offset = 0.001f * scale * u;
         Ray3 ray = Ray3(position + offset, u);
 
-        bool hit = precomp_kdtree ? precomp_kdtree->template rayIntersects<RayIntersectionTester>(ray)
-                                  : kdtree->template rayIntersects<RayIntersectionTester>(ray);
+        bool hit = precomp_bvh ? precomp_bvh->template rayIntersects<RayIntersectionTester>(ray)
+                               : bvh->template rayIntersects<RayIntersectionTester>(ray);
         if (!hit)
           num_escaped++;
       }
@@ -126,8 +126,8 @@ class Visibility
     }
 
   private:
-    KdTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
-    ExternalKdTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
+    Bvh * bvh;  ///< Self-owned BVH on the mesh for computing ray intersections.
+    ExternalBvh const * precomp_bvh;  ///< Precomputed BVH on the mesh for computing ray intersections.
     Real scale;  ///< The normalization scale for offsetting ray origins.
 
 }; // class Visibility

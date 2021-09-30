@@ -25,7 +25,7 @@
 #include "../UnorderedMap.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
-#include "KdTreeN.hpp"
+#include "BvhN.hpp"
 #include <type_traits>
 
 namespace Thea {
@@ -63,7 +63,7 @@ class IndexedVertexTriple
 
 typedef Triangle3<IndexedVertexTriple> IndexedTriangle;  ///< Triangle with indexed vertices.
 
-// KD-tree node attributes.
+// BVH node attributes.
 struct NodeAttribute
 {
   double    area;        ///< Surface area of the contents of the node
@@ -73,7 +73,7 @@ struct NodeAttribute
   double    normal_len;  ///< Cached magnitude of the normal.
 };
 
-typedef KdTreeN<IndexedTriangle, 3, Real, NodeAttribute> TriangleKdTree;
+typedef BvhN<IndexedTriangle, 3, Real, NodeAttribute> TriangleBvh;
 
 // A data structure to hold the integral terms.
 struct IntegralData
@@ -201,7 +201,7 @@ class THEA_API ImlsSurface : private Noncopyable
     typedef ImlsSurfaceInternal::IndexedVertexTriple  IndexedVertexTriple;
     typedef ImlsSurfaceInternal::IndexedTriangle      IndexedTriangle;
     typedef ImlsSurfaceInternal::NodeAttribute        NodeAttribute;
-    typedef ImlsSurfaceInternal::TriangleKdTree       TriangleKdTree;
+    typedef ImlsSurfaceInternal::TriangleBvh          TriangleBvh;
     typedef ImlsSurfaceInternal::IntegralData         IntegralData;
 
     /** Functor prototype. */
@@ -214,7 +214,7 @@ class THEA_API ImlsSurface : private Noncopyable
       virtual void evalTri(Vector3 const & p, IndexedTriangle const & tri) = 0;
 
       /** Process a node. */
-      virtual void evalNode(Vector3 const & p, TriangleKdTree::Node const & node) = 0;
+      virtual void evalNode(Vector3 const & p, TriangleBvh::Node const & node) = 0;
 
       /** Check if the error in a sum is within acceptable limits. */
       virtual bool acceptableError(double err) const = 0;
@@ -230,7 +230,7 @@ class THEA_API ImlsSurface : private Noncopyable
       EvalFunctor(ImlsSurface const & surf_) : surf(surf_), sum(0), sum_phi(0) {}
 
       void evalTri(Vector3 const & p, IndexedTriangle const & tri);
-      void evalNode(Vector3 const & p, TriangleKdTree::Node const & node);
+      void evalNode(Vector3 const & p, TriangleBvh::Node const & node);
       bool acceptableError(double err) const;
 
     }; // struct EvalFunctor
@@ -244,7 +244,7 @@ class THEA_API ImlsSurface : private Noncopyable
       DerivFunctor(ImlsSurface const & surf_) : surf(surf_) {}
 
       void evalTri(Vector3 const & p, IndexedTriangle const & tri);
-      void evalNode(Vector3 const & p, TriangleKdTree::Node const & node);
+      void evalNode(Vector3 const & p, TriangleBvh::Node const & node);
       bool acceptableError(double err) const;
 
     }; // struct DerivFunctor
@@ -285,10 +285,10 @@ class THEA_API ImlsSurface : private Noncopyable
     }
 
     /** Recursively compute the area weighted centroids. */
-    void computeCentroidsRec(TriangleKdTree::Node const * start);
+    void computeCentroidsRec(TriangleBvh::Node const * start);
 
     /** Recursively compute the unweighted integrals. */
-    void computeUnweightedRec(TriangleKdTree::Node const * start);
+    void computeUnweightedRec(TriangleBvh::Node const * start);
 
     /** Compute the iso value such that the mean value at the vertices is zero. */
     void computeIsolevel();
@@ -296,18 +296,18 @@ class THEA_API ImlsSurface : private Noncopyable
     /** Adjust the phi values until all vertices are within the isosurface. Also computes the isolevel. */
     void computeEnclosingPhi();
 
-    /** Apply a functor to kd-tree nodes, to approximate the implicit function or its derivative. */
+    /** Apply a functor to BVH nodes, to approximate the implicit function or its derivative. */
     void eval(Vector3 const & p, Functor & functor) const;
 
     /**
-     * Apply a functor to kd-tree nodes, to approximate the implicit function or its derivative. The tree is traversed
+     * Apply a functor to BVH nodes, to approximate the implicit function or its derivative. The tree is traversed
      * recursively, without using a priority queue.
      */
-    void evalRec(Vector3 const & p, TriangleKdTree::Node const * start, Functor & functor) const;
+    void evalRec(Vector3 const & p, TriangleBvh::Node const * start, Functor & functor) const;
 
     Array<Vector3>  verts;   ///< Mesh vertices.
     Array<double>   phi;     ///< Phi values assigned per vertex.
-    TriangleKdTree  kdtree;  ///< KD-tree of mesh triangles.
+    TriangleBvh     bvh;     ///< BVH on mesh triangles.
 
     double  mesh_size;  ///< Size of the input mesh, measured as the diagonal of its bounding box.
     double  eps;        ///< Smoothness.
@@ -344,11 +344,11 @@ ImlsSurface::ImlsSurface(Graphics::MeshGroup<MeshT> const & mg, double eps_, dou
   if (bounded)
     enforceBounds(tris);
 
-  kdtree.init(tris.begin(), tris.end(), -1, DEFAULT_MAX_TRIS_PER_LEAF, true);
-  mesh_size = kdtree.getBounds().getExtent().norm();
+  bvh.init(tris.begin(), tris.end(), TriangleBvh::Method::AUTO, -1, DEFAULT_MAX_TRIS_PER_LEAF, true);
+  mesh_size = bvh.getBounds().getExtent().norm();
 
-  computeCentroidsRec(kdtree.getRoot());
-  computeUnweightedRec(kdtree.getRoot());
+  computeCentroidsRec(bvh.getRoot());
+  computeUnweightedRec(bvh.getRoot());
   computeEnclosingPhi();
 }
 
@@ -362,11 +362,11 @@ ImlsSurface::constructFromMesh(MeshT const & mesh)
   if (bounded)
     enforceBounds(tris);
 
-  kdtree.init(tris.begin(), tris.end(), -1, -1, true);
-  mesh_size = kdtree.getBounds().getExtent().norm();
+  bvh.init(tris.begin(), tris.end(), TriangleBvh::Method::AUTO, -1, -1, true);
+  mesh_size = bvh.getBounds().getExtent().norm();
 
-  computeCentroidsRec(kdtree.getRoot());
-  computeUnweightedRec(kdtree.getRoot());
+  computeCentroidsRec(bvh.getRoot());
+  computeUnweightedRec(bvh.getRoot());
   computeEnclosingPhi();
 }
 

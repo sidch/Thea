@@ -2,8 +2,8 @@
 #include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/ConnectedComponents.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
-#include "../../Algorithms/MeshKdTree.hpp"
+#include "../../Algorithms/BvhN.hpp"
+#include "../../Algorithms/MeshBvh.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
@@ -227,7 +227,7 @@ meshFix(int argc, char * argv[])
   mg.load(infile, codecs, &read_callback);
 
   mg.updateBounds();  // load() should do this, but let's play safe
-  if (mg.isEmpty())
+  if (mg.empty())
   {
     THEA_ERROR << "Input mesh is empty, no output written";
     return -1;
@@ -844,8 +844,8 @@ tJuncts(Mesh & mesh)
     if (vi->isBoundaryVertex())
       boundary_verts.push_back(&(*vi));
 
-  typedef KdTreeN<Mesh::Vertex *, 3> VertexKdTree;
-  VertexKdTree kdtree(boundary_verts.begin(), boundary_verts.end());
+  typedef BvhN<Mesh::Vertex *, 3> VertexBvh;
+  VertexBvh bvh(boundary_verts.begin(), boundary_verts.end());
 
   Array<Mesh::Edge *> boundary_edges;
   Array<LineSegment3> boundary_segs;
@@ -871,14 +871,14 @@ tJuncts(Mesh & mesh)
       Mesh::Edge * edge = boundary_edges[i];
 
       VertexFilter filter(edge);
-      kdtree.pushFilter(&filter);
-        intx index = kdtree.closestElement<MetricL2>(boundary_segs[i], /* dist_bound = */ 2 * tol);  // a little safety margin
-      kdtree.popFilter();
+      bvh.pushFilter(&filter);
+        intx index = bvh.closestElement<MetricL2>(boundary_segs[i], /* dist_bound = */ 2 * tol);  // a little safety margin
+      bvh.popFilter();
 
       if (index < 0)
         continue;
 
-      Mesh::Vertex * vx = kdtree.getElements()[(size_t)index];
+      Mesh::Vertex * vx = bvh.getElements()[(size_t)index];
       Vector3 cp = boundary_segs[i].closestPoint(vx->getPosition());
 
       if ((cp - edge->getEndpoint(0)->getPosition()).squaredNorm() > sqtol
@@ -1222,13 +1222,13 @@ orientMajority(Mesh & mesh)
 
 struct VisibilityOrienter
 {
-  typedef MeshKdTree<Mesh> KdTree;
+  typedef MeshBvh<Mesh> Bvh;
 
   VisibilityOrienter(MG & mg, bool hi_qual_ = false)
   : hi_qual(hi_qual_)
   {
-    kdtree.add(mg);
-    kdtree.init();
+    bvh.add(mg);
+    bvh.init();
 
     mesh_center = mg.getBounds().getCenter();
     camera_distance = 2 * mg.getBounds().getExtent().norm();
@@ -1348,7 +1348,7 @@ struct VisibilityOrienter
 #endif
           Ray3 ray(p, camera_pos - p);
           ray.setOrigin(ray.getPoint(0.0001));
-          if (kdtree.rayIntersects<RayIntersectionTester>(ray))
+          if (bvh.rayIntersects<RayIntersectionTester>(ray))
             continue;
 
           // Shoot a few jittered rays to test "openness" of the face w.r.t. this camera
@@ -1361,7 +1361,7 @@ struct VisibilityOrienter
             Ray3 jray(p, camera_pos + Vector3(jx, jy, jz) - p);
             jray.setOrigin(ray.getPoint(0.0001));
 
-            if (!kdtree.rayIntersects<RayIntersectionTester>(jray))
+            if (!bvh.rayIntersects<RayIntersectionTester>(jray))
               num_open++;
           }
 
@@ -1386,7 +1386,7 @@ struct VisibilityOrienter
     return false;
   }
 
-  KdTree kdtree;
+  Bvh bvh;
   bool hi_qual;
   Vector3 mesh_center;
   Real camera_distance;

@@ -1,6 +1,6 @@
 #include "../Common.hpp"
 #include "../Algorithms/IntersectionTester.hpp"
-#include "../Algorithms/KdTreeN.hpp"
+#include "../Algorithms/BvhN.hpp"
 #include "../Algorithms/MetricL2.hpp"
 #include "../Algorithms/PointTraitsN.hpp"
 #include "../Algorithms/RayIntersectionTester.hpp"
@@ -17,22 +17,22 @@ using namespace std;
 using namespace Thea;
 using namespace Algorithms;
 
-void testPointKdTree();
-void testTriangleKdTree();
+void testPointBvh();
+void testTriangleBvh();
 
 int
 main(int argc, char * argv[])
 {
   try
   {
-    testPointKdTree();
+    testPointBvh();
     cout << endl;
-    testTriangleKdTree();
+    testTriangleBvh();
   }
   THEA_CATCH(return -1;, ERROR, "%s", "An error occurred")
 
   // Hooray, all tests passed
-  cout << "KdTreeN: Test completed" << endl;
+  cout << "BvhN: Test completed" << endl;
   return 0;
 }
 
@@ -80,7 +80,7 @@ struct MyCustomTriangleVertexTriple
 };
 
 // Our custom triangle class just wraps the vertex triple above. We don't need to specify any additional traits classes because
-// the kd-tree already knows how to handle any specialization of Triangle3<...>. The vertex triple tells Triangle3 how to get
+// the BVH already knows how to handle any specialization of Triangle3<...>. The vertex triple tells Triangle3 how to get
 // the three vertices of the triangle, and the rest is automatically set up. To access the vertex triple (and any custom info
 // inside it), use triangle.getVertices(), which returns a reference to the wrapped vertex triple.
 typedef Triangle3<MyCustomTriangleVertexTriple> MyCustomTriangle;
@@ -88,14 +88,14 @@ typedef Triangle3<MyCustomTriangleVertexTriple> MyCustomTriangle;
 namespace Thea {
 namespace Algorithms {
 
-// Tell the kd-tree that a MyCustomPoint object is a 3D point.
+// Tell the BVH that a MyCustomPoint object is a 3D point.
 template <>
 struct IsPointN<MyCustomPoint, 3>
 {
   static bool const value = true;
 };
 
-// A specialization of the traits class, to obtain the position of a MyCustomPoint. The kd-tree requires this traits class to
+// A specialization of the traits class, to obtain the position of a MyCustomPoint. The BVH requires this traits class to
 // get the position of an arbitrary point type.
 template <>
 struct PointTraitsN<MyCustomPoint, 3, Real>
@@ -106,8 +106,8 @@ struct PointTraitsN<MyCustomPoint, 3, Real>
 } // namespace Algorithms
 } // namespace Thea
 
-// This function is called by the kd-tree for every point encountered in a range. The args are the index of the point (in the
-// array returned by kdtree.getElements()) and a reference to the point itself (as cached by the kd-tree).
+// This function is called by the BVH for every point encountered in a range. The args are the index of the point (in the array
+// returned by bvh.getElements()) and a reference to the point itself (as cached by the BVH).
 bool printPoint(intx index, MyCustomPoint & np)
 {
   cout << "  Found point '" << np.name << "' at position " << np.position.transpose() << endl;
@@ -115,10 +115,10 @@ bool printPoint(intx index, MyCustomPoint & np)
 }
 
 void
-testPointKdTree()
+testPointBvh()
 {
   cout << "=========================\n"
-       << "Testing kd-tree on points\n"
+       << "Testing BVH on points\n"
        << "=========================" << endl;
 
   //============================================================================================================================
@@ -138,14 +138,14 @@ testPointKdTree()
   cout << "Generated " << points.size() << " random points" << endl;
 
   //============================================================================================================================
-  // Create kd-tree for the data
+  // Create BVH for the data
   //============================================================================================================================
 
-  // Create a kd-tree for all the points
-  typedef KdTreeN<MyCustomPoint, 3> KdTree;
-  KdTree kdtree(points.begin(), points.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
+  // Create a BVH for all the points
+  typedef BvhN<MyCustomPoint, 3> Bvh;
+  Bvh bvh(points.begin(), points.end());  // To reinitialize the tree later, call bvh.init(begin, end). For fast
                                                 // reinitialization, set the deallocate_previous_memory arg of init() to false.
-  cout << "Created kd-tree for points" << endl;
+  cout << "Created BVH for points" << endl;
 
   //============================================================================================================================
   // Three ways of doing a range query
@@ -158,19 +158,19 @@ testPointKdTree()
   // query
   Ball3 ball(Vector3(0.5f, 0.5f, 0.5f), 0.25f);
   cout << "\nLooking for all points in ball " << ball.toString() << ':' << endl;
-  kdtree.processRangeUntil<IntersectionTester>(ball, printPoint);  // processes all points in the ball until the functor returns
+  bvh.processRangeUntil<IntersectionTester>(ball, printPoint);  // processes all points in the ball until the functor returns
                                                                    // true
 
   // Another way of writing a range query, that explicitly returns all the elements in the ball. This might be slower because of
   // memory allocation by push_back in vector.
   vector<MyCustomPoint> elems_in_range;
-  kdtree.rangeQuery<IntersectionTester>(ball, elems_in_range);
+  bvh.rangeQuery<IntersectionTester>(ball, elems_in_range);
   cout << "\nRange query returned " << elems_in_range.size() << " elements (with possible duplications)" << endl;
 
   // Yet another way of writing a range query, that returns the indices of all the elements in the ball. This might also be
   // slower because of memory allocation by push_back in vector.
   vector<intx> indices_of_elems_in_range;
-  kdtree.rangeQueryIndices<IntersectionTester>(ball, indices_of_elems_in_range);
+  bvh.rangeQueryIndices<IntersectionTester>(ball, indices_of_elems_in_range);
   cout << "\nRange query returned " << elems_in_range.size() << " indices (with possible duplications)" << endl;
 
   //============================================================================================================================
@@ -180,7 +180,7 @@ testPointKdTree()
   // A range query that prints all the points in a box
   AxisAlignedBox3 box(Vector3(0.25f, 0.25f, 0.25f), Vector3(0.75f, 0.75f, 0.75f));
   cout << "\nLooking for all points in box " << box.toString() << ':' << endl;
-  kdtree.processRangeUntil<IntersectionTester>(box, printPoint);
+  bvh.processRangeUntil<IntersectionTester>(box, printPoint);
 
   //============================================================================================================================
   // Finding the nearest neighbor of a query point
@@ -190,9 +190,9 @@ testPointKdTree()
   Vector3 query(0.5f, 0.5f, 0.5f);
   double dist_bound = 0.25;  // we'll limit the search to all points within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the returned point
-  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist);
+  intx nn_index = bvh.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist);
   if (nn_index >= 0)
-    cout << "\nThe point nearest the query " << query.transpose() << " is " << kdtree.getElements()[nn_index].name
+    cout << "\nThe point nearest the query " << query.transpose() << " is " << bvh.getElements()[nn_index].name
          << " at distance " << dist << endl;
   else
     cout << "\nNo nearest neighbor found" << endl;
@@ -202,14 +202,14 @@ testPointKdTree()
   //============================================================================================================================
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
-  BoundedSortedArrayN<3, KdTree::NeighborPair> nbrs;
-  intx num_nbrs = kdtree.kClosestPairs<MetricL2>(query, nbrs, dist_bound, UniversalCompatibility());
+  BoundedSortedArrayN<3, Bvh::NeighborPair> nbrs;
+  intx num_nbrs = bvh.kClosestPairs<MetricL2>(query, nbrs, dist_bound, UniversalCompatibility());
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.transpose() << ':' << endl;
-    for (intx i = 0; i < nbrs.size(); ++i)
+    for (size_t i = 0; i < nbrs.size(); ++i)
     {
-      cout << "  " << kdtree.getElements()[nbrs[i].getTargetIndex()].name << " at distance "
+      cout << "  " << bvh.getElements()[nbrs[i].getTargetIndex()].name << " at distance "
            << nbrs[i].getDistance<MetricL2>() << endl;
     }
   }
@@ -229,25 +229,25 @@ testPointKdTree()
     MyCustomPoint p(oss.str(), random_pt);
     new_points.push_back(p);
   }
-  KdTree new_kdtree(new_points.begin(), new_points.end());
+  Bvh new_bvh(new_points.begin(), new_points.end());
 
-  typedef KdTree::NeighborPair NeighborPair;
+  typedef Bvh::NeighborPair NeighborPair;
 
   // -1 means there's no limit on the maximum allowed separation. Setting a (small) positive value can make this query run
   // *much* faster.
-  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, UniversalCompatibility(), true);
+  NeighborPair nn_pair = bvh.closestPair<MetricL2>(new_bvh, -1, UniversalCompatibility(), true);
   if (nn_pair.isValid())
   {
     cout << "\nThe nearest neighbors are "
-         << new_kdtree.getElements()[nn_pair.getQueryIndex()].name << ' ' << nn_pair.getQueryPoint() << " and "
-         << kdtree.getElements()[nn_pair.getTargetIndex()].name << ' ' << nn_pair.getTargetPoint()
+         << new_bvh.getElements()[nn_pair.getQueryIndex()].name << ' ' << nn_pair.getQueryPoint() << " and "
+         << bvh.getElements()[nn_pair.getTargetIndex()].name << ' ' << nn_pair.getTargetPoint()
          << " at separation " << nn_pair.getDistance<MetricL2>() << endl;
 
-    cout << "    Query point is at " << new_kdtree.getElements()[nn_pair.getQueryIndex()].position << endl;
-    cout << "    Target point is at " << kdtree.getElements()[nn_pair.getTargetIndex()].position << endl;
+    cout << "    Query point is at " << new_bvh.getElements()[nn_pair.getQueryIndex()].position << endl;
+    cout << "    Target point is at " << bvh.getElements()[nn_pair.getTargetIndex()].position << endl;
   }
   else
-    cout << "\nNo nearest neighbors found between the two kd-trees" << endl;
+    cout << "\nNo nearest neighbors found between the two BVHs" << endl;
 
   //============================================================================================================================
   // Finding the k-nearest neighbors of a set of query points
@@ -255,18 +255,18 @@ testPointKdTree()
 
   // Find the 3 points nearest to the query point defined above, using the L2 norm and the same upper bound on the distance
   nbrs.clear();  // not necessary but let's do this anyway
-  num_nbrs = kdtree.kClosestPairs<MetricL2>(new_kdtree, nbrs, -1, UniversalCompatibility(), true);
+  num_nbrs = bvh.kClosestPairs<MetricL2>(new_bvh, nbrs, -1, UniversalCompatibility(), true);
   if (num_nbrs > 0)
   {
     cout << '\n' << num_nbrs << " pairs of nearest neighbors (max 3) found for query point set:" << endl;
     for (intx i = 0; i < nbrs.size(); ++i)
     {
-      cout << "  (" << new_kdtree.getElements()[nbrs[i].getQueryIndex()].name << ' ' << nbrs[i].getQueryPoint() << ", "
-                    << kdtree.getElements()[nbrs[i].getTargetIndex()].name << ' ' << nbrs[i].getTargetPoint()
+      cout << "  (" << new_bvh.getElements()[nbrs[i].getQueryIndex()].name << ' ' << nbrs[i].getQueryPoint() << ", "
+                    << bvh.getElements()[nbrs[i].getTargetIndex()].name << ' ' << nbrs[i].getTargetPoint()
                     << ") at distance " << nbrs[i].getDistance<MetricL2>() << endl;
 
-      cout << "      Query point is at " << new_kdtree.getElements()[nbrs[i].getQueryIndex()].position << endl;
-      cout << "      Target point is at " << kdtree.getElements()[nbrs[i].getTargetIndex()].position << endl;
+      cout << "      Query point is at " << new_bvh.getElements()[nbrs[i].getQueryIndex()].position << endl;
+      cout << "      Target point is at " << bvh.getElements()[nbrs[i].getTargetIndex()].position << endl;
     }
   }
   else
@@ -274,10 +274,10 @@ testPointKdTree()
 }
 
 void
-testTriangleKdTree()
+testTriangleBvh()
 {
   cout << "============================\n"
-       << "Testing kd-tree on triangles\n"
+       << "Testing BVH on triangles\n"
        << "============================" << endl;
 
   //============================================================================================================================
@@ -300,16 +300,16 @@ testTriangleKdTree()
   cout << "Generated " << triangles.size() << " random triangles" << endl;
 
   //============================================================================================================================
-  // Create kd-tree for the data
+  // Create BVH for the data
   //============================================================================================================================
 
-  // Create a kd-tree for all the triangles
-  typedef KdTreeN<MyCustomTriangle, 3> KdTree;
-  KdTree kdtree(triangles.begin(), triangles.end());  // To reinitialize the tree later, call kdtree.init(begin, end). For fast
+  // Create a BVH for all the triangles
+  typedef BvhN<MyCustomTriangle, 3> Bvh;
+  Bvh bvh(triangles.begin(), triangles.end());  // To reinitialize the tree later, call bvh.init(begin, end). For fast
                                                       // reinitialization, set the deallocate_previous_memory arg of init() to
                                                       // false.
-  kdtree.enableNearestNeighborAcceleration();
-  cout << "Created kd-tree for triangles" << endl;
+  bvh.enableNearestNeighborAcceleration();
+  cout << "Created BVH for triangles" << endl;
 
   //============================================================================================================================
   // Finding the nearest neighbor of a query point
@@ -320,21 +320,18 @@ testTriangleKdTree()
   double dist_bound = 0.25;  // we'll limit the search to all triangles within a distance of 0.25; passing -1 turns this off
   double dist = 0;  // this will contain the distance to the nearest triangle
   Vector3 closest_point;  // this will contain the closest point on the nearest triangle
-  intx nn_index = kdtree.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist, &closest_point);
+  intx nn_index = bvh.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist, &closest_point);
   if (nn_index >= 0)
     cout << "\nThe triangle nearest the query " << query.transpose() << " is "
-         << kdtree.getElements()[nn_index].getVertices().name
+         << bvh.getElements()[nn_index].getVertices().name
          << " at distance " << dist << ", with closest point" << closest_point.transpose() << endl;
   else
     cout << "\nNo nearest neighbor of the query point found" << endl;
 
   //============================================================================================================================
-  // Finding the nearest neighbors between two sets of triangles. Slow, because of triangle-triangle distance tests. Can be
+  // Finding the nearest neighbors between two sets of triangles. Slow, because of triangle-triangle distance tests. Is
   // accelerated by setting an upper bound on the maximum separation between the nearest neighbors (this replaces the -1 in the
-  // call to closestPair()). This upper bound can be computed by finding the distance between two auxiliary kd-trees, each on
-  // point samples from the corresponding set of triangles, e.g. the triangle vertices. This is basically the approach taken by
-  // CGAL's AABB_Tree::accelerate_distance_queries(). However, I haven't added this to my KD-tree implementation yet, so you'll
-  // need to do this explicitly if it's really required.
+  // call to closestPair()).
   //============================================================================================================================
 
   // Generate a second set of triangles, and find the nearest pair of triangles between the two sets
@@ -349,27 +346,25 @@ testTriangleKdTree()
     MyCustomTriangle tri(MyCustomTriangleVertexTriple(oss.str(), v[0], v[1], v[2]));
     new_triangles.push_back(tri);
   }
-  KdTree new_kdtree(new_triangles.begin(), new_triangles.end());
-  new_kdtree.enableNearestNeighborAcceleration();
+  Bvh new_bvh(new_triangles.begin(), new_triangles.end());
+  new_bvh.enableNearestNeighborAcceleration();
 
-  typedef KdTree::NeighborPair NeighborPair;
+  typedef Bvh::NeighborPair NeighborPair;
 
-  // -1 means there's no limit on the maximum allowed separation. Setting a (small) positive value can make this query run
-  // *much* faster.
-  NeighborPair nn_pair = kdtree.closestPair<MetricL2>(new_kdtree, -1, UniversalCompatibility(), true);
+  NeighborPair nn_pair = bvh.closestPair<MetricL2>(new_bvh, -1, UniversalCompatibility(), true);
   if (nn_pair.isValid())
     cout << "\nThe nearest neighbors are "
-         << new_kdtree.getElements()[nn_pair.getQueryIndex()].getVertices().name << " and "
-         << kdtree.getElements()[nn_pair.getTargetIndex()].getVertices().name
+         << new_bvh.getElements()[nn_pair.getQueryIndex()].getVertices().name << " and "
+         << bvh.getElements()[nn_pair.getTargetIndex()].getVertices().name
          << " at separation " << nn_pair.getDistance<MetricL2>()
          << ", with closest points " << nn_pair.getQueryPoint().transpose() << " and " << nn_pair.getTargetPoint().transpose()
          << " respectively" << endl;
   else
-    cout << "\nNo nearest neighbors found between the two kd-trees" << endl;
+    cout << "\nNo nearest neighbors found between the two BVHs" << endl;
 
   //============================================================================================================================
   // Ray-triangle intersection. There are three types of intersection queries, each giving strictly more information than the
-  // last. They all take roughly the same time for kd-trees of triangles, so there's no special reason to favour
+  // last. They should all take roughly the same time for BVHs of triangles.
   //============================================================================================================================
 
   // Generate a random ray from the origin into the positive quadrant (the ray's direction vector need not be a unit vector,
@@ -382,29 +377,29 @@ testTriangleKdTree()
   cout << "\nTesting intersection with ray " << ray.toString() << endl;
 
   // First type of query: does the ray intersect any triangle in the tree?
-  if (kdtree.rayIntersects<RayIntersectionTester>(ray, max_time))
-    cout << "Ray intersects a triangle in the kd-tree" << endl;
+  if (bvh.rayIntersects<RayIntersectionTester>(ray, max_time))
+    cout << "Ray intersects a triangle in the BVH" << endl;
   else
-    cout << "Ray does not intersect any triangle in the kd-tree" << endl;
+    cout << "Ray does not intersect any triangle in the BVH" << endl;
 
   // Second type of query: what is the hit time of the ray?
-  Real hit_time = kdtree.rayIntersectionTime<RayIntersectionTester>(ray, max_time);
+  Real hit_time = bvh.rayIntersectionTime<RayIntersectionTester>(ray, max_time);
   if (hit_time >= 0)
-    cout << "Ray intersects a triangle in the kd-tree after time " << hit_time
+    cout << "Ray intersects a triangle in the BVH after time " << hit_time
          << " (at point " << ray.getPoint(hit_time).transpose() << ')' << endl;
   else
-    cout << "Ray does not intersect any triangle in the kd-tree" << endl;
+    cout << "Ray does not intersect any triangle in the BVH" << endl;
 
   // Third type of query: full info about the intersection point
-  RayStructureIntersection3 isec = kdtree.rayStructureIntersection<RayIntersectionTester>(ray, max_time);
+  RayStructureIntersection3 isec = bvh.rayStructureIntersection<RayIntersectionTester>(ray, max_time);
   if (isec.isValid())
   {
-    cout << "Ray intersects a triangle in the kd-tree:\n"
+    cout << "Ray intersects a triangle in the BVH:\n"
          << "    hit time = " << isec.getTime() << '\n'
-         << "    intersected triangle = " << kdtree.getElements()[isec.getElementIndex()].getVertices().name << '\n'
+         << "    intersected triangle = " << bvh.getElements()[isec.getElementIndex()].getVertices().name << '\n'
          << "    intersection point = " << ray.getPoint(isec.getTime()).transpose() << '\n'
          << "    normal at intersection point = " << isec.getNormal().transpose() << endl;
   }
   else
-    cout << "Ray does not intersect any triangle in the kd-tree" << endl;
+    cout << "Ray does not intersect any triangle in the BVH" << endl;
 }

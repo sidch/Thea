@@ -16,7 +16,7 @@
 #define __Thea_Algorithms_Icp3_hpp__
 
 #include "../Common.hpp"
-#include "KdTreeN.hpp"
+#include "BvhN.hpp"
 #include "MetricL2.hpp"
 #include "PointTraitsN.hpp"
 #include "../AffineTransformN.hpp"
@@ -100,10 +100,10 @@ class Icp3
       if (from_num_pts <= 0 || to_num_pts <= 0)
         return AffineTransformT::identity();
 
-      KdTreeN<ToT, 3, ScalarT> to_kdtree(to, to + to_num_pts);
-      to_kdtree.enableNearestNeighborAcceleration();
+      BvhN<ToT, 3, ScalarT> to_bvh(to, to + to_num_pts);
+      to_bvh.enableNearestNeighborAcceleration();
 
-      return align(from_num_pts, from, from_weight_func, to_kdtree, error);
+      return align(from_num_pts, from, from_weight_func, to_bvh, error);
     }
 
     /** Find the transform that best aligns the point set \a from to the proximity query structure \a to. */
@@ -152,10 +152,10 @@ class Icp3
       if (from_num_pts <= 0 || to_num_pts <= 0)
         return AffineTransformT::identity();
 
-      KdTreeN<ToT, 3, ScalarT> to_kdtree(to, to + to_num_pts);
-      to_kdtree.enableNearestNeighborAcceleration();
+      BvhN<ToT, 3, ScalarT> to_bvh(to, to + to_num_pts);
+      to_bvh.enableNearestNeighborAcceleration();
 
-      return alignSymmetric(from_num_pts, from, from_weight_func, from_symmetry_plane, to_kdtree, to_symmetry_plane, error);
+      return alignSymmetric(from_num_pts, from, from_weight_func, from_symmetry_plane, to_bvh, to_symmetry_plane, error);
     }
 
     /**

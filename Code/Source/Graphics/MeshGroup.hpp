@@ -103,7 +103,7 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     template <typename MeshInputIterator> MeshGroup(MeshInputIterator first, MeshInputIterator last) : meshes(first, last) {}
 
     /** Check if the mesh group is empty. */
-    bool isEmpty() const { return meshes.empty() && children.empty(); }
+    bool empty() const { return meshes.empty() && children.empty(); }
 
     /** Get the parent group of this mesh group, or null if this is the root of the hierarchy. */
     MeshGroup * getParent() const { return parent; }

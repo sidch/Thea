@@ -77,7 +77,7 @@ computeEuclidean(PointSet3 const & surf, Vector3 const & position, Real max_dist
   else
   {
     Ball3 ball(position, max_distance);
-    const_cast<PointSet3::SampleKdTree &>(surf.getKdTree()).processRangeUntil<IntersectionTester>(ball, std::ref(callback));
+    const_cast<PointSet3::SampleBvh &>(surf.getBvh()).processRangeUntil<IntersectionTester>(ball, std::ref(callback));
   }
 
   return callback.getAverageDistance() / max_distance;
@@ -115,10 +115,10 @@ computeGeodesic(PointSet3 const & surf, Vector3 const & position, Real max_dista
     max_distance = surf.getScale();
 
   // Find the sample closest to the query position and use it as the source for all distance calculations
-  intx seed_index =  surf.getKdTree().closestElement<MetricL2>(position);
+  intx seed_index =  surf.getBvh().closestElement<MetricL2>(position);
   alwaysAssertM(seed_index >= 0, "AverageDistance: Seed sample for geodesic distances not found");
 
-  // Assume the graph and the kd-tree have samples in the same sequence
+  // Assume the graph and the BVH have samples in the same sequence
   PointSet3::SampleGraph::VertexHandle seed_sample = const_cast<SamplePoint3 *>(&surf.getSample(seed_index));
 
   ShortestPaths<PointSet3::SampleGraph> shortest_paths;

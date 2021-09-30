@@ -69,7 +69,7 @@ struct ProjectedCurvatureFunctor : private Noncopyable
 double
 Curvature::computeProjectedCurvature(Vector3 const & position, Real nbd_radius) const
 {
-  intx nn_index = surf->getKdTree().closestElement<MetricL2>(position);
+  intx nn_index = surf->getBvh().closestElement<MetricL2>(position);
   if (nn_index < 0)
   {
     THEA_WARNING << "Curvature: Query point cannot be mapped to mesh, curvature value set to zero";
@@ -89,7 +89,7 @@ Curvature::computeProjectedCurvature(Vector3 const & position, Vector3 const & n
 
   CurvatureInternal::ProjectedCurvatureFunctor func(position, normal);
   Ball3 range(position, nbd_radius);
-  const_cast<PointSet3::SampleKdTree &>(surf->getKdTree()).processRangeUntil<IntersectionTester>(range, std::ref(func));
+  const_cast<PointSet3::SampleBvh &>(surf->getBvh()).processRangeUntil<IntersectionTester>(range, std::ref(func));
 
   return func.getCurvature();
 }

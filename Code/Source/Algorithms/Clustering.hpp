@@ -656,7 +656,7 @@ Clustering::toClutoMatrix(MatrixX<T, MatrixLayout::COLUMN_MAJOR> const & m, Clut
   cm.getRowIndices().clear();
   cm.getColumnIndices().clear();
 
-  if (!m.isEmpty())
+  if (!m.empty())
   {
     cm.getValues().resize(m.rows() * m.cols());
 

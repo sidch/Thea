@@ -3,7 +3,7 @@
 #include "../../Algorithms/SurfaceFeatures/Local/ShapeDiameter.hpp"
 #include "../../Algorithms/Clustering.hpp"
 #include "../../Algorithms/ConvexHull3.hpp"
-#include "../../Algorithms/MeshKdTree.hpp"
+#include "../../Algorithms/MeshBvh.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Colors.hpp"
@@ -46,7 +46,7 @@ main(int argc, char * argv[])
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKdTree<Mesh> KdTree;
+typedef MeshBvh<Mesh> Bvh;
 typedef Vector<4, double> ClusterablePoint;
 
 ClusterablePoint
@@ -65,7 +65,7 @@ toClusterablePoint(Vector3 const & pos, Real sdf)
 
 int countSDFModes(Array<Real> const & sdf_values);
 ColorRgb const & getPaletteColor(int i);
-int combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KdTree const & kdtree,
+int combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, Bvh const & bvh,
                                Array<int> & labels, double concavity_threshold, double score_threshold);
 
 int
@@ -99,22 +99,22 @@ segmentSDF(int argc, char * argv[])
   MG mg;
   mg.load(inpath);
 
-  // Initialize kdtree
-  KdTree kdtree;
-  kdtree.add(mg);
-  kdtree.init();
+  // Initialize bvh
+  Bvh bvh;
+  bvh.add(mg);
+  bvh.init();
 
   // Compute samples
   double total_area = 0;
-  for (intx i = 0; i < kdtree.numElements(); ++i)
-    total_area += kdtree.getElements()[(size_t)i].getArea();
+  for (intx i = 0; i < bvh.numElements(); ++i)
+    total_area += bvh.getElements()[(size_t)i].getArea();
 
   double density = approx_num_samples / total_area;
 
   Array<Vector3> positions, normals;
-  for (intx i = 0; i < kdtree.numElements(); ++i)
+  for (intx i = 0; i < bvh.numElements(); ++i)
   {
-    KdTree::Element const & elem = kdtree.getElements()[(size_t)i];
+    Bvh::Element const & elem = bvh.getElements()[(size_t)i];
     double num_samples = density * elem.getArea();
     double rem = num_samples;
     for (intx j = 1; j < num_samples; ++j)
@@ -135,7 +135,7 @@ segmentSDF(int argc, char * argv[])
 
   // Compute SDF values
   Array<Real> sdf_values(positions.size());
-  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree);
+  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&bvh);
   for (size_t i = 0; i < positions.size(); ++i)
     sdf_values[i] = (Real)sdf.compute(positions[i], normals[i]);
 
@@ -175,7 +175,7 @@ segmentSDF(int argc, char * argv[])
   THEA_CONSOLE << "Segmented points into " << num_clusters << " clusters";
 
   // Merge clusters whose union is approximately convex
-  num_clusters = combineClustersByConvexity(positions, normals, kdtree, labels, -1, -1);
+  num_clusters = combineClustersByConvexity(positions, normals, bvh, labels, -1, -1);
 
   THEA_CONSOLE << "Merged clusters into " << num_clusters << " clusters";
 
@@ -466,18 +466,18 @@ struct SampleCluster
   int label;
   Array<Vector3 const *> positions;
   Array<Vector3 const *> normals;
-  KdTreeN<Vector3 const *, 3> * kdtree;
+  BvhN<Vector3 const *, 3> * bvh;
   double concavity;
   SampleClusterConnectivityGraph::VertexIterator conn_vertex;
   bool changed;
 
-  SampleCluster() : kdtree(new KdTreeN<Vector3 const *, 3>), changed(false) {}
+  SampleCluster() : bvh(new BvhN<Vector3 const *, 3>), changed(false) {}
 
-  void updateKdTree()
+  void updateBvh()
   {
     if (changed)
     {
-      kdtree->init(positions.begin(), positions.end());
+      bvh->init(positions.begin(), positions.end());
       changed = false;
     }
   }
@@ -487,9 +487,9 @@ typedef UnorderedMap<int, SampleCluster> SampleClusterMap;
 
 double
 computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *> const & normals,
-                 KdTree const & kdtree)
+                 Bvh const & bvh)
 {
-  Real skin_width = 0.01 * kdtree.getBounds().getExtent().norm();
+  Real skin_width = 0.01 * bvh.getBounds().getExtent().norm();
   THEA_CONSOLE << "Skin width = " << skin_width;
 
   ConvexHull3::Options(ConvexHull3::Options::Approx(100, skin_width));
@@ -500,11 +500,11 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
   Mesh hull_mesh;
   hull.computeApprox(hull_mesh);
 
-  KdTree hull_kdtree;
-  hull_kdtree.add(hull_mesh);
-  hull_kdtree.init();
+  Bvh hull_bvh;
+  hull_bvh.add(hull_mesh);
+  hull_bvh.init();
 
-  Real extent = kdtree.getBounds().getExtent().norm();
+  Real extent = bvh.getBounds().getExtent().norm();
   THEA_CONSOLE << "Extent = " << extent;
   if (Math::fuzzyEq(extent, (Real)0))
     return 0;
@@ -514,11 +514,11 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
   for (size_t i = 0; i < positions.size(); ++i)
   {
     Ray3 hull_ray(*positions[i], *normals[i]);
-    Real hull_isec_time = hull_kdtree.rayIntersectionTime<RayIntersectionTester>(hull_ray);
+    Real hull_isec_time = hull_bvh.rayIntersectionTime<RayIntersectionTester>(hull_ray);
     // cout << "Intersection time for ray " << i << " = " << isec_time << endl;
 
     Ray3 model_ray(hull_ray.getOrigin() + 0.001 * hull_ray.getDirection(), hull_ray.getDirection());
-    Real model_isec_time = kdtree.rayIntersectionTime<RayIntersectionTester>(model_ray);
+    Real model_isec_time = bvh.rayIntersectionTime<RayIntersectionTester>(model_ray);
     if (hull_isec_time < model_isec_time)
     {
       sum_distances += min(hull_isec_time, extent);
@@ -532,7 +532,7 @@ computeConcavity(Array<Vector3 const *> const & positions, Array<Vector3 const *
 }
 
 int
-combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, KdTree const & kdtree,
+combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> const & normals, Bvh const & bvh,
                            Array<int> & labels, double concavity_threshold, double score_threshold)
 {
   if (concavity_threshold < 0) concavity_threshold  =  0.015;
@@ -555,12 +555,12 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
 
   SampleClusterConnectivityGraph cluster_conn_graph;
   {
-    double const INTERSECTION_THRESHOLD  =  0.01 * kdtree.getBounds().getExtent().norm();
+    double const INTERSECTION_THRESHOLD  =  0.01 * bvh.getBounds().getExtent().norm();
     size_t const NNBRS_THRESHOLD         =  10;
 
     for (SampleClusterMap::iterator ci = sample_clusters.begin(); ci != sample_clusters.end(); ++ci)
     {
-      ci->second.updateKdTree();
+      ci->second.updateBvh();
       ci->second.conn_vertex = cluster_conn_graph.addVertex(&ci->second);
 
       for (SampleClusterMap::iterator cj = sample_clusters.begin(); cj != ci; ++cj)
@@ -568,7 +568,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
         size_t nnbrs = 0;
         for (size_t j = 0; j < cj->second.positions.size(); ++j)
         {
-          intx nn_index = ci->second.kdtree->closestElement<MetricL2>(*cj->second.positions[j],
+          intx nn_index = ci->second.bvh->closestElement<MetricL2>(*cj->second.positions[j],
                                                                       /* dist_bound = */ INTERSECTION_THRESHOLD);
           if (nn_index >= 0)
           {
@@ -588,7 +588,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
   for (SampleClusterConnectivityGraph::VertexIterator vi = cluster_conn_graph.verticesBegin();
        vi != cluster_conn_graph.verticesEnd(); ++vi)
   {
-    vi->attr()->concavity = computeConcavity(vi->attr()->positions, vi->attr()->normals, kdtree);
+    vi->attr()->concavity = computeConcavity(vi->attr()->positions, vi->attr()->normals, bvh);
   }
 
   // Compute concavities of connected pairs of clusters
@@ -603,7 +603,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
     combined_normals.insert(combined_normals.end(), ei->getEnd()->attr()->normals.begin(),
                                                     ei->getEnd()->attr()->normals.end());
 
-    ei->setAttr(computeConcavity(combined_positions, combined_normals, kdtree));
+    ei->setAttr(computeConcavity(combined_positions, combined_normals, bvh));
   }
 
   printGraph(cluster_conn_graph);
@@ -649,7 +649,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
     Array<Vector3 const *> & enormals = max_edge->getEnd()->attr()->normals;
     onormals.insert(onormals.end(), enormals.begin(), enormals.end());
 
-    // Mark the KD-tree for an update
+    // Mark the BVH for an update
     ov->attr()->changed = true;
 
     cluster_conn_graph.collapseEdge(max_edge);
@@ -666,7 +666,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
       Array<Vector3 const *> combined_normals((*ei)->getOrigin()->attr()->normals);
       combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
 
-      double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);
+      double combined_concavity = computeConcavity(combined_positions, combined_normals, bvh);
       (*ei)->setAttr(combined_concavity);
     }
 
@@ -678,7 +678,7 @@ combineClustersByConvexity(Array<Vector3> const & positions, Array<Vector3> cons
       Array<Vector3 const *> combined_normals((*ei)->getEnd()->attr()->normals);
       combined_normals.insert(combined_normals.end(), onormals.begin(), onormals.end());
 
-      double combined_concavity = computeConcavity(combined_positions, combined_normals, kdtree);
+      double combined_concavity = computeConcavity(combined_positions, combined_normals, bvh);
       (*ei)->setAttr(combined_concavity);
     }
   }

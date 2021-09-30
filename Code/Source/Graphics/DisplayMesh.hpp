@@ -361,7 +361,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     virtual void clear();
 
     /** True if and only if the mesh contains no objects. */
-    bool isEmpty() const { return vertices.empty() && tris.empty(); }
+    bool empty() const { return vertices.empty() && tris.empty(); }
 
     /** Get the number of vertices of the mesh. */
     intx numVertices() const { return (intx)vertices.size(); };

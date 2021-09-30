@@ -369,7 +369,7 @@ class MeshTriangles
       buildTriangleList(mg, tris);
     }
 
-    /** Add a mesh face to the kd-tree. The tree is <b>not</b> updated until you call init(). */
+    /** Add a mesh face to the BVH. The tree is <b>not</b> updated until you call init(). */
     void addFace(Mesh & mesh, typename Mesh::Face & face)
     {
       MeshTrianglesInternal::addFace(mesh, face, tris);
@@ -389,7 +389,7 @@ class MeshTriangles
     }
 
     /** Check if the set is empty. */
-    bool isEmpty() const { return tris.empty(); }
+    bool empty() const { return tris.empty(); }
 
     /** Get the number of triangles in the set. */
     intx numTriangles() const { return (intx)tris.size(); }

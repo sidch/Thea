@@ -19,8 +19,8 @@
 #include "GraphicsWidget.hpp"
 #include "MeshFwd.hpp"
 #include "Segment.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
-#include "../../Algorithms/MeshKdTree.hpp"
+#include "../../Algorithms/BvhN.hpp"
+#include "../../Algorithms/MeshBvh.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../Algorithms/RayQueryStructureN.hpp"
 #include "../../AffineTransform3.hpp"
@@ -52,10 +52,10 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     typedef Transformable<AffineTransform3> TransformableBaseT;
 
   public:
-    typedef Thea::Algorithms::MeshKdTree<Mesh> KdTree;  ///< A kd-tree on mesh triangles.
+    typedef Thea::Algorithms::MeshBvh<Mesh> Bvh;  ///< A BVH on mesh triangles.
     typedef Algorithms::RayStructureIntersection3 RayStructureIntersection3;  /**< Intersection of a ray with an acceleration
                                                                                    structure. */
-    typedef Thea::Algorithms::KdTreeN<MeshVertex const *, 3> VertexKdTree;  ///< A kd-tree on mesh vertices.
+    typedef Thea::Algorithms::BvhN<MeshVertex const *, 3> VertexBvh;  ///< A BVH on mesh vertices.
 
     /** A sample point on the surface. */
     struct Sample
@@ -92,7 +92,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     std::string const & getPath() const { return path; }
 
     /** Is the model empty? */
-    bool isEmpty() const;
+    bool empty() const;
 
     /** Clear the model and invalidate all associated structures. */
     void clear();
@@ -105,26 +105,26 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     void clearTransform();
 
     //========================================================================================================================
-    // KD-trees on mesh triangles and vertices
+    // BVHs on mesh triangles and vertices
     //========================================================================================================================
 
-    /** Invalidate the kd-tree of the model. The kd-tree will be lazily recomputed. */
-    void invalidateKdTree();
+    /** Invalidate the BVH of the model. The BVH will be lazily recomputed. */
+    void invalidateBvh();
 
-    /** Invalidate the kd-tree on the vertices of the model. The kd-tree will be lazily recomputed. */
-    void invalidateVertexKdTree();
+    /** Invalidate the BVH on the vertices of the model. The BVH will be lazily recomputed. */
+    void invalidateVertexBvh();
 
-    /** Compute the kd-tree of the model, if the current kd-tree is invalid. */
-    void updateKdTree() const;
+    /** Compute the BVH of the model, if the current BVH is invalid. */
+    void updateBvh() const;
 
-    /** Compute the kd-tree on the vertices of the model, if the current kd-tree is invalid. */
-    void updateVertexKdTree() const;
+    /** Compute the BVH on the vertices of the model, if the current BVH is invalid. */
+    void updateVertexBvh() const;
 
-    /** Get the kd-tree for the model. By default, it will be recomputed if it is currently invalid. */
-    KdTree const & getKdTree(bool recompute_if_invalid = true) const;
+    /** Get the BVH for the model. By default, it will be recomputed if it is currently invalid. */
+    Bvh const & getBvh(bool recompute_if_invalid = true) const;
 
-    /** Get the kd-tree on the vertices of the model. By default, it will be recomputed if it is currently invalid. */
-    VertexKdTree const & getVertexKdTree(bool recompute_if_invalid = true) const;
+    /** Get the BVH on the vertices of the model. By default, it will be recomputed if it is currently invalid. */
+    VertexBvh const & getVertexBvh(bool recompute_if_invalid = true) const;
 
     //========================================================================================================================
     // Ray-shooting and nearest neighbor queries
@@ -156,7 +156,7 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
      * @param accelerate_with_vertices If true, the function first computes an approximate nearest neighbor using the set of
      *   mesh vertices, to make the exact computation faster. This parameter should normally always be true.
      *
-     * @return The index of the kd-tree triangle containing the closest point, if one is found within the distance bound, else
+     * @return The index of the BVH triangle containing the closest point, if one is found within the distance bound, else
      *   a negative number.
      */
     intx closestPoint(Vector3 const & query, Real distance_bound = -1, Real * min_dist = nullptr,
@@ -389,11 +389,11 @@ class Model : public GraphicsWidget, public Transformable<AffineTransform3>, pub
     intx segment_depth_promotion;
     intx selected_segment;
 
-    mutable bool valid_kdtree;
-    mutable KdTree * kdtree;
+    mutable bool valid_bvh;
+    mutable Bvh * bvh;
 
-    mutable bool valid_vertex_kdtree;
-    mutable VertexKdTree * vertex_kdtree;
+    mutable bool valid_vertex_bvh;
+    mutable VertexBvh * vertex_bvh;
 
 }; // class Model
 

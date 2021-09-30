@@ -87,7 +87,7 @@ class SamplePoint3
     SamplePoint3() {}
 
     /** Construct with an index and maximum number of neighbors. */
-    SamplePoint3(intx index_, int max_nbrs) : index(index_), nbrs(max_nbrs) {}
+    SamplePoint3(intx index_, intx max_nbrs) : index(index_), nbrs((size_t)max_nbrs) {}
 
     /** Get the sample index. */
     intx getIndex() const { return index; }
@@ -108,13 +108,27 @@ class SamplePoint3
     void setNormal(Vector3 const & n_) { n = n_; }
 
     /** Get the number of neighboring samples. */
-    int numNeighbors() const { return nbrs.size(); }
+    intx numNeighbors() const { return (intx)nbrs.size(); }
 
     /** Get the set of neighboring samples. */
     NeighborSet const & getNeighbors() const { return nbrs; }
 
     /** Get a non-const reference to the set of neighboring samples. */
     NeighborSet & getNeighbors() { return nbrs; }
+
+    /** Get the neighboring sample with a given index. */
+    Neighbor const & getNeighbor(intx i) const { return nbrs[(size_t)i]; }
+
+    /**
+     * Add a new neighboring sample.
+     *
+     * @return True if the neighbor was successfully added, false otherwise (e.g. if the sample already has enough neighbors at
+     *   nearer distances).
+     */
+    bool addNeighbor(Neighbor const & nbr) { return nbrs.insert(nbr) < nbrs.getCapacity(); }
+
+    /** Clear the set of neighbors of this sample. */
+    void clearNeighbors() { nbrs.clear(); }
 
   private:
     intx index;        ///< Index of the sample.

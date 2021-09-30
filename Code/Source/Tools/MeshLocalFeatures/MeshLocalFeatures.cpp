@@ -9,7 +9,7 @@
 #include "../../Algorithms/SurfaceFeatures/Local/Visibility.hpp"
 #include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/CentroidN.hpp"
-#include "../../Algorithms/MeshKdTree.hpp"
+#include "../../Algorithms/MeshBvh.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/PointSet3.hpp"
 #include "../../Graphics/GeneralMesh.hpp"
@@ -31,7 +31,7 @@ using namespace Algorithms;
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKdTree<Mesh> KdTree;
+typedef MeshBvh<Mesh> Bvh;
 
 template <typename MeshTriangleT>
 Vector3
@@ -76,7 +76,7 @@ bool is_oriented = false;  // all normals point outwards
 
 int usage(int argc, char * argv[]);
 double meshScale(MG & mg, MeshScaleType mesh_scale_type);
-bool computeSDF(KdTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+bool computeSDF(Bvh const & bvh, Array<Vector3> const & positions, Array<Vector3> const & normals,
                 Array<double> & values);
 bool computeProjectedCurvatures(MG const & mg, Array<Vector3> const & positions, Array<Vector3> const & normals,
                                 intx num_samples, double nbd_radius, Array<double> & values);
@@ -93,7 +93,7 @@ bool computeSpinImages(MG const & mg, Array<Vector3> const & positions, intx num
                        int num_height_bins, MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
 bool computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_samples, intx num_steps, intx num_walks,
                         MatrixX<double, MatrixLayout::ROW_MAJOR> & values);
-bool computeVisibilities(KdTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values);
+bool computeVisibilities(Bvh const & bvh, Array<Vector3> const & positions, intx num_rays, Array<double> & values);
 
 int
 main(int argc, char * argv[])
@@ -228,11 +228,11 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Loaded " << pts.size() << " point(s) from " << pts_path;
 
   // Snap to surface points and normals
-  KdTree kdtree;
-  kdtree.add(mg);
-  kdtree.init();
+  Bvh bvh;
+  bvh.add(mg);
+  bvh.init();
 
-  THEA_CONSOLE << "Created mesh kd-tree";
+  THEA_CONSOLE << "Created mesh BVH";
 
   Array<Vector3> positions(pts.size());
   Array<Vector3> face_normals(pts.size());
@@ -241,15 +241,15 @@ main(int argc, char * argv[])
   for (size_t i = 0; i < pts.size(); ++i)
   {
     Vector3 cp = Vector3::Zero();
-    intx elem = kdtree.closestElement<MetricL2>(pts[i], -1, UniversalCompatibility(), nullptr, &cp);
+    intx elem = bvh.closestElement<MetricL2>(pts[i], -1, UniversalCompatibility(), nullptr, &cp);
     if (elem < 0)
     {
       THEA_ERROR << "Could not find nearest neighbor of query point " << pts[i] << " on mesh";
       return -1;
     }
 
-    Vector3 cn = kdtree.getElements()[(size_t)elem].getNormal();
-    Vector3 csn = smoothNormal(kdtree.getElements()[(size_t)elem], cp);
+    Vector3 cn = bvh.getElements()[(size_t)elem].getNormal();
+    Vector3 csn = smoothNormal(bvh.getElements()[(size_t)elem], cp);
 
     positions[i] = cp;
     face_normals[i] = cn;
@@ -467,7 +467,7 @@ main(int argc, char * argv[])
     else if (feat == "--sdf")
     {
       Array<double> values;
-      if (!computeSDF(kdtree, positions, face_normals, values))
+      if (!computeSDF(bvh, positions, face_normals, values))
         return -1;
 
       alwaysAssertM(values.size() == positions.size(), "Number of SDF values doesn't match number of points");
@@ -571,7 +571,7 @@ main(int argc, char * argv[])
       }
 
       Array<double> values;
-      if (!computeVisibilities(kdtree, positions, num_rays, values))
+      if (!computeVisibilities(bvh, positions, num_rays, values))
         return -1;
 
       alwaysAssertM(values.size() == positions.size(), "Number of visibility values doesn't match number of points");
@@ -735,13 +735,13 @@ meshScale(MG & mg, MeshScaleType mesh_scale_type)
 }
 
 bool
-computeSDF(KdTree const & kdtree, Array<Vector3> const & positions, Array<Vector3> const & normals,
+computeSDF(Bvh const & bvh, Array<Vector3> const & positions, Array<Vector3> const & normals,
            Array<double> & values)
 {
   THEA_CONSOLE << "Computing SDF features";
 
   values.resize(positions.size());
-  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&kdtree, (Real)mesh_scale);
+  SurfaceFeatures::Local::ShapeDiameter<Mesh> sdf(&bvh, (Real)mesh_scale);
   double scaling = (normalize_by_mesh_scale ? 1 : mesh_scale);
 
   for (size_t i = 0; i < positions.size(); ++i)
@@ -963,12 +963,12 @@ computeRandomWalks(MG const & mg, Array<Vector3> const & positions, intx num_sam
 }
 
 bool
-computeVisibilities(KdTree const & kdtree, Array<Vector3> const & positions, intx num_rays, Array<double> & values)
+computeVisibilities(Bvh const & bvh, Array<Vector3> const & positions, intx num_rays, Array<double> & values)
 {
   THEA_CONSOLE << "Computing external visibilities";
 
   values.resize(positions.size());
-  SurfaceFeatures::Local::Visibility<Mesh> vis(&kdtree);
+  SurfaceFeatures::Local::Visibility<Mesh> vis(&bvh);
 
   for (size_t i = 0; i < positions.size(); ++i)
     values[i] = vis.compute(positions[i], num_rays);

@@ -283,7 +283,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     }
 
     /** True if and only if the mesh contains no objects. */
-    bool isEmpty() const { return vertices.empty() && faces.empty() && halfedges.empty(); }
+    bool empty() const { return vertices.empty() && faces.empty() && halfedges.empty(); }
 
     /** Get the number of vertices. */
     intx numVertices() const { return (intx)vertices.size(); }

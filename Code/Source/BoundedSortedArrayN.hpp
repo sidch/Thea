@@ -18,6 +18,7 @@
 #include "Common.hpp"
 #include "Algorithms/FastCopy.hpp"
 #include <functional>
+#include <iterator>
 
 namespace Thea {
 
@@ -35,15 +36,20 @@ namespace Thea {
  *
  * @see BoundedSortedArray
  */
-template < int N, typename T, typename Compare = std::less<T> >
+template < size_t N, typename T, typename Compare = std::less<T> >
 class BoundedSortedArrayN
 {
   private:
+    static_assert(N > 0, "BoundedSortedArrayN: Capacity must be positive");
+
     Compare compare;
-    int num_elems;
+    size_t num_elems;
     T values[N];
 
   public:
+    typedef T const *                              const_iterator;          ///< Iterator over immutable elements.
+    typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;  ///< Reverse iterator over immutable elements.
+
     /**
      * Constructor.
      *
@@ -52,16 +58,33 @@ class BoundedSortedArrayN
     BoundedSortedArrayN(Compare compare_ = Compare()) : compare(compare_), num_elems(0) {}
 
     /** Get the maximum number of elements the array can hold. */
-    static int getCapacity() { return N; }
+    static constexpr size_t getCapacity() { return N; }
 
     /** Get the number of elements in the array. */
-    int size() const { return num_elems; }
+    size_t size() const { return num_elems; }
 
     /** Check if the array is empty or not. */
-    bool isEmpty() const { return num_elems <= 0; }
+    bool empty() const { return num_elems <= 0; }
 
     /** Get a pointer to the data buffer. */
     T const * data() const { return values; }
+
+    const_iterator begin() const noexcept   { return values; }  ///< Iterator to the beginning of the array.
+    const_iterator cbegin() const noexcept  { return values; }  ///< Iterator to the beginning of the array.
+    const_iterator end() const noexcept     { return values + num_elems; }  ///< Iterator to the end of the array.
+    const_iterator cend() const noexcept    { return values + num_elems; }  ///< Iterator to the end of the array.
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator rbegin() const noexcept   { return reverse_iterator(end()); }
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator crbegin() const noexcept  { return reverse_iterator(end()); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator rend() const noexcept     { return reverse_iterator(begin()); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator crend() const noexcept    { return reverse_iterator(begin()); }
 
     /** Get the first element in the sorted sequence. */
     T const & first() const
@@ -78,14 +101,14 @@ class BoundedSortedArrayN
     }
 
     /** Get the element at a given position in the sorted sequence. */
-    T const & operator[](int i) const
+    T const & operator[](size_t i) const
     {
-      debugAssertM(i >= 0 && i < num_elems, format("BoundedSortedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
+      debugAssertM(i < num_elems, format("BoundedSortedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 
     /** Check if the array contains an element with a given value. */
-    bool contains(T const & t) const { return find(t) >= 0; }
+    bool contains(T const & t) const { return find(t) < N; }
 
     /**
      * Check if the array already contains an element with a given value, by testing every element in the set for equality with
@@ -93,7 +116,7 @@ class BoundedSortedArrayN
      */
     template <typename EqualityComparatorT> bool contains(T const & t, EqualityComparatorT const & comp) const
     {
-      for (int i = 0; i < num_elems; ++i)
+      for (size_t i = 0; i < num_elems; ++i)
         if (comp(values[i], t))
           return true;
 
@@ -101,23 +124,23 @@ class BoundedSortedArrayN
     }
 
     /**
-     * Get the index of a given value, or negative if it is not present in the array. If the value occurs multiple times, the
-     * index of any one occurrence is returned.
+     * Get the index of a given value in the array. If the value is not present in the array, the capacity of the array is
+     * returned. If the value occurs multiple times, the index of any one occurrence is returned.
      */
-    int find(T const & t) const
+    size_t find(T const & t) const
     {
-      int lb = lowerBound(t);
-      return (lb < num_elems && !compare(t, values[lb])) ? lb : -1;
+      size_t lb = lowerBound(t);
+      return (lb < num_elems && !compare(t, values[lb])) ? lb : N;
     }
 
     /**
      * Get the index of the first element strictly greater than \a t, or return the capacity of the array (N) if no such element
      * is present.
      */
-    int upperBound(T const & t) const
+    size_t upperBound(T const & t) const
     {
-      int first = 0, mid, step;
-      int count = num_elems;
+      size_t first = 0, mid, step;
+      size_t count = num_elems;
       while (count > 0)
       {
         step = count >> 1;
@@ -138,10 +161,10 @@ class BoundedSortedArrayN
      * Get the index of the first element equal to or greater than \a t, or return the capacity of the array (N) if no such
      * element is present.
      */
-    int lowerBound(T const & t) const
+    size_t lowerBound(T const & t) const
     {
-      int first = 0, mid, step;
-      int count = num_elems;
+      size_t first = 0, mid, step;
+      size_t count = num_elems;
       while (count > 0)
       {
         step = count >> 1;
@@ -170,9 +193,9 @@ class BoundedSortedArrayN
     /**
      * Insert a value into the array.
      *
-     * @return The index of the newly inserted element, or negative if the value could not be inserted.
+     * @return The index of the newly inserted element, or the capacity of the array (N) if the value could not be inserted.
      */
-    int insert(T const & t)
+    size_t insert(T const & t)
     {
       if (num_elems <= 0)
       {
@@ -182,7 +205,7 @@ class BoundedSortedArrayN
       }
       else if (isInsertable(t))
       {
-        int ub = upperBound(t);
+        size_t ub = upperBound(t);
         T * end = values + (num_elems < N ? num_elems : N - 1);
         Algorithms::fastCopyBackward(values + ub, end, end + 1);
         values[ub] = t;
@@ -190,28 +213,28 @@ class BoundedSortedArrayN
         return ub;
       }
 
-      return -1;
+      return N;
     }
 
     /**
      * Insert a value into the array only if it does not already exist.
      *
-     * @return The index of the newly inserted element, or negative if the value could not be inserted.
+     * @return The index of the newly inserted element, or the capacity of the array (N) if the value could not be inserted.
      *
      * @todo Make this faster by merging the containment test with the lookup for the insertion position.
      */
-    int insertUnique(T const & t)
+    size_t insertUnique(T const & t)
     {
       if (contains(t))
-        return -1;
+        return N;
 
       return insert(t);
     }
 
     /** Remove the element at the given position from the array. */
-    void erase(int i)
+    void erase(size_t i)
     {
-      if (i >= 0 && i < num_elems)
+      if (i < num_elems)
       {
         Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
         --num_elems;

@@ -13,7 +13,7 @@
 #include "../Algorithms/ConnectedComponents.hpp"
 #include "../Algorithms/ImlsSurface.hpp"
 #include "../Algorithms/ImplicitSurfaceMesher.hpp"
-#include "../Algorithms/MeshKdTree.hpp"
+#include "../Algorithms/MeshBvh.hpp"
 #include "../Application.hpp"
 #include "../Array.hpp"
 #include "../FilePath.hpp"
@@ -80,8 +80,8 @@ testGeneralMesh(int argc, char * argv[])
   GM::Ptr mesh(new GM("General Mesh"));
   mg.addMesh(mesh);
 
-  Algorithms::MeshKdTree<GM> kdtree;
-  kdtree.add(mg);
+  Algorithms::MeshBvh<GM> bvh;
+  bvh.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
   Array< Array<GM::Face *> > components;
@@ -100,8 +100,8 @@ testDcelMesh(int argc, char * argv[])
   DM::Ptr mesh(new DM("DCEL Mesh"));
   mg.addMesh(mesh);
 
-  Algorithms::MeshKdTree<DM> kdtree;
-  kdtree.add(mg);
+  Algorithms::MeshBvh<DM> bvh;
+  bvh.add(mg);
 
 #ifdef TEST_CONNECTED_COMPONENTS
   Array< Array<DM::Face *> > components;

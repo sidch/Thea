@@ -20,7 +20,7 @@
 #include "ModelDisplay.hpp"
 #include "PointCloud.hpp"
 #include "Util.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/RayIntersectionTester.hpp"
 #include "../../Graphics/MeshCodec.hpp"
@@ -76,10 +76,10 @@ Model::Model(std::string const & initial_mesh)
   selected_sample(-1),
   segment_depth_promotion(0),
   selected_segment(-1),
-  valid_kdtree(true),
-  kdtree(new KdTree),
-  valid_vertex_kdtree(true),
-  vertex_kdtree(new VertexKdTree)
+  valid_bvh(true),
+  bvh(new Bvh),
+  valid_vertex_bvh(true),
+  vertex_bvh(new VertexBvh)
 {
   load(initial_mesh);
 
@@ -88,8 +88,8 @@ Model::Model(std::string const & initial_mesh)
 
 Model::~Model()
 {
-  delete vertex_kdtree;
-  delete kdtree;
+  delete vertex_bvh;
+  delete bvh;
 }
 
 std::string
@@ -104,9 +104,9 @@ Model::getName() const
 }
 
 bool
-Model::isEmpty() const
+Model::empty() const
 {
-  return (!mesh_group || mesh_group->isEmpty()) && (!point_cloud || point_cloud->isEmpty());
+  return (!mesh_group || mesh_group->empty()) && (!point_cloud || point_cloud->empty());
 }
 
 void
@@ -226,11 +226,11 @@ Model::setTransform(AffineTransform3 const & trans_)
 {
   TransformableBaseT::setTransform(trans_);
 
-  if (valid_kdtree)
-    kdtree->setTransform(trans_);
+  if (valid_bvh)
+    bvh->setTransform(trans_);
 
-  if (valid_vertex_kdtree)
-    vertex_kdtree->setTransform(trans_);
+  if (valid_vertex_bvh)
+    vertex_bvh->setTransform(trans_);
 }
 
 void
@@ -238,51 +238,51 @@ Model::clearTransform()
 {
   TransformableBaseT::clearTransform();
 
-  if (valid_kdtree)
-    kdtree->clearTransform();
+  if (valid_bvh)
+    bvh->clearTransform();
 
-  if (valid_vertex_kdtree)
-    vertex_kdtree->clearTransform();
+  if (valid_vertex_bvh)
+    vertex_bvh->clearTransform();
 }
 
 void
 Model::invalidateAll()
 {
-  invalidateVertexKdTree();
-  invalidateKdTree();
+  invalidateVertexBvh();
+  invalidateBvh();
 }
 
 void
-Model::invalidateKdTree()
+Model::invalidateBvh()
 {
-  valid_kdtree = false;
+  valid_bvh = false;
 }
 
 void
-Model::updateKdTree() const
+Model::updateBvh() const
 {
-  if (valid_kdtree) return;
+  if (valid_bvh) return;
 
-  kdtree->clear(false);
+  bvh->clear(false);
 
   if (mesh_group)
   {
-    kdtree->add(*mesh_group);
-    kdtree->init();
+    bvh->add(*mesh_group);
+    bvh->init();
 
     if (hasTransform())
-      kdtree->setTransform(getTransform());
+      bvh->setTransform(getTransform());
 
-    THEA_CONSOLE << getName() << ": Updated kd-tree";
+    THEA_CONSOLE << getName() << ": Updated BVH";
   }
 
-  valid_kdtree = true;
+  valid_bvh = true;
 }
 
 void
-Model::invalidateVertexKdTree()
+Model::invalidateVertexBvh()
 {
-  valid_vertex_kdtree = false;
+  valid_vertex_bvh = false;
 }
 
 namespace ModelInternal {
@@ -306,56 +306,56 @@ struct CollectVerticesFunctor
 } // namespace ModelInternal
 
 void
-Model::updateVertexKdTree() const
+Model::updateVertexBvh() const
 {
-  if (valid_vertex_kdtree) return;
+  if (valid_vertex_bvh) return;
 
-  vertex_kdtree->clear(false);
+  vertex_bvh->clear(false);
 
   Array<MeshVertex *> verts;
   mesh_group->forEachMeshUntil(ModelInternal::CollectVerticesFunctor(&verts));
-  vertex_kdtree->init(verts.begin(), verts.end());
+  vertex_bvh->init(verts.begin(), verts.end());
 
   if (hasTransform())
-    vertex_kdtree->setTransform(getTransform());
+    vertex_bvh->setTransform(getTransform());
 
-  valid_vertex_kdtree = true;
+  valid_vertex_bvh = true;
 }
 
-Model::KdTree const &
-Model::getKdTree(bool recompute_if_invalid) const
+Model::Bvh const &
+Model::getBvh(bool recompute_if_invalid) const
 {
   if (recompute_if_invalid)
-    updateKdTree();
+    updateBvh();
 
-  return *kdtree;
+  return *bvh;
 }
 
-Model::VertexKdTree const &
-Model::getVertexKdTree(bool recompute_if_invalid) const
+Model::VertexBvh const &
+Model::getVertexBvh(bool recompute_if_invalid) const
 {
   if (recompute_if_invalid)
-    updateVertexKdTree();
+    updateVertexBvh();
 
-  return *vertex_kdtree;
+  return *vertex_bvh;
 }
 
 bool
 Model::rayIntersects(Ray3 const & ray, Real max_time) const
 {
-  return getKdTree().rayIntersects<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getBvh().rayIntersects<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 Real
 Model::rayIntersectionTime(Ray3 const & ray, Real max_time) const
 {
-  return getKdTree().rayIntersectionTime<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getBvh().rayIntersectionTime<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 Model::RayStructureIntersection3
 Model::rayIntersection(Ray3 const & ray, Real max_time) const
 {
-  return getKdTree().rayStructureIntersection<Algorithms::RayIntersectionTester>(ray, max_time);
+  return getBvh().rayStructureIntersection<Algorithms::RayIntersectionTester>(ray, max_time);
 }
 
 intx
@@ -364,26 +364,26 @@ Model::closestPoint(Vector3 const & query, Real distance_bound, Real * min_dist,
 {
   using namespace Algorithms;
 
-  if (!isEmpty())
+  if (!empty())
   {
     if (accelerate_with_vertices)
     {
       // Tighten the bound as much as we can with a fast initial query on the set of vertices
-      updateVertexKdTree();
+      updateVertexBvh();
       double fast_distance_bound = 0;
-      intx vertex_index = vertex_kdtree->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(),
-                                                                  &fast_distance_bound);
+      intx vertex_index = vertex_bvh->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(),
+                                                               &fast_distance_bound);
       if (vertex_index >= 0)
         distance_bound = (Real)fast_distance_bound;
     }
 
-    updateKdTree();
+    updateBvh();
     double d = 0;
-    intx index = kdtree->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(), &d, closest_pt);
+    intx index = bvh->closestElement<MetricL2>(query, distance_bound, UniversalCompatibility(), &d, closest_pt);
     if (index >= 0)
     {
       if (min_dist) *min_dist = (Real)d;
-      if (closest_pt_normal) *closest_pt_normal = kdtree->getElements()[index].getNormal();
+      if (closest_pt_normal) *closest_pt_normal = bvh->getElements()[index].getNormal();
       return index;
     }
   }
@@ -405,7 +405,7 @@ Model::pick(Ray3 const & ray)
   }
   else
   {
-    KdTree::NeighborPair cp = kdtree->closestPair<Algorithms::MetricL2>(ray, -1, Algorithms::UniversalCompatibility(), true);
+    Bvh::NeighborPair cp = bvh->closestPair<Algorithms::MetricL2>(ray, -1, Algorithms::UniversalCompatibility(), true);
     if (cp.isValid())
     {
       t = (cp.getQueryPoint() - ray.getOrigin()).dot(ray.getDirection().normalized());
@@ -419,7 +419,7 @@ Model::pick(Ray3 const & ray)
 
   if (index >= 0)
   {
-    KdTree::VertexTriple const & triple = kdtree->getElements()[(size_t)index].getVertices();
+    Bvh::VertexTriple const & triple = bvh->getElements()[(size_t)index].getVertices();
     picked_sample.mesh = const_cast<Mesh *>(triple.getMesh());
     picked_sample.face_index = triple.getMeshFace()->getIndex();
 
@@ -484,7 +484,7 @@ Model::addPickedSample(std::string const & label, bool snap_to_vertex)
 {
   if (valid_pick)
   {
-//     if (label.isEmpty())
+//     if (label.empty())
 //     {
 //       THEA_WARNING << getName() << ": Empty label, cannot add sample";
 //       return false;
@@ -735,7 +735,7 @@ Model::togglePickMesh(Ray3 const & ray, bool extend_to_similar)
   if (isec.isValid())
   {
     size_t index = (size_t)isec.getElementIndex();
-    KdTree::VertexTriple const & triple = kdtree->getElements()[index].getVertices();
+    Bvh::VertexTriple const & triple = bvh->getElements()[index].getVertices();
     Mesh * mesh = const_cast<Mesh *>(triple.getMesh());
 
     Segment const * existing = getSegment(mesh);
@@ -987,32 +987,32 @@ featToColor(Real f0, Real const * f1, Real const * f2)
     return ColorRgb(f0, *f1, *f2);
 }
 
-typedef Algorithms::KdTreeN<Vector3, 3> PointKdTree;
+typedef Algorithms::BvhN<Vector3, 3> PointBvh;
 
 struct VertexFeatureVisitor
 {
-  VertexFeatureVisitor(PointKdTree * fkdtree_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
-  : fkdtree(fkdtree_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
+  VertexFeatureVisitor(PointBvh * fbvh_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  : fbvh(fbvh_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
   {
-    static int const MAX_NBRS = 8;
-    Real scale = std::max(0.2f * fkdtree->getBounds().getExtent().norm(), (Real)1.0e-8);
+    static size_t const MAX_NBRS = 8;
+    Real scale = std::max(0.2f * fbvh->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
-    BoundedSortedArrayN<MAX_NBRS, PointKdTree::NeighborPair> nbrs;
+    BoundedSortedArrayN<MAX_NBRS, PointBvh::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
       nbrs.clear();
-      intx num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
+      intx num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
       if (num_nbrs <= 0)
-        num_nbrs = fkdtree->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
+        num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs);
 
       if (num_nbrs > 0)
       {
         ColorRgb c(0, 0, 0);
         double sum_weights = 0;
-        for (int j = 0; j < num_nbrs; ++j)
+        for (size_t j = 0; j < nbrs.size(); ++j)
         {
           double dist = nbrs[j].getDistance<Algorithms::MetricL2>();
           double weight = Math::fastMinusExp(dist * dist / scale2);
@@ -1037,7 +1037,7 @@ struct VertexFeatureVisitor
     return false;
   }
 
-  PointKdTree * fkdtree;
+  PointBvh * fbvh;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
@@ -1173,8 +1173,8 @@ Model::loadFeatures(std::string const & path_)
       }
     }
 
-    PointKdTree fkdtree(feat_pts.begin(), feat_pts.end());
-    VertexFeatureVisitor visitor(&fkdtree,
+    PointBvh fbvh(feat_pts.begin(), feat_pts.end());
+    VertexFeatureVisitor visitor(&fbvh,
                                  &feat_vals[0][0],
                                  feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
                                  feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
@@ -1478,7 +1478,7 @@ struct DrawVertexNormals
 int8
 Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
-  if (isEmpty())
+  if (empty())
     return true;
 
   if (!options) options = Graphics::RenderOptions::defaults();

@@ -18,7 +18,7 @@
 #include "../../../Common.hpp"
 #include "../../../Graphics/MeshGroup.hpp"
 #include "../../BestFitSphere3.hpp"
-#include "../../MeshKdTree.hpp"
+#include "../../MeshBvh.hpp"
 #include "../../MetricL2.hpp"
 #include "../../PointCollectorN.hpp"
 #include "../../RayIntersectionTester.hpp"
@@ -38,15 +38,15 @@ namespace Local {
  *
  * Gal, Shamir and Cohen-Or, "Pose-Oblivious Shape Signature", IEEE TVCG 2007.
  */
-template < typename MeshT, typename ExternalKdTreeT = MeshKdTree<MeshT> >
+template < typename MeshT, typename ExternalBvhT = MeshBvh<MeshT> >
 class ShapeDiameter
 {
   public:
     typedef MeshT Mesh;  ///< The mesh class.
-    typedef ExternalKdTreeT ExternalKdTree;  ///< A precomputed kd-tree on the mesh.
+    typedef ExternalBvhT ExternalBvh;  ///< A precomputed BVH on the mesh.
 
   private:
-    typedef MeshKdTree<Mesh> KdTree;  ///< A kd-tree on the mesh.
+    typedef MeshBvh<Mesh> Bvh;  ///< A BVH on the mesh.
 
   public:
     /**
@@ -58,10 +58,10 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Mesh const & mesh, Real normalization_scale = -1)
-    : kdtree(new KdTree), precomp_kdtree(nullptr), scale(normalization_scale)
+    : bvh(new Bvh), precomp_bvh(nullptr), scale(normalization_scale)
     {
-      kdtree->add(const_cast<Mesh &>(mesh));  // safe -- the kd-tree won't be used to modify the mesh
-      kdtree->init();
+      bvh->add(const_cast<Mesh &>(mesh));  // safe -- the BVH won't be used to modify the mesh
+      bvh->init();
 
       if (scale <= 0)
       {
@@ -81,10 +81,10 @@ class ShapeDiameter
      *   sphere diameter will be used.
      */
     ShapeDiameter(Graphics::MeshGroup<Mesh> const & mesh_group, Real normalization_scale = -1)
-    : kdtree(new KdTree), precomp_kdtree(nullptr), scale(normalization_scale)
+    : bvh(new Bvh), precomp_bvh(nullptr), scale(normalization_scale)
     {
-      kdtree->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the kd-tree won't be used to modify the mesh
-      kdtree->init();
+      bvh->add(const_cast<Graphics::MeshGroup<Mesh> &>(mesh_group));  // safe -- the BVH won't be used to modify the mesh
+      bvh->init();
 
       if (scale <= 0)
       {
@@ -95,31 +95,31 @@ class ShapeDiameter
     }
 
     /**
-     * Constructs the object to compute the shape diameter at sample points of a shape with a precomputed kd-tree. The kd-tree
+     * Constructs the object to compute the shape diameter at sample points of a shape with a precomputed BVH. The BVH
      * must persist as long as this object does.
      *
-     * @param kdtree_ The precomputed kd-tree representing the shape.
+     * @param bvh_ The precomputed BVH representing the shape.
      * @param normalization_scale The scale of the shape, used to normalize shape diameters to [0, 1]. If <= 0, the bounding
      *   box diagonal will be used.
      *
      * @warning This function uses the <b>bounding box diagonal</b> as the default normalization scale, instead of the bounding
      *   sphere diameter as in the other constructors. This is because the latter cannot currently be computed from only a
-     *   kd-tree. If you want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute
+     *   BVH. If you want to use the bounding sphere diameter (or other value) as the normalization scale, you must compute
      *   it separately and pass it as a parameter to this function.
      */
-    ShapeDiameter(ExternalKdTree const * kdtree_, Real normalization_scale = -1)
-    : kdtree(nullptr), precomp_kdtree(kdtree_), scale(normalization_scale)
+    ShapeDiameter(ExternalBvh const * bvh_, Real normalization_scale = -1)
+    : bvh(nullptr), precomp_bvh(bvh_), scale(normalization_scale)
     {
-      alwaysAssertM(precomp_kdtree, "ShapeDiameter: Precomputed KD-tree cannot be null");
+      alwaysAssertM(precomp_bvh, "ShapeDiameter: Precomputed BVH cannot be null");
 
       if (scale <= 0)
-        scale = precomp_kdtree->getBounds().getExtent().norm();
+        scale = precomp_bvh->getBounds().getExtent().norm();
     }
 
     /** Destructor. */
     ~ShapeDiameter()
     {
-      delete kdtree;
+      delete bvh;
     }
 
     /**
@@ -140,8 +140,8 @@ class ShapeDiameter
      */
     double compute(Vector3 const & position, bool only_hit_interior_surfaces = true) const
     {
-      intx nn_index = precomp_kdtree ? precomp_kdtree->template closestElement<MetricL2>(position)
-                                     : kdtree->template closestElement<MetricL2>(position);
+      intx nn_index = precomp_bvh ? precomp_bvh->template closestElement<MetricL2>(position)
+                                  : bvh->template closestElement<MetricL2>(position);
       if (nn_index < 0)
       {
         THEA_WARNING << "ShapeDiameter: Query point cannot be mapped to mesh, returning negative SDF value";
@@ -149,8 +149,8 @@ class ShapeDiameter
       }
 
       // Use the face normal and not the smooth normal, to handle sharp edged slabs etc
-      Vector3 normal = precomp_kdtree ? precomp_kdtree->getElements()[(size_t)nn_index].getNormal()
-                                      : kdtree->getElements()[(size_t)nn_index].getNormal();
+      Vector3 normal = precomp_bvh ? precomp_bvh->getElements()[(size_t)nn_index].getNormal()
+                                   : bvh->getElements()[(size_t)nn_index].getNormal();
 
       return compute(position, normal, only_hit_interior_surfaces);
     }
@@ -212,9 +212,9 @@ class ShapeDiameter
       {
         Vector3 dir = rot * CONE_DIRS[i];
         Ray3 ray(position + offset, dir);
-        RayStructureIntersection3 isec = precomp_kdtree
-                                       ? precomp_kdtree->template rayStructureIntersection<RayIntersectionTester>(ray)
-                                       : kdtree->template rayStructureIntersection<RayIntersectionTester>(ray);
+        RayStructureIntersection3 isec = precomp_bvh
+                                       ? precomp_bvh->template rayStructureIntersection<RayIntersectionTester>(ray)
+                                       : bvh->template rayStructureIntersection<RayIntersectionTester>(ray);
 
         if (isec.isValid() && (!only_hit_interior_surfaces || isec.getNormal().dot(dir) >= 0))
         {
@@ -258,8 +258,8 @@ class ShapeDiameter
     }
 
   private:
-    KdTree * kdtree;  ///< Self-owned KD-tree on the mesh for computing ray intersections.
-    ExternalKdTree const * precomp_kdtree;  ///< Precomputed KD-tree on the mesh for computing ray intersections.
+    Bvh * bvh;  ///< Self-owned BVH on the mesh for computing ray intersections.
+    ExternalBvh const * precomp_bvh;  ///< Precomputed BVH on the mesh for computing ray intersections.
     Real scale;  ///< The normalization length.
 
 }; // class ShapeDiameter

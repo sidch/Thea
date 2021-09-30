@@ -625,7 +625,7 @@ PointCloud::uploadToGraphicsSystem(Graphics::IRenderSystem & render_system)
 int8
 PointCloud::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions const * options) const
 {
-  if (isEmpty())
+  if (empty())
     return true;
 
   if (!options) options = Graphics::RenderOptions::defaults();

@@ -39,7 +39,7 @@ walk(PointSet3 const & surf, intx seed_index, intx num_steps, double * features)
   for (intx i = 0; i < num_steps; ++i, base_index += 3)
   {
     auto const & nbrs = sample->getNeighbors();
-    if (nbrs.isEmpty())
+    if (nbrs.empty())
       return i;
 
     intx next_index = Random::common().integer(0, nbrs.size() - 1);
@@ -82,7 +82,7 @@ RandomWalks::compute(Vector3 const & position, intx num_steps, double * features
   }
 
   // Find the sample closest to the query position and use it as the source for walks
-  intx seed_index = surf->getKdTree().closestElement<MetricL2>(position);
+  intx seed_index = surf->getBvh().closestElement<MetricL2>(position);
   alwaysAssertM(seed_index >= 0, "RandomWalks: Seed sample for random walks not found");
 
   // Make sure the proximity graph exists, since we don't actually call getGraph()

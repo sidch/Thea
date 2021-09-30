@@ -31,7 +31,7 @@ SpinImage::compute(Vector3 const & position, int num_radial_bins, int num_height
 {
   alwaysAssertM(surf->hasNormals(), "SpinImage: Cannot infer query normal from surface lacking normals");
 
-  intx nn_index = surf->getKdTree().closestElement<MetricL2>(position);
+  intx nn_index = surf->getBvh().closestElement<MetricL2>(position);
   if (nn_index < 0)
   {
     THEA_WARNING << "SpinImage: Query point cannot be mapped to mesh, spin image set to zero";

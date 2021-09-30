@@ -12,13 +12,14 @@
 //
 //============================================================================
 
-#ifndef __Thea_Algorithms_KdTreeN_hpp__
-#define __Thea_Algorithms_KdTreeN_hpp__
+#ifndef __Thea_Algorithms_BvhN_hpp__
+#define __Thea_Algorithms_BvhN_hpp__
 
 #include "../Common.hpp"
 #include "../AffineTransformN.hpp"
 #include "../Array.hpp"
 #include "../AttributedObject.hpp"
+#include "../BoundedSortedArrayN.hpp"
 #include "../Math.hpp"
 #include "../Noncopyable.hpp"
 #include "../Random.hpp"
@@ -30,6 +31,7 @@
 #include "RangeQueryStructure.hpp"
 #include "RayQueryStructureN.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -39,11 +41,11 @@ namespace Thea {
 namespace Algorithms {
 
 // Forward declaration
-template <typename T, int N, typename S, typename A> class KdTreeN;
+template <typename T, int N, typename S, typename A, int D, typename V> class BvhN;
 
-namespace KdTreeNInternal {
+namespace BvhNInternal {
 
-// A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries.
+// A point sample drawn from a BVH element, used for accelerating nearest neighbor queries.
 template <typename T, int N, typename ScalarT>
 struct ElementSample
 {
@@ -78,8 +80,8 @@ class SampleFilter : public Filter< ElementSample<T, N, ScalarT> >
 
 }; // struct SampleFilter
 
-// A dummy class with a subset of the interface of KdTreeN, whose functions are all no-ops. Used as the acceleration structure
-// for acceleration structures, to avoid recursive instantiation overflow.
+// A dummy class with the interface of BvhN, whose functions are all no-ops. Used as the acceleration structure for acceleration
+// structures, to avoid recursive instantiation overflow.
 template <typename T, int N, typename ScalarT>
 struct DummyAccelerationStructure
 {
@@ -102,18 +104,19 @@ struct DummyAccelerationStructure
 
 }; // DummyAccelerationStructure
 
-// Defines the acceleration structure for a kd-tree.
-template <typename T, int N, typename ScalarT, typename NodeAttributeT>
+// Defines the acceleration structure for a BVH.
+template <typename T, int N, typename ScalarT, typename NodeAttributeT, int MaxDegree, typename BoundingVolumeT>
 struct AccelerationTraits
 {
   /** Structure to speed up nearest neighbor queries. */
-  typedef KdTreeN< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT > NearestNeighborAccelerationStructure;
+  typedef BvhN< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT, 2, AxisAlignedBoxN<N, ScalarT> >
+          NearestNeighborAccelerationStructure;
 
 }; // class AccelerationTraits
 
-// Defines a dummy acceleration structure for a kd-tree that is itself an acceleration structure.
-template <typename T, int N, typename ScalarT, typename NodeAttributeT>
-struct AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT >
+// Defines a dummy acceleration structure for a BVH that is itself an acceleration structure.
+template <typename T, int N, typename ScalarT, typename NodeAttributeT, int MaxDegree, typename BoundingVolumeT >
+struct AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttributeT, MaxDegree, BoundingVolumeT >
 {
   typedef DummyAccelerationStructure< ElementSample<T, N, ScalarT>, N, ScalarT > NearestNeighborAccelerationStructure;
 
@@ -162,38 +165,79 @@ template <typename CompatibilityFunctorT> class SampleCompatibility
 
 }; // class SampleCompatibility
 
-} // namespace KdTreeNInternal
-
-template <typename T, int N, typename ScalarT>
-class IsPointN< KdTreeNInternal::ElementSample<T, N, ScalarT>, N >
+// Check if a distance value \a lhs is less than another distance value \a rhs. All negative distances are considered equal, and
+// greater than any positive value.
+template <typename U, typename V> bool distanceLessThan(U lhs, V rhs)
 {
-  public:
-    static bool const value = true;
-};
+  return (lhs >= 0 && (rhs < 0 || lhs < rhs));
+}
+
+} // namespace BvhNInternal
 
 template <typename T, int N, typename ScalarT>
-class PointTraitsN< KdTreeNInternal::ElementSample<T, N, ScalarT>, N, ScalarT >
+class IsPointN< BvhNInternal::ElementSample<T, N, ScalarT>, N > { public: static bool const value = true; };
+
+template <typename T, int N, typename ScalarT>
+class PointTraitsN< BvhNInternal::ElementSample<T, N, ScalarT>, N, ScalarT >
 {
   public:
     typedef Vector<N, ScalarT> VectorT;
-    static VectorT getPosition(KdTreeNInternal::ElementSample<T, N, ScalarT> const & sample) { return sample.position; }
+    static VectorT getPosition(BvhNInternal::ElementSample<T, N, ScalarT> const & sample) { return sample.position; }
+};
+
+// Define a DummyAccelerationStructure as a logical point, to enable MetricL2 to handle it and thereby allow compilation to
+// proceed. These functions will never actually be called.
+template <typename T, int N, typename ScalarT>
+class IsPointN< BvhNInternal::DummyAccelerationStructure<T, N, ScalarT>, N > { public: static bool const value = true; };
+
+template <typename T, int N, typename ScalarT>
+class PointTraitsN< BvhNInternal::DummyAccelerationStructure<T, N, ScalarT>, N, ScalarT >
+{
+  public:
+    typedef Vector<N, ScalarT> VectorT;
+
+    static VectorT getPosition(BvhNInternal::DummyAccelerationStructure<T, N, ScalarT> const & dummy)
+    {
+      (void)dummy;
+      return VectorT::Constant(Math::inf<ScalarT>());
+    }
 };
 
 /**
- * A kd-tree for a set of bounded objects in N-space. IsBoundedNN<T, N> must evaluate to true, and BoundedTraitsN<T, N>
- * appropriately defined to compute bounding boxes of T objects. The optional template parameter <code>NodeAttributeT</code>
- * must be default-constructible.
+ * A bounding volume hierarchy (BVH) for a set of bounded objects in N-space. IsBoundedN<T, N> must evaluate to true, and
+ * BoundedTraitsN<T, N> appropriately defined to compute bounding volumes of T objects. The optional template parameter
+ * <code>NodeAttributeT</code> must be default-constructible.
  *
- * An affine transformation may be applied to the kd-tree. The tree does <em>not</em> need to be recomputed after the
+ * BvhN supports fast nearest neighbor (including BVH-to-BVH), range, and ray intersection queries. An optional auxiliary
+ * structure based on point samples can be automatically computed to accelerate nearest neighbor queries
+ * (see enableNearestNeighborAcceleration()).
+ *
+ * This class is designed to handle many different types of spatial hierarchies, including kd-trees (in any dimension),
+ * quadtrees (in 2 dimensions), octrees (in 3 dimension) etc. The appropriate type of hierarchy is selected (or auto-selected)
+ * via the <tt>method</tt> parameter of the init() function. (Currently only kd-tree construction is supported.) Note that the
+ * MaxDegree parameter, which specifies the maximum number of children a tree node can have, must be at least 2 for kd-trees, 4
+ * for quadtrees, and 8 for octrees.
+ *
+ * The default bounding volume is an axis-aligned bounding box. A different volume (e.g. a ball, for a bounding sphere
+ * hierarchy) may be specified using the <tt>BoundingVolumeT</tt> template parameter, as long it has the same interface for
+ * merging, range intersection, nearest neighbors, raycasting, etc.
+ *
+ * An affine transformation may be applied to the BVH. The tree does <em>not</em> need to be recomputed after the
  * transformation, though all operations may be somewhat slower (the precise overhead depends on how difficult it is to compute
  * distances, intersections etc after a transform). Normally, this means that the elements of type T should be affine
  * transformable via Transformer::transform().
+ *
+ * If the elements in the tree are modified in such a way that siblings stay relatively close together (e.g. an articulating
+ * human), then the bounding volumes can be rapidly updated, without changing the tree topology, by calling updateNodeBounds().
+ * This is much faster than recomputing the tree from scratch.
  */
 template < typename T,
            int N,
            typename ScalarT = Real,
-           typename NodeAttributeT = NullAttribute >
-class /* THEA_API */ KdTreeN
+           typename NodeAttributeT = NullAttribute,
+           int MaxDegree = 2,
+           typename BoundingVolumeT = AxisAlignedBoxN<N, ScalarT> >
+class /* THEA_API */ BvhN
 : public RangeQueryStructure<T>,
   public ProximityQueryStructureN<N, ScalarT>,
   public RayQueryStructureN<N, ScalarT>,
@@ -201,17 +245,21 @@ class /* THEA_API */ KdTreeN
   private Noncopyable
 {
   private:
-    typedef RangeQueryStructure<T>                                              RangeQueryBaseT;
-    typedef ProximityQueryStructureN<N, ScalarT>                                ProximityQueryBaseT;
-    typedef RayQueryStructureN<N, ScalarT>                                      RayQueryBaseT;
-    typedef Transformable< AffineTransformN<N, ScalarT> >                       TransformableBaseT;
-    typedef KdTreeNInternal::AccelerationTraits<T, N, ScalarT, NodeAttributeT>  AccelerationTraitsT;
-    typedef BoundedTraitsN<T, N, ScalarT>                                       BoundedTraitsT;
+    static_assert(N >= 1, "BvhN: Dimensionality must be at least 1");
+    static_assert(MaxDegree >= 2, "BvhN: Maximum degree (number of children) must be at least 2");
+
+    typedef RangeQueryStructure<T>                         RangeQueryBaseT;
+    typedef ProximityQueryStructureN<N, ScalarT>           ProximityQueryBaseT;
+    typedef RayQueryStructureN<N, ScalarT>                 RayQueryBaseT;
+    typedef Transformable< AffineTransformN<N, ScalarT> >  TransformableBaseT;
+    typedef BoundedTraitsN<T, N, ScalarT>                  BoundedTraitsT;
+
+    typedef BvhNInternal::AccelerationTraits<T, N, ScalarT, NodeAttributeT, MaxDegree, BoundingVolumeT>  AccelerationTraitsT;
 
   public:
-    typedef size_t ElementIndex;  ///< Index of an element in the kd-tree.
+    typedef size_t ElementIndex;  ///< Index of an element in the BVH.
     typedef typename ProximityQueryBaseT::NeighborPair NeighborPair;  ///< A pair of neighboring elements.
-    typedef typename TransformableBaseT::Transform Transform;  ///< Transform applied to the kd-tree.
+    typedef typename TransformableBaseT::Transform Transform;  ///< Transform applied to the BVH.
 
   private:
     /**
@@ -228,26 +276,16 @@ class /* THEA_API */ KdTreeN
             /** Constructor. */
             Buffer(size_t capacity_ = 0) : data(nullptr), capacity(capacity_), current_end(0)
             {
-              alwaysAssertM(capacity_ > 0, "KdTreeN: Memory pool buffer capacity must be positive");
+              alwaysAssertM(capacity_ > 0, "BvhN: Memory pool buffer capacity must be positive");
               if (capacity > 0)
-              {
                 data = new U[capacity];
-                // THEA_CONSOLE << "Allocated data block " << data << " for buffer " << this;
-              }
             }
 
             /** Destructor. */
-            ~Buffer()
-            {
-              // THEA_CONSOLE << "Deleting data " << data << " of buffer " << this;
-              delete [] data;
-            }
+            ~Buffer() { delete [] data; }
 
             /** Clears the buffer without deallocating buffer memory. */
-            void reset()
-            {
-              current_end = 0;
-            }
+            void reset() { current_end = 0; }
 
             /**
              * Allocate a block of elements and return a pointer to the first allocated element, or null if the allocation
@@ -255,8 +293,6 @@ class /* THEA_API */ KdTreeN
              */
             U * alloc(size_t num_elems)
             {
-              // THEA_CONSOLE << "KdTreeN: Allocating " << num_elems << " elements from buffer of capacity " << capacity;
-
               if (current_end + num_elems > capacity)
                 return nullptr;
 
@@ -304,12 +340,7 @@ class /* THEA_API */ KdTreeN
         {
           intx next_buffer = current_buffer < 0 ? 0 : current_buffer + 1;
           if ((size_t)next_buffer >= buffers.size())
-          {
             buffers.push_back(new Buffer(buffer_capacity));
-
-            // THEA_CONSOLE << "KdTreeN: Added buffer to memory pool " << this << ", current_buffer = " << current_buffer
-            //              << ", next_buffer = " << next_buffer;
-          }
 
           current_buffer = next_buffer;
           return *buffers[(size_t)current_buffer];
@@ -317,40 +348,25 @@ class /* THEA_API */ KdTreeN
 
       public:
         /** Constructor. */
-        MemoryPool() : buffer_capacity(0), current_buffer(-1)
-        {
-          // THEA_CONSOLE << "KdTreeN: Creating memory pool " << this;
-        }
+        MemoryPool() : buffer_capacity(0), current_buffer(-1) {}
 
         /** Destructor. */
-        ~MemoryPool()
-        {
-          clear(true);
-          // THEA_CONSOLE << "KdTreeN: Destroyed memory pool " << this;
-        }
+        ~MemoryPool() { clear(true); }
 
         /** Initialize the memory pool to hold buffers of a given capacity. Previous data in the pool is deallocated. */
         void init(size_t buffer_capacity_)
         {
-          // THEA_CONSOLE << "KdTreeN: Initializing memory pool " << this << " with buffer capacity " << buffer_capacity_
-          //              << " elements";
-
           clear(true);
 
           buffer_capacity = buffer_capacity_;
         }
 
         /** Get the maximum number of elements of type T that a single buffer can hold. */
-        size_t getBufferCapacity() const
-        {
-          return buffer_capacity;
-        }
+        size_t getBufferCapacity() const { return buffer_capacity; }
 
         /** Reset the memory pool, optionally deallocating and removing all buffers. */
         void clear(bool deallocate_all_memory = true)
         {
-          // THEA_CONSOLE << "KdTreeN: Clearing memory pool " << this;
-
           if (deallocate_all_memory)
           {
             for (size_t i = 0; i < buffers.size(); ++i)
@@ -370,7 +386,7 @@ class /* THEA_API */ KdTreeN
         /** Allocate a block of elements from the pool and return a pointer to the first allocated element. */
         U * alloc(size_t num_elems)
         {
-          alwaysAssertM(num_elems <= buffer_capacity, "KdTreeN: A single memory pool allocation cannot exceed buffer capacity");
+          alwaysAssertM(num_elems <= buffer_capacity, "BvhN: A single memory pool allocation cannot exceed buffer capacity");
 
           if (current_buffer >= 0)
           {
@@ -423,44 +439,45 @@ class /* THEA_API */ KdTreeN
     };
 
   public:
-    THEA_DECL_SMART_POINTERS(KdTreeN)
+    THEA_DECL_SMART_POINTERS(BvhN)
 
-    typedef T                                    Element;        ///< Type of elements in the kd-tree.
-    typedef T                                    value_type;     ///< Type of elements in the kd-tree (STL convention).
-    typedef NodeAttributeT                       NodeAttribute;  ///< Attributes attached to nodes.
+    typedef T                Element;         ///< Type of elements in the BVH.
+    typedef T                value_type;      ///< Type of elements in the BVH (STL convention).
+    typedef NodeAttributeT   NodeAttribute;   ///< Attributes attached to nodes.
+    typedef BoundingVolumeT  BoundingVolume;  ///< Bounding volume for elements in N-space.
 
     typedef typename ProximityQueryBaseT::VectorT              VectorT;                    ///< Vector in N-space.
-    typedef AxisAlignedBoxN<N, ScalarT>                        AxisAlignedBoxT;            ///< Axis-aligned box in N-space.
     typedef typename RayQueryBaseT::RayT                       RayT;                       ///< Ray in N-space.
     typedef typename RayQueryBaseT::RayStructureIntersectionT  RayStructureIntersectionT;  /**< Ray intersection structure in
                                                                                                 N-space. */
 
-    /** A point sample drawn from a kd-tree element, used for accelerating nearest neighbor queries. */
-    typedef KdTreeNInternal::ElementSample<T, N, ScalarT> ElementSample;
+    /** A point sample drawn from a BVH element, used for accelerating nearest neighbor queries. */
+    typedef BvhNInternal::ElementSample<T, N, ScalarT> ElementSample;
 
     /** Structure to speed up nearest neighbor queries. */
     typedef typename AccelerationTraitsT::NearestNeighborAccelerationStructure NearestNeighborAccelerationStructure;
 
-    /** A node of the kd-tree. Only immutable objects of this class should be exposed by the external kd-tree interface. */
+    /** A node of the BVH. Only immutable objects of this class should be exposed by the external BVH interface. */
     class Node : public AttributedObject<NodeAttributeT>
     {
       private:
+        typedef std::array<Node *, MaxDegree> ChildArray;
+
         intx depth;
-        AxisAlignedBoxT bounds;
+        BoundingVolume bounds;
         size_t num_elems;
         ElementIndex * elems;
-        Node * lo;
-        Node * hi;
+        ChildArray children;
 
-        friend class KdTreeN;
+        friend class BvhN;
 
         void init(intx depth_)
         {
           depth = depth_;
-          bounds = AxisAlignedBoxT();
+          bounds = BoundingVolume();
           num_elems = 0;
           elems = nullptr;
-          lo = hi = nullptr;
+          children.fill(nullptr);
         }
 
       public:
@@ -468,18 +485,18 @@ class /* THEA_API */ KdTreeN
         typedef ElementIndex const * ElementIndexConstIterator;
 
         /** Constructor. */
-        Node(intx depth_ = 0) : depth(depth_), lo(nullptr), hi(nullptr) {}
+        Node(intx depth_ = 0) : depth(depth_) { children.fill(nullptr); }
 
         /** Get the depth of the node in the tree (the root is at depth 0). */
         intx getDepth() const { return depth; }
 
-        /** Get the bounding box of the node. */
-        AxisAlignedBoxT const & getBounds() const { return bounds; }
+        /** Get the bounding volume of the node. */
+        BoundingVolume const & getBounds() const { return bounds; }
 
         /**
          * Get the number of element indices stored at this node. This is <b>not</b> the number of elements within the node's
-         * bounding box: in memory-saving mode, indices of all such elements are only held at the leaves of the subtree rooted
-         * at this node.
+         * bounding volume: in memory-saving mode, indices of all such elements are only held at the leaves of the subtree
+         * rooted at this node.
          */
         intx numElementIndices() const { return (intx)num_elems; }
 
@@ -489,28 +506,59 @@ class /* THEA_API */ KdTreeN
         /** Get an iterator to one past the last element index stored at the node. */
         ElementIndexConstIterator elementIndicesEnd() const { return elems + num_elems; }
 
-        /** Get the child corresponding to the lower half of the range. */
-        Node const * getLowChild() const { return lo; }
+        /**
+         * Get the maximum possible number of children of a node. It is possible no node in a tree actually has this many
+         * children.
+         */
+        static constexpr int maxDegree() { return MaxDegree; }
 
-        /** Get the child containing the upper half of the range. */
-        Node const * getHighChild() const { return hi; }
+        /** Get the child with a given index. */
+        Node const * getChild(intx i) const { return children[(size_t)i]; }
 
         /** Check if the node is a leaf (both children are null) are not. */
-        bool isLeaf() const { return !(lo || hi); }
+        bool isLeaf() const
+        {
+          for (auto c : children)
+            if (c) { return false; }
 
-    }; // Node
+          return true;
+        }
+
+    }; // class Node
+
+    /** The method used for tree construction (enum class). */
+    struct Method
+    {
+      /** Supported values. */
+      enum Value
+      {
+        AUTO,      ///< Auto-select a suitable method based on dimensionality, maximum degree etc.
+        KDTREE,    ///< Construct a kd-tree (split node with a single axis-aligned plane in each subdivision step).
+        QUADTREE,  ///< Construct a quadtree (split node into 4 quadrants in each subdivision step). Only for <tt>N == 2</tt>.
+        OCTREE,    ///< Construct an octree (split node into 8 octants in each subdivision step). Only for <tt>N == 3</tt>.
+      };
+
+      THEA_ENUM_CLASS_BODY(Method)
+
+      THEA_ENUM_CLASS_STRINGS_BEGIN(Method)
+        THEA_ENUM_CLASS_STRING(AUTO,      "auto")
+        THEA_ENUM_CLASS_STRING(KDTREE,    "kd-tree")
+        THEA_ENUM_CLASS_STRING(QUADTREE,  "quadtree")
+        THEA_ENUM_CLASS_STRING(OCTREE,    "octree")
+      THEA_ENUM_CLASS_STRINGS_END(Method)
+    };
 
   protected:
-    typedef MemoryPool<Node> NodePool;  ///< A pool for quickly allocating kd-tree nodes.
+    typedef MemoryPool<Node> NodePool;  ///< A pool for quickly allocating BVH nodes.
     typedef MemoryPool<ElementIndex> IndexPool;  ///< A pool for quickly allocating element indices.
 
   private:
     typedef Array<T> ElementArray;  ///< An array of elements.
-    typedef KdTreeNInternal::SampleFilter<T, N, ScalarT> SampleFilter;  ///< Filter for samples, wrapping a filter for elements.
+    typedef BvhNInternal::SampleFilter<T, N, ScalarT> SampleFilter;  ///< Filter for samples, wrapping a filter for elements.
 
   public:
     /** Default constructor. */
-    KdTreeN()
+    BvhN()
     : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0),
       transform_inverse(AffineTransformN<N, ScalarT>::identity()),
       transform_inverse_transpose(Matrix<N, N, ScalarT>::Identity()),
@@ -522,6 +570,7 @@ class /* THEA_API */ KdTreeN
      *
      * @param begin Points to the first element to be added.
      * @param end Points to one position beyond the last element to be added.
+     * @param method The tree construction method. Pass Method::AUTO to auto-select a suitable method.
      * @param max_depth_ Maximum depth of the tree. The root is at depth zero. Use a negative argument to auto-select a suitable
      *   value.
      * @param max_elems_per_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
@@ -530,14 +579,14 @@ class /* THEA_API */ KdTreeN
      *   down range searches since every positive result will only be obtained at the leaves.
      */
     template <typename InputIterator>
-    KdTreeN(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
-            bool save_memory = false)
+    BvhN(InputIterator begin, InputIterator end, Method method = Method::AUTO, intx max_depth_ = -1,
+         intx max_elems_per_leaf_ = -1, bool save_memory = false)
     : root(nullptr), num_elems(0), num_nodes(0), max_depth(0), max_elems_per_leaf(0),
       transform_inverse(AffineTransformN<N, ScalarT>::identity()),
       transform_inverse_transpose(Matrix<N, N, ScalarT>::Identity()),
       accelerate_nn_queries(false), valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {
-      init(begin, end, max_elems_per_leaf_, max_depth_, save_memory, false /* no previous data to deallocate */);
+      init(begin, end, method, max_elems_per_leaf_, max_depth_, save_memory, /* no previous data to deallocate, hence */ false);
     }
 
     /**
@@ -546,6 +595,7 @@ class /* THEA_API */ KdTreeN
      *
      * @param begin Points to the first element to be added.
      * @param end Points to one position beyond the last element to be added.
+     * @param method The tree construction method. Pass Method::AUTO to auto-select a suitable method.
      * @param max_depth_ Maximum depth of the tree. The root is at depth zero. Use a negative argument to auto-select a suitable
      *   value.
      * @param max_elems_per_leaf_ Maximum number of elements in a leaf (unless the depth exceeds the maximum). Use a negative
@@ -555,13 +605,25 @@ class /* THEA_API */ KdTreeN
      * @param deallocate_previous_memory If true, all previous data held in internal memory pools is explicitly deallocated.
      *   Else, all such space is reused and overwritten when possible. If \a save_memory is true, or some filters are active,
      *   this flag may not be quite as effective since it's more likely that some space will be allocated/deallocated. Note that
-     *   if this flag is set to false, the space used internally by the kd-tree will not decrease except in some special
+     *   if this flag is set to false, the space used internally by the BVH will not decrease except in some special
      *   implementation-specific cases.
      */
     template <typename InputIterator>
-    void init(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
-              bool save_memory = false, bool deallocate_previous_memory = true)
+    void init(InputIterator begin, InputIterator end, Method method = Method::AUTO, intx max_depth_ = -1,
+              intx max_elems_per_leaf_ = -1, bool save_memory = false, bool deallocate_previous_memory = true)
     {
+      if (method == Method::AUTO)
+      {
+        if (MaxDegree >= 4 && N == 2)
+          method = Method::QUADTREE;
+        else if (MaxDegree >= 8 && N == 3)
+          method = Method::OCTREE;
+        else if (MaxDegree >= 2)
+          method = Method::KDTREE;
+        else
+          throw Error("BvhN: Could not infer tree construction method");
+      }
+
       clear(deallocate_previous_memory);
 
       if (deallocate_previous_memory)
@@ -616,95 +678,23 @@ class /* THEA_API */ KdTreeN
       if (num_elems <= 0)
         return;
 
-      static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 5;
-      max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
-
-      // The fraction of elements held by the larger node at each split is 0.5
-      static double const SPLIT_FRACTION = 0.5;
-      intx est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
-      max_depth = max_depth_;
-      if (max_depth < 0)
-        max_depth = est_depth;
-      else if (max_depth < est_depth)
-        est_depth = max_depth;
-
-      // THEA_CONSOLE << "KdTreeN: max_depth = " << max_depth << ", est_depth = " << est_depth;
-
-      // Each index is stored at most once at each level
-      size_t BUFFER_SAFETY_MARGIN = 10;
-      size_t index_buffer_capacity = num_elems + BUFFER_SAFETY_MARGIN;
-      if (!save_memory)
-        index_buffer_capacity *= (size_t)(1 + est_depth);  // reserve space for all levels at once
-
-      if (deallocate_previous_memory || index_buffer_capacity > 1.3 * index_pool.getBufferCapacity())
+      switch (method)
       {
-        // THEA_CONSOLE << "KdTreeN: Resizing index pool: old buffer capacity = " << index_pool.getBufferCapacity()
-        //              << ", new buffer capacity = " << index_buffer_capacity;
-        index_pool.init(index_buffer_capacity);
+        case Method::KDTREE:
+          initKdTree(begin, end, max_depth_, max_elems_per_leaf_, save_memory, deallocate_previous_memory); break;
+
+        default: throw Error("BvhN: Unsupported BVH construction method");
       }
-
-      // Assume a complete, balanced binary tree upto the estimated depth to guess the number of leaf nodes
-      size_t node_buffer_capacity = (size_t)(1 << est_depth) + BUFFER_SAFETY_MARGIN;
-      if (deallocate_previous_memory || node_buffer_capacity > 1.3 * node_pool.getBufferCapacity())
-      {
-        // THEA_CONSOLE << "KdTreeN: Resizing node pool: old buffer capacity = " << node_pool.getBufferCapacity()
-        //              << ", new buffer capacity = " << node_buffer_capacity;
-        node_pool.init(node_buffer_capacity);
-      }
-
-      // Create the root node
-      root = node_pool.alloc(1);
-      root->init(0);
-      num_nodes = 1;
-
-      // THEA_CONSOLE << "Allocated root " << root << " from mempool " << &node_pool;
-
-      root->num_elems = num_elems;
-      root->elems = index_pool.alloc(root->num_elems);
-
-      AxisAlignedBoxT elem_bounds;
-      for (size_t i = 0; i < (size_t)num_elems; ++i)
-      {
-        root->elems[i] = i;
-
-        BoundedTraitsT::getBounds(elems[i], elem_bounds);
-        root->bounds.merge(elem_bounds);
-      }
-
-      // Expand the bounding box slightly to handle numerical error
-      root->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
-
-      if (save_memory)
-      {
-        // Estimate the maximum number of indices that will need to be held in the scratch pool at any time during depth-first
-        // traversal with earliest-possible deallocation. This is
-        //
-        //      #elements * (sum of series 1 + 1 + SPLIT_FRACTION + SPLIT_FRACTION^2 + ... + SPLIT_FRACTION^(est_depth - 1))
-        //  <=  #elements * (1 + 1 / (1 - SPLIT_FRACTION))
-        //
-        size_t est_max_path_indices = (size_t)(num_elems * (1 + 1 / (1 - SPLIT_FRACTION)));
-        // THEA_CONSOLE << "KdTreeN: Estimated maximum number of indices on a single path = " << est_max_path_indices;
-
-        // Create a temporary pool for scratch storage
-        IndexPool tmp_index_pool;
-        tmp_index_pool.init(est_max_path_indices + BUFFER_SAFETY_MARGIN);
-
-        createTree(root, true, &tmp_index_pool, &index_pool);
-      }
-      else
-        createTree(root, false, &index_pool, nullptr);
-
-      invalidateBounds();
     }
 
     /**
-     * Update cached properties of all elements in the kd-tree, or in one of its subtrees. In this base class, this function
-     * does nothing, but see MeshKdTree for a non-trivial override.
+     * Update cached properties of all elements in the BVH, or in one of its subtrees. In this base class, this function
+     * does nothing, but see MeshBvh for a non-trivial override.
      */
     virtual void updateElements(Node const * start = nullptr) {}
 
     /**
-     * Recompute the bounding box of every node in the tree (or a specific subtree) from the element data at the leaves. The
+     * Recompute the bounding volume of every node in the tree (or a specific subtree) from the element data at the leaves. The
      * tree topology is unchanged. This function is useful for quickly updating the tree when relative element sizes and
      * element-to-element proximity do not change much (e.g. under character articulations). Of course, this also requires that
      * the leaf elements (objects of type <tt>T</tt>) be pointers or other handles to external data that can be changed outside
@@ -736,7 +726,12 @@ class /* THEA_API */ KdTreeN
     }
 
     /** Destructor. */
-    ~KdTreeN() { clear(true); }
+    ~BvhN() { clear(true); }
+
+    /**
+     * Get the maximum possible number of children of a node. It is possible no node in a tree actually has this many children.
+     */
+    static constexpr int maxDegree() { return MaxDegree; }
 
     /**
      * Enable acceleration of nearest neighbor queries with an auxiliary structure on a sparse set of points.
@@ -819,10 +814,10 @@ class /* THEA_API */ KdTreeN
         acceleration_structure->clearTransform();
     }
 
-    /** Get the inverse of the transform applied to the kd-tree. */
+    /** Get the inverse of the transform applied to the BVH. */
     AffineTransformN<N, ScalarT> const & getTransformInv() const { return transform_inverse; }
 
-    /** Get the transpose of the inverse of the linear part of the transform applied to the kd-tree. */
+    /** Get the transpose of the inverse of the linear part of the transform applied to the BVH. */
     Matrix<N, N, ScalarT> const & getLinearTransformInvTr() const { return transform_inverse_transpose; }
 
     /**
@@ -846,7 +841,7 @@ class /* THEA_API */ KdTreeN
     }
 
     /** Check if the tree is empty. */
-    bool isEmpty() const { return num_elems <= 0; }
+    bool empty() const { return num_elems <= 0; }
 
     /** Get the number of elements in the tree. The elements themselves can be obtained with getElements(). */
     intx numElements() const { return num_elems; }
@@ -865,7 +860,7 @@ class /* THEA_API */ KdTreeN
 
   public:
     /**
-     * Get the node corresponding to the root of the kd-tree. This function is provided so that users can implement their own
+     * Get the node corresponding to the root of the BVH. This function is provided so that users can implement their own
      * tree traversal procedures.
      *
      * This function cannot be used to change the structure of the tree, or any value in it (unless <code>const_cast</code> is
@@ -878,14 +873,14 @@ class /* THEA_API */ KdTreeN
     /** Get the number of nodes in the tree. */
     intx numNodes() const { return num_nodes; }
 
-    /** Get the maximum subdivision depth (number of levels not counting the root) of the kd-tree. */
+    /** Get the maximum subdivision depth (number of levels not counting the root) of the BVH. */
     intx maxDepth() const { return max_depth; }
 
-    /** Get the maximum number of elements in each leaf of the kd-tree. */
+    /** Get the maximum number of elements in each leaf of the BVH. */
     intx maxElementsPerLeaf() const { return max_elems_per_leaf; }
 
-    /** Get a bounding box for all the objects in the tree. */
-    AxisAlignedBoxT const & getBounds() const
+    /** Get a bounding volume for all the objects in the tree. */
+    BoundingVolume const & getBounds() const
     {
       updateBounds();
       return bounds;
@@ -901,7 +896,7 @@ class /* THEA_API */ KdTreeN
      */
     void pushFilter(Filter<T> * filter)
     {
-      alwaysAssertM(filter, "KdTreeN: Filter must be non-null");
+      alwaysAssertM(filter, "BvhN: Filter must be non-null");
 
       filters.push_back(filter);
 
@@ -984,7 +979,7 @@ class /* THEA_API */ KdTreeN
       if (!root) return NeighborPair(-1);
 
       // Early pruning if the entire structure is too far away from the query
-      AxisAlignedBoxT query_bounds;
+      BoundingVolume query_bounds;
       getObjectBounds(query, query_bounds);
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
@@ -1042,7 +1037,7 @@ class /* THEA_API */ KdTreeN
       if (!root) return 0;
 
       // Early pruning if the entire structure is too far away from the query
-      AxisAlignedBoxT query_bounds;
+      BoundingVolume query_bounds;
       getObjectBounds(query, query_bounds);
       double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
       if (mon_approx_dist_bound >= 0)
@@ -1068,14 +1063,14 @@ class /* THEA_API */ KdTreeN
     void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root) const_cast<KdTreeN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryFunctor(result));
+      if (root) const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryFunctor(result));
     }
 
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root) const_cast<KdTreeN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryIndicesFunctor(result));
+      if (root) const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryIndicesFunctor(result));
     }
 
     /**
@@ -1091,13 +1086,13 @@ class /* THEA_API */ KdTreeN
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
      *
-     * @note The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
-     * AxisAlignedBoxT.
+     * @note The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * BoundingVolume.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     intx processRangeUntil(RangeT const & range, FunctorT functor) const
     {
-      return root ? const_cast<KdTreeN *>(this)->processRangeUntil<IntersectionTesterT, T const>(root, range, functor) : -1;
+      return root ? const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT, T const>(root, range, functor) : -1;
     }
 
     /**
@@ -1113,8 +1108,8 @@ class /* THEA_API */ KdTreeN
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
      *
-     * @note The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
-     * AxisAlignedBoxT.
+     * @note The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * BoundingVolume.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
     intx processRangeUntil(RangeT const & range, FunctorT functor)
@@ -1179,10 +1174,10 @@ class /* THEA_API */ KdTreeN
     struct ObjectLess
     {
       intx coord;
-      KdTreeN const * tree;
+      BvhN const * tree;
 
       /** Constructor. Axis 0 = X, 1 = Y, 2 = Z. */
-      ObjectLess(intx coord_, KdTreeN const * tree_) : coord(coord_), tree(tree_) {}
+      ObjectLess(intx coord_, BvhN const * tree_) : coord(coord_), tree(tree_) {}
 
       /** Less-than operator, along the specified axis. */
       bool operator()(ElementIndex a, ElementIndex b)
@@ -1193,7 +1188,7 @@ class /* THEA_API */ KdTreeN
       }
     };
 
-    // Allow the comparator unrestricted access to the kd-tree.
+    // Allow the comparator unrestricted access to the BVH.
     friend struct ObjectLess;
 
     typedef Array<Filter<T> *> FilterStack;  ///< A stack of element filters.
@@ -1220,15 +1215,88 @@ class /* THEA_API */ KdTreeN
     }
 
   protected:
+    /** Initialize a kd-tree. Assumes that the global list of elements <tt>elems</tt> has already been initialized. */
+    template <typename InputIterator>
+    void initKdTree(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
+                    bool save_memory = false, bool deallocate_previous_memory = true)
+    {
+      static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 5;
+      max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
+
+      // The fraction of elements held by the larger node at each split is 0.5
+      static double const SPLIT_FRACTION = 0.5;
+      intx est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
+      max_depth = max_depth_;
+      if (max_depth < 0)
+        max_depth = est_depth;
+      else if (max_depth < est_depth)
+        est_depth = max_depth;
+
+      // Each index is stored at most once at each level
+      size_t BUFFER_SAFETY_MARGIN = 10;
+      size_t index_buffer_capacity = num_elems + BUFFER_SAFETY_MARGIN;
+      if (!save_memory)
+        index_buffer_capacity *= (size_t)(1 + est_depth);  // reserve space for all levels at once
+
+      if (deallocate_previous_memory || index_buffer_capacity > 1.3 * index_pool.getBufferCapacity())
+        index_pool.init(index_buffer_capacity);
+
+      // Assume a complete, balanced binary tree upto the estimated depth to guess the number of leaf nodes
+      size_t node_buffer_capacity = (size_t)(1 << est_depth) + BUFFER_SAFETY_MARGIN;
+      if (deallocate_previous_memory || node_buffer_capacity > 1.3 * node_pool.getBufferCapacity())
+        node_pool.init(node_buffer_capacity);
+
+      // Create the root node
+      root = node_pool.alloc(1);
+      root->init(0);
+      num_nodes = 1;
+
+      root->num_elems = num_elems;
+      root->elems = index_pool.alloc(root->num_elems);
+
+      BoundingVolume elem_bounds;
+      for (size_t i = 0; i < (size_t)num_elems; ++i)
+      {
+        root->elems[i] = i;
+
+        BoundedTraitsT::getBounds(elems[i], elem_bounds);
+        root->bounds.merge(elem_bounds);
+      }
+
+      // Expand the bounding volume slightly to handle numerical error
+      root->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+
+      if (save_memory)
+      {
+        // Estimate the maximum number of indices that will need to be held in the scratch pool at any time during depth-first
+        // traversal with earliest-possible deallocation. This is
+        //
+        //      #elements * (sum of series 1 + 1 + SPLIT_FRACTION + SPLIT_FRACTION^2 + ... + SPLIT_FRACTION^(est_depth - 1))
+        //  <=  #elements * (1 + 1 / (1 - SPLIT_FRACTION))
+        //
+        size_t est_max_path_indices = (size_t)(num_elems * (1 + 1 / (1 - SPLIT_FRACTION)));
+
+        // Create a temporary pool for scratch storage
+        IndexPool tmp_index_pool;
+        tmp_index_pool.init(est_max_path_indices + BUFFER_SAFETY_MARGIN);
+
+        createKdTree(root, true, &tmp_index_pool, &index_pool);
+      }
+      else
+        createKdTree(root, false, &index_pool, nullptr);
+
+      invalidateBounds();
+    }
+
     /**
-     * Recursively construct a (sub-)tree. If \a save_memory is true, element indices for this subtree are assumed to be in a
+     * Recursively construct a (sub-)kd-tree. If \a save_memory is true, element indices for this subtree are assumed to be in a
      * block at the end of \a main_index_pool. They are subsequently moved to arrays associated with the leaves, allocated in
      * \a leaf_index_pool. They are deleted from \a main_index_pool when this function exits, thus deallocating index arrays
      * held by internal nodes. If \a save_memory is false, each node maintains its own list of all elements in its subtree.
      *
      * @note To use this function with a node accessed via getRoot(), you'll have to const_cast it to a non-const type first.
      */
-    void createTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
+    void createKdTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
       // Assume the start node is fully constructed at this stage.
       //
@@ -1245,8 +1313,8 @@ class /* THEA_API */ KdTreeN
       }
 
       // Find a splitting plane
-#define THEA_KDTREEN_SPLIT_LONGEST
-#ifdef THEA_KDTREEN_SPLIT_LONGEST
+#define THEA_BVHN_KDTREE_SPLIT_LONGEST
+#ifdef THEA_BVHN_KDTREE_SPLIT_LONGEST
       intx coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension
 #else
       intx coord = (intx)(start->depth % N);  // cycle between dimensions
@@ -1257,68 +1325,50 @@ class /* THEA_API */ KdTreeN
       std::nth_element(start->elems, start->elems + mid, start->elems + start->num_elems, ObjectLess(coord, this));
 
       // Create child nodes
-      start->lo = node_pool.alloc(1);
-      start->lo->init(start->depth + 1);
-      num_nodes++;
-
-      start->hi = node_pool.alloc(1);
-      start->hi->init(start->depth + 1);
-      num_nodes++;
-
-      // THEA_CONSOLE << "num_nodes = " << num_nodes;
-
-      // Allocate element arrays for the children
-      start->lo->elems = main_index_pool->alloc(start->num_elems - mid);
-      start->hi->elems = main_index_pool->alloc(mid);
-
-      // Add first half of array (elems less than median) to low child
-      AxisAlignedBoxT elem_bounds;
-      bool lo_first = true;
-      for (ElementIndex i = 0; i < start->num_elems - mid; ++i)
+      for (size_t i = 0; i < 2; ++i)
       {
-        ElementIndex index = start->elems[i];
-        BoundedTraitsT::getBounds(elems[index], elem_bounds);
+        Node * child = start->children[i] = node_pool.alloc(1);
+        child->init(start->depth + 1);
+        num_nodes++;
 
-        start->lo->elems[start->lo->num_elems++] = index;
-
-        if (lo_first)
-        {
-          start->lo->bounds = elem_bounds;
-          lo_first = false;
-        }
+        ElementIndex elems_begin, elems_end;
+        if (i == 0)
+        { elems_begin = 0; elems_end = start->num_elems - mid; }
         else
-          start->lo->bounds.merge(elem_bounds);
-      }
+        { elems_begin = start->num_elems - mid; elems_end = start->num_elems; }
 
-      // Add second half of array (elems greater than median) to high child
-      bool hi_first = true;
-      for (ElementIndex i = start->num_elems - mid; i < start->num_elems; ++i)
-      {
-        ElementIndex index = start->elems[i];
-        BoundedTraitsT::getBounds(elems[index], elem_bounds);
+        child->elems = main_index_pool->alloc(elems_end - elems_begin);
 
-        start->hi->elems[start->hi->num_elems++] = index;
-
-        if (hi_first)
+        // Add the appropriate half of the elements to the child node
+        BoundingVolume elem_bounds;
+        bool first = true;
+        for (ElementIndex i = elems_begin; i < elems_end; ++i)
         {
-          start->hi->bounds = elem_bounds;
-          hi_first = false;
-        }
-        else
-          start->hi->bounds.merge(elem_bounds);
-      }
+          ElementIndex index = start->elems[i];
+          BoundedTraitsT::getBounds(elems[index], elem_bounds);
 
-      // Expand the bounding boxes slightly to handle numerical error
-      start->lo->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
-      start->hi->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+          child->elems[child->num_elems++] = index;
+
+          if (first)
+          {
+            child->bounds = elem_bounds;
+            first = false;
+          }
+          else
+            child->bounds.merge(elem_bounds);
+        }
+
+        // Expand the bounding volumes slightly to handle numerical error
+        child->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+      }
 
       // Recurse on the high child first, since its indices are at the end of the main index pool and can be freed first if
       // necessary
-      createTree(start->hi, save_memory, main_index_pool, leaf_index_pool);
+      createKdTree(start->children[1], save_memory, main_index_pool, leaf_index_pool);
 
       // Recurse on the low child next, if we are in memory-saving mode its indices are now the last valid entries in the main
       // index pool
-      createTree(start->lo, save_memory, main_index_pool, leaf_index_pool);
+      createKdTree(start->children[0], save_memory, main_index_pool, leaf_index_pool);
 
       // If we are in memory-saving mode, deallocate the indices stored at this node, which are currently the last entries in
       // the main index pool
@@ -1331,24 +1381,24 @@ class /* THEA_API */ KdTreeN
     }
 
     /**
-     * Recompute the bounding box of a leaf node from its elements. Can be overriden in derived classes for additional speed if
-     * possible.
+     * Recompute the bounding volume of a leaf node from its elements. Can be overriden in derived classes for additional speed
+     * if possible.
      *
      * @param leaf A pointer to a leaf node. This is guaranteed to be non-null, and an actual leaf without children.
      *
-     * @return The updated bounding box of \a leaf, <b>without</b> any padding. The bounding box actually stored in \a leaf
-     *   <b>will</b> be padded.
+     * @return The updated bounding volume of \a leaf, <b>without</b> any padding. The bounding volume actually stored in
+     *   \a leaf <b>will</b> be padded.
      */
-    virtual AxisAlignedBoxT updateLeafBounds(Node * leaf)
+    virtual BoundingVolume updateLeafBounds(Node * leaf)
     {
-      AxisAlignedBoxT unpadded_bounds, elem_bounds;
+      BoundingVolume unpadded_bounds, elem_bounds;
       for (ElementIndex i = 0; i < leaf->num_elems; ++i)
       {
         BoundedTraitsT::getBounds(elems[leaf->elems[i]], elem_bounds);
         unpadded_bounds.merge(elem_bounds);
       }
 
-      // Expand the bounding box slightly to handle numerical error
+      // Expand the bounding volume slightly to handle numerical error
       leaf->bounds = unpadded_bounds.scaleCenteredCopy(BOUNDS_EXPANSION_FACTOR);
 
       return unpadded_bounds;
@@ -1358,17 +1408,18 @@ class /* THEA_API */ KdTreeN
     /**
      * Recursively applied helper function for updateNodeBounds().
      *
-     * @return The updated bounding box of \a start, <b>without</b> any padding. The bounding box actually stored in \a start
-     *   <b>will</b> be padded.
+     * @return The updated bounding volume of \a start, <b>without</b> any padding. The bounding volume actually stored in
+     *   \a start <b>will</b> be padded.
      */
-    AxisAlignedBoxT updateNodeBoundsRecursive(Node * start)
+    BoundingVolume updateNodeBoundsRecursive(Node * start)
     {
       if (start->isLeaf())
         return updateLeafBounds(start);
       else  // recurse
       {
-        AxisAlignedBoxT unpadded_bounds = updateNodeBoundsRecursive(start->lo);
-        unpadded_bounds.merge(            updateNodeBoundsRecursive(start->hi));
+        BoundingVolume unpadded_bounds;
+        for (auto c : start->children)
+          unpadded_bounds.merge(updateNodeBoundsRecursive(c));
 
         start->bounds = unpadded_bounds.scaleCenteredCopy(BOUNDS_EXPANSION_FACTOR);
 
@@ -1377,13 +1428,13 @@ class /* THEA_API */ KdTreeN
     }
 
   protected:
-    /** Mark that the bounding box requires an update. */
+    /** Mark that the bounding volume requires an update. */
     void invalidateBounds()
     {
       valid_bounds = false;
     }
 
-    /** Recompute the bounding box if it has been invalidated. */
+    /** Recompute the bounding volume if it has been invalidated. */
     void updateBounds() const
     {
       if (valid_bounds) return;
@@ -1396,7 +1447,7 @@ class /* THEA_API */ KdTreeN
       }
       else
       {
-        bounds = AxisAlignedBoxT();
+        bounds = BoundingVolume();
       }
 
       valid_bounds = true;
@@ -1414,26 +1465,26 @@ class /* THEA_API */ KdTreeN
       return true;
     }
 
-    /** Get the bounding box for an object, if it is bounded. */
+    /** Get the bounding volume for an object, if it is bounded. */
     template < typename U, typename std::enable_if< IsBoundedN<U, N>::value, int >::type = 0 >
-    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds)
+    static void getObjectBounds(U const & u, BoundingVolume & bounds)
     {
       BoundedTraitsN<U, N, ScalarT>::getBounds(u, bounds);
     }
 
-    /** Returns a null bounding box for unbounded objects. */
+    /** Returns a null bounding volume for unbounded objects. */
     template < typename U, typename std::enable_if< !IsBoundedN<U, N>::value, int >::type = 0 >
-    static void getObjectBounds(U const & u, AxisAlignedBoxT & bounds)
+    static void getObjectBounds(U const & u, BoundingVolume & bounds)
     {
       bounds.setNull();
     }
 
     /**
-     * Get a lower bound on (the monotone approximation to) the distance between the bounding box of a kd-tree node and a
+     * Get a lower bound on (the monotone approximation to) the distance between the bounding volume of a BVH node and a
      * bounded query object, or a negative value if no such lower bound can be calculated.
      */
     template < typename MetricT, typename QueryT, typename std::enable_if< IsBoundedN<QueryT, N>::value, int >::type = 0 >
-    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds) const
+    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume query_bounds) const
     {
       if (node && !query_bounds.isNull())
         return MetricT::template monotoneApproxDistance<N, ScalarT>(query_bounds, getBoundsWorldSpace(*node));
@@ -1442,52 +1493,67 @@ class /* THEA_API */ KdTreeN
     }
 
     /**
-     * Get a lower bound on (the monotone approximation to) the distance between the bounding box of a kd-tree node and an
+     * Get a lower bound on (the monotone approximation to) the distance between the bounding volume of a BVH node and an
      * unbounded query object, or a negative value if no such lower bound can be calculated. \a query_bounds is ignored.
      */
     template < typename MetricT, typename QueryT, typename std::enable_if< !IsBoundedN<QueryT, N>::value, int >::type = 0 >
-    double monotonePruningDistance(Node const * node, QueryT const & query, AxisAlignedBoxT query_bounds) const
+    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume query_bounds) const
     {
       // Assume the following specialization exists
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
     }
 
-    /** Get a bounding box for a node, in world space. */
-    AxisAlignedBoxT getBoundsWorldSpace(Node const & node) const
+    /** Get a bounding volume for a node, in world space. */
+    BoundingVolume getBoundsWorldSpace(Node const & node) const
     {
       return TransformableBaseT::hasTransform()
            ? node.bounds.transformAndBound(TransformableBaseT::getTransform())
            : node.bounds;
     }
 
+  private:
+    /** Wrap a node and a distance to it. */
+    struct NodeDistance
+    {
+      Node * node;      ///< The wrapped node.
+      double distance;  ///< The distance to the node.
+
+      /** Default constructor. */
+      NodeDistance() : node(nullptr), distance(-1) {}
+
+      /** Initializing constructor. */
+      NodeDistance(Node * node_, double distance_) : node(node_), distance(distance_) {}
+
+      /** Less-than operator. All negative distances are considered equal, and greater than any positive value. */
+      bool operator<(NodeDistance const & rhs) const { return BvhNInternal::distanceLessThan(distance, rhs.distance); }
+
+    }; // struct NodeDistance
+
+    /** Sorted array of distances to the children of a tree node. */
+    typedef BoundedSortedArrayN<MaxDegree, NodeDistance> ChildDistanceArray;
+
+  protected:
     /**
      * Recursively look for the closest pair of points between two elements. Only pairs separated by less than the current
      * minimum distance (as stored in \a pair) will be considered. If \a get_closest_points is true, the positions of the
      * closest pair of points will be stored in \a pair, not just the distance between them.
      */
     template <typename MetricT, typename QueryT, typename CompatibilityFunctorT>
-    void closestPair(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds, NeighborPair & pair,
+    void closestPair(Node const * start, QueryT const & query, BoundingVolume const & query_bounds, NeighborPair & pair,
                      CompatibilityFunctorT compatibility, bool get_closest_points) const
     {
       if (start->isLeaf())
         closestPairLeaf<MetricT>(start, query, pair, compatibility, get_closest_points);
       else  // not leaf
       {
-        // Figure out which child is closer (optimize for point queries?)
-        Node const * n[2] = { start->lo, start->hi };
-        double mad[2] = { monotonePruningDistance<MetricT>(n[0], query, query_bounds),
-                          monotonePruningDistance<MetricT>(n[1], query, query_bounds) };
+        // Sort the children by increasing distance to their bounding volumes (optimize for point queries?)
+        ChildDistanceArray c;
+        for (auto n : start->children)
+          if (n) { c.insert(NodeDistance(n, monotonePruningDistance<MetricT>(n, query, query_bounds))); }
 
-        // The smaller non-negative value should be first
-        if (mad[1] >= 0 && (mad[0] < 0 || mad[0] > mad[1]))
-        {
-          std::swap(n[0], n[1]);
-          std::swap(mad[0], mad[1]);
-        }
-
-        for (int i = 0; i < 2; ++i)
-          if (pair.getMonotoneApproxDistance() < 0 || mad[i] <= pair.getMonotoneApproxDistance())
-            closestPair<MetricT>(n[i], query, query_bounds, pair, compatibility, get_closest_points);
+        for (size_t i = 0; i < c.size(); ++i)
+          if (pair.getMonotoneApproxDistance() < 0 || c[i].distance <= pair.getMonotoneApproxDistance())
+            closestPair<MetricT>(c[i].node, query, query_bounds, pair, compatibility, get_closest_points);
       }
     }
 
@@ -1505,7 +1571,7 @@ class /* THEA_API */ KdTreeN
       CompatibilityFunctorT compatibility,
       bool get_closest_points) const
     {
-      KdTreeNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+      BvhNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1586,7 +1652,7 @@ class /* THEA_API */ KdTreeN
      * stored with each pair, not just the distance between them.
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT>
-    void kClosestPairs(Node const * start, QueryT const & query, AxisAlignedBoxT const & query_bounds,
+    void kClosestPairs(Node const * start, QueryT const & query, BoundingVolume const & query_bounds,
                        BoundedNeighborPairSet & k_closest_pairs, double dist_bound, CompatibilityFunctorT compatibility,
                        bool get_closest_points, intx use_as_query_index_and_swap) const
     {
@@ -1595,26 +1661,19 @@ class /* THEA_API */ KdTreeN
                                    use_as_query_index_and_swap);
       else  // not leaf
       {
-        // Figure out which child is closer (optimize for point queries?)
-        Node const * n[2] = { start->lo, start->hi };
-        double mad[2] = { monotonePruningDistance<MetricT>(n[0], query, query_bounds),
-                          monotonePruningDistance<MetricT>(n[1], query, query_bounds) };
-
-        // The smaller non-negative value should be first
-        if (mad[1] >= 0 && (mad[0] < 0 || mad[0] > mad[1]))
-        {
-          std::swap(n[0], n[1]);
-          std::swap(mad[0], mad[1]);
-        }
+        // Sort the children by increasing distance to their bounding volumes (optimize for point queries?)
+        ChildDistanceArray c;
+        for (auto n : start->children)
+          if (n) { c.insert(NodeDistance(n, monotonePruningDistance<MetricT>(n, query, query_bounds))); }
 
         double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
-        for (int i = 0; i < 2; ++i)
+        for (size_t i = 0; i < c.size(); ++i)
         {
-          if ((mon_approx_dist_bound < 0 || mad[i] <= mon_approx_dist_bound)
-            && k_closest_pairs.isInsertable(NeighborPair(0, 0, mad[i])))
+          if ((mon_approx_dist_bound < 0 || c[i].distance <= mon_approx_dist_bound)
+            && k_closest_pairs.isInsertable(NeighborPair(0, 0, c[i].distance)))
           {
-            kClosestPairs<MetricT>(n[i], query, query_bounds, k_closest_pairs, dist_bound, compatibility, get_closest_points,
-                                   use_as_query_index_and_swap);
+            kClosestPairs<MetricT>(c[i].node, query, query_bounds, k_closest_pairs, dist_bound, compatibility,
+                                   get_closest_points, use_as_query_index_and_swap);
           }
         }
       }
@@ -1636,7 +1695,7 @@ class /* THEA_API */ KdTreeN
       bool get_closest_points,
       intx use_as_query_index_and_swap) const
     {
-      KdTreeNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+      BvhNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1741,8 +1800,8 @@ class /* THEA_API */ KdTreeN
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
      * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
      *
-     * The RangeT class should support intersection queries with AxisAlignedBoxT and containment queries with VectorT and
-     * AxisAlignedBoxT.
+     * The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * BoundingVolume.
      *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
@@ -1751,7 +1810,7 @@ class /* THEA_API */ KdTreeN
     intx processRangeUntil(Node const * start, RangeT const & range, FunctorT functor)
     {
       // Early exit if the range and node are disjoint
-      AxisAlignedBoxT tr_start_bounds = getBoundsWorldSpace(*start);
+      BoundingVolume tr_start_bounds = getBoundsWorldSpace(*start);
       if (!IntersectionTesterT::template intersects<N, ScalarT>(range, tr_start_bounds))
         return -1;
 
@@ -1792,9 +1851,11 @@ class /* THEA_API */ KdTreeN
       }
       else  // not leaf
       {
-        intx index = processRangeUntil<IntersectionTesterT, FunctorArgT>(start->lo, range, functor);
-        if (index >= 0) return index;
-        return processRangeUntil<IntersectionTesterT, FunctorArgT>(start->hi, range, functor);
+        for (auto c : start->children)
+        {
+          intx index = processRangeUntil<IntersectionTesterT, FunctorArgT>(c, range, functor);
+          if (index >= 0) return index;
+        }
       }
 
       return -1;
@@ -1811,15 +1872,6 @@ class /* THEA_API */ KdTreeN
     VectorT normalToWorldSpace(VectorT const & n) const
     {
       return (transform_inverse_transpose * n).normalized();
-    }
-
-    /**
-     * Check if the ray intersection time \a new_time represents a closer, or equally close, valid hit than the previous best
-     * time \a old_time.
-     */
-    static bool improvedRayTime(Real new_time, Real old_time)
-    {
-      return (new_time >= 0 && (old_time < 0 || new_time <= old_time));
     }
 
   protected:
@@ -1840,7 +1892,7 @@ class /* THEA_API */ KdTreeN
             continue;
 
           Real time = RayIntersectionTesterT::template rayIntersectionTime<N, ScalarT>(ray, elem, best_time);
-          if (improvedRayTime(time, best_time))
+          if (BvhNInternal::distanceLessThan(time, best_time))
           {
             best_time = time;
             found = true;
@@ -1851,28 +1903,19 @@ class /* THEA_API */ KdTreeN
       }
       else  // not leaf
       {
-        // Figure out which child will be hit first
-        Node const * n[2] = { start->lo, start->hi };
-        Real t[2] = { n[0]->bounds.rayIntersectionTime(ray, max_time),
-                      n[1]->bounds.rayIntersectionTime(ray, max_time) };
-
-        if (t[0] < 0 && t[1] < 0)
-          return -1;
-
-        if (improvedRayTime(t[1], t[0]))
-        {
-          std::swap(n[0], n[1]);
-          std::swap(t[0], t[1]);
-        }
+        // Sort the children by increasing hit times to their bounding volumes
+        ChildDistanceArray c;
+        for (auto n : start->children)
+          if (n) { c.insert(NodeDistance(n, n->bounds.rayIntersectionTime(ray, max_time))); }
 
         Real best_time = max_time;
         bool found = false;
-        for (int i = 0; i < 2; ++i)
+        for (size_t i = 0; i < c.size(); ++i)
         {
-          if (improvedRayTime(t[i], best_time))
+          if (BvhNInternal::distanceLessThan(c[i].distance, best_time))
           {
-            Real time = rayIntersectionTime<RayIntersectionTesterT>(n[i], ray, best_time);
-            if (improvedRayTime(time, best_time))
+            Real time = rayIntersectionTime<RayIntersectionTesterT>(c[i].node, ray, best_time);
+            if (BvhNInternal::distanceLessThan(time, best_time))
             {
               best_time = time;
               found = true;
@@ -1902,7 +1945,7 @@ class /* THEA_API */ KdTreeN
 
           RayIntersectionN<N, ScalarT> isec = RayIntersectionTesterT::template rayIntersection<N, ScalarT>(ray, elem,
                                                                                                            best_isec.getTime());
-          if (improvedRayTime(isec.getTime(), best_isec.getTime()))
+          if (BvhNInternal::distanceLessThan(isec.getTime(), best_isec.getTime()))
           {
             best_isec = RayStructureIntersectionT(isec, (intx)index);
             found = true;
@@ -1913,28 +1956,20 @@ class /* THEA_API */ KdTreeN
       }
       else  // not leaf
       {
-        // Figure out which child will be hit first
-        Node const * n[2] = { start->lo, start->hi };
-        Real t[2] = { n[0]->bounds.rayIntersectionTime(ray, max_time),
-                      n[1]->bounds.rayIntersectionTime(ray, max_time) };
-
-        if (t[0] < 0 && t[1] < 0)
-          return -1;
-
-        if (improvedRayTime(t[1], t[0]))
-        {
-          std::swap(n[0], n[1]);
-          std::swap(t[0], t[1]);
-        }
+        // Sort the children by increasing hit times to their bounding volumes
+        ChildDistanceArray c;
+        for (auto n : start->children)
+          if (n) { c.insert(NodeDistance(n, n->bounds.rayIntersectionTime(ray, max_time))); }
 
         RayStructureIntersectionT best_isec(max_time);
         bool found = false;
-        for (int i = 0; i < 2; ++i)
+        for (size_t i = 0; i < c.size(); ++i)
         {
-          if (improvedRayTime(t[i], best_isec.getTime()))
+          if (BvhNInternal::distanceLessThan(c[i].distance, best_isec.getTime()))
           {
-            RayStructureIntersectionT isec = rayStructureIntersection<RayIntersectionTesterT>(n[i], ray, best_isec.getTime());
-            if (improvedRayTime(isec.getTime(), best_isec.getTime()))
+            RayStructureIntersectionT isec = rayStructureIntersection<RayIntersectionTesterT>(c[i].node, ray,
+                                                                                              best_isec.getTime());
+            if (BvhNInternal::distanceLessThan(isec.getTime(), best_isec.getTime()))
             {
               best_isec = isec;
               found = true;
@@ -1950,7 +1985,7 @@ class /* THEA_API */ KdTreeN
     /**
      * Given a preallocated array of ElementSample objects, each pointing to a valid element, assign each object a point
      * (randomly or deterministically) sampled from the corresponding element. The default implementation finds the point
-     * closest to the bounding box center of each element: subclasses can override this with faster sampling methods.
+     * closest to the center of the bounding volume each element: subclasses can override this with faster sampling methods.
      *
      * @note This version finds nearest neighbors on elements using the L2 distance. Hence MetricL2 must support NN queries with
      *   the element type T.
@@ -2028,17 +2063,17 @@ class /* THEA_API */ KdTreeN
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
       return accel
              ? accel->template distance<MetricT>(query, dist_bound,
-                                                 KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility))
+                                                 BvhNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility))
              : -1;
     }
 
     /**
-     * Get an upper bound on the distance to a query kd-tree, using the acceleration structures of both the query and of this
+     * Get an upper bound on the distance to a query BVH, using the acceleration structures of both the query and of this
      * object if they exist.
      */
-    template <typename MetricT, typename E, typename S, typename A, typename B,
+    template <typename MetricT, typename E, typename S, typename A, int D, typename V,
               typename CompatibilityFunctorT = UniversalCompatibility>
-    double accelerationBound(KdTreeN<E, N, S, A> const & query, double dist_bound,
+    double accelerationBound(BvhN<E, N, S, A, D, V> const & query, double dist_bound,
                              CompatibilityFunctorT compatibility = CompatibilityFunctorT()) const
     {
       NearestNeighborAccelerationStructure const * accel = getNearestNeighborAccelerationStructure<MetricT>();
@@ -2046,22 +2081,22 @@ class /* THEA_API */ KdTreeN
       {
         if (query.hasNearestNeighborAcceleration())
         {
-          typename KdTreeN<E, N, S, A>::NearestNeighborAccelerationStructure const * query_accel
+          typename BvhN<E, N, S, A, D, V>::NearestNeighborAccelerationStructure const * query_accel
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
-            return accel->template distance<MetricT>(
-                       *query_accel, dist_bound, KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
+            return accel->template distance<MetricT>(*query_accel, dist_bound,
+                                                     BvhNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
         }
 
         return accel->template distance<MetricT>(query, dist_bound,
-                                                 KdTreeNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
+                                                 BvhNInternal::SampleCompatibility<CompatibilityFunctorT>(compatibility));
       }
       else
       {
         if (query.hasNearestNeighborAcceleration())
         {
-          typename KdTreeN<E, N, S, A>::NearestNeighborAccelerationStructure const * query_accel
+          typename BvhN<E, N, S, A, D, V>::NearestNeighborAccelerationStructure const * query_accel
               = query.template getNearestNeighborAccelerationStructure<MetricT>();
 
           if (query_accel)
@@ -2098,23 +2133,25 @@ class /* THEA_API */ KdTreeN
     mutable SampleFilterStack sample_filters;
 
     mutable bool valid_bounds;
-    mutable AxisAlignedBoxT bounds;
+    mutable BoundingVolume bounds;
 
   protected:
-    /** A factor by which node bounding boxes are upscaled to add a little padding for protection against numerical error. */
+    /** A factor by which node bounding volumes are upscaled to add a little padding for protection against numerical error. */
     static Real const BOUNDS_EXPANSION_FACTOR;
 
-}; // class KdTreeN
+}; // class BvhN
 
 // Static variables
-template <typename T, int N, typename S, typename A>
-Real const KdTreeN<T, N, S, A>::BOUNDS_EXPANSION_FACTOR = 1.05f;
+template <typename T, int N, typename S, typename A, int D, typename V>
+Real const BvhN<T, N, S, A, D, V>::BOUNDS_EXPANSION_FACTOR = 1.05f;
 
-// Mark the kd-tree and its (public) descendants as bounded objects. The default BoundedTraitsN implementation is good enough.
+// Mark the BVH and its (public) descendants as bounded objects. The default BoundedTraitsN implementation is good enough.
 template <typename T, int N>
-class IsBoundedN< T, N, typename std::enable_if< std::is_base_of< KdTreeN< typename T::Element, N,
-                                                                           typename T::VectorT::value_type,
-                                                                           typename T::NodeAttribute >,
+class IsBoundedN< T, N, typename std::enable_if< std::is_base_of< BvhN< typename T::Element, N,
+                                                                        typename T::VectorT::value_type,
+                                                                        typename T::NodeAttribute,
+                                                                        T::maxDegree(),
+                                                                        typename T::BoundingVolume >,
                                                                   T >::value >::type >
 {
   public:

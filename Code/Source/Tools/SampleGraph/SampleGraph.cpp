@@ -1,5 +1,5 @@
 #include "../../Common.hpp"
-#include "../../Algorithms/MeshKdTree.hpp"
+#include "../../Algorithms/MeshBvh.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/PointSet3.hpp"
 #include "../../Algorithms/ShortestPaths.hpp"
@@ -32,7 +32,7 @@ enum { LOAD_ERROR = 1, PARSE_ERROR, UNSUPPORTED_FORMAT };
 
 typedef GeneralMesh<> Mesh;
 typedef MeshGroup<Mesh> MG;
-typedef MeshKdTree<Mesh> KdTree;
+typedef MeshBvh<Mesh> Bvh;
 
 int loadSamples(string const & samples_path, Array<Vector3> & positions, Array<Vector3> & normals);
 
@@ -216,7 +216,7 @@ main(int argc, char * argv[])
   Array<Vector3> dense_positions;
   Array<Vector3> dense_normals;
   bool dense_has_normals = false;
-  KdTree kdtree;
+  Bvh bvh;
   if (mesh_path != "-")
   {
     // First try to load the file as a set of points
@@ -267,8 +267,8 @@ main(int argc, char * argv[])
         THEA_CONSOLE << "Matched scale of source mesh and original samples";
       }
 
-      kdtree.add(mg);
-      kdtree.init();
+      bvh.add(mg);
+      bvh.init();
 
       // If the samples have no normals, compute them
       if (consistent_normals && !has_normals)
@@ -277,14 +277,14 @@ main(int argc, char * argv[])
 
         for (size_t i = 0; i < sample_positions.size(); ++i)
         {
-          intx elem = kdtree.closestElement<MetricL2>(sample_positions[i]);
+          intx elem = bvh.closestElement<MetricL2>(sample_positions[i]);
           if (elem < 0)
           {
             THEA_ERROR << "Could not find nearest neighbor of sample " << i << " on mesh";
             return -1;
           }
 
-          sample_normals[i] = kdtree.getElements()[(size_t)elem].getNormal();
+          sample_normals[i] = bvh.getElements()[(size_t)elem].getNormal();
         }
 
         has_normals = true;
@@ -331,7 +331,7 @@ main(int argc, char * argv[])
   PointSet3 surf(opts);
   surf.addSamples((intx)sample_positions.size(), &sample_positions[0], (consistent_normals ? &sample_normals[0] : nullptr));
   surf.addOversampling((intx)dense_positions.size(), &dense_positions[0], (consistent_normals ? &dense_normals[0] : nullptr));
-  surf.updateGraph(reachability && !kdtree.isEmpty() ? &kdtree : nullptr);
+  surf.updateGraph(reachability && !bvh.empty() ? &bvh : nullptr);
 
   THEA_CONSOLE << "Computed sample graph";
 

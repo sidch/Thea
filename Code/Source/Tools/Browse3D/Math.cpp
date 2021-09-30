@@ -436,10 +436,10 @@ closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<Coo
 }
 
 int
-kdtreeDepth(intx num_elems, int max_elems_in_leaf)
+bvhDepth(intx num_elems, int max_elems_in_leaf)
 {
-  alwaysAssertM(num_elems >= 0, "Can't compute kd-tree depth for negative number of elements");
-  alwaysAssertM(max_elems_in_leaf > 0, "Can't compute kd-tree depth for non-positive number of elements at leaf");
+  alwaysAssertM(num_elems >= 0, "Can't compute BVH depth for negative number of elements");
+  alwaysAssertM(max_elems_in_leaf > 0, "Can't compute BVH depth for non-positive number of elements at leaf");
 
   int max_depth = (num_elems > 0 ? (int)std::ceil(Math::fastLog2(num_elems / (double)max_elems_in_leaf)) : 0);
   return max_depth;

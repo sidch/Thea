@@ -54,10 +54,10 @@ class IsBoundedN< T, N, typename std::enable_if< IsRawPointN<T, N>::value >::typ
 { public: static bool const value = true; };
 
 // ... as are many simple geometric objects
-template <int N, typename S> class IsBoundedN< AxisAlignedBoxN<N, S>, N >         { public: static bool const value = true; };
-template <int N, typename S> class IsBoundedN< BallN<N, S>, N >                   { public: static bool const value = true; };
-template <int N, typename S> class IsBoundedN< BoxN<N, S>, N >                    { public: static bool const value = true; };
-template <int N, typename S> class IsBoundedN< LineSegmentN<N, S>, N >            { public: static bool const value = true; };
+template <int N, typename S> class IsBoundedN< AxisAlignedBoxN<N, S>, N >          { public: static bool const value = true; };
+template <int N, typename S> class IsBoundedN< BallN<N, S>, N >                    { public: static bool const value = true; };
+template <int N, typename S> class IsBoundedN< BoxN<N, S>, N >                     { public: static bool const value = true; };
+template <int N, typename S> class IsBoundedN< LineSegmentN<N, S>, N >             { public: static bool const value = true; };
 template <typename VertexTripleT> class IsBoundedN< Triangle3<VertexTripleT>, 3 >  { public: static bool const value = true; };
 
 /** Same as IsBoundedN (no need to specialize it separately), except false for const or pointer types. */

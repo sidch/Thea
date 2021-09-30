@@ -2,7 +2,7 @@
 #include "../../FilePath.hpp"
 #include "../../Algorithms/Filter.hpp"
 #include "../../Algorithms/Iterators.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MetricL2.hpp"
 #include "../../Algorithms/PointTraitsN.hpp"
 #include "../../AffineTransform3.hpp"
@@ -27,7 +27,7 @@ using namespace Algorithms;
 
 typedef UnorderedMap<int32, string> IndexLabelMap;
 
-static int const MAX_NBRS = 8;
+static size_t const MAX_NBRS = 8;
 int MAX_ROUNDS = 25;
 int MAX_SMOOTHING_ROUNDS = 3;
 int LAST_SMOOTHING_ROUNDS = 1;
@@ -83,7 +83,7 @@ PointTraitsN<Sample, 3>::getPosition(Sample const & sample)
 
 typedef Array<Sample> SampleArray;
 typedef PtrIterator<SampleArray::const_iterator> SamplePtrIterator;
-typedef KdTreeN<Sample const *, 3> KdTree;
+typedef BvhN<Sample const *, 3> Bvh;
 typedef BoundedArrayN<MAX_NBRS, size_t> NeighborSet;
 typedef Array<NeighborSet> NeighborSets;
 typedef Array<Offset> OffsetArray;
@@ -199,21 +199,21 @@ computeBounds(SampleArray const & samples, int32 selected_label = -1)
 }
 
 void
-findNeighbors(SampleArray const & samples, KdTree const & kdtree, NeighborSets & nbrs)
+findNeighbors(SampleArray const & samples, Bvh const & bvh, NeighborSets & nbrs)
 {
   nbrs.clear();
   nbrs.resize(samples.size());
 
-  BoundedSortedArrayN<3 * MAX_NBRS, KdTree::NeighborPair> init_nbrs;
+  BoundedSortedArrayN<3 * MAX_NBRS, Bvh::NeighborPair> init_nbrs;
   size_t last_count = 0;
   for (size_t i = 0; i < samples.size(); ++i)
   {
     NNFilter filter(samples[i].n, samples[i].label);
-    const_cast<KdTree &>(kdtree).pushFilter(&filter);
-      kdtree.kClosestPairs<MetricL2>(samples[i].p, init_nbrs);
-    const_cast<KdTree &>(kdtree).popFilter();
+    const_cast<Bvh &>(bvh).pushFilter(&filter);
+      bvh.kClosestPairs<MetricL2>(samples[i].p, init_nbrs);
+    const_cast<Bvh &>(bvh).popFilter();
 
-    for (int j = 0; j < init_nbrs.size() && nbrs[i].size() < MAX_NBRS; ++j)
+    for (size_t j = 0; j < init_nbrs.size() && nbrs[i].size() < MAX_NBRS; ++j)
     {
       intx tgt_index = init_nbrs[j].getTargetIndex();
       if (tgt_index < 0)
@@ -245,7 +245,7 @@ findNeighbors(SampleArray const & samples, KdTree const & kdtree, NeighborSets &
 }
 
 void
-updateOffsets(SampleArray const & src_samples, KdTree const & tgt_kdtree, OffsetArray & src_offsets, int32 selected_label = -1)
+updateOffsets(SampleArray const & src_samples, Bvh const & tgt_bvh, OffsetArray & src_offsets, int32 selected_label = -1)
 {
   for (size_t i = 0; i < src_samples.size(); ++i)
   {
@@ -261,13 +261,13 @@ updateOffsets(SampleArray const & src_samples, KdTree const & tgt_kdtree, Offset
     Vector3 offset_p = src_samples[i].p + src_offsets[i].d();
 
     NNFilter filter(src_samples[i].n, src_samples[i].label);
-    const_cast<KdTree &>(tgt_kdtree).pushFilter(&filter);
-      intx nn_index = tgt_kdtree.closestElement<MetricL2>(offset_p);
-    const_cast<KdTree &>(tgt_kdtree).popFilter();
+    const_cast<Bvh &>(tgt_bvh).pushFilter(&filter);
+      intx nn_index = tgt_bvh.closestElement<MetricL2>(offset_p);
+    const_cast<Bvh &>(tgt_bvh).popFilter();
 
     if (nn_index >= 0)
     {
-      Sample const * nn_sample = tgt_kdtree.getElements()[(size_t)nn_index];
+      Sample const * nn_sample = tgt_bvh.getElements()[(size_t)nn_index];
       src_offsets[i].set(nn_sample->p - src_samples[i].p);  // no transform here
     }
     else
@@ -290,7 +290,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
 
     for (size_t i = 0; i < samples.size(); ++i)
     {
-      if (nbrs[i].isEmpty())
+      if (nbrs[i].empty())
         continue;
 
       Real sq_bandwidth = 4 * (samples[nbrs[i].last()].p - samples[i].p).squaredNorm();
@@ -308,7 +308,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
       }
 
       Real sum_weights = 1;  // even if there is no valid offset, since we want the point's original position to be favored
-      for (int j = 0; j < nbrs[i].size(); ++j)
+      for (size_t j = 0; j < nbrs[i].size(); ++j)
       {
         Offset const & offset = offsets[nbrs[i][j]];
         if (!offset.isValid())
@@ -342,7 +342,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
 
       Vector3 sum_offsets = offsets[i].d();
       Real sum_weights = 1;  // even if there is no valid offset, since we want the point's original position to be favored
-      for (int j = 0; j < nbrs[i].size(); ++j)
+      for (size_t j = 0; j < nbrs[i].size(); ++j)
       {
         Offset const & offset = offsets[nbrs[i][j]];
         if (!offset.isValid())
@@ -405,7 +405,7 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
   {
     size_t index = selected_samples[i];
     intx src_id = uf.getObjectId(index);
-    for (int j = 0; j < nbrs[index].size(); ++j)
+    for (size_t j = 0; j < nbrs[index].size(); ++j)
       uf.merge(src_id, uf.getObjectId(nbrs[index][j]));
   }
 
@@ -427,8 +427,8 @@ computeWeightedCentroid(SampleArray const & samples, NeighborSets const & nbrs, 
 // Returns transform of samples1 to align them to samples2
 AffineTransform3
 initTransform(int32 selected_label,
-              SampleArray const & samples1, NeighborSets const & nbrs1, KdTree & kdtree1,
-              SampleArray const & samples2, NeighborSets const & nbrs2, KdTree & kdtree2)
+              SampleArray const & samples1, NeighborSets const & nbrs1, Bvh & bvh1,
+              SampleArray const & samples2, NeighborSets const & nbrs2, Bvh & bvh2)
 {
   AffineTransform3 tr = AffineTransform3::identity();
 
@@ -477,7 +477,7 @@ findConnectedComponents(Array<size_t> const & selected_samples, NeighborSets con
   {
     size_t index = selected_samples[i];
     intx src_id = uf.getObjectId(index);
-    for (int j = 0; j < nbrs[index].size(); ++j)
+    for (size_t j = 0; j < nbrs[index].size(); ++j)
       uf.merge(src_id, uf.getObjectId(nbrs[index][j]));
   }
 }
@@ -549,8 +549,8 @@ deactivateSmallComponents(Array<size_t> const & selected_samples, UnionFind<size
 
 void
 initOffsetsForLabel(int32 selected_label,
-                    SampleArray & samples1, NeighborSets const & nbrs1, KdTree & kdtree1,
-                    SampleArray & samples2, NeighborSets const & nbrs2, KdTree & kdtree2,
+                    SampleArray & samples1, NeighborSets const & nbrs1, Bvh & bvh1,
+                    SampleArray & samples2, NeighborSets const & nbrs2, Bvh & bvh2,
                     OffsetArray & offsets1, OffsetArray & offsets2)
 {
   string label_name = "all";
@@ -619,18 +619,18 @@ initOffsetsForLabel(int32 selected_label,
   }
 #endif
 
-  AffineTransform3 tr_1_to_2 = initTransform(selected_label, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2);
+  AffineTransform3 tr_1_to_2 = initTransform(selected_label, samples1, nbrs1, bvh1, samples2, nbrs2, bvh2);
   AffineTransform3 tr_2_to_1 = tr_1_to_2.inverse();
 
   // Compute forward offsets
-  kdtree2.setTransform(tr_2_to_1);  // align bounding boxes in first iteration
-    updateOffsets(samples1, kdtree2, offsets1, selected_label);
-  kdtree2.clearTransform();
+  bvh2.setTransform(tr_2_to_1);  // align bounding boxes in first iteration
+    updateOffsets(samples1, bvh2, offsets1, selected_label);
+  bvh2.clearTransform();
 
   // Compute backward offsets
-  kdtree1.setTransform(tr_1_to_2);  // align bounding boxes in first iteration
-    updateOffsets(samples2, kdtree1, offsets2, selected_label);
-  kdtree1.clearTransform();
+  bvh1.setTransform(tr_1_to_2);  // align bounding boxes in first iteration
+    updateOffsets(samples2, bvh1, offsets2, selected_label);
+  bvh1.clearTransform();
 
   if (selected_label >= 0)
     cout << "Initialized offsets for label: " << label_name << endl;
@@ -639,22 +639,22 @@ initOffsetsForLabel(int32 selected_label,
 }
 
 void
-initOffsets(SampleArray & samples1, NeighborSets const & nbrs1, KdTree & kdtree1,
-            SampleArray & samples2, NeighborSets const & nbrs2, KdTree & kdtree2,
+initOffsets(SampleArray & samples1, NeighborSets const & nbrs1, Bvh & bvh1,
+            SampleArray & samples2, NeighborSets const & nbrs2, Bvh & bvh2,
             OffsetArray & offsets1, OffsetArray & offsets2)
 {
   // For initial correspondences, we'll match bounding boxes, per-label if labels are available, else globally for the shapes
   if (USE_LABELS)
   {
     for (IndexLabelMap::const_iterator li = LABELS.begin(); li != LABELS.end(); ++li)
-      initOffsetsForLabel(li->first, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
+      initOffsetsForLabel(li->first, samples1, nbrs1, bvh1, samples2, nbrs2, bvh2, offsets1, offsets2);
 
     // No label supplied for these samples
-    initOffsetsForLabel(0, samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
+    initOffsetsForLabel(0, samples1, nbrs1, bvh1, samples2, nbrs2, bvh2, offsets1, offsets2);
   }
   else
   {
-    initOffsetsForLabel(-1, samples1, nbrs2, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
+    initOffsetsForLabel(-1, samples1, nbrs2, bvh1, samples2, nbrs2, bvh2, offsets1, offsets2);
   }
 }
 
@@ -673,19 +673,19 @@ bool
 alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> const & salient1,
               Array<Vector3> const & salient2, OffsetArray & offsets1)
 {
-  // Init kd-trees
-  KdTree kdtree1(SamplePtrIterator(samples1.begin()), SamplePtrIterator(samples1.end()));
-  kdtree1.enableNearestNeighborAcceleration();
+  // Initialize BVHs
+  Bvh bvh1(SamplePtrIterator(samples1.begin()), SamplePtrIterator(samples1.end()));
+  bvh1.enableNearestNeighborAcceleration();
 
-  KdTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
-  kdtree2.enableNearestNeighborAcceleration();
+  Bvh bvh2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
+  bvh2.enableNearestNeighborAcceleration();
 
-  THEA_CONSOLE << "Initialized kd-trees";
+  THEA_CONSOLE << "Initialized BVHs";
 
   // Compute sample neighbors
   NeighborSets nbrs1, nbrs2;
-  findNeighbors(samples1, kdtree1, nbrs1);
-  findNeighbors(samples2, kdtree2, nbrs2);
+  findNeighbors(samples1, bvh1, nbrs1);
+  findNeighbors(samples2, bvh2, nbrs2);
 
   // Map salient points to nearest samples
   if (salient1.size() != salient2.size())
@@ -697,7 +697,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
   Array<size_t> salient_indices1, salient_indices2;
   for (size_t i = 0; i < salient1.size(); ++i)
   {
-    intx nn_index = kdtree1.closestElement<MetricL2>(salient1[i]);
+    intx nn_index = bvh1.closestElement<MetricL2>(salient1[i]);
     if (nn_index < 0)
     {
       THEA_ERROR << "Could not map salient1[" << i << "] to a corresponding sample";
@@ -708,7 +708,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
 
   for (size_t i = 0; i < salient2.size(); ++i)
   {
-    intx nn_index = kdtree2.closestElement<MetricL2>(salient2[i]);
+    intx nn_index = bvh2.closestElement<MetricL2>(salient2[i]);
     if (nn_index < 0)
     {
       THEA_ERROR << "Could not map salient2[" << i << "] to a corresponding sample";
@@ -723,7 +723,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
   OffsetArray offsets2(samples2.size());
 
   // Initialize offsets per-label if available, else globally
-  initOffsets(samples1, nbrs1, kdtree1, samples2, nbrs2, kdtree2, offsets1, offsets2);
+  initOffsets(samples1, nbrs1, bvh1, samples2, nbrs2, bvh2, offsets1, offsets2);
 
   for (int round = 0; round < MAX_ROUNDS; ++round)
   {
@@ -731,7 +731,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
 
     // Compute forward offsets
     if (round > 0)
-      updateOffsets(samples1, kdtree2, offsets1);
+      updateOffsets(samples1, bvh2, offsets1);
 
     // Enforce hard constraints
     enforceConstraints(samples1, samples2, salient_indices1, salient_indices2, offsets1);
@@ -740,7 +740,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
     {
       // Compute backward offsets
       if (round > 0)
-        updateOffsets(samples2, kdtree1, offsets2);
+        updateOffsets(samples2, bvh1, offsets2);
 
       // Smooth backward offsets
       enforceConstraints(samples2, samples1, salient_indices2, salient_indices1, offsets2);
@@ -752,15 +752,15 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
       for (size_t i = 0; i < samples2.size(); ++i)
         offset_samples2[i].p += offsets2[i].d();
 
-      KdTree offset_kdtree2(SamplePtrIterator(offset_samples2.begin()), SamplePtrIterator(offset_samples2.end()));
-      offset_kdtree2.enableNearestNeighborAcceleration();
+      Bvh offset_bvh2(SamplePtrIterator(offset_samples2.begin()), SamplePtrIterator(offset_samples2.end()));
+      offset_bvh2.enableNearestNeighborAcceleration();
 
       for (size_t i = 0; i < samples1.size(); ++i)
       {
         NNFilter filter(samples1[i].n, samples1[i].label);
-        offset_kdtree2.pushFilter(&filter);
-          intx nn_index = offset_kdtree2.closestElement<MetricL2>(samples1[i].p);
-        offset_kdtree2.popFilter();
+        offset_bvh2.pushFilter(&filter);
+          intx nn_index = offset_bvh2.closestElement<MetricL2>(samples1[i].p);
+        offset_bvh2.popFilter();
 
         if (nn_index >= 0)
           offsets1[i].set(0.5f * offsets1[i].d() - 0.5f * offsets2[(size_t)nn_index].d());
@@ -1142,8 +1142,8 @@ main(int argc, char * argv[])
                            FilePath::baseName(samples_path1) + "___corr___" + FilePath::baseName(samples_path2) + ".pts");
     ofstream out_corr(corr_path.c_str(), ios::binary);
 
-    KdTree kdtree2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
-    kdtree2.enableNearestNeighborAcceleration();
+    Bvh bvh2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
+    bvh2.enableNearestNeighborAcceleration();
 
     intx num_matched = 0;
     for (size_t i = 0; i < samples1.size(); ++i)
@@ -1152,9 +1152,9 @@ main(int argc, char * argv[])
 
       Vector3 deformed_p1 = p1 + offsets1[i].d();
       NNFilterLabelOnly filter(samples1[i].label);
-      kdtree2.pushFilter(&filter);
-        intx nn_index = kdtree2.closestElement<MetricL2>(deformed_p1);
-      kdtree2.popFilter();
+      bvh2.pushFilter(&filter);
+        intx nn_index = bvh2.closestElement<MetricL2>(deformed_p1);
+      bvh2.popFilter();
 
       if (nn_index < 0)
       {
@@ -1162,7 +1162,7 @@ main(int argc, char * argv[])
         continue;
       }
 
-      Vector3 p2 = kdtree2.getElements()[nn_index]->p;
+      Vector3 p2 = bvh2.getElements()[nn_index]->p;
 
       out_corr << p1[0] << ' ' << p1[1] << ' ' << p1[2] << ' '
                << p2[0] << ' ' << p2[1] << ' ' << p2[2] << '\n';

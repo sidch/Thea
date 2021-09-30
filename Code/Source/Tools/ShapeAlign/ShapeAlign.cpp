@@ -1,7 +1,7 @@
 #include "../../Common.hpp"
 #include "../../Algorithms/CentroidN.hpp"
 #include "../../Algorithms/Icp3.hpp"
-#include "../../Algorithms/KdTreeN.hpp"
+#include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Graphics/DisplayMesh.hpp"
 #include "../../Graphics/MeshGroup.hpp"
@@ -336,7 +336,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         from_pts[i] += offset;
     }
 
-    KdTreeN<Vector3d, 3, double> to_kdtree(to_pts.begin(), to_pts.end());
+    BvhN<Vector3d, 3, double> to_bvh(to_pts.begin(), to_pts.end());
 
     if (rotate_axis_aligned)
     {
@@ -368,7 +368,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
               for (size_t i = 0; i < from_pts.size(); ++i)
                 rot_from_pts[i] = rot_tr * from_pts[i];
 
-              AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+              AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_bvh, &rot_error);
               rot_error = normalizeError(rot_error, to_scale, (intx)from_pts.size());
               if (first || rot_error < error)
               {
@@ -418,7 +418,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
         for (size_t j = 0; j < from_pts.size(); ++j)
           rot_from_pts[j] = rot_tr * from_pts[j];
 
-        AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_kdtree, &rot_error);
+        AffineTransform3d icp_tr = icp.align((intx)rot_from_pts.size(), &rot_from_pts[0], to_bvh, &rot_error);
         rot_error = normalizeError(rot_error, to_scale, (intx)from_pts.size());
         if (first || rot_error < error)
         {
@@ -445,7 +445,7 @@ alignShapes(string const & from_path, string const & to_path, std::ostream * out
       if (has_up_vector)
         icp.setUpVector(up_vector);
 
-      tr = icp.align((intx)from_pts.size(), &from_pts[0], to_kdtree, &error);
+      tr = icp.align((intx)from_pts.size(), &from_pts[0], to_bvh, &error);
       tr = tr * init_tr;
 
       error = normalizeError(error, to_scale, (intx)from_pts.size());

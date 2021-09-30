@@ -62,7 +62,7 @@ PointSet3::operator=(PointSet3 const & src)
   avg_separation = src.avg_separation;
   valid_scale = src.valid_scale;
   scale = src.scale;
-  valid_kdtree = false;  // this must be recomputed
+  valid_bvh = false;  // this must be recomputed
 
   // Update neighbor pointers
   PointSet3Internal::updateNeighborPointers(samples, src.samples);
@@ -81,7 +81,7 @@ PointSet3::clear()
   avg_separation = 0;
   valid_scale = true;
   scale = 0;
-  valid_kdtree = false;
+  valid_bvh = false;
 }
 
 namespace PointSet3Internal {
@@ -111,11 +111,11 @@ class SamplePointerGraph
     intx numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
     NeighborIterator neighborsBegin(VertexHandle vertex)
     {
-      return vertex->getNeighbors().isEmpty() ? nullptr : const_cast<Sample::Neighbor *>(&vertex->getNeighbors()[0]);
+      return vertex->getNeighbors().empty() ? nullptr : const_cast<Sample::Neighbor *>(&vertex->getNeighbors()[0]);
     }
     NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
     {
-      return vertex->getNeighbors().isEmpty() ? nullptr : &vertex->getNeighbors()[0];
+      return vertex->getNeighbors().empty() ? nullptr : &vertex->getNeighbors()[0];
     }
     NeighborIterator neighborsEnd(VertexHandle vertex) { return neighborsBegin(vertex) + numNeighbors(vertex); }
     NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const { return neighborsBegin(vertex) + numNeighbors(vertex); }

@@ -18,9 +18,9 @@
 #include "../Common.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "BestFitSphere3.hpp"
+#include "BvhN.hpp"
 #include "Filter.hpp"
 #include "Iterators.hpp"
-#include "KdTreeN.hpp"
 #include "IntersectionTester.hpp"
 #include "MeshSampler.hpp"
 #include "MetricL2.hpp"
@@ -30,7 +30,6 @@
 #include "RayIntersectionTester.hpp"
 #include "RayQueryStructureN.hpp"
 #include "SamplePoint3.hpp"
-#include "../BoundedSortedArray.hpp"
 #include "../MatVec.hpp"
 #include <type_traits>
 
@@ -38,7 +37,7 @@ namespace Thea {
 namespace Algorithms {
 
 /**
- * A set of 3D points, with a proximity graph and kd-tree on the samples. Typical usage is to first specify the sample positions
+ * A set of 3D points, with a proximity graph and BVH on the samples. Typical usage is to first specify the sample positions
  * (and optionally normals) via setSamples(). Then, specify an optional dense oversampling via setOversampling() -- the
  * oversampling makes it easier to verify if two samples are actually adjacent on the underlying manifold (if there is one) when
  * computing its proximity graph. This graph is lazily computed by getGraph(): it can be improved if a representation of the
@@ -67,9 +66,9 @@ class PointSet3
 
     }; // class Options
 
-    typedef SamplePoint3 Sample;                ///< A single sample point.
-    typedef Array<Sample> SampleArray;          ///< Array of samples.
-    typedef KdTreeN<Sample *, 3> SampleKdTree;  ///< KD-tree on surface samples.
+    typedef SamplePoint3 Sample;          ///< A single sample point.
+    typedef Array<Sample> SampleArray;    ///< Array of samples.
+    typedef BvhN<Sample *, 3> SampleBvh;  ///< BVH on surface samples.
 
     /** Proximity graph on surface samples, satisfying the IsAdjacencyGraph concept. */
     class SampleGraph
@@ -104,18 +103,18 @@ class PointSet3
         VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
 
         /** Get the number of neighbors of a vertex. */
-        intx numNeighbors(VertexConstHandle vertex) const { return vertex->getNeighbors().size(); }
+        intx numNeighbors(VertexConstHandle vertex) const { return vertex->numNeighbors(); }
 
         /** Get an iterator to the first neighbor of a vertex. */
         NeighborIterator neighborsBegin(VertexHandle vertex)
         {
-          return vertex->getNeighbors().isEmpty() ? nullptr : const_cast<Sample::Neighbor *>(&vertex->getNeighbors()[0]);
+          return vertex->numNeighbors() <= 0 ? nullptr : const_cast<Sample::Neighbor *>(&vertex->getNeighbor(0));
         }
 
         /** Get a const iterator to the first neighbor of a vertex. */
         NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
         {
-          return vertex->getNeighbors().isEmpty() ? nullptr : &vertex->getNeighbors()[0];
+          return vertex->numNeighbors() <= 0 ? nullptr : &vertex->getNeighbor(0);
         }
 
         /** Get an iterator to the one position beyond the last neighbor of a vertex. */
@@ -153,7 +152,7 @@ class PointSet3
     /** Construct with a set of options for creating the graph. */
     PointSet3(Options const & options_ = Options::defaults())
     : options(options_), has_normals(false), valid_graph(true), graph(samples), avg_separation(0), valid_scale(true), scale(0),
-      valid_kdtree(true)
+      valid_bvh(true)
     {
       alwaysAssertM(options.max_degree >= 0, "PointSet3: Maximum degree must be non-negative");
     }
@@ -313,7 +312,7 @@ class PointSet3
     }
 
     /**
-     * Construct the sample proximity graph with the aid of a known representation of the underlying surface (such as a kd-tree
+     * Construct the sample proximity graph with the aid of a known representation of the underlying surface (such as a BVH
      * on mesh triangles). Additional adjacency tests, including those that test if the two samples are on opposite sides of a
      * thin surface, will be performed by this explicit graph update.
      *
@@ -324,8 +323,8 @@ class PointSet3
       if (valid_graph)  // don't initialize twice
         return;
 
-      SampleKdTree * k = nullptr;
-      SampleKdTree agg_kdtree;
+      SampleBvh * h = nullptr;
+      SampleBvh agg_bvh;
       if (!dense_samples.empty())
       {
         // Aggregate samples
@@ -343,44 +342,44 @@ class PointSet3
 
         // Clear any prior adjacency data
         for (size_t i = 0; i < sample_ptrs.size(); ++i)
-          sample_ptrs[i]->getNeighbors().clear();
+          sample_ptrs[i]->clearNeighbors();
 
         if (sample_ptrs.size() <= 1)  // nothing to do
           return;
 
-        // Create kd-tree on aggregated samples
-        agg_kdtree.init(sample_ptrs.begin(), sample_ptrs.end());
-        k = &agg_kdtree;
+        // Create BVH on aggregated samples
+        agg_bvh.init(sample_ptrs.begin(), sample_ptrs.end());
+        h = &agg_bvh;
       }
       else
-        k = const_cast<SampleKdTree *>(&getKdTree());
+        h = const_cast<SampleBvh *>(&getBvh());
 
       // Get a measure of the average pairwise separation of samples
-      auto k_num_elems = k->numElements();
-      auto k_elems = k->getElements();
+      auto h_num_elems = h->numElements();
+      auto h_elems = h->getElements();
       avg_separation = 0;
-      intx num_trials = std::min(100L, k_num_elems);
+      intx num_trials = std::min(100L, h_num_elems);
       for (intx i = 0; i < num_trials; ++i)
       {
-        auto index = Random::common().integer(0, (int32)k_num_elems - 1);
-        FilterSelf filter(k_elems[index]);
-        k->pushFilter(&filter);
-          intx nn_index = k->closestElement<MetricL2>(k_elems[index]->getPosition());
+        auto index = Random::common().integer(0, (int32)h_num_elems - 1);
+        FilterSelf filter(h_elems[index]);
+        h->pushFilter(&filter);
+          intx nn_index = h->closestElement<MetricL2>(h_elems[index]->getPosition());
           alwaysAssertM(nn_index >= 0, "PointSet3: Nearest neighbor of sample not found");
-          avg_separation += (k_elems[nn_index]->getPosition() - k_elems[index]->getPosition()).squaredNorm();
-        k->popFilter();
+          avg_separation += (h_elems[nn_index]->getPosition() - h_elems[index]->getPosition()).squaredNorm();
+        h->popFilter();
       }
 
       avg_separation = std::sqrt(avg_separation / num_trials);  // RMS average
 
       // Find the neighbors of each sample
       Real sep_scale = std::sqrt((Real)options.max_degree);  // assume uniform distribution on 2D surface
-      for (intx i = 0; i < k_num_elems; ++i)
-        findSampleNeighbors(k_elems[i], *k, sep_scale * avg_separation, surface);
+      for (intx i = 0; i < h_num_elems; ++i)
+        findSampleNeighbors(h_elems[i], *h, sep_scale * avg_separation, surface);
 
       // Extract adjacencies between original set of samples
       if (!dense_samples.empty())
-        extractOriginalAdjacencies(k_num_elems, k_elems);
+        extractOriginalAdjacencies(h_num_elems, h_elems);
 
       // Update the average separation to the correct value
       updateAverageSeparation();
@@ -413,8 +412,8 @@ class PointSet3
       valid_scale = (s >= 0);
     }
 
-    /** Get the kd-tree on the sample points. */
-    SampleKdTree const & getKdTree() const { updateKdTree(); return kdtree; }
+    /** Get the BVH on the sample points. */
+    SampleBvh const & getBvh() const { updateBvh(); return bvh; }
 
     /** Clear the graph. */
     void clear();
@@ -455,7 +454,7 @@ class PointSet3
     }; // struct DummyRayQueryStructure3
 
     /** Invalidate all lazily computed/on-demand data. */
-    void invalidateAll() { valid_graph = valid_scale = valid_kdtree = false; }
+    void invalidateAll() { valid_graph = valid_scale = valid_bvh = false; }
 
     /**
      * Check if there is at least one sample with a normal vector in either the main samples array or in an additional
@@ -596,7 +595,7 @@ class PointSet3
         {
           Real sep = 0;
           if (isValidNeighbor(nbr, sep))
-            sample->getNeighbors().insert(Sample::Neighbor(nbr, sep));
+            sample->addNeighbor(Sample::Neighbor(nbr, sep));
 
           return false;
         }
@@ -604,7 +603,8 @@ class PointSet3
       private:
         /**
          * Check if a candidate neighboring sample is a valid neighbor, that is, if it is near the original sample as measured
-         * on the surface.
+         * on the surface. If the function returns true, it puts the computed separation between the original and candidate
+         * samples in \a sep.
          */
         bool isValidNeighbor(Sample const * nbr, Real & sep)
         {
@@ -625,7 +625,7 @@ class PointSet3
           // Duplication test which compares only the samples themselves (since numerical error can cause multiple attempts to
           // insert the same sample with slightly different separations)
           for (int i = 0; i < sample->numNeighbors(); ++i)
-            if (nbr == sample->getNeighbors()[i].getSample())
+            if (nbr == sample->getNeighbor(i).getSample())
               return false;
 
           // Compute the separation of the samples
@@ -655,7 +655,7 @@ class PointSet3
 
     /** Find the samples adjacent to a given sample. */
     template <typename RayQueryStructureT>
-    void findSampleNeighbors(Sample * sample, SampleKdTree & k, Real init_radius, RayQueryStructureT const * surface) const
+    void findSampleNeighbors(Sample * sample, SampleBvh & h, Real init_radius, RayQueryStructureT const * surface) const
     {
       static int const MAX_ITERS = 3;
       static Real const RADIUS_EXPANSION_FACTOR = 2.0f;
@@ -664,13 +664,13 @@ class PointSet3
       Real radius = init_radius;
       for (int i = 0; i < MAX_ITERS; ++i)
       {
-        sample->getNeighbors().clear();
+        sample->clearNeighbors();
         NeighborFunctor<RayQueryStructureT> func(sample, has_normals, surface);
 
         Ball3 nbd(sample->getPosition(), radius);
-        k.processRangeUntil<IntersectionTester>(nbd, func);
+        h.processRangeUntil<IntersectionTester>(nbd, func);
 
-        if (sample->getNeighbors().size() >= min_degree)
+        if (sample->numNeighbors() >= min_degree)
           break;
         else
           radius *= RADIUS_EXPANSION_FACTOR;
@@ -689,11 +689,10 @@ class PointSet3
       intx num_edges = 0;  // double-counts, but we'll ignore that for now
       for (size_t i = 0; i < samples.size(); ++i)
       {
-        auto const & nbrs = samples[i].getNeighbors();
-        for (int j = 0; j < nbrs.size(); ++j)
-          avg_separation += nbrs[j].getSeparation();
+        for (auto const & n : samples[i].getNeighbors())
+          avg_separation += n.getSeparation();
 
-        num_edges += (intx)nbrs.size();
+        num_edges += samples[i].numNeighbors();
       }
 
       if (num_edges > 0)
@@ -701,37 +700,37 @@ class PointSet3
     }
 
     /**
-     * Get a non-const reference to the internally created kd-tree, or null if no such kd-tree exists. <b>Use with caution</b>
+     * Get a non-const reference to the internally created BVH, or null if no such BVH exists. <b>Use with caution</b>
      * -- you should never actually change the tree even if you have a non-const handle to it!
      */
-    void updateKdTree() const
+    void updateBvh() const
     {
-      if (valid_kdtree) return;
+      if (valid_bvh) return;
 
       if (samples.empty())
-        kdtree.clear();
+        bvh.clear();
       else
       {
         // Need to use raw pointers else makePtrIterator can't create a read-write iterator
-        kdtree.init(makePtrIterator(const_cast<Sample *>(samples.data())),
-                    makePtrIterator(const_cast<Sample *>(samples.data() + samples.size())));
+        bvh.init(makePtrIterator(const_cast<Sample *>(samples.data())),
+                 makePtrIterator(const_cast<Sample *>(samples.data() + samples.size())));
       }
 
-      valid_kdtree = true;
+      valid_bvh = true;
     }
 
-    Options options;            ///< Options for creating the graph.
-    bool has_normals;           ///< Do the samples have associated surface normals?
-    SampleArray samples;        ///< Array of samples constituting the vertex set of the graph.
-    SampleArray dense_samples;  ///< Array of samples constituting an oversampling of the surface.
+    Options options;              ///< Options for creating the graph.
+    bool has_normals;             ///< Do the samples have associated surface normals?
+    SampleArray samples;          ///< Array of samples constituting the vertex set of the graph.
+    SampleArray dense_samples;    ///< Array of samples constituting an oversampling of the surface.
 
     mutable bool valid_graph;     ///< Has the proximity graph been initialized?
     mutable SampleGraph graph;    ///< Proximity graph on surface samples.
     mutable Real avg_separation;  ///< Average separation between neighboring samples.
     mutable bool valid_scale;     ///< Has the normalization length been computed?
     mutable Real scale;           ///< The normalization length.
-    mutable bool valid_kdtree;    ///< Has the sample kd-tree been initialized?
-    mutable SampleKdTree kdtree;  ///< kd-tree on surface samples.
+    mutable bool valid_bvh;       ///< Has the sample BVH been initialized?
+    mutable SampleBvh bvh;        ///< BVH on surface samples.
 
 }; // class PointSet3
 

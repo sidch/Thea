@@ -17,6 +17,7 @@
 
 #include "Common.hpp"
 #include "Algorithms/FastCopy.hpp"
+#include <iterator>
 
 namespace Thea {
 
@@ -34,25 +35,32 @@ namespace Thea {
  *
  * For a bounded stack-based array that also guarantees that its elements are in sorted order, see BoundedSortedArrayN.
  */
-template <int N, typename T>
+template <size_t N, typename T>
 class BoundedArrayN
 {
   private:
-    int num_elems;
+    static_assert(N > 0, "BoundedArrayN: Capacity must be positive");
+
+    size_t num_elems;
     T values[N];
 
   public:
+    typedef T *                                    iterator;                ///< Iterator over elements.
+    typedef T const *                              const_iterator;          ///< Iterator over immutable elements.
+    typedef std::reverse_iterator<iterator>        reverse_iterator;        ///< Reverse iterator over elements.
+    typedef std::reverse_iterator<const_iterator>  const_reverse_iterator;  ///< Reverse iterator over immutable elements.
+
     /** Constructor. */
     BoundedArrayN() : num_elems(0) {}
 
     /** Get the maximum number of elements the array can hold. */
-    static int getCapacity() { return N; }
+    static constexpr size_t getCapacity() { return N; }
 
     /** Get the number of elements in the array. */
-    int size() const { return num_elems; }
+    size_t size() const { return num_elems; }
 
     /** Check if the array is empty or not. */
-    bool isEmpty() const { return num_elems <= 0; }
+    bool empty() const { return num_elems <= 0; }
 
     /** Check if the array has reached maximum capacity or not. */
     bool isFull() const { return num_elems >= N; }
@@ -62,6 +70,31 @@ class BoundedArrayN
 
     /** Get a pointer to the data buffer. */
     T * data() { return values; }
+
+    iterator begin() noexcept               { return values; }  ///< Iterator to the beginning of the array.
+    const_iterator begin() const noexcept   { return values; }  ///< Iterator to the beginning of the array.
+    const_iterator cbegin() const noexcept  { return values; }  ///< Iterator to the beginning of the array.
+    iterator end() noexcept                 { return values + num_elems; }  ///< Iterator to the end of the array.
+    const_iterator end() const noexcept     { return values + num_elems; }  ///< Iterator to the end of the array.
+    const_iterator cend() const noexcept    { return values + num_elems; }  ///< Iterator to the end of the array.
+
+    /**< Reverse iterator to the end of the array. */
+    reverse_iterator rbegin() noexcept               { return reverse_iterator(end()); }
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator rbegin() const noexcept   { return reverse_iterator(end()); }
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator crbegin() const noexcept  { return reverse_iterator(end()); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    reverse_iterator rend() noexcept                 { return reverse_iterator(begin()); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator rend() const noexcept     { return reverse_iterator(begin()); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator crend() const noexcept    { return reverse_iterator(begin()); }
 
     /** Get the first element in the array. */
     T const & first() const
@@ -78,16 +111,16 @@ class BoundedArrayN
     }
 
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
-    T const & operator[](int i) const
+    T const & operator[](size_t i) const
     {
-      debugAssertM(i >= 0 && i < num_elems, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
+      debugAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
-    T & operator[](int i)
+    T & operator[](size_t i)
     {
-      debugAssertM(i >= 0 && i < num_elems, format("BoundedArrayN: Index %d out of bounds [0, %d)", i, num_elems));
+      debugAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 
@@ -112,10 +145,10 @@ class BoundedArrayN
      * Insert an element at a given position in the array, shifting all existing elements at or after this position up by one
      * position to make space. If the array is full, the last element is dropped.
      */
-    void insert(int i, T const & t)
+    void insert(size_t i, T const & t)
     {
-      debugAssertM(i >= 0 && i <= std::min(num_elems, N - 1), format("BoundedArrayN: Index %d out of bounds [0, %d]", i,
-                                                                     std::min(num_elems, N - 1)));
+      debugAssertM(i <= std::min(num_elems, N - 1),
+                   format("BoundedArrayN: Index %ld out of bounds [0, %ld]", (long)i, (long)std::min(num_elems, N - 1)));
 
       if (isFull())
         Algorithms::fastCopyBackward(values + i, values + N - 1, values + i + 1);
@@ -126,9 +159,9 @@ class BoundedArrayN
     }
 
     /** Remove the element at the given position from the array. */
-    void erase(int i)
+    void erase(size_t i)
     {
-      if (i >= 0 && i < num_elems)
+      if (i < num_elems)
       {
         Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
         --num_elems;
