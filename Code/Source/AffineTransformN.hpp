@@ -48,6 +48,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformNBase(MatrixT const & linear_, VectorT const & translation_) : linear(linear_), trans(translation_) {}
 
+    /** Construct from an N x (N + 1) matrix. */
+    template <typename AffineMatrixT> AffineTransformNBase(Eigen::DenseBase<AffineMatrixT> const & m)
+    : linear(m.template leftCols<N>()), trans(m.template rightCols<1>())
+    {
+      // The initialization of the linear matrix will have checked the row count already, but still...
+      alwaysAssertM(m.rows() == N && m.cols() == N + 1, "AffineTransformN: Matrix passed to constructor must be N x (N + 1)");
+    }
+
     /** Cast the transform to a different scalar type. */
     template <typename U> AffineTransformN<N, U> cast() const
     {
@@ -97,13 +105,8 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     Matrix<N + 1, N + 1, T> homogeneous() const
     {
       Matrix<N + 1, N + 1, T> m = Matrix<N + 1, N + 1, T>::Identity();
-      for (intx i = 0; i < N; ++i)
-      {
-        for (intx j = 0; j < N; ++j)
-          m(i, j) = linear(i, j);
-
-        m(i, N) = trans[i];
-      }
+      m.template topLeftCorner<N, N>() = linear;
+      m.template topRightCorner<N, 1>() = trans;
 
       return m;
     }
@@ -112,13 +115,8 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     Matrix<N, N + 1, T> toMatrix() const
     {
       Matrix<N, N + 1, T> m;
-      for (intx i = 0; i < N; ++i)
-      {
-        for (intx j = 0; j < N; ++j)
-          m(i, j) = linear(i, j);
-
-        m(i, N) = trans[i];
-      }
+      m.template leftCols<N>() = linear;
+      m.template rightCols<1>() = trans;
 
       return m;
     }
@@ -133,14 +131,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Get an element of the N x (N + 1) matrix representing this transform. */
     T operator()(intx i, intx j) const
     {
-      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformT: Index out of bounds");
+      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);
     }
 
     /** Get an element of the N x (N + 1) matrix representing this transform. */
     T & operator()(intx i, intx j)
     {
-      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformT: Index out of bounds");
+      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);
     }
 
@@ -192,6 +190,9 @@ class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N,
 
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
+
+    /** Construct from an N x (N + 1) matrix. */
+    template <typename AffineMatrixT> AffineTransformN(Eigen::DenseBase<AffineMatrixT> const & m) : BaseT(m) {}
 
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
