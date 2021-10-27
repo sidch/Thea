@@ -37,9 +37,6 @@ class /* THEA_API */ AffineTransformN<3, T> : public Internal::AffineTransformNB
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
 
-    /** Construct from a 3 x 4 matrix. */
-    template <typename AffineMatrixT> AffineTransformN(Eigen::DenseBase<AffineMatrixT> const & m) : BaseT(m) {}
-
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
 

@@ -48,18 +48,16 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformNBase(MatrixT const & linear_, VectorT const & translation_) : linear(linear_), trans(translation_) {}
 
-    /** Construct from an N x (N + 1) matrix. */
-    template <typename AffineMatrixT> AffineTransformNBase(Eigen::DenseBase<AffineMatrixT> const & m)
-    : linear(m.template leftCols<N>()), trans(m.template rightCols<1>())
+    /**
+     * Construct from an N x (N + 1) matrix.
+     *
+     * @see toMatrix()
+     */
+    template <typename AffineMatrixT> static AffineTransformT fromMatrix(Eigen::DenseBase<AffineMatrixT> const & m)
     {
-      // The initialization of the linear matrix will have checked the row count already, but still...
       alwaysAssertM(m.rows() == N && m.cols() == N + 1, "AffineTransformN: Matrix passed to constructor must be N x (N + 1)");
-    }
 
-    /** Cast the transform to a different scalar type. */
-    template <typename U> AffineTransformN<N, U> cast() const
-    {
-      return AffineTransformN<N, U>(linear.template cast<U>(), trans.template cast<U>());
+      return AffineTransformT(m.template leftCols<N>(), m.template rightCols<1>());
     }
 
     /** Construct a scaling transform. */
@@ -78,6 +76,12 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     static AffineTransformT translation(VectorT const & v)
     {
       return AffineTransformT(MatrixT::Identity(), v);
+    }
+
+    /** Cast the transform to a different scalar type. */
+    template <typename U> AffineTransformN<N, U> cast() const
+    {
+      return AffineTransformN<N, U>(linear.template cast<U>(), trans.template cast<U>());
     }
 
     /** Set the transform to identity. */
@@ -111,7 +115,11 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
       return m;
     }
 
-    /** Convert to an N x (N + 1) transformation matrix. */
+    /**
+     * Convert to an N x (N + 1) transformation matrix.
+     *
+     * @see fromMatrix()
+     */
     Matrix<N, N + 1, T> toMatrix() const
     {
       Matrix<N, N + 1, T> m;
@@ -190,9 +198,6 @@ class /* THEA_API */ AffineTransformN : public Internal::AffineTransformNBase<N,
 
     /** Construct from a linear transform, followed by a translation. */
     AffineTransformN(MatrixT const & linear_, VectorT const & translation_ = VectorT::Zero()) : BaseT(linear_, translation_) {}
-
-    /** Construct from an N x (N + 1) matrix. */
-    template <typename AffineMatrixT> AffineTransformN(Eigen::DenseBase<AffineMatrixT> const & m) : BaseT(m) {}
 
     /** Copy constructor. */
     AffineTransformN(AffineTransformN const & src) : BaseT(src) {}
