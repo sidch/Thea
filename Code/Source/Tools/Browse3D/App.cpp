@@ -83,7 +83,7 @@ App::optsToString() const
       << "\n  fancy-colors = " << opts.fancy_colors
       << "\n  point-scale = " << opts.point_scale
       << "\n  no-axes = " << opts.no_axes
-      << "\n  no-shading= " << opts.no_shading
+      << "\n  no-shading = " << opts.no_shading
       << '\n';
 
   return oss.str();

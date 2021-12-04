@@ -1,5 +1,4 @@
 #include "ShapeRenderer.hpp"
-#include "../../Algorithms/BestFitSphere3.hpp"
 #include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
 #include "../../Algorithms/MeshTriangles.hpp"

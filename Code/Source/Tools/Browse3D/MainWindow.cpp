@@ -87,21 +87,22 @@ MainWindow::init()
     rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADED,       "&Flat shading\tAlt+0");
   view_menu->AppendSubMenu(rendering_menu,  "&Rendering");
   view_menu->Append(ID_VIEW_FIT,            "&Fit view to model\tCtrl+0");
+  view_menu->Append(ID_VIEW_PRINT_CAMERA,   "Print &camera parameters\tAlt+W");
   menubar->Append(view_menu, "&View");
 
   // Go menu
   wxMenu * go_menu = new wxMenu();
-  go_menu->Append(ID_GO_PREV,           "&Previous model\tCtrl+,");
-  go_menu->Append(ID_GO_NEXT,           "&Next model\tCtrl+.");
+  go_menu->Append(ID_GO_PREV,          "&Previous model\tCtrl+,");
+  go_menu->Append(ID_GO_NEXT,          "&Next model\tCtrl+.");
   go_menu->AppendSeparator();
-  go_menu->Append(ID_GO_PREV_FEATURES,  "Previous features\tCtrl+[");
-  go_menu->Append(ID_GO_NEXT_FEATURES,  "Next features\tCtrl+]");
+  go_menu->Append(ID_GO_PREV_FEATURES, "Previous features\tCtrl+[");
+  go_menu->Append(ID_GO_NEXT_FEATURES, "Next features\tCtrl+]");
   menubar->Append(go_menu, "&Go");
 
   // Tools menu
   wxMenu * tools_menu = new wxMenu();
-  tools_menu->Append(ID_TOOLS_SCREENSHOT,        "&Save screenshot\tCtrl+G");
-  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX,  "&Toolbox\tCtrl+T");
+  tools_menu->Append(ID_TOOLS_SCREENSHOT,       "&Save screenshot\tCtrl+G");
+  tools_menu->AppendCheckItem(ID_TOOLS_TOOLBOX, "&Toolbox\tCtrl+T");
   menubar->Append(tools_menu, "&Tools");
 
   // About menu
@@ -231,6 +232,7 @@ MainWindow::init()
   Bind(wxEVT_MENU, &ModelDisplay::setTwoSided, ui.model_display, ID_VIEW_TWO_SIDED);
   Bind(wxEVT_MENU, &ModelDisplay::setFlatShaded, ui.model_display, ID_VIEW_FLAT_SHADED);
   Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
+  Bind(wxEVT_MENU, &ModelDisplay::printCamera, ui.model_display, ID_VIEW_PRINT_CAMERA);
 
   Bind(wxEVT_MENU, &MainWindow::loadPreviousModel, this, ID_GO_PREV);
   Bind(wxEVT_MENU, &MainWindow::loadNextModel, this, ID_GO_NEXT);

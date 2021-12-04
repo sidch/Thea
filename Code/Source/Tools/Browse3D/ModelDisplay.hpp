@@ -118,6 +118,9 @@ class ModelDisplay : public wxGLCanvas
     /** Adjust the view to fit the current model. */
     void fitViewToModel(wxEvent & event = DUMMY_EVENT);
 
+    /** Print the camera parameters. */
+    void printCamera(wxEvent & event = DUMMY_EVENT);
+
     /** Called when the model geometry changes. */
     void modelGeometryChanged(wxEvent & event = DUMMY_EVENT);
 

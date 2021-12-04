@@ -49,6 +49,11 @@ class THEA_API Camera : public Serializable
       };
 
       THEA_ENUM_CLASS_BODY(ProjectionType)
+
+      THEA_ENUM_CLASS_STRINGS_BEGIN(ProjectionType)
+        THEA_ENUM_CLASS_STRING(ORTHOGRAPHIC,  "orthographic")
+        THEA_ENUM_CLASS_STRING(PERSPECTIVE,   "perspective")
+      THEA_ENUM_CLASS_STRINGS_END(ProjectionType)
     };
 
     /** The direction in which projected Y coordinates increase, relative to the up vector of the camera frame. */
@@ -62,6 +67,11 @@ class THEA_API Camera : public Serializable
       };
 
       THEA_ENUM_CLASS_BODY(ProjectedYDirection)
+
+      THEA_ENUM_CLASS_STRINGS_BEGIN(ProjectedYDirection)
+        THEA_ENUM_CLASS_STRING(UP,    "up")
+        THEA_ENUM_CLASS_STRING(DOWN,  "down")
+      THEA_ENUM_CLASS_STRINGS_END(ProjectedYDirection)
     };
 
     /**

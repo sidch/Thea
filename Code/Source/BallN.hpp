@@ -33,15 +33,15 @@ template <int N, typename T = Real>
 class /* THEA_API */ BallN : public RayIntersectableN<N, T>
 {
   public:
-    typedef Vector<N, T> VectorT;
-
     THEA_DECL_SMART_POINTERS(BallN)
+
+    typedef Vector<N, T> VectorT;  ///< Compatible vector type.
 
     /** Default constructor. Does not initialize anything. */
     BallN() {}
 
     /** Initialize with a center and a radius. */
-    BallN(VectorT const & center_, T const & radius_) : center(center_), radius(radius_) {}
+    BallN(VectorT const & center_, T radius_) : center(center_), radius(radius_) {}
 
     /** Copy constructor. */
     BallN(BallN const & src) : center(src.center), radius(src.radius) {}

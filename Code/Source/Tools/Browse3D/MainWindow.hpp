@@ -66,6 +66,7 @@ class MainWindow : public wxFrame
       ID_VIEW_TWO_SIDED,
       ID_VIEW_FLAT_SHADED,
       ID_VIEW_FIT,
+      ID_VIEW_PRINT_CAMERA,
       ID_GO_PREV,
       ID_GO_NEXT,
       ID_GO_PREV_FEATURES,

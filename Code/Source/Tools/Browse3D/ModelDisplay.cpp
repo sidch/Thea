@@ -208,6 +208,23 @@ ModelDisplay::updateCameraProjection()
 }
 
 void
+ModelDisplay::printCamera(wxEvent & event)
+{
+  THEA_CONSOLE << "\nCamera:\n"
+               << "  -- eye: " << toString(camera.getPosition()) << '\n'
+               << "  -- look: " << toString(camera.getLookDirection()) << '\n'
+               << "  -- up: " << toString(camera.getUpDirection()) << '\n'
+               << "  -- projection: " << camera.getProjectionType().toString() << '\n'
+               << "  -- left margin: " << camera.getLeftMargin() << '\n'
+               << "  -- right margin: " << camera.getLeftMargin() << '\n'
+               << "  -- bottom margin: " << camera.getBottomMargin() << '\n'
+               << "  -- top margin: " << camera.getTopMargin() << '\n'
+               << "  -- near distance: " << camera.getNearDistance() << '\n'
+               << "  -- far distance: " << camera.getFarDistance() << '\n'
+               << "  -- projected Y increases: " << camera.getProjectedYDirection ().toString() << '\n';
+}
+
+void
 ModelDisplay::modelGeometryChanged(wxEvent & event)
 {
   fitViewToModel(event);
