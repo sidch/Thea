@@ -105,8 +105,8 @@ class CodecObj : public CodecObjBase<MeshT>
     class ReadOptions
     {
       private:
-        bool ignore_texcoords;
-        bool ignore_normals;
+        bool read_texcoords;
+        bool read_normals;
         bool skip_empty_meshes;
         bool flatten;
         bool store_vertex_indices;
@@ -119,21 +119,21 @@ class CodecObj : public CodecObjBase<MeshT>
       public:
         /* Constructor. Sets default values. */
         ReadOptions()
-        : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
+        : read_texcoords(true), read_normals(true), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
           store_face_indices(true), strict(false), verbose(1) {}
 
         /**
-         * Ignore texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
+         * Include texture coordinates when reading from/writing to the OBJ file? If false, each unique vertex/texcoord pair
          * referenced by faces is treated as a distinct vertex. Note that not all mesh types can store texture coordinates by
          * default.
          */
-        ReadOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+        ReadOptions & setReadTexCoords(bool value) { read_texcoords = value; return *this; }
 
         /**
-         * Ignore normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by
+         * Include normals when reading from/writing to the OBJ file? If false, each unique vertex/normal pair referenced by
          * faces is treated as a distinct vertex. Note that not all mesh types can store normals by default.
          */
-        ReadOptions & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
+        ReadOptions & setReadNormals(bool value) { read_normals = value; return *this; }
 
         /** Skip meshes with no vertices or faces? */
         ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
@@ -154,9 +154,11 @@ class CodecObj : public CodecObjBase<MeshT>
         ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
-         * The set of default options. The default options correspond to
-         * ReadOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false)
-         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
+         * The set of default options. The default options correspond to:
+         * \code
+         * ReadOptions().setReadTexCoords(true).setReadNormals(true).setSkipEmptyMeshes(true).setFlatten(false)
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1)
+         * \endcode
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -166,8 +168,8 @@ class CodecObj : public CodecObjBase<MeshT>
     class WriteOptions
     {
       private:
-        bool ignore_texcoords;
-        bool ignore_normals;
+        bool write_texcoords;
+        bool write_normals;
         bool skip_empty_meshes;
         bool flatten;
         int  verbose;
@@ -176,20 +178,20 @@ class CodecObj : public CodecObjBase<MeshT>
 
       public:
         /* Constructor. Sets default values. */
-        WriteOptions() : ignore_texcoords(false), ignore_normals(false), skip_empty_meshes(true), flatten(false), verbose(1)
+        WriteOptions() : write_texcoords(true), write_normals(true), skip_empty_meshes(true), flatten(false), verbose(1)
         {}
 
         /**
-         * Ignore texture coordinates when writing to the OBJ file? If false, each unique vertex/texcoord pair referenced by
+         * Include texture coordinates when writing to the OBJ file? If false, each unique vertex/texcoord pair referenced by
          * faces is treated as a distinct vertex. Note that not all mesh types can store texture coordinates by default.
          */
-        WriteOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+        WriteOptions & setWriteTexCoords(bool value) { write_texcoords = value; return *this; }
 
         /**
-         * Ignore normals when writing to the OBJ file? If false, each unique vertex/normal pair referenced by faces is treated
+         * Include normals when writing to the OBJ file? If false, each unique vertex/normal pair referenced by faces is treated
          * as a distinct vertex. Note that not all mesh types can store normals by default.
          */
-        WriteOptions & setIgnoreNormals(bool value) { ignore_normals = value; return *this; }
+        WriteOptions & setWriteNormals(bool value) { write_normals = value; return *this; }
 
         /** Skip meshes with no vertices or faces? */
         WriteOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
@@ -201,9 +203,11 @@ class CodecObj : public CodecObjBase<MeshT>
         WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
-         * The set of default options. The default options correspond to
-         * WriteOptions().setIgnoreTexCoords(false).setIgnoreNormals(false).setSkipEmptyMeshes(true).setFlatten(false)
-         *               .setVerbose(1).
+         * The set of default options. The default options correspond to:
+         * \code
+         * WriteOptions().setWriteTexCoords(true).setWriteNormals(true).setSkipEmptyMeshes(true)
+         *               .setFlatten(false).setVerbose(1)
+         * \endcode
          */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
@@ -273,7 +277,7 @@ class CodecObj : public CodecObjBase<MeshT>
 
           if (line[1] == 't')
           {
-            if (!read_opts.ignore_texcoords)  // texcoord
+            if (read_opts.read_texcoords)  // texcoord
             {
               vstr.get();
               if (!(vstr >> x >> y))
@@ -284,7 +288,7 @@ class CodecObj : public CodecObjBase<MeshT>
           }
           else if (line[1] == 'n')
           {
-            if (!read_opts.ignore_normals)  // normal
+            if (read_opts.read_normals)  // normal
             {
               vstr.get();
               if (!(vstr >> x >> y >> z))
@@ -319,7 +323,7 @@ class CodecObj : public CodecObjBase<MeshT>
             // OBJ stores a vertex reference as VertexIndex[/[TexCoordIndex][/NormalIndex]]
             VTN vtn; vtn[0] = vtn[1] = vtn[2] = 0;
 
-            if (!read_opts.ignore_texcoords || !read_opts.ignore_normals)  // spend time parsing VTN triplets
+            if (read_opts.read_texcoords || read_opts.read_normals)  // spend time parsing VTN triplets
             {
               bool bad_index = false;
               if (!(fstr >> vtn[0]))
@@ -329,7 +333,7 @@ class CodecObj : public CodecObjBase<MeshT>
               {
                 if (fstr.peek() == '/')
                 {
-                  if (!read_opts.ignore_normals)
+                  if (read_opts.read_normals)
                   {
                     fstr.get();
                     if (!(fstr >> vtn[2]))
@@ -343,10 +347,10 @@ class CodecObj : public CodecObjBase<MeshT>
 
                   if (!bad_index)
                   {
-                    if (read_opts.ignore_texcoords)  // reset field
+                    if (!read_opts.read_texcoords)  // reset field
                       vtn[1] = 0;
 
-                    if (!read_opts.ignore_normals && fstr.get() == '/')
+                    if (read_opts.read_normals && fstr.get() == '/')
                     {
                       if (!(fstr >> vtn[2]))
                         bad_index = true;
@@ -368,14 +372,14 @@ class CodecObj : public CodecObjBase<MeshT>
                 bad_face = true; break;
               }
 
-              if (!read_opts.ignore_texcoords && std::abs(vtn[1]) > (intx)texcoords.size())
+              if (read_opts.read_texcoords && std::abs(vtn[1]) > (intx)texcoords.size())
               {
                 THEA_WARNING << getName() << ": Texture coordinate index " << vtn[1] << " out of bounds (#texcoords = "
                              << texcoords.size() << ')';
                 vtn[1] = 0;
               }
 
-              if (!read_opts.ignore_normals && std::abs(vtn[2]) > (intx)normals.size())
+              if (read_opts.read_normals && std::abs(vtn[2]) > (intx)normals.size())
               {
                 THEA_WARNING << getName() << ": Normal index " << vtn[2] << " out of bounds (#normals = "
                              << normals.size() << ')';
@@ -572,7 +576,7 @@ class CodecObj : public CodecObjBase<MeshT>
         if (callback) callback->vertexWritten(&mesh, vertex_index - 1, &(*vi));
       }
 
-      if (!write_opts.ignore_normals)
+      if (write_opts.write_normals)
       {
         for (typename Mesh::VertexConstIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
           output.printf("vn %f %f %f\n", vi->getNormal().x(), vi->getNormal().y(), vi->getNormal().z());
@@ -596,7 +600,7 @@ class CodecObj : public CodecObjBase<MeshT>
         if (callback) callback->vertexWritten(&mesh, vertex_index - 1, (intx)i);
       }
 
-      if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
+      if (write_opts.write_texcoords && mesh.hasTexCoords())
       {
         typename Mesh::TexCoordArray const & texcoords = mesh.getTexCoords();
         alwaysAssertM(texcoords.size() == vertices.size(),
@@ -609,7 +613,7 @@ class CodecObj : public CodecObjBase<MeshT>
         }
       }
 
-      if (!write_opts.ignore_normals && mesh.hasNormals())
+      if (write_opts.write_normals && mesh.hasNormals())
       {
         typename Mesh::NormalArray const & normals = mesh.getNormals();
         alwaysAssertM(normals.size() == vertices.size(),
@@ -661,7 +665,7 @@ class CodecObj : public CodecObjBase<MeshT>
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(*vi);
           alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
-          if (!write_opts.ignore_normals)
+          if (write_opts.write_normals)
             os << ' ' << ii->second << "//" << ii->second;
           else
             os << ' ' << ii->second;
@@ -700,16 +704,16 @@ class CodecObj : public CodecObjBase<MeshT>
           typename VertexIndexMap::const_iterator ii = vertex_indices.find(DisplayMeshVRef(&mesh, (intx)f.getVertexIndex(j)));
           alwaysAssertM(ii != vertex_indices.end(), toString(getName()) + ": Vertex index not found");
 
-          if (!write_opts.ignore_texcoords && mesh.hasTexCoords())
+          if (write_opts.write_texcoords && mesh.hasTexCoords())
           {
-            if (!write_opts.ignore_normals && mesh.hasNormals())
+            if (write_opts.write_normals && mesh.hasNormals())
               os << ' ' << ii->second << '/' << ii->second << '/' << ii->second;
             else
               os << ' ' << ii->second << '/' << ii->second;
           }
           else
           {
-            if (!write_opts.ignore_normals && mesh.hasNormals())
+            if (write_opts.write_normals && mesh.hasNormals())
               os << ' ' << ii->second << "//" << ii->second;
             else
               os << ' ' << ii->second;

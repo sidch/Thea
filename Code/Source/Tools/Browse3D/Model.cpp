@@ -163,7 +163,7 @@ Model::load(std::string path_)
     Mesh::resetVertexIndices();  // reset counting
     Mesh::resetFaceIndices();
 
-    static CodecObj<Mesh> const obj_codec(CodecObj<Mesh>::ReadOptions().setIgnoreTexCoords(true));
+    static CodecObj<Mesh> const obj_codec(CodecObj<Mesh>::ReadOptions().setReadTexCoords(false));
     try
     {
       if (endsWith(toLower(path_), ".obj"))
@@ -1496,30 +1496,9 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
   render_system->pushTextures();
   render_system->pushColorFlags();
 
-    setPhongShader(*render_system);
-    render_system->setTexture(0, nullptr);
-
-    if (app().getMainWindow()->pickPoints())
-    {
-      Real sample_radius = 0.005f * getBounds().getExtent().norm();
-      if (valid_pick)
-      {
-        render_system->setColor(ColorRgba::red().data());
-        drawSphere(*render_system, picked_sample.position, sample_radius);
-      }
-
-      for (size_t i = 0; i < samples.size(); ++i)
-      {
-        render_system->setColor(getLabelColor(samples[i].label).data());
-
-        if ((intx)i == selected_sample)
-          drawSphere(*render_system, samples[i].position, 3 * sample_radius);
-        else
-          drawSphere(*render_system, samples[i].position, sample_radius);
-      }
-    }
-
     render_system->setColor(color.data());
+    render_system->setTexture(0, nullptr);
+    setSurfaceShader(*render_system);
 
     if (mesh_group)
     {
@@ -1548,6 +1527,28 @@ Model::draw(Graphics::IRenderSystem * render_system, Graphics::IRenderOptions co
           else
             mesh_group->forEachMeshUntil(ModelInternal::DrawVertexNormals(render_system, normal_scale));
         }
+      }
+    }
+
+    if (app().getMainWindow()->pickPoints())
+    {
+      setPhongShader(*render_system);
+
+      Real sample_radius = 0.005f * getBounds().getExtent().norm();
+      if (valid_pick)
+      {
+        render_system->setColor(ColorRgba::red().data());
+        drawSphere(*render_system, picked_sample.position, sample_radius);
+      }
+
+      for (size_t i = 0; i < samples.size(); ++i)
+      {
+        render_system->setColor(getLabelColor(samples[i].label).data());
+
+        if ((intx)i == selected_sample)
+          drawSphere(*render_system, samples[i].position, 3 * sample_radius);
+        else
+          drawSphere(*render_system, samples[i].position, sample_radius);
       }
     }
 

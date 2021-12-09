@@ -59,8 +59,8 @@ Mesh::Ptr
 loadMesh(std::string const & path)
 {
   Array< MeshCodec<Mesh>::Ptr > codecs {
-    std::make_shared< CodecObj<Mesh> >(CodecObj<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true)),
-    std::make_shared< Codec3ds<Mesh> >(Codec3ds<Mesh>::ReadOptions().setIgnoreTexCoords(true).setFlatten(true))
+    std::make_shared< CodecObj<Mesh> >(CodecObj<Mesh>::ReadOptions().setReadTexCoords(false).setFlatten(true)),
+    std::make_shared< Codec3ds<Mesh> >(Codec3ds<Mesh>::ReadOptions().setReadTexCoords(false).setFlatten(true))
   };
 
   MeshGroup<Mesh> mesh_group;

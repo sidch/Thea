@@ -144,9 +144,9 @@ main(int argc, char * argv[])
   if (argc < 3)
     return usage(argc, argv);
 
-  CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(CodecObj<Mesh>::ReadOptions().setIgnoreNormals(true)
-                                                                                .setIgnoreTexCoords(true)));
-  Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(Codec3ds<Mesh>::ReadOptions().setIgnoreTexCoords(true)));
+  CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(CodecObj<Mesh>::ReadOptions().setReadNormals(false)
+                                                                                .setReadTexCoords(false)));
+  Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(Codec3ds<Mesh>::ReadOptions().setReadTexCoords(false)));
   Array<MeshCodec<Mesh>::Ptr> read_codecs;
   read_codecs.push_back(codec_obj);
   read_codecs.push_back(codec_3ds);

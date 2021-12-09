@@ -58,7 +58,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
     {
       private:
         bool use_transforms;
-        bool ignore_texcoords;
+        bool read_texcoords;
         bool skip_empty_meshes;
         bool flatten;
         bool store_vertex_indices;
@@ -71,15 +71,15 @@ class Codec3ds : public Codec3dsBase<MeshT>
       public:
         /** Constructor. Sets default values. */
         ReadOptions()
-        : use_transforms(false), ignore_texcoords(false), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
+        : use_transforms(false), read_texcoords(true), skip_empty_meshes(true), flatten(false), store_vertex_indices(true),
           store_face_indices(true), strict(false), verbose(1)
         {}
 
         /** Apply node transforms embedded in the 3DS file? */
         ReadOptions & setUseTransforms(bool value) { use_transforms = value; return *this; }
 
-        /** Ignore texture coordinates when reading from/writing to the 3DS file? */
-        ReadOptions & setIgnoreTexCoords(bool value) { ignore_texcoords = value; return *this; }
+        /** Include texture coordinates when reading from/writing to the 3DS file? */
+        ReadOptions & setReadTexCoords(bool value) { read_texcoords = value; return *this; }
 
         /** Skip meshes with no vertices or faces? */
         ReadOptions & setSkipEmptyMeshes(bool value) { skip_empty_meshes = value; return *this; }
@@ -100,9 +100,11 @@ class Codec3ds : public Codec3dsBase<MeshT>
         ReadOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
-         * The set of default options. The default options correspond to
-         * ReadOptions().setUseTransforms(false).setIgnoreTexCoords(false).setSkipEmptyMeshes(true).setFlatten(false).
-         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1).
+         * The set of default options. The default options correspond to:
+         * \code
+         * ReadOptions().setUseTransforms(false).setReadTexCoords(true).setSkipEmptyMeshes(true).setFlatten(false).
+         *              .setStoreVertexIndices(true).setStoreFaceIndices(true).setVerbose(1)
+         * \endcode
          */
         static ReadOptions const & defaults() { static ReadOptions const def; return def; }
 
@@ -125,8 +127,10 @@ class Codec3ds : public Codec3dsBase<MeshT>
         WriteOptions & setVerbose(int value) { verbose = value; return *this; }
 
         /**
-         * The set of default options. The default options correspond to
+         * The set of default options. The default options correspond to:
+         * \code
          * WriteOptions().setVerbose(1).
+         * \endcode
          */
         static WriteOptions const & defaults() { static WriteOptions const def; return def; }
 
@@ -269,7 +273,7 @@ class Codec3ds : public Codec3dsBase<MeshT>
           Vector3 vertex(m->pointL[i].pos[0], m->pointL[i].pos[1], m->pointL[i].pos[2]);
 
           intx vindex = (read_opts.store_vertex_indices ? vertex_count : -1);
-          if (!read_opts.ignore_texcoords && (intx)i < (intx)m->texels)
+          if (read_opts.read_texcoords && (intx)i < (intx)m->texels)
           {
             Vector2 texcoord(m->texelL[i][0], m->texelL[i][1]);
             vref = builder->addVertex(read_opts.use_transforms ? Math::hmul(transform, vertex)

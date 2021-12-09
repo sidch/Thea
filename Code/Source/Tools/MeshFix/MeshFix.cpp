@@ -192,17 +192,17 @@ meshFix(int argc, char * argv[])
     return parse_status;
 
   Codec3ds<Mesh>::ReadOptions read_opts_3ds = Codec3ds<Mesh>::ReadOptions::defaults();
-  read_opts_3ds.setIgnoreTexCoords(no_texcoords)
+  read_opts_3ds.setReadTexCoords(!no_texcoords)
                .setSkipEmptyMeshes(no_empty);
   Codec3ds<Mesh>::Ptr codec_3ds(new Codec3ds<Mesh>(read_opts_3ds, Codec3ds<Mesh>::WriteOptions::defaults()));
 
   CodecObj<Mesh>::ReadOptions read_opts_obj = CodecObj<Mesh>::ReadOptions::defaults();
-  read_opts_obj.setIgnoreTexCoords(no_texcoords)
-               .setIgnoreNormals(no_normals)
+  read_opts_obj.setReadTexCoords(!no_texcoords)
+               .setReadNormals(!no_normals)
                .setSkipEmptyMeshes(no_empty);
   CodecObj<Mesh>::WriteOptions write_opts_obj = CodecObj<Mesh>::WriteOptions::defaults();
-  write_opts_obj.setIgnoreTexCoords(no_texcoords)
-                .setIgnoreNormals(no_normals)
+  write_opts_obj.setWriteTexCoords(!no_texcoords)
+                .setWriteNormals(!no_normals)
                 .setSkipEmptyMeshes(no_empty);
   CodecObj<Mesh>::Ptr codec_obj(new CodecObj<Mesh>(read_opts_obj, write_opts_obj));
 

@@ -53,6 +53,12 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsDcelMesh<MeshT>::
       alwaysAssertM(mesh, "IncrementalMeshBuilder: Mesh pointer cannot be null");
     }
 
+    /** Get the mesh being built. */
+    Mesh const * getMesh() const { return mesh; }
+
+    /** Get the mesh being built. */
+    Mesh * getMesh() { return mesh; }
+
     /**
      * Start building the mesh. A mesh may be incrementally built in piecewise fashion through multiple begin() / end()
      * blocks. For every begin there must be a corresponding end(). Blocks may not be nested.
@@ -64,6 +70,12 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsDcelMesh<MeshT>::
       alwaysAssertM(!building, "IncrementalMeshBuilder: begin/end not matched");
       building = true;
     }
+
+    /** Check if a vertex handle is valid, that is, it is not a null pointer. */
+    static bool isValidVertexHandle(VertexHandle handle) { return Mesh::isValidVertexHandle(handle); }
+
+    /** Check if a face handle is valid, that is, it is not a null pointer. */
+    static bool isValidFaceHandle(FaceHandle handle) { return Mesh::isValidFaceHandle(handle); }
 
     /** Add a vertex to the mesh and return a handle to it. Must be called within a begin() / end() block. */
     VertexHandle addVertex(Vector3 const & pos, intx index = -1, Vector3 const * normal = nullptr,

@@ -79,6 +79,7 @@ App::optsToString() const
       << "\n  flat = " << opts.flat
       << "\n  edges = " << opts.edges
       << "\n  material = " << toString(opts.material)
+      << "\n  matcap = " << opts.matcap
       << "\n  fancy-points = " << opts.fancy_points
       << "\n  fancy-colors = " << opts.fancy_colors
       << "\n  point-scale = " << opts.point_scale
@@ -198,14 +199,17 @@ App::parseOptions(std::vector<std::string> const & args)
   visible.add_options()
           ("help,h",               "Print this help message")
           ("version,v",            "Print the program version")
-          ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"), "Configuration file (overridden by duplicate cmdline options)")
+          ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"),
+                                   "Configuration file (overridden by duplicate cmdline options)")
           ("plugin-dir",           po::value<std::string>(&opts.plugin_dir), "Plugins directory")
-          ("resource-dir",         po::value<std::string>(&opts.resource_dir)->default_value(def_resource_dir), "Resources directory")
+          ("resource-dir",         po::value<std::string>(&opts.resource_dir)->default_value(def_resource_dir),
+                                   "Resources directory")
           ("working-dir",          po::value<std::string>(&opts.working_dir)->default_value("."), "Working directory")
           ("model",                po::value<std::string>(&s_model), "Model to load on startup, with optional transform")
           ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
           ("features,f",           po::value<std::string>(&opts.features), "Directory/file containing features to load")
-          ("elem-labels,l",        po::value<std::string>(&opts.elem_labels), "Directory/file containing face/point labels to load")
+          ("elem-labels,l",        po::value<std::string>(&opts.elem_labels),
+                                   "Directory/file containing face/point labels to load")
           ("emph-features,e",      "Make feature distributions easier to view")
           ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
           ("normals,n",            "Draw normals as arrows")
@@ -215,7 +219,8 @@ App::parseOptions(std::vector<std::string> const & args)
           ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
           ("flat,0",               "Flat shade meshes")
           ("edges,j",              "Show mesh edges")
-          ("material,k",           po::value<std::string>(&s_material), "Surface material coefficients (ka, kd, ks, ksp)")
+          ("material,k",           po::value<std::string>(&s_material),
+                                   "Surface material coefficients (ka, kd, ks, ksp), or path to a matcap image")
           ("fancy-points",         "Draw points as shaded spheres")
           ("fancy-colors",         "Color points by a function of position")
           ("point-scale,p",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
@@ -329,17 +334,24 @@ App::parseOptions(std::vector<std::string> const & args)
 
   if (!s_material.empty())
   {
-    Vector4 m;
-    int num_fields = parseVector(s_material, m);
-    if (num_fields <= 0)
+    if (FileSystem::fileExists(s_material))
+      opts.matcap = s_material;
+    else
     {
-      THEA_ERROR << "Could not parse material: " << s_material;
-      return false;
+      Vector4 m;
+      int num_fields = parseVector(s_material, m);
+      if (num_fields > 0)
+      {
+        for (int i = 0; i < num_fields; ++i)
+          if (m[i] >= -0.001)
+            opts.material[i] = m[i];
+      }
+      else
+      {
+        THEA_ERROR << "Invalid material: " << s_material;
+        return false;
+      }
     }
-
-    for (int i = 0; i < num_fields; ++i)
-      if (m[i] >= -0.001)
-        opts.material[i] = m[i];
   }
 
   Application::setResourceArchive(opts.resource_dir);

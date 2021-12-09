@@ -261,7 +261,7 @@ class THEA_API ImplicitSurfaceMesher
           Vector3 p(bp_p.x, bp_p.y, bp_p.z), n(bp_n.x, bp_n.y, bp_n.z);
 
           typename Builder::VertexHandle vx = builder.addVertex(p, (intx)i, &n);
-          if (!vx)
+          if (!builder.isValidVertexHandle(vx))
             throw Error("ImplicitSurfaceMesher: Could not add vertex from Bloomenthal polygonizer to mesh");
 
           vertices.push_back(vx);
@@ -278,7 +278,7 @@ class THEA_API ImplicitSurfaceMesher
           typename Builder::VertexHandle vx[3] = { vertices[(size_t)tri.v0],
                                                    vertices[(size_t)tri.v1],
                                                    vertices[(size_t)tri.v2] };
-          if (!builder.addFace(vx, vx + 3))
+          if (!builder.isValidFaceHandle(builder.addFace(vx, vx + 3)))
             throw Error("ImplicitSurfaceMesher: Could not add triangle from Bloomenthal polygonizer to mesh");
         }
       builder.end();

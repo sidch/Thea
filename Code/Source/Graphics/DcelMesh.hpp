@@ -337,6 +337,12 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
      */
     AxisAlignedBox3 const & getBounds() const { return bounds; }
 
+    /** Check if a vertex handle is valid, that is, it is not a null pointer. */
+    static bool isValidVertexHandle(VertexConstHandle handle) { return (bool)handle; }
+
+    /** Check if a face handle is valid, that is, it is not a null pointer. */
+    static bool isValidFaceHandle(FaceConstHandle handle) { return (bool)handle; }
+
     /** Do the mesh vertices have attached colors? */
     bool hasVertexColors() const { return HasColor<Vertex>::value; }
 

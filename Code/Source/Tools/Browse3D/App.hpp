@@ -71,6 +71,7 @@ class App : public wxApp
       bool flat;                                            ///< Flat-shade meshes by default?
       bool edges;                                           ///< Show mesh edges by default?
       Vector4 material;                                     ///< Surface material coefficients (kd, ka, ks, ksp).
+      std::string matcap;                                   ///< Path to matcap image (empty to disable).
       bool fancy_points;                                    ///< Draw points as shaded spheres?
       bool fancy_colors;                                    ///< Color points by a function of position?
       Real point_scale;                                     ///< Scale point sizes by this factor.

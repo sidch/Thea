@@ -277,7 +277,7 @@ testIMLS(int argc, char * argv[])
   // Get a vertex on the mesh
   Vector3 p = (*input_mg.meshesBegin())->verticesBegin()->getPosition();
 
-  // mesh_opts.bloomenthal.cell_size = input_mg.getBounds().getExtent().cwiseMax() / 15.0;
+  // mesh_opts.bloomenthal.cell_size = input_mg.getBounds().getExtent().maxCoeff() / 15.0;
   // mesh_opts.bloomenthal.max_search_steps = 10;
 
   cout << "Cell size = " << mesh_opts.bloomenthal.cell_size

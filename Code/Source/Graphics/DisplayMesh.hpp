@@ -502,6 +502,12 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
       return bounds;
     }
 
+    /** Check if a vertex handle is valid, that is, it is not a negative integer. */
+    static bool isValidVertexHandle(VertexConstHandle handle) { return handle >= 0; }
+
+    /** Check if a face handle is valid, that is, it is not a negative integer. */
+    static bool isValidFaceHandle(FaceConstHandle handle) { return handle >= 0; }
+
     /** Check if the vertices have attached normal information. */
     bool hasNormals() const { return !normals.empty(); }
 

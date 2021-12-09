@@ -41,16 +41,22 @@ class GraphicsWidget : public Graphics::IDrawable
     /** Update the bounding box of the part. */
     virtual void updateBounds() {}
 
-    /** Select a Phong shader for rendering. */
-    static void setPhongShader(Graphics::IRenderSystem & render_system);
+    /** Select an appropriate shader for surface rendering. Prefers matcap over Phong if both are available. */
+    static bool setSurfaceShader(Graphics::IRenderSystem & render_system);
+
+    /** Select the Phong shader for rendering. */
+    static bool setPhongShader(Graphics::IRenderSystem & render_system);
+
+    /** Select the matcap shader for rendering. */
+    static bool setMatcapShader(Graphics::IRenderSystem & render_system);
 
     /** Get the shader currently being used. */
     static Graphics::IShader * getShader();
 
-    /** Set the lighting parameters. */
+    /** Set the lighting parameters for shaders that support these settings. */
     static void setLight(Vector3 const & dir, ColorRgb const & color, ColorRgb const & ambient_color_);
 
-    /** Set two-sided lighting on/off. */
+    /** Set two-sided lighting on/off, for shaders that support these settings. */
     static void setTwoSided(bool value);
 
     /** Set flat shading on/off. */
@@ -72,11 +78,17 @@ class GraphicsWidget : public Graphics::IDrawable
     static bool isFlatShaded() { return flat_shaded; }
 
   private:
-    /** Set shader uniforms related to lighting. */
-    static void setLightingUniforms(Graphics::IShader * s = nullptr);
-
-    /** Get the wrapped Phong shader. */
+    /** Get the wrapped Phong shader, or a null pointer if it could not be initialized. */
     static Graphics::IShader * getPhongShader(Graphics::IRenderSystem & render_system);
+
+    /** Get the wrapped matcap shader, or a null pointer if it could not be initialized. */
+    static Graphics::IShader * getMatcapShader(Graphics::IRenderSystem & render_system);
+
+    /** Set shader uniforms related to Phong shading (including the surface material). Returns null on error. */
+    static Graphics::IShader * setPhongUniforms(Graphics::IRenderSystem & render_system);
+
+    /** Set shader uniforms related to matcap materials (including the matcap texture itself). Returns null on error. */
+    static Graphics::IShader * setMatcapUniforms(Graphics::IRenderSystem & render_system);
 
     static Graphics::IShader * shader;
     static Vector3 light_dir;

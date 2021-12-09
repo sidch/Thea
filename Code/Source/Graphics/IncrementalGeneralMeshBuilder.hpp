@@ -53,6 +53,12 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsGeneralMesh<MeshT
       alwaysAssertM(mesh, "IncrementalMeshBuilder: Mesh pointer cannot be null");
     }
 
+    /** Get the mesh being built. */
+    Mesh const * getMesh() const { return mesh; }
+
+    /** Get the mesh being built. */
+    Mesh * getMesh() { return mesh; }
+
     /**
      * Start building the mesh. A mesh may be incrementally built in piecewise fashion through multiple begin() / end()
      * blocks. For every begin there must be a corresponding end(). Blocks may not be nested.
@@ -72,7 +78,8 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsGeneralMesh<MeshT
       debugAssertM(building, "IncrementalMeshBuilder: A vertex cannot be added outside a begin/end block");
 
       VertexHandle ref = mesh->addVertex(pos, index, normal, color, texcoord);
-      num_vertices++;
+      if (ref) { num_vertices++; }
+
       return ref;
     }
 
@@ -83,9 +90,16 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsGeneralMesh<MeshT
       debugAssertM(building, "IncrementalMeshBuilder: A face cannot be added outside a begin/end block");
 
       FaceHandle ref = mesh->addFace(begin, end, index);
-      num_faces++;
+      if (ref) { num_faces++; }
+
       return ref;
     }
+
+    /** Check if a vertex handle is valid, that is, it is not a null pointer. */
+    static bool isValidVertexHandle(VertexHandle handle) { return Mesh::isValidVertexHandle(handle); }
+
+    /** Check if a face handle is valid, that is, it is not a null pointer. */
+    static bool isValidFaceHandle(FaceHandle handle) { return Mesh::isValidFaceHandle(handle); }
 
     /** Get the number of vertices added so far. */
     intx numVertices() const { return num_vertices; }
