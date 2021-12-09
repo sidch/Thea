@@ -169,6 +169,16 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     {
       if (child)
       {
+        // Check for loops introduced by adding this child. Given the first assert, we only need to check the root of the
+        // hierarchy thereafter, but we'll check at all levels to be safe, and because it's the same time complexity.
+        alwaysAssertM(!child->parent, getNameStr() + ": Remove child from existing parent before adding it to this mesh group");
+        auto const * p = this;
+        while (p)
+        {
+          alwaysAssertM(child.get() != p, getNameStr() + ": Trying to add ancestor mesh group as its own descendant");
+          p = p->parent;
+        }
+
         children.insert(child);
         child->parent = this;
       }
