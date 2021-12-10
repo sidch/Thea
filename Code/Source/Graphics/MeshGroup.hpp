@@ -197,7 +197,7 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     /** Remove all children of the group. */
     void clearChildren()
     {
-      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
         (*ci)->parent = nullptr;
 
       children.clear();
@@ -205,6 +205,9 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
 
     /** Remove all meshes and children of the group. */
     void clear() { clearMeshes(); clearChildren(); }
+
+    /** Move all submeshes in the hierarchy to the root level. */
+    void makeSingleLevel() { makeSingleLevel(nullptr); }
 
     /**
      * Apply a functor to each mesh in the group, at any level, until the functor returns true. The functor may not alter a
@@ -228,11 +231,11 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     template <typename MeshFunctorT> MeshConstPtr forEachMeshUntil(MeshFunctorT functor) const
     {
       // Need to explicitly const_cast to ensure the functor can't change the meshes
-      for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+      for (auto mi = meshes.begin(); mi != meshes.end(); ++mi)
         if (functor(const_cast<Mesh const &>(**mi)))
           return *mi;
 
-      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
       {
         auto m = const_cast<MeshGroup const &>(**ci).forEachMeshUntil(functor);
         if (m) return m;
@@ -262,11 +265,11 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
      */
     template <typename MeshFunctorT> MeshPtr forEachMeshUntil(MeshFunctorT functor)
     {
-      for (MeshIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+      for (auto mi = meshes.begin(); mi != meshes.end(); ++mi)
         if (functor(**mi))
           return *mi;
 
-      for (GroupIterator ci = children.begin(); ci != children.end(); ++ci)
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
       {
         auto m = (*ci)->forEachMeshUntil(functor);
         if (m) return m;
@@ -280,7 +283,7 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     {
       bounds = AxisAlignedBox3();
 
-      for (MeshIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+      for (auto mi = meshes.begin(); mi != meshes.end(); ++mi)
         if (*mi)
         {
           Mesh & mesh = **mi;
@@ -288,7 +291,7 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
           bounds.merge(mesh.getBounds());
         }
 
-      for (GroupIterator ci = children.begin(); ci != children.end(); ++ci)
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
         if (*ci)
         {
           MeshGroup & child = **ci;
@@ -305,10 +308,10 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
 
     int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const
     {
-      for (MeshConstIterator mi = meshes.begin(); mi != meshes.end(); ++mi)
+      for (auto mi = meshes.begin(); mi != meshes.end(); ++mi)
         if (*mi && !(*mi)->draw(render_system, options)) return false;
 
-      for (GroupConstIterator ci = children.begin(); ci != children.end(); ++ci)
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
         if (*ci && !(*ci)->draw(render_system, options)) return false;
 
       return true;
@@ -409,6 +412,25 @@ class MeshGroup : public NamedObject, public virtual IDrawable, public Serializa
     }
 
   private:
+    /** Move all submeshes in the subtree at \a root to the root level. If \a root is null, it is set to <tt>this</tt>. */
+    void makeSingleLevel(MeshGroup * root)
+    {
+      if (!root) { root = this; }
+
+      if (root != this)
+      {
+        for (auto mi = meshes.begin(); mi != meshes.end(); ++mi)
+          root->addMesh(*mi);
+
+        clearMeshes();
+      }
+
+      for (auto ci = children.begin(); ci != children.end(); ++ci)
+        (*ci)->makeSingleLevel(root);
+
+      clearChildren();
+    }
+
     /**
      * Save the mesh group to a file. Unlike write(), the file will <b>not</b> have a prefixed header. An exception will be
      * thrown if the mesh group cannot be saved.
