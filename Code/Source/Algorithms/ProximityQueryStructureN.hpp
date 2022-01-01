@@ -16,6 +16,7 @@
 #define __Thea_Algorithms_ProximityQueryStructureN_hpp__
 
 #include "../Common.hpp"
+#include "Filter.hpp"
 #include "../AxisAlignedBoxN.hpp"
 #include "../MatVec.hpp"
 #include <cmath>

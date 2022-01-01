@@ -26,7 +26,17 @@ ENDIF()
 # Dependency: GLUT
 IF(OPENGL_FOUND)
   FIND_PACKAGE(GLUT)
-  MESSAGE(STATUS "Found GLUT: headers at ${GLUT_INCLUDE_DIR}, libraries at ${GLUT_LIBRARIES}")
+  IF(GLUT_FOUND)
+    # Get around a bug where CMake 3.22.1's FindGLUT does not return complete information from pkg_check_modules
+    IF(GLUT_INCLUDE_DIRS)
+      SET(GLUT_INCLUDE_DIR ${GLUT_INCLUDE_DIRS})
+    ENDIF()
+    IF(GLUT_LINK_LIBRARIES)
+      SET(GLUT_LIBRARIES ${GLUT_LINK_LIBRARIES})
+    ENDIF()
+
+    MESSAGE(STATUS "Found GLUT: headers at ${GLUT_INCLUDE_DIR}, libraries at ${GLUT_LIBRARIES}")
+  ENDIF()
 ENDIF()
 
 IF(OPENGL_FOUND)
