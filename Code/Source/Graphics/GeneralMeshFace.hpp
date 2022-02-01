@@ -261,17 +261,17 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     EdgeReverseIterator edgesReverseEnd() { return edges.rend(); }
 
     /** Get the number of vertices of the face. */
-    int numVertices() const
+    intx numVertices() const
     {
       debugAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
-      return (int)vertices.size();
+      return (intx)vertices.size();
     }
 
     /** Get the number of edges bordering the face. */
-    int numEdges() const
+    intx numEdges() const
     {
       debugAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
-      return (int)edges.size();
+      return (intx)edges.size();
     }
 
     /** Check if the face is a triangle. */

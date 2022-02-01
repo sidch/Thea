@@ -17,7 +17,6 @@
 
 namespace Browse3D {
 
-
 void
 Segment::removeMesh(Mesh const * mesh, intx depth_promotion)
 {

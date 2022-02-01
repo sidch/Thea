@@ -143,6 +143,7 @@ class /* THEA_API */ ShortestPaths
      * \endcode
      *
      * The callback should normally return false, unless it wants to terminate the search, in which case it should return true.
+     * To pass a callback by reference, wrap it in <tt>std::ref</tt>.
      *
      * @param graph The graph to process. <b>Must have non-negative edge lengths.</b>
      * @param src The source vertex from which to measure distances. This vertex is initialized to distance zero and no

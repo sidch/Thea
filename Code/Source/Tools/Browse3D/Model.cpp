@@ -600,7 +600,7 @@ Model::loadSamples(std::string const & path_)
       else
       {
         if (face->numVertices() < 3)
-          throw Error(format("Face %ld has %d vertices", face->getIndex(), face->numVertices()));
+          throw Error(format("Face %ld has %ld vertices", face->getIndex(), (long)face->numVertices()));
 
         MeshFace::VertexConstIterator v2 = face->verticesBegin();
         MeshFace::VertexConstIterator v0 = v2; ++v2;
@@ -649,7 +649,7 @@ Model::saveSamples(std::string const & path_) const
     }
 
     if (face->numVertices() < 3)
-      throw Error(format("Face %ld has %d vertices", face->getIndex(), face->numVertices()));
+      throw Error(format("Face %ld has %ld vertices", face->getIndex(), (intx)face->numVertices()));
 
     MeshFace::VertexConstIterator v2 = face->verticesBegin();
     MeshFace::VertexConstIterator v0 = v2; ++v2;

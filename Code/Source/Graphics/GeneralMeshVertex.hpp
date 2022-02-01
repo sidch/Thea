@@ -84,19 +84,19 @@ class /* THEA_API */ GeneralMeshVertex
     /**
      * Get the number of edges incident on the vertex. Equivalent to degree().
      *
-     * @see degree();
+     * @see degree()
      */
-    int numEdges() const { return (int)edges.size(); }
+    intx numEdges() const { return (intx)edges.size(); }
 
     /**
      * Get the degree of the vertex, i.e. number of edges incident on it. Equivalent to numEdges().
      *
-     * @see numEdges();
+     * @see numEdges()
      */
-    int degree() const { return (int)edges.size(); }
+    intx degree() const { return (intx)edges.size(); }
 
     /** Get the number of faces incident on the vertex. */
-    int numFaces() const { return (int)faces.size(); }
+    intx numFaces() const { return (intx)faces.size(); }
 
     /** Get the edge from this vertex to another, if it exists, else return null. */
     Edge const * getEdgeTo(GeneralMeshVertex const * v) const

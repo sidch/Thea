@@ -21,6 +21,7 @@
 #include "../AttributedObject.hpp"
 #include "DcelHalfedge.hpp"
 #include "GraphicsAttributes.hpp"
+#include <iterator>
 
 namespace Thea {
 namespace Graphics {
@@ -164,6 +165,28 @@ class /* THEA_API */ DcelVertex
 
     /** Get an iterator pointing to the position beyond the last face incident on the vertex. */
     FaceIterator facesEnd() { return FaceIterator(leaving, false); }
+
+    /**
+     * Get the number of edges incident on the vertex, or equivalently the number of halfedges leaving the vertex. This function
+     * currently involves a loop over all incident edges.
+     *
+     * @todo Cache the edge count? (Must be updated every time the local topology changes.)
+     */
+    intx numEdges() const { return (intx)std::distance(edgesBegin(), edgesEnd()); }
+
+    /**
+     * Get the degree of the vertex, i.e. number of edges incident on it. Equivalent to numEdges().
+     *
+     * @see numEdges()
+     */
+    intx degree() const { return numEdges(); }
+
+    /**
+     * Get the number of faces incident on the vertex. This function currently involves a loop over all incident faces.
+     *
+     * @todo Cache the face count? (Must be updated every time the local topology changes.)
+     */
+    intx numFaces() const { return (intx)std::distance(facesBegin(), facesEnd()); }
 
     /** Check if the vertex lies on a mesh boundary. */
     bool isBoundaryVertex() const

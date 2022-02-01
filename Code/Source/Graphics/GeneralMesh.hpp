@@ -32,6 +32,8 @@
 #include "GraphicsAttributes.hpp"
 #include "IncrementalGeneralMeshBuilder.hpp"
 #include "EdgeWelder.hpp"
+#include <cstddef>
+#include <iterator>
 #include <type_traits>
 
 namespace Thea {
@@ -41,6 +43,9 @@ namespace Graphics {
  * A class for storing meshes with arbitrary topologies, with pointer-based cross-references between vertices, faces and edges.
  * Topology changes are generally fast as a result, since most of the data structure is not invalidated by local changes.
  * GPU-buffered rendering is performed with lazy element-packing as required.
+ *
+ * This class satisfies the IsAdjacencyGraph concept, with vertices and edges of the mesh corresponding to vertices and edges of
+ * the graph.
  *
  * @note Any methods of this class which change the mesh will automatically (and lazily) re-initialize the GPU buffers.
  * <b>However</b>, if <i>external</i> methods change the mesh, such as methods of the GeneralMeshVertex, GeneralMeshEdge and
@@ -90,6 +95,47 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     typedef Face          *  FaceHandle;         ///< Handle to a mesh face.
     typedef Face   const  *  FaceConstHandle;    ///< Handle to an immutable mesh face.
 
+  private:
+    /** Iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
+    template <typename NeighborVertexT>
+    class NbrIter
+    : public std::iterator<std::forward_iterator_tag, NeighborVertexT, std::ptrdiff_t, NeighborVertexT *, NeighborVertexT &>
+    {
+      public:
+        NbrIter(typename Vertex::EdgeConstIterator ii_, NeighborVertexT * origin_) : ii(ii_), origin(origin_) {}
+
+        // Templated to allow constructing a const-iterator from a non-const-iterator
+        template <typename U> NbrIter(NbrIter<U> const & src) : ii(src.ii), origin(src.origin) {}
+
+        Edge const * getEdge() const { return *ii; }
+
+        NbrIter & operator++() { ++ii; return *this; }
+        NbrIter   operator++(int) { NbrIter tmp(*this); operator++(); return tmp; }
+        NbrIter & operator--() { --ii; return *this; }
+        NbrIter   operator--(int) { NbrIter tmp(*this); operator--(); return tmp; }
+
+        NeighborVertexT & operator*() const { return *(*ii)->getOtherEndpoint(origin); }
+        NeighborVertexT * operator->() const { return (*ii)->getOtherEndpoint(origin); }
+
+        bool operator==(NbrIter const & rhs) const { return ii == rhs.ii && origin == rhs.origin; }
+        bool operator!=(NbrIter const & rhs) const { return !(*this == rhs); }
+
+      private:
+        typename Vertex::EdgeConstIterator ii;
+        NeighborVertexT * origin;
+
+        template <typename U> friend class NbrIter;
+
+    }; // class NbrIter
+
+  public:
+    /** Iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
+    typedef NbrIter<Vertex> NeighborIterator;
+
+    /** Const iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
+    typedef NbrIter<Vertex const> NeighborConstIterator;
+
+  public:
     /** Identifiers for the various buffers (enum class). */
     struct BufferId
     {
@@ -281,6 +327,42 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
 
     /** Get an iterator pointing to the position beyond the last face. */
     FaceIterator facesEnd() { return faces.end(); }
+
+    /** Get a handle to the vertex referenced by an iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexHandle getVertex(VertexIterator vi) { return &(*vi); }
+
+    /** Get a handle to the vertex referenced by a const iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
+
+    /** Get the number of neighbors of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    intx numNeighbors(VertexConstHandle vertex) const { return vertex->numEdges(); }
+
+    /** Get an iterator to the first neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborIterator neighborsBegin(VertexHandle vertex) { return NeighborIterator(vertex->edgesBegin(), vertex); }
+
+    /** Get a const iterator to the first neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const
+    { return NeighborConstIterator(vertex->edgesBegin(), vertex); }
+
+    /** Get an iterator to one position beyond the last neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborIterator neighborsEnd(VertexHandle vertex) { return NeighborIterator(vertex->edgesEnd(), vertex); }
+
+    /** Get a const iterator to one position beyond the last neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const
+    { return NeighborConstIterator(vertex->edgesEnd(), vertex); }
+
+    /** Get a handle to the neighboring vertex referenced by an iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexHandle getVertex(NeighborIterator ni) { return &(*ni); }
+
+    /** Get a handle to the neighboring vertex referenced by a const iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexConstHandle getVertex(NeighborConstIterator ni) const { return &(*ni); }
+
+    /**
+     * Get the distance between a vertex and its neighbor.
+     *
+     * @todo Cache this somehow to avoid the sqrt in each call?
+     */
+    double distance(VertexConstHandle v, NeighborConstIterator ni) { return ni.getEdge()->length(); }
 
     /** Deletes all data in the mesh and resets automatic element indexing. */
     void clear()

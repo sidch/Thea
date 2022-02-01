@@ -47,18 +47,22 @@
 namespace Thea {
 
 /** Check if a test condition is true, and immediately abort the program with an error code if not, in debug mode only. */
+#ifdef THEA_DEBUG_BUILD
+
 template <typename CondT, typename MessageT>
 inline void
 debugAssertM(CondT const & test, MessageT const & msg)
 {
-#ifdef THEA_DEBUG_BUILD
   if (!test)
   {
     std::cerr << "!!! Debug-mode assertion failed !!! " << msg << std::endl;
     std::exit(-1);
   }
-#endif
 }
+
+#else
+#  define debugAssertM(test, msg) (void)0
+#endif
 
 /** Check if a test condition is true, and immediately abort the program with an error code if not. */
 template <typename CondT, typename MessageT>

@@ -192,6 +192,9 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Check if this is a boundary edge, i.e. if it is adjacent to at most one face. */
     bool isBoundaryEdge() const { return numFaces() <= 1; }
 
+    /** Get the length of the edge (involves a square root since the value is not cached). */
+    Real length() const { return (endpoints[0]->getPosition() - endpoints[1]->getPosition()).norm(); }
+
     /** Check if one or more marker bits are set. */
     bool areBitsSet(unsigned char mask) const { return ((bits & mask) == mask); };
 

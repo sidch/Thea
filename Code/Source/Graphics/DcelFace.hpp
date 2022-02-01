@@ -116,10 +116,10 @@ class /* THEA_API */ DcelFace : public NormalAttribute<Vector3>, public Attribut
     EdgeIterator edgesEnd() { return EdgeIterator(halfedge, false); }
 
     /** Get the number of edges bordering this face. */
-    int numEdges() const { return num_edges; }
+    intx numEdges() const { return num_edges; }
 
     /** Get the number of vertices of this face (identical to numEdges()). */
-    int numVertices() const { return num_edges; }
+    intx numVertices() const { return num_edges; }
 
     /** Check if the face is a triangle. */
     bool isTriangle() const { return num_edges == 3; }
@@ -209,7 +209,7 @@ class /* THEA_API */ DcelFace : public NormalAttribute<Vector3>, public Attribut
 
     Halfedge * halfedge;
     intx index;
-    int num_edges;
+    intx num_edges;
 
 }; // class DcelFace
 

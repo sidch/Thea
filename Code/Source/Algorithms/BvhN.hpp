@@ -1798,7 +1798,7 @@ class /* THEA_API */ BvhN
      * \endcode
      * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>
+     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
      * The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
      * BoundingVolume.

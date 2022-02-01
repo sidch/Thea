@@ -47,7 +47,10 @@ namespace Graphics {
  * Mesh based on a doubly-connected edge list (or halfedge data structure). GPU-buffered rendering is performed with lazy
  * element-packing as required.
  *
- * Adapted from: DcelMesh class. Part of an example DCEL implementation.
+ * This class satisfies the IsAdjacencyGraph concept, with vertices and (undirected) edges of the mesh corresponding to vertices
+ * and edges of the graph.
+ *
+ * Adapted from: DCELMesh class. Part of an example DCEL implementation.
  * - Webpage: http://www.holmes3d.net/graphics/dcel/
  * - Author: Ryan Holmes
  * - E-mail: ryan [at] holmes3d [dot] net
@@ -108,6 +111,12 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
 
     /** Const iterator over edges (alternate halfedges starting from the first). */
     typedef DCELInternal::BidirEdgeIterator<HalfedgeConstIterator> EdgeConstIterator;
+
+    /** Iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
+    typedef typename Vertex::EdgeIterator NeighborIterator;
+
+    /** Const iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
+    typedef typename Vertex::EdgeConstIterator NeighborConstIterator;
 
     /** Identifiers for the various buffers (enum class). */
     struct BufferId
@@ -257,6 +266,40 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
 
     /** Get an iterator pointing to the position beyond the last face. */
     FaceIterator facesEnd() { return Algorithms::makeRefIterator(faces.end()); }
+
+    /** Get a handle to the vertex referenced by an iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexHandle getVertex(VertexIterator vi) { return &(*vi); }
+
+    /** Get a handle to the vertex referenced by a const iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexConstHandle getVertex(VertexConstIterator vi) const { return &(*vi); }
+
+    /** Get the number of neighbors of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    intx numNeighbors(VertexConstHandle vertex) const { return vertex->numEdges(); }
+
+    /** Get an iterator to the first neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborIterator neighborsBegin(VertexHandle vertex) { return vertex->edgesBegin(); }
+
+    /** Get a const iterator to the first neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborConstIterator neighborsBegin(VertexConstHandle vertex) const { return vertex->edgesBegin(); }
+
+    /** Get an iterator to one position beyond the last neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborIterator neighborsEnd(VertexHandle vertex) { return vertex->edgesEnd(); }
+
+    /** Get a const iterator to one position beyond the last neighbor of a vertex (to satisfy the IsAdjacencyGraph concept). */
+    NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const { return vertex->edgesEnd(); }
+
+    /** Get a handle to the neighboring vertex referenced by an iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexHandle getVertex(NeighborIterator ni) { return (*ni)->getEnd(); }
+
+    /** Get a handle to the neighboring vertex referenced by a const iterator (to satisfy the IsAdjacencyGraph concept). */
+    VertexConstHandle getVertex(NeighborConstIterator ni) const { return (*ni)->getEnd(); }
+
+    /**
+     * Get the distance between a vertex and its neighbor.
+     *
+     * @todo Cache this somehow to avoid the sqrt in each call?
+     */
+    double distance(VertexConstHandle v, NeighborConstIterator ni) { return (*ni)->length(); }
 
     /** Deletes all data in the mesh and resets automatic element indexing. */
     void clear()
@@ -762,8 +805,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
      *
      * @return A pointer to the newly created face.
      */
-    Face * addFace(size_t num_verts, Vertex ** verts, Halfedge * first, size_t origin, bool reverse,
-                   Vector3 const & normal)
+    Face * addFace(size_t num_verts, Vertex ** verts, Halfedge * first, size_t origin, bool reverse, Vector3 const & normal)
     {
       // For each vertex, check that the halfedge emanating from it exists as a boundary halfedge, or can be successfully added.
       // Store either the existing edge to the next vertex, or the preceding boundary halfedge _into_ the vertex.
@@ -836,7 +878,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
 
       // Now create the new face
       Face * face = new Face;
-      face->num_edges = (int)num_verts;
+      face->num_edges = (intx)num_verts;
       face->setNormal(normal);
 
       // Now actually create and add the edges. In this loop we directly access private members (ha ha) of the edges to bypass

@@ -384,6 +384,9 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
     /** Check if this is a boundary edge, i.e. if either this halfedge or its twin has a null face pointer. */
     bool isBoundaryEdge() const { return !face || !twin()->face; }
 
+    /** Get the length of the halfedge (involves a square root since the value is not cached). */
+    Real length() const { return (origin->getPosition() - getEnd()->getPosition()).norm(); }
+
     /** Check if one or more marker bits are set. */
     bool areBitsSet(unsigned char mask) const { return ((bits & mask) == mask); };
 

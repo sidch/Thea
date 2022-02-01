@@ -16,6 +16,7 @@
 #define __Thea_Algorithms_Iterators_hpp__
 
 #include "../Common.hpp"
+#include <cstddef>
 #include <iterator>
 #include <type_traits>
 

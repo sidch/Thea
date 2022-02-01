@@ -22,6 +22,7 @@
 #include "MeshGroup.hpp"
 #include "MeshCodec.hpp"
 #include "MeshType.hpp"
+#include <boost/functional/hash.hpp>
 #include <functional>
 #include <sstream>
 #include <type_traits>

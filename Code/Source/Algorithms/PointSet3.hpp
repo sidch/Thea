@@ -117,10 +117,10 @@ class PointSet3
           return vertex->numNeighbors() <= 0 ? nullptr : &vertex->getNeighbor(0);
         }
 
-        /** Get an iterator to the one position beyond the last neighbor of a vertex. */
+        /** Get an iterator to one position beyond the last neighbor of a vertex. */
         NeighborIterator neighborsEnd(VertexHandle vertex) { return neighborsBegin(vertex) + numNeighbors(vertex); }
 
-        /** Get a const iterator to the one position beyond the last neighbor of a vertex. */
+        /** Get a const iterator to one position beyond the last neighbor of a vertex. */
         NeighborConstIterator neighborsEnd(VertexConstHandle vertex) const
         { return neighborsBegin(vertex) + numNeighbors(vertex); }
 
@@ -300,9 +300,9 @@ class PointSet3
     void invalidateGraph() { valid_graph = false; }
 
     /**
-     * Construct the sample proximity graph from, without tests that require access to the underlying surface. This function is
-     * automatically called by getGraph() to update the graph if it is invalid. It can also be called explicitly to ensure the
-     * proximity graph exists.
+     * Construct the sample proximity graph from the points, without tests that require access to the underlying surface. This
+     * function is automatically called by getGraph() to update the graph if it is invalid. It can also be called explicitly to
+     * ensure the proximity graph exists.
      *
      * @see updateGraph(RayQueryStructureT const *)
      */
