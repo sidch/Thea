@@ -207,9 +207,8 @@ bool
 Model::selectAndLoad()
 {
   wxFileDialog file_dialog(app().getMainWindow(), "Load model", "", "",
-                           "Model files (*.3ds *.obj *.off *.off.bin *.ply *.pts)|"
-                               "*.3ds;*.3DS;*.obj;*.OBJ;*.off;*.OFF;*.off.bin;*.OFF.BIN;*.OFF.bin;*.off.BIN;"
-                               "*.ply;*.PLY;*.pts;*.PTS",
+                           "Model files (*.3ds *.obj *.off *.ply *.pts)|"
+                               "*.3ds;*.3DS;*.obj;*.OBJ;*.off;*.OFF;*.ply;*.PLY;*.pts;*.PTS",
                            wxFD_OPEN | wxFD_FILE_MUST_EXIST);
   if (file_dialog.ShowModal() == wxID_CANCEL)
       return false;

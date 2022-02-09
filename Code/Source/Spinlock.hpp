@@ -15,19 +15,22 @@
 #ifndef __Thea_Spinlock_hpp__
 #define __Thea_Spinlock_hpp__
 
-#include "AtomicInt32.hpp"
+#include <atomic>
 
 namespace Thea {
 
 /**
  * A simple lock that can be shared by multiple threads for synchronization. Busy-waits for a lock, and unlocks immediately.
- * Implemented with a single atomic integer.
+ * Implemented with a single atomic flag.
  */
 class THEA_API Spinlock
 {
   public:
     /** Constructor. The object is initially unlocked. */
-    Spinlock() : atomic(0) {}
+    Spinlock()
+    {
+      flag.clear();
+    }
 
     /**
      * Acquire the lock by atomically setting the value of an integer to non-zero, busy-waiting until the lock is obtained.
@@ -36,7 +39,7 @@ class THEA_API Spinlock
      */
     void lock()
     {
-      while (atomic.compareAndSet(0, 1) != 0) {}
+      while (flag.test_and_set(std::memory_order_acquire)) {}
     }
 
     /**
@@ -46,11 +49,11 @@ class THEA_API Spinlock
      */
     void unlock()
     {
-      atomic = 0;
+      flag.clear(std::memory_order_release);
     }
 
   private:
-    AtomicInt32 atomic;
+    std::atomic_flag flag;
 
 }; // class Spinlock
 

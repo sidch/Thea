@@ -47,7 +47,7 @@ App::Options::Options()
 
 App::App()
 : main_window(nullptr),
-  has_render_system(0),
+  has_render_system(false),
   gl_plugin(nullptr),
   render_system_factory(nullptr),
   render_system(nullptr)
@@ -386,11 +386,13 @@ App::loadPlugins()
 void
 App::createRenderSystem()
 {
-  render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
-  render_system = render_system_factory->createRenderSystem("OpenGL");
-  has_render_system = 1;
+  if (!has_render_system.exchange(true))
+  {
+    render_system_factory = Application::getRenderSystemManager().getFactory("OpenGL");
+    render_system = render_system_factory->createRenderSystem("OpenGL");
 
-  THEA_CONSOLE << "\nRenderSystem: " << render_system->describeSystem();
+    THEA_CONSOLE << "\nRenderSystem: " << render_system->describeSystem();
+  }
 }
 
 //=============================================================================================================================

@@ -18,7 +18,6 @@
 #include "../Common.hpp"
 #include "../IAddressableMatrix.hpp"
 #include "../Array.hpp"
-#include "../AtomicInt32.hpp"
 #include "../Iostream.hpp"
 #include "../Math.hpp"
 #include "../MatVec.hpp"
@@ -28,6 +27,7 @@
 #include "../System.hpp"
 #include "../ThreadGroup.hpp"
 #include <algorithm>
+#include <atomic>
 #include <thread>
 #include <type_traits>
 
@@ -428,7 +428,7 @@ class THEA_API KMeans : public Serializable
           }
 
           if (changed)
-            parent->flag.increment();
+            parent->flag = true;
         }
 
       private:
@@ -456,7 +456,7 @@ class THEA_API KMeans : public Serializable
     {
       intx num_points = (intx)points.rows();
       unsigned int concurrency = std::thread::hardware_concurrency();
-      flag = 0;
+      flag = false;
 
       if (options.parallelize && concurrency > 1 && num_points > (intx)(2 * concurrency))
       {
@@ -489,7 +489,7 @@ class THEA_API KMeans : public Serializable
         mapper();
       }
 
-      return (flag.value() > 0);
+      return (bool)flag;
     }
 
     /** Map a point to its nearest center. */
@@ -621,7 +621,7 @@ class THEA_API KMeans : public Serializable
     Options options;
 
     mutable RowVectorXd fvec;
-    mutable AtomicInt32 flag;
+    mutable std::atomic<bool> flag;
 
 }; // class KMeans
 

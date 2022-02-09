@@ -24,6 +24,7 @@
 #include "../../Random.hpp"
 #include "../../UnorderedMap.hpp"
 #include <algorithm>
+#include <atomic>
 #include <cstdio>
 #include <fstream>
 #include <functional>
@@ -72,7 +73,7 @@ enum PointUsage
 class ShapeRendererImpl
 {
   private:
-    static AtomicInt32 has_render_system;
+    static std::atomic_bool has_render_system;
     static IRenderSystemFactory * render_system_factory;
     static IRenderSystem * render_system;
     static IShader * point_shader;
@@ -176,7 +177,7 @@ ShapeRenderer::exec(int argc, char ** argv)
   return impl->exec(argc, argv);
 }
 
-AtomicInt32 ShapeRendererImpl::has_render_system(0);
+std::atomic_bool ShapeRendererImpl::has_render_system(false);
 IRenderSystemFactory * ShapeRendererImpl::render_system_factory = nullptr;
 IRenderSystem * ShapeRendererImpl::render_system = nullptr;
 IShader * ShapeRendererImpl::point_shader = nullptr;
@@ -190,7 +191,7 @@ ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
   resetArgs();
 
-  if (has_render_system.compareAndSet(0, 1) == 0)
+  if (!has_render_system.exchange(true))
   {
     if (!loadPlugins(argc, argv))
       throw Error("Could not load plugins");
@@ -199,7 +200,7 @@ ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 
 ShapeRendererImpl::~ShapeRendererImpl()
 {
-  if (has_render_system.compareAndSet(1, 0) == 1)
+  if (has_render_system.exchange(false))
   {
     if (render_system_factory)
       render_system_factory->destroyRenderSystem(render_system);

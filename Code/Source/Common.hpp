@@ -16,7 +16,6 @@
 #define __Thea_Common_hpp__
 
 #include "Platform.hpp"
-#include "AtomicInt32.hpp"
 #include "CommonEnums.hpp"
 #include "EnumClass.hpp"
 #include "Error.hpp"

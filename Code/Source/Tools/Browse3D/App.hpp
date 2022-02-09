@@ -19,6 +19,7 @@
 #include "../../AffineTransform3.hpp"
 #include "../../MatVec.hpp"
 #include <wx/app.h>
+#include <atomic>
 #include <vector>
 
 namespace Thea {
@@ -90,7 +91,7 @@ class App : public wxApp
     std::string optsToString() const;
 
     /** Check if the application has a properly constructed rendersystem */
-    bool hasRenderSystem() const { return has_render_system.value(); }
+    bool hasRenderSystem() const { return (bool)has_render_system; }
 
     /** Get a handle to the application's main window. */
     MainWindow * getMainWindow() { return main_window; }
@@ -137,7 +138,7 @@ class App : public wxApp
 
     Options opts;
     MainWindow * main_window;
-    AtomicInt32 has_render_system;
+    std::atomic_bool has_render_system;
     IPlugin * gl_plugin;
     Graphics::IRenderSystemFactory * render_system_factory;
     Graphics::IRenderSystem * render_system;

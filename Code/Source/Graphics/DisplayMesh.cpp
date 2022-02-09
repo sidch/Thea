@@ -256,7 +256,7 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
   if (num_vertices == 3)
     return addTriangle(vertex_indices[0], vertex_indices[1], vertex_indices[2], src_face_index);
 
-#ifdef THEA_DEBUG
+#ifdef THEA_DEBUG_BUILD
   for (int i = 0; i < num_vertices; ++i)
   {
     intx vi = vertex_indices[i];
@@ -298,8 +298,9 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
              || (src_face_index < 0 && tri_src_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
-#ifdef THEA_DEBUG
   intx first_tri = numTriangles();
+
+#ifdef THEA_DEBUG_BUILD
   debugAssertM(face_starting_tris.back() == first_tri, getNameStr() + ": Last entry of face_starting_tris is invalid");
 #endif
 
