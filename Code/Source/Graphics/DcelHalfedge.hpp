@@ -381,8 +381,24 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
     /** Check if this is a boundary halfedge, i.e. if its face pointer is null. */
     bool isBoundaryHalfedge() const { return !face; }
 
-    /** Check if this is a boundary edge, i.e. if either this halfedge or its twin has a null face pointer. */
-    bool isBoundaryEdge() const { return !face || !twin()->face; }
+    /**
+     * Check if this is a boundary edge. A boundary edge, by default, is a bidirectional edge adjacent to <b><i>at most</i></b>
+     * one face, hence either this halfedge or its twin (or both) should have a null face pointer. Note that this definition
+     * considers isolated edges, not adjacent to any faces, to be boundary edges. To exclude such edges, set
+     * \a isolated_is_boundary to be false.
+     */
+    bool isBoundaryEdge(bool isolated_is_boundary = true) const
+    { return isolated_is_boundary ? (!face || !twin()->face) : face != twin()->face; }
+
+    /**
+     * Check if this is a boundary edge of a patch defined by a subset of mesh faces. Such a bidirectional edge will be adjacent
+     * to <b><i>exactly</i></b> one face of the patch, so either this halfedge or its twin should have a pointer to a face in
+     * the subset, but not both. FaceSetT should be a collection with a <tt>find()</tt> member function compatible with
+     * <tt>std::set<Face const *>::find()</tt>.
+     */
+    template <typename FaceSetT>
+    bool isBoundaryEdge(FaceSetT const & patch) const
+    { return ((!face || patch.find(face) == patch.end()) != (!twin()->face || patch.find(twin()->face) == patch.end())); }
 
     /** Get the length of the halfedge (involves a square root since the value is not cached). */
     Real length() const { return (origin->getPosition() - getEnd()->getPosition()).norm(); }

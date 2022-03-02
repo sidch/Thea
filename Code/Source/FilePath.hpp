@@ -82,10 +82,12 @@ class THEA_API FilePath
      *
      * @param path The path to change.
      * @param new_ext The new extension.
+     * @param change_dot If true, the dot "." is omitted from the concatenation. This allows transformations like
+     *   <tt>changeExtension("foo.txt", "_bar.dat", true) --> foo_bar.dat</tt>.
      *
      * @see extension(), changeCompleteExtension()
      */
-    static std::string changeExtension(std::string const & path, std::string const & new_ext);
+    static std::string changeExtension(std::string const & path, std::string const & new_ext, bool change_dot = false);
 
     /**
      * Change the complete extension of a path. Equivalent to concat(parent(\a path), baseName(\a path) + "." + \a new_ext).
@@ -98,10 +100,12 @@ class THEA_API FilePath
      *
      * @param path The path to change.
      * @param new_ext The new complete extension.
+     * @param change_dot If true, the dot "." is omitted from the concatenation. This allows transformations like
+     *   <tt>changeCompleteExtension("foo.old.txt", "_bar.dat", true) --> foo_bar.dat</tt>.
      *
      * @see completeExtension(), changeExtension()
      */
-    static std::string changeCompleteExtension(std::string const & path, std::string const & new_ext);
+    static std::string changeCompleteExtension(std::string const & path, std::string const & new_ext, bool change_dot = false);
 
     /** Returns true if a path uniquely identifies a file or directory. */
     static bool isAbsolute(std::string const & path);

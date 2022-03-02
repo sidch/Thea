@@ -92,8 +92,7 @@ class DiscreteExponentialMap : private Noncopyable
      * @param sample_index Index of the query sample.
      * @param has_parameters Set to false if the sample was not parametrized (outside radius), else true.
      *
-     * @see param
-     etrize()
+     * @see parametrize()
      */
     Vector2 getParameters(intx sample_index, bool & has_parameters) const;
 

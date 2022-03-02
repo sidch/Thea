@@ -21,6 +21,7 @@
 #include "../AxisAlignedBoxN.hpp"
 #include "../BoxN.hpp"
 #include "../BallN.hpp"
+#include "../LineSegmentN.hpp"
 #include "../MatVec.hpp"
 #include "../Triangle3.hpp"
 #include "PointTraitsN.hpp"
@@ -147,9 +148,7 @@ struct TransformerImpl< AxisAlignedBoxN<N, ScalarT>, RigidTransformN<N, ScalarT>
 {
   typedef BoxN<N, ScalarT> Result;
   static Result transform(AxisAlignedBoxN<N, ScalarT> const & aabb, RigidTransformN<N, ScalarT> const & tr)
-  {
-    return Result(aabb, CoordinateFrameN<N, ScalarT>(tr));
-  }
+  { return Result(aabb, CoordinateFrameN<N, ScalarT>(tr)); }
 };
 
 template <int N, typename ScalarT>
@@ -157,9 +156,7 @@ struct TransformerImpl< BoxN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, Scalar
 {
   typedef BoxN<N, ScalarT> Result;
   static Result transform(BoxN<N, ScalarT> const & box, RigidTransformN<N, ScalarT> const & tr)
-  {
-    return Result(box.getLocalAAB(), CoordinateFrameN<N, ScalarT>(tr) * box.getLocalFrame());
-  }
+  { return Result(box.getLocalAAB(), CoordinateFrameN<N, ScalarT>(tr) * box.getLocalFrame()); }
 };
 
 template <int N, typename ScalarT>
@@ -167,7 +164,7 @@ struct TransformerImpl< BallN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, Scala
 {
   typedef BallN<N, ScalarT> Result;
   static Result transform(BallN<N, ScalarT> const & ball, RigidTransformN<N, ScalarT> const & tr)
-  { return BallN<N, ScalarT>(tr * ball.getCenter(), ball.getRadius()); }
+  { return Result(tr * ball.getCenter(), ball.getRadius()); }
 };
 
 template <typename VertexTripleT, typename TransT, typename ScalarT>
@@ -176,9 +173,20 @@ struct THEA_API TransformerImpl< Triangle3<VertexTripleT>, TransT, 3, ScalarT >
   typedef LocalTriangle3 Result;
   static Result transform(Triangle3<VertexTripleT> const & tri, TransT const & tr)
   {
-    return LocalTriangle3(Transformer::transform<3, ScalarT>(tri.getVertex(0), tr),
+    return Result(Transformer::transform<3, ScalarT>(tri.getVertex(0), tr),
                           Transformer::transform<3, ScalarT>(tri.getVertex(1), tr),
                           Transformer::transform<3, ScalarT>(tri.getVertex(2), tr));
+  }
+};
+
+template <int N, typename ScalarT, typename TransT>
+struct THEA_API TransformerImpl< LineSegmentN<N, ScalarT>, TransT, N, ScalarT >
+{
+  typedef LineSegmentN<N, ScalarT> Result;
+  static Result transform(LineSegmentN<N, ScalarT> const & seg, TransT const & tr)
+  {
+    return Result(Transformer::transform<N, ScalarT>(seg.getEndpoint(0), tr),
+                  Transformer::transform<N, ScalarT>(seg.getEndpoint(1), tr));
   }
 };
 

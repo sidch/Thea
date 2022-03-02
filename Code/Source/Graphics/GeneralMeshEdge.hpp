@@ -123,6 +123,18 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     }
 
     /**
+     * Get the index (0 or 1) of the endpoint that this edge shares with another if they are connected, or a negative value if
+     * they are not. If the two edges have the same endpoints, the index of an arbitrary one is returned.
+     */
+    int getCommonEndpoint(GeneralMeshEdge const & other) const
+    {
+      if (endpoints[0] == other.endpoints[0] || endpoints[0] == other.endpoints[1]) { return 0; }
+      if (endpoints[1] == other.endpoints[0] || endpoints[1] == other.endpoints[1]) { return 1; }
+
+      return -1;
+    }
+
+    /**
      * Get the next edge when stepping counter-clockwise (when viewed from the "outside" of the mesh) around a specified
      * endpoint, assuming the neighborhood is manifold. This also assumes that face vertices/edges have consistent
      * counter-clockwise winding order when viewed from the outside. On error, returns null.
@@ -189,8 +201,29 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Get an iterator pointing to one position beyond the last face incident on the edge. */
     FaceIterator facesEnd() { return faces.end(); }
 
-    /** Check if this is a boundary edge, i.e. if it is adjacent to at most one face. */
-    bool isBoundaryEdge() const { return numFaces() <= 1; }
+    /**
+     * Check if this is a boundary edge. A boundary edge, by default, is an edge adjacent to <b><i>at most</i></b> one face.
+     * Note that this definition considers isolated edges, not adjacent to any faces, to be boundary edges. To exclude such
+     * edges, set \a isolated_is_boundary to be false.
+     */
+    bool isBoundaryEdge(bool isolated_is_boundary = true) const
+    { return isolated_is_boundary ? numFaces() <= 1 : numFaces() == 1; }
+
+    /**
+     * Check if this is a boundary edge of a patch defined by a subset of mesh faces. Such an edge will be adjacent to
+     * <b><i>exactly</i></b> one face of the patch. FaceSetT should be a collection with a <tt>find()</tt> member function
+     * compatible with <tt>std::set<Face const *>::find()</tt>.
+     */
+    template <typename FaceSetT>
+    bool isBoundaryEdge(FaceSetT const & patch) const
+    {
+      intx count = 0;
+      for (auto f : faces)
+        if (patch.find(f) != patch.end())
+          count++;
+
+      return count == 1;
+    }
 
     /** Get the length of the edge (involves a square root since the value is not cached). */
     Real length() const { return (endpoints[0]->getPosition() - endpoints[1]->getPosition()).norm(); }

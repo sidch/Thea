@@ -128,6 +128,18 @@ struct IntersectionTesterImpl<A, B, N, T,
 // Specializations where the intersects() member function is not defined in both classes
 //=============================================================================================================================
 
+template <int N, typename T>
+struct IntersectionTesterImpl<LineN<N, T>, AxisAlignedBoxN<N, T>, N, T>
+{
+  static bool intersects(LineN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.intersects(a); }
+};
+
+template <int N, typename T>
+struct IntersectionTesterImpl<LineSegmentN<N, T>, AxisAlignedBoxN<N, T>, N, T>
+{
+  static bool intersects(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.intersects(a); }
+};
+
 template <typename VertexTripleT, typename T>
 struct IntersectionTesterImpl<AxisAlignedBoxN<3, T>, Triangle3<VertexTripleT>, 3, T>
 {

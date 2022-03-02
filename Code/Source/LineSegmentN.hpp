@@ -205,6 +205,16 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
       return (c1 - c2).squaredNorm();
     }
 
+    /**
+     * Get the parameter <tt>t</tt> of a point \a p, assumed to be on the line segment, such that <tt>p = getPoint(t)</tt>.
+     *
+     * @see getPoint()
+     */
+    T parametrize(VectorT const & p) const
+    {
+      return (p - point).dot(direction) / direction.squaredNorm();
+    }
+
     /** Get a bounding box for the line segment. */
     AxisAlignedBoxN<N, T> getBounds() const
     {
@@ -222,8 +232,8 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     }
 
   private:
-    VectorT point;      ///< A point on the line.
-    VectorT direction;  ///< A unit vector along the direction of the line.
+    VectorT point;      ///< The first endpoint of the segment.
+    VectorT direction;  ///< The unnormalized vector from the first endpoint to the second.
 
 }; // class LineSegmentNBase
 

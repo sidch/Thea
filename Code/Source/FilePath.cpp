@@ -88,15 +88,21 @@ FilePath::concat(std::string const & parent_name, std::string const & child_name
 }
 
 std::string
-FilePath::changeExtension(std::string const & path, std::string const & new_ext)
+FilePath::changeExtension(std::string const & path, std::string const & new_ext, bool change_dot)
 {
-  return concat(parent(path), completeBaseName(path) + '.' + new_ext);
+  if (change_dot)
+    return concat(parent(path), completeBaseName(path) + new_ext);
+  else
+    return concat(parent(path), completeBaseName(path) + '.' + new_ext);
 }
 
 std::string
-FilePath::changeCompleteExtension(std::string const & path, std::string const & new_ext)
+FilePath::changeCompleteExtension(std::string const & path, std::string const & new_ext, bool change_dot)
 {
-  return concat(parent(path), baseName(path) + '.' + new_ext);
+  if (change_dot)
+    return concat(parent(path), baseName(path) + new_ext);
+  else
+    return concat(parent(path), baseName(path) + '.' + new_ext);
 }
 
 bool

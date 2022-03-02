@@ -76,7 +76,10 @@ class THEA_API SurfaceParametrization
     };
 
     /**
-     * Parametrize a collection of mesh faces forming a surface patch.
+     * Parametrize a collection of mesh faces forming a surface patch. \a fixed_vertex_params and \a free_vertex_params should
+     * be compatible with the interface of <tt>std::map<VertexConstHandle, Vec2T></tt>, where <tt>VertexConstHandle</tt> is a
+     * handle to a mesh vertex (typically a pointer to a const vertex object) and <tt>Vec2T</tt> is a vector with at least 2
+     * dimensions (of any numerical type).
      *
      * @param faces_begin Iterator to the first face in the sequence.
      * @param faces_end Iterator to (one position beyond) the last face in the sequence.

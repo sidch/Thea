@@ -44,14 +44,14 @@ class /* THEA_API */ ShortestPaths
     typedef typename GraphT::VertexHandle VertexHandle;  ///< Handle to a vertex in the graph.
 
     /** Stores shortest path information for a vertex. */
-    class ShortestPathInfo
+    class VertexInfo
     {
       public:
         /** Default constructor. */
-        ShortestPathInfo() {}
+        VertexInfo() {}
 
         /** Constructor. */
-        ShortestPathInfo(double dist_, bool has_pred_, VertexHandle pred_)
+        VertexInfo(double dist_, bool has_pred_, VertexHandle pred_)
         : dist(dist_), has_pred(has_pred_), pred(pred_) {}
 
         /** Get the distance of this vertex from the source point. */
@@ -71,23 +71,23 @@ class /* THEA_API */ ShortestPaths
         bool has_pred;      ///< Does this vertex have a predecessor in the shortest path from the source?
         VertexHandle pred;  ///< Predecessor in the shortest path from the source.
 
-    }; // class ShortestPathInfo
+    }; // class VertexInfo
 
   private:
     /** A callback that adds vertices to a map. */
     class MapCallback
     {
       public:
-        MapCallback(UnorderedMap<VertexHandle, ShortestPathInfo> & result_) : result(result_) {}
+        MapCallback(UnorderedMap<VertexHandle, VertexInfo> & result_) : result(result_) {}
 
         bool operator()(VertexHandle vertex, double distance, bool has_pred, VertexHandle pred)
         {
-          result[vertex] = ShortestPathInfo(distance, has_pred, pred);
+          result[vertex] = VertexInfo(distance, has_pred, pred);
           return false;
         }
 
       private:
-        UnorderedMap<VertexHandle, ShortestPathInfo> & result;
+        UnorderedMap<VertexHandle, VertexInfo> & result;
 
     }; // class MapCallback
 
@@ -115,7 +115,7 @@ class /* THEA_API */ ShortestPaths
      * @param include_unreachable If true, vertices unreachable from the source vertex are also returned, mapped to negative
      *   distances and without predecessors.
      */
-    void dijkstra(Graph & graph, VertexHandle src, UnorderedMap<VertexHandle, ShortestPathInfo> & result, double limit = -1,
+    void dijkstra(Graph & graph, VertexHandle src, UnorderedMap<VertexHandle, VertexInfo> & result, double limit = -1,
                   UnorderedMap<VertexHandle, double> const * src_region = nullptr, bool include_unreachable = false)
     {
       result.clear();

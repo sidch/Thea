@@ -134,6 +134,17 @@ class /* THEA_DLL_LOCAL */ LineNBase
       return (c1 - c2).squaredNorm();
     }
 
+    /**
+     * Get the parameter <tt>t</tt> of a point \a p, assumed to be on the line, such that
+     * <tt>p = getPoint() + t * getDirection()</tt>.
+     *
+     * @see getPoint(), getDirection()
+     */
+    T parametrize(VectorT const & p) const
+    {
+      return (p - point).dot(direction);
+    }
+
     /** Get a textual description of the line. */
     std::string toString() const
     {

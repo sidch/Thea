@@ -237,6 +237,9 @@ class PointSet3
       addSamples(num_samples, dense_positions, dense_normals, dense_samples);
     }
 
+    /** Get the number of oversamples (points in the dense oversampling). */
+    intx numOversamples() const { return (intx)dense_samples.size(); }
+
     /**
      * Add points to an oversampling of the surface. These additional samples will not constitute vertices of the final graph,
      * but will be used to more accurately compute adjacencies. The input sequence should consist of objects that satisfy

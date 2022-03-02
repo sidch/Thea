@@ -110,6 +110,16 @@ class /* THEA_API */ RayN
       }
     }
 
+    /**
+     * Get the parameter <tt>t</tt> of a point \a p, assumed to be on the ray, such that <tt>p = getPoint(t)</tt>.
+     *
+     * @see getPoint()
+     */
+    T parametrize(VectorT const & p) const
+    {
+      return (p - origin).dot(direction) / direction.squaredNorm();
+    }
+
     /** Get a textual representation of the ray. */
     std::string toString() const
     {
