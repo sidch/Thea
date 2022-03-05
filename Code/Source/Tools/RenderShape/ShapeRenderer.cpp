@@ -190,12 +190,6 @@ ITexture * ShapeRendererImpl::tex3d = nullptr;
 ShapeRendererImpl::ShapeRendererImpl(int argc, char * argv[])
 {
   resetArgs();
-
-  if (!has_render_system.exchange(true))
-  {
-    if (!loadPlugins(argc, argv))
-      throw Error("Could not load plugins");
-  }
 }
 
 ShapeRendererImpl::~ShapeRendererImpl()
@@ -334,6 +328,12 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 {
   if (!parseArgs(argc, argv))
     return -1;
+
+  if (!has_render_system.exchange(true))
+  {
+    if (!loadPlugins(argc, argv))
+      throw Error("Could not load plugins");
+  }
 
   // Load the mesh
   Model model(show_points & POINTS_PRIMARY);
