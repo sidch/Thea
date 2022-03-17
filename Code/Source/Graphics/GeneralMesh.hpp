@@ -99,9 +99,14 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /** Iterator over the neighbors of a vertex, to satisfy the IsAdjacencyGraph concept. */
     template <typename NeighborVertexT>
     class NbrIter
-    : public std::iterator<std::forward_iterator_tag, NeighborVertexT, std::ptrdiff_t, NeighborVertexT *, NeighborVertexT &>
     {
       public:
+        typedef std::forward_iterator_tag  iterator_category;
+        typedef NeighborVertexT            value_type;
+        typedef std::ptrdiff_t             difference_type;
+        typedef NeighborVertexT *          pointer;
+        typedef NeighborVertexT &          reference;
+
         NbrIter(typename Vertex::EdgeConstIterator ii_, NeighborVertexT * origin_) : ii(ii_), origin(origin_) {}
 
         // Templated to allow constructing a const-iterator from a non-const-iterator

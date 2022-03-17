@@ -88,9 +88,14 @@ struct /** THEA_API */ BidirEdgeIterator : public BaseIterT
 // IncrementFunctorT should be callable with the signature: void operator()(EdgeT **)
 template <typename EdgeT, typename ValueT, typename DerefFunctorT, typename IncrementFunctorT>
 class /** THEA_API */ FwdIterator
-: public std::iterator<std::forward_iterator_tag, ValueT, std::ptrdiff_t, ValueT *, ValueT &>
 {
   public:
+    typedef std::forward_iterator_tag  iterator_category;
+    typedef ValueT                     value_type;
+    typedef std::ptrdiff_t             difference_type;
+    typedef ValueT *                   pointer;
+    typedef ValueT &                   reference;
+
     // Constructor.
     FwdIterator(EdgeT * e_ = nullptr, bool first_ = true) : initial(e_), e(e_), first(first_) {}
 

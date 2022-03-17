@@ -34,8 +34,8 @@ class FixedPointIterator
 {
   public:
     typedef std::random_access_iterator_tag  iterator_category;  ///< Iterator category.
-    typedef std::ptrdiff_t                   difference_type;    ///< Type for expressing difference of two iterators.
     typedef T                                value_type;         ///< Type of values being iterated over.
+    typedef std::ptrdiff_t                   difference_type;    ///< Type for expressing difference of two iterators.
     typedef T *                              pointer;            ///< Pointer to a value.
     typedef T &                              reference;          ///< Reference to a value.
 
@@ -154,9 +154,14 @@ class RefIterator< IteratorT, typename std::enable_if<
 // Specialization when the iterator is a pointer to T.
 template <typename T>
 class RefIterator< T *, typename std::enable_if< ! std::is_pointer< typename std::remove_cv<T>::type >::value >::type >
-: public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T                                value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T *                              pointer;
+    typedef T &                              reference;
+
     RefIterator(T * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
@@ -171,9 +176,15 @@ class RefIterator< T *, typename std::enable_if< ! std::is_pointer< typename std
 
 // Specialization when the iterator is a pointer to a pointer to T.
 template <typename T>
-class RefIterator<T **> : public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
+class RefIterator<T **>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T                                value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T *                              pointer;
+    typedef T &                              reference;
+
     explicit RefIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
@@ -190,9 +201,14 @@ class RefIterator<T **> : public std::iterator<std::random_access_iterator_tag, 
 // Specialization when the iterator is a const pointer to a const pointer to T.
 template <typename T>
 class RefIterator<T const * const *>
-: public std::iterator<std::random_access_iterator_tag, T const, std::ptrdiff_t, T const *, T const &>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T const                          value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T const *                        pointer;
+    typedef T const &                        reference;
+
     explicit RefIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(RefIterator, std::ptrdiff_t)
@@ -254,9 +270,14 @@ class PtrIterator< IteratorT, typename std::enable_if<
 // Specialization when the iterator is a pointer to T.
 template <typename T>
 class PtrIterator<T *>
-: public std::iterator<std::random_access_iterator_tag, T, std::ptrdiff_t, T *, T &>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T                                value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T *                              pointer;
+    typedef T &                              reference;
+
     PtrIterator(T * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)
@@ -271,9 +292,14 @@ class PtrIterator<T *>
 // Specialization when the iterator is a pointer to a pointer to T.
 template <typename T>
 class PtrIterator<T **>
-: public std::iterator<std::random_access_iterator_tag, T *, std::ptrdiff_t, T **, T * &>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T *                              value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T **                             pointer;
+    typedef T * &                            reference;
+
     PtrIterator(T ** ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)
@@ -289,9 +315,14 @@ class PtrIterator<T **>
 // Specialization when the iterator is a const pointer to a const pointer to T.
 template <typename T>
 class PtrIterator<T const * const *>
-: public std::iterator<std::random_access_iterator_tag, T const *, std::ptrdiff_t, T const * const *, T const * const &>
 {
   public:
+    typedef std::random_access_iterator_tag  iterator_category;
+    typedef T const *                        value_type;
+    typedef std::ptrdiff_t                   difference_type;
+    typedef T const * const *                pointer;
+    typedef T const * const &                reference;
+
     PtrIterator(T const * const * ii_ = nullptr) : ii(ii_) {}
 
     THEA_RANDOM_ACCESS_ITERATOR_BODY(PtrIterator, std::ptrdiff_t)

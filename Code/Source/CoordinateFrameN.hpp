@@ -87,7 +87,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a point from world space to the local space of the coordinate frame. */
     VectorT pointToObjectSpace(VectorT const & p) const
     {
-      return (p - this->getTranslation()).transpose() * this->getRotation();
+      return ((p - this->getTranslation()).transpose() * this->getRotation()).transpose();
     }
 
     /** Transform a direction vector from the local space of the coordinate frame to world space. */
@@ -99,7 +99,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a direction vector from world space to the local space of the coordinate frame. */
     VectorT vectorToObjectSpace(VectorT const & v) const
     {
-      return v.transpose() * this->getRotation();
+      return (v.transpose() * this->getRotation()).transpose();
     }
 
     /** Transform a normal from the local space of the coordinate frame to world space. */
@@ -111,7 +111,7 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
     /** Transform a normal from world space to the local space of the coordinate frame. */
     VectorT normalToObjectSpace(VectorT const & n) const
     {
-      return n.transpose() * this->getRotation();
+      return (n.transpose() * this->getRotation()).transpose();
     }
 
     /** Get the identity frame (same as the world frame). */
