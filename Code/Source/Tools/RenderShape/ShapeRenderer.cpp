@@ -2320,7 +2320,7 @@ initMeshShader(IShader & shader, Vector4 const & material, bool two_sided = true
 "  vec4 matcap_color = texture2D(matcap_tex, 0.495 * matcap_uv + 0.5);\n"
 "  float lite = lightness(matcap_color.rgb);\n"
 "  float highlight_blend = lite * lite * lite * lite;\n"
-"  gl_FragColor = vec4(mix(color.rgb, vec3(1.0, 1.0, 1.0), highlight_blend * matcap_color.rgb, color.a);\n"
+"  gl_FragColor = vec4(mix(color.rgb, vec3(1.0, 1.0, 1.0), highlight_blend) * matcap_color.rgb, color.a);\n"
 "}\n";
 
   string fragment_shader = FRAGMENT_SHADER_HEADER_1;
