@@ -1056,7 +1056,8 @@ class /* THEA_API */ BvhN
       double accel_bound = accelerationBound<MetricT>(query, dist_bound, compatibility);
       if (accel_bound >= 0)
       {
-        double fudge = std::max(0.001 * getBoundsWorldSpace(*root).getExtent().norm(), Math::eps<double>());
+        double fudge = std::max((double)(0.001 * getBoundsWorldSpace(*root).getExtent().norm()),
+                                (double)(100 * Math::eps<ScalarT>()));
         dist_bound = accel_bound + fudge;
       }
 
