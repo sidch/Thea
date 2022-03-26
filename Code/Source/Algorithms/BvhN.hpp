@@ -416,6 +416,66 @@ class /* THEA_API */ BvhN
 
     }; // class MemoryPool
 
+    /** A functor to get the element closest to a query. */
+    template <typename MetricT>
+    class ClosestPairFunctor
+    {
+      public:
+        ClosestPairFunctor(double dist_bound, NeighborPair & result_)
+        : result(result_)
+        {
+          if (!result_.isValid())  // not pre-initialized
+            result_ = NeighborPair(-1, -1, (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1));
+        }
+
+        bool allows(NeighborPair const & pair) const
+        {
+          return true;  // do distance-based pruning in operator() -- not sure if we also want to do that here or not
+        }
+
+        bool operator()(NeighborPair const & pair)
+        {
+          auto best_mad = result.getMonotoneApproxDistance();
+          if (best_mad < 0 || pair.getMonotoneApproxDistance() < best_mad)
+            result = pair;
+
+          return false;
+        }
+
+      private:
+        NeighborPair & result;
+
+    }; // class ClosestPairFunctor
+
+    /** A functor to get the element closest to a query. */
+    template <typename MetricT, typename BoundedNeighborPairSetT>
+    class KClosestPairsFunctor
+    {
+      public:
+        KClosestPairsFunctor(double dist_bound_, BoundedNeighborPairSetT & result_)
+        : mad_bound(dist_bound_ >= 0 ? MetricT::computeMonotoneApprox(dist_bound_) : -1), result(result_)
+        {}
+
+        bool allows(NeighborPair const & pair) const
+        {
+          return (!pair.isValid()  // invalid indices implies distance-based check, which we will ignore here
+               || !result.contains(pair, std::equal_to<NeighborPair>()));  // avoid duplicates
+        }
+
+        bool operator()(NeighborPair const & pair)
+        {
+          if ((mad_bound < 0 || pair.getMonotoneApproxDistance() < mad_bound) && result.isInsertable(pair))
+            result.insert(pair);
+
+          return false;
+        }
+
+      private:
+        double mad_bound;
+        BoundedNeighborPairSetT & result;
+
+    }; // class KClosestPairsFunctor
+
     /** A functor to add results of a range query to an array. */
     class RangeQueryFunctor
     {
@@ -425,7 +485,8 @@ class /* THEA_API */ BvhN
 
       private:
         Array<T> & result;
-    };
+
+    }; // class RangeQueryFunctor
 
     /** A functor to add the indices of results of a range query to an array. */
     class RangeQueryIndicesFunctor
@@ -436,7 +497,8 @@ class /* THEA_API */ BvhN
 
       private:
         Array<intx> & result;
-    };
+
+    }; // class RangeQueryIndicesFunctor
 
   public:
     THEA_DECL_SMART_POINTERS(BvhN)
@@ -976,7 +1038,8 @@ class /* THEA_API */ BvhN
                              CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
                              bool get_closest_points = false) const
     {
-      if (!root) return NeighborPair(-1);
+      NeighborPair result(-1, -1);
+      if (!root) { return result; }
 
       // Early pruning if the entire structure is too far away from the query
       BoundingVolume query_bounds;
@@ -986,30 +1049,33 @@ class /* THEA_API */ BvhN
       {
         double lower_bound = monotonePruningDistance<MetricT>(root, query, query_bounds);
         if (lower_bound >= 0 && lower_bound > mon_approx_dist_bound)
-          return NeighborPair(-1);
+          return result;
       }
 
       // If acceleration is enabled, set an upper limit to the distance to the nearest object
       double accel_bound = accelerationBound<MetricT>(query, dist_bound, compatibility);
       if (accel_bound >= 0)
       {
-        double fudge = 0.001 * getBoundsWorldSpace(*root).getExtent().norm();
-        mon_approx_dist_bound = MetricT::computeMonotoneApprox(accel_bound + fudge);
+        double fudge = std::max(0.001 * getBoundsWorldSpace(*root).getExtent().norm(), Math::eps<double>());
+        dist_bound = accel_bound + fudge;
       }
 
-      NeighborPair pair(-1, -1, mon_approx_dist_bound);
-      closestPair<MetricT>(root, query, query_bounds, pair, compatibility, get_closest_points);
+      ClosestPairFunctor<MetricT> functor(dist_bound, result);
+      processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points, -1);
 
-      return pair;
+      return result;
     }
 
     /**
-     * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (k). The template
-     * type BoundedNeighborPairSetT should typically be BoundedSortedArray<NeighborPair> or BoundedSortedArrayN<k, NeighborPair>
-     * if only a few neighbors are requested.
+     * Get the k elements closest to a query object. The returned elements are placed in a set of bounded size (<tt>k</tt>). The
+     * template type BoundedNeighborPairSetT should typically be BoundedSortedArray<NeighborPair> or
+     * BoundedSortedArrayN<k, NeighborPair> if only a few neighbors are requested. The set is <b>not</b> cleared at the start.
+     *
+     * @note The auxiliary nearest-neighbor acceleration structure, even if present (enableNearestNeighborAcceleration()), is
+     *   <b>NOT</b> used for pruning by this function.
      *
      * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
-     * @param k_closest_pairs The k (or fewer) nearest neighbors are placed here.
+     * @param k_closest_pairs The <tt>k</tt> (or fewer) nearest neighbors are placed here.
      * @param dist_bound Upper bound on the distance between any pair of points considered. Ignored if negative.
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
@@ -1018,103 +1084,136 @@ class /* THEA_API */ BvhN
      *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
-     * @param clear_set If true (default), this function discards prior data in \a k_closest_pairs. This is chiefly for internal
-     *   use and the default value of true should normally be left as is.
-     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
-     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
-     *   is chiefly for internal use and the default value of -1 should normally be left as is.
      *
-     * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
+     * @return The number of neighbors found, i.e. the size of \a k_closest_pairs, which may be less than its capacity
+     *   <tt>k</tt>.
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT,
               typename CompatibilityFunctorT = UniversalCompatibility>
     intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
-                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
-                       bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const
+                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(), bool get_closest_points = false) const
     {
-      if (clear_set) k_closest_pairs.clear();
+      KClosestPairsFunctor<MetricT, BoundedNeighborPairSetT> functor(dist_bound, k_closest_pairs);
+      processNeighbors<MetricT>(query, functor, compatibility, get_closest_points);
 
-      if (!root) return 0;
+      return (intx)k_closest_pairs.size();
+    }
+
+    /**
+     * Apply a functor to all elements neighboring a query object, until the functor returns true. The functor should provide
+     * the following two member functions:
+     * \code
+     * bool allows(NeighborPair const &) const;
+     * bool operator()(NeighborPair const &)
+     * \endcode
+     * The first function will be used to check if a potential pair of neighbors will be accepted by the functor or not. Note
+     * that this pair may be <i>incomplete</i>, e.g. one or both source/target element indices, or the element separation, could
+     * be negative. Any such invalid fields will be ignored. This feature is used for early pruning of elements and bounding
+     * volumes.
+     *
+     * The second function will be passed information about every valid pair of elements that passes the <tt>allows()</tt>
+     * function. If the query is itself a proximity query structure, the corresponding field of the NeighborPair will point to
+     * the relevant element in the structure. Otherwise, the corresponding field will always contain the index 0 and refer to
+     * the entire query object. This function will always receive <i>complete</i> NeighborPair objects (no negative indices or
+     * distances), though the closest point positions will be uninitialized if \a get_closest_points is false.
+     *
+     * This is a generic function that can be used to mimic the behavior of closestPair() or kClosestPairs(), though those
+     * functions can have individual optimizations (e.g. closestPair() uses the auxiliary acceleration structure).
+     *
+     * @note Since two different leaf volumes can contain the same overlapping element, the same pair of elements may be found
+     *   twice and passed to <tt>FunctorT::operator()</tt>. <tt>FunctorT::allows()</tt> should check for repetitions if it wants
+     *   to avoid this.
+     * @note The auxiliary nearest-neighbor acceleration structure, even if present (enableNearestNeighborAcceleration()), is
+     *   <b>NOT</b> used for pruning by this function.
+     *
+     * @param query Query object. BoundedTraitsN<QueryT, N, ScalarT> must be defined.
+     * @param functor The functor that will be called for each pair of neighbors.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
+     *   computed and passed to the functor.
+     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
+     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
+     *   is chiefly for internal use and the default value of -1 should normally be left as is.
+     *
+     * If the functor returns true on any object, the search will terminate immediately (this is useful for searching for a
+     * particular pair). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
+     */
+    template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
+    void processNeighbors(QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                          bool get_closest_points = false, intx use_as_query_index_and_swap = -1) const
+    {
+      if (!root) { return; }
 
       // Early pruning if the entire structure is too far away from the query
       BoundingVolume query_bounds;
       getObjectBounds(query, query_bounds);
-      double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
-      if (mon_approx_dist_bound >= 0)
-      {
-        double lower_bound = monotonePruningDistance<MetricT>(root, query, query_bounds);
-        if (lower_bound >= 0)
-        {
-          if (lower_bound > mon_approx_dist_bound)
-            return 0;
+      if (!functor.allows(NeighborPair(-1, -1, monotonePruningDistance<MetricT>(root, query, query_bounds))))
+        return;
 
-          if (!k_closest_pairs.isInsertable(NeighborPair(0, 0, lower_bound)))
-            return 0;
-        }
-      }
-
-      kClosestPairs<MetricT>(root, query, query_bounds, k_closest_pairs, dist_bound, compatibility, get_closest_points,
-                             use_as_query_index_and_swap);
-
-      return k_closest_pairs.size();
+      processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points,
+                                use_as_query_index_and_swap);
     }
 
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQuery(RangeT const & range, Array<T> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root) const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryFunctor(result));
+      if (root) { const_cast<BvhN *>(this)->processRange<IntersectionTesterT>(range, RangeQueryFunctor(result)); }
     }
 
     template <typename IntersectionTesterT, typename RangeT>
     void rangeQueryIndices(RangeT const & range, Array<intx> & result, bool discard_prior_results = true) const
     {
       if (discard_prior_results) result.clear();
-      if (root) const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT>(range, RangeQueryIndicesFunctor(result));
+      if (root) { const_cast<BvhN *>(this)->processRange<IntersectionTesterT>(range, RangeQueryIndicesFunctor(result)); }
     }
 
     /**
-     * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
-     * (or be a function pointer with the equivalent signature)
+     * Apply a functor to all elements intersecting a range, until the functor returns true. The functor should provide the
+     * member function (or be a function pointer with the equivalent signature):
      * \code
      * bool operator()(intx index, T const & t)
      * \endcode
-     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
-     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
+     * and will be passed the index of each element intersecting in the range as well as a handle to the element itself. If the
+     * functor returns true on any element, the search will terminate immediately (this is useful for searching for a particular
+     * element). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
-     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
-     *   immediately after processing this object), else a negative value.
-     *
-     * @note The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * The RangeT class should support intersection queries with BoundingVolume and T, and containment queries with
      * BoundingVolume.
+     *
+     * @return The index of the first element in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this element), else a negative value.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
-    intx processRangeUntil(RangeT const & range, FunctorT functor) const
+    intx processRange(RangeT const & range, FunctorT functor) const
     {
-      return root ? const_cast<BvhN *>(this)->processRangeUntil<IntersectionTesterT, T const>(root, range, functor) : -1;
+      return root ? const_cast<BvhN *>(this)->processRange<IntersectionTesterT, T const>(root, range, functor) : -1;
     }
 
     /**
-     * Apply a functor to all objects in a range, until the functor returns true. The functor should provide the member function
-     * (or be a function pointer with the equivalent signature)
+     * Apply a functor to all elements intersecting a range, until the functor returns true. The functor should provide the
+     * member function (or be a function pointer with the equivalent signature)
      * \code
      * bool operator()(intx index, T [const] & t)
      * \endcode
-     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
-     * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
-     * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
+     * and will be passed the index of each element intersecting the range as well as a handle to the element itself. If the
+     * functor returns true on any element, the search will terminate immediately (this is useful for searching for a particular
+     * element). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
-     * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
-     *   immediately after processing this object), else a negative value.
-     *
-     * @note The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * The RangeT class should support intersection queries with BoundingVolume and T, and containment queries with
      * BoundingVolume.
+     *
+     * @return The index of the first element in the range for which the functor evaluated to true (the search stopped
+     *   immediately after processing this element), else a negative value.
      */
     template <typename IntersectionTesterT, typename RangeT, typename FunctorT>
-    intx processRangeUntil(RangeT const & range, FunctorT functor)
+    intx processRange(RangeT const & range, FunctorT functor)
     {
-      return root ? processRangeUntil<IntersectionTesterT, T>(root, range, functor) : -1;
+      return root ? processRange<IntersectionTesterT, T>(root, range, functor) : -1;
     }
 
     template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, Real max_time = -1) const
@@ -1534,16 +1633,16 @@ class /* THEA_API */ BvhN
 
   protected:
     /**
-     * Recursively look for the closest pair of points between two elements. Only pairs separated by less than the current
-     * minimum distance (as stored in \a pair) will be considered. If \a get_closest_points is true, the positions of the
-     * closest pair of points will be stored in \a pair, not just the distance between them.
+     * Recursively call \a functor for elements neighboring a query object in the subtree rooted at \a start. If
+     * \a get_closest_points is true, the positions of the closest pair of points will be stored with each pair, not just the
+     * distance between them.
      */
-    template <typename MetricT, typename QueryT, typename CompatibilityFunctorT>
-    void closestPair(Node const * start, QueryT const & query, BoundingVolume const & query_bounds, NeighborPair & pair,
-                     CompatibilityFunctorT compatibility, bool get_closest_points) const
+    template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
+    void processNeighbors(Node const * start, QueryT const & query, BoundingVolume const & query_bounds, FunctorT functor,
+                          CompatibilityFunctorT compatibility, bool get_closest_points, intx use_as_query_index_and_swap) const
     {
       if (start->isLeaf())
-        closestPairLeaf<MetricT>(start, query, pair, compatibility, get_closest_points);
+        processNeighborsLeaf<MetricT>(start, query, functor, compatibility, get_closest_points, use_as_query_index_and_swap);
       else  // not leaf
       {
         // Sort the children by increasing distance to their bounding volumes (optimize for point queries?)
@@ -1552,148 +1651,22 @@ class /* THEA_API */ BvhN
           if (n) { c.insert(NodeDistance(n, monotonePruningDistance<MetricT>(n, query, query_bounds))); }
 
         for (size_t i = 0; i < c.size(); ++i)
-          if (pair.getMonotoneApproxDistance() < 0 || c[i].distance <= pair.getMonotoneApproxDistance())
-            closestPair<MetricT>(c[i].node, query, query_bounds, pair, compatibility, get_closest_points);
-      }
-    }
-
-  private:
-    /**
-     * Search the elements in a leaf node for the one closest to another element, when the latter is a proximity query
-     * structure.
-     */
-    template < typename MetricT, typename QueryT, typename CompatibilityFunctorT,
-               typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
-    void closestPairLeaf(
-      Node const * leaf,
-      QueryT const & query,
-      NeighborPair & pair,
-      CompatibilityFunctorT compatibility,
-      bool get_closest_points) const
-    {
-      BvhNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
-
-      for (size_t i = 0; i < leaf->num_elems; ++i)
-      {
-        ElementIndex index = leaf->elems[i];
-        Element const & elem = elems[index];
-
-        if (!elementPassesFilters(elem))
-          continue;
-
-        // sqrt unavoidable or at least (hopefully) insignificant compared to NN search in query structure
-        auto elem_dist_bound = (pair.getMonotoneApproxDistance() >= 0
-                              ? MetricT::invertMonotoneApprox(pair.getMonotoneApproxDistance()) : -1);
-
-        NeighborPair swapped;
-        if (TransformableBaseT::hasTransform())
-          swapped = query.template closestPair<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                        elem_dist_bound, swapped_compatibility, get_closest_points);
-        else
-          swapped = query.template closestPair<MetricT>(elem, elem_dist_bound, swapped_compatibility, get_closest_points);
-
-        if (swapped.isValid())
         {
-          pair = swapped.swapped();
-          pair.setTargetIndex((intx)index);
-        }
-      }
-    }
-
-    /**
-     * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
-     * structure.
-     */
-    template < typename MetricT, typename QueryT, typename CompatibilityFunctorT,
-               typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
-    void closestPairLeaf(
-      Node const * leaf,
-      QueryT const & query,
-      NeighborPair & pair,
-      CompatibilityFunctorT compatibility,
-      bool get_closest_points) const
-    {
-      VectorT qp = VectorT::Zero(), tp = VectorT::Zero();  // initialize to squash uninitialized variable warning
-      double mad;
-
-      for (size_t i = 0; i < leaf->num_elems; ++i)
-      {
-        ElementIndex index = leaf->elems[i];
-        Element const & elem = elems[index];
-
-        if (!elementPassesFilters(elem))
-          continue;
-
-        if (TransformableBaseT::hasTransform())
-        {
-          auto transformed_elem = makeTransformedObject(&elem, &TransformableBaseT::getTransform());
-          if (!compatibility(query, transformed_elem))
-            continue;
-
-          mad = MetricT::template closestPoints<N, ScalarT>(transformed_elem, query, tp, qp);
-        }
-        else
-        {
-          if (!compatibility(query, elem))
-            continue;
-
-          mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
-        }
-
-        if (pair.getMonotoneApproxDistance() < 0 || mad <= pair.getMonotoneApproxDistance())
-          pair = NeighborPair(0, (intx)index, mad, qp, tp);
-      }
-    }
-
-  protected:
-    /**
-     * Recursively look for the k closest elements to a query object. Only elements at less than the specified maximum distance
-     * \a dist_bound will be considered. If \a get_closest_points is true, the positions of the closest pair of points will be
-     * stored with each pair, not just the distance between them.
-     */
-    template <typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT>
-    void kClosestPairs(Node const * start, QueryT const & query, BoundingVolume const & query_bounds,
-                       BoundedNeighborPairSet & k_closest_pairs, double dist_bound, CompatibilityFunctorT compatibility,
-                       bool get_closest_points, intx use_as_query_index_and_swap) const
-    {
-      if (start->isLeaf())
-        kClosestPairsLeaf<MetricT>(start, query, k_closest_pairs, dist_bound, compatibility, get_closest_points,
-                                   use_as_query_index_and_swap);
-      else  // not leaf
-      {
-        // Sort the children by increasing distance to their bounding volumes (optimize for point queries?)
-        ChildDistanceArray c;
-        for (auto n : start->children)
-          if (n) { c.insert(NodeDistance(n, monotonePruningDistance<MetricT>(n, query, query_bounds))); }
-
-        double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
-        for (size_t i = 0; i < c.size(); ++i)
-        {
-          if ((mon_approx_dist_bound < 0 || c[i].distance <= mon_approx_dist_bound)
-            && k_closest_pairs.isInsertable(NeighborPair(0, 0, c[i].distance)))
+          if (functor.allows(NeighborPair(-1, -1, c[i].distance)))
           {
-            kClosestPairs<MetricT>(c[i].node, query, query_bounds, k_closest_pairs, dist_bound, compatibility,
-                                   get_closest_points, use_as_query_index_and_swap);
+            processNeighbors<MetricT>(c[i].node, query, query_bounds, functor, compatibility, get_closest_points,
+                                      use_as_query_index_and_swap);
           }
         }
       }
     }
 
   private:
-    /**
-     * Search the elements in a leaf node for the k nearest neighbors of an object, when the latter is a proximity query
-     * structure of compatible type.
-     */
-    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT,
+    /** Find elements in a leaf node neighboring another object, when the latter IS a proximity query structure. */
+    template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT,
                typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
-    void kClosestPairsLeaf(
-      Node const * leaf,
-      QueryT const & query,
-      BoundedNeighborPairSet & k_closest_pairs,
-      double dist_bound,
-      CompatibilityFunctorT compatibility,
-      bool get_closest_points,
-      intx use_as_query_index_and_swap) const
+    void processNeighborsLeaf(Node const * leaf, QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility,
+                              bool get_closest_points, intx use_as_query_index_and_swap) const
     {
       BvhNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
 
@@ -1706,36 +1679,21 @@ class /* THEA_API */ BvhN
           continue;
 
         if (TransformableBaseT::hasTransform())
-          query.template kClosestPairs<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                k_closest_pairs, dist_bound, swapped_compatibility, get_closest_points, false,
-                                                (intx)index);
+          query.template processNeighbors<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
+                                                   functor, swapped_compatibility, get_closest_points, (intx)index);
         else
-          query.template kClosestPairs<MetricT>(elem, k_closest_pairs, dist_bound, swapped_compatibility, get_closest_points,
-                                                false, (intx)index);
+          query.template processNeighbors<MetricT>(elem, functor, swapped_compatibility, get_closest_points, (intx)index);
       }
     }
 
-    /**
-     * Search the elements in a leaf node for the one closest to another element, when the latter is NOT a proximity query
-     * structure.
-     */
-    template < typename MetricT, typename QueryT, typename BoundedNeighborPairSet, typename CompatibilityFunctorT,
+    /** Find elements in a leaf node neighboring another object, when the latter is NOT a proximity query structure. */
+    template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT,
                typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
-    void kClosestPairsLeaf(
-      Node const * leaf,
-      QueryT const & query,
-      BoundedNeighborPairSet & k_closest_pairs,
-      double dist_bound,
-      CompatibilityFunctorT compatibility,
-      bool get_closest_points,
-      intx use_as_query_index_and_swap) const
+    void processNeighborsLeaf(Node const * leaf, QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility,
+                              bool get_closest_points, intx use_as_query_index_and_swap) const
     {
-      double mon_approx_dist_bound = (dist_bound >= 0 ? MetricT::computeMonotoneApprox(dist_bound) : -1);
-
-      std::equal_to<NeighborPair> eq_comp;
       VectorT qp, tp;
       double mad;
-
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
         ElementIndex index = leaf->elems[i];
@@ -1747,7 +1705,7 @@ class /* THEA_API */ BvhN
         // Check if the element is already in the set of neighbors or not
         NeighborPair pair = (use_as_query_index_and_swap >= 0 ? NeighborPair((intx)index, use_as_query_index_and_swap)
                                                               : NeighborPair(0, (intx)index));
-        if (k_closest_pairs.contains(pair, eq_comp))  // already found
+        if (!functor.allows(pair))  // the same pair may be found twice, so the functor may choose to ignore repetitions
           continue;
 
         if (TransformableBaseT::hasTransform())
@@ -1766,7 +1724,7 @@ class /* THEA_API */ BvhN
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
         }
 
-        if (mon_approx_dist_bound < 0 || mad <= mon_approx_dist_bound)
+        if (functor.allows(NeighborPair(-1, -1, mad)))  // no need to check indices again
         {
           pair.setMonotoneApproxDistance(mad);
 
@@ -1784,30 +1742,30 @@ class /* THEA_API */ BvhN
             }
           }
 
-          k_closest_pairs.insert(pair);
+          functor(pair);
         }
       }
     }
 
   protected:
     /**
-     * Apply a functor to all elements of a subtree within a range, until the functor returns true. The functor should provide
-     * the member function (or be a function pointer with the equivalent signature)
+     * Apply a functor to all elements of a subtree intersecting a range, until the functor returns true. The functor should
+     * provide the member function (or be a function pointer with the equivalent signature)
      * \code
      * bool operator()(intx index, T & t)
      * \endcode
-     * and will be passed the index of each object contained in the range as well as a handle to the object itself. If the
+     * and will be passed the index of each object intersecting the range as well as a handle to the object itself. If the
      * functor returns true on any object, the search will terminate immediately (this is useful for searching for a particular
      * object). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      *
-     * The RangeT class should support intersection queries with BoundingVolume and containment queries with VectorT and
+     * The RangeT class should support intersection queries with BoundingVolume and T, and containment queries with
      * BoundingVolume.
      *
      * @return The index of the first object in the range for which the functor evaluated to true (the search stopped
      *   immediately after processing this object), else a negative value.
      */
     template <typename IntersectionTesterT, typename FunctorArgT, typename RangeT, typename FunctorT>
-    intx processRangeUntil(Node const * start, RangeT const & range, FunctorT functor)
+    intx processRange(Node const * start, RangeT const & range, FunctorT functor)
     {
       // Early exit if the range and node are disjoint
       BoundingVolume tr_start_bounds = getBoundsWorldSpace(*start);
@@ -1853,7 +1811,7 @@ class /* THEA_API */ BvhN
       {
         for (auto c : start->children)
         {
-          intx index = processRangeUntil<IntersectionTesterT, FunctorArgT>(c, range, functor);
+          intx index = processRange<IntersectionTesterT, FunctorArgT>(c, range, functor);
           if (index >= 0) return index;
         }
       }

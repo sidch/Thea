@@ -55,7 +55,7 @@ LocalPca::compute(Vector3 const & position, Vector3 * eigenvectors, Real nbd_rad
 
   Ball3 range(position, nbd_radius);
   func.reset();
-  const_cast<PointSet3::SampleBvh &>(surf->getBvh()).processRangeUntil<IntersectionTester>(range, std::ref(func));
+  surf->getBvh().processRange<IntersectionTester>(range, std::ref(func));
 
   return func.getPcaFeatures(eigenvectors);
 }

@@ -89,7 +89,7 @@ Curvature::computeProjectedCurvature(Vector3 const & position, Vector3 const & n
 
   CurvatureInternal::ProjectedCurvatureFunctor func(position, normal);
   Ball3 range(position, nbd_radius);
-  const_cast<PointSet3::SampleBvh &>(surf->getBvh()).processRangeUntil<IntersectionTester>(range, std::ref(func));
+  surf->getBvh().processRange<IntersectionTester>(range, std::ref(func));
 
   return func.getCurvature();
 }

@@ -82,7 +82,7 @@ computeEuclidean(PointSet3 const & surf, Vector3 const & position, Histogram & h
   else
   {
     Ball3 ball(position, max_distance);
-    const_cast<PointSet3::SampleBvh &>(surf.getBvh()).processRangeUntil<IntersectionTester>(ball, callback);
+    surf.getBvh().processRange<IntersectionTester>(ball, callback);
   }
 }
 

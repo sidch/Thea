@@ -110,7 +110,7 @@ struct PointTraitsN<MyCustomPoint, 3, Real>
 // returned by bvh.getElements()) and a reference to the point itself (as cached by the BVH).
 bool printPoint(intx index, MyCustomPoint & np)
 {
-  cout << "  Found point '" << np.name << "' at position " << np.position.transpose() << endl;
+  cout << "  Found point '" << np.name << "' at position " << toString(np.position) << endl;
   return false;  // the range query stops when this function returns true -- here we don't want that to happen
 }
 
@@ -158,8 +158,7 @@ testPointBvh()
   // query
   Ball3 ball(Vector3(0.5f, 0.5f, 0.5f), 0.25f);
   cout << "\nLooking for all points in ball " << ball.toString() << ':' << endl;
-  bvh.processRangeUntil<IntersectionTester>(ball, printPoint);  // processes all points in the ball until the functor returns
-                                                                   // true
+  bvh.processRange<IntersectionTester>(ball, printPoint);  // processes all points in the ball until the functor returns true
 
   // Another way of writing a range query, that explicitly returns all the elements in the ball. This might be slower because of
   // memory allocation by push_back in vector.
@@ -180,7 +179,7 @@ testPointBvh()
   // A range query that prints all the points in a box
   AxisAlignedBox3 box(Vector3(0.25f, 0.25f, 0.25f), Vector3(0.75f, 0.75f, 0.75f));
   cout << "\nLooking for all points in box " << box.toString() << ':' << endl;
-  bvh.processRangeUntil<IntersectionTester>(box, printPoint);
+  bvh.processRange<IntersectionTester>(box, printPoint);
 
   //============================================================================================================================
   // Finding the nearest neighbor of a query point
@@ -192,7 +191,7 @@ testPointBvh()
   double dist = 0;  // this will contain the distance to the returned point
   intx nn_index = bvh.closestElement<MetricL2>(query, dist_bound, UniversalCompatibility(), &dist);
   if (nn_index >= 0)
-    cout << "\nThe point nearest the query " << query.transpose() << " is " << bvh.getElements()[nn_index].name
+    cout << "\nThe point nearest the query " << toString(query) << " is " << bvh.getElements()[nn_index].name
          << " at distance " << dist << endl;
   else
     cout << "\nNo nearest neighbor found" << endl;
@@ -206,7 +205,7 @@ testPointBvh()
   intx num_nbrs = bvh.kClosestPairs<MetricL2>(query, nbrs, dist_bound, UniversalCompatibility());
   if (num_nbrs > 0)
   {
-    cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << query.transpose() << ':' << endl;
+    cout << '\n' << num_nbrs << " neighbors (max 3) found for query " << toString(query) << ':' << endl;
     for (size_t i = 0; i < nbrs.size(); ++i)
     {
       cout << "  " << bvh.getElements()[nbrs[i].getTargetIndex()].name << " at distance "
@@ -239,12 +238,12 @@ testPointBvh()
   if (nn_pair.isValid())
   {
     cout << "\nThe nearest neighbors are "
-         << new_bvh.getElements()[nn_pair.getQueryIndex()].name << ' ' << nn_pair.getQueryPoint() << " and "
-         << bvh.getElements()[nn_pair.getTargetIndex()].name << ' ' << nn_pair.getTargetPoint()
+         << new_bvh.getElements()[nn_pair.getQueryIndex()].name << ' ' << toString(nn_pair.getQueryPoint()) << " and "
+         << bvh.getElements()[nn_pair.getTargetIndex()].name << ' ' << toString(nn_pair.getTargetPoint())
          << " at separation " << nn_pair.getDistance<MetricL2>() << endl;
 
-    cout << "    Query point is at " << new_bvh.getElements()[nn_pair.getQueryIndex()].position << endl;
-    cout << "    Target point is at " << bvh.getElements()[nn_pair.getTargetIndex()].position << endl;
+    cout << "    Query point is at " << toString(new_bvh.getElements()[nn_pair.getQueryIndex()].position) << endl;
+    cout << "    Target point is at " << toString(bvh.getElements()[nn_pair.getTargetIndex()].position) << endl;
   }
   else
     cout << "\nNo nearest neighbors found between the two BVHs" << endl;
@@ -261,12 +260,12 @@ testPointBvh()
     cout << '\n' << num_nbrs << " pairs of nearest neighbors (max 3) found for query point set:" << endl;
     for (intx i = 0; i < nbrs.size(); ++i)
     {
-      cout << "  (" << new_bvh.getElements()[nbrs[i].getQueryIndex()].name << ' ' << nbrs[i].getQueryPoint() << ", "
-                    << bvh.getElements()[nbrs[i].getTargetIndex()].name << ' ' << nbrs[i].getTargetPoint()
+      cout << "  (" << new_bvh.getElements()[nbrs[i].getQueryIndex()].name << ' ' << toString(nbrs[i].getQueryPoint()) << ", "
+                    << bvh.getElements()[nbrs[i].getTargetIndex()].name << ' ' << toString(nbrs[i].getTargetPoint())
                     << ") at distance " << nbrs[i].getDistance<MetricL2>() << endl;
 
-      cout << "      Query point is at " << new_bvh.getElements()[nbrs[i].getQueryIndex()].position << endl;
-      cout << "      Target point is at " << bvh.getElements()[nbrs[i].getTargetIndex()].position << endl;
+      cout << "      Query point is at " << toString(new_bvh.getElements()[nbrs[i].getQueryIndex()].position) << endl;
+      cout << "      Target point is at " << toString(bvh.getElements()[nbrs[i].getTargetIndex()].position) << endl;
     }
   }
   else
@@ -324,7 +323,7 @@ testTriangleBvh()
   if (nn_index >= 0)
     cout << "\nThe triangle nearest the query " << query.transpose() << " is "
          << bvh.getElements()[nn_index].getVertices().name
-         << " at distance " << dist << ", with closest point" << closest_point.transpose() << endl;
+         << " at distance " << dist << ", with closest point" << toString(closest_point) << endl;
   else
     cout << "\nNo nearest neighbor of the query point found" << endl;
 
@@ -357,7 +356,7 @@ testTriangleBvh()
          << new_bvh.getElements()[nn_pair.getQueryIndex()].getVertices().name << " and "
          << bvh.getElements()[nn_pair.getTargetIndex()].getVertices().name
          << " at separation " << nn_pair.getDistance<MetricL2>()
-         << ", with closest points " << nn_pair.getQueryPoint().transpose() << " and " << nn_pair.getTargetPoint().transpose()
+         << ", with closest points " << toString(nn_pair.getQueryPoint()) << " and " << toString(nn_pair.getTargetPoint())
          << " respectively" << endl;
   else
     cout << "\nNo nearest neighbors found between the two BVHs" << endl;
@@ -386,7 +385,7 @@ testTriangleBvh()
   Real hit_time = bvh.rayIntersectionTime<RayIntersectionTester>(ray, max_time);
   if (hit_time >= 0)
     cout << "Ray intersects a triangle in the BVH after time " << hit_time
-         << " (at point " << ray.getPoint(hit_time).transpose() << ')' << endl;
+         << " (at point " << toString(ray.getPoint(hit_time)) << ')' << endl;
   else
     cout << "Ray does not intersect any triangle in the BVH" << endl;
 
@@ -397,8 +396,8 @@ testTriangleBvh()
     cout << "Ray intersects a triangle in the BVH:\n"
          << "    hit time = " << isec.getTime() << '\n'
          << "    intersected triangle = " << bvh.getElements()[isec.getElementIndex()].getVertices().name << '\n'
-         << "    intersection point = " << ray.getPoint(isec.getTime()).transpose() << '\n'
-         << "    normal at intersection point = " << isec.getNormal().transpose() << endl;
+         << "    intersection point = " << toString(ray.getPoint(isec.getTime())) << '\n'
+         << "    normal at intersection point = " << toString(isec.getNormal()) << endl;
   }
   else
     cout << "Ray does not intersect any triangle in the BVH" << endl;

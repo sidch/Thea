@@ -77,7 +77,7 @@ computeEuclidean(PointSet3 const & surf, Vector3 const & position, Real max_dist
   else
   {
     Ball3 ball(position, max_distance);
-    const_cast<PointSet3::SampleBvh &>(surf.getBvh()).processRangeUntil<IntersectionTester>(ball, std::ref(callback));
+    surf.getBvh().processRange<IntersectionTester>(ball, std::ref(callback));
   }
 
   return callback.getAverageDistance() / max_distance;

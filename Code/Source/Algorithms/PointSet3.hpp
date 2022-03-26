@@ -671,7 +671,7 @@ class PointSet3
         NeighborFunctor<RayQueryStructureT> func(sample, has_normals, surface);
 
         Ball3 nbd(sample->getPosition(), radius);
-        h.processRangeUntil<IntersectionTester>(nbd, func);
+        h.processRange<IntersectionTester>(nbd, func);
 
         if (sample->numNeighbors() >= min_degree)
           break;

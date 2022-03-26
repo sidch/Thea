@@ -48,21 +48,18 @@ class /* THEA_API */ ProximityQueryStructureN
     class /* THEA_API */ NeighborPair
     {
       public:
-        /** Default constructor. */
-        NeighborPair() {}
-
         /**
          * Construct from a pair of query and target indices, and a monotone approximation to the distance between the
-         * elements.
+         * elements. A negative value for any field implies it has not been initialized.
          */
-        NeighborPair(intx query_index_, intx target_index_ = -1, double mon_approx_dist_ = 0)
-        : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_),
-          query_point(VectorT::Zero()), target_point(VectorT::Zero())
+        NeighborPair(intx query_index_ = -1, intx target_index_ = -1, double mon_approx_dist_ = -1)
+        : query_index(query_index_), target_index(target_index_), mon_approx_dist(mon_approx_dist_)
         {}
 
         /**
          * Construct from a pair of query and target indices, a monotone approximation to the distance between the elements, and
-         * the positions of the closest pair of points on them.
+         * the positions of the closest pair of points on them. A negative value for any of the scalar fields implies it has not
+         * been initialized.
          */
         NeighborPair(intx query_index_, intx target_index_, double mon_approx_dist_, VectorT const & query_point_,
                      VectorT const & target_point_)
@@ -85,7 +82,7 @@ class /* THEA_API */ ProximityQueryStructureN
         /** Set the index of the target element. */
         void setTargetIndex(intx target_index_) { target_index = target_index_; }
 
-        /** Get a monotone approximation of the distance between the neighbors. */
+        /** Get a monotone approximation of the distance between the neighbors. A negative value */
         double getMonotoneApproxDistance() const { return mon_approx_dist; }
 
         /** Set the monotone approximation of the distance between the neighbors. */
@@ -93,7 +90,7 @@ class /* THEA_API */ ProximityQueryStructureN
 
         /**
          * Get the distance between the neighbors, assuming the stored monotone approximation was computed using the supplied
-         * metric.
+         * metric. The return value is undefined if the monotone approximation has an invalid value (e.g. negative).
          */
         template <typename MetricT> double getDistance() const { return MetricT::invertMonotoneApprox(mon_approx_dist); }
 
@@ -218,19 +215,56 @@ class /* THEA_API */ ProximityQueryStructureN
      *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
-     * @param clear_set If true (default), this function discards prior data in \a k_closest_pairs. This is chiefly for internal
-     *   use and the default value of true should normally be left as is.
-     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
-     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
-     *   is chiefly for internal use and the default value of -1 should normally be left as is.
      *
      * @return The number of neighbors found (i.e. the size of \a k_closest_pairs).
      */
     template <typename MetricT, typename QueryT, typename BoundedNeighborPairSetT,
               typename CompatibilityFunctorT = UniversalCompatibility>
     intx kClosestPairs(QueryT const & query, BoundedNeighborPairSetT & k_closest_pairs, double dist_bound = -1,
-                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
-                       bool get_closest_points = false, bool clear_set = true, intx use_as_query_index_and_swap = -1) const;
+                       CompatibilityFunctorT compatibility = CompatibilityFunctorT(), bool get_closest_points = false) const;
+
+    /**
+     * Apply a functor to all elements neighboring a query object, until the functor returns true. The functor should provide
+     * the following two member functions:
+     * \code
+     * bool allows(NeighborPair const &) const;
+     * bool operator()(NeighborPair const &)
+     * \endcode
+     * The first function will be used to check if a potential pair of neighbors will be accepted by the functor or not. Note
+     * that this pair may be <i>incomplete</i>, e.g. one or both source/target element indices, or the element separation, could
+     * be negative. Any such invalid fields will be ignored. This feature is used for early pruning of elements.
+     *
+     * The second function will be passed information about every valid pair of elements that passes the <tt>allows()</tt>
+     * function. If the query is itself a proximity query structure, the corresponding field of the NeighborPair will point to
+     * the relevant element in the structure. Otherwise, the corresponding field will always contain the index 0 and refer to
+     * the entire query object. This function will always receive <i>complete</i> NeighborPair objects (no negative indices or
+     * distances), though the closest point positions will be uninitialized if \a get_closest_points is false.
+     *
+     * This is a generic function that can be used to mimic the behavior of closestPair() or kClosestPairs(), though those
+     * functions can be individually optimized in specific implementations.
+     *
+     * @note The same pair of elements may be found twice and passed to <tt>FunctorT::operator()</tt>.
+     *   <tt>FunctorT::allows()</tt> should check for repetitions if it wants to avoid this.
+     *
+     * @param query Query object.
+     * @param functor The functor that will be called for each pair of neighbors.
+     * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
+     *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
+     *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
+     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
+     *   computed and passed to the functor.
+     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
+     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
+     *   is chiefly for internal use and the default value of -1 should normally be left as is.
+     *
+     * If the functor returns true on any object, the search will terminate immediately (this is useful for searching for a
+     * particular pair). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
+     */
+    template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
+    void processNeighbors(QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
+                          bool get_closest_points = false, intx use_as_query_index_and_swap = -1) const;
 
 }; // class ProximityQueryStructureN
 
