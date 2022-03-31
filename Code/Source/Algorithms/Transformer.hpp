@@ -23,7 +23,7 @@
 #include "../BallN.hpp"
 #include "../LineSegmentN.hpp"
 #include "../MatVec.hpp"
-#include "../Triangle3.hpp"
+#include "../TriangleN.hpp"
 #include "PointTraitsN.hpp"
 #include <type_traits>
 
@@ -107,26 +107,10 @@ struct /* THEA_API */ TransformerImpl<ObjT *, TransT, N, ScalarT>
 // Specializations
 //=============================================================================================================================
 
-namespace TransformerInternal {
-
-template <typename T, int N, typename Enable = void>
-struct IsHomMatrix
-{
-  static bool const value = false;
-};
-
-template <typename T, int N>
-struct IsHomMatrix< T, N, typename std::enable_if< T::RowsAtCompileTime == N + 1 && T::ColsAtCompileTime == N + 1 >::type >
-{
-  static bool const value = true;
-};
-
-} // namespace TransformerInternal
-
 template <typename ObjT, typename TransT, int N, typename ScalarT>
 struct TransformerImpl<ObjT, TransT, N, ScalarT,
                        typename std::enable_if< IsNonReferencedPointN<ObjT, N>::value
-                                             && !TransformerInternal::IsHomMatrix<TransT, N>::value >::type>
+                                             && !Math::IsHomMatrix<TransT, N>::value >::type>
 {
   typedef Vector<N, ScalarT> Result;
   static Result transform(ObjT const & obj, TransT const & tr) { return tr * PointTraitsN<ObjT, N, ScalarT>::getPosition(obj); }
@@ -136,7 +120,7 @@ struct TransformerImpl<ObjT, TransT, N, ScalarT,
 template <typename ObjT, typename TransT, int N, typename ScalarT>
 struct TransformerImpl<ObjT, TransT, N, ScalarT,
                        typename std::enable_if< IsNonReferencedPointN<ObjT, N>::value
-                                             && TransformerInternal::IsHomMatrix<TransT, N>::value >::type>
+                                             && Math::IsHomMatrix<TransT, N>::value >::type>
 {
   typedef Vector<N, ScalarT> Result;
   static Result transform(ObjT const & obj, TransT const & tr)
@@ -167,16 +151,11 @@ struct TransformerImpl< BallN<N, ScalarT>, RigidTransformN<N, ScalarT>, N, Scala
   { return Result(tr * ball.getCenter(), ball.getRadius()); }
 };
 
-template <typename VertexTripleT, typename TransT, typename ScalarT>
-struct THEA_API TransformerImpl< Triangle3<VertexTripleT>, TransT, 3, ScalarT >
+template <int N, typename ScalarT, typename VertexTripleT, typename TransT>
+struct THEA_API TransformerImpl< TriangleN<N, VertexTripleT, ScalarT>, TransT, N, ScalarT >
 {
-  typedef LocalTriangle3 Result;
-  static Result transform(Triangle3<VertexTripleT> const & tri, TransT const & tr)
-  {
-    return Result(Transformer::transform<3, ScalarT>(tri.getVertex(0), tr),
-                          Transformer::transform<3, ScalarT>(tri.getVertex(1), tr),
-                          Transformer::transform<3, ScalarT>(tri.getVertex(2), tr));
-  }
+  typedef TriangleN< N, TriangleLocalVertexTripleN<N, ScalarT>, ScalarT > Result;
+  static Result transform(TriangleN<N, VertexTripleT, ScalarT> const & tri, TransT const & tr) { return tri.transform(tr); }
 };
 
 template <int N, typename ScalarT, typename TransT>

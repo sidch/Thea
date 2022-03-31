@@ -19,7 +19,7 @@
 #include "../AxisAlignedBoxN.hpp"
 #include "../BallN.hpp"
 #include "../MatVec.hpp"
-#include "../Triangle3.hpp"
+#include "../TriangleN.hpp"
 #include "PointTraitsN.hpp"
 #include "TransformedObject.hpp"
 #include <cmath>
@@ -274,41 +274,45 @@ struct MetricL2Impl<AxisAlignedBoxN<N, T>, BallN<N, T>, N, T>
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <typename VertexTripleT, typename T>
-struct MetricL2Impl<LineN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename VertexTripleT, typename T>
+struct MetricL2Impl<LineN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static T distance(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(LineN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
-  { return b.squaredDistance(a, &cpb, &cpa); }
-};
-
-template <typename VertexTripleT, typename T>
-struct MetricL2Impl<LineSegmentN<3, T>, Triangle3<VertexTripleT>, 3, T>
-{
-  static T distance(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b)
+  static T distance(LineN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.distance(a); }
+  static T monotoneApproxDistance(LineN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b)
   { return b.squaredDistance(a); }
-  static T closestPoints(LineSegmentN<3, T> const & a, Triangle3<VertexTripleT> const & b,
-                         Vector<3, T> & cpa, Vector<3, T> & cpb)
+  static T closestPoints(LineN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <typename VertexTripleT, typename T>
-struct MetricL2Impl<RayN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename VertexTripleT, typename T>
+struct MetricL2Impl<LineSegmentN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static T distance(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(RayN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
+  static T distance(LineSegmentN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.distance(a); }
+  static T monotoneApproxDistance(LineSegmentN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b)
+  { return b.squaredDistance(a); }
+  static T closestPoints(LineSegmentN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b,
+                         Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 
-template <typename VertexTripleT, typename T>
-struct MetricL2Impl<BallN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename VertexTripleT, typename T>
+struct MetricL2Impl<RayN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static T distance(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.distance(a); }
-  static T monotoneApproxDistance(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.squaredDistance(a); }
-  static T closestPoints(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b, Vector<3, T> & cpa, Vector<3, T> & cpb)
+  static T distance(RayN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.distance(a); }
+  static T monotoneApproxDistance(RayN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b)
+  { return b.squaredDistance(a); }
+  static T closestPoints(RayN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
+  { return b.squaredDistance(a, &cpb, &cpa); }
+};
+
+template <int N, typename VertexTripleT, typename T>
+struct MetricL2Impl<BallN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
+{
+  static T distance(BallN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.distance(a); }
+  static T monotoneApproxDistance(BallN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b)
+  { return b.squaredDistance(a); }
+  static T closestPoints(BallN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b,
+                         Vector<N, T> & cpa, Vector<N, T> & cpb)
   { return b.squaredDistance(a, &cpb, &cpa); }
 };
 

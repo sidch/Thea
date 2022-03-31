@@ -7,6 +7,7 @@
 #include "../AxisAlignedBox3.hpp"
 #include "../Ball3.hpp"
 #include "../BoundedSortedArrayN.hpp"
+#include "../Triangle3.hpp"
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -80,10 +81,10 @@ struct MyCustomTriangleVertexTriple
 };
 
 // Our custom triangle class just wraps the vertex triple above. We don't need to specify any additional traits classes because
-// the BVH already knows how to handle any specialization of Triangle3<...>. The vertex triple tells Triangle3 how to get
-// the three vertices of the triangle, and the rest is automatically set up. To access the vertex triple (and any custom info
-// inside it), use triangle.getVertices(), which returns a reference to the wrapped vertex triple.
-typedef Triangle3<MyCustomTriangleVertexTriple> MyCustomTriangle;
+// the BVH already knows how to handle any specialization of Triangle<3, ...>. The vertex triple tells Triangle how to get the
+// three vertices of the triangle, and the rest is automatically set up. To access the vertex triple (and any custom info inside
+// it), use triangle.getVertices(), which returns a reference to the wrapped vertex triple.
+typedef TriangleN<3, MyCustomTriangleVertexTriple, Real> MyCustomTriangle;
 
 namespace Thea {
 namespace Algorithms {

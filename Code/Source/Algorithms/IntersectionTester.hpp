@@ -19,7 +19,7 @@
 #include "../AxisAlignedBoxN.hpp"
 #include "../BallN.hpp"
 #include "../BoxN.hpp"
-#include "../Triangle3.hpp"
+#include "../TriangleN.hpp"
 #include "PointTraitsN.hpp"
 #include "TransformedObject.hpp"
 #include <type_traits>
@@ -140,22 +140,22 @@ struct IntersectionTesterImpl<LineSegmentN<N, T>, AxisAlignedBoxN<N, T>, N, T>
   static bool intersects(LineSegmentN<N, T> const & a, AxisAlignedBoxN<N, T> const & b) { return b.intersects(a); }
 };
 
-template <typename VertexTripleT, typename T>
-struct IntersectionTesterImpl<AxisAlignedBoxN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename T, typename VertexTripleT>
+struct IntersectionTesterImpl<AxisAlignedBoxN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static bool intersects(AxisAlignedBoxN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
+  static bool intersects(AxisAlignedBoxN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.intersects(a); }
 };
 
-template <typename VertexTripleT, typename T>
-struct IntersectionTesterImpl<BallN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename T, typename VertexTripleT>
+struct IntersectionTesterImpl<BallN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static bool intersects(BallN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
+  static bool intersects(BallN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.intersects(a); }
 };
 
-template <typename VertexTripleT, typename T>
-struct IntersectionTesterImpl<BoxN<3, T>, Triangle3<VertexTripleT>, 3, T>
+template <int N, typename T, typename VertexTripleT>
+struct IntersectionTesterImpl<BoxN<N, T>, TriangleN<N, VertexTripleT, T>, N, T>
 {
-  static bool intersects(BoxN<3, T> const & a, Triangle3<VertexTripleT> const & b) { return b.intersects(a); }
+  static bool intersects(BoxN<N, T> const & a, TriangleN<N, VertexTripleT, T> const & b) { return b.intersects(a); }
 };
 
 template <int N, typename T>

@@ -351,11 +351,11 @@ class MeshTriangles
   public:
     THEA_DECL_SMART_POINTERS(MeshTriangles)
 
-    typedef MeshT Mesh;                           ///< The mesh type.
-    typedef Graphics::MeshGroup<Mesh> MeshGroup;  ///< A group of meshes.
-    typedef MeshVertexTriple<Mesh> VertexTriple;  ///< A triple of mesh vertices.
-    typedef Triangle3< VertexTriple > Triangle;   ///< The triangle defined by a triple of mesh vertices.
-    typedef Array<Triangle> TriangleArray;    ///< An array of mesh triangles.
+    typedef MeshT Mesh;                                 ///< The mesh type.
+    typedef Graphics::MeshGroup<Mesh> MeshGroup;        ///< A group of meshes.
+    typedef MeshVertexTriple<Mesh> VertexTriple;        ///< A triple of mesh vertices.
+    typedef TriangleN<3, VertexTriple, Real> Triangle;  ///< The triangle defined by a triple of mesh vertices.
+    typedef Array<Triangle> TriangleArray;              ///< An array of mesh triangles.
 
     /** Triangulate the faces of a mesh and add them to the set. */
     void add(Mesh & mesh)

@@ -20,7 +20,7 @@
 #include "../BallN.hpp"
 #include "../BoxN.hpp"
 #include "../LineSegmentN.hpp"
-#include "../Triangle3.hpp"
+#include "../TriangleN.hpp"
 #include "PointTraitsN.hpp"
 #include <type_traits>
 
@@ -58,7 +58,8 @@ template <int N, typename S> class IsBoundedN< AxisAlignedBoxN<N, S>, N >       
 template <int N, typename S> class IsBoundedN< BallN<N, S>, N >                    { public: static bool const value = true; };
 template <int N, typename S> class IsBoundedN< BoxN<N, S>, N >                     { public: static bool const value = true; };
 template <int N, typename S> class IsBoundedN< LineSegmentN<N, S>, N >             { public: static bool const value = true; };
-template <typename VertexTripleT> class IsBoundedN< Triangle3<VertexTripleT>, 3 >  { public: static bool const value = true; };
+template <int N, typename VertexTripleT, typename S>
+class IsBoundedN< TriangleN<N, VertexTripleT, S>, N > { public: static bool const value = true; };
 
 /** Same as IsBoundedN (no need to specialize it separately), except false for const or pointer types. */
 template <typename T, int N>
@@ -120,8 +121,8 @@ struct /* THEA_API */ BoundedTraitsN<T const, N, ScalarT>
   { BoundedTraitsN<T, N, ScalarT>::getBounds(t, bounds); }
 
   static Vector<N, ScalarT> getCenter(T const & t)  { return BoundedTraitsN<T, N, ScalarT>::getCenter(t);      }
-  static ScalarT getHigh(T const & t, intx coord)    { return BoundedTraitsN<T, N, ScalarT>::getHigh(t, coord); }
-  static ScalarT getLow(T const & t, intx coord)     { return BoundedTraitsN<T, N, ScalarT>::getLow(t, coord);  }
+  static ScalarT getHigh(T const & t, intx coord)   { return BoundedTraitsN<T, N, ScalarT>::getHigh(t, coord); }
+  static ScalarT getLow(T const & t, intx coord)    { return BoundedTraitsN<T, N, ScalarT>::getLow(t, coord);  }
 };
 
 // Specialization for pointer types
@@ -168,9 +169,9 @@ struct /* THEA_API */ BoundedTraitsN<T, N, ScalarT, typename std::enable_if< IsR
     bounds = BallN<N, ScalarT>(PointTraitsN<T, N, ScalarT>::getPosition(t), 0);
   }
 
-  static Vector<N, ScalarT> getCenter(T const & t) { return PointTraitsN<T, N, ScalarT>::getPosition(t); }
-  static ScalarT getHigh(T const & t, intx coord) { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord]; }
-  static ScalarT getLow(T const & t, intx coord)  { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord];  }
+  static Vector<N, ScalarT> getCenter(T const & t) { return PointTraitsN<T, N, ScalarT>::getPosition(t);        }
+  static ScalarT getHigh(T const & t, intx coord)  { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord]; }
+  static ScalarT getLow(T const & t, intx coord)   { return PointTraitsN<T, N, ScalarT>::getPosition(t)[coord]; }
 };
 
 // Specialization for AxisAlignedBoxN
@@ -182,9 +183,9 @@ struct /* THEA_API */ BoundedTraitsN< AxisAlignedBoxN<N, ScalarT>, N, ScalarT >
   static void getBounds(AxisAlignedBoxN<N, ScalarT> const & t, BallN<N, ScalarT> & bounds)
   { bounds = BallN<N, ScalarT>(t.getCenter(), 0.5f * t.getExtent().norm()); }
 
-  static Vector<N, ScalarT> getCenter(AxisAlignedBoxN<N, ScalarT> const & t) { return t.getCenter(); }
-  static ScalarT getHigh(AxisAlignedBoxN<N, ScalarT> const & t, intx coord) { return t.getHigh()[coord]; }
-  static ScalarT getLow(AxisAlignedBoxN<N, ScalarT> const & t, intx coord)  { return t.getLow()[coord];  }
+  static Vector<N, ScalarT> getCenter(AxisAlignedBoxN<N, ScalarT> const & t) { return t.getCenter();      }
+  static ScalarT getHigh(AxisAlignedBoxN<N, ScalarT> const & t, intx coord)  { return t.getHigh()[coord]; }
+  static ScalarT getLow(AxisAlignedBoxN<N, ScalarT> const & t, intx coord)   { return t.getLow()[coord];  }
 };
 
 // Specialization for BallN
@@ -194,30 +195,30 @@ struct /* THEA_API */ BoundedTraitsN< BallN<N, ScalarT>, N, ScalarT >
   static void getBounds(BallN<N, ScalarT> const & t, AxisAlignedBoxN<N, ScalarT> & bounds) { bounds = t.getBounds(); }
   static void getBounds(BallN<N, ScalarT> const & t, BallN<N, ScalarT> & bounds)           { bounds = t; }
 
-  static Vector<N, ScalarT> getCenter(BallN<N, ScalarT> const & t) { return t.getCenter(); }
-  static ScalarT getHigh(BallN<N, ScalarT> const & t, intx coord) { return t.getCenter()[coord] + t.getRadius(); }
-  static ScalarT getLow(BallN<N, ScalarT> const & t, intx coord)  { return t.getCenter()[coord] - t.getRadius(); }
+  static Vector<N, ScalarT> getCenter(BallN<N, ScalarT> const & t) { return t.getCenter();                        }
+  static ScalarT getHigh(BallN<N, ScalarT> const & t, intx coord)  { return t.getCenter()[coord] + t.getRadius(); }
+  static ScalarT getLow(BallN<N, ScalarT> const & t, intx coord)   { return t.getCenter()[coord] - t.getRadius(); }
 };
 
-// Specialization for Triangle3
-template <typename VertexTripleT, typename ScalarT>
-struct /* THEA_API */ BoundedTraitsN< Triangle3<VertexTripleT>, 3, ScalarT >
+// Specialization for TriangleN
+template <int N, typename ScalarT, typename VertexTripleT>
+struct /* THEA_API */ BoundedTraitsN< TriangleN<N, VertexTripleT, ScalarT>, N, ScalarT >
 {
-  typedef Triangle3<VertexTripleT> Triangle;
+  typedef TriangleN<N, VertexTripleT, ScalarT> Triangle;
 
-  static void getBounds(Triangle const & t, AxisAlignedBox3 & bounds) { bounds = t.getBounds(); }
+  static void getBounds(Triangle const & t, AxisAlignedBoxN<N, ScalarT> & bounds) { bounds = t.getBounds(); }
 
   // TODO: Make this tighter
-  static void getBounds(Triangle const & t, Ball3 & bounds)
-  { BoundedTraitsN<AxisAlignedBox3, 3, ScalarT>::getBounds(t.getBounds(), bounds); }
+  static void getBounds(Triangle const & t, BallN<N, ScalarT> & bounds)
+  { BoundedTraitsN< AxisAlignedBoxN<N, ScalarT>, N, ScalarT >::getBounds(t.getBounds(), bounds); }
 
-  static Vector<3, ScalarT> getCenter(Triangle const & t) { return (t.getVertex(0) + t.getVertex(1) + t.getVertex(2)) / 3; }
+  static Vector<N, ScalarT> getCenter(Triangle const & t) { return t.getCentroid(); }
 
   static ScalarT getHigh(Triangle const & t, intx coord)
-  { return (ScalarT)std::max(std::max(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
+  { return std::max(std::max(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
 
   static ScalarT getLow(Triangle const & t, intx coord)
-  { return (ScalarT)std::min(std::min(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
+  { return std::min(std::min(t.getVertex(0)[coord], t.getVertex(1)[coord]), t.getVertex(2)[coord]); }
 };
 
 } // namespace Algorithms

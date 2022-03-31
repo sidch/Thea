@@ -49,7 +49,7 @@ testMetrics(int argc, char * argv[])
   cout << MetricL2::distance<3, Real>(aabb, ball) << endl;
   cout << MetricL2::distance<3, Real>(ball, aabb) << endl;
 
-  LocalTriangle3 tri(Vector3(-1, -1, -1), Vector3(0.5, 0.5, 0), Vector3(0, 0.5, 0.5));
+  Triangle3 tri(Vector3(-1, -1, -1), Vector3(0.5, 0.5, 0), Vector3(0, 0.5, 0.5));
   cout << MetricL2::distance<3, Real>(tri, p) << endl;
   cout << MetricL2::distance<3, Real>(p, tri) << endl;
   cout << MetricL2::distance<3, Real>(tri, ball) << endl;
@@ -75,10 +75,10 @@ testMetrics(int argc, char * argv[])
   cout << MetricL2::distance< AxisAlignedBoxN<N, T>, Vector<N, T> >
   cout << MetricL2::distance< Vector<N, T>, AxisAlignedBoxN<N, T> >
   cout << MetricL2::distance< AxisAlignedBoxN<N, T>, AxisAlignedBoxN<N, T> >
-  cout << MetricL2::distance< Triangle3<VertexTripleType>, Vector3 >
-  cout << MetricL2::distance< Vector3, Triangle3<VertexTripleType> >
-  cout << MetricL2::distance< Triangle3<VertexTripleType1>, Triangle3<VertexTripleType2> >
-  cout << MetricL2::distance< Triangle3<VertexTripleType>, Ball3 >
-  cout << MetricL2::distance< Ball3, Triangle3<VertexTripleType> >
+  cout << MetricL2::distance< TriangleN<N, VertexTripleType, T>, Vector<N, T> >
+  cout << MetricL2::distance< Vector<N, T>, TriangleN<N, VertexTripleType, T> >
+  cout << MetricL2::distance< TriangleN<N, VertexTripleType, T>, TriangleN<N, VertexTripleType2, T> >
+  cout << MetricL2::distance< TriangleN<N, VertexTripleType, T>, BallN<N, T> >
+  cout << MetricL2::distance< BallN<N, T>, TriangleN<N, VertexTripleType, T> >
 #endif
 }

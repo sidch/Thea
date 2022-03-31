@@ -33,10 +33,10 @@ template < typename MeshT,
            int MaxDegree = 2,
            typename BoundingVolumeT = AxisAlignedBox3 >
 class MeshBvh
-: public Algorithms::BvhN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 >
+: public Algorithms::BvhN< TriangleN< 3, MeshVertexTriple<MeshT>, Real >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 >
 {
   private:
-    typedef BvhN< Triangle3< MeshVertexTriple<MeshT> >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 > BaseT;
+    typedef BvhN< TriangleN< 3, MeshVertexTriple<MeshT>, Real >, 3, Real, NodeAttributeT, MaxDegree, AxisAlignedBox3 > BaseT;
     typedef MeshTriangles<MeshT> Triangles;
 
   public:

@@ -283,7 +283,7 @@ closestPtRayTriangle(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge0
     return sqdist;
 
   // Not the most efficient way but the most convenient
-  LocalTriangle3 tri(v0, v0 + edge01, v0 + edge02);
+  Triangle3 tri(v0, v0 + edge01, v0 + edge02);
   s = 0;
   c1 = ray.getOrigin();
   c2 = tri.closestPoint(c1);

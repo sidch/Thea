@@ -515,13 +515,13 @@ ImlsSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
   size_t i2 = tri.getVertices().getIndex(2);
 
   Vector2d I = triangleQuadrature<Vector2d>(splitTriangleQuadrature, p, surf.verts[i0], surf.verts[i1],
-                                                      surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
-                                                      surf.phi[i2], surf.eps2);
+                                            surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
+                                            surf.phi[i2], surf.eps2);
 
   debugAssertM(!Math::isNaN(I[0]) && !Math::isNaN(I[1]), "ImlsSurface: Integral is NaN");
 
   sum      +=  I[1];
-  sum_phi  +=  (I[0] + tri.getNormal().dot(p - tri.getCentroid()) * I[1]);  // Triangle3 has unit normal
+  sum_phi  +=  (I[0] + tri.getNormal().dot(p - tri.getCentroid()) * I[1]);  // TriangleN has unit normal
 }
 
 void

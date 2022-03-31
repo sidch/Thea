@@ -1152,7 +1152,7 @@ class /* THEA_API */ BvhN
       // Early pruning if the entire structure is too far away from the query
       BoundingVolume query_bounds;
       getObjectBounds(query, query_bounds);
-      if (!functor.allows(NeighborPair(-1, -1, monotonePruningDistance<MetricT>(root, query, query_bounds))))
+      if (!processNeighborsAllows(functor, NeighborPair(-1, -1, monotonePruningDistance<MetricT>(root, query, query_bounds))))
         return;
 
       processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points,
@@ -1217,12 +1217,12 @@ class /* THEA_API */ BvhN
       return root ? processRange<IntersectionTesterT, T>(root, range, functor) : -1;
     }
 
-    template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, Real max_time = -1) const
+    template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, ScalarT max_time = -1) const
     {
       return rayIntersectionTime<RayIntersectionTesterT>(ray, max_time) >= 0;
     }
 
-    template <typename RayIntersectionTesterT> Real rayIntersectionTime(RayT const & ray, Real max_time = -1) const
+    template <typename RayIntersectionTesterT> ScalarT rayIntersectionTime(RayT const & ray, ScalarT max_time = -1) const
     {
       if (root)
       {
@@ -1243,7 +1243,7 @@ class /* THEA_API */ BvhN
     }
 
     template <typename RayIntersectionTesterT>
-    RayStructureIntersectionT rayStructureIntersection(RayT const & ray, Real max_time = -1) const
+    RayStructureIntersectionT rayStructureIntersection(RayT const & ray, ScalarT max_time = -1) const
     {
       if (root)
       {
@@ -1653,7 +1653,7 @@ class /* THEA_API */ BvhN
 
         for (size_t i = 0; i < c.size(); ++i)
         {
-          if (functor.allows(NeighborPair(-1, -1, c[i].distance)))
+          if (processNeighborsAllows(functor, NeighborPair(-1, -1, c[i].distance)))
           {
             processNeighbors<MetricT>(c[i].node, query, query_bounds, functor, compatibility, get_closest_points,
                                       use_as_query_index_and_swap);
@@ -1706,7 +1706,7 @@ class /* THEA_API */ BvhN
         // Check if the element is already in the set of neighbors or not
         NeighborPair pair = (use_as_query_index_and_swap >= 0 ? NeighborPair((intx)index, use_as_query_index_and_swap)
                                                               : NeighborPair(0, (intx)index));
-        if (!functor.allows(pair))  // the same pair may be found twice, so the functor may choose to ignore repetitions
+        if (!processNeighborsAllows(functor, pair))  // same pair may be found twice, so functor may want to ignore repetitions
           continue;
 
         if (TransformableBaseT::hasTransform())
@@ -1725,7 +1725,7 @@ class /* THEA_API */ BvhN
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
         }
 
-        if (functor.allows(NeighborPair(-1, -1, mad)))  // no need to check indices again
+        if (processNeighborsAllows(functor, NeighborPair(-1, -1, mad)))  // no need to check indices again
         {
           pair.setMonotoneApproxDistance(mad);
 
@@ -1747,6 +1747,16 @@ class /* THEA_API */ BvhN
         }
       }
     }
+
+    /** Helper function to check if a functor passed to processNeighbors allows a pair. */
+    template <typename FunctorT>
+    static bool processNeighborsAllows(FunctorT functor, NeighborPair pair)
+    { return functor.allows(pair); }
+
+    // Specialization when the functor has been wrapped with std::ref
+    template <typename FunctorT>
+    static bool processNeighborsAllows(std::reference_wrapper<FunctorT> functor, NeighborPair pair)
+    { return functor.get().allows(pair); }
 
   protected:
     /**
@@ -1836,11 +1846,11 @@ class /* THEA_API */ BvhN
   protected:
     /** Get the time taken for a ray to hit the nearest object in a node, in the forward direction. */
     template <typename RayIntersectionTesterT>
-    Real rayIntersectionTime(Node const * start, RayT const & ray, Real max_time) const
+    ScalarT rayIntersectionTime(Node const * start, RayT const & ray, ScalarT max_time) const
     {
       if (start->isLeaf())
       {
-        Real best_time = max_time;
+        ScalarT best_time = max_time;
         bool found = false;
         for (size_t i = 0; i < start->num_elems; ++i)
         {
@@ -1850,7 +1860,7 @@ class /* THEA_API */ BvhN
           if (!elementPassesFilters(elem))
             continue;
 
-          Real time = RayIntersectionTesterT::template rayIntersectionTime<N, ScalarT>(ray, elem, best_time);
+          ScalarT time = RayIntersectionTesterT::template rayIntersectionTime<N, ScalarT>(ray, elem, best_time);
           if (BvhNInternal::distanceLessThan(time, best_time))
           {
             best_time = time;
@@ -1867,13 +1877,13 @@ class /* THEA_API */ BvhN
         for (auto n : start->children)
           if (n) { c.insert(NodeDistance(n, n->bounds.rayIntersectionTime(ray, max_time))); }
 
-        Real best_time = max_time;
+        ScalarT best_time = max_time;
         bool found = false;
         for (size_t i = 0; i < c.size(); ++i)
         {
           if (BvhNInternal::distanceLessThan(c[i].distance, best_time))
           {
-            Real time = rayIntersectionTime<RayIntersectionTesterT>(c[i].node, ray, best_time);
+            ScalarT time = rayIntersectionTime<RayIntersectionTesterT>(c[i].node, ray, best_time);
             if (BvhNInternal::distanceLessThan(time, best_time))
             {
               best_time = time;
@@ -1888,7 +1898,7 @@ class /* THEA_API */ BvhN
 
     /** Get the nearest intersection of a ray with a node in the forward direction. */
     template <typename RayIntersectionTesterT>
-    RayStructureIntersectionT rayStructureIntersection(Node const * start, RayT const & ray, Real max_time) const
+    RayStructureIntersectionT rayStructureIntersection(Node const * start, RayT const & ray, ScalarT max_time) const
     {
       if (start->isLeaf())
       {
@@ -2096,13 +2106,13 @@ class /* THEA_API */ BvhN
 
   protected:
     /** A factor by which node bounding volumes are upscaled to add a little padding for protection against numerical error. */
-    static Real const BOUNDS_EXPANSION_FACTOR;
+    static ScalarT const BOUNDS_EXPANSION_FACTOR;
 
 }; // class BvhN
 
 // Static variables
 template <typename T, int N, typename S, typename A, int D, typename V>
-Real const BvhN<T, N, S, A, D, V>::BOUNDS_EXPANSION_FACTOR = 1.05f;
+S const BvhN<T, N, S, A, D, V>::BOUNDS_EXPANSION_FACTOR = static_cast<S>(1.05);
 
 // Mark the BVH and its (public) descendants as bounded objects. The default BoundedTraitsN implementation is good enough.
 template <typename T, int N>

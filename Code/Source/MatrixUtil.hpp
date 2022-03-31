@@ -69,20 +69,20 @@ getElementsColumnMajor(Eigen::MatrixBase<Derived> const & m, OutT * buf)
 
 /** Get the coordinate of a vector with the least value. The behavior is undefined if \a v is not a (row or column) vector. */
 template <typename Derived>
-Eigen::Index
+intx
 minAxis(Eigen::MatrixBase<Derived> const & v)
 {
-  Eigen::Index min_axis;
+  intx min_axis;
   v.minCoeff(&min_axis);
   return min_axis;
 }
 
 /** Get the coordinate of a vector with the largest value. The behavior is undefined if \a v is not a (row or column) vector. */
 template <typename Derived>
-Eigen::Index
+intx
 maxAxis(Eigen::MatrixBase<Derived> const & v)
 {
-  Eigen::Index max_axis;
+  intx max_axis;
   v.maxCoeff(&max_axis);
   return max_axis;
 }
@@ -92,10 +92,10 @@ maxAxis(Eigen::MatrixBase<Derived> const & v)
  * vector.
  */
 template <typename Derived>
-Eigen::Index
+intx
 minAbsAxis(Eigen::MatrixBase<Derived> const & v)
 {
-  Eigen::Index min_axis;
+  intx min_axis;
   v.cwiseAbs().minCoeff(&min_axis);
   return min_axis;
 }
@@ -105,22 +105,43 @@ minAbsAxis(Eigen::MatrixBase<Derived> const & v)
  * vector.
  */
 template <typename Derived>
-Eigen::Index
+intx
 maxAbsAxis(Eigen::MatrixBase<Derived> const & v)
 {
-  Eigen::Index max_axis;
+  intx max_axis;
   v.cwiseAbs().maxCoeff(&max_axis);
   return max_axis;
 }
 
 /**
- * Convenience function to multiply a 4x4 matrix by a 3-vector, by converting to homogeneous coordinates, multiplying, and
- * converting back.
+ * Traits class that checks whether a matrix has compile-time dimensions corresponding to a transform in homogeneous
+ * coordinates.
  */
-template <typename T, int N, int O1, int R1, int C1, int O2, int R2, int C2>
-Eigen::Matrix<T, N - 1, 1, O2, R2, C2>
-hmul(Eigen::Matrix<T, N,     N, O1, R1, C1> const & m,
-     Eigen::Matrix<T, N - 1, 1, O2, R2, C2> const & v)
+template <typename MatrixT, int N, typename Enable = void>
+struct IsHomMatrix
+{
+  static bool const value = false;
+};
+
+template <typename MatrixT, int N>
+struct IsHomMatrix< MatrixT, N, typename std::enable_if< MatrixT::RowsAtCompileTime == N + 1
+                                                      && MatrixT::ColsAtCompileTime == N + 1 >::type >
+{
+  static bool const value = true;
+};
+
+/**
+ * Convenience function to multiply an (N + 1) x (N + 1) matrix by an N-vector, by converting to homogeneous coordinates,
+ * multiplying, and converting back.
+ */
+template < typename HomMatrixT, typename VectorT,
+           typename std::enable_if< VectorT::ColsAtCompileTime == 1
+                                 && HomMatrixT::RowsAtCompileTime == HomMatrixT::ColsAtCompileTime
+                                 && HomMatrixT::ColsAtCompileTime == VectorT::RowsAtCompileTime + 1 >::type * = nullptr >
+Matrix< VectorT::RowsAtCompileTime, 1, typename VectorT::value_type,
+        HomMatrixT::IsRowMajor ? MatrixLayout::ROW_MAJOR : MatrixLayout::COLUMN_MAJOR,
+        VectorT::MaxRowsAtCompileTime, VectorT::MaxColsAtCompileTime >
+hmul(HomMatrixT const & m, VectorT const & v)
 {
   return (m * v.homogeneous()).hnormalized();
 }

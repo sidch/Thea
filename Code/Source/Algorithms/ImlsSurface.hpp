@@ -21,7 +21,7 @@
 #include "../MatVec.hpp"
 #include "../Noncopyable.hpp"
 #include "../Polygon3.hpp"
-#include "../Triangle3.hpp"
+#include "../TriangleN.hpp"
 #include "../UnorderedMap.hpp"
 #include "../Graphics/MeshGroup.hpp"
 #include "../Graphics/MeshType.hpp"
@@ -61,7 +61,7 @@ class IndexedVertexTriple
 
 }; // IndexedVertexTriple
 
-typedef Triangle3<IndexedVertexTriple> IndexedTriangle;  ///< Triangle with indexed vertices.
+typedef TriangleN<3, IndexedVertexTriple, Real> IndexedTriangle;  ///< Triangle with indexed vertices.
 
 // BVH node attributes.
 struct NodeAttribute
