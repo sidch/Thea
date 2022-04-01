@@ -57,6 +57,12 @@ class /* THEA_DLL_LOCAL */ CoordinateFrameNBase : public RigidTransformN<N, T>
       return CoordinateFrameT(RigidTransformT::_fromAffine(aff_));
     }
 
+    /** Cast the frame to a different scalar type. */
+    template <typename U> CoordinateFrameN<N, U> cast() const
+    {
+      return CoordinateFrameN<N, U>(RigidTransformT::template cast<U>());
+    }
+
     /** Get an axis of the frame. */
     VectorT getAxis(intx i) const { return this->getRotation().col(i); }
 
