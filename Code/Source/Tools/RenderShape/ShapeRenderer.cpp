@@ -1373,11 +1373,11 @@ struct FaceColorizer
 
   bool operator()(Mesh & mesh)
   {
-    if (labels || parent->color_by_leaf || parent->color_by_leafname)
-      mesh.computeAveragedVertexNormals();
-
-    if (!parent->color_by_leaf && !parent->color_by_leafname)
+    if (parent->flat || !(parent->color_by_leaf || parent->color_by_leafname))
       mesh.isolateTriangles();
+
+    if (parent->flat || labels || parent->color_by_leaf || parent->color_by_leafname)
+      mesh.computeAveragedVertexNormals();
 
     mesh.addColors();
 
