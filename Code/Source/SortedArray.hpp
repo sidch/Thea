@@ -30,6 +30,9 @@ class SortedArray
     Compare compare;
 
   public:
+    typedef typename Array<T>::const_iterator          const_iterator;          ///< Iterator over immutable elements.
+    typedef typename Array<T>::const_reverse_iterator  const_reverse_iterator;  ///< Reverse iterator over immutable elements.
+
     /**
      * Constructor.
      *
@@ -63,6 +66,23 @@ class SortedArray
       debugAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
       return values[(size_t)i];
     }
+
+    const_iterator begin() const noexcept   { return values.begin();  }  ///< Iterator to the beginning of the array.
+    const_iterator cbegin() const noexcept  { return values.cbegin(); }  ///< Iterator to the beginning of the array.
+    const_iterator end() const noexcept     { return values.end();    }  ///< Iterator to the end of the array.
+    const_iterator cend() const noexcept    { return values.cend();   }  ///< Iterator to the end of the array.
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator rbegin() const noexcept   { return values.rbegin(); }
+
+    /**< Reverse iterator to the end of the array. */
+    const_reverse_iterator crbegin() const noexcept  { return values.crbegin(); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator rend() const noexcept     { return values.rend(); }
+
+    /**< Reverse iterator to the beginning of the array. */
+    const_reverse_iterator crend() const noexcept    { return values.crend(); }
 
     /** Check if the array contains an element with a given value. */
     bool contains(T const & t) const { return find(t) >= 0; }
@@ -176,7 +196,8 @@ class SortedArray
     /** Remove the element at the given position from the array. */
     void erase(intx i)
     {
-      values.erase(values.begin() + (size_t)i);
+      if (i >= 0 && i < (intx)values.size())
+        values.erase(values.begin() + (size_t)i);
     }
 
     /** Remove (one occurrence of) the given value from the array, if it is present. */

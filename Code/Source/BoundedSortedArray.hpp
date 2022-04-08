@@ -285,7 +285,7 @@ class BoundedSortedArray
     /** Remove the element at the given position from the array. */
     void erase(size_t i)
     {
-      if (i < num_elems)
+      if (i >= 0 && i < num_elems)
       {
         Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
         --num_elems;
