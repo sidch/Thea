@@ -1055,7 +1055,8 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     }
 
     /**
-     * Triangulate all faces with more than 3 vertices.
+     * Triangulate all faces with more than 3 vertices. The triangles generated for each face will all have the index of the
+     * source face.
      *
      * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not. A negative value selects a default
      *   setting.
@@ -1085,7 +1086,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     }
 
     /**
-     * Triangulate a face if it has more than 3 vertices.
+     * Triangulate a face if it has more than 3 vertices. The generated triangles will all have the index of the source face.
      *
      * @param face The face to triangulate.
      * @param epsilon A tolerance threshold to decide if a triangle is degenerate or not. A negative value selects a default
@@ -1520,7 +1521,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
         else
         {
           // Construct a new triangular face
-          if (!addFace(&tri_vertices[0], &tri_vertices[0] + 3))
+          if (!addFace(&tri_vertices[0], &tri_vertices[0] + 3, face->getIndex()))  // reuse index
             return false;
         }
       }

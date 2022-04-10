@@ -127,10 +127,18 @@ class /* THEA_API */ DcelFace : public NormalAttribute<Vector3>, public Attribut
     /** Check if the face is a quad. */
     bool isQuad() const { return num_edges == 4; }
 
-    /** Get the index of the face, typically in the source file (or negative if unindexed). */
+    /**
+     * Get the index of the face, typically in the source file (or negative if unindexed). Note that while indices are usually
+     * unique, some operations may produce duplicate indices: for instance, triangulating a face will assign the source face's
+     * index to each subface.
+     */
     intx getIndex() const { return index; }
 
-    /** Set the index of the face, typically from the source file (or negative if unindexed). */
+    /**
+     * Set the index of the face, typically from the source file (or negative if unindexed). Note that while indices are usually
+     * unique, some operations may produce duplicate indices: for instance, triangulating a face will assign the source face's
+     * index to each subface.
+     */
     void setIndex(intx index_) { index = index_; }
 
     /** Update the face normal by recomputing it from vertex data. */

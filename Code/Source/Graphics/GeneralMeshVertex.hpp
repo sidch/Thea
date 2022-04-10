@@ -174,10 +174,16 @@ class /* THEA_API */ GeneralMeshVertex
       return false;
     }
 
-    /** Get the index of the vertex, typically in the source file (or negative if unindexed). */
+    /**
+     * Get the index of the vertex, typically in the source file (or negative if unindexed). Note that while indices are usually
+     * unique, some operations may produce duplicate indices.
+     */
     intx getIndex() const { return index; }
 
-    /** Set the index of the vertex, typically from the source file (or negative if unindexed). */
+    /**
+     * Set the index of the vertex, typically from the source file (or negative if unindexed). Note that while indices are
+     * usually unique, some operations may produce duplicate indices.
+     */
     void setIndex(intx index_) { index = index_; }
 
     /** Check if the vertex has a precomputed normal. */
