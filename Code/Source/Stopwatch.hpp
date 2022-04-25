@@ -99,7 +99,7 @@ class THEA_API Stopwatch
     /** Constructor. */
     Stopwatch(std::string const & name = "Stopwatch");
 
-    /** Amount of time between the most recent tick() and tock() calls. 0 if tick() has never been called. */
+    /** Amount of time, in seconds, between the most recent tick() and tock() calls. 0 if tick() has never been called. */
     double elapsedTime() const
     {
       return lastDuration;
@@ -108,6 +108,8 @@ class THEA_API Stopwatch
     /**
      * Time-smoothed value that is stable to the nearest 1%. This is useful if you are displaying elapsed time in real time and
      * want a stable number.
+     *
+     * @see elapsedTime()
      */
     double smoothElapsedTime() const
     {

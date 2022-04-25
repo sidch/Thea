@@ -126,14 +126,28 @@ struct AccelerationTraits< ElementSample<T, N, ScalarT>, N, ScalarT, NodeAttribu
 template <typename CompatibilityFunctorT> class SwappedCompatibility
 {
   public:
-    SwappedCompatibility(CompatibilityFunctorT compatibility_) : compatibility(compatibility_) {}
+    SwappedCompatibility(CompatibilityFunctorT compatibility_) : base_compatibility(compatibility_) {}
+    template <typename U, typename V> bool operator()(U const & u, V const & v) const { return base_compatibility(v, u); }
 
-    template <typename U, typename V> bool operator()(U const & u, V const & v) const { return compatibility(v, u); }
-
-  private:
-    CompatibilityFunctorT compatibility;
+    CompatibilityFunctorT base_compatibility;  // The base compatibility functor.
 
 }; // class SwappedCompatibility
+
+// Utility function to construct a SwappedCompatibility object.
+template <typename CompatibilityFunctorT>
+SwappedCompatibility<CompatibilityFunctorT>
+makeSwappedCompatibility(CompatibilityFunctorT compatibility)
+{
+  return SwappedCompatibility<CompatibilityFunctorT>(compatibility);
+}
+
+// Version of makeSwappedCompatibility that handles the nested swap case (swap(swap(c)) == c).
+template <typename CompatibilityFunctorT>
+CompatibilityFunctorT
+makeSwappedCompatibility(SwappedCompatibility<CompatibilityFunctorT> swapped)
+{
+  return swapped.base_compatibility;
+}
 
 // A utility class that evaluates the compatibility of samples in terms of the compatibility of their parent elements.
 template <typename CompatibilityFunctorT> class SampleCompatibility
@@ -153,12 +167,6 @@ template <typename CompatibilityFunctorT> class SampleCompatibility
     static T const & getObject(ElementSample<T, N, ScalarT> const & t)
     {
       return *t.element;
-    }
-
-    template <typename T, int N, typename ScalarT, typename TransformT>
-    static TransformedObject<T, TransformT> getObject(TransformedObject< ElementSample<T, N, ScalarT>, TransformT > const & t)
-    {
-      return makeTransformedObject(t.getObject().element, &t.getTransform());
     }
 
     CompatibilityFunctorT compatibility;
@@ -218,18 +226,21 @@ class PointTraitsN< BvhNInternal::DummyAccelerationStructure<T, N, ScalarT>, N, 
  * MaxDegree parameter, which specifies the maximum number of children a tree node can have, must be at least 2 for kd-trees, 4
  * for quadtrees, and 8 for octrees.
  *
- * The default bounding volume is an axis-aligned bounding box. A different volume (e.g. a ball, for a bounding sphere
- * hierarchy) may be specified using the <tt>BoundingVolumeT</tt> template parameter, as long it has the same interface for
- * merging, range intersection, nearest neighbors, raycasting, etc.
+ * The default (and currently the only supported) bounding volume is an axis-aligned bounding box. The class is designed to
+ * support other bounding volumes (e.g. spheres) in the future, but it currently makes some AAB-specific assumptions so
+ * instantiating the class with (say) BallN will not yet work.
  *
  * An affine transformation may be applied to the BVH. The tree does <em>not</em> need to be recomputed after the
  * transformation, though all operations may be somewhat slower (the precise overhead depends on how difficult it is to compute
- * distances, intersections etc after a transform). Normally, this means that the elements of type T should be affine
- * transformable via Transformer::transform().
+ * distances, intersections etc after a transform, and how much a transformation enlarges each bounding volume).
+ * Normally, this means that the elements of type T should be affine-transformable via Transformer::transform().
  *
  * If the elements in the tree are modified in such a way that siblings stay relatively close together (e.g. an articulating
  * human), then the bounding volumes can be rapidly updated, without changing the tree topology, by calling updateNodeBounds().
  * This is much faster than recomputing the tree from scratch.
+ *
+ * @todo Support bounding volumes other than AxisAlignedBoxN. This should be fairly straightforward but needs a bunch of small
+ *   fixes here and there.
  */
 template < typename T,
            int N,
@@ -531,7 +542,7 @@ class /* THEA_API */ BvhN
         ElementIndex * elems;
         ChildArray children;
 
-        friend class BvhN;
+        template <typename E, int M, typename S, typename A, int D, typename V> friend class BvhN;
 
         void init(intx depth_)
         {
@@ -1025,8 +1036,7 @@ class /* THEA_API */ BvhN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
      *   and stored in the returned structure.
      *
@@ -1056,13 +1066,14 @@ class /* THEA_API */ BvhN
       double accel_bound = accelerationBound<MetricT>(query, dist_bound, compatibility);
       if (accel_bound >= 0)
       {
-        double fudge = std::max((double)(0.001 * getBoundsWorldSpace(*root).getExtent().norm()),
+        double fudge = std::max((double)(0.001 * getBoundsWorldSpace(*root).getExtent().norm()),  // FIXME: AABB-specific
                                 (double)(100 * Math::eps<ScalarT>()));
         dist_bound = accel_bound + fudge;
       }
 
       ClosestPairFunctor<MetricT> functor(dist_bound, result);
-      processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points, -1);
+      processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points,
+                                /* query_index = */ 0, /* swap_query_and_target = */ false);
 
       return result;
     }
@@ -1081,8 +1092,7 @@ class /* THEA_API */ BvhN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
      *
@@ -1132,20 +1142,21 @@ class /* THEA_API */ BvhN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and passed to the functor.
-     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
-     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
-     *   is chiefly for internal use and the default value of -1 should normally be left as is.
+     * @param query_index The supplied index is passed to the functor as the index of the query object. This is chiefly used for
+     *   internal processing and the default value of 0 should normally be left as is.
+     * @param swap_query_and_target If true, the indices and other properties of neighboring query and target objects are
+     *   swapped when they are passed to the functor. This is chiefly used for internal processing and the default value of
+     *   false should normally be left as is.
      *
      * If the functor returns true on any object, the search will terminate immediately (this is useful for searching for a
      * particular pair). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      */
     template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
     void processNeighbors(QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
-                          bool get_closest_points = false, intx use_as_query_index_and_swap = -1) const
+                          bool get_closest_points = false, intx query_index = 0, bool swap_query_and_target = false) const
     {
       if (!root) { return; }
 
@@ -1156,7 +1167,7 @@ class /* THEA_API */ BvhN
         return;
 
       processNeighbors<MetricT>(root, query, query_bounds, functor, compatibility, get_closest_points,
-                                use_as_query_index_and_swap);
+                                query_index, swap_query_and_target);
     }
 
     template <typename IntersectionTesterT, typename RangeT>
@@ -1415,7 +1426,7 @@ class /* THEA_API */ BvhN
       // Find a splitting plane
 #define THEA_BVHN_KDTREE_SPLIT_LONGEST
 #ifdef THEA_BVHN_KDTREE_SPLIT_LONGEST
-      intx coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension
+      intx coord = Math::maxAxis(start->bounds.getExtent());  // split longest dimension (FIXME: AABB-specific)
 #else
       intx coord = (intx)(start->depth % N);  // cycle between dimensions
 #endif
@@ -1478,6 +1489,22 @@ class /* THEA_API */ BvhN
         start->num_elems = 0;
         start->elems = nullptr;
       }
+    }
+
+    /**
+     * Check if an element passes all filters currently on the stack.
+     *
+     * @see pushFilter(), popFilter()
+     */
+    bool elementPassesFilters(T const & elem) const
+    {
+      if (filters.empty()) return true;  // early exit
+
+      for (typename FilterStack::const_iterator fi = filters.begin(); fi != filters.end(); ++fi)
+        if (!(*fi)->allows(elem))
+          return false;
+
+      return true;
     }
 
     /**
@@ -1553,18 +1580,6 @@ class /* THEA_API */ BvhN
       valid_bounds = true;
     }
 
-    /** Check if an element passes all filters currently on the stack. */
-    bool elementPassesFilters(T const & elem) const
-    {
-      if (filters.empty()) return true;  // early exit
-
-      for (typename FilterStack::const_iterator fi = filters.begin(); fi != filters.end(); ++fi)
-        if (!(*fi)->allows(elem))
-          return false;
-
-      return true;
-    }
-
     /** Get the bounding volume for an object, if it is bounded. */
     template < typename U, typename std::enable_if< IsBoundedN<U, N>::value, int >::type = 0 >
     static void getObjectBounds(U const & u, BoundingVolume & bounds)
@@ -1577,6 +1592,24 @@ class /* THEA_API */ BvhN
     static void getObjectBounds(U const & u, BoundingVolume & bounds)
     {
       bounds.setNull();
+    }
+
+    /**
+     * Get a bounding volume for a node of the tree, in world space. For the bounding volume in object coordinates,
+     * Node::getBounds() can be used.
+     */
+    BoundingVolume getBoundsWorldSpace(Node const & node) const
+    {
+      return TransformableBaseT::hasTransform()
+           ? node.bounds.transformAndBound(TransformableBaseT::getTransform())
+           : node.bounds;
+    }
+
+    /** Get a bounding volume for an element, in world space. */
+    BoundingVolume getBoundsWorldSpace(T const & t) const
+    {
+      BoundingVolume tb; getObjectBounds(t, tb);
+      return TransformableBaseT::hasTransform() ? tb.transformAndBound(TransformableBaseT::getTransform()) : tb;
     }
 
     /**
@@ -1603,14 +1636,6 @@ class /* THEA_API */ BvhN
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
     }
 
-    /** Get a bounding volume for a node, in world space. */
-    BoundingVolume getBoundsWorldSpace(Node const & node) const
-    {
-      return TransformableBaseT::hasTransform()
-           ? node.bounds.transformAndBound(TransformableBaseT::getTransform())
-           : node.bounds;
-    }
-
   private:
     /** Wrap a node and a distance to it. */
     struct NodeDistance
@@ -1633,17 +1658,43 @@ class /* THEA_API */ BvhN
     typedef BoundedSortedArrayN<MaxDegree, NodeDistance> ChildDistanceArray;
 
   protected:
+    /** Check whether the type Q is a compatible BvhN. This default implementation sets the <tt>value</tt> field to false. */
+    template <typename Q, typename Enable = void>
+    struct IsCompatibleBvhN
+    {
+      static bool const value = false;
+    };
+
     /**
-     * Recursively call \a functor for elements neighboring a query object in the subtree rooted at \a start. If
-     * \a get_closest_points is true, the positions of the closest pair of points will be stored with each pair, not just the
-     * distance between them.
+     * Check whether the type Q is a compatible BvhN. This specialization is used when Q is actually a BvhN, and it sets the
+     * <tt>value</tt> field to true.
      */
-    template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
+    template <typename Q>
+    struct IsCompatibleBvhN< Q, typename std::enable_if< std::is_base_of< BvhN< typename Q::Element, N, ScalarT,
+                                                                                typename Q::NodeAttribute,
+                                                                                Q::maxDegree(),
+                                                                                typename Q::BoundingVolume >,
+                                                                          Q >::value >::type >
+    {
+      static bool const value = true;
+    };
+
+    /**
+     * Recursively call \a functor for elements neighboring a query object in the subtree rooted at \a start, when the query
+     * object is NOT itself a compatible BvhN. If \a get_closest_points is true, the positions of the closest pair of points
+     * will be stored with each pair, not just the distance between them.
+     */
+    template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility,
+               typename std::enable_if< !IsCompatibleBvhN<QueryT>::value, int >::type = 0 >
     void processNeighbors(Node const * start, QueryT const & query, BoundingVolume const & query_bounds, FunctorT functor,
-                          CompatibilityFunctorT compatibility, bool get_closest_points, intx use_as_query_index_and_swap) const
+                          CompatibilityFunctorT compatibility, bool get_closest_points,
+                          intx query_index, bool swap_query_and_target) const
     {
       if (start->isLeaf())
-        processNeighborsLeaf<MetricT>(start, query, functor, compatibility, get_closest_points, use_as_query_index_and_swap);
+      {
+        processNeighborsLeaf<MetricT>(start, query, functor, compatibility, get_closest_points,
+                                      query_index, swap_query_and_target);
+      }
       else  // not leaf
       {
         // Sort the children by increasing distance to their bounding volumes (optimize for point queries?)
@@ -1656,20 +1707,135 @@ class /* THEA_API */ BvhN
           if (processNeighborsAllows(functor, NeighborPair(-1, -1, c[i].distance)))
           {
             processNeighbors<MetricT>(c[i].node, query, query_bounds, functor, compatibility, get_closest_points,
-                                      use_as_query_index_and_swap);
+                                      query_index, swap_query_and_target);
           }
         }
       }
     }
 
+    /**
+     * Recursively call \a functor for elements neighboring a query object in the subtree rooted at \a start, when the query
+     * object IS a compatible BvhN. If \a get_closest_points is true, the positions of the closest pair of points will be stored
+     * with each pair, not just the distance between them.
+     */
+    template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility,
+               typename std::enable_if< IsCompatibleBvhN<QueryT>::value, int >::type = 0 >
+    void processNeighbors(Node const * start, QueryT const & query, BoundingVolume const & query_bounds, FunctorT functor,
+                          CompatibilityFunctorT compatibility, bool get_closest_points,
+                          intx query_index, bool swap_query_and_target) const
+    {
+      processNeighborsBvh<MetricT>(start, query, query.getRoot(), functor, compatibility, get_closest_points,
+                                   swap_query_and_target);
+    }
+
   private:
+    /**
+     * Recursively call \a functor for neighboring elements between subtrees rooted at \a this_node (of this BvhN) and
+     * \a query_node (of a different but compatible BvhN). If \a get_closest_points is true, the positions of the closest pair
+     * of points will be stored with each pair, not just the distance between them.
+     */
+    template <typename MetricT, typename QueryBvhT, typename QueryNodeT, typename FunctorT, typename CompatibilityFunctorT>
+    void processNeighborsBvh(Node const * this_node, QueryBvhT const & query, QueryNodeT const * query_node, FunctorT functor,
+                             CompatibilityFunctorT compatibility, bool get_closest_points, bool swap_query_and_target) const
+    {
+      if (!this_node || !query_node) { return; }
+
+      if (this_node->isLeaf() && query_node->isLeaf())  // both are leaves
+      {
+        // Loop over the elements in query_node and compare each one to the bounding box of this_node for pruning
+        auto const * qelems = query.getElements();
+        BoundingVolume qe_bounds_compatible;  // QueryBvhT::BoundingVolume may differ from BoundingVolume
+        for (auto qei = query_node->elementIndicesBegin(); qei != query_node->elementIndicesEnd(); ++qei)
+        {
+          auto const & qe = qelems[*qei];
+          if (!query.elementPassesFilters(qe))
+            continue;
+
+          auto qe_bounds = query.getBoundsWorldSpace(qe);
+          getObjectBounds(qe_bounds, qe_bounds_compatible);
+
+          auto mad = monotonePruningDistance<MetricT>(this_node, qe, qe_bounds_compatible);
+          if (processNeighborsAllows(functor, NeighborPair(-1, -1, mad)))
+            processNeighborsLeaf<MetricT>(this_node, qe, functor, compatibility, get_closest_points, *qei,
+                                          swap_query_and_target);
+        }
+      }
+      else  // at most one is a leaf
+      {
+        bool recurse_into_this = false;
+        BoundingVolume query_bounds_compatible;  // QueryBvhT::BoundingVolume may differ from BoundingVolume
+        typename QueryBvhT::BoundingVolume this_bounds_compatible;
+
+        if (!this_node->isLeaf() && !query_node->isLeaf())  // neither are leaves
+        {
+          // Find the bigger node and recurse into it
+          auto this_bounds = getBoundsWorldSpace(*this_node);
+          auto query_bounds = query.getBoundsWorldSpace(*query_node);
+          getObjectBounds(query_bounds, query_bounds_compatible);
+
+          // FIXME: AABB-specific
+          recurse_into_this = (this_bounds.getExtent().squaredNorm() > query_bounds_compatible.getExtent().squaredNorm());
+
+          if (!recurse_into_this)
+            query.getObjectBounds(this_bounds, this_bounds_compatible);
+        }
+        else  // exactly one is a leaf
+        {
+          recurse_into_this = !this_node->isLeaf();
+
+          if (recurse_into_this)
+            getObjectBounds(query.getBoundsWorldSpace(*query_node), query_bounds_compatible);
+          else
+            query.getObjectBounds(getBoundsWorldSpace(*this_node), this_bounds_compatible);
+        }
+
+        if (recurse_into_this)
+        {
+          processNeighborsBvhRecurse<MetricT>(this_node, query, query_node, query_bounds_compatible, functor, compatibility,
+                                              get_closest_points, swap_query_and_target);
+        }
+        else
+        {
+          auto swapped_compatibility = BvhNInternal::makeSwappedCompatibility(compatibility);
+
+          query.template processNeighborsBvhRecurse<MetricT>(query_node, *this, this_node, this_bounds_compatible, functor,
+                                                             swapped_compatibility, get_closest_points, !swap_query_and_target);
+        }
+      }
+    }
+
+    /** Helper function for processNeighborsBvh that does one step of recursion into the children of \a this_node. */
+    template <typename MetricT, typename QueryBvhT, typename QueryNodeT, typename FunctorT, typename CompatibilityFunctorT>
+    void processNeighborsBvhRecurse(Node const * this_node, QueryBvhT const & query, QueryNodeT const * query_node,
+                                    BoundingVolume const & query_node_bounds, FunctorT functor,
+                                    CompatibilityFunctorT compatibility, bool get_closest_points,
+                                    bool swap_query_and_target) const
+    {
+      ChildDistanceArray c;
+      for (auto n : this_node->children)
+        if (n)
+        {
+          // query_node_bounds twice is intentional
+          c.insert(NodeDistance(n, monotonePruningDistance<MetricT>(n, query_node_bounds, query_node_bounds)));
+        }
+
+      for (size_t i = 0; i < c.size(); ++i)
+      {
+        if (processNeighborsAllows(functor, NeighborPair(-1, -1, c[i].distance)))
+        {
+          processNeighborsBvh<MetricT>(c[i].node, query, query_node, functor, compatibility, get_closest_points,
+                                       swap_query_and_target);
+        }
+      }
+    }
+
     /** Find elements in a leaf node neighboring another object, when the latter IS a proximity query structure. */
     template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT,
                typename std::enable_if< std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void processNeighborsLeaf(Node const * leaf, QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility,
-                              bool get_closest_points, intx use_as_query_index_and_swap) const
+                              bool get_closest_points, intx query_index, bool swap_query_and_target) const
     {
-      BvhNInternal::SwappedCompatibility<CompatibilityFunctorT> swapped_compatibility(compatibility);
+      auto swapped_compatibility = BvhNInternal::makeSwappedCompatibility(compatibility);
 
       for (size_t i = 0; i < leaf->num_elems; ++i)
       {
@@ -1681,9 +1847,9 @@ class /* THEA_API */ BvhN
 
         if (TransformableBaseT::hasTransform())
           query.template processNeighbors<MetricT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
-                                                   functor, swapped_compatibility, get_closest_points, (intx)index);
+                                                   functor, swapped_compatibility, get_closest_points, (intx)index, true);
         else
-          query.template processNeighbors<MetricT>(elem, functor, swapped_compatibility, get_closest_points, (intx)index);
+          query.template processNeighbors<MetricT>(elem, functor, swapped_compatibility, get_closest_points, (intx)index, true);
       }
     }
 
@@ -1691,7 +1857,7 @@ class /* THEA_API */ BvhN
     template < typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT,
                typename std::enable_if< !std::is_base_of<ProximityQueryBaseT, QueryT>::value, int >::type = 0 >
     void processNeighborsLeaf(Node const * leaf, QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility,
-                              bool get_closest_points, intx use_as_query_index_and_swap) const
+                              bool get_closest_points, intx query_index, bool swap_query_and_target) const
     {
       VectorT qp, tp;
       double mad;
@@ -1704,26 +1870,21 @@ class /* THEA_API */ BvhN
           continue;
 
         // Check if the element is already in the set of neighbors or not
-        NeighborPair pair = (use_as_query_index_and_swap >= 0 ? NeighborPair((intx)index, use_as_query_index_and_swap)
-                                                              : NeighborPair(0, (intx)index));
+        NeighborPair pair = (swap_query_and_target ? NeighborPair((intx)index, query_index)
+                                                   : NeighborPair(query_index, (intx)index));
         if (!processNeighborsAllows(functor, pair))  // same pair may be found twice, so functor may want to ignore repetitions
+          continue;
+
+        if (!compatibility(query, elem))
           continue;
 
         if (TransformableBaseT::hasTransform())
         {
-          auto transformed_elem = makeTransformedObject(&elem, &TransformableBaseT::getTransform());
-          if (!compatibility(query, transformed_elem))
-            continue;
-
-          mad = MetricT::template closestPoints<N, ScalarT>(transformed_elem, query, tp, qp);
+          mad = MetricT::template closestPoints<N, ScalarT>(makeTransformedObject(&elem, &TransformableBaseT::getTransform()),
+                                                            query, tp, qp);
         }
         else
-        {
-          if (!compatibility(query, elem))
-            continue;
-
           mad = MetricT::template closestPoints<N, ScalarT>(elem, query, tp, qp);
-        }
 
         if (processNeighborsAllows(functor, NeighborPair(-1, -1, mad)))  // no need to check indices again
         {
@@ -1731,7 +1892,7 @@ class /* THEA_API */ BvhN
 
           if (get_closest_points)
           {
-            if (use_as_query_index_and_swap >= 0)
+            if (swap_query_and_target)
             {
               pair.setQueryPoint(tp);
               pair.setTargetPoint(qp);
@@ -2077,6 +2238,8 @@ class /* THEA_API */ BvhN
     }
 
   private:
+    template <typename E, int M, typename S, typename A, int D, typename V> friend class BvhN;
+
     Node * root;
 
     intx num_elems;  // elems.size() doesn't tell us how many elements there are, it's just the capacity of the elems array

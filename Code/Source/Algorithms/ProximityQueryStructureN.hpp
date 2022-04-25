@@ -151,8 +151,7 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      */
     template <typename MetricT, typename QueryT, typename CompatibilityFunctorT = UniversalCompatibility>
     double distance(QueryT const & query, double dist_bound = -1, CompatibilityFunctorT compatibility = CompatibilityFunctorT())
@@ -166,8 +165,7 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param dist The distance to the query object is placed here. Ignored if null.
      * @param closest_point The coordinates of the closest point are placed here. Ignored if null.
      *
@@ -187,8 +185,7 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on the respective elements is computed
      *   and stored in the returned structure.
      *
@@ -211,8 +208,7 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and stored in the returned pairs.
      *
@@ -251,20 +247,21 @@ class /* THEA_API */ ProximityQueryStructureN
      * @param compatibility A functor that checks if two elements being considered as near neighbors are compatible with each
      *   other or not. It should have a <tt>bool operator()(q, e) const</tt> function that returns true if the two objects
      *   <tt>q</tt> and <tt>e</tt> are compatible with each other, where <tt>q</tt> is (i) an element of <tt>QueryT</tt> if the
-     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise, or (iii) a TransformedObject wrapping either of
-     *   these; and <tt>e</tt> is (i) an element of this structure, or (ii) a TransformedObject wrapping it.
+     *   latter is a ProximityQueryStructureN, or (ii) \a query otherwise; and <tt>e</tt> is an element of this structure.
      * @param get_closest_points If true, the coordinates of the closest pair of points on each pair of neighboring elements is
      *   computed and passed to the functor.
-     * @param use_as_query_index_and_swap If non-negative, the supplied index is used as the index of the query object (instead
-     *   of the default 0), following which query and target indices/points are swapped in the returned pairs of neighbors. This
-     *   is chiefly for internal use and the default value of -1 should normally be left as is.
+     * @param query_index The supplied index is passed to the functor as the index of the query object. This is chiefly used for
+     *   internal processing and the default value of 0 should normally be left as is.
+     * @param swap_query_and_target If true, the indices and other properties of neighboring query and target objects are
+     *   swapped when they are passed to the functor. This is chiefly used for internal processing and the default value of
+     *   false should normally be left as is.
      *
      * If the functor returns true on any object, the search will terminate immediately (this is useful for searching for a
      * particular pair). To pass a functor by reference, wrap it in <tt>std::ref</tt>.
      */
     template <typename MetricT, typename QueryT, typename FunctorT, typename CompatibilityFunctorT = UniversalCompatibility>
     void processNeighbors(QueryT const & query, FunctorT functor, CompatibilityFunctorT compatibility = CompatibilityFunctorT(),
-                          bool get_closest_points = false, intx use_as_query_index_and_swap = -1) const;
+                          bool get_closest_points = false, intx query_index = 0, bool swap_query_and_target = false) const;
 
 }; // class ProximityQueryStructureN
 
