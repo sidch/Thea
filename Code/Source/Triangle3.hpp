@@ -312,7 +312,7 @@ class /* THEA_DLL_LOCAL */ TriangleN<3, VertexTripleT, T>
      */
     template <typename OtherVertexTripleT>
     T squaredDistance(TriangleN<3, OtherVertexTripleT, T> const & other, VectorT * this_pt = nullptr,
-                         VectorT * other_pt = nullptr) const
+                      VectorT * other_pt = nullptr) const
     {
       // From Christer Ericson, "T-Time Collision Detection", Morgan-Kaufman, 2005.
 

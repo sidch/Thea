@@ -585,10 +585,16 @@ class /* THEA_API */ BvhN
          */
         static constexpr int maxDegree() { return MaxDegree; }
 
-        /** Get the child with a given index. */
+        /**
+         * Get the number of non-null children of the node. This involves a pass over the array of children and is not just a
+         * value lookup. Also note that the non-null children may not be contiguously stored in the array.
+         */
+        int numChildren() const { return MaxDegree - (int)std::count(children.begin(), children.end(), nullptr); }
+
+        /** Get the child with a given index. The returned handle may be null if no child exists with this index. */
         Node const * getChild(intx i) const { return children[(size_t)i]; }
 
-        /** Check if the node is a leaf (both children are null) are not. */
+        /** Check if the node is a leaf (all children are null) are not. */
         bool isLeaf() const
         {
           for (auto c : children)
