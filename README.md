@@ -11,7 +11,15 @@ Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released unde
 If you find a bug, please let me know promptly. Thank you!
 
 ***
-!!! **IMPORTANT** !!! If you last cloned this repository before **Sep 19, 2021**, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged (Git will hopefully warn you about this).
+!!! **IMPORTANT 1** !!! If you last cloned this repository before **Sep 19, 2021**, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged (Git will hopefully warn you about this).
+
+!!! **IMPORTANT 2** !!! The default branch is now called `main` instead of `master`, to be more inclusive (https://github.com/github/renaming/). To update your local copy, run the following commands:
+```
+git branch -m master main
+git fetch origin
+git branch -u origin/main main
+git remote set-head origin -a
+```
 ***
 
 ## What is Thea?
