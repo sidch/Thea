@@ -19,17 +19,18 @@
 namespace Thea {
 namespace Math {
 
-int
-binaryTreeDepth(intx num_elems, int max_elems_in_leaf, Real split_ratio)
+intx
+treeDepth(intx num_elems, int max_elems_in_leaf, Real max_child_fraction)
 {
-  alwaysAssertM(num_elems >= 0, "Math: Can't compute binary tree depth for negative number of elements");
-  alwaysAssertM(max_elems_in_leaf > 0, "Math: Can't compute binary tree depth for non-positive number of elements at leaf");
-  alwaysAssertM(split_ratio > 0 && split_ratio < 1, "Math: Binary tree split ratio must be in range (0, 1)");
+  alwaysAssertM(num_elems >= 0, "Math: Can't compute tree depth for negative number of elements");
+  alwaysAssertM(max_elems_in_leaf > 0, "Math: Can't compute tree depth for non-positive number of elements at leaf");
+  alwaysAssertM(max_child_fraction > 0 && max_child_fraction < 1,
+                "Math: Max fraction of elements assigned to a child must be in range (0, 1)");
 
   if (num_elems <= 0) return 0;
 
-  double log_inv_split_ratio = -std::log(split_ratio);
-  int est_depth = (int)std::ceil(std::log(num_elems / (double)max_elems_in_leaf) / log_inv_split_ratio);
+  double log_inv_mcf = -std::log(max_child_fraction);
+  intx est_depth = (intx)std::ceil(std::log(num_elems / (double)max_elems_in_leaf) / log_inv_mcf);
 
   return est_depth < 0 ? 0 : est_depth;  // check shouldn't be necessary but do it just in case
 }

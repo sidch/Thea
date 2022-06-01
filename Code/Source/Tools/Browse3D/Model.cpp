@@ -189,12 +189,7 @@ Model::load(std::string path_)
     loadSamples(getSamplesPath());
     loadSegments(getSegmentsPath());
     loadFeatures(getDefaultFeaturesPath());
-
-    // FIXME: GeneralMesh must support rendering per-face colors again
-    if (!app().options().elem_labels.empty())
-      THEA_WARNING << "Visualizing per-face labels currently disabled because of changes to the mesh class";
-
-    // loadElementLabels(getDefaultElementLabelsPath());
+    loadElementLabels(getDefaultElementLabelsPath());
   }
 
   wxPostEvent(this, wxCommandEvent(EVT_MODEL_PATH_CHANGED));
@@ -1203,6 +1198,8 @@ class FaceLabeler
 
         fi->attr().setColor(elem_colors[(size_t)index]);
       }
+
+      mesh.setFaceAttributesEnabled(true);
 
       return false;
     }

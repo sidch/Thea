@@ -15,6 +15,7 @@
 #include "DisplayMesh.hpp"
 #include "../Polygon3.hpp"
 #include "../UnorderedSet.hpp"
+#include <utility>
 
 namespace Thea {
 namespace Graphics {
@@ -500,10 +501,10 @@ DisplayMesh::isolateTriangles()
     tris[i + 2]  =  new_vindex + 2;
   }
 
-  vertices   =  new_vertices;
-  normals    =  new_normals;
-  colors     =  new_colors;
-  texcoords  =  new_texcoords;
+  vertices   =  std::move(new_vertices);
+  normals    =  std::move(new_normals);
+  colors     =  std::move(new_colors);
+  texcoords  =  std::move(new_texcoords);
 
   recomputeEdges();
 

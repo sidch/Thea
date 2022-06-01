@@ -1194,7 +1194,7 @@ HoughForest::autoSelectUnspecifiedOptions(Options & opts_, TrainingData const & 
     opts_.max_leaf_elements = 10;
 
   if (opts_.max_depth < 0)
-    opts_.max_depth = 3 * Math::binaryTreeDepth(training_data.numExamples(), opts_.max_leaf_elements);
+    opts_.max_depth = 3 * Math::treeDepth(training_data.numExamples(), opts_.max_leaf_elements);
 
   if (opts_.max_candidate_features < 0)
   {

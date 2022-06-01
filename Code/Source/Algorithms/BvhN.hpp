@@ -25,6 +25,7 @@
 #include "../Random.hpp"
 #include "../Transformable.hpp"
 #include "BoundedTraitsN.hpp"
+#include "FastCopy.hpp"
 #include "Filter.hpp"
 #include "MetricL2.hpp"
 #include "ProximityQueryStructureN.hpp"
@@ -220,11 +221,10 @@ class PointTraitsN< BvhNInternal::DummyAccelerationStructure<T, N, ScalarT>, N, 
  * structure based on point samples can be automatically computed to accelerate nearest neighbor queries
  * (see enableNearestNeighborAcceleration()).
  *
- * This class is designed to handle many different types of spatial hierarchies, including kd-trees (in any dimension),
- * quadtrees (in 2 dimensions), octrees (in 3 dimension) etc. The appropriate type of hierarchy is selected (or auto-selected)
- * via the <tt>method</tt> parameter of the init() function. (Currently only kd-tree construction is supported.) Note that the
- * MaxDegree parameter, which specifies the maximum number of children a tree node can have, must be at least 2 for kd-trees, 4
- * for quadtrees, and 8 for octrees.
+ * This class is designed to handle many different types of spatial hierarchies, including kd-trees (in any dimension) and
+ * orthotrees (quadtrees in 2 dimensions, octrees in 3 dimensions...) etc. The appropriate type of hierarchy is selected (or
+ * auto-selected) via the <tt>method</tt> parameter of the init() function. Note that the MaxDegree parameter, which specifies
+ * the maximum number of children a tree node can have, must be at least 2 for kd-trees, and 2^N for orthotrees.
  *
  * The default (and currently the only supported) bounding volume is an axis-aligned bounding box. The class is designed to
  * support other bounding volumes (e.g. spheres) in the future, but it currently makes some AAB-specific assumptions so
@@ -238,6 +238,16 @@ class PointTraitsN< BvhNInternal::DummyAccelerationStructure<T, N, ScalarT>, N, 
  * If the elements in the tree are modified in such a way that siblings stay relatively close together (e.g. an articulating
  * human), then the bounding volumes can be rapidly updated, without changing the tree topology, by calling updateNodeBounds().
  * This is much faster than recomputing the tree from scratch.
+ *
+ * @note The default <b>kd-tree</b> construction associates each element with <i>exactly one node at each level</i>, instead of
+ *   it being associated with all nodes whose bounding volumes it intersects. It expands each such node's bounding volume as
+ *   needed to completely contain the element. This is an intentional design choice to get balanced trees and to allow functions
+ *   like updateNodeBounds() to not change tree invariants, but it also results in nodes with overlapping bounding volumes. On
+ *   the other hand, <b>orthotree</b> (quad/octree) construction will associate each element with <i>all the nodes it
+ *   intersects</i>, since the splits and consequent bounding volumes are determined independently of the underlying data.
+ *   However, calling updateNodeBounds() on such a tree after elements have moved will no longer maintain the quad/octree
+ *   layout, nor will elements still be guaranteed to link to all the nodes they intersect. However, query functions will still
+ *   work.
  *
  * @todo Support bounding volumes other than AxisAlignedBoxN. This should be fairly straightforward but needs a bunch of small
  *   fixes here and there.
@@ -567,9 +577,9 @@ class /* THEA_API */ BvhN
         BoundingVolume const & getBounds() const { return bounds; }
 
         /**
-         * Get the number of element indices stored at this node. This is <b>not</b> the number of elements within the node's
-         * bounding volume: in memory-saving mode, indices of all such elements are only held at the leaves of the subtree
-         * rooted at this node.
+         * Get the number of element indices stored at this node. This is <b>not</b> necessarily the number of elements
+         * intersecting the node's bounding volume: see the details of individual tree construction methods. Also, in
+         * memory-saving mode, indices of all such elements are only held at the leaves of the subtree rooted at this node.
          */
         intx numElementIndices() const { return (intx)num_elems; }
 
@@ -603,6 +613,9 @@ class /* THEA_API */ BvhN
           return true;
         }
 
+        /** Check if the node is the root node of the hierarchy or not. */
+        bool isRoot() const { return depth == 0; }
+
     }; // class Node
 
     /** The method used for tree construction (enum class). */
@@ -611,19 +624,18 @@ class /* THEA_API */ BvhN
       /** Supported values. */
       enum Value
       {
-        AUTO,      ///< Auto-select a suitable method based on dimensionality, maximum degree etc.
-        KDTREE,    ///< Construct a kd-tree (split node with a single axis-aligned plane in each subdivision step).
-        QUADTREE,  ///< Construct a quadtree (split node into 4 quadrants in each subdivision step). Only for <tt>N == 2</tt>.
-        OCTREE,    ///< Construct an octree (split node into 8 octants in each subdivision step). Only for <tt>N == 3</tt>.
+        AUTO,       ///< Auto-select a suitable method based on dimensionality, maximum degree etc.
+        KDTREE,     ///< Construct a kd-tree (split node with a single axis-aligned plane in each subdivision step).
+        ORTHOTREE,  /**< Construct a quadtree (for <tt>N == 2</tt>), octree (for <tt>N == 3</tt>), or equivalent in other
+                         dimensions. */
       };
 
       THEA_ENUM_CLASS_BODY(Method)
 
       THEA_ENUM_CLASS_STRINGS_BEGIN(Method)
-        THEA_ENUM_CLASS_STRING(AUTO,      "auto")
-        THEA_ENUM_CLASS_STRING(KDTREE,    "kd-tree")
-        THEA_ENUM_CLASS_STRING(QUADTREE,  "quadtree")
-        THEA_ENUM_CLASS_STRING(OCTREE,    "octree")
+        THEA_ENUM_CLASS_STRING(AUTO,       "auto")
+        THEA_ENUM_CLASS_STRING(KDTREE,     "kd-tree")
+        THEA_ENUM_CLASS_STRING(ORTHOTREE,  "orthotree")
       THEA_ENUM_CLASS_STRINGS_END(Method)
     };
 
@@ -665,7 +677,7 @@ class /* THEA_API */ BvhN
       transform_inverse_transpose(Matrix<N, N, ScalarT>::Identity()),
       accelerate_nn_queries(false), valid_acceleration_structure(false), acceleration_structure(nullptr), valid_bounds(true)
     {
-      init(begin, end, method, max_elems_per_leaf_, max_depth_, save_memory, /* no previous data to deallocate, hence */ false);
+      init(begin, end, method, max_elems_per_leaf_, max_depth_, save_memory, /* need to set buffer sizes, hence */ true);
     }
 
     /**
@@ -693,10 +705,8 @@ class /* THEA_API */ BvhN
     {
       if (method == Method::AUTO)
       {
-        if (MaxDegree >= 4 && N == 2)
-          method = Method::QUADTREE;
-        else if (MaxDegree >= 8 && N == 3)
-          method = Method::OCTREE;
+        if ((MaxDegree >= 4 && N == 2) || (MaxDegree >= 8 && N == 3))
+          method = Method::ORTHOTREE;
         else if (MaxDegree >= 2)
           method = Method::KDTREE;
         else
@@ -760,7 +770,22 @@ class /* THEA_API */ BvhN
       switch (method)
       {
         case Method::KDTREE:
-          initKdTree(begin, end, max_depth_, max_elems_per_leaf_, save_memory, deallocate_previous_memory); break;
+        {
+          // The fraction of elements held by either child at each split is ~0.5
+          static Real const MAX_KDTREE_CHILD_FRACTION = 0.5f;
+          initTree(begin, end, std::mem_fn(&BvhN::createKdTree<void>), MAX_KDTREE_CHILD_FRACTION, max_depth_,
+                   max_elems_per_leaf_, save_memory, deallocate_previous_memory);
+          break;
+        }
+
+        case Method::ORTHOTREE:
+        {
+          // Guess that half the children are empty after a split. The min handles the N == 1 case.
+          static Real const MAX_ORTHOTREE_CHILD_FRACTION = (Real)std::min(2.0 / (1 << N), 0.5);
+          initTree(begin, end, std::mem_fn(&BvhN::createOrthoTree<void>), MAX_ORTHOTREE_CHILD_FRACTION, max_depth_,
+                   max_elems_per_leaf_, save_memory, deallocate_previous_memory);
+          break;
+        }
 
         default: throw Error("BvhN: Unsupported BVH construction method");
       }
@@ -781,6 +806,8 @@ class /* THEA_API */ BvhN
      *
      * @param start The root of the subtree to update. If null, the entire tree is updated.
      *
+     * @warning If the tree construction provided some guarantees (e.g. that each element is associated with all the leaf
+     *   bounding volumes it intersects), then they may be violated after calling this function.
      * @note Since this function is meaningful only if the elements have changed, you may need to call updateElements() before
      *   calling this.
      */
@@ -1293,15 +1320,15 @@ class /* THEA_API */ BvhN
       intx coord;
       BvhN const * tree;
 
-      /** Constructor. Axis 0 = X, 1 = Y, 2 = Z. */
+      /** Constructor. Axis 0 = X, 1 = Y, 2 = Z etc. */
       ObjectLess(intx coord_, BvhN const * tree_) : coord(coord_), tree(tree_) {}
 
       /** Less-than operator, along the specified axis. */
       bool operator()(ElementIndex a, ElementIndex b)
       {
-        // Compare object min coords
-        return BoundedTraitsT::getLow(tree->elems[a], coord)
-             < BoundedTraitsT::getLow(tree->elems[b], coord);
+        // Compare object center coords
+        return BoundedTraitsT::getCenter(tree->elems[a])[coord]
+             < BoundedTraitsT::getCenter(tree->elems[b])[coord];
       }
     };
 
@@ -1332,36 +1359,57 @@ class /* THEA_API */ BvhN
     }
 
   protected:
-    /** Initialize a kd-tree. Assumes that the global list of elements <tt>elems</tt> has already been initialized. */
-    template <typename InputIterator>
-    void initKdTree(InputIterator begin, InputIterator end, intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
-                    bool save_memory = false, bool deallocate_previous_memory = true)
+    /** Initialize a tree. Assumes that the global list of elements <tt>elems</tt> has already been initialized. */
+    template <typename InputIterator, typename RecursiveBuilderT>
+    void initTree(InputIterator begin, InputIterator end, RecursiveBuilderT recursive_builder, Real max_child_fraction,
+                  intx max_depth_ = -1, intx max_elems_per_leaf_ = -1,
+                  bool save_memory = false, bool deallocate_previous_memory = true)
     {
       static intx const DEFAULT_MAX_ELEMS_IN_LEAF = 5;
-      max_elems_per_leaf = max_elems_per_leaf_ < 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
+      max_elems_per_leaf = max_elems_per_leaf_ <= 0 ? DEFAULT_MAX_ELEMS_IN_LEAF : max_elems_per_leaf_;
+      max_depth = max_depth_ <= 0 ? Math::treeDepth(num_elems, max_elems_per_leaf, max_child_fraction) : max_depth_;
 
-      // The fraction of elements held by the larger node at each split is 0.5
-      static double const SPLIT_FRACTION = 0.5;
-      intx est_depth = Math::binaryTreeDepth(num_elems, max_elems_per_leaf, SPLIT_FRACTION);
-      max_depth = max_depth_;
-      if (max_depth < 0)
-        max_depth = est_depth;
-      else if (max_depth < est_depth)
-        est_depth = max_depth;
-
-      // Each index is stored at most once at each level
-      size_t BUFFER_SAFETY_MARGIN = 10;
-      size_t index_buffer_capacity = num_elems + BUFFER_SAFETY_MARGIN;
-      if (!save_memory)
-        index_buffer_capacity *= (size_t)(1 + est_depth);  // reserve space for all levels at once
-
-      if (deallocate_previous_memory || index_buffer_capacity > 1.3 * index_pool.getBufferCapacity())
+      static double const BUFFER_SAFETY_FACTOR = 1.1;
+      if (deallocate_previous_memory)
+      {
+        // Guess that each index is stored (a bit more than) once per level, but only allocate space for one level for now since
+        // we don't know exactly how much we will need
+        size_t index_buffer_capacity = (size_t)std::ceil(num_elems * BUFFER_SAFETY_FACTOR);
         index_pool.init(index_buffer_capacity);
 
-      // Assume a complete, balanced binary tree upto the estimated depth to guess the number of leaf nodes
-      size_t node_buffer_capacity = (size_t)(1 << est_depth) + BUFFER_SAFETY_MARGIN;
-      if (deallocate_previous_memory || node_buffer_capacity > 1.3 * node_pool.getBufferCapacity())
+        // Guess the capacity of each node buffer as (roughly) half the number of non-empty leaf nodes
+        size_t node_buffer_capacity = (size_t)std::ceil(0.5 * (num_elems / (double)max_elems_per_leaf) * BUFFER_SAFETY_FACTOR);
         node_pool.init(node_buffer_capacity);
+      }
+      else
+      {
+        // Probably already done by the caller, but play safe
+        node_pool.clear(false);
+        index_pool.clear(false);
+      }
+
+      // Set up an additional scratch index pool if we're operating in memory-saving mode
+      IndexPool * main_index_pool = &index_pool;
+      IndexPool * leaf_index_pool = nullptr;
+      IndexPool tmp_index_pool;
+      if (save_memory)
+      {
+        // Estimate the maximum number of indices that will need to be held in the scratch pool at any time during depth-first
+        // traversal with earliest-possible deallocation. This is
+        //
+        //      #elements * (sum of series 1 + 1 + f + f^2 + ... + f^(max_depth - 1))
+        //  <=  #elements * (1 + 1 / (1 - f))
+        //
+        // where f := max_child_fraction.
+        //
+        size_t est_max_path_indices = (size_t)(num_elems * (1 + 1 / (1 - max_child_fraction)));
+
+        // Create a temporary pool for scratch storage
+        tmp_index_pool.init((size_t)std::ceil(est_max_path_indices * BUFFER_SAFETY_FACTOR));
+
+        main_index_pool = &tmp_index_pool;
+        leaf_index_pool = &index_pool;
+      }
 
       // Create the root node
       root = node_pool.alloc(1);
@@ -1369,7 +1417,7 @@ class /* THEA_API */ BvhN
       num_nodes = 1;
 
       root->num_elems = num_elems;
-      root->elems = index_pool.alloc(root->num_elems);
+      root->elems = main_index_pool->alloc(root->num_elems);
 
       BoundingVolume elem_bounds;
       for (size_t i = 0; i < (size_t)num_elems; ++i)
@@ -1380,27 +1428,11 @@ class /* THEA_API */ BvhN
         root->bounds.merge(elem_bounds);
       }
 
-      // Expand the bounding volume slightly to handle numerical error
+      // Do the actual recursive construction
+      recursive_builder(*this, root, save_memory, main_index_pool, leaf_index_pool);
+
+      // Expand the root node's bounding volume slightly to handle numerical error (do this after recursion)
       root->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
-
-      if (save_memory)
-      {
-        // Estimate the maximum number of indices that will need to be held in the scratch pool at any time during depth-first
-        // traversal with earliest-possible deallocation. This is
-        //
-        //      #elements * (sum of series 1 + 1 + SPLIT_FRACTION + SPLIT_FRACTION^2 + ... + SPLIT_FRACTION^(est_depth - 1))
-        //  <=  #elements * (1 + 1 / (1 - SPLIT_FRACTION))
-        //
-        size_t est_max_path_indices = (size_t)(num_elems * (1 + 1 / (1 - SPLIT_FRACTION)));
-
-        // Create a temporary pool for scratch storage
-        IndexPool tmp_index_pool;
-        tmp_index_pool.init(est_max_path_indices + BUFFER_SAFETY_MARGIN);
-
-        createKdTree(root, true, &tmp_index_pool, &index_pool);
-      }
-      else
-        createKdTree(root, false, &index_pool, nullptr);
 
       invalidateBounds();
     }
@@ -1413,7 +1445,9 @@ class /* THEA_API */ BvhN
      *
      * @note To use this function with a node accessed via getRoot(), you'll have to const_cast it to a non-const type first.
      */
-    void createKdTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
+    template <typename Enable = void>
+    typename std::enable_if< (MaxDegree >= 2), Enable >::type
+    createKdTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
     {
       // Assume the start node is fully constructed at this stage.
       //
@@ -1442,13 +1476,17 @@ class /* THEA_API */ BvhN
       std::nth_element(start->elems, start->elems + mid, start->elems + start->num_elems, ObjectLess(coord, this));
 
       // Create child nodes
+      //
+      // !!! IMPORTANT: The children's bounding volumes may overlap BUT each element will be associated with EXACTLY ONE child
+      // (instead of being associated with all children whose bounding volumes it intersects). This is an intentional design
+      // choice to get balanced trees and to allow functions like updateNodeBounds() to maintain invariants.
       for (size_t i = 0; i < 2; ++i)
       {
         Node * child = start->children[i] = node_pool.alloc(1);
         child->init(start->depth + 1);
         num_nodes++;
 
-        ElementIndex elems_begin, elems_end;
+        size_t elems_begin, elems_end;
         if (i == 0)
         { elems_begin = 0; elems_end = start->num_elems - mid; }
         else
@@ -1458,34 +1496,21 @@ class /* THEA_API */ BvhN
 
         // Add the appropriate half of the elements to the child node
         BoundingVolume elem_bounds;
-        bool first = true;
-        for (ElementIndex i = elems_begin; i < elems_end; ++i)
+        for (auto i = elems_begin; i < elems_end; ++i)
         {
-          ElementIndex index = start->elems[i];
+          auto index = start->elems[i];
           BoundedTraitsT::getBounds(elems[index], elem_bounds);
 
           child->elems[child->num_elems++] = index;
-
-          if (first)
-          {
-            child->bounds = elem_bounds;
-            first = false;
-          }
-          else
-            child->bounds.merge(elem_bounds);
+          child->bounds.merge(elem_bounds);
         }
 
-        // Expand the bounding volumes slightly to handle numerical error
+        // Recurse on the child. Its indices are currently at the end of the main index pool and can be freed if necessary.
+        createKdTree(child, save_memory, main_index_pool, leaf_index_pool);
+
+        // Expand the child node's bounding volume slightly to handle numerical error (do this after recursion)
         child->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
       }
-
-      // Recurse on the high child first, since its indices are at the end of the main index pool and can be freed first if
-      // necessary
-      createKdTree(start->children[1], save_memory, main_index_pool, leaf_index_pool);
-
-      // Recurse on the low child next, if we are in memory-saving mode its indices are now the last valid entries in the main
-      // index pool
-      createKdTree(start->children[0], save_memory, main_index_pool, leaf_index_pool);
 
       // If we are in memory-saving mode, deallocate the indices stored at this node, which are currently the last entries in
       // the main index pool
@@ -1495,6 +1520,148 @@ class /* THEA_API */ BvhN
         start->num_elems = 0;
         start->elems = nullptr;
       }
+    }
+
+    // No-op version called when the condition is violated.
+    template <typename Enable = void>
+    typename std::enable_if< (MaxDegree < 2), Enable >::type
+    createKdTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
+    {
+      // Should never reach here if template parameters are correctly chosen
+      throw FatalError(format("BvhN: Insufficient MaxDegree %d for kd-tree (must be at least 2)", MaxDegree));
+    }
+
+    /**
+     * Recursively construct a (sub-)orthotree. If \a save_memory is true, element indices for this subtree are assumed to be in
+     * a block at the end of \a main_index_pool. They are subsequently moved to arrays associated with the leaves, allocated in
+     * \a leaf_index_pool. They are deleted from \a main_index_pool when this function exits, thus deallocating index arrays
+     * held by internal nodes. If \a save_memory is false, each node maintains its own list of all elements in its subtree.
+     *
+     * @note To use this function with a node accessed via getRoot(), you'll have to const_cast it to a non-const type first.
+     */
+    template <typename Enable = void>
+    typename std::enable_if< ((size_t)MaxDegree >= ((size_t)1 << N)), Enable >::type
+    createOrthoTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
+    {
+      // Assume the start node is fully constructed at this stage.
+      //
+      // If we are in memory-saving mode, then we assume the node's indices are last in the main index pool (but not yet in the
+      // leaf pool, since we don't yet know if this node will turn out to be a leaf). In this case, after the function finishes,
+      // the node's indices will be deallocated from the main index pool (and possibly moved to the leaf pool).
+
+      if (!start || start->depth >= max_depth || (intx)start->num_elems <= max_elems_per_leaf)
+      {
+        if (save_memory)
+          moveIndicesToLeafPool(start, main_index_pool, leaf_index_pool);
+
+        return;
+      }
+
+      // Create child nodes. This construction method guarantees that every element will be referenced by every node whose
+      // bounding volume it intersects.
+      static constexpr size_t NUM_CHILDREN = ((size_t)1 << N);
+
+      // Location of the splits along each axis
+      auto mid = start->bounds.getCenter();
+
+      // We don't know how many elements will be assigned to each child (needed to make the correct pool allocs), so find and
+      // stash the per-child indices in scratch arrays before actually creating the child nodes.
+      //
+      // WARNING: The array is shared by all calls to this function: not threadsafe!
+      for (size_t i = 0; i < NUM_CHILDREN; ++i)
+        child_elems[i].clear();  // won't release memory
+
+      BoundingVolume elem_bounds;
+      for (size_t i = 0, ne = start->num_elems; i < ne; ++i)
+      {
+        auto elem_index = start->elems[i];
+        BoundedTraitsT::getBounds(elems[elem_index], elem_bounds);
+        Eigen::Array<bool, 1, N> coord_contains[2] = { (elem_bounds.getLow().array()  <= mid.array()),
+                                                       (elem_bounds.getHigh().array() >= mid.array()) };
+        for (size_t j = 0; j < NUM_CHILDREN; ++j)
+        {
+          bool ok = true;
+          for (int k = 0; k < N; ++k)
+            ok = (ok && coord_contains[((j >> k) & 0x01)][k]);
+
+          if (ok) { child_elems[j].push_back(elem_index); }
+        }
+      }
+
+      // Check if we have a pathological case where each of the children contains all the elements in the parent (possible with,
+      // say, a stack of overlapping shapes) and if so, stop recursing
+      bool all_elems_in_all_children = true;
+      for (size_t i = 0; i < NUM_CHILDREN; ++i)
+        if (child_elems[i].size() != start->num_elems)
+        {
+          all_elems_in_all_children = false;
+          break;
+        }
+
+      if (all_elems_in_all_children)
+      {
+        if (save_memory)
+          moveIndicesToLeafPool(start, main_index_pool, leaf_index_pool);
+
+        return;
+      }
+
+      // Now actually create the children
+      start->children.fill(nullptr);  // should be already null, but just in case
+      for (size_t i = 0; i < NUM_CHILDREN; ++i)
+      {
+        if (child_elems[i].empty()) { continue; }
+
+        Node * child = start->children[i] = node_pool.alloc(1);
+        child->init(start->depth + 1);
+        num_nodes++;
+
+        child->elems = main_index_pool->alloc(child_elems[i].size());
+        child->num_elems = child_elems[i].size();
+        Algorithms::fastCopy(child_elems[i].data(), child_elems[i].data() + child_elems[i].size(), child->elems);
+
+        VectorT child_lo = start->bounds.getLow(), child_hi = start->bounds.getHigh();
+        for (int j = 0; j < N; ++j)
+        {
+          if ((i >> j) & 0x01) { child_lo[j] = mid[j]; }
+          else                 { child_hi[j] = mid[j]; }
+        }
+
+        child->bounds.set(child_lo, child_hi);
+      }
+
+      // Recurse on the children in reverse order so that in memory-saving mode, the element indices of the child being
+      // currently processed are at the end of the main index pool and can be freed. We can't combine the recursion with the
+      // node creation loop above, because the recursion will overwrite the child_elems arrays.
+      for (intx i = (intx)(NUM_CHILDREN - 1); i >= 0; --i)
+      {
+        auto child = start->children[(size_t)i];
+        if (child)
+        {
+          createOrthoTree(child, save_memory, main_index_pool, leaf_index_pool);
+
+          // Expand the child node's bounding volume slightly to handle numerical error (do this after recursion)
+          child->bounds.scaleCentered(BOUNDS_EXPANSION_FACTOR);
+        }
+      }
+
+      // If we are in memory-saving mode, deallocate the indices stored at this node, which are currently the last entries in
+      // the main index pool
+      if (save_memory)
+      {
+        main_index_pool->free(start->num_elems);
+        start->num_elems = 0;
+        start->elems = nullptr;
+      }
+    }
+
+    // No-op version called when the condition is violated.
+    template <typename Enable = void>
+    typename std::enable_if< ((size_t)MaxDegree < ((size_t)1 << N)), Enable >::type
+    createOrthoTree(Node * start, bool save_memory, IndexPool * main_index_pool, IndexPool * leaf_index_pool)
+    {
+      // Should never reach here if template parameters are correctly chosen
+      throw FatalError(format("BvhN: Insufficient MaxDegree %d for orthotree in %d dimension(s)", MaxDegree, N));
     }
 
     /**
@@ -2255,6 +2422,7 @@ class /* THEA_API */ BvhN
     NodePool node_pool;
 
     IndexPool index_pool;
+    Array<ElementIndex> child_elems[MaxDegree];  // temporary storage used during tree construction
 
     intx max_depth;
     intx max_elems_per_leaf;

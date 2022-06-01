@@ -143,6 +143,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       next_halfedge_index(0),
       max_vertex_index(-1),
       max_face_index(-1),
+      enable_face_attributes(false),
       changed_packed(BufferId::ALL),
       changed_buffers(BufferId::ALL),
       num_tri_indices(0),
@@ -183,6 +184,13 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     }
 
     // Abstract mesh interface
+
+    /**
+     * \copydoc IMesh::getVertexMatrix()
+     *
+     * @warning If rendering with face attributes is enabled, i.e. areFaceAttributesEnabled() returns true, then the number of
+     *   rows of this matrix will NOT be numVertices(), but will instead be the number of vertex-face incidences.
+     */
     IDenseMatrix<Real> const * THEA_ICALL getVertexMatrix() const
     {
       // Assume Vector3 is tightly packed and has no padding
@@ -192,6 +200,12 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       return &vertex_wrapper;
     }
 
+    /**
+     * \copydoc IMesh::getTriangleMatrix()
+     *
+     * @warning If rendering with face attributes is enabled, i.e. areFaceAttributesEnabled() returns true, then the triangles
+     *   corresponding to each source face will reference a unique set of vertex indices.
+     */
     IDenseMatrix<uint32> const * THEA_ICALL getTriangleMatrix() const
     {
       packTopology();
@@ -200,11 +214,17 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       return &tri_wrapper;
     }
 
+    /**
+     * \copydoc IMesh::getQuadMatrix()
+     *
+     * @warning If rendering with face attributes is enabled, i.e. areFaceAttributesEnabled() returns true, then the quads
+     *   corresponding to each source face will reference a unique set of vertex indices.
+     * @warning Even if the mesh has quads, this function currently returns an empty matrix. This is because we pack everything
+     *   to the GPU as triangles (for compatibility with modern OpenGL) so we currently have no efficient way of returning the
+     *   quads. In the future, we can consider packing the quads on-demand in this function.
+     */
     IDenseMatrix<uint32> const * THEA_ICALL getQuadMatrix() const
     {
-      // FIXME: Even if the mesh has quads, we pack everything as triangles (for compatibility with modern OpenGL) so we
-      // currently have no efficient way of returning the quads. In the future, we can consider packing the quads on-demand in
-      // this function (call packTopology(), which should set a flag to turn trigger the quad-packing here).
       typedef Matrix<4, 0, uint32, MatrixLayout::COLUMN_MAJOR> EmptyQuadMatrix;
       static EmptyQuadMatrix EMPTY_QUAD_MATRIX;
       static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
@@ -321,6 +341,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       max_vertex_index = -1;
       max_face_index = -1;
       bounds = AxisAlignedBox3();
+      enable_face_attributes = false;
 
       invalidateGpuBuffers();
     }
@@ -666,10 +687,33 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     {
       packVertexPositions();
       packVertexNormals();
-      packVertexColors<Vertex>();
+      packVertexColors<Vertex, Face>();
       packVertexTexCoords<Vertex>();
       packTopology();
     }
+
+    /**
+     * If true, per-face instead of per-vertex attributes such as colors and normals will be used for rendering.
+     *
+     * @warning Setting this to true currently affects the IMesh interface functions getVertexMatrix(), getTriangleMatrix() and
+     * getQuadMatrix().
+     */
+    void setFaceAttributesEnabled(bool value)
+    {
+      if (value != enable_face_attributes)
+      {
+        enable_face_attributes = value;
+        invalidateGpuBuffers();
+      }
+    }
+
+    /**
+     * Check if per-face instead of per-vertex attributes such as colors and normals will be used for rendering.
+     *
+     * @warning This setting currently affects the IMesh interface functions getVertexMatrix(), getTriangleMatrix() and
+     *   getQuadMatrix().
+     */
+    bool areFaceAttributesEnabled() const { return enable_face_attributes; }
 
     int8 THEA_ICALL draw(IRenderSystem * render_system, IRenderOptions const * options = nullptr) const;
 
@@ -1219,10 +1263,28 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     {
       if (isPackedArrayValid(BufferId::VERTEX_POSITION)) return;
 
-      packed_vertex_positions.resize(vertices.size());
-      size_t i = 0;
-      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_positions[i] = (*vi)->getPosition();
+      if (areFaceAttributesEnabled())  // need to duplicate vertices
+      {
+        // Traversal order must be synced with the other pack* functions!
+        packed_vertex_positions.clear();  // no realloc
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        {
+          Halfedge const * start = (*fi)->getHalfedge();
+          Halfedge const * he = start;
+          do
+          {
+            packed_vertex_positions.push_back(he->getOrigin()->getPosition());
+            he = he->next();
+          } while (he != start);
+        }
+      }
+      else // regular per-vertex attributes only
+      {
+        packed_vertex_positions.resize(vertices.size());
+        size_t i = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+          packed_vertex_positions[i] = (*vi)->getPosition();
+      }
 
       setPackedArrayValid(BufferId::VERTEX_POSITION);
     }
@@ -1232,30 +1294,105 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     {
       if (isPackedArrayValid(BufferId::VERTEX_NORMAL)) return;
 
-      packed_vertex_normals.resize(vertices.size());
-      size_t i = 0;
-      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_normals[i] = (*vi)->getNormal();
+      if (areFaceAttributesEnabled())  // need to duplicate vertices
+      {
+        // Traversal order must be synced with the other pack* functions!
+        packed_vertex_normals.clear();  // no realloc
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+          packed_vertex_normals.insert(packed_vertex_normals.end(), (size_t)(*fi)->numVertices(), (*fi)->getNormal());
+      }
+      else // regular per-vertex attributes only
+      {
+        packed_vertex_normals.resize(vertices.size());
+        size_t i = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+          packed_vertex_normals[i] = (*vi)->getNormal();
+      }
 
       setPackedArrayValid(BufferId::VERTEX_NORMAL);
     }
 
-    /** Pack vertex colors densely in an array. */
-    template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
+    /** Pack vertex colors densely in an array (called when vertices and faces both have colors). */
+    template < typename VertexT, typename FaceT,
+               typename std::enable_if< HasColor<VertexT>::value && HasColor<FaceT>::value, int>::type = 0 >
     void packVertexColors() const
     {
       if (isPackedArrayValid(BufferId::VERTEX_COLOR)) return;
 
-      packed_vertex_colors.resize(vertices.size());
-      size_t i = 0;
-      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_colors[i] = ColorRgba((*vi)->attr().getColor());
+      if (areFaceAttributesEnabled())
+      {
+        // Traversal order must be synced with the other pack* functions!
+        packed_vertex_colors.clear();  // no realloc
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+          packed_vertex_colors.insert(packed_vertex_colors.end(), (size_t)(*fi)->numVertices(),
+                                      ColorRgba((*fi)->attr().getColor()));
+      }
+      else
+      {
+        packed_vertex_colors.resize(vertices.size());
+        size_t i = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+          packed_vertex_colors[i] = ColorRgba((*vi)->attr().getColor());
+      }
 
       setPackedArrayValid(BufferId::VERTEX_COLOR);
     }
 
-    /** Clear the array of packed vertex colors (called when vertices don't have attached colors). */
-    template < typename VertexT, typename std::enable_if< !HasColor<VertexT>::value, int >::type = 0 >
+    /** Pack vertex colors densely in an array (called when vertices have colors but faces lack them). */
+    template < typename VertexT, typename FaceT,
+               typename std::enable_if< HasColor<VertexT>::value && !HasColor<FaceT>::value, int>::type = 0 >
+    void packVertexColors() const
+    {
+      if (isPackedArrayValid(BufferId::VERTEX_COLOR)) return;
+
+      if (areFaceAttributesEnabled())
+      {
+        // Traversal order must be synced with the other pack* functions!
+        packed_vertex_colors.clear();  // no realloc
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        {
+          Halfedge const * start = (*fi)->getHalfedge();
+          Halfedge const * he = start;
+          do
+          {
+            packed_vertex_colors.push_back(ColorRgba(he->getOrigin()->attr().getColor()));
+            he = he->next();
+          } while (he != start);
+        }
+      }
+      else
+      {
+        packed_vertex_colors.resize(vertices.size());
+        size_t i = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+          packed_vertex_colors[i] = ColorRgba((*vi)->attr().getColor());
+      }
+
+      setPackedArrayValid(BufferId::VERTEX_COLOR);
+    }
+
+    /** Pack vertex colors densely in an array (called when vertices lack colors but faces have them). */
+    template < typename VertexT, typename FaceT,
+               typename std::enable_if< !HasColor<VertexT>::value && HasColor<FaceT>::value, int >::type = 0 >
+    void packVertexColors() const
+    {
+      if (isPackedArrayValid(BufferId::VERTEX_COLOR)) return;
+
+      packed_vertex_colors.clear();  // no realloc
+      if (areFaceAttributesEnabled())
+      {
+        // Traversal order must be synced with the other pack* functions!
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+          packed_vertex_colors.insert(packed_vertex_colors.end(), (size_t)(*fi)->numVertices(),
+                                      ColorRgba((*fi)->attr().getColor()));
+      }
+
+      setPackedArrayValid(BufferId::VERTEX_COLOR);
+    }
+
+    /** Clear the array of packed vertex colors (called when no color information is available). */
+    template < typename VertexT, typename FaceT,
+               typename std::enable_if< !HasColor<VertexT>::value && !HasColor<FaceT>::value, int >::type = 0 >
     void packVertexColors() const
     {
       if (!isPackedArrayValid(BufferId::VERTEX_COLOR))
@@ -1271,10 +1408,28 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     {
       if (isPackedArrayValid(BufferId::VERTEX_TEXCOORD)) return;
 
-      packed_vertex_texcoords.resize(vertices.size());
-      size_t i = 0;
-      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-        packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
+      if (areFaceAttributesEnabled())  // need to duplicate vertices
+      {
+        // Traversal order must be synced with the other pack* functions!
+        packed_vertex_texcoords.clear();  // no realloc
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        {
+          Halfedge const * start = (*fi)->getHalfedge();
+          Halfedge const * he = start;
+          do
+          {
+            packed_vertex_texcoords.push_back(he->getOrigin()->getTexCoord());
+            he = he->next();
+          } while (he != start);
+        }
+      }
+      else // regular per-vertex attributes only
+      {
+        packed_vertex_texcoords.resize(vertices.size());
+        size_t i = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
+          packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
+      }
 
       setPackedArrayValid(BufferId::VERTEX_TEXCOORD);
     }
@@ -1297,22 +1452,36 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
 
       packed_tris.clear();
 
-      uint32 packing_index = 0;
-      for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
-        (*vi)->setPackingIndex(packing_index++);
+      bool isolate = areFaceAttributesEnabled();
+      if (!isolate)
+      {
+        uint32 packing_index = 0;
+        for (auto vi = vertices.begin(); vi != vertices.end(); ++vi)
+          (*vi)->setPackingIndex(packing_index++);
+      }
 
       Array<Vertex const *> face_vertices;
       Array<intx> tri_indices;
       Polygon3 poly;  // hopefully doesn't realloc on clear() as well
+      uint32 face_vertices_base = 0;  // used only when face colors are present
       for (auto fi = faces.begin(); fi != faces.end(); ++fi)
       {
         Face * face = *fi;
         if (face->isTriangle())
         {
-          Halfedge const * he = face->getHalfedge();
-          packed_tris.push_back(he->getOrigin()->getPackingIndex()); he = he->next();
-          packed_tris.push_back(he->getOrigin()->getPackingIndex()); he = he->next();
-          packed_tris.push_back(he->getOrigin()->getPackingIndex());
+          if (isolate)
+          {
+            packed_tris.push_back(face_vertices_base);
+            packed_tris.push_back(face_vertices_base + 1);
+            packed_tris.push_back(face_vertices_base + 2);
+          }
+          else
+          {
+            Halfedge const * he = face->getHalfedge();
+            packed_tris.push_back(he->getOrigin()->getPackingIndex()); he = he->next();
+            packed_tris.push_back(he->getOrigin()->getPackingIndex()); he = he->next();
+            packed_tris.push_back(he->getOrigin()->getPackingIndex());
+          }
         }
         else if (face->numVertices() > 3)  // ignore degenerate faces with < 3 vertices
         {
@@ -1357,19 +1526,48 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
           size_t base = 0;
           for (intx j = 0; j < ntris; ++j)
           {
-            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
-            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
-            packed_tris.push_back(face_vertices[tri_indices[base++]]->getPackingIndex());
+            if (isolate)
+            {
+              packed_tris.push_back(face_vertices_base + (uint32)tri_indices[base++]);
+              packed_tris.push_back(face_vertices_base + (uint32)tri_indices[base++]);
+              packed_tris.push_back(face_vertices_base + (uint32)tri_indices[base++]);
+            }
+            else
+            {
+              packed_tris.push_back(face_vertices[(size_t)tri_indices[base++]]->getPackingIndex());
+              packed_tris.push_back(face_vertices[(size_t)tri_indices[base++]]->getPackingIndex());
+              packed_tris.push_back(face_vertices[(size_t)tri_indices[base++]]->getPackingIndex());
+            }
           }
         }
+
+        face_vertices_base += (uint32)face->numVertices();
       }
 
-      packed_edges.resize(halfedges.size());  // i.e. 2 * numEdges()
-      size_t i = 0;
-      for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei, i += 2)
+      if (isolate)
       {
-        packed_edges[i    ] = ei->getOrigin()->getPackingIndex();
-        packed_edges[i + 1] = ei->getEnd()->getPackingIndex();
+        packed_edges.clear();
+        face_vertices_base = 0;
+        for (auto fi = faces.begin(); fi != faces.end(); ++fi)
+        {
+          uint32 nfv = (uint32)(*fi)->numVertices();
+          for (uint32 j = 0; j < nfv; ++j)
+          {
+            packed_edges.push_back(face_vertices_base + j);
+            packed_edges.push_back(face_vertices_base + ((j + 1) % nfv));
+          }
+          face_vertices_base += nfv;
+        }
+      }
+      else
+      {
+        packed_edges.resize(halfedges.size());  // i.e. 2 * numEdges()
+        size_t i = 0;
+        for (auto ei = edgesBegin(); ei != edgesEnd(); ++ei, i += 2)
+        {
+          packed_edges[i    ] = ei->getOrigin()->getPackingIndex();
+          packed_edges[i + 1] = ei->getEnd()->getPackingIndex();
+        }
       }
 
       num_tri_indices = (intx)packed_tris.size();
@@ -1392,6 +1590,9 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     intx max_face_index;    ///< The largest index of a face in the mesh.
 
     AxisAlignedBox3 bounds;  ///< Mesh bounding box.
+
+    /** If true, per-face instead of per-vertex attributes such as colors and normals will be used for rendering. */
+    bool enable_face_attributes;
 
     mutable int changed_packed;  ///< A bitwise OR of the flags of the packed arrays that need to be updated.
     int changed_buffers;         ///< A bitwise OR of the flags of the buffers that need to be updated.
