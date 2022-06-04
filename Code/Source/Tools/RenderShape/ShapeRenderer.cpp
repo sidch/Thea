@@ -428,7 +428,13 @@ ShapeRendererImpl::exec(int argc, char ** argv)
       // Initialize the camera
       Camera camera = model.fitCamera(transforms[0], views[v], zoom, buffer_width, buffer_height);
       if (print_camera)
+      {
         THEA_CONSOLE << "Camera for view " << v << " is: " << camera.toString();
+        THEA_CONSOLE << "Viewing matrix (world to camera) for view " << v << " is: "
+                     << toString(camera.getWorldToCameraTransform().homogeneous());
+        THEA_CONSOLE << "Projection matrix (camera to projection) for view " << v << " is: "
+                     << toString(camera.getProjectionTransform());
+      }
 
       // Render the mesh to the offscreen framebuffer
       render_system->pushFramebuffer();
