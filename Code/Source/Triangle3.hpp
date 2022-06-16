@@ -1312,13 +1312,13 @@ Vector<3, T> closestPointOnLineSegment(
   Vector<3, T> const  &  v0,
   Vector<3, T> const  &  v1,
   Vector<3, T> const  &  edgeDirection,
-  float const            edgeLength,
+  T const                edgeLength,
   Vector<3, T> const  &  point)
 {
   // Vector towards the point
   Vector<3, T> c = point - v0;
   // Projected onto the edge itself
-  float t = edgeDirection.dot(c);
+  T t = edgeDirection.dot(c);
 
   if (t <= 0)
   {
@@ -1342,14 +1342,14 @@ Vector<3, T>
 closestPointOnTrianglePerimeter(
   Vector<3, T> const     v[3],
   Vector<3, T> const     edgeDirection[3],
-  float const            edgeLength[3],
+  T const                edgeLength[3],
   Vector<3, T> const  &  point,
   int                 &  edgeIndex)
 {
   // Closest point on segment from v[i] to v[i + 1]
   Vector<3, T> r[3];
   // Distance squared from r[i] to point
-  float d[3];
+  T d[3];
   // Index of the next point
   static const int next[] = {1, 2, 0};
 
@@ -1399,7 +1399,7 @@ closestPointOnTrianglePerimeter(
 {
   Vector<3, T> v[3] = {v0, v1, v2};
   Vector<3, T> edgeDirection[3] = {(v1 - v0), (v2 - v1), (v0 - v2)};
-  float        edgeLength[3];
+  T edgeLength[3];
 
   for (int i = 0; i < 3; ++i)
   {
