@@ -150,9 +150,11 @@ CsparseLinearSolver::~CsparseLinearSolver()
 {}
 
 int8
-CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options)
+CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, float64 const * guess, IOptions const * options)
 {
   using namespace CsparseLinearSolverInternal;
+
+  (void)guess;  // not used
 
   has_solution = false;
   solution.resize(0);

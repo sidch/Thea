@@ -46,12 +46,14 @@ class THEA_API ILinearSolver : public virtual INamedObject
      *
      * @param a The coefficient matrix A in the system Ax = b.
      * @param b The constant vector b in the system Ax = b.
+     * @param guess A guess for the solution vector, which may be ignored by the solver. Useful primarily for iterative solvers.
      * @param options Backend-specific options. See the documentation of each derived class wrapping a particular backend.
      *
      * @return True if the system was successfully solved, else false. (The same value is returned by subsequent calls to
      *   hasSolution().)
      */
-    virtual int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options = nullptr) = 0;
+    virtual int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, float64 const * guess = nullptr,
+                                  IOptions const * options = nullptr) = 0;
 
     /** Get the size of the solution, which is also the number of columns of the coefficient matrix A. */
     virtual int64 THEA_ICALL dims() const = 0;

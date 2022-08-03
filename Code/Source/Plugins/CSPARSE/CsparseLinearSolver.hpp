@@ -59,7 +59,8 @@ class THEA_CSPARSE_DLL_LOCAL CsparseLinearSolver : public virtual ILinearSolver,
      *   - <i>Type:</i> <code>float64</code>
      *   - <i>Default</i>: 1e-20
      */
-    int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options = nullptr);
+    int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, float64 const * guess = nullptr,
+                          IOptions const * options = nullptr);
 
     int64 THEA_ICALL dims() const { return (int64)solution.size(); }
     int8 THEA_ICALL hasSolution() const { return has_solution; }

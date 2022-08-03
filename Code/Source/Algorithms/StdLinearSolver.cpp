@@ -41,8 +41,10 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // Solve the linear system Ax = b for a dense double-precision matrix A.
     template < typename MatrixT, typename ScalarT,
                typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
-    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, IOptions const * options = nullptr)
+    bool solve(Eigen::MatrixBase<MatrixT> const & a, ScalarT const * b, ScalarT const * guess, IOptions const * options)
     {
+      (void)guess;  // not currently used for dense systems
+
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
 
@@ -102,7 +104,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               case StdLinearSolver::Method::HOUSEHOLDER_QR:
               {
                 Eigen::HouseholderQR<typename MatrixT::PlainObject> solver(a);
-                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives)).template cast<float64>();
                 has_solution = true;
                 break;
               }
@@ -112,7 +114,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::ColPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives)).template cast<float64>();
                 has_solution = true;
                 break;
               }
@@ -121,7 +123,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::FullPivHouseholderQR<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives)).template cast<float64>();
                 has_solution = true;
                 break;
               }
@@ -130,7 +132,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::CompleteOrthogonalDecomposition<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives)).template cast<float64>();
                 has_solution = true;
                 break;
               }
@@ -139,7 +141,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
               {
                 Eigen::BDCSVD<typename MatrixT::PlainObject> solver(a);
                 if (tolerance >= 0) solver.setThreshold(tolerance);
-                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives));
+                solution = solver.solve(Eigen::Map< VectorX<ScalarT> const >(b, num_objectives)).template cast<float64>();
                 has_solution = true;
                 break;
               }
@@ -164,7 +166,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
     // Solve the linear system Ax = b for a sparse ScalarT-precision matrix A.
     template < typename MatrixT, typename ScalarT,
                typename std::enable_if< std::is_same<typename MatrixT::value_type, ScalarT>::value, int >::type = 0 >
-    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, IOptions const * options = nullptr)
+    bool solve(Eigen::SparseMatrixBase<MatrixT> const & a, ScalarT const * b, ScalarT const * guess, IOptions const * options)
     {
       if (a.rows() < a.cols())
         THEA_WARNING << "StdLinearSolver: Fewer objectives than dimensions -- the solution will not be unique";
@@ -183,7 +185,7 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           {
             // Return true if a matching solver was found
             if (solveSparseFactorize(a, b)) break;
-            if (solveIterative(a, b)) break;
+            if (solveIterative(a, b, guess)) break;
 
             throw Error("Unsupported method for unconstrained sparse least squares problems");
           }
@@ -201,7 +203,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
   private:
     // Use one of the iterative solvers to solve the dense or sparse problem. Returns true if a suitable solver was found, NOT
     // if the problem was successfully solved.
-    template <typename MatrixT, typename ScalarT> bool solveIterative(MatrixT const & a, ScalarT const * b)
+    template <typename MatrixT, typename ScalarT>
+    bool solveIterative(MatrixT const & a, ScalarT const * b, ScalarT const * guess)
     {
       switch (method)
       {
@@ -213,7 +216,14 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            if (guess)
+              solution = solver.solveWithGuess(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()),
+                                               Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(guess), a.rows()))
+                               .template cast<float64>();
+            else
+              solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                               .template cast<float64>();
+
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -228,7 +238,14 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            if (guess)
+              solution = solver.solveWithGuess(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()),
+                                               Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(guess), a.rows()))
+                               .template cast<float64>();
+            else
+              solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                               .template cast<float64>();
+
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -242,7 +259,14 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            if (guess)
+              solution = solver.solveWithGuess(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()),
+                                               Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(guess), a.rows()))
+                               .template cast<float64>();
+            else
+              solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                               .template cast<float64>();
+
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -268,7 +292,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                             .template cast<float64>();
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -280,7 +305,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                             .template cast<float64>();
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -293,7 +319,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                             .template cast<float64>();
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -307,7 +334,8 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
           solver.compute(a);
           if (solver.info() == Eigen::Success)
           {
-            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()));
+            solution = solver.solve(Eigen::Map< VectorX<ScalarT> >(const_cast<ScalarT *>(b), a.rows()))
+                             .template cast<float64>();
             has_solution = (solver.info() == Eigen::Success);
           }
           break;
@@ -345,7 +373,7 @@ template <MatrixLayout::Value L, typename StorageIndex> using SM = Eigen::Map< S
 template <MatrixLayout::Value L, typename ScalarT>
 bool
 implSolve(StdLinearSolverImpl * impl, int storage_type, intx nr, intx nc, intx nnz, void const * in, void const * out,
-          ScalarT const * val, void const * nzc, ScalarT const * b, IOptions const * opt)
+          ScalarT const * val, void const * nzc, ScalarT const * b, ScalarT const * guess, IOptions const * opt)
 {
   void    * in2  = const_cast<void *>(in);
   void    * out2 = const_cast<void *>(out);
@@ -360,13 +388,13 @@ implSolve(StdLinearSolverImpl * impl, int storage_type, intx nr, intx nc, intx n
 // because the arguments are not of the same type.
 //
 //     case NumericType::INT8:
-//       return impl->solve(SM<L, int8  >(nr, nc, nnz, (int8   *)in2, (int8   *)out2, val2, (int8   *)nzc2), b, opt);
+//       return impl->solve(SM<L, int8  >(nr, nc, nnz, (int8   *)in2, (int8   *)out2, val2, (int8   *)nzc2), b, guess, opt);
 //     case NumericType::INT16:
-//       return impl->solve(SM<L, int16 >(nr, nc, nnz, (int16  *)in2, (int16  *)out2, val2, (int16  *)nzc2), b, opt);
+//       return impl->solve(SM<L, int16 >(nr, nc, nnz, (int16  *)in2, (int16  *)out2, val2, (int16  *)nzc2), b, guess, opt);
     case NumericType::INT32:
-      return impl->solve(SM<L, int32 >(nr, nc, nnz, (int32  *)in2, (int32  *)out2, val2, (int32  *)nzc2), b, opt);
+      return impl->solve(SM<L, int32 >(nr, nc, nnz, (int32  *)in2, (int32  *)out2, val2, (int32  *)nzc2), b, guess, opt);
     case NumericType::INT64:
-      return impl->solve(SM<L, int64 >(nr, nc, nnz, (int64  *)in2, (int64  *)out2, val2, (int64  *)nzc2), b, opt);
+      return impl->solve(SM<L, int64 >(nr, nc, nnz, (int64  *)in2, (int64  *)out2, val2, (int64  *)nzc2), b, guess, opt);
     default: THEA_ERROR << "StdLinearSolver: Unsupported index type";
   }
 
@@ -434,19 +462,20 @@ StdLinearSolver::setMaxIterations(intx max_iters_)
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, float64 const * b, IOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, double const * b, double const * guess, IOptions const * options)
 {
-  return impl->solve(a, b, options);
+  return impl->solve(a, b, guess, options);
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, float64 const * b, IOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, double const * guess,
+                       IOptions const * options)
 {
-  return impl->solve(a, b, options);
+  return impl->solve(a, b, guess, options);
 }
 
 int8
-StdLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options)
+StdLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, float64 const * guess, IOptions const * options)
 {
   alwaysAssertM(a, "StdLinearSolver: Coefficient matrix is null");
   alwaysAssertM(b, "StdLinearSolver: Constant matrix is null");
@@ -457,12 +486,12 @@ StdLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptions c
     if (dm.isRowMajor())
     {
       Eigen::Map< MatrixX<float64, MatrixLayout::ROW_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
-      return impl->solve(wrapped, b, options);
+      return impl->solve(wrapped, b, guess, options);
     }
     else  // col-major
     {
       Eigen::Map< MatrixX<float64, MatrixLayout::COLUMN_MAJOR> const > wrapped(dm.data(), dm.rows(), dm.cols());
-      return impl->solve(wrapped, b, options);
+      return impl->solve(wrapped, b, guess, options);
     }
   }
   else if (a->asSparse() && a->asSparse()->asCompressed())
@@ -481,12 +510,12 @@ StdLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, IOptions c
       return StdLinearSolverInternal::implSolve<MatrixLayout::ROW_MAJOR>(impl, storage_type, sm.rows(), sm.cols(),
                                                                          sm.numStoredElements(), sm.getOuterIndices(),
                                                                          sm.getInnerIndices(), sm.getValues(),
-                                                                         sm.getNonZeroCounts(), b, options);
+                                                                         sm.getNonZeroCounts(), b, guess, options);
     else
       return StdLinearSolverInternal::implSolve<MatrixLayout::COLUMN_MAJOR>(impl, storage_type, sm.rows(), sm.cols(),
                                                                             sm.numStoredElements(), sm.getOuterIndices(),
                                                                             sm.getInnerIndices(), sm.getValues(),
-                                                                            sm.getNonZeroCounts(), b, options);
+                                                                            sm.getNonZeroCounts(), b, guess, options);
   }
   else
   {

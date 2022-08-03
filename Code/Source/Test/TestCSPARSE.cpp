@@ -74,7 +74,7 @@ testCSPARSE(int argc, char * argv[])
 
   Options opts;
   opts.set("method", "LU");
-  ls->solve(&asLvalue(Math::wrapMatrix(A_sparse)), b, &opts);
+  ls->solve(&asLvalue(Math::wrapMatrix(A_sparse)), b, /* guess = */ nullptr, &opts);
 
   static double const EPSILON = 0.0001;
   double expected[3] = {-15, 8, 2};

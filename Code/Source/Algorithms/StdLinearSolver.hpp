@@ -136,13 +136,16 @@ class THEA_API StdLinearSolver : public virtual ILinearSolver, public NamedObjec
     void setMaxIterations(intx max_iters_);
 
     /** Solve the linear system Ax = b for a dense double-precision matrix A. */
-    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, IOptions const * options = nullptr);
+    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, double const * guess = nullptr,
+               IOptions const * options = nullptr);
 
     /** Solve the linear system Ax = b for a sparse double-precision matrix A. */
-    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, IOptions const * options = nullptr);
+    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, double const * guess = nullptr,
+               IOptions const * options = nullptr);
 
     // Functions from ILinearSolver
-    int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, IOptions const * options = nullptr);
+    int8 THEA_ICALL solve(IMatrix<float64> const * a, float64 const * b, float64 const * guess = nullptr,
+                          IOptions const * options = nullptr);
     int64 THEA_ICALL dims() const;
     int8 THEA_ICALL hasSolution() const;
     float64 const * THEA_ICALL getSolution() const;
