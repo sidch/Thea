@@ -504,12 +504,9 @@ ShapeRendererImpl::exec(int argc, char ** argv)
             uint8 const * pixel = (uint8 const *)image.getScanLine(r);
             for (intx c = 0; c < image.getWidth(); ++c, pixel += 4)
             {
-              if (pixel[Image::Channel::ALPHA] != 0xFF) continue;  // background
+              if (pixel[3] != 0xFF) continue;  // background
 
-              size_t index = (size_t)((((uint32)pixel[Image::Channel::BLUE] << 16)
-                                     | ((uint32)pixel[Image::Channel::GREEN] << 8)
-                                     |  (uint32)pixel[Image::Channel::RED])
-                                    & 0x7FFFFF);
+              size_t index = (size_t)((((uint32)pixel[2] << 16) | ((uint32)pixel[1] << 8) |  (uint32)pixel[0]) & 0x7FFFFF);
               alwaysAssertM(index < hitcounts.size(), "Rendered face index out of bounds");
 
               hitcounts[index]++;

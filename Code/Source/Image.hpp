@@ -108,9 +108,8 @@ class THEA_API Image : public virtual IImage, public Serializable
     int getBitsPerChannel() const { return bits_per_channel; }
 
     /**
-     * Get the number of bits assigned to a particular channel. For luminance images, the single channel is assumed to
-     * correspond to the enum value Channel::ALPHA. If the image doesn't contain the specific channel (e.g. luminance images
-     * don't have red, green or blue channels) a value of zero is returned.
+     * Get the number of bits assigned to a particular channel. If the image doesn't contain the specific channel (e.g.
+     * luminance images don't have red, green or blue channels) a value of zero is returned.
      */
     int getBitsInChannel(int channel) const { return type.getBitsInChannel(channel); }
 
@@ -143,7 +142,8 @@ class THEA_API Image : public virtual IImage, public Serializable
      *     [-32768, 32767], which is mapped to [1, 1) by dividing by 32768.
      *   - Floating point channels are assumed to be pre-normalized and no further normalization is done.
      *   - For complex channels, the function returns the magnitude of the complex number.
-     *   - For single-channel images, the luminance is extracted with Channel::ALPHA.
+     *   - For RGB images, passing \a channel = 3 returns 1, since the image is assumed to be non-transparent by common
+     *     convention. In all other cases, passing an invalid channel index returns 0.
      *
      * This is a relatively slow way to iterate over pixel values and is provided only for convenience.
      *
@@ -151,6 +151,20 @@ class THEA_API Image : public virtual IImage, public Serializable
      * zero for such images.
      */
     double getNormalizedValue(void const * pixel, int channel) const;
+
+    /**
+     * Reorder the channels of the image. \a order is a sequence of numChannels() indices that specifies the new channel
+     * ordering. Duplicates are allowed. E.g.
+     * \code
+     * int order[] = { 2, 1, 0 }
+     * \endcode
+     * converts RGB to BGR, and
+     * \code
+     * int order[] = { 0, 0, 0 }
+     * \endcode
+     * converts an RGB image to greyscale by copying the red channel to green and blue.
+     */
+    bool reorderChannels(int const * order);
 
     /** Invert the pixel values of the image. */
     bool invert();

@@ -375,49 +375,7 @@ loadImage(Image & image, std::string const & path)
   if (!FileSystem::fileExists(path)) return false;
 
   image.load(path);
-  if (image.isValid())
-  {
-    // This used to be necessary on Linux. No longer, since we've fixed TextureFormat::fromImageType() to detect and handle BGR
-    // images.
-    // fixChannelOrdering(image);
-
-    return true;
-  }
-
-  return false;
-}
-
-void
-fixChannelOrdering(Image & image)
-{
-  // Make sure the red channel is at pixel[0] and the blue channel at pixel[2]
-  int bytes_pp = 0;
-  switch (image.getType())
-  {
-    case Image::Type::RGB_8U: bytes_pp = 3; break;
-    case Image::Type::RGBA_8U: bytes_pp = 4; break;
-    default: break;
-  }
-
-  if (bytes_pp > 0)
-  {
-    for (int r = 0; r < image.getHeight(); ++r)
-    {
-      uint8 * pixels = (uint8 *)image.getScanLine(r);
-      for (int c = 0; c < image.getWidth(); ++c)
-      {
-        uint8 * pixel = pixels + bytes_pp * c;
-
-        uint8 red    =  pixel[Image::Channel::RED];
-        uint8 green  =  pixel[Image::Channel::GREEN];
-        uint8 blue   =  pixel[Image::Channel::BLUE];
-
-        pixel[0] = red;
-        pixel[1] = green;
-        pixel[2] = blue;
-      }
-    }
-  }
+  return image.isValid();
 }
 
 } // namespace Browse3D

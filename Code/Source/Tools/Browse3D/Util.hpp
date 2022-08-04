@@ -71,9 +71,6 @@ Real dragToScale(wxPoint const & start, wxPoint const & end, int width, int heig
 // Load an image from a file. Fixes channel ordering if necessary.
 bool loadImage(Image & image, std::string const & path);
 
-// Make sure image channels are in order RGB[A]. Currently works only for RGB_8U and RGBA_8U.
-void fixChannelOrdering(Image & image);
-
 } // namespace Browse3D
 
 #endif

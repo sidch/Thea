@@ -30,21 +30,8 @@ class THEA_API IImage
     THEA_DECL_SMART_POINTERS(IImage)
 
     /**
-     * Indices for the color channels in a single pixel. E.g. for a 24-bit RGB bitmap (8 bits per channel), the individual
-     * components for the pixel at address <code>unsigned char * p</code> may be accessed as <code>p[Channel::RED]</code>,
-     * <code>p[Channel::GREEN]</code> and <code>p[Channel::BLUE]</code>.
-     */
-    struct THEA_API Channel
-    {
-      static int32 const RED;    ///< Index of red channel
-      static int32 const GREEN;  ///< Index of green channel
-      static int32 const BLUE;   ///< Index of blue channel
-      static int32 const ALPHA;  ///< Index of alpha channel
-    };
-
-    /**
-     * Different image types (enum class plus extra functions). Note that the channel ordering can be OS dependent, hence access
-     * is best achieved using the implementation-specific RED, GREEN, BLUE and ALPHA indices.
+     * Different image types (enum class plus extra functions). The channel ordering within a pixel is exactly as in the type
+     * name, e.g. RGB_8U has red as channel 0, green as channel 1, and blue as channel 2.
      */
     struct THEA_API Type
     {
@@ -92,9 +79,8 @@ class THEA_API IImage
       int getBitsPerChannel() const;
 
       /**
-       * Get the number of bits assigned to a particular channel. For luminance images, the single channel is assumed to
-       * correspond to the enum value Channel::ALPHA. If the image doesn't contain the specific channel (e.g. luminance images
-       * don't have red, green or blue channels) a value of zero is returned.
+       * Get the number of bits assigned to a particular channel. If the image doesn't contain the specific channel (e.g.
+       * luminance images don't have red, green or blue channels) a value of zero is returned.
        */
       int getBitsInChannel(int channel) const;
 

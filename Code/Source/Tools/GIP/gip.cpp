@@ -219,9 +219,9 @@ template <typename T, uint32 MAX_VALUE> struct PixelToFloats<T, 3, MAX_VALUE>
 {
   inline static void conv(T const * pixel, float32 * out)
   {
-    out[0] = pixel[Image::Channel::RED  ] / (float32)MAX_VALUE;
-    out[1] = pixel[Image::Channel::GREEN] / (float32)MAX_VALUE;
-    out[2] = pixel[Image::Channel::BLUE ] / (float32)MAX_VALUE;
+    out[0] = pixel[0] / (float32)MAX_VALUE;
+    out[1] = pixel[1] / (float32)MAX_VALUE;
+    out[2] = pixel[2] / (float32)MAX_VALUE;
     out[3] = 1.0f;
   }
 };
@@ -230,10 +230,10 @@ template <typename T, uint32 MAX_VALUE> struct PixelToFloats<T, 4, MAX_VALUE>
 {
   inline static void conv(T const * pixel, float32 * out)
   {
-    out[0] = pixel[Image::Channel::RED  ] / (float32)MAX_VALUE;
-    out[1] = pixel[Image::Channel::GREEN] / (float32)MAX_VALUE;
-    out[2] = pixel[Image::Channel::BLUE ] / (float32)MAX_VALUE;
-    out[3] = pixel[Image::Channel::ALPHA] / (float32)MAX_VALUE;
+    out[0] = pixel[0] / (float32)MAX_VALUE;
+    out[1] = pixel[1] / (float32)MAX_VALUE;
+    out[2] = pixel[2] / (float32)MAX_VALUE;
+    out[3] = pixel[3] / (float32)MAX_VALUE;
   }
 };
 
@@ -317,9 +317,9 @@ template <typename T, uint32 MAX_VALUE> struct PixelFromFloats<T, 3, MAX_VALUE>
 {
   inline static void conv(float32 const * in, T * pixel)
   {
-    pixel[Image::Channel::RED  ] = convertValue<T, MAX_VALUE>(in[0]);
-    pixel[Image::Channel::GREEN] = convertValue<T, MAX_VALUE>(in[1]);
-    pixel[Image::Channel::BLUE ] = convertValue<T, MAX_VALUE>(in[2]);
+    pixel[0] = convertValue<T, MAX_VALUE>(in[0]);
+    pixel[1] = convertValue<T, MAX_VALUE>(in[1]);
+    pixel[2] = convertValue<T, MAX_VALUE>(in[2]);
   }
 };
 
@@ -327,10 +327,10 @@ template <typename T, uint32 MAX_VALUE> struct PixelFromFloats<T, 4, MAX_VALUE>
 {
   inline static void conv(float32 const * in, T * pixel)
   {
-    pixel[Image::Channel::RED  ] = convertValue<T, MAX_VALUE>(in[0]);
-    pixel[Image::Channel::GREEN] = convertValue<T, MAX_VALUE>(in[1]);
-    pixel[Image::Channel::BLUE ] = convertValue<T, MAX_VALUE>(in[2]);
-    pixel[Image::Channel::ALPHA] = convertValue<T, MAX_VALUE>(in[3]);
+    pixel[0] = convertValue<T, MAX_VALUE>(in[0]);
+    pixel[1] = convertValue<T, MAX_VALUE>(in[1]);
+    pixel[2] = convertValue<T, MAX_VALUE>(in[2]);
+    pixel[3] = convertValue<T, MAX_VALUE>(in[3]);
   }
 };
 

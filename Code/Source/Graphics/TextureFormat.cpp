@@ -515,20 +515,17 @@ TextureFormat::fromImageType(IImage::Type type, bool is_depth)
     }
   }
 
-  enum { COLOR_ORDER_RGB, COLOR_ORDER_BGR } color_order;
-  color_order = (IImage::Channel::RED < IImage::Channel::BLUE ? COLOR_ORDER_RGB : COLOR_ORDER_BGR);
-
   switch (type)
   {
     case IImage::Type::LUMINANCE_8U  : return L8();
     case IImage::Type::LUMINANCE_16U : return L16();
     case IImage::Type::LUMINANCE_32F : return L32F();
-    case IImage::Type::RGB_8U        : return color_order == COLOR_ORDER_RGB ? RGB8() : BGR8();
-    case IImage::Type::RGBA_8U       : return color_order == COLOR_ORDER_RGB ? RGBA8() : BGRA8();
-    case IImage::Type::RGB_16U       : return color_order == COLOR_ORDER_RGB ? RGB16() : BGR16();
-    case IImage::Type::RGBA_16U      : return color_order == COLOR_ORDER_RGB ? RGBA16() : BGRA16();
-    case IImage::Type::RGB_32F       : return color_order == COLOR_ORDER_RGB ? RGB32F() : BGR32F();
-    case IImage::Type::RGBA_32F      : return color_order == COLOR_ORDER_RGB ? RGBA32F() : BGRA32F();
+    case IImage::Type::RGB_8U        : return RGB8();
+    case IImage::Type::RGBA_8U       : return RGBA8();
+    case IImage::Type::RGB_16U       : return RGB16();
+    case IImage::Type::RGBA_16U      : return RGBA16();
+    case IImage::Type::RGB_32F       : return RGB32F();
+    case IImage::Type::RGBA_32F      : return RGBA32F();
     default: throw Error("TextureFormat: No supported texture format corresponds to the specified image format");
   }
 }
@@ -537,12 +534,8 @@ TextureFormat const *
 TextureFormat::fromString(std::string const & s)
 {
   for (int i = 0; i < Code::NUM; ++i)
-  {
     if (s == TextureFormatInternal::nameArray[i])
-    {
       return fromCode(Code(i));
-    }
-  }
 
   return nullptr;
 }
