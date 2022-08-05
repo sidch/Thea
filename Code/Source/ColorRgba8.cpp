@@ -31,10 +31,10 @@ namespace Thea {
 
 ColorRgba8::ColorRgba8(ColorRgba const & src)
 {
-  c[0] = (uint8)Math::clamp((Real)Math::round(src.r() * 255), (Real)0, (Real)255);
-  c[1] = (uint8)Math::clamp((Real)Math::round(src.g() * 255), (Real)0, (Real)255);
-  c[2] = (uint8)Math::clamp((Real)Math::round(src.b() * 255), (Real)0, (Real)255);
-  c[3] = (uint8)Math::clamp((Real)Math::round(src.a() * 255), (Real)0, (Real)255);
+  c[0] = (uint8)Math::clamp((Real)std::round(src.r() * 255), (Real)0, (Real)255);
+  c[1] = (uint8)Math::clamp((Real)std::round(src.g() * 255), (Real)0, (Real)255);
+  c[2] = (uint8)Math::clamp((Real)std::round(src.b() * 255), (Real)0, (Real)255);
+  c[3] = (uint8)Math::clamp((Real)std::round(src.a() * 255), (Real)0, (Real)255);
 }
 
 ColorRgba8

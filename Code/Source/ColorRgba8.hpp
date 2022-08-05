@@ -150,19 +150,19 @@ class THEA_API ColorRgba8
     /** Multiplication by a scalar. Channels are rounded to the nearest byte values. */
     ColorRgba8 operator*(Real s) const
     {
-      return ColorRgba8((uint8)Math::clamp((Real)Math::round(c[0] * s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[1] * s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[2] * s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[3] * s), (Real)0, (Real)255));
+      return ColorRgba8((uint8)Math::clamp((Real)std::round(c[0] * s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[1] * s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[2] * s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[3] * s), (Real)0, (Real)255));
     }
 
     /** Division by a scalar. Channels are rounded to the nearest byte values. */
     ColorRgba8 operator/(Real s) const
     {
-      return ColorRgba8((uint8)Math::clamp((Real)Math::round(c[0] / s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[1] / s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[2] / s), (Real)0, (Real)255),
-                        (uint8)Math::clamp((Real)Math::round(c[3] / s), (Real)0, (Real)255));
+      return ColorRgba8((uint8)Math::clamp((Real)std::round(c[0] / s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[1] / s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[2] / s), (Real)0, (Real)255),
+                        (uint8)Math::clamp((Real)std::round(c[3] / s), (Real)0, (Real)255));
     }
 
     /** Add and assign. Upper-bounds channels to 255. */

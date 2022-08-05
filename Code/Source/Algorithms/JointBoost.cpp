@@ -290,7 +290,7 @@ JointBoost::optimizeStump(SharedStump & stump, Array<intx> const & stump_classes
   }
   else
   {
-    int32 num_candidate_features = std::max((int32)Math::round(feature_sampling_fraction * num_features), (int32)1);
+    int32 num_candidate_features = std::max((int32)std::round(feature_sampling_fraction * num_features), (int32)1);
     candidate_features.resize((size_t)num_candidate_features);
     Random::common().integers(0, (int32)num_features - 1, num_candidate_features, &candidate_features[0]);
   }

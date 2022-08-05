@@ -107,13 +107,13 @@ class THEA_API ColorL8
     /** Multiply by a scalar. The result is rounded to the nearest byte value. */
     ColorL8 operator*(Real other) const
     {
-      return ColorL8((uint8)Math::clamp((Real)Math::round(val * other), (Real)0, (Real)255));
+      return ColorL8((uint8)Math::clamp((Real)std::round(val * other), (Real)0, (Real)255));
     }
 
     /** Divide by a scalar. The result is rounded to the nearest byte value. */
     ColorL8 operator/(Real other) const
     {
-      return ColorL8((uint8)Math::clamp((Real)Math::round(val / other), (Real)0, (Real)255));
+      return ColorL8((uint8)Math::clamp((Real)std::round(val / other), (Real)0, (Real)255));
     }
 
     /** Add-and-assign. Upper-bounds result to 255. */

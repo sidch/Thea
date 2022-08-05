@@ -507,14 +507,14 @@ ModelDisplay::drawAxes(Graphics::IRenderSystem & rs)
 //   Vector2 y_text_center = y_arrow_tip + TEXT_OFFSET * (y_arrow_tip - arrow_origin);
 //   Vector2 z_text_center = z_arrow_tip + TEXT_OFFSET * (z_arrow_tip - arrow_origin);
 //
-//   wxPoint x_text_bottom_left((int)Math::round((0.5 * (1 + x_text_center.x())) * width()) - half_x_label_size.width(),
-//                             (int)Math::round((0.5 * (1 - x_text_center.y())) * height()) + half_x_label_size.height());
+//   wxPoint x_text_bottom_left((int)std::round((0.5 * (1 + x_text_center.x())) * width()) - half_x_label_size.width(),
+//                              (int)std::round((0.5 * (1 - x_text_center.y())) * height()) + half_x_label_size.height());
 //
-//   wxPoint y_text_bottom_left((int)Math::round((0.5 * (1 + y_text_center.x())) * width()) - half_y_label_size.width(),
-//                             (int)Math::round((0.5 * (1 - y_text_center.y())) * height()) + half_y_label_size.height());
+//   wxPoint y_text_bottom_left((int)std::round((0.5 * (1 + y_text_center.x())) * width()) - half_y_label_size.width(),
+//                              (int)std::round((0.5 * (1 - y_text_center.y())) * height()) + half_y_label_size.height());
 //
-//   wxPoint z_text_bottom_left((int)Math::round((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
-//                             (int)Math::round((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
+//   wxPoint z_text_bottom_left((int)std::round((0.5 * (1 + z_text_center.x())) * width()) - half_z_label_size.width(),
+//                              (int)std::round((0.5 * (1 - z_text_center.y())) * height()) + half_z_label_size.height());
 //
 //   rs.setColor(ColorRgb::red());
 //   renderText(x_text_bottom_left.x(), x_text_bottom_left.y(), "X", label_font);

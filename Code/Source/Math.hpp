@@ -21,71 +21,6 @@
 #include <limits>
 #include <type_traits>
 
-// lrint and lrintf routines
-#ifdef THEA_WINDOWS
-
-// Win32 implementation of the C99 fast rounding routines.
-//
-// @cite routines are
-// Copyright (C) 2001 Erik de Castro Lopo <erikd AT mega-nerd DOT com>
-//
-// Permission to use, copy, modify, distribute, and sell this file for any
-// purpose is hereby granted without fee, provided that the above copyright
-// and this permission notice appear in all copies.  No representations are
-// made about the suitability of this software for any purpose.  It is
-// provided "as is" without express or implied warranty.
-
-__inline intx
-lrint(double flt)
-{
-#ifdef _M_X64
-  return (intx)((flt > 0.0) ? (flt + 0.5) : (flt - 0.5));
-#else
-  int intgr;
-
-  _asm
-  {
-    fld flt
-    fistp intgr
-  };
-
-  return intgr;
-#endif
-}
-
-__inline intx
-lrintf(float flt)
-{
-#ifdef _M_X64
-  return (intx)((flt > 0.0f) ? (flt + 0.5f) : (flt - 0.5f));
-#else
-  int intgr;
-
-  _asm
-  {
-    fld flt
-    fistp intgr
-  };
-
-  return intgr;
-#endif
-}
-
-#else
-
-// These defines enable functionality introduced with the 1999 ISO C standard. They must be defined before the inclusion of
-// math.h to engage them. If optimisation is enabled, these functions will be inlined. With optimisation switched off, you have
-// to link in the math library using -lm.
-
-#  define _ISOC9X_SOURCE1
-#  define _ISOC99_SOURCE1
-#  define __USE_ISOC9X1
-#  define __USE_ISOC991
-
-#  include <math.h>
-
-#endif
-
 namespace Thea {
 
 /** Mathematical functions. */
@@ -306,20 +241,6 @@ inline double
 twoPi()
 {
   return 6.28318530717959;
-}
-
-/** Round a real number to the nearest integer using the lrintf() routine. */
-inline float
-round(float x)
-{
-  return (float)lrintf(x);
-}
-
-/** Round a real number to the nearest integer using the lrint() routine. */
-inline double
-round(double x)
-{
-  return lrint(x);
 }
 
 /** Clamp a number to lie in the range [lo, hi] (inclusive). */
