@@ -25,7 +25,6 @@
 #include "../Random.hpp"
 #include "../Transformable.hpp"
 #include "BoundedTraitsN.hpp"
-#include "FastCopy.hpp"
 #include "Filter.hpp"
 #include "MetricL2.hpp"
 #include "ProximityQueryStructureN.hpp"
@@ -1618,7 +1617,7 @@ class /* THEA_API */ BvhN
 
         child->elems = main_index_pool->alloc(child_elems[i].size());
         child->num_elems = child_elems[i].size();
-        Algorithms::fastCopy(child_elems[i].data(), child_elems[i].data() + child_elems[i].size(), child->elems);
+        std::copy(child_elems[i].data(), child_elems[i].data() + child_elems[i].size(), child->elems);
 
         VectorT child_lo = start->bounds.getLow(), child_hi = start->bounds.getHigh();
         for (int j = 0; j < N; ++j)

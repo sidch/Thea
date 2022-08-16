@@ -16,7 +16,7 @@
 #define __Thea_BoundedSortedArray_hpp__
 
 #include "Common.hpp"
-#include "Algorithms/FastCopy.hpp"
+#include <algorithm>
 #include <functional>
 #include <iterator>
 
@@ -25,9 +25,6 @@ namespace Thea {
 /**
  * A sorted array of bounded maximum size, ordered in ascending order according to a comparator. If the array is full and a new
  * element is added, the last element is dropped.
- *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>std::is_trivially_copyable</tt> is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. This space is allocated on
  * the heap: if the capacity is known at compile-time, BoundedSortedArrayN, which can use stack storage, is usually preferred.
@@ -67,7 +64,7 @@ class BoundedSortedArray
       values(src.capacity > 0 ? new T[src.capacity] : nullptr)
     {
       if (src.num_elems > 0)
-        Algorithms::fastCopy(src.values, src.values + src.num_elems, values);
+        std::copy(src.values, src.values + src.num_elems, values);
     }
 
     /** Assignment operator. */
@@ -84,7 +81,7 @@ class BoundedSortedArray
       }
 
       if (src.num_elems > 0)
-        Algorithms::fastCopy(src.values, src.values + src.num_elems, values);
+        std::copy(src.values, src.values + src.num_elems, values);
 
       return *this;
     }
@@ -258,7 +255,7 @@ class BoundedSortedArray
       {
         size_t ub = upperBound(t);
         T * end = values + (num_elems < capacity ? num_elems : capacity - 1);
-        Algorithms::fastCopyBackward(values + ub, end, end + 1);
+        std::copy_backward(values + ub, end, end + 1);
         values[ub] = t;
         if (num_elems < capacity) ++num_elems;
         return ub;
@@ -287,7 +284,7 @@ class BoundedSortedArray
     {
       if (i >= 0 && i < num_elems)
       {
-        Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
+        std::copy(values + i + 1, values + num_elems, values + i);
         --num_elems;
       }
     }

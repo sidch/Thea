@@ -16,13 +16,13 @@
 #define __Thea_Graphics_GlShader_hpp__
 
 #include "../../Graphics/IShader.hpp"
-#include "../../Algorithms/FastCopy.hpp"
 #include "../../Array.hpp"
 #include "../../Map.hpp"
 #include "GlCaps.hpp"
 #include "GlCommon.hpp"
 #include "GlTexture.hpp"
 #include "GlHeaders.hpp"
+#include <algorithm>
 #include <type_traits>
 
 namespace Thea {
@@ -349,7 +349,7 @@ GlShader::setUniformHelper(char const * uniform_name, int64 num_values, T const 
   THEA_GLSHADER_SET_UNIFORM_CHECKS(GlShaderInternal::uniformTypeFromScalar<T>(), num_values)
 
   entry->second.value.getArray<GT>().resize((size_t)num_values);
-  Algorithms::fastCopy(values, values + num_values, entry->second.value.getArray<GT>().data());
+  std::copy(values, values + num_values, entry->second.value.getArray<GT>().data());
 
   return true;
 }

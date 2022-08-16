@@ -16,7 +16,6 @@
 #define __Thea_SortedArray_hpp__
 
 #include "Common.hpp"
-#include "Algorithms/FastCopy.hpp"
 #include <functional>
 
 namespace Thea {

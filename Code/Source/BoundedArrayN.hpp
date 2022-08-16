@@ -16,7 +16,7 @@
 #define __Thea_BoundedArrayN_hpp__
 
 #include "Common.hpp"
-#include "Algorithms/FastCopy.hpp"
+#include <algorithm>
 #include <iterator>
 
 namespace Thea {
@@ -26,9 +26,6 @@ namespace Thea {
  * its maximum capacity, until some are removed via erase(). Elements can be inserted in the middle of the array even when it is
  * full: in this case the last element is dropped to make space. This class is useful for very fast allocation of space for a
  * few elements, where the exact number of elements is not known but is guaranteed to have an upper limit.
- *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>std::is_trivially_copyable</tt> is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. The capacity N should be
  * <b>positive</b> (non-zero).
@@ -151,9 +148,12 @@ class BoundedArrayN
                    format("BoundedArrayN: Index %ld out of bounds [0, %ld]", (long)i, (long)std::min(num_elems, N - 1)));
 
       if (isFull())
-        Algorithms::fastCopyBackward(values + i, values + N - 1, values + i + 1);
+        std::copy_backward(values + i, values + N - 1, values + N);
       else if (i < num_elems)
-        Algorithms::fastCopyBackward(values + i, values + num_elems, values + i + 1);
+      {
+        std::copy_backward(values + i, values + num_elems, values + num_elems);
+        ++num_elems;
+      }
 
       values[i] = t;
     }
@@ -163,7 +163,7 @@ class BoundedArrayN
     {
       if (i < num_elems)
       {
-        Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
+        std::copy(values + i + 1, values + num_elems, values + i);
         --num_elems;
       }
     }

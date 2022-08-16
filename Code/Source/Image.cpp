@@ -23,11 +23,11 @@
 //============================================================================
 
 #include "Image.hpp"
-#include "Algorithms/FastCopy.hpp"
 #include "Array.hpp"
 #include "FilePath.hpp"
 #include "UnorderedMap.hpp"
 #include <FreeImagePlus.h>
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -471,7 +471,7 @@ Codec3bm::readImage(Image & image, BinaryInputStream & input, bool read_block_he
 
         switch (bytes_pp)
         {
-          case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
+          case 1: std::copy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
           case 3:
           {
             for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
@@ -578,7 +578,7 @@ Codec3bm::writeImage(Image const & image, BinaryOutputStream & output, bool writ
 
       switch (bytes_pp)
       {
-        case 1: Algorithms::fastCopy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
+        case 1: std::copy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
         case 3:
         {
           for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
@@ -1061,7 +1061,7 @@ reorderChannels(Image & img, int const * order)
     }
 
   auto depth = img.getDepth(), height = img.getHeight(), width = img.getWidth();
-  ChannelT reordered[32];  // one less thing to change if we support images with more than 4 channels later
+  ChannelT reordered[256];  // one less thing to change if we support images with more than 4 channels later
   for (int64 i = 0; i < depth; ++i)
     for (int64 j = 0; j < height; ++j)
     {
@@ -1253,12 +1253,15 @@ Image::readAuto(BinaryInputStream & input, bool read_block_header)
       throw Error("Image was successfully decoded but it has a format for which this library does not provide an interface");
     }
 
+    cacheTypeProperties();
+
     width = fip_img->getWidth();
     height = fip_img->getHeight();
     depth = 1;
-  }
 
-  cacheTypeProperties();
+    if (!ImageInternal::canonicalizeChannelOrder(*this))
+      throw Error("Could not canonicalize channel order");
+  }
 }
 
 } // namespace Thea

@@ -16,7 +16,7 @@
 #define __Thea_BoundedSortedArrayN_hpp__
 
 #include "Common.hpp"
-#include "Algorithms/FastCopy.hpp"
+#include <algorithm>
 #include <functional>
 #include <iterator>
 
@@ -27,9 +27,6 @@ namespace Thea {
  * new element is added, the last element is dropped. The capacity is set as a template parameter N, so the array can be stored
  * entirely on the stack. If the array size is known at compile-time, this class is usually a more efficient alternative to
  * BoundedSortedArray.
- *
- * To get some extra speed when T has a trivial (bit-copy) assignment operator, make sure that
- * <tt>std::is_trivially_copyable</tt> is true for T.
  *
  * The implementation always allocates enough space to store the maximum number of instances of T. The capacity N should be
  * <b>positive</b> (non-zero).
@@ -207,7 +204,7 @@ class BoundedSortedArrayN
       {
         size_t ub = upperBound(t);
         T * end = values + (num_elems < N ? num_elems : N - 1);
-        Algorithms::fastCopyBackward(values + ub, end, end + 1);
+        std::copy_backward(values + ub, end, end + 1);
         values[ub] = t;
         if (num_elems < N) ++num_elems;
         return ub;
@@ -236,7 +233,7 @@ class BoundedSortedArrayN
     {
       if (i < num_elems)
       {
-        Algorithms::fastCopy(values + i + 1, values + num_elems, values + i);
+        std::copy(values + i + 1, values + num_elems, values + i);
         --num_elems;
       }
     }

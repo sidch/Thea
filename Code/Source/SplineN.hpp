@@ -27,9 +27,9 @@
 #include "Array.hpp"
 #include "MatrixWrapper.hpp"
 #include "ParametricCurveN.hpp"
-#include "Algorithms/FastCopy.hpp"
 #include "Algorithms/StdLinearSolver.hpp"
 #include "Algorithms/PointTraitsN.hpp"
+#include <algorithm>
 #include <iterator>
 
 namespace Thea {
@@ -84,6 +84,8 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      * @param end One past the last point in the sequence to be fitted.
      * @param initial_params The curve parameters of the points, if known in advance. If this argument is not null, no
      *   reparametrization will be done by default, unless \a max_reparam_iters is explicitly set to a positive number.
+     * @param final_params If non-null, used to return the final parameter values of the point sequence. Must be pre-allocated
+     *  to have at least as many entries as the number of points.
      * @param fix_first_and_last If true, the first and last control vectors will be set to the positions of the first and last
      *   points, respectively, in the sequence. Note that curves whose first and last control vectors are not precisely the
      *   beginning and end positions of the curve will have this feature automatically disabled, with a warning.
@@ -91,8 +93,6 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
      *  many times, guided by initial values (\a initial_params) if any. Pass a negative value to pick a suitable default.
      * @param num_reparam_steps_per_iter The number of successive Newton-Raphson steps in each iteration of reparametrization.
      *  Pass a negative value to pick a suitable default.
-     * @param final_params If non-null, used to return the final parameter values of the point sequence. Must be pre-allocated
-     *  to have at least as many entries as the number of points.
      *
      * @return The non-negative squared fitting error on success, or a negative value on error.
      */
@@ -143,7 +143,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
         // A bit wasteful to save it every iteration instead of outside the loop, but do it in case llsqFit fails and we have to
         // revert to the last solution
         if (final_params)
-          Algorithms::fastCopy(&u[0], &u[0] + u.size(), final_params);
+          std::copy(&u[0], &u[0] + u.size(), final_params);
 
         if (--max_reparam_iters < 0)
           break;

@@ -13,10 +13,10 @@
 //============================================================================
 
 #include "CsparseLinearSolver.hpp"
-#include "../../Algorithms/FastCopy.hpp"
 #include "../../ICompressedSparseMatrix.hpp"
 #include "../../Array.hpp"
 #include "csparse.h"
+#include <algorithm>
 #include <cmath>
 
 namespace Thea {
@@ -220,7 +220,7 @@ CsparseLinearSolver::solve(IMatrix<float64> const * a, float64 const * b, float6
 
       // Initialize the solutions vector with the constants vector. This will be overwritten by the solver.
       solution.resize(std::max(C.m, C.n));
-      Algorithms::fastCopy(b, b + C.m, solution.data());
+      std::copy(b, b + C.m, solution.data());
       if (solution.size() > C.m)  // underdetermined system
         solution.tail(solution.size() - C.m).setZero();
 
