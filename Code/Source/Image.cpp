@@ -981,6 +981,7 @@ Image::convert(Type dst_type, Image & dst) const
         case 4:
         {
           if (&dst != this) dst = *this;
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
 
           if (src_fitype != FIT_BITMAP) status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
           if (status)                   status = (dst.fip_img->convertTo4Bits() == TRUE);
@@ -991,6 +992,7 @@ Image::convert(Type dst_type, Image & dst) const
         case 8:
         {
           if (&dst != this) dst = *this;
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
 
           if (src_fitype != FIT_BITMAP)
             status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
@@ -998,7 +1000,7 @@ Image::convert(Type dst_type, Image & dst) const
             status = true;
 
           if (status)
-            status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palletize
+            status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palettize
 
           break;
         }
@@ -1006,6 +1008,8 @@ Image::convert(Type dst_type, Image & dst) const
         case 24:
         {
           if (&dst != this) dst = *this;
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+
           status = (dst.fip_img->convertTo24Bits() == TRUE);
           break;
         }
@@ -1013,6 +1017,8 @@ Image::convert(Type dst_type, Image & dst) const
         case 32:
         {
           if (&dst != this) dst = *this;
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+
           status = (dst.fip_img->convertTo32Bits() == TRUE);
           break;
         }
@@ -1021,6 +1027,7 @@ Image::convert(Type dst_type, Image & dst) const
     else
     {
       if (&dst != this) dst = *this;
+      if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
 
       if (dst.fip_img->convertToType(dst_fitype) == TRUE)
         status = true;
@@ -1030,7 +1037,10 @@ Image::convert(Type dst_type, Image & dst) const
     {
       dst.type = dst_type;
       dst.cacheTypeProperties();
+
+      if (!ImageInternal::canonicalizeChannelOrder(dst)) throw Error("Could not canonicalize channel order");
     }
+
   }
 
   return status;
