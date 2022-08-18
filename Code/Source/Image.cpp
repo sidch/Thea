@@ -1159,7 +1159,18 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
   }
 
   FREE_IMAGE_FILTER fi_filter = ImageInternal::filterToFreeImageFilter(filter);
-  return (fip_img->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
+  bool status = (fip_img->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
+  if (!status)
+  {
+    THEA_ERROR << "Could not rescale " << width << " x " << height << " image to " << new_width << " x " << new_height;
+    return false;
+  }
+
+  width = new_width;
+  height = new_height;
+  depth = new_depth;
+
+  return true;
 }
 
 void
