@@ -316,14 +316,20 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     {
       dst.setAttr(this->attr());  // assume attributes can be simply copied
 
-      dst.endpoints[0] = vertex_map.find(endpoints[0])->second;  // assume it always exists
-      dst.endpoints[1] = vertex_map.find(endpoints[1])->second;  // assume it always exists
+      auto e0 = vertex_map.find(endpoints[0]);
+      auto e1 = vertex_map.find(endpoints[1]);
+      debugAssertM(e0 != vertex_map.end() && e1 != vertex_map.end(),
+                   "GeneralMeshEdge: Edge endpoint not mapped to target mesh");
 
-      dst.faces.resize(faces.size());
-      FaceConstIterator fi = faces.begin();
-      FaceIterator dfi = dst.faces.begin();
-      for ( ; fi != faces.end(); ++fi, ++dfi)
-        *dfi = face_map.find(*fi)->second;  // assume it always exists
+      dst.endpoints[0] = e0->second;
+      dst.endpoints[1] = e1->second;
+
+      dst.faces.clear();
+      for (auto fi = faces.begin() ; fi != faces.end(); ++fi)
+      {
+        auto loc = face_map.find(*fi);
+        if (loc != face_map.end()) { dst.faces.push_back(loc->second); }
+      }
 
       dst.marked = marked;
       dst.bits = bits;

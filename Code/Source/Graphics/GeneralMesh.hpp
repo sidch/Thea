@@ -269,6 +269,96 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       dst.enable_face_attributes = enable_face_attributes;
     }
 
+    /**
+     * Extract a set of faces to a new mesh, optionally returning mappings between the new and old vertices, edges and faces.
+     * <tt>FaceInputIterator</tt> should dereference to <tt>Face [const] *</tt>. The output mesh \a dst is <b>NOT</b> cleared
+     * at the outset -- any existing elements in it will be preserved as independent entities. Also, its bounding box will be
+     * valid at the end of this function only if it was valid at the beginning of the function, since extracted vertex positions
+     * are merged into it.
+     *
+     * @note The face sequence <tt>[fbegin, fend)</tt> will be traversed at least twice.
+     */
+    template <typename FaceInputIterator>
+    void extractFaces(FaceInputIterator fbegin, FaceInputIterator fend, GeneralMesh & dst,
+                      UnorderedMap<Vertex const *, Vertex *> * vertex_map = nullptr,
+                      UnorderedMap<Edge const *, Edge *> * edge_map = nullptr,
+                      UnorderedMap<Face const *, Face *> * face_map = nullptr) const
+    {
+      typedef UnorderedMap<Vertex const *, Vertex *> VertexMap;
+      typedef UnorderedMap<Edge   const *, Edge   *> EdgeMap;
+      typedef UnorderedMap<Face   const *, Face   *> FaceMap;
+
+      VertexMap  tmp_vertex_map;
+      EdgeMap    tmp_edge_map;
+      FaceMap    tmp_face_map;
+      if (!vertex_map) vertex_map  =  &tmp_vertex_map;
+      if (!edge_map  ) edge_map    =  &tmp_edge_map;
+      if (!face_map  ) face_map    =  &tmp_face_map;
+
+      // Initialize mappings from source to destination
+      for (auto fi = fbegin; fi != fend; ++fi)
+      {
+        auto const * face = *fi;
+        dst.faces.push_back(Face());
+        (*face_map)[face] = &dst.faces.back();
+
+        for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
+        {
+          auto const * vertex = *fvi;
+          if (vertex_map->find(vertex) == vertex_map->end())
+          {
+            dst.vertices.push_back(Vertex());
+            (*vertex_map)[vertex] = &dst.vertices.back();
+            vertex->clearAllInternalBits();
+          }
+        }
+
+        for (auto fei = face->edgesBegin(); fei != face->edgesEnd(); ++fei)
+        {
+          auto const * edge = *fei;
+          if (edge_map->find(edge) == edge_map->end())
+          {
+            dst.edges.push_back(Edge());
+            (*edge_map)[edge] = &dst.edges.back();
+            edge->clearAllInternalBits();
+          }
+        }
+      }
+
+      // Copy elements
+      for (auto fi = fbegin; fi != fend; ++fi)
+      {
+        auto const * face = *fi;
+        auto * dst_face = face_map->find(face)->second;
+        face->copyTo(*dst_face, *vertex_map, *edge_map, *face_map);
+        dst_face->setIndex(++dst.max_face_index);
+
+        for (auto fvi = face->verticesBegin(); fvi != face->verticesEnd(); ++fvi)
+        {
+          auto const * vertex = *fvi;
+          if (!vertex->areInternalBitsSet(0xFF))
+          {
+            auto * dst_vertex = vertex_map->find(vertex)->second;  // should always exist
+            vertex->copyTo(*dst_vertex, *vertex_map, *edge_map, *face_map);
+            vertex->setInternalBits(0xFF, true);
+
+            dst_vertex->setIndex(++dst.max_vertex_index);
+            dst.bounds.merge(vertex->getPosition());
+          }
+        }
+
+        for (auto fei = face->edgesBegin(); fei != face->edgesEnd(); ++fei)
+        {
+          auto const * edge = *fei;
+          if (!edge->areInternalBitsSet(0xFF))
+          {
+            edge->copyTo(*edge_map->find(edge)->second, *vertex_map, *edge_map, *face_map);
+            edge->setInternalBits(0xFF, true);
+          }
+        }
+      }
+    }
+
     // Abstract mesh interface
 
     /**

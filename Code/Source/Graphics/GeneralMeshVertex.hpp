@@ -63,13 +63,14 @@ class /* THEA_API */ GeneralMeshVertex
 
     /** Default constructor. */
     GeneralMeshVertex()
-    : NormalBaseType(Vector3::Zero()), index(-1), has_precomputed_normal(false), normal_normalization_factor(0), marked(false)
+    : NormalBaseType(Vector3::Zero()), index(-1), has_precomputed_normal(false), normal_normalization_factor(0), marked(false),
+      internal_bits(0)
     {}
 
     /** Sets the vertex to have a location. */
     explicit GeneralMeshVertex(Vector3 const & p)
     : PositionBaseType(p), NormalBaseType(Vector3::Zero()), index(-1), has_precomputed_normal(false),
-      normal_normalization_factor(0), marked(false)
+      normal_normalization_factor(0), marked(false), internal_bits(0)
     {}
 
     /**
@@ -78,7 +79,7 @@ class /* THEA_API */ GeneralMeshVertex
      */
     GeneralMeshVertex(Vector3 const & p, Vector3 const & n)
     : PositionBaseType(p), NormalBaseType(n), index(-1), has_precomputed_normal(true), normal_normalization_factor(0),
-      marked(false)
+      marked(false), internal_bits(0)
     {}
 
     /**
@@ -340,6 +341,16 @@ class /* THEA_API */ GeneralMeshVertex
     /** Check if the vertex is marked. */
     bool isMarked() const { return marked; }
 
+    /** Check if one or more internal bits are set. */
+    bool areInternalBitsSet(unsigned char mask) const { return ((internal_bits & mask) == mask); };
+
+    /** Set one or more internal bits on or off. */
+    void setInternalBits(unsigned char mask, bool value) const
+    { internal_bits = (value ? (internal_bits | mask) : (internal_bits & ~mask)); };
+
+    /** Set all internal bits to off. */
+    void clearAllInternalBits() const { internal_bits = 0; };
+
     /** Get the index of the vertex in a GPU array. */
     uint32 getPackingIndex() const { return packing_index; }
 
@@ -356,23 +367,26 @@ class /* THEA_API */ GeneralMeshVertex
       dst.setNormal(this->getNormal());
       dst.setAttr(this->attr());  // assume attributes can be simply copied
 
-      dst.edges.resize(edges.size());
-      EdgeConstIterator ei = edges.begin();
-      EdgeIterator dei = dst.edges.begin();
-      for ( ; ei != edges.end(); ++ei, ++dei)
-        *dei = edge_map.find(*ei)->second;  // assume it always exists
+      dst.edges.clear();
+      for (auto ei = edges.begin(); ei != edges.end(); ++ei)
+      {
+        auto loc = edge_map.find(*ei);
+        if (loc != edge_map.end()) { dst.edges.push_back(loc->second); }
+      }
 
-      dst.faces.resize(faces.size());
-      FaceConstIterator fi = faces.begin();
-      FaceIterator dfi = dst.faces.begin();
-      for ( ; fi != faces.end(); ++fi, ++dfi)
-        *dfi = face_map.find(*fi)->second;  // assume it always exists
+      dst.faces.clear();
+      for (auto fi = faces.begin() ; fi != faces.end(); ++fi)
+      {
+        auto loc = face_map.find(*fi);
+        if (loc != face_map.end()) { dst.faces.push_back(loc->second); }
+      }
 
       dst.index = index;
       dst.has_precomputed_normal = has_precomputed_normal;
       dst.normal_normalization_factor = normal_normalization_factor;
       dst.packing_index = packing_index;
       dst.marked = marked;
+      dst.internal_bits = internal_bits;
     }
 
     EdgeList edges;
@@ -382,6 +396,7 @@ class /* THEA_API */ GeneralMeshVertex
     float normal_normalization_factor;
     mutable uint32 packing_index;
     bool marked;
+    mutable unsigned char internal_bits;  // only for use by GeneralMesh
 
 }; // class GeneralMeshVertex
 

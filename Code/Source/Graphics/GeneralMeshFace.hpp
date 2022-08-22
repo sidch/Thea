@@ -475,11 +475,19 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       dst.setNormal(this->getNormal());
       dst.setAttr(this->attr());  // assume attributes can be simply copied
 
-      dst.vertices.resize(vertices.size());
-      VertexConstIterator vi = vertices.begin();
-      VertexIterator dvi = dst.vertices.begin();
-      for ( ; vi != vertices.end(); ++vi, ++dvi)
-        *dvi = vertex_map.find(*vi)->second;  // assume it always exists
+      dst.vertices.clear();
+      for (auto vi = vertices.begin() ; vi != vertices.end(); ++vi)
+      {
+        auto loc = vertex_map.find(*vi);
+        if (loc != vertex_map.end()) { dst.vertices.push_back(loc->second); }
+      }
+
+      dst.edges.clear();
+      for (auto ei = edges.begin(); ei != edges.end(); ++ei)
+      {
+        auto loc = edge_map.find(*ei);
+        if (loc != edge_map.end()) { dst.edges.push_back(loc->second); }
+      }
 
       dst.edges.resize(edges.size());
       EdgeConstIterator ei = edges.begin();
