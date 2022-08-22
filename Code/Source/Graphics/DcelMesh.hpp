@@ -146,7 +146,6 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       enable_face_attributes(false),
       changed_packed(BufferId::ALL),
       changed_buffers(BufferId::ALL),
-      num_tri_indices(0),
       buf_pool(nullptr),
       vertex_positions_buf(nullptr),
       vertex_normals_buf(nullptr),
@@ -210,7 +209,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     {
       packTopology();
       uint32 const * buf = (packed_tris.empty() ? nullptr : &packed_tris[0]);
-      new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, num_tri_indices / 3);
+      new (&tri_matrix) TriangleMatrix(const_cast<uint32 *>(buf), 3, (intx)(packed_tris.size() / 3));
       return &tri_wrapper;
     }
 
@@ -1570,8 +1569,6 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
         }
       }
 
-      num_tri_indices = (intx)packed_tris.size();
-
       setPackedArrayValid(BufferId::TOPOLOGY);
     }
 
@@ -1603,7 +1600,6 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     mutable TexCoordArray  packed_vertex_texcoords;  ///< Array containing packed set of vertex texture coordinates.
     mutable IndexArray     packed_tris;              ///< Array containing packed set of triangle indices.
     mutable IndexArray     packed_edges;             ///< Array containing packed set of edge indices.
-    mutable intx           num_tri_indices;          ///< Number of triangle indices in the mesh.
 
     IBufferPool * buf_pool;          ///< GPU buffer pool.
     IBuffer * vertex_positions_buf;  ///< GPU buffer for vertex positions.
@@ -1688,7 +1684,6 @@ DcelMesh<V, E, F>::uploadToGraphicsSystem(IRenderSystem & render_system)
     // THEA_CONSOLE << "packed_vertex_texcoords.size() = " << packed_vertex_texcoords.size();
     // THEA_CONSOLE << "packed_tris.size() = " << packed_tris.size();
     // THEA_CONSOLE << "packed_edges.size() = " << packed_edges.size();
-    // THEA_CONSOLE << "num_tri_indices = " << num_tri_indices;
 
     if (buf_pool)
     {
@@ -1806,13 +1801,13 @@ DcelMesh<V, E, F>::draw(IRenderSystem * render_system, IRenderOptions const * op
         render_system->setPolygonOffset(true, 1);
       }
 
-        if (num_tri_indices > 0)
+        if (!packed_tris.empty())
         {
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
-          render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, num_tri_indices, &packed_tris[0]);
+          render_system->sendIndices(IRenderSystem::Primitive::TRIANGLES, (int64)packed_tris.size(), &packed_tris[0]);
 #else
           render_system->setIndexBuffer(tris_buf);
-          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, num_tri_indices);
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::TRIANGLES, 0, (int64)packed_tris.size());
 #endif
         }
 
@@ -1834,10 +1829,10 @@ DcelMesh<V, E, F>::draw(IRenderSystem * render_system, IRenderOptions const * op
         if (!halfedges.empty())
         {
 #ifdef THEA_DCEL_MESH_NO_INDEX_ARRAY
-          render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)halfedges.size(), &packed_edges[0]);
+          render_system->sendIndices(IRenderSystem::Primitive::LINES, (int64)packed_edges.size(), &packed_edges[0]);
 #else
           render_system->setIndexBuffer(edges_buf);
-          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)halfedges.size());
+          render_system->sendIndicesFromBuffer(IRenderSystem::Primitive::LINES, 0, (int64)packed_edges.size());
 #endif
         }
 
