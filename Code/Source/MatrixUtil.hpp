@@ -18,6 +18,7 @@
 #include "Common.hpp"
 #include "Math.hpp"
 #include "MatVec.hpp"
+#include <algorithm>
 #include <type_traits>
 
 namespace Thea {
@@ -579,6 +580,10 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
   // Note that Microsoft (http://msdn.microsoft.com/library/default.asp?url=/library/en-us/opengl/glfunc03_8qnj.asp) and
   // Linux (http://www.xfree86.org/current/glOrtho.3.html) have different matrices shown in their documentation.
 
+  alwaysAssertM(left < right,     "Math::orthogonalProjection: Left must be less than right");
+  alwaysAssertM(bottom < top,     "Math::orthogonalProjection: Bottom must be less than top");
+  alwaysAssertM(nearval < farval, "Math::orthogonalProjection: Near must be less than far");
+
   T x =  2 / (right - left);
   T y =  2 / (top - bottom);
   T z = -2 / (farval - nearval);
@@ -599,6 +604,75 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
 }
 
 /**
+ * Infer the parameters of a 3D orthographic projection, given the final projection matrix which must be exactly consistent with
+ * the conventions of orthographicProjection().
+ */
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
+bool
+inferOrthogonalProjectionParams(Matrix<4, 4, T> const & m,
+                                T & left, T & right, T & bottom, T & top, T & nearval, T & farval, bool & y_increases_upwards)
+{
+  // Given the matrix:
+  //
+  // x 0 0 tx
+  // 0 y 0 ty
+  // 0 0 z tz
+  // 0 0 0 1
+  //
+  // ... solve the system of linear equations for (L, R, B, T, N, F):
+  //
+  //   -Lx + Rx = 2
+  //   -By + Ty = 2
+  //   -Nz + Fz = -2
+  //   L(1 - tx) + R(1 + tx) = 0
+  //   B(1 - ty) + T(1 + ty) = 0
+  //   N(1 - tz) + F(1 + tz) = 0
+
+  if (Math::fuzzyNe(m(0, 1), static_cast<T>(0)) || Math::fuzzyNe(m(0, 2), static_cast<T>(0))
+   || Math::fuzzyNe(m(1, 0), static_cast<T>(0)) || Math::fuzzyNe(m(1, 2), static_cast<T>(0))
+   || Math::fuzzyNe(m(2, 0), static_cast<T>(0)) || Math::fuzzyNe(m(2, 1), static_cast<T>(0))
+   || Math::fuzzyNe(m(3, 0), static_cast<T>(0)) || Math::fuzzyNe(m(3, 1), static_cast<T>(0))
+   || Math::fuzzyNe(m(3, 2), static_cast<T>(0)) || Math::fuzzyNe(m(3, 3), static_cast<T>(1)))
+  {
+    THEA_ERROR << "Math::inferOrthogonalProjectionParams: Matrix is not an orthogonal projection in the expected form";
+    return false;
+  }
+
+  Matrix<6, 6, T> coeffs; coeffs.setZero();
+  Vector<6, T> constants;
+
+  coeffs(0, 0) = -m(0, 0);    coeffs(0, 1) = m(0, 0);     constants[0] = 2;
+  coeffs(1, 2) = -m(1, 1);    coeffs(1, 3) = m(1, 1);     constants[1] = 2;
+  coeffs(2, 4) = -m(2, 2);    coeffs(2, 5) = m(2, 2);     constants[2] = -2;
+  coeffs(3, 0) = 1 - m(0, 3); coeffs(3, 1) = 1 + m(0, 3); constants[3] = 0;
+  coeffs(4, 0) = 1 - m(1, 3); coeffs(4, 1) = 1 + m(1, 3); constants[4] = 0;
+  coeffs(5, 0) = 1 - m(2, 3); coeffs(5, 1) = 1 + m(2, 3); constants[5] = 0;
+
+  Vector<6, T> sol = coeffs.colPivHouseholderQr().solve(constants);
+  if (!(coeffs * sol).isApprox(constants))
+  {
+    THEA_ERROR << "Math::inferOrthogonalProjectionParams: Could not solve linear system for projection parameters";
+    return false;
+  }
+
+  left = sol[0]; right = sol[1]; bottom = sol[2]; top = sol[3]; nearval = sol[4]; farval = sol[5];
+
+  y_increases_upwards = true;
+  if (bottom > top) { std::swap(bottom, top); y_increases_upwards = false; }
+
+  if (left >= right)
+  { THEA_ERROR << "Math::inferOrthogonalProjectionParams: Left not less than right -- check the matrix"; return false; }
+
+  if (bottom >= top)
+  { THEA_ERROR << "Math::inferOrthogonalProjectionParams: Bottom not less than top -- check the matrix"; return false; }
+
+  if (nearval >= farval)
+  { THEA_ERROR << "Math::inferOrthogonalProjectionParams: Near not less than far -- check the matrix"; return false; }
+
+  return true;
+}
+
+/**
  * Constructs a 3D perspective projection matrix from the given parameters. \a nearval and \a farval are the <i>negative</i> of
  * the near and far plane Z values (to follow OpenGL conventions). Set \a y_increases_upwards to false if Y increases downwards
  * instead, e.g. for screen pixel space.
@@ -608,6 +682,11 @@ Matrix<4, 4, T>
 perspectiveProjection(T const & left, T const & right, T const & bottom, T const & top, T const & nearval, T const & farval,
                       bool y_increases_upwards = true)
 {
+  alwaysAssertM(left < right,     "Math::perspectiveProjection: Left must be less than right");
+  alwaysAssertM(bottom < top,     "Math::perspectiveProjection: Bottom must be less than top");
+  alwaysAssertM(nearval < farval, "Math::perspectiveProjection: Near must be less than far");
+  alwaysAssertM(nearval > 0,      "Math::perspectiveProjection: Near must be positive");
+
   T x = (2 * nearval) / (right - left);
   T y = (2 * nearval) / (top - bottom);
   T a = (right + left) / (right - left);
@@ -636,6 +715,92 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
                                0,  y,  b,  0,
                                0,  0,  c,  d,
                                0,  0, -1,  0).finished();
+}
+
+/**
+ * Infer the parameters of a 3D perspective projection, given the final projection matrix which must be exactly consistent with
+ * the conventions of perspectiveProjection().
+ */
+template < typename T, typename std::enable_if< !std::is_integral<T>::value >::type * = nullptr >
+bool
+inferPerspectiveProjectionParams(Matrix<4, 4, T> const & m,
+                                 T & left, T & right, T & bottom, T & top, T & nearval, T & farval, bool & y_increases_upwards)
+{
+  // Given the matrix:
+  //
+  // x  0  a  0
+  // 0  y  b  0
+  // 0  0  c  d
+  // 0  0 -1  0
+  //
+  // ... solve the system of equations for (L, R, B, T, N, F):
+  //
+  //   -Lx + Rx - 2N = 0
+  //   -By + Ty - 2N = 0
+  //   -L(a + 1) + R(a - 1) = 0
+  //   -B(b + 1) + T(b - 1) = 0
+  //   N(1 - c) + F(1 + c) = 0
+  //   -Nd + Fd + 2FN = 0   <-- quadratic!
+  //
+  // ... by first solving this quadratic equation for its non-zero solution:
+  //
+  // Nd (1 + (1 - c) / (1 + c)) + N^2 2(1 - c) / (1 + c) = 0
+
+  if (Math::fuzzyNe(m(0, 1), static_cast<T>(0))  || Math::fuzzyNe(m(0, 3), static_cast<T>(0))
+   || Math::fuzzyNe(m(1, 0), static_cast<T>(0))  || Math::fuzzyNe(m(1, 3), static_cast<T>(0))
+   || Math::fuzzyNe(m(2, 0), static_cast<T>(0))  || Math::fuzzyNe(m(2, 1), static_cast<T>(0))
+   || Math::fuzzyNe(m(3, 0), static_cast<T>(0))  || Math::fuzzyNe(m(3, 1), static_cast<T>(0))
+   || Math::fuzzyNe(m(3, 2), static_cast<T>(-1)) || Math::fuzzyNe(m(3, 3), static_cast<T>(0)))
+  {
+    THEA_ERROR << "Math::inferPerspectiveProjectionParams: Matrix is not a perspective projection in the expected form";
+    return false;
+  }
+
+  if (Math::fuzzyEq(m(2, 2), static_cast<T>(-1)))  // infinite view frustum
+  {
+    nearval = m(2, 3) / (-2);
+    farval = Math::inf<T>();
+  }
+  else
+  {
+    auto x = (1 - m(2, 2)) / (1 + m(2, 2));
+    nearval = -m(2, 3) * (1 + x) / (2 * x);
+    farval = -nearval * x;
+  }
+
+  if (nearval <= 0)
+  { THEA_ERROR << "Math::inferPerspectiveProjectionParams: Near not positive -- check the matrix"; return false; }
+
+  if (nearval >= farval)
+  { THEA_ERROR << "Math::inferPerspectiveProjectionParams: Near not less than far -- check the matrix"; return false; }
+
+  Matrix<4, 4, T> coeffs;
+  coeffs << -m(0, 0),        m(0, 0),        0,              0,
+             0,              0,             -m(1, 1),        m(1, 1),
+            -(m(0, 2) + 1),  (m(0, 2) - 1),  0,              0,
+             0,              0,             -(m(1, 2) + 1),  (m(1, 2) - 1);
+  Vector<4, T> constants;
+  constants << 2 * nearval, 2 * nearval, 0, 0;
+
+  Vector<4, T> sol = coeffs.colPivHouseholderQr().solve(constants);
+  if (!(coeffs * sol).isApprox(constants))
+  {
+    THEA_ERROR << "Math::inferPerspectiveProjectionParams: Could not solve linear system for projection parameters";
+    return false;
+  }
+
+  left = sol[0]; right = sol[1]; bottom = sol[2]; top = sol[3];;
+
+  y_increases_upwards = true;
+  if (bottom > top) { std::swap(bottom, top); y_increases_upwards = false; }
+
+  if (left >= right)
+  { THEA_ERROR << "Math::inferPerspectiveProjectionParams: Left must be less than right -- check the matrix"; return false; }
+
+  if (bottom >= top)
+  { THEA_ERROR << "Math::inferPerspectiveProjectionParams: Bottom must be less than top -- check the matrix"; return false; }
+
+  return true;
 }
 
 /**

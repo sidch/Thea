@@ -25,6 +25,7 @@
 #include "../../UnorderedMap.hpp"
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cstdio>
 #include <fstream>
 #include <functional>
@@ -46,7 +47,13 @@ struct View
   Vector3 eye;
   Vector3 up;
 
-  View() : dir(-1, -1, -1), has_eye(false), up(0, 1, 0) {}
+  bool has_view_matrix;
+  Matrix4 view_matrix;
+
+  bool has_proj_matrix;
+  Matrix4 proj_matrix;
+
+  View() : dir(-1, -1, -1), has_eye(false), up(0, 1, 0), has_view_matrix(false), has_proj_matrix(false) {}
 };
 
 struct Model
@@ -126,7 +133,7 @@ class ShapeRendererImpl
 
     bool loadPlugins(int argc, char ** argv);
     bool parseArgs(int argc, char ** argv);
-    bool usage();
+    bool usage(int argc, char ** argv);
     bool parseTransform(string const & s, Matrix4 & m);
     bool parseViewDiscrete(string const & s, View & view, bool silent = false);
     bool parseViewContinuous(string const & s, View & view, bool silent = false);
@@ -574,19 +581,17 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 }
 
 bool
-ShapeRendererImpl::usage()
+ShapeRendererImpl::usage(int argc, char ** argv)
 {
-  string app_path = FilePath::objectName(Application::programPath());
-
   THEA_CONSOLE << "";
-  THEA_CONSOLE << "Usage: " << app_path << " [OPTIONS] <mesh> <output-image> <width> <height>";
+  THEA_CONSOLE << "Usage: " << argv[0] << " [OPTIONS] <mesh> <output-image> <width> <height>";
   THEA_CONSOLE << "";
   THEA_CONSOLE << "Options:";
   THEA_CONSOLE << "  -o <overlay-shape>    (may be mesh or point set)";
   THEA_CONSOLE << "  -s <scope>            (show 'none' | 'primary' | 'overlay' | 'all' shapes";
   THEA_CONSOLE << "                         as points, sampled if necessary)";
-  THEA_CONSOLE << "  -t <transform>        (row-major comma-separated 3x4 or 4x4 matrix,";
-  THEA_CONSOLE << "                         applied to all subsequent shapes)";
+  THEA_CONSOLE << "  -t <transform>        (row-major 3x4 or 4x4 matrix, applied to all";
+  THEA_CONSOLE << "                         subsequent shapes)";
   THEA_CONSOLE << "  -z <factor>           (zoom factor, default 1)";
   THEA_CONSOLE << "  -v <arg>              (comma-separated 3-vector (viewing direction);";
   THEA_CONSOLE << "                         or 6-vector (direction + eye position);";
@@ -594,6 +599,11 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "                         or string of 3 chars, one for each coordinate,";
   THEA_CONSOLE << "                           each one of +, - or 0;";
   THEA_CONSOLE << "                         or file containing one of the above per line)";
+  THEA_CONSOLE << "  -q <view> <proj>      (row-major 3x4 or 4x4 view (world to camera) and";
+  THEA_CONSOLE << "                         projection (camera to projection) matrices,";
+  THEA_CONSOLE << "                         alternative to -v that allows copy-pasting the";
+  THEA_CONSOLE << "                         matrices from -w cam; use '-' to choose a default";
+  THEA_CONSOLE << "                         setting for an argument)";
   THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -p <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color; or 'id' to color faces by face ID and";
@@ -621,7 +631,7 @@ ShapeRendererImpl::usage()
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -1                    (one-sided lighting)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
-  THEA_CONSOLE << "  -n                    (also save a text file with extension \".hitcount\"";
+  THEA_CONSOLE << "  -n                    (also save a text file with extension '.hitcount'";
   THEA_CONSOLE << "                         containing the number of pixels rendered per";
   THEA_CONSOLE << "                         face/point)";
   THEA_CONSOLE << "  -x                    (suppress color image output)";
@@ -634,24 +644,30 @@ ShapeRendererImpl::usage()
 bool
 ShapeRendererImpl::parseTransform(string const & s, Matrix4 & m)
 {
-  Array<string> fields;
-  intx nfields = stringSplit(trimWhitespace(s), ",;:[({<>})] \t\n\r\f", fields, true);
-  if (nfields != 12 && nfields != 16)
+  auto t = trimWhitespace(s);
+  if (t.size() < 2) { THEA_ERROR << "Could not parse transform from string: " << s; return false; }
+  if (t.front() == '[')
   {
-    THEA_ERROR << "Could not read row-major comma-separated matrix from '" << s << '\'';
-    return false;
+    if (t.back() == ']') { t = t.substr(1, t.length() - 2); }
+    else                 { THEA_ERROR << "Could not parse transform from string: " << s; return false; }
   }
 
-  m = Matrix4::Identity();
-  for (int i = 0; i < nfields; ++i)
-  {
-    istringstream field_in(fields[i]);
-    if (!(field_in >> m(i / 4, i % 4)))
+  m.setIdentity();
+  istringstream t_in(t);
+  for (int i = 0, c = 0; i < m.rows() && c != char_traits<char>::eof(); ++i)
+    for (int j = 0; j < m.cols(); ++j)
     {
-      THEA_ERROR << "Could nor parse matrix entry '" << fields[i] << '\'';
-      return false;
+      if (!(t_in >> m(i, j))) { THEA_ERROR << "Could not parse transform from string: " << s; return false; }
+
+      do
+      {
+        c = t_in.get();
+        if (!t_in && (i < m.rows() - 2 || j != m.cols() - 1))
+        { THEA_ERROR << "Could not parse transform from string: " << s; return false; }
+      } while (t_in && isspace(c));
+
+      if (t_in && c != ',' && (j != m.cols() - 1 || c != ';')) t_in.unget();
     }
-  }
 
   return true;
 }
@@ -903,7 +919,7 @@ bool
 ShapeRendererImpl::parseArgs(int argc, char ** argv)
 {
   if (argc < 5)
-    return usage();
+    return usage(argc, argv);
 
   resetArgs();
 
@@ -920,322 +936,325 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
     string arg = *argv;
     argv++; argc--;
 
-    if (arg.length() <= 0)
+    if (arg.empty())
       continue;
 
     if (arg[0] == '-')
     {
-      if (arg.length() != 2)
-        return usage();
-
-      switch (arg[1])
+      if (arg == "-o")
       {
-        case 'o':
+        if (argc < 1) { THEA_ERROR << "-o: Overlay path not specified"; return false; }
+        model_paths.push_back(*argv);
+        transforms.push_back(current_transform);
+        argv++; argc--;
+      }
+      else if (arg == "-s")
+      {
+        if (argc < 1) { THEA_ERROR << "-s: Shapes to show as points not specified"; return false; }
+        string scope = toLower(*argv);
+        if (scope == "all")
+          show_points = POINTS_ALL;
+        else if (scope == "primary")
+          show_points = POINTS_PRIMARY;
+        else if (scope == "overlay")
+          show_points = POINTS_OVERLAY;
+        else if (scope == "none")
+          show_points = POINTS_NONE;
+        else
         {
-          if (argc < 1) { THEA_ERROR << "-o: Overlay path not specified"; return false; }
-          model_paths.push_back(*argv);
-          transforms.push_back(current_transform);
-          argv++; argc--; break;
+          THEA_ERROR << "Unknown set of shapes to show as points: '" << scope << '\'';
+          return false;
         }
 
-        case 's':
+        argv++; argc--;
+      }
+      else if (arg == "-t")
+      {
+        if (argc < 1) { THEA_ERROR << "-t: Transform not specified"; return false; }
+        if (!parseTransform(*argv, current_transform)) return false;
+        argv++; argc--;
+      }
+      else if (arg == "-z")
+      {
+        if (argc < 1) { THEA_ERROR << "-z: Zoom not specified"; return false; }
+        if (sscanf(*argv, " %f", &zoom) != 1)
         {
-          if (argc < 1) { THEA_ERROR << "-s: Shapes to show as points not specified"; return false; }
-          string scope = toLower(*argv);
-          if (scope == "all")
-            show_points = POINTS_ALL;
-          else if (scope == "primary")
-            show_points = POINTS_PRIMARY;
-          else if (scope == "overlay")
-            show_points = POINTS_OVERLAY;
-          else if (scope == "none")
-            show_points = POINTS_NONE;
-          else
-          {
-            THEA_ERROR << "Unknown set of shapes to show as points: '" << scope << '\'';
-            return false;
-          }
-
-          argv++; argc--; break;
+          THEA_ERROR << "Could not parse zoom '" << *argv << '\'';
+          return false;
         }
-
-        case 't':
+        if (zoom <= 0)
         {
-          if (argc < 1) { THEA_ERROR << "-t: Transform not specified"; return false; }
-          if (!parseTransform(*argv, current_transform)) return false;
-          argv++; argc--; break;
+          THEA_ERROR << "Invalid zoom " << zoom;
+          return false;
         }
+        argv++; argc--;
+      }
+      else if (arg == "-v")
+      {
+        if (argc < 1) { THEA_ERROR << "-v: View parameters not specified"; return false; }
+        View view;
+        bool status = false;
+        if (strlen(*argv) == 3)
+          status = parseViewDiscrete(*argv, view, true);
+        else
+          status = parseViewContinuous(*argv, view, true);
 
-        case 'z':
+        if (status)
+          views.push_back(view);
+        else
         {
-          if (argc < 1) { THEA_ERROR << "-z: Zoom not specified"; return false; }
-          if (sscanf(*argv, " %f", &zoom) != 1)
-          {
-            THEA_ERROR << "Could not parse zoom '" << *argv << '\'';
-            return false;
-          }
-          if (zoom <= 0)
-          {
-            THEA_ERROR << "Invalid zoom " << zoom;
-            return false;
-          }
-          argv++; argc--; break;
-        }
-
-        case 'v':
-        {
-          if (argc < 1) { THEA_ERROR << "-v: View parameters not specified"; return false; }
-          View view;
-          bool status = false;
-          if (strlen(*argv) == 3)
-            status = parseViewDiscrete(*argv, view, true);
-          else
-            status = parseViewContinuous(*argv, view, true);
-
-          if (status)
-            views.push_back(view);
-          else
-          {
-            if (FileSystem::fileExists(*argv))
-            {
-              if (!parseViewFile(*argv))
-                return false;
-            }
-            else
-            {
-              THEA_ERROR << "Invalid or unparseable view parameters '" << *argv << '\'';
-              return false;
-            }
-          }
-
-          argv++; argc--; break;
-        }
-
-        case 'u':
-        {
-          if (argc < 1) { THEA_ERROR << "-u: Up direction not specified"; return false; }
-          if (!parseViewUp(*argv, view_up)) return false;
-          has_up = true;
-          argv++; argc--; break;
-        }
-
-        case 'p':
-        {
-          if (argc < 1) { THEA_ERROR << "-p: Point size not specified"; return false; }
-          if (sscanf(*argv, " %f", &point_size) != 1)
-          {
-            THEA_ERROR << "Could not parse point size '" << *argv << '\'';
-            return false;
-          }
-          if (zoom <= 0)
-          {
-            THEA_ERROR << "Invalid point size " << point_size;
-            return false;
-          }
-          argv++; argc--; break;
-        }
-
-        case 'c':
-        {
-          if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
-
-          color_by_id = false;
-          color_by_leaf = false;
-          color_by_leafname = false;
-
-          string arg_lc = toLower(trimWhitespace(*argv));
-          if (arg_lc == "id")
-            color_by_id = true;
-          else if (arg_lc == "leaf")
-            color_by_leaf = true;
-          else if (arg_lc == "leafname")
-            color_by_leafname = true;
-          else
-          {
-            if (!parseColor(*argv, primary_color))
-              return false;
-          }
-
-          explicit_primary_color = true;
-
-          argv++; argc--; break;
-        }
-
-        case 'j':
-        {
-          if (argc < 1) { THEA_ERROR << "-j: Edge color not specified"; return false; }
-          if (!parseColor(*argv, edge_color)) return false;
-          show_edges = true;
-          argv++; argc--; break;
-        }
-
-        case 'l':
-        {
-          if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
-
-          color_by_label = true;
-          labels_path = *argv;
-
-          argv++; argc--; break;
-        }
-
-        case 'f':
-        {
-          if (argc < 1) { THEA_ERROR << "-f: Features not specified"; return false; }
-
-          color_by_features = true;
-          features_path = *argv;
-
-          argv++; argc--; break;
-        }
-
-        case 'e':
-        {
-          accentuate_features = true;
-          break;
-        }
-
-        case '2':
-        {
-          if (argc < 1) { THEA_ERROR << "-2: 2D texture image not specified"; return false; }
-
-          color_by_tex2d = true;
-          tex2d_path = *argv;
-
-          argv++; argc--; break;
-        }
-
-        case '3':
-        {
-          if (argc < 1) { THEA_ERROR << "-3: 3D texture image not specified"; return false; }
-
-          color_by_tex3d = true;
-          tex3d_path = *argv;
-
-          argv++; argc--; break;
-        }
-
-        case 'm':
-        {
-          if (argc < 1) { THEA_ERROR << "-m: Selected mesh not specified"; return false; }
-
-          selected_binary_mask = true;
-          selected_mesh = toLower(*argv);
-          selected_color = ColorRgba(1, 1, 1, 1);
-
-          argv++; argc--; break;
-        }
-
-        case 'h':
-        {
-          if (argc < 2) { THEA_ERROR << "-h: Selected mesh or color not specified"; return false; }
-
-          selected_binary_mask = false;
-          selected_mesh = toLower(*argv);
-          argv++; argc--;
-          if (!parseColor(*argv, selected_color))
-            return false;
-
-          argv++; argc--; break;
-        }
-
-        case 'k':
-        {
-          if (argc < 1) { THEA_ERROR << "-k: Material not specified"; return false; }
-
           if (FileSystem::fileExists(*argv))
-            matcap_path = *argv;
-          else
           {
-            Vector4 m;
-            int num_fields = parseVector(*argv, m);
-            if (num_fields <= 0)
+            if (!parseViewFile(*argv))
               return false;
-
-            for (int i = 0; i < num_fields; ++i)
-              if (m[i] >= -0.001)
-                material[i] = m[i];
           }
-
-          argv++; argc--; break;
-        }
-
-        case 'b':
-        {
-          if (argc < 1) { THEA_ERROR << "-b: Background color not specified"; return false; }
-          if (!parseColor(*argv, background_color)) return false;
-          argv++; argc--; break;
-        }
-
-        case 'a':
-        {
-          if (argc < 1) { THEA_ERROR << "-a: Antialiasing level not specified"; return false; }
-          if (sscanf(*argv, " %d", &antialiasing_level) != 1)
-          {
-            THEA_ERROR << "Could not parse antialiasing level '" << *argv << '\'';
-            return false;
-          }
-          if (antialiasing_level < 1)
-          {
-            THEA_ERROR << "Invalid antialiasing level " << antialiasing_level;
-            return false;
-          }
-          argv++; argc--; break;
-        }
-
-        case '0':
-        {
-          flat = true;
-          break;
-        }
-
-        case '1':
-        {
-          two_sided = false;
-          break;
-        }
-
-        case 'd':
-        {
-          save_depth = true;
-          break;
-        }
-
-        case 'n':
-        {
-          save_hitcounts = true;
-          break;
-        }
-
-        case 'x':
-        {
-          save_color = false;
-          break;
-        }
-
-        case 'w':
-        {
-          if (argc < 1) { THEA_ERROR << "-w: Field to write not specified"; return false; }
-          if (string(*argv) == "cam")
-            print_camera = true;
           else
           {
-            THEA_ERROR << "Unknown field to write: '" << *argv << '\'';
+            THEA_ERROR << "Invalid or unparseable view parameters '" << *argv << '\'';
             return false;
           }
-          argv++; argc--; break;
         }
 
-        case 'i':
+        argv++; argc--;
+      }
+      else if (arg == "-q")
+      {
+        if (argc < 2) { THEA_ERROR << "-q: Camera matrices not specified"; return false; }
+        View view;
+
+        string view_str = *(argv++); argc--;
+        if (view_str.empty() || view_str == "-")
+          view.has_view_matrix = false;
+        else
         {
-          if (argc < 1) { THEA_ERROR << "-i: Palette shift not specified"; return false; }
-          if (sscanf(*argv, " %d", &palette_shift) != 1)
-          {
-            THEA_ERROR << "Could not parse palette shift: '" << *argv << '\'';
+          if (parseTransform(view_str, view.view_matrix))
+            view.has_view_matrix = true;
+          else
             return false;
-          }
-          argv++; argc--; break;
         }
+
+        string proj_str = *(argv++); argc--;
+        if (proj_str.empty() || proj_str == "-")
+          view.has_proj_matrix = false;
+        else
+        {
+          if (parseTransform(proj_str, view.proj_matrix))
+            view.has_proj_matrix = true;
+          else
+            return false;
+        }
+
+        views.push_back(view);
+      }
+      else if (arg == "-u")
+      {
+        if (argc < 1) { THEA_ERROR << "-u: Up direction not specified"; return false; }
+        if (!parseViewUp(*argv, view_up)) return false;
+        has_up = true;
+        argv++; argc--;
+      }
+      else if (arg == "-p")
+      {
+        if (argc < 1) { THEA_ERROR << "-p: Point size not specified"; return false; }
+        if (sscanf(*argv, " %f", &point_size) != 1)
+        {
+          THEA_ERROR << "Could not parse point size '" << *argv << '\'';
+          return false;
+        }
+        if (zoom <= 0)
+        {
+          THEA_ERROR << "Invalid point size " << point_size;
+          return false;
+        }
+        argv++; argc--;
+      }
+      else if (arg == "-c")
+      {
+        if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
+
+        color_by_id = false;
+        color_by_leaf = false;
+        color_by_leafname = false;
+
+        string arg_lc = toLower(trimWhitespace(*argv));
+        if (arg_lc == "id")
+          color_by_id = true;
+        else if (arg_lc == "leaf")
+          color_by_leaf = true;
+        else if (arg_lc == "leafname")
+          color_by_leafname = true;
+        else
+        {
+          if (!parseColor(*argv, primary_color))
+            return false;
+        }
+
+        explicit_primary_color = true;
+
+        argv++; argc--;
+      }
+      else if (arg == "-j")
+      {
+        if (argc < 1) { THEA_ERROR << "-j: Edge color not specified"; return false; }
+        if (!parseColor(*argv, edge_color)) return false;
+        show_edges = true;
+        argv++; argc--;
+      }
+      else if (arg == "-l")
+      {
+        if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
+
+        color_by_label = true;
+        labels_path = *argv;
+
+        argv++; argc--;
+      }
+      else if (arg == "-f")
+      {
+        if (argc < 1) { THEA_ERROR << "-f: Features not specified"; return false; }
+
+        color_by_features = true;
+        features_path = *argv;
+
+        argv++; argc--;
+      }
+      else if (arg == "-e")
+      {
+        accentuate_features = true;
+
+      }
+      else if (arg == "-2")
+      {
+        if (argc < 1) { THEA_ERROR << "-2: 2D texture image not specified"; return false; }
+
+        color_by_tex2d = true;
+        tex2d_path = *argv;
+
+        argv++; argc--;
+      }
+      else if (arg == "-3")
+      {
+        if (argc < 1) { THEA_ERROR << "-3: 3D texture image not specified"; return false; }
+
+        color_by_tex3d = true;
+        tex3d_path = *argv;
+
+        argv++; argc--;
+      }
+      else if (arg == "-m")
+      {
+        if (argc < 1) { THEA_ERROR << "-m: Selected mesh not specified"; return false; }
+
+        selected_binary_mask = true;
+        selected_mesh = toLower(*argv);
+        selected_color = ColorRgba(1, 1, 1, 1);
+
+        argv++; argc--;
+      }
+      else if (arg == "-h")
+      {
+        if (argc < 2) { THEA_ERROR << "-h: Selected mesh or color not specified"; return false; }
+
+        selected_binary_mask = false;
+        selected_mesh = toLower(*argv);
+        argv++; argc--;
+        if (!parseColor(*argv, selected_color))
+          return false;
+
+        argv++; argc--;
+      }
+      else if (arg == "-k")
+      {
+        if (argc < 1) { THEA_ERROR << "-k: Material not specified"; return false; }
+
+        if (FileSystem::fileExists(*argv))
+          matcap_path = *argv;
+        else
+        {
+          Vector4 m;
+          int num_fields = parseVector(*argv, m);
+          if (num_fields <= 0)
+            return false;
+
+          for (int i = 0; i < num_fields; ++i)
+            if (m[i] >= -0.001)
+              material[i] = m[i];
+        }
+
+        argv++; argc--;
+      }
+      else if (arg == "-b")
+      {
+        if (argc < 1) { THEA_ERROR << "-b: Background color not specified"; return false; }
+        if (!parseColor(*argv, background_color)) return false;
+        argv++; argc--;
+      }
+      else if (arg == "-a")
+      {
+        if (argc < 1) { THEA_ERROR << "-a: Antialiasing level not specified"; return false; }
+        if (sscanf(*argv, " %d", &antialiasing_level) != 1)
+        {
+          THEA_ERROR << "Could not parse antialiasing level '" << *argv << '\'';
+          return false;
+        }
+        if (antialiasing_level < 1)
+        {
+          THEA_ERROR << "Invalid antialiasing level " << antialiasing_level;
+          return false;
+        }
+        argv++; argc--;
+      }
+      else if (arg == "-0")
+      {
+        flat = true;
+
+      }
+      else if (arg == "-1")
+      {
+        two_sided = false;
+
+      }
+      else if (arg == "-d")
+      {
+        save_depth = true;
+
+      }
+      else if (arg == "-n")
+      {
+        save_hitcounts = true;
+
+      }
+      else if (arg == "-x")
+      {
+        save_color = false;
+
+      }
+      else if (arg == "-w")
+      {
+        if (argc < 1) { THEA_ERROR << "-w: Field to write not specified"; return false; }
+        if (string(*argv) == "cam")
+          print_camera = true;
+        else
+        {
+          THEA_ERROR << "Unknown field to write: '" << *argv << '\'';
+          return false;
+        }
+        argv++; argc--;
+      }
+      else if (arg == "-i")
+      {
+        if (argc < 1) { THEA_ERROR << "-i: Palette shift not specified"; return false; }
+        if (sscanf(*argv, " %d", &palette_shift) != 1)
+        {
+          THEA_ERROR << "Could not parse palette shift: '" << *argv << '\'';
+          return false;
+        }
+        argv++; argc--;
+      }
+      else
+      {
+        THEA_ERROR << "Unknown option: " << arg;
+        return usage(argc, argv);
       }
     }
     else
@@ -1284,7 +1303,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   if (pos < 4)
   {
     THEA_ERROR << "Too few positional arguments";
-    return usage();
+    return usage(argc, argv);
   }
 
   // If no primary color was explicitly specified, set it to white by default if we're also going to multiply it by the matcap
@@ -2171,53 +2190,83 @@ modelBSphere(Model const & model, Matrix4 const & transform)
 Camera
 Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int width, int height)
 {
-  // Orientation
-  Ball3 bsphere = modelBSphere(*this, transform);
-  Vector3 center = bsphere.getCenter();
-  Real diameter = bsphere.getDiameter();
-
-  // Make absolutely sure these are unit vectors
-  Vector3 dir  =  view.dir.normalized();
-  Vector3 up   =  view.up.normalized();
-  Vector3 eye;
-
-  if (view.has_eye)
+  Ball3 bsphere;
+  Vector3 center;
+  Real diameter;
+  if (!view.has_view_matrix || !view.has_proj_matrix)
   {
-    eye = view.eye;
+    bsphere = modelBSphere(*this, transform);
+    center = bsphere.getCenter();
+    diameter = bsphere.getDiameter();
+  }
+
+  CoordinateFrame3 cframe;
+  if (view.has_view_matrix)
+  {
+    Matrix3 rot = Math::orthonormalBasis(Matrix3(view.view_matrix.topLeftCorner<3, 3>()));  // world to camera coordinates
+    Vector3 trn = view.view_matrix.topRightCorner<3, 1>();
+    cframe = CoordinateFrame3::_fromAffine(AffineTransform3(rot, trn)).inverse();  // camera to world
   }
   else
   {
-    Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
-    eye = center - camera_separation * dir;
+    // Make absolutely sure these are unit vectors
+    Vector3 dir  =  view.dir.normalized();
+    Vector3 up   =  view.up.normalized();
+    Vector3 eye;
+
+    if (view.has_eye)
+      eye = view.eye;
+    else
+    {
+      Real camera_separation = diameter > 1.0e-10f ? 2.1 * diameter : 1.0e-10f;
+      eye = center - camera_separation * dir;
+    }
+
+    cframe = CoordinateFrame3::fromViewFrame(eye, eye + dir, up);
   }
 
-  CoordinateFrame3 cframe = CoordinateFrame3::fromViewFrame(eye, eye + dir, up);
-
-  // Projection
-  Real center_distance = std::max((bsphere.getCenter() - eye).dot(dir), (Real)0);
-  Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
-  Real far_dist  = center_distance + 2 * diameter;
-
-  static Real const HALF_WIDTH = 0.5;
-  Real hw = 0, hh = 0;
-  if (height > width)
+  Camera camera;
+  if (view.has_proj_matrix)
   {
-    Real aspect_ratio = height / (Real)width;
-    hw = HALF_WIDTH;
-    hh = aspect_ratio * HALF_WIDTH;
+    camera.setFrame(cframe);
+    if (!camera.setProjection(view.proj_matrix))
+      throw Error("Could not infer projection parameters from projection matrix");
+
+    alwaysAssertM(camera.getProjectionTransform().isApprox(view.proj_matrix),
+                  "Inferred projection parameters do not reconstruct projection matrix");
   }
   else
   {
-    Real aspect_ratio = width / (Real)height;
-    hw = aspect_ratio * HALF_WIDTH;
-    hh = HALF_WIDTH;
+    // Projection
+    Vector3 eye = cframe.getTranslation();
+    Vector3 dir = cframe.lookVector();
+    Real center_distance = std::max((center - eye).dot(dir), (Real)0);
+    Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
+    Real far_dist  = center_distance + 2 * diameter;
+
+    static Real const HALF_WIDTH = 0.5;
+    Real hw = 0, hh = 0;
+    if (height > width)
+    {
+      Real aspect_ratio = height / (Real)width;
+      hw = HALF_WIDTH;
+      hh = aspect_ratio * HALF_WIDTH;
+    }
+    else
+    {
+      Real aspect_ratio = width / (Real)height;
+      hw = aspect_ratio * HALF_WIDTH;
+      hh = HALF_WIDTH;
+    }
+
+    hw = (hw / zoom) * (0.5f * near_dist);
+    hh = (hh / zoom) * (0.5f * near_dist);
+
+    camera.set(cframe,
+               Camera::ProjectionType::PERSPECTIVE, -hw, hw, -hh, hh, near_dist, far_dist, Camera::ProjectedYDirection::UP);
   }
 
-  hw = (hw / zoom) * (0.5f * near_dist);
-  hh = (hh / zoom) * (0.5f * near_dist);
-
-  return Camera(cframe,
-                Camera::ProjectionType::PERSPECTIVE, -hw, hw, -hh, hh, near_dist, far_dist, Camera::ProjectedYDirection::UP);
+  return camera;
 }
 
 bool

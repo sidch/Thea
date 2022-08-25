@@ -56,6 +56,31 @@ Camera::setProjection(ProjectionType projection_type_, Real left_, Real right_, 
   proj_changed = true;
 }
 
+bool
+Camera::setProjection(Matrix4 const & m)
+{
+  bool y_increases_upwards = true;
+  bool status;
+  if (Math::fuzzyEq(m(3, 2), (Real)0))
+  {
+    projection_type = ProjectionType::ORTHOGRAPHIC;
+    status = Math::inferOrthogonalProjectionParams (m, left, right, bottom, top, near_dist, far_dist, y_increases_upwards);
+  }
+  else
+  {
+    projection_type = ProjectionType::PERSPECTIVE;
+    status = Math::inferPerspectiveProjectionParams(m, left, right, bottom, top, near_dist, far_dist, y_increases_upwards);
+  }
+
+  if (!status)
+    return false;
+
+  proj_y_dir = (y_increases_upwards ? ProjectedYDirection::UP : ProjectedYDirection::DOWN);
+  proj_changed = true;
+
+  return true;
+}
+
 Matrix4
 Camera::getProjectionTransform() const
 {

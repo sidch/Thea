@@ -87,10 +87,7 @@ class THEA_API Camera : public Serializable
     Camera(CoordinateFrame3 const & frame_, ProjectionType projection_type_, Real left_, Real right_, Real bottom_, Real top_,
            Real near_dist_, Real far_dist_, ProjectedYDirection proj_y_dir_);
 
-    /**
-     * Set all the parameters of the camera in one go. Calling this function with no arguments sets all parameters to default
-     * values. \a near_dist_ and \a far_dist_ are <b>positive</b> distances to the near and far clipping planes.
-     */
+    /** Set all the parameters of the camera in one go. */
     void set(CoordinateFrame3 const & frame_, ProjectionType projection_type_, Real left_, Real right_, Real bottom_, Real top_,
              Real near_dist_, Real far_dist_, ProjectedYDirection proj_y_dir_);
 
@@ -103,6 +100,12 @@ class THEA_API Camera : public Serializable
      */
     void setProjection(ProjectionType projection_type_, Real left_, Real right_, Real bottom_, Real top_,
                        Real near_dist_, Real far_dist_, ProjectedYDirection proj_y_dir_);
+
+    /**
+     * Infer the projection parameters from a projection matrix. The matrix should have been generated exactly as
+     * getProjectionTransform() would do it, i.e. using Math::orthogonalProjection() or Math::perspectiveProjection().
+     */
+    bool setProjection(Matrix4 const & m);
 
     /** Get the coordinate frame of the camera. The camera looks along the negative local Z-axis of the frame. */
     CoordinateFrame3 const & getFrame() const { return frame; }
