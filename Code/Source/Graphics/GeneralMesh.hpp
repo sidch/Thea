@@ -1394,7 +1394,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
     void setVertexColor(VertexT * vertex, ColorRgba const & color)
     {
-      vertex->attr().setColor(color);
+      vertex->attr().setColor(typename VertexT::Attribute::Color(color));
       invalidateGpuBuffers(BufferId::VERTEX_COLOR);
     }
 
@@ -1407,7 +1407,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord)
     {
-      vertex->attr().setTexCoord(texcoord);
+      vertex->attr().setTexCoord(texcoord.cast<typename VertexT::Attribute::TexCoord::value_type>());
       invalidateGpuBuffers(BufferId::VERTEX_TEXCOORD);
     }
 
@@ -1822,14 +1822,14 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
         packed_vertex_texcoords.clear();  // no realloc
         for (auto fi = faces.begin(); fi != faces.end(); ++fi)
           for (auto fvi = fi->verticesBegin(); fvi != fi->verticesEnd(); ++fvi)
-            packed_vertex_texcoords.push_back((*fvi)->getTexCoord());
+            packed_vertex_texcoords.push_back((*fvi)->attr().getTexCoord().template cast<Real>());
       }
       else
       {
         packed_vertex_texcoords.resize(vertices.size());
         size_t i = 0;
         for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-          packed_vertex_texcoords[i] = vi->attr().getTexCoord();
+          packed_vertex_texcoords[i] = vi->attr().getTexCoord().template cast<Real>();
       }
 
       setPackedArrayValid(BufferId::VERTEX_TEXCOORD);

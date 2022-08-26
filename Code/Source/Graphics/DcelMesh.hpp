@@ -721,7 +721,8 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     template < typename VertexT, typename std::enable_if< HasColor<VertexT>::value, int >::type = 0 >
     void setVertexColor(VertexT * vertex, ColorRgba const & color)
     {
-      vertex->attr().setColor(color);
+      vertex->attr().setColor(typename VertexT::Attribute::Color(color));
+      invalidateGpuBuffers(BufferId::VERTEX_COLOR);
     }
 
     /** Set vertex color (no-op, called if vertex does not have color attribute). */
@@ -733,7 +734,8 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     template < typename VertexT, typename std::enable_if< HasTexCoord<VertexT>::value, int >::type = 0 >
     void setVertexTexCoord(VertexT * vertex, Vector2 const & texcoord)
     {
-      vertex->attr().setTexCoord(texcoord);
+      vertex->attr().setTexCoord(texcoord.cast<typename VertexT::Attribute::TexCoord::value_type>());
+      invalidateGpuBuffers(BufferId::VERTEX_TEXCOORD);
     }
 
     /** Set vertex texture coordinates (no-op, called if vertex does not have texture coordinate attribute). */
@@ -1417,7 +1419,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
           Halfedge const * he = start;
           do
           {
-            packed_vertex_texcoords.push_back(he->getOrigin()->getTexCoord());
+            packed_vertex_texcoords.push_back(he->getOrigin()->attr().getTexCoord().template cast<Real>());
             he = he->next();
           } while (he != start);
         }
@@ -1427,7 +1429,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
         packed_vertex_texcoords.resize(vertices.size());
         size_t i = 0;
         for (auto vi = vertices.begin(); vi != vertices.end(); ++vi, ++i)
-          packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord();
+          packed_vertex_texcoords[i] = (*vi)->attr().getTexCoord().template cast<Real>();
       }
 
       setPackedArrayValid(BufferId::VERTEX_TEXCOORD);

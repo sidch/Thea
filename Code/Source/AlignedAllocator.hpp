@@ -15,7 +15,7 @@
 #ifndef __Thea_AlignedAllocator_hpp__
 #define __Thea_AlignedAllocator_hpp__
 
-#include "Common.hpp"
+#include "Platform.hpp"
 
 #ifdef THEA_WINDOWS
 #  include <malloc.h>
@@ -89,13 +89,13 @@ class AlignedAllocator
     }
 
     /** Construct an object at a memory location. */
-    inline void construct (pointer p, const value_type & wert) { new (p) value_type (wert); }
+    inline void construct(pointer p, const value_type & wert) { new (p) value_type(wert); }
 
     /** Destroy an object at a memory location. */
-    inline void destroy (pointer p) { p->~value_type (); }
+    inline void destroy(pointer p) { p->~value_type (); }
 
     /** Get the maximum number of elements that can theoretically be allocated. */
-    inline size_type max_size () const throw () { return size_type (-1) / sizeof (value_type); }
+    inline size_type max_size() const throw () { return size_type (-1) / sizeof(value_type); }
 
     /** A structure that enables this allocator to allocate storage for objects of another type. */
     template <typename T2>

@@ -27,8 +27,8 @@
 #define __Thea_StringAlg_hpp_
 
 #include "Common.hpp"
-#include "BasicStringAlg.hpp"
 #include "Array.hpp"
+#include "BasicStringAlg.hpp"
 #include <cctype>
 #include <sstream>
 #include <type_traits>
