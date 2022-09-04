@@ -53,13 +53,13 @@ class THEA_API Image : public virtual IImage, public Serializable
      */
     Image(std::string const & path, Codec const & codec = CodecAuto());
 
-    /* Copy constructor. */
+    /** Copy constructor. */
     Image(Image const & src);
 
     /** Destructor. */
     ~Image();
 
-    /* Assignment operator. */
+    /** Assignment operator. */
     Image & operator=(Image const & src);
 
     // Abstract interface functions

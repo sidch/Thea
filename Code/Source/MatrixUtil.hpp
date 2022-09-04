@@ -645,8 +645,8 @@ inferOrthogonalProjectionParams(Matrix<4, 4, T> const & m,
   coeffs(1, 2) = -m(1, 1);    coeffs(1, 3) = m(1, 1);     constants[1] = 2;
   coeffs(2, 4) = -m(2, 2);    coeffs(2, 5) = m(2, 2);     constants[2] = -2;
   coeffs(3, 0) = 1 - m(0, 3); coeffs(3, 1) = 1 + m(0, 3); constants[3] = 0;
-  coeffs(4, 0) = 1 - m(1, 3); coeffs(4, 1) = 1 + m(1, 3); constants[4] = 0;
-  coeffs(5, 0) = 1 - m(2, 3); coeffs(5, 1) = 1 + m(2, 3); constants[5] = 0;
+  coeffs(4, 2) = 1 - m(1, 3); coeffs(4, 3) = 1 + m(1, 3); constants[4] = 0;
+  coeffs(5, 4) = 1 - m(2, 3); coeffs(5, 5) = 1 + m(2, 3); constants[5] = 0;
 
   Vector<6, T> sol = coeffs.colPivHouseholderQr().solve(constants);
   if (!(coeffs * sol).isApprox(constants))

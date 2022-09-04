@@ -71,7 +71,7 @@ class THEA_API SurfaceParametrization
       THEA_ENUM_CLASS_STRINGS_BEGIN(WeightType)
         THEA_ENUM_CLASS_STRING(UNIFORM,     "uniform")
         THEA_ENUM_CLASS_STRING(COTANGENT,   "cotangent")
-        THEA_ENUM_CLASS_STRING(MEAN_VALUE,  "mean_value")
+        THEA_ENUM_CLASS_STRING(MEAN_VALUE,  "mean-value")
       THEA_ENUM_CLASS_STRINGS_END(WeightType)
     };
 
@@ -132,18 +132,7 @@ class THEA_API SurfaceParametrization
           }
 
           // If this is a boundary edge, make sure all its vertices have fixed parameters
-          bool is_boundary = (e->numFaces() < 2);
-          if (!is_boundary)
-          {
-            for (auto efi = e->facesBegin(); efi != e->facesEnd(); ++efi)
-              if (faces.find(*efi) == faces.end())  // this is a boundary edge
-              {
-                is_boundary = true;
-                break;
-              }
-          }
-
-          if (is_boundary)
+          if (e->isBoundaryEdge(faces))
           {
             if (fixed_vertex_params.find(e->getEndpoint(0)) == fixed_vertex_params.end()
              || fixed_vertex_params.find(e->getEndpoint(1)) == fixed_vertex_params.end())
