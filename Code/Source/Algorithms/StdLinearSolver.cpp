@@ -253,6 +253,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
         case StdLinearSolver::Method::BICGSTAB:
         {
+          if (!(MatrixT::Flags & Eigen::RowMajorBit))
+            THEA_DEBUG << "StdLinearSolver: BiCGSTAB is slower with column-major matrices, use row-major";
+
           Eigen::BiCGSTAB<typename MatrixT::PlainObject> solver;
           if (tolerance >= 0) solver.setTolerance((ScalarT)tolerance);
           if (max_iters > 0) solver.setMaxIterations(max_iters);
@@ -278,10 +281,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
       return true;
     }
 
-    // Use a solver based on sparse factorization, for column-major matrices. Returns true if a suitable solver was found, NOT
-    // if the problem was successfully solved.
-    template < typename MatrixT, typename ScalarT,
-               typename std::enable_if< !(MatrixT::Flags & Eigen::RowMajorBit), int >::type = 0 >
+    // Use a solver based on sparse factorization. Returns true if a suitable solver was found, NOT if the problem was
+    // successfully solved.
+    template <typename MatrixT, typename ScalarT>
     bool solveSparseFactorize(MatrixT const & a, ScalarT const * b)
     {
       switch (method)
@@ -314,6 +316,9 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
 
         case StdLinearSolver::Method::SPARSE_LU:
         {
+          if (MatrixT::Flags & Eigen::RowMajorBit)
+            THEA_DEBUG << "StdLinearSolver: SparseLU has an expensive copy overhead for row-major matrices, use column-major";
+
           Eigen::SparseLU<typename MatrixT::PlainObject> solver;
           if (tolerance >= 0) solver.setPivotThreshold((ScalarT)tolerance);
           solver.compute(a);
@@ -345,15 +350,6 @@ class THEA_DLL_LOCAL StdLinearSolverImpl
       }
 
       return true;
-    }
-
-    // Use a solver based on sparse factorization, for row-major matrices. Eigen does not provide any such solvers, so this
-    // method is empty. Returns false to indicate no solver was found.
-    template < typename MatrixT, typename ScalarT,
-               typename std::enable_if< (MatrixT::Flags & Eigen::RowMajorBit), int >::type = 0 >
-    bool solveSparseFactorize(MatrixT const & a, ScalarT const * b)
-    {
-      return false;
     }
 
   public:  // no need for accessor fns for this internal class, and friend declarations are complicated by namespaces
@@ -462,14 +458,27 @@ StdLinearSolver::setMaxIterations(intx max_iters_)
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< MatrixXd > const & a, double const * b, double const * guess, IOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< MatrixX<double, MatrixLayout::ROW_MAJOR> > const & a, double const * b, double const * guess,
+                       IOptions const * options)
 {
   return impl->solve(a, b, guess, options);
 }
 
 bool
-StdLinearSolver::solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, double const * guess,
-                       IOptions const * options)
+StdLinearSolver::solve(Eigen::Ref< MatrixX<double, MatrixLayout::COLUMN_MAJOR> > const & a, double const * b,
+                       double const * guess, IOptions const * options)
+{
+  return impl->solve(a, b, guess, options);
+}
+
+bool
+StdLinearSolver::solve(SparseRowMatrix<double> const & a, double const * b, double const * guess, IOptions const * options)
+{
+  return impl->solve(a, b, guess, options);
+}
+
+bool
+StdLinearSolver::solve(SparseColumnMatrix<double> const & a, double const * b, double const * guess, IOptions const * options)
 {
   return impl->solve(a, b, guess, options);
 }

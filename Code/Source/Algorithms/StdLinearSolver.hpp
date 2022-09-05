@@ -33,6 +33,8 @@ namespace StdLinearSolverInternal { class StdLinearSolverImpl; }
 /**
  * Solve dense and sparse linear systems of the form Ax = b for x. This class implements the ILinearSolver interface to provide a
  * variety of built-in algorithms. Other solvers may be provided by plugins implementing the ILinearSolver interface.
+ *
+ * @todo Add method-specific preconditioning.
  */
 class THEA_API StdLinearSolver : public virtual ILinearSolver, public NamedObject
 {
@@ -135,12 +137,25 @@ class THEA_API StdLinearSolver : public virtual ILinearSolver, public NamedObjec
     /* Get the maximum number of solver iterations, if the solver is iterative. A negative number implies the default value. */
     void setMaxIterations(intx max_iters_);
 
-    /** Solve the linear system Ax = b for a dense double-precision matrix A. */
-    bool solve(Eigen::Ref< MatrixXd > const & a, double const * b, double const * guess = nullptr,
+    /** Solve the linear system Ax = b for a dense row-major double-precision matrix A. */
+    bool solve(Eigen::Ref< MatrixX<double, MatrixLayout::ROW_MAJOR> > const & a, double const * b,
+               double const * guess = nullptr, IOptions const * options = nullptr);
+
+    /** Solve the linear system Ax = b for a dense column-major double-precision matrix A. */
+    bool solve(Eigen::Ref< MatrixX<double, MatrixLayout::COLUMN_MAJOR> > const & a, double const * b,
+               double const * guess = nullptr, IOptions const * options = nullptr);
+
+    // Don't use Eigen::Ref for sparse matrices, Ref currently can't distinguish between row-major and column-major sparse
+    // matrices wrapped in Ref. A sparse matrix would match either of the function signatures below if we used Ref to declare
+    // the function parameters. If it is acutely necessary to pass e.g. a Map<SparseMatrix<...>>, wrap the data in an
+    // ICompressedSparseMatrix interface and use the ILinearSolver::solve() API instead.
+
+    /** Solve the linear system Ax = b for a sparse row-major double-precision matrix A. */
+    bool solve(SparseRowMatrix<double> const & a, double const * b, double const * guess = nullptr,
                IOptions const * options = nullptr);
 
-    /** Solve the linear system Ax = b for a sparse double-precision matrix A. */
-    bool solve(Eigen::Ref< SparseMatrix<double> > const & a, double const * b, double const * guess = nullptr,
+    /** Solve the linear system Ax = b for a sparse column-major double-precision matrix A. */
+    bool solve(SparseColumnMatrix<double> const & a, double const * b, double const * guess = nullptr,
                IOptions const * options = nullptr);
 
     // Functions from ILinearSolver

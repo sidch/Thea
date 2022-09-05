@@ -87,12 +87,14 @@ class THEA_API SurfaceParametrization
      * @param fixed_vertex_params The parameters of the fixed vertices. Can be the same container as \a free_vertex_params.
      * @param free_vertex_params Used to return the parameters of the free vertices, as computed by this function. Can be the
      *   same container as \a fixed_vertex_params.
+     * @param solve_method The method to use for solving the sparse linear system (do not pass dense solver methods here).
      *
      * @return True on success, false on error.
      */
     template <typename FaceIteratorT, typename FixedVertexParameterMapT, typename FreeVertexParameterMapT>
     static bool parametrize(FaceIteratorT faces_begin, FaceIteratorT faces_end, WeightType weight_type,
-                            FixedVertexParameterMapT const & fixed_vertex_params, FreeVertexParameterMapT & free_vertex_params)
+                            FixedVertexParameterMapT const & fixed_vertex_params, FreeVertexParameterMapT & free_vertex_params,
+                            StdLinearSolver::Method solve_method = StdLinearSolver::Method::SPARSE_LU)
     {
       // Quick check to catch the case when the user has forgotten to provide any boundary parameters. Partial boundary
       // initialization is detected by more expensive means below.
@@ -178,6 +180,7 @@ class THEA_API SurfaceParametrization
           auto e = *vei;
           auto v1 = e->getOtherEndpoint(v.first);
           double w_ij = getWeight(weight_type, v.first, v1, e, weight_error);
+          if (weight_error) { return false; }
           sum_weights += w_ij;
 
           auto other = interior_verts.find(v1);
@@ -200,17 +203,23 @@ class THEA_API SurfaceParametrization
         v_consts[v.second] /= sum_weights;
       }
 
-      // Build the sparse coefficient matrix
-      SparseMatrix<double> coeffs(num_vars, num_vars);
-      coeffs.setFromTriplets(triplets.begin(), triplets.end());
-
-      // Solve the system for U and V
-      StdLinearSolver u_solver(StdLinearSolver::Method::SPARSE_LU);
-      StdLinearSolver v_solver(StdLinearSolver::Method::SPARSE_LU);
-      if (!u_solver.solve(coeffs, u_consts.data()) || !v_solver.solve(coeffs, v_consts.data()))
+      // Solve the sparse linear system
+      StdLinearSolver u_solver(solve_method), v_solver(solve_method);
+      if (solve_method == StdLinearSolver::Method::BICGSTAB)
       {
-        THEA_ERROR << "SurfaceParametrization: Couldn't solve sparse linear system";
-        return false;
+        SparseRowMatrix<double> coeffs(num_vars, num_vars);  // row-major is faster for BICGSTAB
+        coeffs.setFromTriplets(triplets.begin(), triplets.end());
+
+        if (!u_solver.solve(coeffs, u_consts.data()) || !v_solver.solve(coeffs, v_consts.data()))
+        { THEA_ERROR << "SurfaceParametrization: Couldn't solve sparse linear system"; return false; }
+      }
+      else
+      {
+        SparseColumnMatrix<double> coeffs(num_vars, num_vars);  // column-major is faster for SPARSE_LU
+        coeffs.setFromTriplets(triplets.begin(), triplets.end());
+
+        if (!u_solver.solve(coeffs, u_consts.data()) || !v_solver.solve(coeffs, v_consts.data()))
+        { THEA_ERROR << "SurfaceParametrization: Couldn't solve sparse linear system"; return false; }
       }
 
       float64 const * u_sol = u_solver.getSolution();
@@ -328,6 +337,8 @@ class THEA_API SurfaceParametrization
       for (auto fvi = f->verticesBegin(); fvi != f->verticesEnd(); ++fvi)
         if (*fvi != vi && *fvi != vj)
           return *fvi;
+
+      THEA_ERROR << "SurfaceParametrization: Couldn't find third vertex of face";
 
       return nullptr;
     }
