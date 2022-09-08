@@ -52,18 +52,11 @@ class /* THEA_API */ GeneralMeshVertex
     typedef GeneralMeshEdge<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Edge;  ///< Edge of the mesh.
     typedef GeneralMeshFace<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;  ///< Face of the mesh.
 
-    /**
-     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge pointers and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Edge *, AllocatorT<Edge *> > EdgeCollection;
+  private:
+    typedef List< Edge *, AllocatorT<Edge *> >  EdgeCollection;  ///< Edge collection
+    typedef List< Face *, AllocatorT<Face *> >  FaceCollection;  ///< Face collection
 
-    /**
-     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Face *, AllocatorT<Face *> > FaceCollection;
-
+  public:
     typedef typename EdgeCollection::iterator        EdgeIterator;       ///< Iterator over edges.
     typedef typename EdgeCollection::const_iterator  EdgeConstIterator;  ///< Const iterator over edges.
     typedef typename FaceCollection::iterator        FaceIterator;       ///< Iterator over faces.
@@ -147,18 +140,6 @@ class /* THEA_API */ GeneralMeshVertex
 
       return false;
     }
-
-    /**
-     * Get the collection of incident edges. Treat it as an arbitrary iteratable collection of Edge pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    EdgeCollection const & getEdges() const { return edges; }
-
-    /**
-     * Get the collection of incident faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeConstIterator edgesBegin() const { return edges.begin(); }

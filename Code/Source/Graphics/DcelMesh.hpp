@@ -88,25 +88,11 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       }
     };
 
+    typedef UnorderedSet<Vertex *>               VertexCollection;    ///< Collection of vertices.
+    typedef Set<Halfedge *, HalfedgeComparator>  HalfedgeCollection;  ///< Collection of halfedges.
+    typedef UnorderedSet<Face *>                 FaceCollection;      ///< Collection of faces.
+
   public:
-    /**
-     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    typedef UnorderedSet<Vertex *> VertexCollection;
-
-    /**
-     * Collection of halfedges. Treat it as an arbitrary iteratable collection of Halfedge pointers and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    typedef Set<Halfedge *, HalfedgeComparator> HalfedgeCollection;
-
-    /**
-     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b> assume specific
-     * properties or ordering.
-     */
-    typedef UnorderedSet<Face *> FaceCollection;
-
     /** Vertex iterator. */
     typedef Algorithms::RefIterator<typename VertexCollection::iterator>          VertexIterator;
 
@@ -254,24 +240,6 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
       return &EMPTY_QUAD_WRAPPER;
     }
-
-    /**
-     * Get the collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    VertexCollection const & getVertices() const { return vertices; }
-
-    /**
-     * Get the collection of halfedges. Treat it as an arbitrary iteratable collection of Halfedge pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    HalfedgeCollection const & getHalfedges() const { return halfedges; }
-
-    /**
-     * Get the collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first vertex. */
     VertexConstIterator verticesBegin() const { return Algorithms::makeRefIterator(vertices.begin()); }

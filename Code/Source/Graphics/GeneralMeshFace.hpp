@@ -45,18 +45,11 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     typedef GeneralMeshVertex<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Vertex;  ///< Vertex of the mesh.
     typedef GeneralMeshEdge  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Edge;    ///< Edge of the mesh.
 
-    /**
-     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Vertex *, AllocatorT<Vertex *> > VertexCollection;
+  private:
+    typedef List< Vertex *, AllocatorT<Vertex *> >  VertexCollection;  ///< Collection of vertices.
+    typedef List< Edge *, AllocatorT<Edge *> >      EdgeCollection;    ///< Collection of edges.
 
-    /**
-     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge pointers and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Edge *, AllocatorT<Edge *> > EdgeCollection;
-
+  public:
     typedef typename VertexCollection::iterator                VertexIterator;              ///< Iterator over vertices.
     typedef typename VertexCollection::const_iterator          VertexConstIterator;         ///< Const iterator over vertices.
     typedef typename VertexCollection::reverse_iterator        VertexReverseIterator;       ///< Reverse iterator over vertices.
@@ -221,18 +214,6 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
 
       return nullptr;
     }
-
-    /**
-     * Get the collection of incident vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and
-     * <b>DO NOT</b> assume specific properties or ordering.
-     */
-    VertexCollection const & getVertices() const { return vertices; }
-
-    /**
-     * Get the collection of incident edges. Treat it as an arbitrary iteratable collection of Edge pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    EdgeCollection const & getEdges() const { return edges; }
 
     /** Get an iterator pointing to the first vertex of the face. */
     VertexConstIterator verticesBegin() const { return vertices.begin(); }

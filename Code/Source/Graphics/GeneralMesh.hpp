@@ -76,24 +76,12 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /**< Face of the mesh. */
     typedef GeneralMeshFace   <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;
 
-    /**
-     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex objects and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Vertex, AllocatorT<Vertex> > VertexCollection;
+  private:
+    typedef List< Vertex, AllocatorT<Vertex> >  VertexCollection;  ///< Collection of vertices.
+    typedef List< Edge, AllocatorT<Edge> >      EdgeCollection;    ///< Collection of edges.
+    typedef List< Face, AllocatorT<Face> >      FaceCollection;    ///< Collection of faces.
 
-    /**
-     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge objects and do not assume specific properties
-     * or ordering.
-     */
-    typedef List< Edge, AllocatorT<Edge> >  EdgeCollection;
-
-    /**
-     * Collection of faces. Treat it as an arbitrary iteratable collection of Face objects and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Face, AllocatorT<Face> > FaceCollection;
-
+  public:
     typedef typename VertexCollection::iterator        VertexIterator;       ///< Iterator over vertices.
     typedef typename VertexCollection::const_iterator  VertexConstIterator;  ///< Const iterator over vertices.
     typedef typename EdgeCollection::iterator          EdgeIterator;         ///< Iterator over edges.
@@ -418,24 +406,6 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
       return &EMPTY_QUAD_WRAPPER;
     }
-
-    /**
-     * Get the collection of vertices. Treat it as an arbitrary iteratable collection of Vertex objects and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    VertexCollection const & getVertices() const { return vertices; }
-
-    /**
-     * Get the collection of edges. Treat it as an arbitrary iteratable collection of Edge objects and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    EdgeCollection const & getEdges() const { return edges; }
-
-    /**
-     * Get the collection of faces. Treat it as an arbitrary iteratable collection of Face objects and <b>DO NOT</b> assume
-     * specific properties or ordering.
-     */
-    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first vertex. */
     VertexConstIterator verticesBegin() const { return vertices.begin(); }

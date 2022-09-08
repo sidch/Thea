@@ -41,12 +41,10 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     typedef GeneralMeshVertex<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Vertex;  ///< Vertex of the mesh.
     typedef GeneralMeshFace  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;    ///< Face of the mesh.
 
-    /**
-     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and do not assume specific
-     * properties or ordering.
-     */
-    typedef List< Face *, AllocatorT<Face *> > FaceCollection;
+  private:
+    typedef List< Face *, AllocatorT<Face *> > FaceCollection;  ///< Collection of faces.
 
+  public:
     typedef typename FaceCollection::iterator        FaceIterator;       ///< Iterator over faces.
     typedef typename FaceCollection::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
 
@@ -190,12 +188,6 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
 
     /** Get the number of faces incident on the edge. */
     intx numFaces() const { return (intx)faces.size(); }
-
-    /**
-     * Get the collection of incident faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b>
-     * assume specific properties or ordering.
-     */
-    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first face incident on the edge. */
     FaceConstIterator facesBegin() const { return faces.begin(); }
