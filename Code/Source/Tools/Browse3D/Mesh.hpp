@@ -28,13 +28,17 @@ namespace Browse3D {
 class VertexAttribute : public Graphics::ColorAttribute<ColorRgba>
 {
   public:
-    VertexAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr) {}
+    VertexAttribute() : Graphics::ColorAttribute<ColorRgba>(), parent(nullptr), flag(false) {}
 
     void setParent(Mesh * p) { parent = p; }
     Mesh * getParent() const { return parent; }
 
+    bool getFlag() const { return flag; }
+    void setFlag(bool v) { flag = v; }
+
   private:
     Mesh * parent;
+    bool flag;
 };
 
 class FaceAttribute : public Graphics::ColorAttribute<ColorRgba>

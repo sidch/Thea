@@ -30,6 +30,7 @@
 #include "../../FileSystem.hpp"
 #include <wx/filedlg.h>
 #include <algorithm>
+#include <cstdio>
 #include <fstream>
 
 wxDEFINE_EVENT(EVT_MODEL_PATH_CHANGED,         wxCommandEvent);
@@ -985,7 +986,7 @@ typedef Algorithms::BvhN<Vector3, 3> PointBvh;
 
 struct VertexFeatureVisitor
 {
-  VertexFeatureVisitor(PointBvh * fbvh_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  VertexFeatureVisitor(PointBvh const * fbvh_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
   : fbvh(fbvh_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
@@ -997,6 +998,9 @@ struct VertexFeatureVisitor
     BoundedSortedArrayN<MAX_NBRS, PointBvh::NeighborPair> nbrs;
     for (Mesh::VertexIterator vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
     {
+      if (vi->attr().getFlag())  // color already set
+        continue;
+
       nbrs.clear();
       intx num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vi->getPosition(), nbrs, 2 * scale);
       if (num_nbrs <= 0)
@@ -1024,6 +1028,8 @@ struct VertexFeatureVisitor
         THEA_WARNING << "No nearest neighbor found!";
         vi->attr().setColor(ColorRgb(1, 1, 1));
       }
+
+      vi->attr().setFlag(true);
     }
 
     mesh.invalidateGpuBuffers(Mesh::BufferId::VERTEX_COLOR);
@@ -1031,11 +1037,35 @@ struct VertexFeatureVisitor
     return false;
   }
 
-  PointBvh * fbvh;
+  PointBvh const * fbvh;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
 };
+
+bool
+parseInt(std::string const & s, intx & n)
+{
+  long i;
+  char c;
+  if (std::sscanf(s.c_str(), " %ld %c", &i, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not an integer"; return false; }
+
+  n = (intx)i;
+  return true;
+}
+
+bool
+parseReal(std::string const & s, Real & x)
+{
+  double d;
+  char c;
+  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
+
+  x = (Real)d;
+  return true;
+}
 
 } // namespace ModelInternal
 
@@ -1058,6 +1088,7 @@ Model::loadFeatures(std::string const & path_)
     return has_features;
   }
 
+  UnorderedMap<intx, size_t> vertex_features;
   Array<Vector3> feat_pts;
   Array< Array<Real> > feat_vals(1);
   has_features = true;
@@ -1067,14 +1098,27 @@ Model::loadFeatures(std::string const & path_)
     if (!in)
       throw Error("Couldn't open file");
 
-    std::string line;
+    std::string line, fields[3];
     Vector3 p;
     Real f;
     while (getNextNonBlankLine(in, line))
     {
       std::istringstream line_in(line);
-      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
-        throw Error("Couldn't read feature");
+      if (!(line_in >> fields[0] >> fields[1] >> fields[2] >> f))
+        throw Error("Couldn't read feature from line '" + line + '\'');
+
+      if (fields[0] == "v")  // direct vertex reference
+      {
+        intx vindex;
+        if (!parseInt(fields[1], vindex))  // fields[2] is ignored, currently
+          throw Error("Couldn't read feature from line '" + line + '\'');
+
+        vertex_features[vindex] = feat_pts.size();
+        p = Vector3::Zero();  // will be set below
+      }
+      else
+        if (!parseReal(fields[0], p[0]) || !parseReal(fields[1], p[1]) || !parseReal(fields[2], p[2]))
+          throw Error("Couldn't read feature from line '" + line + '\'');
 
       feat_pts.push_back(p);
       feat_vals[0].push_back(f);
@@ -1092,7 +1136,7 @@ Model::loadFeatures(std::string const & path_)
         for (size_t i = 1; i < feat_vals.size(); ++i)
         {
           if (!(line_in >> f))
-            throw Error("Couldn't read feature");
+            throw Error("Couldn't read feature from line '" + line + '\'');
 
           feat_vals[i].push_back(f);
         }
@@ -1167,11 +1211,29 @@ Model::loadFeatures(std::string const & path_)
       }
     }
 
+    mesh_group->forEachMeshUntil([&](Mesh & mesh) {
+      for (auto vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi)
+      {
+        auto existing = vertex_features.find(vi->getIndex());
+        if (existing != vertex_features.end())
+        {
+          vi->attr().setColor(featToColor(feat_vals[0][existing->second],
+                                          (feat_vals.size() > 1 ? &feat_vals[1][existing->second] : nullptr),
+                                          (feat_vals.size() > 2 ? &feat_vals[2][existing->second] : nullptr)));
+          vi->attr().setFlag(true);
+        }
+        else
+          vi->attr().setFlag(false);
+      }
+
+      return false;
+    });
+
     PointBvh fbvh(feat_pts.begin(), feat_pts.end());
     VertexFeatureVisitor visitor(&fbvh,
-                                 &feat_vals[0][0],
-                                 feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
-                                 feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
+                                 feat_vals[0].data(),
+                                 feat_vals.size() > 1 ? feat_vals[1].data() : nullptr,
+                                 feat_vals.size() > 2 ? feat_vals[2].data() : nullptr);
     mesh_group->forEachMeshUntil(visitor);
   }
   THEA_CATCH(has_features = false;, WARNING, "Couldn't load model features from '%s'", path_.c_str())

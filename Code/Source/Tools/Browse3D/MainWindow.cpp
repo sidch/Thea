@@ -80,8 +80,8 @@ MainWindow::init()
   wxMenu * view_menu = new wxMenu();
   wxMenu * rendering_menu = new wxMenu();
     rendering_menu->AppendRadioItem(ID_VIEW_SHADED,            "&Shaded\tAlt+1");
-    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe\tAlt+2");
-    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe\tAlt+3");
+    rendering_menu->AppendRadioItem(ID_VIEW_SHADED_WIREFRAME,  "S&haded + wireframe\tAlt+2");
+    rendering_menu->AppendRadioItem(ID_VIEW_WIREFRAME,         "&Wireframe\tAlt+3");
     rendering_menu->AppendSeparator();
     rendering_menu->AppendCheckItem(ID_VIEW_TWO_SIDED,         "&Two-sided lighting");
     rendering_menu->AppendCheckItem(ID_VIEW_FLAT_SHADED,       "&Flat shading\tAlt+0");
@@ -227,8 +227,8 @@ MainWindow::init()
   Bind(wxEVT_MENU, &MainWindow::OnExit, this, wxID_EXIT);
 
   Bind(wxEVT_MENU, &ModelDisplay::renderShaded, ui.model_display, ID_VIEW_SHADED);
-  Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
   Bind(wxEVT_MENU, &ModelDisplay::renderShadedWireframe, ui.model_display, ID_VIEW_SHADED_WIREFRAME);
+  Bind(wxEVT_MENU, &ModelDisplay::renderWireframe, ui.model_display, ID_VIEW_WIREFRAME);
   Bind(wxEVT_MENU, &ModelDisplay::setTwoSided, ui.model_display, ID_VIEW_TWO_SIDED);
   Bind(wxEVT_MENU, &ModelDisplay::setFlatShaded, ui.model_display, ID_VIEW_FLAT_SHADED);
   Bind(wxEVT_MENU, &ModelDisplay::fitViewToModel, ui.model_display, ID_VIEW_FIT);
