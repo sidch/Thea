@@ -37,26 +37,36 @@ class GeneralMeshEdge;
 template <typename VertexAttributeT, typename EdgeAttributeT, typename FaceAttributeT, template <typename T> class AllocatorT>
 class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public AttributedObject<FaceAttributeT>
 {
+  private:
+    typedef NormalAttribute<Vector3> NormalBaseType;
+
   public:
     typedef GeneralMesh      <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Mesh;    ///< Parent mesh class.
     typedef GeneralMeshVertex<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Vertex;  ///< Vertex of the mesh.
     typedef GeneralMeshEdge  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Edge;    ///< Edge of the mesh.
 
-  private:
-    typedef NormalAttribute<Vector3> NormalBaseType;
+    /**
+     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Vertex *, AllocatorT<Vertex *> > VertexCollection;
 
-    typedef List< Vertex *, AllocatorT<Vertex *> >  VertexList;
-    typedef List< Edge *,   AllocatorT<Edge *>   >  EdgeList;
+    /**
+     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge pointers and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Edge *, AllocatorT<Edge *> > EdgeCollection;
 
-  public:
-    typedef typename VertexList::iterator                VertexIterator;              ///< Iterator over vertices.
-    typedef typename VertexList::const_iterator          VertexConstIterator;         ///< Const iterator over vertices.
-    typedef typename VertexList::reverse_iterator        VertexReverseIterator;       ///< Reverse iterator over vertices.
-    typedef typename VertexList::const_reverse_iterator  VertexConstReverseIterator;  ///< Const reverse iterator over vertices.
-    typedef typename EdgeList::iterator                  EdgeIterator;                ///< Iterator over edges.
-    typedef typename EdgeList::const_iterator            EdgeConstIterator;           ///< Const iterator over edges.
-    typedef typename EdgeList::reverse_iterator          EdgeReverseIterator;         ///< Reverse iterator over edges.
-    typedef typename EdgeList::const_reverse_iterator    EdgeConstReverseIterator;    ///< Const reverse iterator over edges.
+    typedef typename VertexCollection::iterator                VertexIterator;              ///< Iterator over vertices.
+    typedef typename VertexCollection::const_iterator          VertexConstIterator;         ///< Const iterator over vertices.
+    typedef typename VertexCollection::reverse_iterator        VertexReverseIterator;       ///< Reverse iterator over vertices.
+    typedef typename VertexCollection::const_reverse_iterator  VertexConstReverseIterator;  /**< Const reverse iterator over
+                                                                                                 vertices. */
+    typedef typename EdgeCollection::iterator                  EdgeIterator;                ///< Iterator over edges.
+    typedef typename EdgeCollection::const_iterator            EdgeConstIterator;           ///< Const iterator over edges.
+    typedef typename EdgeCollection::reverse_iterator          EdgeReverseIterator;         ///< Reverse iterator over edges.
+    typedef typename EdgeCollection::const_reverse_iterator    EdgeConstReverseIterator;    /**< Const reverse iterator over
+                                                                                                 edges. */
 
     /** Construct with the given normal. */
     GeneralMeshFace(Vector3 const & normal = Vector3::Zero()) : NormalBaseType(normal), index(-1), marked(false) {}
@@ -211,6 +221,18 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
 
       return nullptr;
     }
+
+    /**
+     * Get the collection of incident vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and
+     * <b>DO NOT</b> assume specific properties or ordering.
+     */
+    VertexCollection const & getVertices() const { return vertices; }
+
+    /**
+     * Get the collection of incident edges. Treat it as an arbitrary iteratable collection of Edge pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    EdgeCollection const & getEdges() const { return edges; }
 
     /** Get an iterator pointing to the first vertex of the face. */
     VertexConstIterator verticesBegin() const { return vertices.begin(); }
@@ -507,8 +529,8 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
       marked = false;
     }
 
-    VertexList vertices;
-    EdgeList edges;
+    VertexCollection vertices;
+    EdgeCollection edges;
     intx index;
     bool marked;
 

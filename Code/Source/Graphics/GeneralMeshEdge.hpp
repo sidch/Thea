@@ -41,12 +41,14 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     typedef GeneralMeshVertex<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Vertex;  ///< Vertex of the mesh.
     typedef GeneralMeshFace  <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;    ///< Face of the mesh.
 
-  private:
-    typedef List< Face *, AllocatorT<Face *> > FaceList;
+    /**
+     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Face *, AllocatorT<Face *> > FaceCollection;
 
-  public:
-    typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
-    typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
+    typedef typename FaceCollection::iterator        FaceIterator;       ///< Iterator over faces.
+    typedef typename FaceCollection::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
 
     /** Construct from two endpoints. */
     GeneralMeshEdge(Vertex * v0 = nullptr, Vertex * v1 = nullptr) : marked(false), bits(0), internal_bits(0)
@@ -189,6 +191,12 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Get the number of faces incident on the edge. */
     intx numFaces() const { return (intx)faces.size(); }
 
+    /**
+     * Get the collection of incident faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    FaceCollection const & getFaces() const { return faces; }
+
     /** Get an iterator pointing to the first face incident on the edge. */
     FaceConstIterator facesBegin() const { return faces.begin(); }
 
@@ -211,11 +219,11 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
 
     /**
      * Check if this is a boundary edge of a patch defined by a subset of mesh faces. Such an edge will be adjacent to
-     * <b><i>exactly</i></b> one face of the patch. FaceSetT should be a collection with a <tt>find()</tt> member function
+     * <b><i>exactly</i></b> one face of the patch. FaceCollectionT should be a collection with a <tt>find()</tt> member function
      * compatible with <tt>std::set<Face const *>::find()</tt>.
      */
-    template <typename FaceSetT>
-    bool isBoundaryEdge(FaceSetT const & patch) const
+    template <typename FaceCollectionT>
+    bool isBoundaryEdge(FaceCollectionT const & patch) const
     {
       intx count = 0;
       for (auto f : faces)
@@ -337,7 +345,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     }
 
     Vertex * endpoints[2];
-    FaceList faces;
+    FaceCollection faces;
     bool marked;
     unsigned char bits;
     mutable unsigned char internal_bits;  // only for use by GeneralMesh

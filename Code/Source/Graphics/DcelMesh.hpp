@@ -88,17 +88,42 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       }
     };
 
-    typedef UnorderedSet<Vertex *>               VertexSet;
-    typedef Set<Halfedge *, HalfedgeComparator>  HalfedgeSet;  // store halfedges in sequence so twins are consecutive
-    typedef UnorderedSet<Face *>                 FaceSet;
-
   public:
-    typedef Algorithms::RefIterator<typename VertexSet::iterator>          VertexIterator;         ///< Vertex iterator.
-    typedef Algorithms::RefIterator<typename VertexSet::const_iterator>    VertexConstIterator;    ///< Const vertex iterator.
-    typedef Algorithms::RefIterator<typename HalfedgeSet::iterator>        HalfedgeIterator;       ///< Halfedge iterator.
-    typedef Algorithms::RefIterator<typename HalfedgeSet::const_iterator>  HalfedgeConstIterator;  ///< Const halfedge iterator.
-    typedef Algorithms::RefIterator<typename FaceSet::iterator>            FaceIterator;           ///< Face iterator.
-    typedef Algorithms::RefIterator<typename FaceSet::const_iterator>      FaceConstIterator;      ///< Const face iterator.
+    /**
+     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    typedef UnorderedSet<Vertex *> VertexCollection;
+
+    /**
+     * Collection of halfedges. Treat it as an arbitrary iteratable collection of Halfedge pointers and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    typedef Set<Halfedge *, HalfedgeComparator> HalfedgeCollection;
+
+    /**
+     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b> assume specific
+     * properties or ordering.
+     */
+    typedef UnorderedSet<Face *> FaceCollection;
+
+    /** Vertex iterator. */
+    typedef Algorithms::RefIterator<typename VertexCollection::iterator>          VertexIterator;
+
+    /** Const vertex iterator. */
+    typedef Algorithms::RefIterator<typename VertexCollection::const_iterator>    VertexConstIterator;
+
+    /** Halfedge iterator. */
+    typedef Algorithms::RefIterator<typename HalfedgeCollection::iterator>        HalfedgeIterator;
+
+    /** Const halfedge iterator. */
+    typedef Algorithms::RefIterator<typename HalfedgeCollection::const_iterator>  HalfedgeConstIterator;
+
+    /** Face iterator. */
+    typedef Algorithms::RefIterator<typename FaceCollection::iterator>            FaceIterator;
+
+    /** Const face iterator. */
+    typedef Algorithms::RefIterator<typename FaceCollection::const_iterator>      FaceConstIterator;
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
     typedef Vertex        *  VertexHandle;       ///< Handle to a mesh vertex.
@@ -229,6 +254,24 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
       return &EMPTY_QUAD_WRAPPER;
     }
+
+    /**
+     * Get the collection of vertices. Treat it as an arbitrary iteratable collection of Vertex pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    VertexCollection const & getVertices() const { return vertices; }
+
+    /**
+     * Get the collection of halfedges. Treat it as an arbitrary iteratable collection of Halfedge pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    HalfedgeCollection const & getHalfedges() const { return halfedges; }
+
+    /**
+     * Get the collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first vertex. */
     VertexConstIterator verticesBegin() const { return Algorithms::makeRefIterator(vertices.begin()); }
@@ -1580,10 +1623,10 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
     typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
-    FaceSet      faces;                ///< Set of mesh faces.
-    VertexSet    vertices;             ///< Set of mesh vertices.
-    HalfedgeSet  halfedges;            ///< Set of mesh halfedges.
-    intx         next_halfedge_index;  ///< Index to be assigned to the next added halfedge.
+    FaceCollection      faces;                ///< Set of mesh faces.
+    VertexCollection    vertices;             ///< Set of mesh vertices.
+    HalfedgeCollection  halfedges;            ///< Set of mesh halfedges.
+    intx                next_halfedge_index;  ///< Index to be assigned to the next added halfedge.
 
     intx max_vertex_index;  ///< The largest index of a vertex in the mesh.
     intx max_face_index;    ///< The largest index of a face in the mesh.

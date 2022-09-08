@@ -76,18 +76,30 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /**< Face of the mesh. */
     typedef GeneralMeshFace   <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;
 
-  private:
-    typedef List<Vertex, AllocatorT<Vertex> >  VertexList;
-    typedef List<Edge,   AllocatorT<Edge>   >  EdgeList;
-    typedef List<Face,   AllocatorT<Face>   >  FaceList;
+    /**
+     * Collection of vertices. Treat it as an arbitrary iteratable collection of Vertex objects and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Vertex, AllocatorT<Vertex> > VertexCollection;
 
-  public:
-    typedef typename VertexList::iterator        VertexIterator;       ///< Iterator over vertices.
-    typedef typename VertexList::const_iterator  VertexConstIterator;  ///< Const iterator over vertices.
-    typedef typename EdgeList::iterator          EdgeIterator;         ///< Iterator over edges.
-    typedef typename EdgeList::const_iterator    EdgeConstIterator;    ///< Const iterator over edges.
-    typedef typename FaceList::iterator          FaceIterator;         ///< Iterator over faces.
-    typedef typename FaceList::const_iterator    FaceConstIterator;    ///< Const iterator over faces.
+    /**
+     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge objects and do not assume specific properties
+     * or ordering.
+     */
+    typedef List< Edge, AllocatorT<Edge> >  EdgeCollection;
+
+    /**
+     * Collection of faces. Treat it as an arbitrary iteratable collection of Face objects and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Face, AllocatorT<Face> > FaceCollection;
+
+    typedef typename VertexCollection::iterator        VertexIterator;       ///< Iterator over vertices.
+    typedef typename VertexCollection::const_iterator  VertexConstIterator;  ///< Const iterator over vertices.
+    typedef typename EdgeCollection::iterator          EdgeIterator;         ///< Iterator over edges.
+    typedef typename EdgeCollection::const_iterator    EdgeConstIterator;    ///< Const iterator over edges.
+    typedef typename FaceCollection::iterator          FaceIterator;         ///< Iterator over faces.
+    typedef typename FaceCollection::const_iterator    FaceConstIterator;    ///< Const iterator over faces.
 
     // Generic typedefs, each mesh class must define these for builder and codec compatibility
     typedef Vertex        *  VertexHandle;       ///< Handle to a mesh vertex.
@@ -406,6 +418,24 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
       static MatrixWrapper<EmptyQuadMatrix> EMPTY_QUAD_WRAPPER(&EMPTY_QUAD_MATRIX);
       return &EMPTY_QUAD_WRAPPER;
     }
+
+    /**
+     * Get the collection of vertices. Treat it as an arbitrary iteratable collection of Vertex objects and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    VertexCollection const & getVertices() const { return vertices; }
+
+    /**
+     * Get the collection of edges. Treat it as an arbitrary iteratable collection of Edge objects and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    EdgeCollection const & getEdges() const { return edges; }
+
+    /**
+     * Get the collection of faces. Treat it as an arbitrary iteratable collection of Face objects and <b>DO NOT</b> assume
+     * specific properties or ordering.
+     */
+    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first vertex. */
     VertexConstIterator verticesBegin() const { return vertices.begin(); }
@@ -1971,9 +2001,9 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     typedef Array<Vector2>    TexCoordArray;  ///< Array of texture coordinates.
     typedef Array<uint32>     IndexArray;     ///< Array of indices.
 
-    FaceList    faces;        ///< Set of mesh faces.
-    VertexList  vertices;     ///< Set of mesh vertices.
-    EdgeList    edges;        ///< Set of mesh edges.
+    FaceCollection    faces;         ///< Set of mesh faces.
+    VertexCollection  vertices;      ///< Set of mesh vertices.
+    EdgeCollection    edges;         ///< Set of mesh edges.
 
     intx max_vertex_index;    ///< The largest index of a vertex in the mesh.
     intx max_face_index;      ///< The largest index of a face in the mesh.

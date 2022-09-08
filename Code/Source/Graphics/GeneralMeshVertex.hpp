@@ -43,23 +43,31 @@ class /* THEA_API */ GeneralMeshVertex
   public NormalAttribute<Vector3>,
   public AttributedObject<VertexAttributeT>
 {
+  private:
+    typedef PositionAttribute<Vector3>  PositionBaseType;
+    typedef NormalAttribute<Vector3>    NormalBaseType;
+
   public:
     typedef GeneralMesh    <VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Mesh;  ///< Parent mesh class.
     typedef GeneralMeshEdge<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Edge;  ///< Edge of the mesh.
     typedef GeneralMeshFace<VertexAttributeT, EdgeAttributeT, FaceAttributeT, AllocatorT>  Face;  ///< Face of the mesh.
 
-  private:
-    typedef PositionAttribute<Vector3>  PositionBaseType;
-    typedef NormalAttribute<Vector3>    NormalBaseType;
+    /**
+     * Collection of edges. Treat it as an arbitrary iteratable collection of Edge pointers and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Edge *, AllocatorT<Edge *> > EdgeCollection;
 
-    typedef List< Edge *, AllocatorT<Edge *> > EdgeList;
-    typedef List< Face *, AllocatorT<Face *> > FaceList;
+    /**
+     * Collection of faces. Treat it as an arbitrary iteratable collection of Face pointers and do not assume specific
+     * properties or ordering.
+     */
+    typedef List< Face *, AllocatorT<Face *> > FaceCollection;
 
-  public:
-    typedef typename EdgeList::iterator        EdgeIterator;       ///< Iterator over edges.
-    typedef typename EdgeList::const_iterator  EdgeConstIterator;  ///< Const iterator over edges.
-    typedef typename FaceList::iterator        FaceIterator;       ///< Iterator over faces.
-    typedef typename FaceList::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
+    typedef typename EdgeCollection::iterator        EdgeIterator;       ///< Iterator over edges.
+    typedef typename EdgeCollection::const_iterator  EdgeConstIterator;  ///< Const iterator over edges.
+    typedef typename FaceCollection::iterator        FaceIterator;       ///< Iterator over faces.
+    typedef typename FaceCollection::const_iterator  FaceConstIterator;  ///< Const iterator over faces.
 
     /** Default constructor. */
     GeneralMeshVertex()
@@ -139,6 +147,18 @@ class /* THEA_API */ GeneralMeshVertex
 
       return false;
     }
+
+    /**
+     * Get the collection of incident edges. Treat it as an arbitrary iteratable collection of Edge pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    EdgeCollection const & getEdges() const { return edges; }
+
+    /**
+     * Get the collection of incident faces. Treat it as an arbitrary iteratable collection of Face pointers and <b>DO NOT</b>
+     * assume specific properties or ordering.
+     */
+    FaceCollection const & getFaces() const { return faces; }
 
     /** Get an iterator pointing to the first edge incident on the vertex. */
     EdgeConstIterator edgesBegin() const { return edges.begin(); }
@@ -389,8 +409,8 @@ class /* THEA_API */ GeneralMeshVertex
       dst.internal_bits = internal_bits;
     }
 
-    EdgeList edges;
-    FaceList faces;
+    EdgeCollection edges;
+    FaceCollection faces;
     intx index;
     bool has_precomputed_normal;
     float normal_normalization_factor;

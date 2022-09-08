@@ -250,7 +250,7 @@ GlTexture::glTexImage(void const * bytes, Format const * bytes_format, int32 fac
 int8
 GlTexture::setInternalFormat(Format const * bytes_format, Format const * desired_format)
 {
-  if (desired_format == TextureFormat::AUTO())
+  if (!desired_format || desired_format == TextureFormat::AUTO())
   {
     if (!bytes_format)
     {
