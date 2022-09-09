@@ -968,6 +968,30 @@ Model::getSegmentsPath() const
 
 namespace ModelInternal {
 
+bool
+parseInt(std::string const & s, intx & n)
+{
+  long i;
+  char c;
+  if (std::sscanf(s.c_str(), " %ld %c", &i, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not an integer"; return false; }
+
+  n = (intx)i;
+  return true;
+}
+
+bool
+parseReal(std::string const & s, Real & x)
+{
+  double d;
+  char c;
+  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
+
+  x = (Real)d;
+  return true;
+}
+
 ColorRgb
 featToColor(Real f0, Real const * f1, Real const * f2)
 {
@@ -1042,30 +1066,6 @@ struct VertexFeatureVisitor
   Real const * feat_vals1;
   Real const * feat_vals2;
 };
-
-bool
-parseInt(std::string const & s, intx & n)
-{
-  long i;
-  char c;
-  if (std::sscanf(s.c_str(), " %ld %c", &i, &c) != 1)
-  { THEA_ERROR << "String '" << s << "' is not an integer"; return false; }
-
-  n = (intx)i;
-  return true;
-}
-
-bool
-parseReal(std::string const & s, Real & x)
-{
-  double d;
-  char c;
-  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
-  { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
-
-  x = (Real)d;
-  return true;
-}
 
 } // namespace ModelInternal
 

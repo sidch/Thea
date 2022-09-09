@@ -1694,6 +1694,30 @@ getNextNonBlankLine(istream & in, string & line)
   return in;
 }
 
+bool
+parseInt(std::string const & s, intx & n)
+{
+  long i;
+  char c;
+  if (std::sscanf(s.c_str(), " %ld %c", &i, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not an integer"; return false; }
+
+  n = (intx)i;
+  return true;
+}
+
+bool
+parseReal(std::string const & s, Real & x)
+{
+  double d;
+  char c;
+  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
+  { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
+
+  x = (Real)d;
+  return true;
+}
+
 ColorRgb
 featToColor(Real f0, Real const * f1, Real const * f2)
 {
@@ -1709,11 +1733,13 @@ featToColor(Real f0, Real const * f1, Real const * f2)
 }
 
 typedef BvhN<Vector3, 3> PointBvh;
+typedef UnorderedMap<intx, size_t> IndexMap;
 
 struct VertexColorizer
 {
-  VertexColorizer(PointBvh * fbvh_, Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
-  : fbvh(fbvh_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
+  VertexColorizer(PointBvh const * fbvh_, IndexMap const * vertex_features_,
+                  Real const * feat_vals0_, Real const * feat_vals1_, Real const * feat_vals2_)
+  : fbvh(fbvh_), vertex_features(vertex_features_), feat_vals0(feat_vals0_), feat_vals1(feat_vals1_), feat_vals2(feat_vals2_) {}
 
   bool operator()(Mesh & mesh)
   {
@@ -1721,12 +1747,13 @@ struct VertexColorizer
     Real scale = std::max(0.2f * fbvh->getBounds().getExtent().norm(), (Real)1.0e-8);
     Real scale2 = scale * scale;
 
-    mesh.addColors();
-
     Mesh::VertexArray const & vertices = mesh.getVertices();
     BoundedSortedArrayN<MAX_NBRS, PointBvh::NeighborPair> nbrs;
     for (size_t i = 0; i < vertices.size(); ++i)
     {
+      if (vertex_features->find(mesh.getVertexSourceIndex((intx)i)) != vertex_features->end())
+        continue;
+
       nbrs.clear();
       intx num_nbrs = fbvh->kClosestPairs<Algorithms::MetricL2>(vertices[i], nbrs, 2 * scale);
       if (num_nbrs <= 0)
@@ -1759,7 +1786,8 @@ struct VertexColorizer
     return false;
   }
 
-  PointBvh * fbvh;
+  PointBvh const * fbvh;
+  IndexMap const * vertex_features;
   Real const * feat_vals0;
   Real const * feat_vals1;
   Real const * feat_vals2;
@@ -1768,22 +1796,36 @@ struct VertexColorizer
 bool
 ShapeRendererImpl::loadFeatures(Model & model)
 {
+  IndexMap vertex_features;
   Array<Vector3> feat_pts;
   Array< Array<Real> > feat_vals(1);
   try
   {
-    ifstream in(features_path.c_str());
+    std::ifstream in(features_path.c_str());
     if (!in)
       throw Error("Couldn't open file");
 
-    string line;
+    std::string line, fields[3];
     Vector3 p;
     Real f;
     while (getNextNonBlankLine(in, line))
     {
-      istringstream line_in(line);
-      if (!(line_in >> p[0] >> p[1] >> p[2] >> f))
-        throw Error("Couldn't read feature");
+      std::istringstream line_in(line);
+      if (!(line_in >> fields[0] >> fields[1] >> fields[2] >> f))
+        throw Error("Couldn't read feature from line '" + line + '\'');
+
+      if (fields[0] == "v")  // direct vertex reference
+      {
+        intx vindex;
+        if (!parseInt(fields[1], vindex))  // fields[2] is ignored, currently
+          throw Error("Couldn't read feature from line '" + line + '\'');
+
+        vertex_features[vindex] = feat_pts.size();
+        p = Vector3::Zero();  // will be set below
+      }
+      else
+        if (!parseReal(fields[0], p[0]) || !parseReal(fields[1], p[1]) || !parseReal(fields[2], p[2]))
+          throw Error("Couldn't read feature from line '" + line + '\'');
 
       feat_pts.push_back(p);
       feat_vals[0].push_back(f);
@@ -1801,7 +1843,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
         for (size_t i = 1; i < feat_vals.size(); ++i)
         {
           if (!(line_in >> f))
-            throw Error("Couldn't read feature");
+            throw Error("Couldn't read feature from line '" + line + '\'');
 
           feat_vals[i].push_back(f);
         }
@@ -1893,8 +1935,23 @@ ShapeRendererImpl::loadFeatures(Model & model)
   }
   else
   {
+    model.mesh_group.forEachMeshUntil([&](Mesh & mesh) {
+      mesh.addColors();
+      auto const & vertices = mesh.getVertices();
+      for (size_t i = 0; i < vertices.size(); ++i)
+      {
+        auto existing = vertex_features.find(mesh.getVertexSourceIndex((intx)i));
+        if (existing != vertex_features.end())
+          mesh.setColor((intx)i, featToColor(feat_vals[0][existing->second],
+                                             (feat_vals.size() > 1 ? &feat_vals[1][existing->second] : nullptr),
+                                             (feat_vals.size() > 2 ? &feat_vals[2][existing->second] : nullptr)));
+      }
+
+      return false;
+    });
+
     PointBvh fbvh(feat_pts.begin(), feat_pts.end());
-    VertexColorizer visitor(&fbvh,
+    VertexColorizer visitor(&fbvh, &vertex_features,
                             &feat_vals[0][0],
                             feat_vals.size() > 1 ? &feat_vals[1][0] : nullptr,
                             feat_vals.size() > 2 ? &feat_vals[2][0] : nullptr);
