@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <limits>
 
 wxDEFINE_EVENT(EVT_MODEL_PATH_CHANGED,         wxCommandEvent);
 wxDEFINE_EVENT(EVT_MODEL_GEOMETRY_CHANGED,     wxCommandEvent);
@@ -983,9 +984,9 @@ parseInt(std::string const & s, intx & n)
 bool
 parseReal(std::string const & s, Real & x)
 {
-  double d;
+  long double d;
   char c;
-  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
+  if (std::sscanf(s.c_str(), " %Lf %c", &d, &c) != 1)
   { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
 
   x = (Real)d;
@@ -1100,7 +1101,7 @@ Model::loadFeatures(std::string const & path_)
 
     std::string line, fields[3];
     Vector3 p;
-    Real f;
+    long double f;  // to handle underflow problems with smaller representations
     while (getNextNonBlankLine(in, line))
     {
       std::istringstream line_in(line);
@@ -1128,7 +1129,7 @@ Model::loadFeatures(std::string const & path_)
         while (line_in >> f)
         {
           feat_vals.push_back(Array<Real>());
-          feat_vals.back().push_back(f);
+          feat_vals.back().push_back((Real)Math::clamp(f, -std::numeric_limits<Real>::max(), std::numeric_limits<Real>::max()));
         }
       }
       else
@@ -1138,7 +1139,7 @@ Model::loadFeatures(std::string const & path_)
           if (!(line_in >> f))
             throw Error("Couldn't read feature from line '" + line + '\'');
 
-          feat_vals[i].push_back(f);
+          feat_vals[i].push_back((Real)Math::clamp(f, -std::numeric_limits<Real>::max(), std::numeric_limits<Real>::max()));
         }
       }
     }

@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <fstream>
 #include <functional>
+#include <limits>
 #include <sstream>
 #include <utility>
 
@@ -1709,9 +1710,9 @@ parseInt(std::string const & s, intx & n)
 bool
 parseReal(std::string const & s, Real & x)
 {
-  double d;
+  long double d;
   char c;
-  if (std::sscanf(s.c_str(), " %lf %c", &d, &c) != 1)
+  if (std::sscanf(s.c_str(), " %Lf %c", &d, &c) != 1)
   { THEA_ERROR << "String '" << s << "' is not a real number"; return false; }
 
   x = (Real)d;
@@ -1807,7 +1808,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
 
     std::string line, fields[3];
     Vector3 p;
-    Real f;
+    long double f;  // to handle underflow problems with smaller representations
     while (getNextNonBlankLine(in, line))
     {
       std::istringstream line_in(line);
@@ -1835,7 +1836,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
         while (line_in >> f)
         {
           feat_vals.push_back(Array<Real>());
-          feat_vals.back().push_back(f);
+          feat_vals.back().push_back((Real)Math::clamp(f, -std::numeric_limits<Real>::max(), std::numeric_limits<Real>::max()));
         }
       }
       else
@@ -1845,7 +1846,7 @@ ShapeRendererImpl::loadFeatures(Model & model)
           if (!(line_in >> f))
             throw Error("Couldn't read feature from line '" + line + '\'');
 
-          feat_vals[i].push_back(f);
+          feat_vals[i].push_back((Real)Math::clamp(f, -std::numeric_limits<Real>::max(), std::numeric_limits<Real>::max()));
         }
       }
     }
