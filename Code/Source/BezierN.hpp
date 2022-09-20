@@ -83,35 +83,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
 
     bool hasDeriv(intx deriv_order) const { return (deriv_order >= 0); }
 
-  private:
-    mutable Array<VectorT>   ctrl[4];   ///< Arrays of curve control vectors and first, second and third-order differences.
-    mutable MatrixX<float64>  binom;    ///< Cached binomial coefficients.
-
-    /** Cache binomial coefficients for computing Bernstein polynomials. */
-    void cacheBinom() const
-    {
-      if (binom.rows() > 0)
-        return;
-
-      intx n = (intx)ctrl[0].size();
-      binom.resize(n, n);
-
-      // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteBezierCurve.h
-      //
-      // Compute combinatorial values binom(n, k). The values binom(r, c) are invalid for r < c; that is, we use only the
-      // entries for r >= c.
-      binom(0, 0) = 1;
-      binom(1, 0) = 1;
-      binom(1, 1) = 1;
-      for (intx i = 2; i < n; ++i)
-      {
-        binom(i, 0) = 1;
-        binom(i, i) = 1;
-        for (intx j = 1; j < i; ++j)
-          binom(i, j) = binom(i - 1, j - 1) + binom(i - 1, j);
-      }
-    }
-
+  protected:
     void update() const
     {
       if (!this->isChanged()) return;
@@ -196,6 +168,35 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
     }
 
     bool firstAndLastControlsArePositions() const { return true; }
+
+  private:
+    /** Cache binomial coefficients for computing Bernstein polynomials. */
+    void cacheBinom() const
+    {
+      if (binom.rows() > 0)
+        return;
+
+      intx n = (intx)ctrl[0].size();
+      binom.resize(n, n);
+
+      // From https://www.geometrictools.com/GTEngine/Include/Mathematics/GteBezierCurve.h
+      //
+      // Compute combinatorial values binom(n, k). The values binom(r, c) are invalid for r < c; that is, we use only the
+      // entries for r >= c.
+      binom(0, 0) = 1;
+      binom(1, 0) = 1;
+      binom(1, 1) = 1;
+      for (intx i = 2; i < n; ++i)
+      {
+        binom(i, 0) = 1;
+        binom(i, i) = 1;
+        for (intx j = 1; j < i; ++j)
+          binom(i, j) = binom(i - 1, j - 1) + binom(i - 1, j);
+      }
+    }
+
+    mutable Array<VectorT>   ctrl[4];   ///< Arrays of curve control vectors and first, second and third-order differences.
+    mutable MatrixX<float64>  binom;    ///< Cached binomial coefficients.
 
 }; // class BezierN
 
