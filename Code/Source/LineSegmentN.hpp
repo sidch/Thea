@@ -154,13 +154,13 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, other.point,
-                                              VectorT(other.point + other.direction), false, s, t, c1, c2);
+      auto sqdist = Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, other.point,
+                                                            VectorT(other.point + other.direction), false, s, t, c1, c2);
 
       if (this_pt)  *this_pt  = c1;
       if (other_pt) *other_pt = c2;
 
-      return (c1 - c2).squaredNorm();
+      return sqdist;
     }
 
     /** Get the distance of this segment from an infinite line. */
@@ -174,13 +174,13 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, line.getPoint(),
-                                              VectorT(line.getPoint() + line.getDirection()), true, s, t, c1, c2);
+      auto sqdist = Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, line.getPoint(),
+                                                            VectorT(line.getPoint() + line.getDirection()), true, s, t, c1, c2);
 
       if (this_pt) *this_pt = c1;
       if (line_pt) *line_pt = c2;
 
-      return (c1 - c2).squaredNorm();
+      return sqdist;
     }
 
     /** Get the distance of this segment from a ray. */
@@ -194,15 +194,15 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     {
       VectorT c1, c2;
       T s, t;
-      Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, ray.getOrigin(),
-                                              VectorT(ray.getOrigin() + ray.getDirection()), true, s, t, c1, c2);
+      auto sqdist = Internal::closestPtSegmentSegment<N, T>(point, VectorT(point + direction), false, ray.getOrigin(),
+                                                            VectorT(ray.getOrigin() + ray.getDirection()), true, s, t, c1, c2);
       if (t < 0)
         c2 = ray.getOrigin();
 
       if (this_pt) *this_pt = c1;
       if (ray_pt)  *ray_pt  = c2;
 
-      return (c1 - c2).squaredNorm();
+      return sqdist;
     }
 
     /**
@@ -353,7 +353,7 @@ closestPtSegmentSegment(Vector<N, T> const & p1, Vector<N, T> const & q1, bool i
 
   c1 = p1 + s * d1;
   c2 = p2 + t * d2;
-  return (c1 - c2).dot(c1 - c2);
+  return (c1 - c2).squaredNorm();
 }
 
 } // namespace Internal

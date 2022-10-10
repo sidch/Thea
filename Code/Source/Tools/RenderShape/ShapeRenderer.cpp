@@ -126,6 +126,7 @@ class ShapeRendererImpl
     PointUsage show_points;
     bool flat;
     bool two_sided;
+    Vector3 light_dir;
     bool save_color;
     bool save_depth;
     bool save_hitcounts;
@@ -249,6 +250,7 @@ ShapeRendererImpl::resetArgs()
   show_points = POINTS_NONE;
   flat = false;
   two_sided = true;
+  light_dir = Vector3(-1, -1, -2).stableNormalized();
   save_color = true;
   save_depth = false;
   save_hitcounts = false;
@@ -605,7 +607,7 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "                         alternative to -v that allows copy-pasting the";
   THEA_CONSOLE << "                         matrices from -w cam; use '-' to choose a default";
   THEA_CONSOLE << "                         setting for an argument)";
-  THEA_CONSOLE << "  -u <up-dir>           (x, y or z, optionally preceded by + or -)";
+  THEA_CONSOLE << "  -u <dir>              (x, y or z, optionally preceded by + or -)";
   THEA_CONSOLE << "  -p <pixels>           (size of points in pixels -- can be fractional)";
   THEA_CONSOLE << "  -c <argb>             (shape color; or 'id' to color faces by face ID and";
   THEA_CONSOLE << "                         points by point ID; or 'leaf' to assign a random";
@@ -631,6 +633,7 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "                         high quality)";
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -1                    (one-sided lighting)";
+  THEA_CONSOLE << "  -g <dir>              (light direction, as 'x y z')";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "  -n                    (also save a text file with extension '.hitcount'";
   THEA_CONSOLE << "                         containing the number of pixels rendered per";
@@ -1214,6 +1217,14 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         two_sided = false;
 
+      }
+      else if (arg == "-g")
+      {
+        Vector4 d;
+        if (parseVector(*argv, d) != 3) { THEA_ERROR << "-g: Could not parse light direction"; return false; }
+        light_dir = d.head<3>().stableNormalized();
+
+        argv++; argc--;
       }
       else if (arg == "-d")
       {
@@ -2355,8 +2366,9 @@ initPointShader(IShader & shader)
 }
 
 bool
-initMeshShader(IShader & shader, Vector4 const & material, bool two_sided = true, ITexture * matcap_tex = nullptr,
-               ITexture * tex2d = nullptr, ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true,
+               ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr, ITexture * tex3d = nullptr,
+               AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2460,7 +2472,6 @@ initMeshShader(IShader & shader, Vector4 const & material, bool two_sided = true
     shader.setUniform("matcap_tex", matcap_tex);
   else
   {
-    Vector3 light_dir(-1, -1, -2);
     Vector3 light_color(1, 1, 1);
     Vector3 ambient_color(1, 1, 1);
 
@@ -2619,7 +2630,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, two_sided, matcap_tex, tex2d, tex3d, model.mesh_group.getBounds()))
+        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, matcap_tex, tex2d, tex3d,
+                            model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
