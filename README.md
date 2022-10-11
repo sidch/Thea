@@ -221,6 +221,8 @@ sudo ./install-defaults.sh --with-wxwidgets --use-root --prefix "$prefix" -j4
 ```
 `--use-root` will try to use `apt-get` on Ubuntu/Debian, omit it if you want to build everything from scratch regardless. `--with-wxwidgets` is needed to build *Browse3D*, a bundled GUI application for viewing 3D files: it can be omitted if so desired. Add `--with-osmesa` to install OSMesa for headless CPU-only rendering (good for remote servers). Replace 4 with the actual number of hardware threads on your system, typically 2, 4, or 8.
 
+(**Note for macOS:** Ideally, `install-defaults.sh --use-root` should use Homebrew/MacPorts on Mac. However, I have not added this yet because I'm swamped with other stuff. Until then, `brew install boost eigen lib3ds freeimage wxwidgets` will do the job and you don't need to run `install-defaults.sh`.)
+
 The above step will install the necessary libraries by compiling them from source (if not `apt-get`able) and placing the result in `$prefix`. To install an individual library, call `install.sh --with-<package> ...` with the same `--use-root`, `--prefix` etc arguments as above. Carefully check for errors (warnings are generally ok). If there are errors, you probably need to explicitly install some third-party libraries/tools -- see the error messages -- and rerun the command. E.g. I have found some barebones server installs without the [zlib](https://www.zlib.net) or [Expat](https://libexpat.github.io) development packages, required by Mesa: in this particular case, the source packages are included and you can use `./install.sh --with-expat --with-zlib ...`. *Make sure there are no errors in the output before proceeding further.*
 
 ### Installing the Thea library, plugins and bundled tools
