@@ -6,12 +6,12 @@
 #
 #===============================================================================================================================
 
-PROJECT(TheaPluginGL CXX C)
-
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
+
+PROJECT(TheaPluginGL CXX C)
 
 # Dependency: OpenGL
 IF(WITH_OSMESA)

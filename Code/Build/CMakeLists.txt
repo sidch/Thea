@@ -6,8 +6,6 @@
 #
 #===============================================================================================================================
 
-PROJECT(Thea CXX C)
-
 # Set the minimum required CMake version
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 
@@ -15,6 +13,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 IF(POLICY CMP0003)
   CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(POLICY CMP0003)
+
+PROJECT(Thea CXX C)
 
 # Avoid having to repeat condition after ELSE and ENDIF statements
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)

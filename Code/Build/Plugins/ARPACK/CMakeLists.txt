@@ -6,12 +6,12 @@
 #
 #===============================================================================================================================
 
-PROJECT(TheaPluginARPACK CXX C)
-
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
+
+PROJECT(TheaPluginARPACK CXX C)
 
 # Dependency: ARPACK
 IF(EXISTS ${THEA_DEPS_ROOT}/installed-arpack)

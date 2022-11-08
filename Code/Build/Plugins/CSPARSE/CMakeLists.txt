@@ -6,12 +6,12 @@
 #
 #===============================================================================================================================
 
-PROJECT(TheaPluginCSPARSE CXX C)
-
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
+
+PROJECT(TheaPluginCSPARSE CXX C)
 
 # Shared library flags
 ADD_DEFINITIONS(-DTHEA_CSPARSE_DLL -DTHEA_CSPARSE_DLL_EXPORTS)
