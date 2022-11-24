@@ -4,7 +4,6 @@
 A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
 
 Source code is available at [https://github.com/sidch/Thea](https://github.com/sidch/Thea).<br/>
-Online documentation is available at [https://sidch.github.io/Thea](https://sidch.github.io/Thea).
 
 Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released under the BSD license (see `LICENSE.txt`).
 
