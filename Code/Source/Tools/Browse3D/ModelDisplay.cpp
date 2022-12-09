@@ -196,9 +196,13 @@ ModelDisplay::updateCameraProjection()
     hh = HALF_WIDTH;
   }
 
-  Real camera_separation = (camera_look_at - camera.getPosition()).norm();
-  Real near_dist = 0.01 * camera_separation;
-  Real far_dist  = 1000 * camera_separation;
+  Vector3 center = model->getTransformedBounds().getCenter();
+  Vector3 dir = camera.getLookDirection();
+  Real center_dist = std::max((center - camera.getPosition()).dot(dir), (Real)0);
+  Real scale = model->getTransformedBounds().getExtent().norm();
+
+  Real near_dist = std::max(center_dist - 1.1f * scale, 0.01f * scale);
+  Real far_dist  = center_dist + 2 * scale;
 
   hw *= (0.5f * near_dist);
   hh *= (0.5f * near_dist);
@@ -656,6 +660,8 @@ ModelDisplay::incrementViewTransform(AffineTransform3 const & tr)
 
   if (view_edit_mode == ViewEditMode::PAN)
     camera_look_at = inv_vt * camera_look_at;
+
+  updateCameraProjection();  // needed because it adjusts to the new separation from the model
 
   Refresh();
 }

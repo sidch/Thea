@@ -93,7 +93,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
     {
       if (N < 1 || !hasDeriv(1)) return VectorT::Zero();
 
-      return eval(t, 1).normalized();
+      return eval(t, 1).stableNormalized();
     }
 
     /**
@@ -108,10 +108,10 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
       VectorT d2 = eval(t, 2);
 
       T d1_sqlen = d1.squaredNorm();
-      if (!Math::fuzzyEq(d1_sqlen, static_cast<T>(0), Math::square(Math::eps<T>())))
+      if (std::fabs(d1_sqlen) > Math::square(Math::eps<T>()))
         d2 -= (d2.dot(d1) / d1_sqlen) * d1;  // sqrt in normalizing d1 avoided because of repeated d1
 
-      return d2.normalized();
+      return d2.stableNormalized();
     }
 
     /**
@@ -144,7 +144,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
         f -= d.dot(g) * g;
       }
 
-      return f.normalized();
+      return f.stableNormalized();
     }
 
     /**
@@ -188,8 +188,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
 
       // Generate a uniform distribution of normalized arc lengths, map each arc length to the corresponding interval in the
       // generated sequence, and use linear interpolation within the interval to find the corresponding curve parameter
-      typedef Array<double>::iterator DoubleIterator;
-      DoubleIterator last = arclen.begin();
+      auto last = arclen.begin();
       for (size_t i = 0; i < (size_t)num_points; ++i)
       {
         if (i == 0)  // short-circuit for first and last points and save two binary searches
@@ -199,12 +198,12 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
         else
         {
           double s = i / (double)(num_points - 1);  // target arc-length
-          DoubleIterator seg_stop = std::upper_bound(last, arclen.end(), s);
+          auto seg_stop = std::upper_bound(last, arclen.end(), s);
           if (seg_stop == arclen.end())  // in degenerate cases
             t = max_param;
           else if (seg_stop != arclen.begin())
           {
-            DoubleIterator seg_start = seg_stop - 1;
+            auto seg_start = seg_stop - 1;
             double f = (s - *seg_start) / (*seg_stop - *seg_start);  // denom won't be zero because of upper_bound spec
             size_t index = (seg_start - arclen.begin());
             t = static_cast<T>(index + f) * arc_scaling + min_param;
@@ -222,7 +221,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
     virtual std::string toString() const
     {
       std::ostringstream oss;
-      oss << "[order = " << getOrder() << ", param-range = [" << min_param << ", " << max_param << ']';
+      oss << "[order = " << getOrder() << ", param-range = [" << min_param << ", " << max_param << "]]";
       return oss.str();
     }
 
@@ -318,12 +317,12 @@ class /* THEA_API */ ParametricCurveN : public Internal::ParametricCurveNBase<N,
     {
       if (N < 3 || !this->hasDeriv(3)) return VectorT::Zero();
 
-      VectorT d1 = this->eval(t, 1).normalized();
+      VectorT d1 = this->eval(t, 1).stableNormalized();
       VectorT d2 = this->eval(t, 2);
-      d2 = (d2 - (d2.dot(d1) * d1)).normalized();
+      d2 = (d2 - (d2.dot(d1) * d1)).stableNormalized();
 
       VectorT d3 = this->eval(t, 3);
-      return (d3 - (d3.dot(d1) * d1) - (d3.dot(d2) * d2)).normalized();
+      return (d3 - (d3.dot(d1) * d1) - (d3.dot(d2) * d2)).stableNormalized();
     }
 
 }; // class ParametricCurveN

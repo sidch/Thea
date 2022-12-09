@@ -27,7 +27,7 @@ class fipImage;
 
 namespace Thea {
 
-/** A 2D image. */
+/** A raster image, typically 2D but 3D images (depth > 1) are also supported. */
 class THEA_API Image : public virtual IImage, public Serializable
 {
   public:

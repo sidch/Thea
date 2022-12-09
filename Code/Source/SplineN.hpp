@@ -31,6 +31,7 @@
 #include "Algorithms/PointTraitsN.hpp"
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 namespace Thea {
 
