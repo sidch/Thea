@@ -164,7 +164,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       for (intx i = 0; i < this->numControls(); ++i)
       {
         if (i > 0) oss << ", ";
-        oss << getControl(i);
+        oss << Thea::toString(getControl(i));
       }
       oss << "]]";
       return oss.str();
