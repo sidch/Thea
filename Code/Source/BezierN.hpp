@@ -147,7 +147,7 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       return result;
     }
 
-    void getBasisFunctions(float64 t, VectorX<float64> & b) const
+    void getBasisFunctions(T const & t, VectorX<T> & b) const
     {
       // Bernstein basis
 
@@ -157,12 +157,12 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       b.resize(n + 1);
 
       b[0] = 1.0;
-      float64 tpow = t;
+      T tpow = t;
       for (intx i = 1; i <= n; ++i, tpow *= t)
         b[i] = binom(n, i) * tpow;
 
-      float64 omt = 1 - t;
-      float64 omt_pow = omt;
+      T omt = 1 - t;
+      T omt_pow = omt;
       for (intx i = n - 1; i >= 0; --i, omt_pow *= omt)
         b[i] *= omt_pow;
     }
@@ -195,8 +195,8 @@ class /* THEA_API */ BezierN : public SplineN<N, T>
       }
     }
 
-    mutable Array<VectorT>   ctrl[4];   ///< Arrays of curve control vectors and first, second and third-order differences.
-    mutable MatrixX<float64>  binom;    ///< Cached binomial coefficients.
+    mutable Array<VectorT>  ctrl[4];  ///< Arrays of curve control vectors and first, second and third-order differences.
+    mutable MatrixX<T>      binom;    ///< Cached binomial coefficients.
 
 }; // class BezierN
 

@@ -183,7 +183,7 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
 
       // Compute the normalized arc length for each sampled point, by a piecewise linear approximation. This is a monotonically
       // increasing sorted array with first element 0 and last element 1.
-      Array<double> arclen;
+      Array<T> arclen;
       chordLengthParametrize(arc_samples.begin(), arc_samples.end(), arclen, 0.0, 1.0);
 
       // Generate a uniform distribution of normalized arc lengths, map each arc length to the corresponding interval in the
@@ -197,14 +197,14 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
           t = max_param;
         else
         {
-          double s = i / (double)(num_points - 1);  // target arc-length
+          auto s = i / static_cast<T>(num_points - 1);  // target arc-length
           auto seg_stop = std::upper_bound(last, arclen.end(), s);
           if (seg_stop == arclen.end())  // in degenerate cases
             t = max_param;
           else if (seg_stop != arclen.begin())
           {
             auto seg_start = seg_stop - 1;
-            double f = (s - *seg_start) / (*seg_stop - *seg_start);  // denom won't be zero because of upper_bound spec
+            auto f = (s - *seg_start) / (*seg_stop - *seg_start);  // denom won't be zero because of upper_bound spec
             size_t index = (seg_start - arclen.begin());
             t = static_cast<T>(index + f) * arc_scaling + min_param;
           }
@@ -238,8 +238,8 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
 
     /** Estimate curve parameters for a sequence of points, by accumulating pairwise segment lengths along the sequence. */
     template <typename InputIterator>
-    static void chordLengthParametrize(InputIterator begin, InputIterator end, Array<double> & u,
-                                       double min_param_ = 0, double max_param_ = 1)
+    static void chordLengthParametrize(InputIterator begin, InputIterator end, Array<T> & u,
+                                       T const & min_param_ = 0, T const & max_param_ = 1)
     {
       using namespace Algorithms;
       typedef typename std::iterator_traits<InputIterator>::value_type PointT;
@@ -249,24 +249,24 @@ class /* THEA_DLL_LOCAL */ ParametricCurveNBase
       if (begin == end)
         return;
 
-      u.push_back(0.0);
+      u.push_back(static_cast<T>(0));
 
       VectorT last = PointTraitsN<PointT, N, T>::getPosition(*begin);
       InputIterator pi = begin;
-      double sum_u = 0.0;
+      T sum_u = 0;
       for (++pi; pi != end; ++pi)
       {
         VectorT curr = PointTraitsN<PointT, N, T>::getPosition(*pi);
-        sum_u += static_cast<double>((curr - last).norm());
+        sum_u += (curr - last).norm();
         u.push_back(sum_u);
         last = curr;
       }
 
-      double umax = u[u.size() - 1];
+      auto umax = u[u.size() - 1];
       if (umax <= 0)
         return;
 
-      double scaling = (max_param_ - min_param_) / umax;
+      auto scaling = (max_param_ - min_param_) / umax;
       for (size_t i = 0; i < u.size(); ++i)
         u[i] = u[i] * scaling + min_param_;
     }

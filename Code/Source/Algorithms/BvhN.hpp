@@ -1789,8 +1789,10 @@ class /* THEA_API */ BvhN
      * bounded query object, or a negative value if no such lower bound can be calculated.
      */
     template < typename MetricT, typename QueryT, typename std::enable_if< IsBoundedN<QueryT, N>::value, int >::type = 0 >
-    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume query_bounds) const
+    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume const & query_bounds) const
     {
+      (void)query;
+
       if (node && !query_bounds.isNull())
         return MetricT::template monotoneApproxDistance<N, ScalarT>(query_bounds, getBoundsWorldSpace(*node));
       else
@@ -1802,8 +1804,10 @@ class /* THEA_API */ BvhN
      * unbounded query object, or a negative value if no such lower bound can be calculated. \a query_bounds is ignored.
      */
     template < typename MetricT, typename QueryT, typename std::enable_if< !IsBoundedN<QueryT, N>::value, int >::type = 0 >
-    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume query_bounds) const
+    double monotonePruningDistance(Node const * node, QueryT const & query, BoundingVolume const & query_bounds) const
     {
+      (void)query_bounds;
+
       // Assume the following specialization exists
       return node ? MetricT::template monotoneApproxDistance<N, ScalarT>(query, getBoundsWorldSpace(*node)) : -1;
     }

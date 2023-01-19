@@ -18,7 +18,10 @@
 #include "../Common.hpp"
 #include "../AxisAlignedBoxN.hpp"
 #include "../BallN.hpp"
+#include "../LineN.hpp"
+#include "../LineSegmentN.hpp"
 #include "../MatVec.hpp"
+#include "../RayN.hpp"
 #include "../TriangleN.hpp"
 #include "PointTraitsN.hpp"
 #include "TransformedObject.hpp"
@@ -39,34 +42,33 @@ namespace Algorithms {
 template <typename A, typename B, int N, typename T, typename Enable = void>
 struct /* THEA_API */ MetricL2Impl
 {
-  public:
-    /** Measure the Euclidean (L2) distance between two objects. */
-    static T distance(A const & a, B const & b)
-    {
-      return static_cast<T>(a.distance(b));
-    }
+  /** Measure the Euclidean (L2) distance between two objects. */
+  static T distance(A const & a, B const & b)
+  {
+    return static_cast<T>(a.distance(b));
+  }
 
-    /**
-     * Measure the square of the Euclidean (L2) distance between two objects, which is an efficiently computable (avoids the
-     * square root) monotonic approximation to the true distance.
-     */
-    static T monotoneApproxDistance(A const & a, B const & b)
-    {
-      return static_cast<T>(a.squaredDistance(b));
-    }
+  /**
+   * Measure the square of the Euclidean (L2) distance between two objects, which is an efficiently computable (avoids the
+   * square root) monotonic approximation to the true distance.
+   */
+  static T monotoneApproxDistance(A const & a, B const & b)
+  {
+    return static_cast<T>(a.squaredDistance(b));
+  }
 
-    /**
-     * Find the closest pair of points between two objects.
-     *
-     * @return A monotonic approximation (the square of the Euclidean distance in this case) to the shortest distance between
-     * the objects, i.e. the value of monotoneApproxDistance(\a a, \a b).
-     */
-    static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
-    {
-      return static_cast<T>(a.squaredDistance(b, &cpa, &cpb));
-    }
+  /**
+   * Find the closest pair of points between two objects.
+   *
+   * @return A monotonic approximation (the square of the Euclidean distance in this case) to the shortest distance between
+   * the objects, i.e. the value of monotoneApproxDistance(\a a, \a b).
+   */
+  static T closestPoints(A const & a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
+  {
+    return static_cast<T>(a.squaredDistance(b, &cpa, &cpb));
+  }
 
-}; // class MetricL2Impl
+}; // struct MetricL2Impl
 
 /**
  * Distances and closest pairs of points between various types of objects according to the Euclidean (L2) metric. When distances
@@ -132,31 +134,28 @@ class THEA_API MetricL2
 template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A *, B *, N, T>
 {
-  public:
-    static T distance(A const * a, B const * b) { return MetricL2::distance<N, T>(*a, *b); }
-    static T monotoneApproxDistance(A const * a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(*a, *b); }
-    static T closestPoints(A const * a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
-    { return MetricL2::closestPoints<N, T>(*a, *b, cpa, cpb); }
+  static T distance(A const * a, B const * b) { return MetricL2::distance<N, T>(*a, *b); }
+  static T monotoneApproxDistance(A const * a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(*a, *b); }
+  static T closestPoints(A const * a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
+  { return MetricL2::closestPoints<N, T>(*a, *b, cpa, cpb); }
 };
 
 template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A, B *, N, T>
 {
-  public:
-    static T distance(A const & a, B const * b) { return MetricL2::distance<N, T>(a, *b); }
-    static T monotoneApproxDistance(A const & a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(a, *b); }
-    static T closestPoints(A const & a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
-    { return MetricL2::closestPoints<N, T>(a, *b, cpa, cpb); }
+  static T distance(A const & a, B const * b) { return MetricL2::distance<N, T>(a, *b); }
+  static T monotoneApproxDistance(A const & a, B const * b) { return MetricL2::monotoneApproxDistance<N, T>(a, *b); }
+  static T closestPoints(A const & a, B const * b, Vector<N, T> & cpa, Vector<N, T> & cpb)
+  { return MetricL2::closestPoints<N, T>(a, *b, cpa, cpb); }
 };
 
 template <typename A, typename B, int N, typename T>
 struct /* THEA_API */ MetricL2Impl<A *, B, N, T>
 {
-  public:
-    static T distance(A const * a, B const & b) { return MetricL2::distance<N, T>(*a, b); }
-    static T monotoneApproxDistance(A const * a, B const & b) { return MetricL2::monotoneApproxDistance<N, T>(*a, b); }
-    static T closestPoints(A const * a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
-    { return MetricL2::closestPoints<N, T>(*a, b, cpa, cpb); }
+  static T distance(A const * a, B const & b) { return MetricL2::distance<N, T>(*a, b); }
+  static T monotoneApproxDistance(A const * a, B const & b) { return MetricL2::monotoneApproxDistance<N, T>(*a, b); }
+  static T closestPoints(A const * a, B const & b, Vector<N, T> & cpa, Vector<N, T> & cpb)
+  { return MetricL2::closestPoints<N, T>(*a, b, cpa, cpb); }
 };
 
 //=============================================================================================================================

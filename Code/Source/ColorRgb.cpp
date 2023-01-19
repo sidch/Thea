@@ -184,7 +184,8 @@ ColorRgb::fromARGB(uint32 x)
   return ColorRgb((Real)((x >> 16) & 0xFF), (Real)((x >> 8) & 0xFF), (Real)(x & 0xFF)) / 255.0f;
 }
 
-ColorRgb ColorRgb::random()
+ColorRgb
+ColorRgb::random()
 {
   return ColorRgb(Random::common().uniform01(), Random::common().uniform01(), Random::common().uniform01()).normalized();
 }

@@ -45,7 +45,6 @@
 #define __Thea_ThreadGroup_hpp__
 
 #include "Common.hpp"
-#include "Array.hpp"
 #include "List.hpp"
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/locks.hpp>

@@ -82,7 +82,10 @@ class /* THEA_API */ ProximityQueryStructureN
         /** Set the index of the target element. */
         void setTargetIndex(intx target_index_) { target_index = target_index_; }
 
-        /** Get a monotone approximation of the distance between the neighbors. A negative value */
+        /**
+         * Get a monotone approximation of the distance between the neighbors. A negative value indicates the field has not been
+         * initialized.
+         */
         double getMonotoneApproxDistance() const { return mon_approx_dist; }
 
         /** Set the monotone approximation of the distance between the neighbors. */

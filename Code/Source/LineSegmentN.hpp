@@ -90,19 +90,19 @@ class /* THEA_DLL_LOCAL */ LineSegmentNBase
     /** Get the square of the length of the line segment. */
     T squaredLength() const { return direction.squaredNorm(); }
 
-    /** Get the distance of the line from a given point. */
+    /** Get the distance of the line segment from a given point. */
     T distance(VectorT const & p) const
     {
       return std::sqrt(squaredDistance(p));
     }
 
-    /** Get the square of the distance of the line from a given point. */
+    /** Get the square of the distance of the line segment from a given point. */
     T squaredDistance(VectorT const & p) const
     {
       return (p - closestPoint(p)).squaredNorm();
     }
 
-    /** Get the point on the line closest to a given point. */
+    /** Get the point on the line segment closest to a given point. */
     VectorT closestPoint(VectorT const & p) const
     {
       // Taken from G3D::LineSegment
