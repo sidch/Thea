@@ -32,6 +32,7 @@ int MAX_ROUNDS = 25;
 int MAX_SMOOTHING_ROUNDS = 3;
 int LAST_SMOOTHING_ROUNDS = 1;
 bool USE_LABELS = false;
+bool USE_NORMALS = true;
 IndexLabelMap LABELS;
 
 struct Sample
@@ -91,7 +92,9 @@ typedef Array<Offset> OffsetArray;
 struct NNFilter : public Filter<Sample const *>
 {
   NNFilter(Vector3 const & n_, int32 label_) : n(n_), label(label_) {}
-  bool allows(Sample const * const & sample) const { return (!USE_LABELS || sample->label == label) && n.dot(sample->n) >= 0; }
+
+  bool allows(Sample const * const & sample) const
+  { return (!USE_LABELS || sample->label == label) && (!USE_NORMALS || n.dot(sample->n) >= 0); }
 
   Vector3 n;
   int32 label;
@@ -158,12 +161,14 @@ loadSamples(string const & path, SampleArray & samples, bool read_labels)
 
   samples.clear();
   string line;
-  Vector3 p, n;
+  Vector3 p, n = Vector3::Zero();
   while (getline(in, line))
   {
     istringstream line_in(line);
-    if (!(line_in >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2]))
-      continue;
+    if (USE_NORMALS)
+    { if (!(line_in >> p[0] >> p[1] >> p[2] >> n[0] >> n[1] >> n[2])) { continue; } }
+    else
+    { if (!(line_in >> p[0] >> p[1] >> p[2])) { continue; } }
 
     int32 label_hash = 0;
     if (read_labels)
@@ -178,6 +183,12 @@ loadSamples(string const & path, SampleArray & samples, bool read_labels)
     }
 
     samples.push_back(Sample(p, n, label_hash));
+  }
+
+  if (samples.empty())
+  {
+    THEA_ERROR << "Could not read any samples from file '" << path << '\'';
+    return false;
   }
 
   THEA_CONSOLE << "Read " << samples.size() << " samples from file '" << path << '\'';
@@ -336,7 +347,7 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
         sum_weights += weight;
       }
 
-      smoothed_offsets[i].set(fabs(sum_lengths / sum_weights) * sum_dirs.normalized());
+      smoothed_offsets[i].set(fabs(sum_lengths / sum_weights) * sum_dirs.stableNormalized());
 
 #else // plane prior
 
@@ -791,6 +802,7 @@ usage(int argc, char * argv[])
   THEA_CONSOLE << "  [--rounds <num-rounds>]";
   THEA_CONSOLE << "  [--smooth <num-rounds>]";
   THEA_CONSOLE << "  [--smooth-last <num-rounds>]";
+  THEA_CONSOLE << "  [--no-normals]";
   THEA_CONSOLE << "  [--labels]";
   THEA_CONSOLE << "  [--salient <file1> <file2>]";
   THEA_CONSOLE << "  [--max-salient <num-points>]";
@@ -868,6 +880,10 @@ main(int argc, char * argv[])
     {
       USE_LABELS = true;
     }
+    else if (arg == "--no-normals")
+    {
+      USE_NORMALS = false;
+    }
     else if (arg == "--salient")
     {
       if (i >= argc - 2)
@@ -919,6 +935,7 @@ main(int argc, char * argv[])
   THEA_CONSOLE << "Max iterations: " << MAX_ROUNDS;
   THEA_CONSOLE << "Max smoothing iterations: " << MAX_SMOOTHING_ROUNDS;
   THEA_CONSOLE << "Smoothing iterations in last iteration: " << LAST_SMOOTHING_ROUNDS;
+  THEA_CONSOLE << "Match normal orientations: " << USE_NORMALS;
   THEA_CONSOLE << "Match labels: " << USE_LABELS;
   THEA_CONSOLE << "Max salient points: " << max_salient;
 
@@ -1139,7 +1156,7 @@ main(int argc, char * argv[])
   //===========================================================================================================================
   {
     string corr_path = FilePath::concat(FilePath::parent(offsets_path1),
-                           FilePath::baseName(samples_path1) + "___corr___" + FilePath::baseName(samples_path2) + ".pts");
+                           FilePath::baseName(samples_path1) + "_corr_" + FilePath::baseName(samples_path2) + ".pts");
     ofstream out_corr(corr_path.c_str(), ios::binary);
 
     Bvh bvh2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
@@ -1162,10 +1179,7 @@ main(int argc, char * argv[])
         continue;
       }
 
-      Vector3 p2 = bvh2.getElements()[nn_index]->p;
-
-      out_corr << p1[0] << ' ' << p1[1] << ' ' << p1[2] << ' '
-               << p2[0] << ' ' << p2[1] << ' ' << p2[2] << '\n';
+      out_corr << i << ' ' << nn_index << '\n';
 
       num_matched++;
     }
