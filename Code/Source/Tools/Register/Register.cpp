@@ -1156,7 +1156,7 @@ main(int argc, char * argv[])
   //===========================================================================================================================
   {
     string corr_path = FilePath::concat(FilePath::parent(offsets_path1),
-                           FilePath::baseName(samples_path1) + "_corr_" + FilePath::baseName(samples_path2) + ".pts");
+                           FilePath::baseName(samples_path1) + "_corr_" + FilePath::baseName(samples_path2) + ".txt");
     ofstream out_corr(corr_path.c_str(), ios::binary);
 
     Bvh bvh2(SamplePtrIterator(samples2.begin()), SamplePtrIterator(samples2.end()));
