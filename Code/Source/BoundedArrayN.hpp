@@ -94,14 +94,14 @@ class BoundedArrayN
     const_reverse_iterator crend() const noexcept    { return reverse_iterator(begin()); }
 
     /** Get the first element in the array. */
-    T const & first() const
+    T const & front() const
     {
       debugAssertM(num_elems > 0, "BoundedArrayN: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the array. */
-    T const & last() const
+    T const & back() const
     {
       debugAssertM(num_elems > 0, "BoundedArrayN: Can't get last element of empty array");
       return values[num_elems - 1];

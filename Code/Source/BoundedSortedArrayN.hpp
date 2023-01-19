@@ -84,14 +84,14 @@ class BoundedSortedArrayN
     const_reverse_iterator crend() const noexcept    { return reverse_iterator(begin()); }
 
     /** Get the first element in the sorted sequence. */
-    T const & first() const
+    T const & front() const
     {
       debugAssertM(num_elems > 0, "BoundedSortedArrayN: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the sorted sequence. */
-    T const & last() const
+    T const & back() const
     {
       debugAssertM(num_elems > 0, "BoundedSortedArrayN: Can't get last element of empty array");
       return values[num_elems - 1];
@@ -184,7 +184,7 @@ class BoundedSortedArrayN
      */
     bool isInsertable(T const & t) const
     {
-      return num_elems < N || compare(t, last());
+      return num_elems < N || compare(t, back());
     }
 
     /**

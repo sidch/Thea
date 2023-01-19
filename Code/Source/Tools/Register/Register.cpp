@@ -108,14 +108,12 @@ struct NNFilterLabelOnly : public Filter<Sample const *>
   int32 label;
 };
 
-inline float
-kernelEpanechnikovSqDist(float squared_dist, float squared_bandwidth)
+inline Real
+kernelEpanechnikovSqDist(Real squared_dist, Real squared_bandwidth)
 {
-  // These constants assume dim = 6
-  static float const VOL_B6 = 5.1677127800499694f;  // volume of 6-D unit ball
-  static float const SCALE = 0.5f * (6 + 2) / VOL_B6;
+  static Real const SCALE = (Real)(15.0 / (8.0 * Math::pi()));  // normalizing constant for 3D Epanechnikov kernel
 
-  float nrm_sqdist = squared_dist / squared_bandwidth;
+  Real nrm_sqdist = squared_dist / squared_bandwidth;
   return nrm_sqdist < 1 ? SCALE * (1 - nrm_sqdist) : 0;
 }
 
@@ -304,21 +302,23 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
       if (nbrs[i].empty())
         continue;
 
-      Real sq_bandwidth = 4 * (samples[nbrs[i].last()].p - samples[i].p).squaredNorm();
+      Real sq_bandwidth = 4 * (samples[nbrs[i].back()].p - samples[i].p).squaredNorm();
 
 // #define SPHERE_PRIOR
 #ifdef SPHERE_PRIOR
+
+      // Even if there is no valid offset, we want the point's original position to be favored
+      Real sum_weights = kernelEpanechnikovSqDist(0, sq_bandwidth);
 
       Vector3 sum_dirs(0, 0, 0);
       Real sum_lengths = 0;
       Real length = 0;
       if (offsets[i].isValid() && (length = offsets[i].d().norm()) > 0)
       {
-        sum_dirs = offsets[i].d() / length;
-        sum_lengths = length;
+        sum_dirs = (sum_weights / length) * offsets[i].d();
+        sum_lengths = (sum_weights / length);
       }
 
-      Real sum_weights = 1;  // even if there is no valid offset, since we want the point's original position to be favored
       for (size_t j = 0; j < nbrs[i].size(); ++j)
       {
         Offset const & offset = offsets[nbrs[i][j]];
@@ -351,8 +351,15 @@ smoothOffsets(SampleArray const & samples, NeighborSets const & nbrs, OffsetArra
 
 #else // plane prior
 
-      Vector3 sum_offsets = offsets[i].d();
-      Real sum_weights = 1;  // even if there is no valid offset, since we want the point's original position to be favored
+      // Even if there is no valid offset, we want the point's original position to be favored
+      Real sum_weights = 0;
+      Vector3 sum_offsets = Vector3::Zero();
+      if (offsets[i].isValid())
+      {
+        sum_weights = kernelEpanechnikovSqDist(0, sq_bandwidth);
+        sum_offsets = sum_weights * offsets[i].d();
+      }
+
       for (size_t j = 0; j < nbrs[i].size(); ++j)
       {
         Offset const & offset = offsets[nbrs[i][j]];
@@ -736,6 +743,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
   // Initialize offsets per-label if available, else globally
   initOffsets(samples1, nbrs1, bvh1, samples2, nbrs2, bvh2, offsets1, offsets2);
 
+  SampleArray offset_samples2;
   for (int round = 0; round < MAX_ROUNDS; ++round)
   {
     cout << "Round " << round << ':' << flush;
@@ -759,7 +767,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
       enforceConstraints(samples2, samples1, salient_indices2, salient_indices1, offsets2);
 
       // Blend backward offsets with forward offsets
-      SampleArray offset_samples2 = samples2;
+      offset_samples2 = samples2;
       for (size_t i = 0; i < samples2.size(); ++i)
         offset_samples2[i].p += offsets2[i].d();
 
@@ -774,7 +782,7 @@ alignNonRigid(SampleArray & samples1, SampleArray & samples2, Array<Vector3> con
         offset_bvh2.popFilter();
 
         if (nn_index >= 0)
-          offsets1[i].set(0.5f * offsets1[i].d() - 0.5f * offsets2[(size_t)nn_index].d());
+          offsets1[i].set((Real)0.5 * (offsets1[i].d() - offsets2[(size_t)nn_index].d()));
       }
     }
 
@@ -1163,6 +1171,7 @@ main(int argc, char * argv[])
     bvh2.enableNearestNeighborAcceleration();
 
     intx num_matched = 0;
+    double sum_sqdist = 0;
     for (size_t i = 0; i < samples1.size(); ++i)
     {
       Vector3 p1 = samples1[i].p;
@@ -1182,9 +1191,12 @@ main(int argc, char * argv[])
       out_corr << i << ' ' << nn_index << '\n';
 
       num_matched++;
+      sum_sqdist += (deformed_p1 - samples2[(size_t)nn_index].p).squaredNorm();
     }
 
     THEA_CONSOLE << "Wrote correspondences for " << num_matched << '/' << samples1.size() << " point(s) to " << corr_path;
+    THEA_CONSOLE << "Root mean squared separation of matched pairs = "
+                 << (num_matched > 0 ? sqrt(sum_sqdist / num_matched) : 0);
   }
 
   return 0;

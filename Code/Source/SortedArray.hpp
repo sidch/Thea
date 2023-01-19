@@ -46,14 +46,14 @@ class SortedArray
     bool empty() const { return values.empty(); }
 
     /** Get the first element in the sorted sequence. */
-    T const & first() const
+    T const & front() const
     {
       debugAssertM(!values.empty(), "SortedArray: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the sorted sequence. */
-    T const & last() const
+    T const & back() const
     {
       debugAssertM(!values.empty(), "SortedArray: Can't get last element of empty array");
       return values[size() - 1];
