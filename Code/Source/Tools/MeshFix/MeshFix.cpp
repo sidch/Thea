@@ -11,12 +11,13 @@
 #include "../../Graphics/MeshGroup.hpp"
 #include "../../Graphics/VertexWelder.hpp"
 #include "../../FilePath.hpp"
+#include "../../Hash.hpp"
 #include "../../LineSegment3.hpp"
 #include "../../Math.hpp"
 #include "../../Random.hpp"
 #include "../../UnorderedSet.hpp"
 #include "../../UnorderedMap.hpp"
-#include <boost/program_options.hpp>
+#include "../../ThirdParty/CLI11/CLI11.hpp"
 #include <algorithm>
 #include <fstream>
 #include <functional>
@@ -361,109 +362,53 @@ meshFix(int argc, char * argv[])
 int
 parseArgs(int argc, char * argv[])
 {
-  namespace po = boost::program_options;
-
-  static std::string const usage("\nUsage: " + string(argv[0]) + " [options] <infile> <outfile>\n"
-                                   "   (all tolerances are specified as a fraction of the sub-mesh bounding box diagonal)\n");
+  CLI::App app{"MeshFix"};
 
   string s_orient_visibility_qual;
 
-  po::options_description visible("Allowed options");
-  visible.add_options()
-          ("help,h",              "Print this help message")
-          ("version,v",           "Print the program version")
-          ("verbose",             "Print extra status information")
-          ("infile",              po::value<string>(&infile), "Path to input mesh file")
-          ("outfile",             po::value<string>(&outfile), "Path to output mesh file")
+  app.add_option("infile", infile, "Path to input mesh file")->required()->check(CLI::ExistingFile);
+  app.add_option("outfile", outfile, "Path to output mesh file")->required();
+  app.add_flag("--verbose", verbose, "Print extra debugging output");
+  app.add_flag("--no-normals", no_normals, "Ignore vertex and face normals in the input, and don't write any to output");
+  app.add_flag("--no-texcoords", no_texcoords,
+      "Ignore vertex and face texture coordinates in the input, and don't write any to output");
+  app.add_flag("--no-empty", no_empty, "Ignore empty sub-meshes");
+  app.add_flag("--flatten", do_flatten, "Flatten the object to a single sub-mesh when reading");
+  app.add_flag("--del-danglers", do_del_danglers, "Delete isolated vertices and edges, and empty faces");
+  app.add_flag("--del-dup-faces", do_del_dup_faces, "Delete duplicate faces, regardless of orientation");
+  app.add_option("--zipper", zipper_tolerance,
+      "Seal pairs of boundary edges whose endpoints are equal upto the given tolerance, specified here and for subsequent "
+      "options as a fraction of the sub-mesh bounding box diagonal (implies --del-danglers)");
+  app.add_option("--v-weld", v_weld_tolerance, "Merge boundary vertices closer than the specified tolerance (implies --del-danglers)");
+  app.add_option("--v-weld-boundary", v_weld_tolerance,
+      "Merge vertices closer than the specified tolerance (implies --del-danglers)");
+  app.add_option("--t-juncts", t_juncts_tolerance,
+      "Split boundary edges at t-junctions so they can be zippered properly (always executed before any welding or zippering)");
+  app.add_option("--tj-iters", t_juncts_iters, "Number of iterations for fixing t-junctions");
+  app.add_flag("--orient",
+      "Consistently orient each edge-connected component of the mesh so that normals defined by counter-clockwise winding "
+      "point inside-out");
+  app.add_flag("--orient-sdf",
+      "Consistently orient each face of the mesh so that the normal defined by counter-clockwise winding points inside-out, "
+      "using the direction of smaller shape diameter as a heuristic");
+  app.add_flag("--orient-majority",
+      "Consistently orient each edge-connected component of the mesh so that normals defined by counter-clockwise winding "
+      "point inside-out, first flipping faces that disagree most with their neighbors");
+  app.add_option("--orient-visibility", s_orient_visibility_qual,
+      "Consistently orient each face of the mesh so that the normal defined by counter-clockwise winding points towards the "
+      "direction of an external camera from which the face is visible");
+  app.add_option("--triangulate", triangulate_tolerance, "Triangulate every face with more than 3 vertices");
+  app.add_flag("--export-face-labels", export_face_labels,
+      "Along with the output mesh, export a .lab file that associates every face with the name of the submesh it belonged to "
+      "in the input. Works even if --flatten is specified.");
 
-          ("no-normals",          "Ignore vertex and face normals in the input, and don't write any to output")
-
-          ("no-texcoords",        "Ignore vertex and face texture coordinates in the input, and don't write any to output")
-
-          ("no-empty",            "Ignore empty sub-meshes")
-
-          ("flatten",             "Flatten the object to a single sub-mesh when reading")
-
-          ("del-danglers",        "Delete isolated vertices and edges, and empty faces")
-
-          ("del-dup-faces",       "Delete duplicate faces, regardless of orientation")
-
-          ("zipper",              po::value<double>(&zipper_tolerance),
-                                  "Seal pairs of boundary edges whose endpoints are equal upto the specified tolerance"
-                                  " (implies --del-danglers)")
-
-          ("v-weld",              po::value<double>(&v_weld_tolerance),
-                                  "Merge vertices closer than the specified tolerance (implies --del-danglers)")
-
-          ("v-weld-boundary",     po::value<double>(&v_weld_tolerance),
-                                  "Merge boundary vertices closer than the specified tolerance (implies --del-danglers)")
-
-          ("t-juncts",            po::value<double>(&t_juncts_tolerance),
-                                  "Split boundary edges at t-junctions so they can be zippered properly (always executed before"
-                                  " any welding or zippering)")
-
-          ("tj-iters",            po::value<int>(&t_juncts_iters),
-                                  "Number of iterations for fixing t-junctions")
-
-          ("orient",              "Consistently orient each edge-connected component of the mesh so that normals defined by"
-                                  " counter-clockwise winding point inside-out")
-
-          ("orient-sdf",          "Consistently orient each face of the mesh so that the normal defined by counter-clockwise"
-                                  " winding points inside-out, using the direction of smaller shape diameter as a heuristic")
-
-          ("orient-majority",     "Consistently orient each edge-connected component of the mesh so that normals defined by"
-                                  " counter-clockwise winding point inside-out, flipping faces that disagree most with their"
-                                  " neighbors first")
-
-          ("orient-visibility",   po::value<string>(&s_orient_visibility_qual)->implicit_value(""),
-                                  "Consistently orient each face of the mesh so that the normal defined by counter-clockwise"
-                                  " winding points towards the direction of an external camera from which the face is visible")
-
-          ("triangulate",         po::value<double>(&triangulate_tolerance),
-                                  "Triangulate every face with more than 3 vertices")
-
-          ("export-face-labels",  "Along with the output mesh, export a .lab file that associates every face with the name of"
-                                  " the submesh it belonged to in the input. Works even if --flatten is specified.")
-  ;
-
-  po::options_description desc;
-  desc.add(visible) /* .add(hidden) */ ;
-
-  po::positional_options_description pdesc;
-  pdesc.add("infile", 1);
-  pdesc.add("outfile", 1);
-
-  // Read cmdline options first (overrides conflicting config file values)
-  po::parsed_options cmdline_parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).positional(pdesc).run();
-  po::variables_map vm;
-  po::store(cmdline_parsed, vm);
-  po::notify(vm);
-
-  if (vm.count("verbose") > 0)
-    verbose = true;
-
-  bool quit = false;
-  if (vm.count("version") > 0)
+  try
   {
-    THEA_CONSOLE << "MeshFix version 0.1";
-    THEA_CONSOLE << "Computer Graphics Lab, Stanford University, 2011";
-    quit = true;
+    app.parse(argc, argv);
   }
-
-  if (argc <= 2 || vm.count("help") > 0)
+  catch (CLI::ParseError const & e)
   {
-    if (quit) THEA_CONSOLE << "";
-    THEA_CONSOLE << usage;
-    THEA_CONSOLE << visible;
-    quit = true;
-  }
-
-  if (quit)
-    return 0;
-
-  if (vm.count("infile") <= 0 || vm.count("outfile") <= 0)
-  {
-    THEA_ERROR << "Both input and output files should be specified";
+    app.exit(e);
     return -1;
   }
 
@@ -474,72 +419,18 @@ parseArgs(int argc, char * argv[])
     return -1;
   }
 
-  bool do_something = false;
-
-  if (vm.count("no-normals") > 0)
-    no_normals = do_something = true;
-
-  if (vm.count("no-texcoords") > 0)
-    no_texcoords = do_something = true;
-
-  if (vm.count("no-empty") > 0)
-    no_empty = do_something = true;
-
-  if (vm.count("flatten") > 0)
-    do_flatten = do_something = true;
-
-  if (vm.count("del-danglers") > 0)
-    do_del_danglers = do_something = true;
-
-  if (vm.count("del-dup-faces") > 0)
-    do_del_dup_faces = do_something = true;
-
-  if (vm.count("zipper") > 0)
-    do_zipper = do_something = true;
-
-  v_weld_boundary_only = true;
-  if (vm.count("v-weld") > 0)
-  {
-    do_v_weld = do_something = true;
-    v_weld_boundary_only = false;
-  }
-
-  // Must be tested after v_weld, to ensure v_weld_boundary_only is set correctly
-  if (vm.count("v-weld-boundary") > 0)
-    do_v_weld = do_something = true;
-
-  if (vm.count("t-juncts") > 0)
-    do_t_juncts = do_something = true;
-
-  if (vm.count("orient") > 0)
-    do_orient = do_something = true;
-
-  if (vm.count("orient-sdf") > 0)
-    do_orient_sdf = do_something = true;
-
-  if (vm.count("orient-majority") > 0)
-    do_orient_majority = do_something = true;
-
-  if (vm.count("orient-visibility") > 0)
-  {
-    do_orient_visibility = do_something = true;
-    string s = toLower(s_orient_visibility_qual);
-    if (s == "hi" || s == "high")
-      orient_visibility_hi_qual = true;
-    else if (s.empty() || s == "lo" || s == "low")
-      orient_visibility_hi_qual = false;
-    else
-    {
-      THEA_ERROR << "Orient by visibility quality setting not recognized: " << s_orient_visibility_qual;
-      return -1;
-    }
-  }
-
-  if (vm.count("triangulate") > 0)
-    do_triangulate = do_something = true;
-
-  if (vm.count("export-face-labels") > 0)
-    export_face_labels = do_something = true;
+  do_zipper = (app.count("--zipper") > 0);
+  do_v_weld = (app.count("--v-weld") > 0 || app.count("--v-weld-boundary") > 0);
+  v_weld_boundary_only = (do_v_weld && app.count("--v-weld") <= 0);
+  do_t_juncts = (app.count("--t-juncts") > 0);
+  do_orient = (app.count("--orient") > 0);
+  do_orient_sdf = (app.count("--orient-sdf") > 0);
+  do_orient_majority = (app.count("--orient-majority") > 0);
+  do_orient_visibility = (app.count("--orient-visibility") > 0);
+  do_triangulate = (app.count("--triangulate") > 0);
+  bool do_something = no_normals || no_texcoords || no_empty || do_flatten || do_del_danglers || do_del_dup_faces || do_zipper
+                   || do_v_weld || do_t_juncts || do_orient || do_orient_sdf || do_orient_majority || do_orient_visibility
+                   || do_triangulate || export_face_labels;
 
   if (!do_something)
   {
@@ -605,7 +496,7 @@ void
 flatten(MG & mesh_group)
 {
   Flattener flattener;
-  mesh_group.forEachMeshUntil(std::ref(flattener));
+  mesh_group.forEachMeshUntil(ref(flattener));
   mesh_group.clear();
   mesh_group.addMesh(flattener.flattened);
 }
@@ -636,7 +527,7 @@ struct FaceSeq
       seq.push_back(*vi);
 
     if (sorted)
-      std::sort(seq.begin(), seq.end());
+      sort(seq.begin(), seq.end());
   }
 };
 
@@ -644,23 +535,19 @@ bool
 operator==(FaceSeq const & lhs, FaceSeq const & rhs)
 {
   return lhs.seq.size() == rhs.seq.size()
-      && std::equal(lhs.seq.begin(), lhs.seq.end(), rhs.seq.begin());
+      && equal(lhs.seq.begin(), lhs.seq.end(), rhs.seq.begin());
 }
 
-namespace std {
-
 template <>
-struct hash<FaceSeq>
+struct Hasher<FaceSeq>
 {
-  std::size_t operator()(FaceSeq const & f) const
+  size_t operator()(FaceSeq const & f) const
   {
-    return boost::hash_range(f.seq.begin(), f.seq.end());
+    return hashRange(f.seq.begin(), f.seq.end());
   }
 };
 
-} // namespace std
-
-typedef UnorderedSet<FaceSeq> FaceSet;
+typedef UnorderedSet< FaceSeq, Hasher<FaceSeq> > FaceSet;
 
 struct DupFaceDeleter
 {
@@ -1236,7 +1123,7 @@ struct VisibilityOrienter
 
   bool operator()(Mesh & mesh)
   {
-    static Real PHI = (Real)((1.0 + std::sqrt(5.0)) / 2.0);
+    static Real PHI = (Real)((1.0 + sqrt(5.0)) / 2.0);
     static Vector3 const CAMERAS_LO[] = {
       Vector3( 1,  1,  1).normalized(),
       Vector3( 1,  1, -1).normalized(),
@@ -1396,7 +1283,7 @@ void
 orientVisibility(MG & mesh_group)
 {
   VisibilityOrienter func(mesh_group, orient_visibility_hi_qual);
-  mesh_group.forEachMeshUntil(std::ref(func));
+  mesh_group.forEachMeshUntil(ref(func));
 }
 
 bool
@@ -1447,14 +1334,14 @@ checkProblems(Mesh & mesh)
     Mesh::Face const & face = *fi;
 
     for (Mesh::Face::VertexConstIterator vi = face.verticesBegin(); vi != face.verticesEnd(); ++vi)
-      if (std::count(face.verticesBegin(), face.verticesEnd(), *vi) > 1)
+      if (count(face.verticesBegin(), face.verticesEnd(), *vi) > 1)
       {
         num_faces_with_repeated_vertices++;
         break;
       }
 
     for (Mesh::Face::EdgeConstIterator ei = face.edgesBegin(); ei != face.edgesEnd(); ++ei)
-      if (std::count(face.edgesBegin(), face.edgesEnd(), *ei) > 1)
+      if (count(face.edgesBegin(), face.edgesEnd(), *ei) > 1)
       {
         num_faces_with_repeated_edges++;
         break;
@@ -1469,7 +1356,7 @@ checkProblems(Mesh & mesh)
       num_edges_with_repeated_vertices++;
 
     for (Mesh::Edge::FaceConstIterator fi = edge.facesBegin(); fi != edge.facesEnd(); ++fi)
-      if (std::count(edge.facesBegin(), edge.facesEnd(), *fi) > 1)
+      if (count(edge.facesBegin(), edge.facesEnd(), *fi) > 1)
       {
         num_edges_with_repeated_faces++;
         break;
@@ -1481,14 +1368,14 @@ checkProblems(Mesh & mesh)
     Mesh::Vertex const & vertex = *vi;
 
     for (Mesh::Vertex::EdgeConstIterator ei = vertex.edgesBegin(); ei != vertex.edgesEnd(); ++ei)
-      if (std::count(vertex.edgesBegin(), vertex.edgesEnd(), *ei) > 1)
+      if (count(vertex.edgesBegin(), vertex.edgesEnd(), *ei) > 1)
       {
         num_vertices_with_repeated_edges++;
         break;
       }
 
     for (Mesh::Vertex::FaceConstIterator fi = vertex.facesBegin(); fi != vertex.facesEnd(); ++fi)
-      if (std::count(vertex.facesBegin(), vertex.facesEnd(), *fi) > 1)
+      if (count(vertex.facesBegin(), vertex.facesEnd(), *fi) > 1)
       {
         num_vertices_with_repeated_faces++;
         break;

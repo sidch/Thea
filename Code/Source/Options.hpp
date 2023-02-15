@@ -17,7 +17,7 @@
 
 #include "Common.hpp"
 #include "Map.hpp"
-#include <boost/any.hpp>
+#include <any>
 
 namespace Thea {
 
@@ -64,7 +64,7 @@ class THEA_API IOptions
  * A set of options, specified as key-value pairs. Supports a much more general set of value types than the simpler abstract
  * interface it implements.
  */
-class THEA_API Options : public virtual IOptions, private Map<std::string, boost::any>
+class THEA_API Options : public virtual IOptions, private Map<std::string, std::any>
 {
   public:
     /** Destructor. */
@@ -100,7 +100,7 @@ class THEA_API Options : public virtual IOptions, private Map<std::string, boost
     {
       const_iterator existing = find(toString(option_name));
       if (existing != end())
-        return boost::any_cast<T>(existing->second);
+        return std::any_cast<T>(existing->second);
       else
         return default_value;
     }
@@ -120,7 +120,7 @@ Options::get<char const *>(char const * option_name, char const * const & defaul
   if (existing != end())
   {
     // any_cast with reference type returns handle to held value
-    return boost::any_cast<std::string const &>(existing->second).c_str();
+    return std::any_cast<std::string const &>(existing->second).c_str();
   }
   else
     return default_value;

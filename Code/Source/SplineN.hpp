@@ -293,7 +293,7 @@ class /* THEA_API */ SplineN : public ParametricCurveN<N, T>
       // Update the control vectors
       if (fix_first_and_last) setControl(0, first_pos);
 
-      std::vector<VectorT> new_ctrls(num_unknown_ctrls);
+      Array<VectorT> new_ctrls(num_unknown_ctrls);
       for (intx i = 0; i < N; ++i)
       {
         intx offset = i * num_unknown_ctrls;

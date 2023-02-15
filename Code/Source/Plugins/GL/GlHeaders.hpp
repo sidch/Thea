@@ -18,7 +18,7 @@
 #  define GLEW_STATIC
 #endif
 
-#include "glew.h"
+#include "../../ThirdParty/GLEW/glew.h"
 
 #ifdef THEA_GL_OSMESA
 
@@ -79,9 +79,9 @@
 // GUI compatibility. Requires a display device.
 #ifndef THEA_GL_OSMESA
 #  ifdef THEA_WIN32
-#    include "wglew.h"
+#    include "../../ThirdParty/GLEW/wglew.h"
 #  elif defined(THEA_LINUX) || defined(THEA_BSD)
-#    include "glxew.h"
+#    include "../../ThirdParty/GLEW/glxew.h"
 #  endif
 #endif
 

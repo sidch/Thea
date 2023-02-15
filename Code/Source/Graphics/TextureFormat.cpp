@@ -24,7 +24,7 @@
 */
 
 #include "TextureFormat.hpp"
-#include "../Plugins/GL/glew.h"
+#include "../ThirdParty/GLEW/glew.h"
 
 // Let's hope the EXT versions exist at least... else we're on really really old GL
 #ifndef GL_BGR
@@ -520,6 +520,9 @@ TextureFormat::fromImageType(IImage::Type type, bool is_depth)
     case IImage::Type::LUMINANCE_8U  : return L8();
     case IImage::Type::LUMINANCE_16U : return L16();
     case IImage::Type::LUMINANCE_32F : return L32F();
+    case IImage::Type::LA_8U         : return LA8();
+    case IImage::Type::LA_16U        : return LA16();
+    case IImage::Type::LA_32F        : return LA32F();
     case IImage::Type::RGB_8U        : return RGB8();
     case IImage::Type::RGBA_8U       : return RGBA8();
     case IImage::Type::RGB_16U       : return RGB16();

@@ -9,75 +9,72 @@
 # Setup build
 GET_FILENAME_COMPONENT(Thea_PROJECT_ROOT ../.. ABSOLUTE)
 SET(Thea_FIND_ALL TRUE)
-SET(Thea_FIND_Boost_ADDITIONAL_COMPONENTS program_options)
 INCLUDE(${Thea_PROJECT_ROOT}/Build/Common/BuildSetup.cmake NO_POLICY_SCOPE)
 
 PROJECT(TheaTools CXX C)
-
-# Dependency: OpenGL
-IF(WITH_OSMESA)
-  SET(OPENGL_FOUND )
-  SET(OPENGL_GLU_FOUND )
-
-  IF(EXISTS ${THEA_DEPS_ROOT}/installed-osmesa)
-    SET(OSMesa_ROOT ${THEA_DEPS_ROOT}/installed-osmesa)
-  ELSE()
-    SET(OSMesa_ROOT ${THEA_DEPS_ROOT})
-  ENDIF()
-  FIND_PACKAGE(OSMesa)
-
-  IF(OSMesa_GLU_FOUND)
-    SET(OPENGL_GLU_FOUND TRUE)
-  ENDIF()
-
-  IF(OSMesa_FOUND)
-    SET(OPENGL_FOUND TRUE)
-
-    # Replace GL libraries with OSMesa ones, if available
-    SET(OPENGL_INCLUDE_DIRS ${OSMesa_INCLUDE_DIRS} ${OSMesa_GLU_INCLUDE_DIRS})
-    SET(OPENGL_CFLAGS "${OSMesa_CFLAGS} ${OSMesa_GLU_CFLAGS}")
-    SET(OPENGL_LIBRARIES ${OSMesa_GLU_LIBRARIES} ${OSMesa_LIBRARIES})
-    SET(OPENGL_LIBRARY_DIRS ${OSMesa_LIBRARY_DIRS} ${OSMesa_GLU_LIBRARY_DIRS})
-    SET(OPENGL_LDFLAGS "${OSMesa_LDFLAGS} ${OSMesa_GLU_LDFLAGS}")
-    ADD_DEFINITIONS(-DTHEA_GL_OSMESA=1 -DGLEW_OSMESA=1)
-  ENDIF()
-ELSE()
-  FIND_PACKAGE(OpenGL)
-ENDIF()
-
-IF(OPENGL_FOUND)
-  ADD_DEFINITIONS(-DGLEW_STATIC)
-
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENGL_CFLAGS}")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPENGL_CFLAGS}")
-ENDIF()
-
-# Dependency: wxWidgets
-FIND_PACKAGE(wxWidgets COMPONENTS core base gl)
-IF(wxWidgets_FOUND)
-  INCLUDE(${wxWidgets_USE_FILE})
-ENDIF()
-
-# Dependency: OpenCL
-FIND_PACKAGE(OpenCL)
-
-IF(APPLE)
-  ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
-ENDIF()
 
 # Shared library flags
 IF(THEA_DLL)
   ADD_DEFINITIONS(-DTHEA_DLL -DTHEA_DLL_IMPORTS)
 ENDIF()
 
+# Dependency: OpenGL
+IF(WITH_PLUGIN_GL)
+  IF(WITH_OSMESA)
+    SET(OPENGL_FOUND )
+    SET(OPENGL_GLU_FOUND )
+
+    IF(EXISTS ${THEA_DEPS_ROOT}/installed-osmesa)
+      SET(OSMesa_ROOT ${THEA_DEPS_ROOT}/installed-osmesa)
+    ELSE()
+      SET(OSMesa_ROOT ${THEA_DEPS_ROOT})
+    ENDIF()
+    FIND_PACKAGE(OSMesa)
+
+    IF(OSMesa_GLU_FOUND)
+      SET(OPENGL_GLU_FOUND TRUE)
+    ENDIF()
+
+    IF(OSMesa_FOUND)
+      SET(OPENGL_FOUND TRUE)
+
+      # Replace GL libraries with OSMesa ones, if available
+      SET(OPENGL_INCLUDE_DIRS ${OSMesa_INCLUDE_DIRS} ${OSMesa_GLU_INCLUDE_DIRS})
+      SET(OPENGL_CFLAGS "${OSMesa_CFLAGS} ${OSMesa_GLU_CFLAGS}")
+      SET(OPENGL_LIBRARIES ${OSMesa_GLU_LIBRARIES} ${OSMesa_LIBRARIES})
+      SET(OPENGL_LIBRARY_DIRS ${OSMesa_LIBRARY_DIRS} ${OSMesa_GLU_LIBRARY_DIRS})
+      SET(OPENGL_LDFLAGS "${OSMesa_LDFLAGS} ${OSMesa_GLU_LDFLAGS}")
+      ADD_DEFINITIONS(-DTHEA_GL_OSMESA=1 -DGLEW_OSMESA=1)
+    ENDIF()
+  ELSE()
+    FIND_PACKAGE(OpenGL)
+  ENDIF()
+
+  IF(OPENGL_FOUND)
+    ADD_DEFINITIONS(-DGLEW_STATIC)
+
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENGL_CFLAGS}")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OPENGL_CFLAGS}")
+  ENDIF()
+
+  # Dependency: wxWidgets
+  FIND_PACKAGE(wxWidgets COMPONENTS core base gl)
+  IF(wxWidgets_FOUND)
+    INCLUDE(${wxWidgets_USE_FILE})
+  ENDIF()
+ENDIF()
+
+# Dependency: OpenCL
+FIND_PACKAGE(OpenCL)
+IF(OPENCL_FOUND AND APPLE)
+  ADD_DEFINITIONS(-DGL_SILENCE_DEPRECATION -DCL_SILENCE_DEPRECATION)
+ENDIF()
+
 # Include directories
 INCLUDE_DIRECTORIES(BEFORE
                     ${SourceRoot}
-                    ${OPENGL_INCLUDE_DIRS})
-
-IF(OPENCL_FOUND)
-  INCLUDE_DIRECTORIES(BEFORE ${OPENCL_INCLUDE_DIRS})
-ENDIF()
+                    ${OPENGL_INCLUDE_DIRS}
+                    ${OPENCL_INCLUDE_DIRS})
 
 # Link directories
 LINK_DIRECTORIES(${OutputRoot}/lib
@@ -90,7 +87,7 @@ SET(TheaAllTools )
 # Browse3D
 #===========================================================
 
-IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
+IF(WITH_PLUGIN_GL AND wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   # Source file lists
   FILE(GLOB Browse3DSources
        ${SourceRoot}/Tools/Browse3D/*.cpp
@@ -127,7 +124,6 @@ IF(wxWidgets_FOUND AND OPENGL_FOUND AND NOT WITH_OSMESA)
   ENDIF()
 
   SET(TheaAllTools ${TheaAllTools} Browse3D)
-
 ENDIF()
 
 #===========================================================
@@ -197,7 +193,6 @@ IF(OPENCL_FOUND)
   ENDIF()
 
   SET(TheaAllTools ${TheaAllTools} gip)
-
 ENDIF()
 
 #===========================================================
@@ -435,41 +430,43 @@ SET(TheaAllTools ${TheaAllTools} Register)
 # RenderShape
 #===========================================================
 
-# Source file lists
-FILE(GLOB RenderShapeSources
-     ${SourceRoot}/Tools/RenderShape/*.cpp
-     ${SourceRoot}/Plugins/GL/glew.c)
+IF(WITH_PLUGIN_GL AND OPENGL_FOUND)
+  # Source file lists
+  FILE(GLOB RenderShapeSources
+       ${SourceRoot}/Tools/RenderShape/*.cpp
+       ${SourceRoot}/Plugins/GL/glew.c)
 
-# Libraries to link to
-SET(RenderShapeLibraries
-    Thea
-    ${OPENGL_LIBRARIES}
-    ${Thea_DEPS_LIBRARIES})
+  # Libraries to link to
+  SET(RenderShapeLibraries
+      Thea
+      ${OPENGL_LIBRARIES}
+      ${Thea_DEPS_LIBRARIES})
 
-# Additional platform-specific libraries
-IF(WIN32)
-  SET(RenderShapeLibraries ${RenderShapeLibraries} "version.lib")
+  # Additional platform-specific libraries
+  IF(WIN32)
+    SET(RenderShapeLibraries ${RenderShapeLibraries} "version.lib")
+  ENDIF()
+
+  # Build products
+  ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
+
+  # Additional libraries to be linked
+  TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
+
+  # Linker flags
+  SET_TARGET_PROPERTIES(RenderShape
+                          PROPERTIES
+                            LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}"
+                            INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+  # Fix library install names on OS X
+  IF(APPLE)
+    INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+    OSX_FIX_DYLIB_REFERENCES(RenderShape "${RenderShapeLibraries}")
+  ENDIF()
+
+  SET(TheaAllTools ${TheaAllTools} RenderShape)
 ENDIF()
-
-# Build products
-ADD_EXECUTABLE(RenderShape ${RenderShapeSources})
-
-# Additional libraries to be linked
-TARGET_LINK_LIBRARIES(RenderShape ${RenderShapeLibraries})
-
-# Linker flags
-SET_TARGET_PROPERTIES(RenderShape
-                        PROPERTIES
-                          LINK_FLAGS "${Thea_DEPS_LDFLAGS} ${OPENGL_LDFLAGS}"
-                          INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# Fix library install names on OS X
-IF(APPLE)
-  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
-  OSX_FIX_DYLIB_REFERENCES(RenderShape "${RenderShapeLibraries}")
-ENDIF()
-
-SET(TheaAllTools ${TheaAllTools} RenderShape)
 
 #===========================================================
 # SampleGraph
@@ -508,38 +505,36 @@ SET(TheaAllTools ${TheaAllTools} SampleGraph)
 # SegmentSDF
 #===========================================================
 
-IF(CLUTO_FOUND)
+IF(WITH_CLUTO AND CLUTO_FOUND)
+  # Source file lists
+  FILE(GLOB SegmentSDFSources
+       ${SourceRoot}/Tools/SegmentSDF/*.cpp)
 
-# Source file lists
-FILE(GLOB SegmentSDFSources
-     ${SourceRoot}/Tools/SegmentSDF/*.cpp)
+  # Libraries to link to
+  SET(SegmentSDFLibraries
+      Thea
+      ${Thea_DEPS_LIBRARIES})
 
-# Libraries to link to
-SET(SegmentSDFLibraries
-    Thea
-    ${Thea_DEPS_LIBRARIES})
+  # Build products
+  ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
 
-# Build products
-ADD_EXECUTABLE(SegmentSDF ${SegmentSDFSources})
+  # Additional libraries to be linked
+  TARGET_LINK_LIBRARIES(SegmentSDF ${SegmentSDFLibraries})
 
-# Additional libraries to be linked
-TARGET_LINK_LIBRARIES(SegmentSDF ${SegmentSDFLibraries})
+  # Linker flags
+  SET_TARGET_PROPERTIES(SegmentSDF
+                          PROPERTIES
+                            LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
+                            INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-# Linker flags
-SET_TARGET_PROPERTIES(SegmentSDF
-                        PROPERTIES
-                          LINK_FLAGS "${Thea_DEPS_LDFLAGS}"
-                          INSTALL_RPATH_USE_LINK_PATH TRUE)
+  # Fix library install names on OS X
+  IF(APPLE)
+    INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
+    OSX_FIX_DYLIB_REFERENCES(SegmentSDF "${SegmentSDFLibraries}")
+  ENDIF()
 
-# Fix library install names on OS X
-IF(APPLE)
-  INCLUDE(${CMAKE_MODULE_PATH}/OSXFixDylibReferences.cmake)
-  OSX_FIX_DYLIB_REFERENCES(SegmentSDF "${SegmentSDFLibraries}")
+  SET(TheaAllTools ${TheaAllTools} SegmentSDF)
 ENDIF()
-
-SET(TheaAllTools ${TheaAllTools} SegmentSDF)
-
-ENDIF(CLUTO_FOUND)
 
 #===========================================================
 # ShapeAlign

@@ -17,19 +17,41 @@
 
 #include "Common.hpp"
 #include "IImage.hpp"
-#include "AlignedAllocator.hpp"
 #include "Array.hpp"
 #include "Iostream.hpp"
 #include "Serializable.hpp"
 
+#if THEA_ENABLE_FREEIMAGE
+#include <FreeImagePlus.h>
+// Work around a bug where FreeImage.h defines _WINDOWS_ and this messes with platform detection in other libs e.g. wxWindows
+#if !THEA_WINDOWS
+#  ifdef _WINDOWS_
+#    undef _WINDOWS_
+#  endif
+#endif
+
 // Forward declaration
 class fipImage;
+#endif
 
 namespace Thea {
 
-/** A raster image, typically 2D but 3D images (depth > 1) are also supported. */
+/**
+ * A raster image, typically 2D but 3D images (depth > 1) are also supported.
+ *
+ * @todo Use an aligned allocator for stb images by defining STBI_MALLOC etc.
+ * @todo Support wrapping an external pixel buffer.
+ */
 class THEA_API Image : public virtual IImage, public Serializable
 {
+  private:
+    /** Externally managed implementation. */
+#if THEA_ENABLE_FREEIMAGE
+    typedef fipImage Impl;
+#else
+    typedef void Impl;
+#endif
+
   public:
     THEA_DECL_SMART_POINTERS(Image)
 
@@ -53,13 +75,20 @@ class THEA_API Image : public virtual IImage, public Serializable
      */
     Image(std::string const & path, Codec const & codec = CodecAuto());
 
-    /** Copy constructor. */
+    /**
+     * Copy constructor. Creates a deep copy of the source image. If the source image wraps an external buffer, the destination
+     * image will allocate a new buffer and copy over the data -- the external buffer will not be wrapped in the latter.
+     */
     Image(Image const & src);
 
     /** Destructor. */
     ~Image();
 
-    /** Assignment operator. */
+    /**
+     * Assignment operator. Creates a deep copy of the source image. If the source image wraps an external buffer, the
+     * destination image will allocate a new buffer and copy over the data -- the external buffer will not be wrapped in the
+     * latter.
+     */
     Image & operator=(Image const & src);
 
     // Abstract interface functions
@@ -82,28 +111,28 @@ class THEA_API Image : public virtual IImage, public Serializable
     /**
      * Check if the channels hold complex (as opposed to real) values.
      *
-     * This returns a cached value and is likely to be faster than calling the equivalent function in Image::Type.
+     * This returns a cached value and might be faster than calling the equivalent function in Image::Type.
      */
     bool isComplex() const { return is_complex; }
 
     /**
      * Check if the channels hold floating-point values (at any precision).
      *
-     * This returns a cached value and is likely to be faster than calling the equivalent function in Image::Type.
+     * This returns a cached value and might be faster than calling the equivalent function in Image::Type.
      */
     bool isFloatingPoint() const { return is_floating_point; }
 
     /**
      * Get the number of bits assigned to each pixel.
      *
-     * This returns a cached value and is likely to be faster than calling the equivalent function in Image::Type.
+     * This returns a cached value and might be faster than calling the equivalent function in Image::Type.
      */
     int getBitsPerPixel() const { return bits_per_pixel; }
 
     /**
      * Get the number of bits assigned to each channel. Returns -1 if the channels don't all have the same number of bits.
      *
-     * This returns a cached value and is likely to be faster than calling the equivalent function in Image::Type.
+     * This returns a cached value and might be faster than calling the equivalent function in Image::Type.
      */
     int getBitsPerChannel() const { return bits_per_channel; }
 
@@ -199,21 +228,33 @@ class THEA_API Image : public virtual IImage, public Serializable
      */
     void save(std::string const & path, Codec const & codec = CodecAuto()) const;
 
-    /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
-    fipImage const * _getFreeImage() const { return fip_img; }
-
-    /** <b>[Internal use only]</b> Get the wrapped FreeImage bitmap. */
-    fipImage * _getFreeImage() { return fip_img; }
-
-    /** <b>[Internal use only]</b> Set the type of the image. */
-    void _setType(Type type_);
-
   private:
-    /** Automatically detect the type of the encoded image and read it appropriately. */
-    void readAuto(BinaryInputStream & input, bool read_block_header);
-
     /** Cache properties related to the image type. */
     void cacheTypeProperties();
+
+    /** Compute the minimum number of bytes needed to store the uncompressed image. */
+    intx minTotalBytes(Type t = Type::UNKNOWN, int64 w = -1, int64 h = -1, int64 d = -1, int32 row_align = -1) const;
+
+    /** Clear the externally managed implementation, if any. */
+    void clearImpl();
+
+    /** Clear the internally managed buffer, if any. */
+    void clearData();
+
+    /** Resize the externally managed implementation, if any. */
+    bool resizeImpl(int64 type, int64 width_, int64 height_, int64 depth_);
+
+    /** Resize the internally managed buffer, if any. */
+    bool resizeData(int64 type, int64 width_, int64 height_, int64 depth_, int32 row_align_);
+
+    /** Set the type of the image, and optionally also its dimensions. */
+    void setAttribs(Type type_, int64 w = -1, int64 h = -1, int64 d = -1, int32 data_align_ = -1);
+
+    /** Read an image in the 3BM format. */
+    void read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_header);
+
+    /** Write an image in the 3BM format. */
+    void write3bm(Codec const & codec, BinaryOutputStream & output, bool write_block_header) const;
 
     // Scanline alignment when allocating custom arrays
     static size_t const ROW_ALIGNMENT = 8;  // would prefer 16 for SSE compatibility, but OpenGL supports a max of 8
@@ -224,9 +265,15 @@ class THEA_API Image : public virtual IImage, public Serializable
     int64 height;
     int64 depth;
 
-    // Image data
-    fipImage * fip_img;
-    Array< uint8, AlignedAllocator<uint8, ROW_ALIGNMENT> > data;  // pixel buffer when fipImage won't work, e.g. 3D images
+    // Image data managed by a third-party API
+    Impl * impl;
+
+    // Image data managed by this object, allocated directly or wrapping an external buffer
+    void * data;
+    bool owns_data;
+    size_t data_size;
+    int data_alignment;
+    AlignedAllocator<uint8, ROW_ALIGNMENT> data_allocator;
 
     // Cached type properties for fast access
     int   num_channels;
@@ -241,80 +288,132 @@ class THEA_API Image : public virtual IImage, public Serializable
 /** Abstract base class for all image codecs. */
 class THEA_API ImageCodec : public Codec
 {
+#if THEA_ENABLE_FREEIMAGE
   public:
-    /**
-     * Read an image from a binary input stream. If \a read_block_header is true, extra information about the image block (such
-     * as its size and type) will be read first from the input stream. Else, the entire input will be treated as the image block
-     * (the size() function of the stream must return the correct value in this case).
-     *
-     * @see writeImage
-     */
-    virtual void readImage(Image & image, BinaryInputStream & input, bool read_block_header) const = 0;
-
-    /**
-     * Write an image to a binary output stream. Optionally prefixes extra information about the image block such as its size
-     * and type (which may have not been specified in the encoding format itself).
-     *
-     * @see readImage
-     */
-    virtual void writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const = 0;
+    virtual FREE_IMAGE_FORMAT getImplFormat() const = 0;
+    virtual int getImplReadFlags() const = 0;
+    virtual int getImplWriteFlags() const = 0;
+#else
+#endif
 };
 
-#define THEA_DEF_IMAGE_CODEC_BODY(name, magic, desc)                                                                          \
-    public:                                                                                                                   \
-      char const * getName() const { static char const * my_name = desc; return my_name; }                                    \
-      MagicString const & getMagic() const { static MagicString const magic_ = toMagic(magic); return magic_; }               \
-      void readImage(Image & image, BinaryInputStream & input, bool read_block_header) const;                                 \
-      void writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const;
+#if THEA_ENABLE_FREEIMAGE
+#  define THEA_DEF_IMAGE_CODEC_EXTERNAL_IMPL(fif, read_flags, write_flags)                                                    \
+      FREE_IMAGE_FORMAT getImplFormat() const { return (fif); }                                                               \
+      int getImplReadFlags() const { return (read_flags); }                                                                   \
+      int getImplWriteFlags() const { return (write_flags); }
+#else
+#  define THEA_DEF_IMAGE_CODEC_EXTERNAL_IMPL(fif, read_flags, write_flags)
+#endif
 
-#define THEA_DEF_IMAGE_CODEC(name, magic, desc)                                                                               \
+#define THEA_DEF_IMAGE_CODEC_BODY(name, magic, fif, read_flags, write_flags, desc)                                            \
+    public:                                                                                                                   \
+      char const * getName() const { static char const * my_name = (desc); return my_name; }                                  \
+      MagicString const & getMagic() const { static MagicString const magic_ = toMagic(magic); return magic_; }               \
+      THEA_DEF_IMAGE_CODEC_EXTERNAL_IMPL((fif), (read_flags), (write_flags));
+
+#define THEA_DEF_IMAGE_CODEC(name, magic, fif, read_flags, write_flags, desc)                                                 \
   class THEA_API name : public ImageCodec                                                                                     \
   {                                                                                                                           \
     public: name() {}                                                                                                         \
-    THEA_DEF_IMAGE_CODEC_BODY(name, magic, desc)                                                                              \
+    THEA_DEF_IMAGE_CODEC_BODY(name, (magic), (fif), (read_flags), (write_flags), (desc))                                      \
   };
 
 // TODO: Add options to all the ones that support them
 
 // 2D formats
-THEA_DEF_IMAGE_CODEC(CodecBmp,     "BMP",     "Windows or OS/2 Bitmap File (*.bmp)")
-THEA_DEF_IMAGE_CODEC(CodecCut,     "CUT",     "Dr. Halo (*.cut)")
-THEA_DEF_IMAGE_CODEC(CodecDds,     "DDS",     "DirectDraw Surface (*.dds)")
-THEA_DEF_IMAGE_CODEC(CodecExr,     "EXR",     "ILM OpenEXR (*.exr)")
-THEA_DEF_IMAGE_CODEC(CodecFaxg3,   "FAXG3",   "Raw Fax format CCITT G3 (*.g3)")
-THEA_DEF_IMAGE_CODEC(CodecGif,     "GIF",     "Graphics Interchange Format (*.gif)")
-THEA_DEF_IMAGE_CODEC(CodecHdr,     "HDR",     "High Dynamic Range (*.hdr)")
-THEA_DEF_IMAGE_CODEC(CodecIco,     "ICO",     "Windows Icon (*.ico)")
-THEA_DEF_IMAGE_CODEC(CodecIff,     "IFF",     "Amiga IFF (*.iff, *.lbm)")
-THEA_DEF_IMAGE_CODEC(CodecJ2k,     "J2K",     "JPEG-2000 codestream (*.j2k, *.j2c)")
-THEA_DEF_IMAGE_CODEC(CodecJng,     "JNG",     "JPEG Network Graphics (*.jng)")
-THEA_DEF_IMAGE_CODEC(CodecJp2,     "JP2",     "JPEG-2000 File Format (*.jp2)")
-THEA_DEF_IMAGE_CODEC(CodecKoala,   "KOALA",   "Commodore 64 Koala format (*.koa)")
-THEA_DEF_IMAGE_CODEC(CodecMng,     "MNG",     "Multiple Network Graphics (*.mng)")
-THEA_DEF_IMAGE_CODEC(CodecPbm,     "PBM",     "Portable Bitmap (ASCII) (*.pbm)")
-THEA_DEF_IMAGE_CODEC(CodecPbmraw,  "PBMRAW",  "Portable Bitmap (BINARY) (*.pbm)")
-THEA_DEF_IMAGE_CODEC(CodecPcd,     "PCD",     "Kodak PhotoCD (*.pcd)")
-THEA_DEF_IMAGE_CODEC(CodecPcx,     "PCX",     "Zsoft Paintbrush PCX bitmap format (*.pcx)")
-THEA_DEF_IMAGE_CODEC(CodecPfm,     "PFM",     "Portable Floatmap (*.pfm)")
-THEA_DEF_IMAGE_CODEC(CodecPgm,     "PGM",     "Portable Graymap (ASCII) (*.pgm)")
-THEA_DEF_IMAGE_CODEC(CodecPgmraw,  "PGMRAW",  "Portable Graymap (BINARY) (*.pgm)")
-THEA_DEF_IMAGE_CODEC(CodecPng,     "PNG",     "Portable Network Graphics (*.png)")
-THEA_DEF_IMAGE_CODEC(CodecPpm,     "PPM",     "Portable Pixelmap (ASCII) (*.ppm)")
-THEA_DEF_IMAGE_CODEC(CodecPpmraw,  "PPMRAW",  "Portable Pixelmap (BINARY) (*.ppm)")
-THEA_DEF_IMAGE_CODEC(CodecPsd,     "PSD",     "Adobe Photoshop (*.psd)")
-THEA_DEF_IMAGE_CODEC(CodecRas,     "RAS",     "Sun Rasterfile (*.ras)")
-THEA_DEF_IMAGE_CODEC(CodecSgi,     "SGI",     "Silicon Graphics SGI image format (*.sgi)")
-THEA_DEF_IMAGE_CODEC(CodecTarga,   "TARGA",   "Truevision Targa files (*.tga, *.targa)")
-THEA_DEF_IMAGE_CODEC(CodecTiff,    "TIFF",    "Tagged Image File Format (*.tif, *.tiff)")
-THEA_DEF_IMAGE_CODEC(CodecWbmp,    "WBMP",    "Wireless Bitmap (*.wbmp)")
-THEA_DEF_IMAGE_CODEC(CodecXbm,     "XBM",     "X11 Bitmap Format (*.xbm)")
-THEA_DEF_IMAGE_CODEC(CodecXpm,     "XPM",     "X11 Pixmap Format (*.xpm)")
+THEA_DEF_IMAGE_CODEC(CodecBmp,    "BMP",    FIF_BMP,    0,  0,  "Windows or OS/2 Bitmap (*.bmp)")
+THEA_DEF_IMAGE_CODEC(CodecGif,    "GIF",    FIF_GIF,    0,  0,  "Graphics Interchange Format (*.gif)")
+THEA_DEF_IMAGE_CODEC(CodecHdr,    "HDR",    FIF_HDR,    0,  0,  "High Dynamic Range (*.hdr)")
+THEA_DEF_IMAGE_CODEC(CodecPng,    "PNG",    FIF_PNG,    0,  0,  "Portable Network Graphics (*.png)")
+THEA_DEF_IMAGE_CODEC(CodecPsd,    "PSD",    FIF_PSD,    0,  0,  "Adobe Photoshop (*.psd)")
+THEA_DEF_IMAGE_CODEC(CodecTga,    "TGA",    FIF_TARGA,  0,  0,  "Truevision Targa (*.tga, *.targa)")
 
-// 3D formats
-THEA_DEF_IMAGE_CODEC(Codec3bm,     "3BM",     "3D Bitmap (*.3bm)")
+#if THEA_ENABLE_FREEIMAGE
+
+THEA_DEF_IMAGE_CODEC(CodecCut,    "CUT",    FIF_CUT,    0,  0,  "Dr. Halo (*.cut)")
+THEA_DEF_IMAGE_CODEC(CodecDds,    "DDS",    FIF_DDS,    0,  0,  "DirectDraw Surface (*.dds)")
+THEA_DEF_IMAGE_CODEC(CodecExr,    "EXR",    FIF_EXR,    0,  0,  "ILM OpenEXR (*.exr)")
+THEA_DEF_IMAGE_CODEC(CodecFaxg3,  "FAXG3",  FIF_FAXG3,  0,  0,  "Raw Fax Format CCITT G3 (*.g3)")
+THEA_DEF_IMAGE_CODEC(CodecIco,    "ICO",    FIF_ICO,    0,  0,  "Windows Icon (*.ico)")
+THEA_DEF_IMAGE_CODEC(CodecIff,    "IFF",    FIF_IFF,    0,  0,  "Amiga IFF (*.iff, *.lbm)")
+THEA_DEF_IMAGE_CODEC(CodecJ2k,    "J2K",    FIF_J2K,    0,  0,  "JPEG-2000 Codestream (*.j2k, *.j2c)")
+THEA_DEF_IMAGE_CODEC(CodecJng,    "JNG",    FIF_JNG,    0,  0,  "JPEG Network Graphics (*.jng)")
+THEA_DEF_IMAGE_CODEC(CodecJp2,    "JP2",    FIF_JP2,    0,  0,  "JPEG-2000 (*.jp2)")
+THEA_DEF_IMAGE_CODEC(CodecKoa,    "KOA",    FIF_KOALA,  0,  0,  "Commodore 64 Koala (*.koa)")
+THEA_DEF_IMAGE_CODEC(CodecMng,    "MNG",    FIF_MNG,    0,  0,  "Multiple Network Graphics (*.mng)")
+THEA_DEF_IMAGE_CODEC(CodecPcd,    "PCD",    FIF_PCD,    0,  0,  "Kodak PhotoCD (*.pcd)")
+THEA_DEF_IMAGE_CODEC(CodecPcx,    "PCX",    FIF_PCX,    0,  0,  "Zsoft Paintbrush (*.pcx)")
+THEA_DEF_IMAGE_CODEC(CodecPfm,    "PFM",    FIF_PFM,    0,  0,  "Portable Floatmap (*.pfm)")
+THEA_DEF_IMAGE_CODEC(CodecRas,    "RAS",    FIF_RAS,    0,  0,  "Sun Rasterfile (*.ras)")
+THEA_DEF_IMAGE_CODEC(CodecSgi,    "SGI",    FIF_SGI,    0,  0,  "Silicon Graphics Image (*.sgi)")
+THEA_DEF_IMAGE_CODEC(CodecTif,    "TIF",    FIF_TIFF,   0,  0,  "Tagged Image File Format (*.tif, *.tiff)")
+THEA_DEF_IMAGE_CODEC(CodecWbmp,   "WBMP",   FIF_WBMP,   0,  0,  "Wireless Bitmap (*.wbmp)")
+THEA_DEF_IMAGE_CODEC(CodecXbm,    "XBM",    FIF_XBM,    0,  0,  "X11 Bitmap (*.xbm)")
+THEA_DEF_IMAGE_CODEC(CodecXpm,    "XPM",    FIF_XPM,    0,  0,  "X11 Pixmap (*.xpm)")
+
+/** PBM image codec. */
+class THEA_API CodecPbm : public ImageCodec
+{
+  public:
+    /** Constructor. */
+    CodecPbm(bool binary_ = true) : binary(binary_) {}
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecPbm, "PBM", (binary ? FIF_PBMRAW : FIF_PBM), 0, 0, "Portable Bitmap (*.pgm)")
+
+  private:
+    bool binary;
+};
+
+#else
+
+// Only supported by stb, not FreeImage
+THEA_DEF_IMAGE_CODEC(CodecPic, "PIC", FIF_UNKNOWN, 0, 0, "Softimage Picture (*.pic)")
+
+#endif
+
+/** PGM image codec. */
+class THEA_API CodecPgm : public ImageCodec
+{
+  public:
+#if THEA_ENABLE_FREEIMAGE
+    /** Constructor. */
+    CodecPgm(bool binary_ = true) : binary(binary_) {}
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecPgm, "PGM", (binary ? FIF_PGMRAW : FIF_PGM), 0, 0, "Portable Greymap (*.pgm)")
+
+  private:
+    bool binary;
+#else
+    /** Constructor. */
+    CodecPgm() {}
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecPgm, "PGM", FIF_PGMRAW, 0, 0, "Portable Greymap (*.pgm)")
+#endif
+};
+
+/** PPM image codec. */
+class THEA_API CodecPpm : public ImageCodec
+{
+  public:
+#if THEA_ENABLE_FREEIMAGE
+    /** Constructor. */
+    CodecPpm(bool binary_ = true) : binary(binary_) {}
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecPpm, "PPM", (binary ? FIF_PPMRAW : FIF_PPM), 0, 0, "Portable Pixelmap (*.ppm)")
+
+  private:
+    bool binary;
+#else
+    /** Constructor. */
+    CodecPpm() {}
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecPpm, "PPM", FIF_PPMRAW, 0, 0, "Portable Pixelmap (*.ppm)")
+#endif
+};
 
 /** JPEG image codec. */
-class THEA_API CodecJpeg : public ImageCodec
+class THEA_API CodecJpg : public ImageCodec
 {
   public:
     /** %Options for JPEG encoding. */
@@ -334,16 +433,27 @@ class THEA_API CodecJpeg : public ImageCodec
     };
 
     /** Default constructor. Sets default options (quality 75, non-progressive encoding). */
-    CodecJpeg() : options(Options::defaults()) {}
+    CodecJpg() : options(Options::defaults()) {}
 
     /** Constructor to set encoding options. */
-    CodecJpeg(Options const & options_) : options(options_) {}
+    CodecJpg(Options const & options_) : options(options_) {}
 
-    THEA_DEF_IMAGE_CODEC_BODY(CodecJpeg, "JPEG", "Independent JPEG Group (*.jpg, *.jif, *.jpeg, *.jpe)")
+    /** Get the JPEG options. */
+    Options const & getOptions() const { return options; }
+
+    THEA_DEF_IMAGE_CODEC_BODY(CodecJpg, "JPG", FIF_JPEG, 0, (options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0)),
+                              "Independent JPEG Group (*.jpg, *.jif, *.jpeg, *.jpe)")
 
   private:
     Options options;
 };
+
+// 3D formats
+THEA_DEF_IMAGE_CODEC(Codec3bm, "3BM", FIF_UNKNOWN, 0, 0, "3D Bitmap (*.3bm)")
+
+#undef THEA_DEF_IMAGE_CODEC
+#undef THEA_DEF_IMAGE_CODEC_BODY
+#undef THEA_DEF_IMAGE_CODEC_EXTERNAL_IMPL
 
 } // namespace Thea
 

@@ -77,7 +77,9 @@ class /* THEA_API */ MappedMatrix : public virtual IAddressableMatrix<T>, public
     {
       size_t operator()(Triplet const & t) const
       {
-        return std::hash< std::pair<Index, Index> >()(std::make_pair(t.row(), t.col()));
+        auto h = hashValue(t.row());
+        hashCombine(h, t.col());
+        return h;
       }
     };
 

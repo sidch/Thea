@@ -18,7 +18,7 @@
 #include "../Common.hpp"
 #include "../Array.hpp"
 #include "../BallN.hpp"
-#include "miniball/Seb.h"
+#include "../ThirdParty/miniball/Seb.h"
 
 namespace Thea {
 namespace Algorithms {

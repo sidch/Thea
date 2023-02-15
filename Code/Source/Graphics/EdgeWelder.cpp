@@ -13,8 +13,8 @@
 //============================================================================
 
 #include "EdgeWelder.hpp"
+#include "../Hash.hpp"
 #include "../UnorderedMap.hpp"
-#include <boost/functional/hash.hpp>
 #include <cmath>
 #include <utility>
 
@@ -45,14 +45,14 @@ class EdgeWelderImpl
 
     struct Long3PairHasher
     {
-      std::size_t operator()(Long3Pair const & a) const
+      size_t operator()(Long3Pair const & a) const
       {
-        std::size_t s = boost::hash_value(a.first.x);
-        boost::hash_combine(s, a.first.y);
-        boost::hash_combine(s, a.first.z);
-        boost::hash_combine(s, a.second.x);
-        boost::hash_combine(s, a.second.y);
-        boost::hash_combine(s, a.second.z);
+        size_t s = hashValue(a.first.x);
+        hashCombine(s, a.first.y);
+        hashCombine(s, a.first.z);
+        hashCombine(s, a.second.x);
+        hashCombine(s, a.second.y);
+        hashCombine(s, a.second.z);
         return s;
       }
     };

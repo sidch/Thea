@@ -708,7 +708,7 @@ Array _dxfResampleComponentDepConAfterSimplification(Array array,
 						    int *face_parents, int *face_lut,
 						    float *face_areas);
 
-#endif  // DX_HAVE_ARRAY
+#endif // DX_HAVE_ARRAY
 
 /*+--------------------------------------------------------------------------+
   |                                                                          |

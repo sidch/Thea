@@ -13,6 +13,7 @@
 //============================================================================
 
 #include "GeodesicSphere3.hpp"
+#include "../Hash.hpp"
 #include "../UnorderedMap.hpp"
 #include <utility>
 
@@ -22,7 +23,7 @@ namespace Algorithms {
 namespace GeodesicSphere3Internal {
 
 typedef std::pair<size_t, size_t> IndexPair;
-typedef UnorderedMap<IndexPair, size_t> MidpointMap;
+typedef UnorderedMap< IndexPair, size_t, Hasher<IndexPair> > MidpointMap;
 
 intx
 midpoint(size_t i, size_t j, Array<Vector3> & vertices, MidpointMap & midpoints)

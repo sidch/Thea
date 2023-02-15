@@ -26,16 +26,68 @@
 #include "Array.hpp"
 #include "FilePath.hpp"
 #include "UnorderedMap.hpp"
-#include <FreeImagePlus.h>
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+
+#if !THEA_ENABLE_FREEIMAGE
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#    define STBI_NO_STDIO
+#    define STB_IMAGE_IMPLEMENTATION
+#    define STB_IMAGE_WRITE_IMPLEMENTATION
+#    include "ThirdParty/stb/stb_image.h"
+#    include "ThirdParty/stb/stb_image_resize.h"
+#    include "ThirdParty/stb/stb_image_write.h"
+#  pragma clang diagnostic pop
+#endif
 
 THEA_INSTANTIATE_SMART_POINTERS(Thea::Image)
 
 namespace Thea {
 
 namespace ImageInternal {
+
+// Bytes consumed by an aligned row
+int64
+scanWidth(int64 width, int bpp, int32 alignment)
+{
+  int64 width_bits = width * bpp;
+  int64 row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
+  return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
+}
+
+// Bits (not bytes) per pixel
+static int
+typeToBpp(Image::Type type)
+{
+  switch (type)
+  {
+    case Image::Type::LUMINANCE_1U  : return 1;
+    case Image::Type::LUMINANCE_2U  : return 2;
+    case Image::Type::LUMINANCE_4U  : return 4;
+    case Image::Type::LUMINANCE_8U  : return 8;
+    case Image::Type::LUMINANCE_16  :
+    case Image::Type::LUMINANCE_16U : return 16;
+    case Image::Type::LUMINANCE_32  :
+    case Image::Type::LUMINANCE_32U : return 32;
+    case Image::Type::LUMINANCE_32F : return 32;
+    case Image::Type::LUMINANCE_64F : return 64;
+    case Image::Type::LA_8U         : return 16;
+    case Image::Type::LA_16U        : return 32;
+    case Image::Type::LA_32F        : return 64;
+    case Image::Type::RGB_8U        : return 24;
+    case Image::Type::RGBA_8U       : return 32;
+    case Image::Type::RGB_16U       : return 48;
+    case Image::Type::RGBA_16U      : return 64;
+    case Image::Type::RGB_32F       : return 96;
+    case Image::Type::RGBA_32F      : return 128;
+    case Image::Type::COMPLEX_64F   : return 128;
+    default                         : return 0;
+  }
+}
+
+#if THEA_ENABLE_FREEIMAGE
 
 static FREE_IMAGE_TYPE
 typeToFreeImageType(Image::Type type)
@@ -63,34 +115,8 @@ typeToFreeImageType(Image::Type type)
   }
 }
 
-static WORD
-typeToFreeImageBPP(Image::Type type)
-{
-  switch (type)
-  {
-    case Image::Type::LUMINANCE_1U  : return 1;
-    case Image::Type::LUMINANCE_2U  : return 2;
-    case Image::Type::LUMINANCE_4U  : return 4;
-    case Image::Type::LUMINANCE_8U  : return 8;
-    case Image::Type::LUMINANCE_16  :
-    case Image::Type::LUMINANCE_16U : return 16;
-    case Image::Type::LUMINANCE_32  :
-    case Image::Type::LUMINANCE_32U : return 32;
-    case Image::Type::LUMINANCE_32F : return 32;
-    case Image::Type::LUMINANCE_64F : return 64;
-    case Image::Type::RGB_8U        : return 24;
-    case Image::Type::RGBA_8U       : return 32;
-    case Image::Type::RGB_16U       : return 48;
-    case Image::Type::RGBA_16U      : return 64;
-    case Image::Type::RGB_32F       : return 96;
-    case Image::Type::RGBA_32F      : return 128;
-    case Image::Type::COMPLEX_64F   : return 128;
-    default                         : return 0;
-  }
-}
-
 static Image::Type
-typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
+typeFromFreeImageTypeAndBpp(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
 {
   switch (fi_type)
   {
@@ -124,15 +150,48 @@ typeFromFreeImageTypeAndBPP(FREE_IMAGE_TYPE fi_type, WORD fi_bpp)
   return Image::Type::UNKNOWN;
 }
 
-// Returns bytes consumed by an aligned row
-int64
-scanWidth(int64 width, int bpp, int32 alignment)
+#else // THEA_ENABLE_FREEIMAGE
+
+static Image::Type
+typeFromStbChannelsAndBpc(int nc, int bpc)
 {
-  int64 width_bits = width * bpp;
-  int64 row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
-  return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
+  switch (bpc)
+  {
+    case 16:
+      switch (nc)
+      {
+        case 1:  return Image::Type::LUMINANCE_16U;
+        case 2:  return Image::Type::LA_16U;
+        case 3:  return Image::Type::RGB_16U;
+        case 4:  return Image::Type::RGBA_16U;
+        default: return Image::Type::UNKNOWN;
+      }
+
+    case 32:
+      switch (nc)
+      {
+        case 1:  return Image::Type::LUMINANCE_32F;
+        case 2:  return Image::Type::LA_32F;
+        case 3:  return Image::Type::RGB_32F;
+        case 4:  return Image::Type::RGBA_32F;
+        default: return Image::Type::UNKNOWN;
+      }
+
+    default:  // 8-bit
+      switch (nc)
+      {
+        case 1:  return Image::Type::LUMINANCE_8U;
+        case 2:  return Image::Type::LA_8U;
+        case 3:  return Image::Type::RGB_8U;
+        case 4:  return Image::Type::RGBA_8U;
+        default: return Image::Type::UNKNOWN;
+      }
+  }
 }
 
+#endif // THEA_ENABLE_FREEIMAGE
+
+// Only called for saving images to files when a codec should be auto-inferred from the filename
 static ImageCodec const *
 codecFromPath(std::string const & path)
 {
@@ -143,45 +202,52 @@ codecFromPath(std::string const & path)
   if (codec_map.empty())  // only on the first call
   {
     // 2D formats
+
     codec_map["BMP"  ] = ICPtr(new CodecBmp());
+    codec_map["GIF"  ] = ICPtr(new CodecGif());
+    codec_map["HDR"  ] = ICPtr(new CodecHdr());
+    codec_map["JPG"  ] =
+    codec_map["JIF"  ] =
+    codec_map["JPEG" ] =
+    codec_map["JPE"  ] = ICPtr(new CodecJpg());
+    codec_map["PGM"  ] = ICPtr(new CodecPgm());
+    codec_map["PNG"  ] = ICPtr(new CodecPng());
+    codec_map["PPM"  ] = ICPtr(new CodecPpm());
+    codec_map["PSD"  ] = ICPtr(new CodecPsd());
+    codec_map["TGA"  ] =
+    codec_map["TARGA"] = ICPtr(new CodecTga());
+
+#if THEA_ENABLE_FREEIMAGE
+
     codec_map["CUT"  ] = ICPtr(new CodecCut());
     codec_map["DDS"  ] = ICPtr(new CodecDds());
     codec_map["EXR"  ] = ICPtr(new CodecExr());
-    codec_map["GIF"  ] = ICPtr(new CodecGif());
-    codec_map["HDR"  ] = ICPtr(new CodecHdr());
     codec_map["ICO"  ] = ICPtr(new CodecIco());
-    codec_map["IFF"  ] = ICPtr(new CodecIff());
+    codec_map["IFF"  ] =
     codec_map["LBM"  ] = ICPtr(new CodecIff());
-    codec_map["J2K"  ] = ICPtr(new CodecJ2k());
+    codec_map["J2K"  ] =
     codec_map["J2C"  ] = ICPtr(new CodecJ2k());
     codec_map["JNG"  ] = ICPtr(new CodecJng());
     codec_map["JP2"  ] = ICPtr(new CodecJp2());
-    codec_map["JPG"  ] = ICPtr(new CodecJpeg());
-    codec_map["JIF"  ] = ICPtr(new CodecJpeg());
-    codec_map["JPEG" ] = ICPtr(new CodecJpeg());
-    codec_map["JPE"  ] = ICPtr(new CodecJpeg());
-    codec_map["KOA"  ] = ICPtr(new CodecKoala());
+    codec_map["KOA"  ] = ICPtr(new CodecKoa());
     codec_map["MNG"  ] = ICPtr(new CodecMng());
     codec_map["PBM"  ] = ICPtr(new CodecPbm());
-    codec_map["PBM"  ] = ICPtr(new CodecPbmraw());
     codec_map["PCD"  ] = ICPtr(new CodecPcd());
     codec_map["PCX"  ] = ICPtr(new CodecPcx());
     codec_map["PFM"  ] = ICPtr(new CodecPfm());
-    codec_map["PGM"  ] = ICPtr(new CodecPgm());
-    codec_map["PGM"  ] = ICPtr(new CodecPgmraw());
-    codec_map["PNG"  ] = ICPtr(new CodecPng());
-    codec_map["PPM"  ] = ICPtr(new CodecPpm());
-    codec_map["PPM"  ] = ICPtr(new CodecPpmraw());
-    codec_map["PSD"  ] = ICPtr(new CodecPsd());
     codec_map["RAS"  ] = ICPtr(new CodecRas());
     codec_map["SGI"  ] = ICPtr(new CodecSgi());
-    codec_map["TGA"  ] = ICPtr(new CodecTarga());
-    codec_map["TARGA"] = ICPtr(new CodecTarga());
-    codec_map["TIF"  ] = ICPtr(new CodecTiff());
-    codec_map["TIFF" ] = ICPtr(new CodecTiff());
+    codec_map["TIF"  ] =
+    codec_map["TIFF" ] = ICPtr(new CodecTif());
     codec_map["WBMP" ] = ICPtr(new CodecWbmp());
     codec_map["XBM"  ] = ICPtr(new CodecXbm());
     codec_map["XPM"  ] = ICPtr(new CodecXpm());
+
+#else // THEA_ENABLE_FREEIMAGE
+
+    codec_map["PIC"  ] = ICPtr(new CodecPic());
+
+#endif // THEA_ENABLE_FREEIMAGE
 
     // 3D formats
     codec_map["3BM"  ] = ICPtr(new Codec3bm());
@@ -205,6 +271,8 @@ codecFromMagic(int64 num_bytes, uint8 const * buf)
 
   return nullptr;
 }
+
+#if THEA_ENABLE_FREEIMAGE
 
 // FreeImage can store 8-bit channels in arbitrary order, accessed via FI_RGBA_RED, FI_RGBA_GREEN etc indices. This function
 // reorders each pixel in-place so that the order is RGBA.
@@ -241,370 +309,57 @@ decanonicalizeChannelOrder(Image & img)
   return true;
 }
 
+#else // THEA_ENABLE_FREEIMAGE
+
+// Fill 'data' with 'size' bytes. Return number of bytes actually read.
+int
+stbStreamRead(void * user, char * data, int size)
+{
+  auto bis = (BinaryInputStream *)user;
+  if (!bis) { return 0; }
+
+  int64 num_read = 0;
+  bis->readBytes(size, data, num_read);
+
+  return (int)num_read;
+}
+
+// Skip the next 'n' bytes, or 'unget' the last -n bytes if negative.
+void
+stbStreamSkip(void * user, int n)
+{
+  auto bis = (BinaryInputStream *)user;
+  if (!bis) { return; }
+
+  bis->skip(n);
+}
+
+// Returns nonzero if we are at end of file/data.
+int
+stbStreamEof(void * user)
+{
+  auto bis = (BinaryInputStream *)user;
+  if (!bis) { return 1; }
+
+  return !bis->hasMore();
+}
+
+// Write a chunk of data to a stream.
+void
+stbStreamWrite(void * user, void * data, int size)
+{
+  auto bos = (BinaryOutputStream *)user;
+  if (!bos) { return; }
+
+  bos->writeBytes(size, data);
+}
+
+// Global set of callbacks, all access is read-only so it's threadsafe.
+static stbi_io_callbacks const STB_CALLBACKS = { stbStreamRead, stbStreamSkip, stbStreamEof };
+
+#endif // THEA_ENABLE_FREEIMAGE
+
 } // namespace ImageInternal
-
-//=============================================================================================================================
-// 2D formats
-//=============================================================================================================================
-
-#define THEA_DEF_DESERIALIZE_IMAGE(codec, fip_format, flags)                                                                  \
-void                                                                                                                          \
-codec::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const                                      \
-{                                                                                                                             \
-  /* Get the size of the image block in bytes */                                                                              \
-  uint64 size = (read_block_header ? BlockHeader(input).data_size : input.size());                                            \
-                                                                                                                              \
-  /* Read the image block into a memory buffer (optimization possible when the data has already been buffered within the */   \
-  /* input stream?)  */                                                                                                       \
-  Array<uint8> img_block((size_t)size);                                                                                       \
-  input.readBytes((int64)size, img_block.data());                                                                             \
-                                                                                                                              \
-  /* Decode the image */                                                                                                      \
-  fipMemoryIO mem((BYTE *)img_block.data(), (DWORD)size);                                                                     \
-  FIBITMAP * bitmap = mem.load(fip_format, flags);                                                                            \
-  if (!bitmap)                                                                                                                \
-    throw Error(toString(getName()) + ": Could not decode image from memory stream");                                         \
-                                                                                                                              \
-  fipImage * fip_img = image._getFreeImage();                                                                                 \
-  debugAssertM(fip_img, toString(getName()) + ": Image does not wrap a valid FreeImage bitmap");                              \
-                                                                                                                              \
-  *fip_img = bitmap;  /* the FIP object will now manage the destruction of the bitmap */                                      \
-                                                                                                                              \
-  Image::Type type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());         \
-  if (type == Image::Type::UNKNOWN)                                                                                           \
-  {                                                                                                                           \
-    image.clear();                                                                                                            \
-    throw Error(toString(getName())                                                                                           \
-            + ": Image was successfully decoded but it has a format for which this library does not provide an interface");   \
-  }                                                                                                                           \
-  image._setType(type);                                                                                                       \
-                                                                                                                              \
-  if (!ImageInternal::canonicalizeChannelOrder(image))                                                                        \
-    throw Error(toString(getName()) + ": Could not canonicalize channel order");                                              \
-}
-
-// TODO: Add options to all the ones that support them
-THEA_DEF_DESERIALIZE_IMAGE(CodecBmp,     FIF_BMP,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecCut,     FIF_CUT,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecDds,     FIF_DDS,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecExr,     FIF_EXR,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecGif,     FIF_GIF,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecHdr,     FIF_HDR,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecIco,     FIF_ICO,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecIff,     FIF_IFF,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJ2k,     FIF_J2K,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJng,     FIF_JNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJp2,     FIF_JP2,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecJpeg,    FIF_JPEG,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecKoala,   FIF_KOALA,   0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecMng,     FIF_MNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPbm,     FIF_PBM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPbmraw,  FIF_PBMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPcd,     FIF_PCD,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPcx,     FIF_PCX,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPfm,     FIF_PFM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPgm,     FIF_PGM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPgmraw,  FIF_PGMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPng,     FIF_PNG,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPpm,     FIF_PPM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPpmraw,  FIF_PPMRAW,  0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecPsd,     FIF_PSD,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecRas,     FIF_RAS,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecSgi,     FIF_SGI,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecTarga,   FIF_TARGA,   0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecTiff,    FIF_TIFF,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecWbmp,    FIF_WBMP,    0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecXbm,     FIF_XBM,     0)
-THEA_DEF_DESERIALIZE_IMAGE(CodecXpm,     FIF_XPM,     0)
-
-// Note: Some versions of FreeImage++ don't const-protect saveToMemory(), hence the const_cast.
-#define THEA_DEF_SERIALIZE_IMAGE(codec, fip_format, flags)                                                                    \
-void                                                                                                                          \
-codec::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const                            \
-{                                                                                                                             \
-  if (!ImageInternal::decanonicalizeChannelOrder(const_cast<Image &>(image)))                                                 \
-    throw Error(toString(getName()) + ": Could not decanonicalize channel order");                                            \
-                                                                                                                              \
-  fipMemoryIO mem;                                                                                                            \
-  if (const_cast<fipImage *>(image._getFreeImage())->saveToMemory(fip_format, mem, flags) != TRUE)                            \
-    throw Error(toString(getName()) + ": Could not save image to memory stream");                                             \
-                                                                                                                              \
-  if (!ImageInternal::canonicalizeChannelOrder(const_cast<Image &>(image)))                                                   \
-    throw Error(toString(getName()) + ": Could not canonicalize channel order");                                              \
-                                                                                                                              \
-  BYTE * data;                                                                                                                \
-  DWORD size_in_bytes;                                                                                                        \
-  if (!mem.acquire(&data, &size_in_bytes))                                                                                    \
-    throw Error(toString(getName()) + ": Error accessing the FreeImage memory stream");                                       \
-                                                                                                                              \
-  if (write_block_header)                                                                                                     \
-  {                                                                                                                           \
-    BlockHeader header(this->getMagic(), (uint64)size_in_bytes);                                                              \
-    header.write(output);                                                                                                     \
-  }                                                                                                                           \
-                                                                                                                              \
-  output.writeBytes(size_in_bytes, data);                                                                                     \
-}
-
-// TODO: Add options to all the ones that support them
-THEA_DEF_SERIALIZE_IMAGE(CodecBmp,     FIF_BMP,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecCut,     FIF_CUT,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecDds,     FIF_DDS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecExr,     FIF_EXR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecGif,     FIF_GIF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecHdr,     FIF_HDR,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecIco,     FIF_ICO,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecIff,     FIF_IFF,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJ2k,     FIF_J2K,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJng,     FIF_JNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJp2,     FIF_JP2,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecJpeg,    FIF_JPEG,    options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0))
-THEA_DEF_SERIALIZE_IMAGE(CodecKoala,   FIF_KOALA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecMng,     FIF_MNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPbm,     FIF_PBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPbmraw,  FIF_PBMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPcd,     FIF_PCD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPcx,     FIF_PCX,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPfm,     FIF_PFM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPgm,     FIF_PGM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPgmraw,  FIF_PGMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPng,     FIF_PNG,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPpm,     FIF_PPM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPpmraw,  FIF_PPMRAW,  0)
-THEA_DEF_SERIALIZE_IMAGE(CodecPsd,     FIF_PSD,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecRas,     FIF_RAS,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecSgi,     FIF_SGI,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTarga,   FIF_TARGA,   0)
-THEA_DEF_SERIALIZE_IMAGE(CodecTiff,    FIF_TIFF,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecWbmp,    FIF_WBMP,    0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXbm,     FIF_XBM,     0)
-THEA_DEF_SERIALIZE_IMAGE(CodecXpm,     FIF_XPM,     0)
-
-//=============================================================================================================================
-// 3D formats
-//=============================================================================================================================
-
-void
-Codec3bm::readImage(Image & image, BinaryInputStream & input, bool read_block_header) const
-{
-  // Get the size of the image block in bytes
-  uint64 prefixed_size = (read_block_header ? BlockHeader(input).data_size : 0);
-
-  BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
-
-  int64 start_position = input.getPosition();
-
-  // Read file header (32 bytes):
-  //   4 bytes: Magic string "3BM\0"
-  //   4 bytes: Version
-  //   8 bytes: Size of the whole file in bytes
-  //   8 bytes: Reserved
-  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
-
-  uint8 magic[4];
-  input.readBytes(4, &magic);
-  if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'\0')
-    throw Error(toString(getName()) + ": Image is not in 3BM format");
-
-  input.skip(4);
-  uint64 size = input.readUInt64();
-  if (prefixed_size > 0 && size != prefixed_size)
-    throw Error(toString(getName()) + ": Prefixed size does not match image size from header");
-
-  input.skip(8);
-  uint64 bitmap_offset = input.readUInt64();
-
-  // Read info header (72 bytes):
-  //   8 bytes: Size of this header (72 bytes)
-  //   8 bytes: Width of the bitmap in voxels
-  //   8 bytes: Height of the bitmap in voxels
-  //   8 bytes: Depth of the bitmap in voxels
-  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
-  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
-  //   8 bytes: Size of raw image data
-  //   8 bytes: Width resolution in voxels/meter
-  //   8 bytes: Height resolution in voxels/meter
-  //   8 bytes: Depth resolution in voxels/meter
-
-  input.skip(8);
-  int64 width   =  (int64)input.readUInt64();
-  int64 height  =  (int64)input.readUInt64();
-  int64 depth   =  (int64)input.readUInt64();
-
-  int bpp = (int)input.readUInt32();
-  if (bpp != 8 && bpp != 24 && bpp != 32)
-    throw Error(toString(getName()) + ": Only 8, 24 and 32-bit bitmaps currently supported");
-
-  uint32 compression = input.readUInt32();
-  if (compression != 0)
-    throw Error(toString(getName()) + ": Unsupported compression method");
-
-  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
-  uint64 data_size = input.readUInt64();
-  if (data_size != (uint64)stream_scan_width * (uint64)height * (uint64)depth)
-    throw Error(toString(getName()) + ": Pixel data block size does not match image dimensions");
-
-  // Read image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
-  input.setPosition(start_position + (int64)bitmap_offset);
-
-  Image::Type type = Image::Type::UNKNOWN;
-  switch (bpp)
-  {
-    case 8   :  type = Image::Type::LUMINANCE_8U; break;
-    case 24  :  type = Image::Type::RGB_8U; break;
-    case 32  :  type = Image::Type::RGBA_8U; break;
-    default  :  throw Error(format("%s: Bit depth %d not supported", getName(), bpp));
-  }
-
-  image.resize(type, width, height, depth);
-  if (width > 0 && height > 0 && depth > 0 && bpp > 0)
-  {
-    int bytes_pp = bpp / 8;
-    Array<uint8> row_buf((size_t)stream_scan_width);
-    for (intx i = 0; i < depth; ++i)
-      for (intx j = 0; j < height; ++j)
-      {
-        input.readBytes(stream_scan_width, &row_buf[0]);
-
-        uint8 const * in_pixel = &row_buf[0];
-        uint8 * out_pixel = (uint8 *)image.getScanLine(j, i);
-
-        switch (bytes_pp)
-        {
-          case 1: std::copy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
-          case 3:
-          {
-            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-            {
-              out_pixel[0] = in_pixel[2];
-              out_pixel[1] = in_pixel[1];
-              out_pixel[2] = in_pixel[0];
-            }
-            break;
-          }
-          default: // 4
-          {
-            for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-            {
-              out_pixel[0] = in_pixel[2];
-              out_pixel[1] = in_pixel[1];
-              out_pixel[2] = in_pixel[0];
-              out_pixel[3] = in_pixel[3];
-            }
-            break;
-          }
-        }
-      }
-  }
-}
-
-void
-Codec3bm::writeImage(Image const & image, BinaryOutputStream & output, bool write_block_header) const
-{
-  if (!image.isValid())
-    throw Error(toString(getName()) + ": Cannot write an invalid image");
-
-  Image::Type type(image.getType());
-  int64 width   =  image.getWidth();
-  int64 height  =  image.getHeight();
-  int64 depth   =  image.getDepth();
-
-  if (type != Image::Type::LUMINANCE_8U
-   && type != Image::Type::RGB_8U
-   && type != Image::Type::RGBA_8U)
-    throw Error(toString(getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
-
-  int bpp = image.getBitsPerPixel();
-  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
-
-  static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
-  static uint64 const INFO_HEADER_SIZE = 72;
-  uint64 data_size = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
-  uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_size;
-
-  if (write_block_header)
-    BlockHeader(getMagic(), size_in_bytes).write(output);
-
-  BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
-
-  // Write file header (32 bytes):
-  //   4 bytes: Magic string "3BM\0"
-  //   4 bytes: Version
-  //   8 bytes: Size of the whole file in bytes
-  //   8 bytes: Reserved
-  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
-
-  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'M', (uint8)'\0' };
-  output.writeBytes(4, MAGIC);
-  output.writeUInt32(0x0001);
-  output.writeUInt64(size_in_bytes);
-  output.writeUInt64(0);
-  output.writeUInt64(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
-
-  // Write info header (72 bytes):
-  //   8 bytes: Size of this header (72 bytes)
-  //   8 bytes: Width of the bitmap in voxels
-  //   8 bytes: Height of the bitmap in voxels
-  //   8 bytes: Depth of the bitmap in voxels
-  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 24 and 32 are supported
-  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
-  //   8 bytes: Size of raw image data
-  //   8 bytes: Width resolution in voxels/meter
-  //   8 bytes: Height resolution in voxels/meter
-  //   8 bytes: Depth resolution in voxels/meter
-
-  output.writeUInt64(INFO_HEADER_SIZE);
-  output.writeUInt64((uint64)width);
-  output.writeUInt64((uint64)height);
-  output.writeUInt64((uint64)depth);
-  output.writeUInt32((uint32)bpp);
-  output.writeUInt32(0);
-  output.writeUInt64(data_size);
-  output.writeUInt64(3937);  // 100dpi
-  output.writeUInt64(3937);  // 100dpi
-  output.writeUInt64(3937);  // 100dpi
-
-  // Write image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
-  if (width <= 0 || height <= 0 || depth <= 0 || bpp <= 0)
-    return;
-
-  int bytes_pp = bpp / 8;
-  Array<uint8> row_buf((size_t)stream_scan_width, 0);
-  for (intx i = 0; i < depth; ++i)
-    for (intx j = 0; j < height; ++j)
-    {
-      uint8 const * in_pixel = (uint8 const *)image.getScanLine(j, i);
-      uint8 * out_pixel = &row_buf[0];
-
-      switch (bytes_pp)
-      {
-        case 1: std::copy(in_pixel, in_pixel + width * bytes_pp, out_pixel); break;
-        case 3:
-        {
-          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-          {
-            out_pixel[0] = in_pixel[2];
-            out_pixel[1] = in_pixel[1];
-            out_pixel[2] = in_pixel[0];
-          }
-          break;
-        }
-        default: // 4
-        {
-          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
-          {
-            out_pixel[0] = in_pixel[2];
-            out_pixel[1] = in_pixel[1];
-            out_pixel[2] = in_pixel[0];
-            out_pixel[3] = in_pixel[3];
-          }
-          break;
-        }
-      }
-
-      output.writeBytes((int64)stream_scan_width, &row_buf[0]);
-    }
-}
 
 int
 Image::Type::numChannels() const
@@ -612,6 +367,10 @@ Image::Type::numChannels() const
   switch (value)
   {
     case UNKNOWN   :  return -1;
+
+    case LA_8U     :
+    case LA_16U    :
+    case LA_32F    :  return 2;
 
     case RGB_8U    :
     case RGB_16U   :
@@ -636,6 +395,7 @@ Image::Type::isFloatingPoint() const
 {
   return value == LUMINANCE_32F
       || value == LUMINANCE_64F
+      || value == LA_32F
       || value == RGB_32F
       || value == RGBA_32F
       || value == COMPLEX_64F;
@@ -644,7 +404,7 @@ Image::Type::isFloatingPoint() const
 int
 Image::Type::getBitsPerPixel() const
 {
-  return (int)ImageInternal::typeToFreeImageBPP(*this);
+  return ImageInternal::typeToBpp(*this);
 }
 
 int
@@ -681,79 +441,116 @@ Image::Type::hasByteAlignedChannels() const
 }
 
 Image::Image()
-: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(nullptr)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_size(0),
+  data_alignment(ROW_ALIGNMENT)
 {
   cacheTypeProperties();
 }
 
 Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), fip_img(nullptr)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_size(0),
+  data_alignment(ROW_ALIGNMENT)
 {
   resize(type_, width_, height_, depth_);
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
-: type(Type::UNKNOWN), fip_img(nullptr)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
 {
   read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
-: type(Type::UNKNOWN), fip_img(nullptr)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
 {
   load(path, codec);
 }
 
 Image::Image(Image const & src)
-: type(Type::UNKNOWN), fip_img(nullptr)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
 {
   *this = src;
-  cacheTypeProperties();
 }
 
 Image &
 Image::operator=(Image const & src)
 {
-  type = src.type;
-  width = src.width;
-  height = src.height;
-  depth = src.depth;
+  alwaysAssertM(!src.impl || !src.data, "Image: Source image has both externally and internally managed implementations");
 
-  if (src.depth == 1)
+  if (src.impl)
   {
-    if (src.fip_img)
-    {
-      if (!fip_img)
-        fip_img = new fipImage(*src.fip_img);
-      else
-        *fip_img = *src.fip_img;
-    }
-    else
-      fip_img = nullptr;
+#if THEA_ENABLE_FREEIMAGE
+    if (!impl) { impl = new fipImage(*src.impl); }
+    else       { *impl = *src.impl;              }
+#else
+    resizeImpl(src.type, src.width, src.height, src.depth);
 
-    data.clear();
+    auto src_bytes = src.minTotalBytes();
+    alwaysAssertM(src_bytes == minTotalBytes(), "Image: Sizes of source and destination image buffers don't match");
+
+    std::memcpy(impl, src.impl, src_bytes);
+#endif
   }
   else
-  {
-    data = src.data;
-    delete fip_img; fip_img = nullptr;
-  }
+    clearImpl();
 
-  cacheTypeProperties();
+  if (src.data)
+  {
+    resizeData(src.type, src.width, src.height, src.depth, src.data_alignment);
+    std::memcpy(data, src.data, src.data_size);
+  }
+  else
+    clearData();
+
+  setAttribs(src.type, src.width, src.height, src.depth);
 
   return *this;
 }
 
 Image::~Image()
 {
-  delete fip_img;
+  clear();
 }
 
 int8
 Image::isValid() const
 {
+  debugAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
+
   return type != Type::UNKNOWN && width >= 0 && height >= 0 && depth >= 0
-      && (depth != 1 || (fip_img && fip_img->isValid() != 0));
+      && ((width <= 0 || height <= 0 || depth <= 0)
+#if THEA_ENABLE_FREEIMAGE
+       || (impl && impl->isValid() != 0)
+#else
+       || impl
+#endif
+       || (data && data_size >= minTotalBytes()));
+}
+
+void
+Image::clearImpl()
+{
+  if (!impl) { return; }
+
+#if THEA_ENABLE_FREEIMAGE
+  delete impl;
+#else
+  stbi_image_free(impl);
+#endif
+
+  impl = nullptr;
+}
+
+void
+Image::clearData()
+{
+  if (!data) { return; }
+
+  if (owns_data) { data_allocator.deallocate((unsigned char *)data); }
+  data = nullptr;
+  owns_data = true;
+  data_size = 0;
+  data_alignment = 1;
 }
 
 int8
@@ -762,13 +559,8 @@ Image::clear()
   type = Type::UNKNOWN;
   width = height = depth = 0;
 
-  if (fip_img)
-  {
-    fip_img->clear();
-    fip_img = nullptr;
-  }
-
-  data.clear();
+  clearImpl();
+  clearData();
 
   return true;
 }
@@ -777,49 +569,102 @@ int8
 Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
 {
   Type t(type_);
-  if (t == Type::UNKNOWN || width_ <= 0 || height_ <= 0 || depth_ <= 0)
-  {
-    THEA_ERROR << "Image: Cannot resize to unknown type or non-positive size (use clear() function to destroy data)";
-    return false;
-  }
+  alwaysAssertM(type_ >= 0 && t != Type::UNKNOWN, "Image: Cannot resize to unknown type");
 
-  if (t == type && width_ == getWidth() && height_ == getHeight() && depth_ == getDepth())
-    return true;
-
-  if (depth_ == 1)
-  {
-    if (!fip_img)
-      fip_img = new fipImage;
-
-    fip_img->setSize(ImageInternal::typeToFreeImageType(t), (int)width_, (int)height_, ImageInternal::typeToFreeImageBPP(t));
-  }
+  // If an externally managed image which supports the desired type exists, resize it. Else if an internal data buffer exists,
+  // resize it. If neither exists, resize the external one for 2D images and the internal one for 3D images.
+  if (impl
+   || (!data && depth_ == 1
+#if !THEA_ENABLE_FREEIMAGE  // stb doesn't support all the formats in Image::Type
+    && (t == Type::LUMINANCE_8U || t == Type::LUMINANCE_16U || t == Type::LUMINANCE_32F || t == Type::RGB_8U
+     || t == Type::RGBA_8U || t == Type::RGB_16U || t == Type::RGBA_16U || t == Type::RGB_32F || t == Type::RGBA_32F)
+#endif
+      ))
+    return resizeImpl(type_, width_, height_, depth_);
   else
+    return resizeData(type_, width_, height_, depth_, /* preserve */ getRowAlignment());
+}
+
+bool
+Image::resizeImpl(int64 type_, int64 width_, int64 height_, int64 depth_)
+{
+  Type t(type_);
+  alwaysAssertM(t != Type::UNKNOWN && width_ >= 0 && height_ >= 0 && depth_ >= 0,
+                "Image: Cannot resize to unknown type or negative dimensions");
+
+  // Data and impl cannot co-exist
+  clearData();
+
+#if THEA_ENABLE_FREEIMAGE
+
+  if (width_ > 0 && height_ > 0 && depth_ > 0)
   {
-    if (t.getBitsPerPixel() % 8 != 0)
+    if (!impl)
     {
-      THEA_ERROR << "Image: Non-2D image must have byte-aligned pixels";
-      return false;
+      impl = new fipImage;
+      if (!impl) { THEA_ERROR << "Image: Could not create new FreeImage object"; return false; }
     }
 
-    int64 scan_width = ImageInternal::scanWidth(width_, t.getBitsPerPixel(), (int32)ROW_ALIGNMENT);
-    int64 buf_size = scan_width * height_ * depth_;
-    data.resize((size_t)buf_size);
+    if (!impl->setSize(ImageInternal::typeToFreeImageType(t), (int)width_, (int)height_, ImageInternal::typeToBpp(t)))
+    { THEA_ERROR << "Image: Could not allocate memory for resizing image"; return false; }
+  }
+  else if (impl)  // else just leave it as a null pointer
+    impl->clear();
+
+#else
+
+  auto old_bytes = minTotalBytes();
+  auto new_bytes = minTotalBytes(t, width_, height_, depth_, /* stb row alignment = */ 1);
+  if (new_bytes > old_bytes)  // like std::vector, don't deallocate if new size is smaller
+  {
+    impl = STBI_REALLOC(impl, new_bytes);
+    if (!impl) { THEA_ERROR << "Image: Could not allocate memory for resizing image"; return false; }
   }
 
-  type = t;
-  width = width_;
-  height = height_;
-  depth = depth_;
+#endif
 
-  cacheTypeProperties();
+  setAttribs(t, width_, height_, depth_);
 
   if (!isValid())
   {
     THEA_ERROR << "Image: Could not resize to the specified type and dimensions " << width_ << 'x' << height_ << 'x' << depth_;
     return false;
   }
-  else
-    return true;
+
+  return true;
+}
+
+bool
+Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int32 row_align_)
+{
+  Type t(type_);
+  alwaysAssertM(t != Type::UNKNOWN && width_ >= 0 && height_ >= 0 && depth_ >= 0,
+                "Image: Cannot resize to unknown type or negative dimensions");
+
+  // Impl and data cannot co-exist
+  clearImpl();
+
+  auto new_bytes = minTotalBytes(t, width_, height_, depth_, row_align_);
+  if (new_bytes > data_size)  // like std::vector, don't deallocate if new size is smaller
+  {
+    if (!owns_data) { THEA_ERROR << "Image: Wrapped external buffer cannot be resized"; return false; }
+
+    data_allocator.deallocate((unsigned char *)data);
+    data = data_allocator.allocate(new_bytes);
+    if (!data) { THEA_ERROR << "Image: Could not allocate memory for resizing image"; return false; }
+    owns_data = true;
+    data_size = new_bytes;
+  }
+
+  setAttribs(t, width_, height_, depth_, row_align_);
+
+  if (!isValid())
+  {
+    THEA_ERROR << "Image: Could not resize to the specified type and dimensions " << width_ << 'x' << height_ << 'x' << depth_;
+    return false;
+  }
+
+  return true;
 }
 
 void const *
@@ -831,10 +676,18 @@ Image::getData() const
 void *
 Image::getData()
 {
-  if (depth == 1)
-    return isValid() ? fip_img->accessPixels() : nullptr;
+  debugAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
+
+  if (impl)
+  {
+#if THEA_ENABLE_FREEIMAGE
+    return impl->isValid() ? impl->accessPixels() : nullptr;
+#else
+    return impl;
+#endif
+  }
   else
-    return data.empty() ? nullptr : &data[0];
+    return data;
 }
 
 void const *
@@ -846,37 +699,49 @@ Image::getScanLine(int64 row, int64 z) const
 void *
 Image::getScanLine(int64 row, int64 z)
 {
-  if (z < 0 || z >= depth)
+  debugAssertM(row >= 0 && row < height, "Image: Scanline row index out of bounds");
+  debugAssertM(z   >= 0 && z   < depth,  "Image: Scanline Z index out of bounds");
+  debugAssertM(isValid(),                "Image: Can't get scanline of an invalid image");
+
+  if (impl)
   {
-    THEA_ERROR << "Image: Z value out of bounds";
-    return nullptr;
+#if THEA_ENABLE_FREEIMAGE
+    return impl->isValid() ? impl->getScanLine(row) : nullptr;
+#else
+    return (uint8 *)impl + (z * height + row) * getScanWidth();
+#endif
   }
-
-  if (!isValid())
-    return nullptr;
-
-  if (depth == 1)
-    return fip_img->getScanLine(row);
   else
-  {
-    int64 scan_width = ImageInternal::scanWidth(width, type.getBitsPerPixel(), (int32)ROW_ALIGNMENT);
-    return &data[(z * height + row) * scan_width];
-  }
+    return (uint8 *)data + (z * height + row) * getScanWidth();
 }
 
 int64
 Image::getScanWidth() const
 {
-  if (depth == 1)
-    return isValid() ? fip_img->getScanWidth() : 0;
+  if (impl)
+  {
+#if THEA_ENABLE_FREEIMAGE
+    return impl->getScanWidth();
+#else
+    return width * (getBitsPerPixel() / 8);  // stb always has zero padding and byte-aligned pixels
+#endif
+  }
   else
-    return width + ((int64)ROW_ALIGNMENT - (width % (int64)ROW_ALIGNMENT)) % (int64)ROW_ALIGNMENT;
+  {
+    int64 row_bits = (int64)(width * getBitsPerPixel());
+    int64 row_bytes = (row_bits / 8) + (row_bits % 8 > 0 ? 1 : 0);
+    return row_bytes + ((int64)data_alignment - (row_bytes % (int64)data_alignment)) % (int64)data_alignment;
+  }
 }
 
 int32
 Image::getRowAlignment() const
 {
-  return depth == 1 ? 4 : (int32)ROW_ALIGNMENT;  // the current FreeImage default is 4
+#if THEA_ENABLE_FREEIMAGE
+  return impl ? 4 : data_alignment;  // the FreeImage default is 4
+#else
+  return impl ? 1 : data_alignment;  // the stb default is 1
+#endif
 }
 
 double
@@ -896,6 +761,10 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 
     case Image::Type::LUMINANCE_32F : return channel == 0 ? *((float32 const *)pixel) : 0.0;
     case Image::Type::LUMINANCE_64F : return channel == 0 ? *((float64 const *)pixel) : 0.0;
+
+    case Image::Type::LA_8U         : return channel < 2 ? ((uint8   const *)pixel)[channel] / 255.0 : 0.0;
+    case Image::Type::LA_16U        : return channel < 2 ? ((uint16  const *)pixel)[channel] / 65535.0 : 0.0;
+    case Image::Type::LA_32F        : return channel < 2 ? ((float32 const *)pixel)[channel] : 0.0;
 
     // Alpha of RGB images is assumed to be 1
     case Image::Type::RGB_8U        : return channel < 3 ? ((uint8   const *)pixel)[channel] / 255.0 : 1.0;
@@ -923,10 +792,15 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 }
 
 void
-Image::_setType(Type type_)
+Image::setAttribs(Type type_, int64 w, int64 h, int64 d, int32 data_align_)
 {
   type = type_;
   cacheTypeProperties();
+
+  if (w >= 0) { width  = w; }
+  if (h >= 0) { height = h; }
+  if (d >= 0) { depth  = d; }
+  if (data_align_ >= 0) { data_alignment = data_align_; }
 }
 
 void
@@ -941,10 +815,45 @@ Image::cacheTypeProperties()
   has_byte_aligned_channels  =  type.hasByteAlignedChannels();
 }
 
+intx
+Image::minTotalBytes(Type t, int64 w, int64 h, int64 d, int32 row_align) const
+{
+  if (t == Type::UNKNOWN)
+  {
+    t = type;
+    if (t == Type::UNKNOWN) { return 0; }  // if still unknown, the image itself has unknown type
+  }
+
+  if (w < 0) { w = width;  }
+  if (h < 0) { h = height; }
+  if (d < 0) { d = depth;  }
+  if (row_align < 0) { row_align = getRowAlignment();  }
+
+  auto scan_width = ImageInternal::scanWidth(w, t.getBitsPerPixel(), row_align);
+  auto bytes = (intx)(scan_width * h * d);
+
+  debugAssertM(bytes >= 0, "Image: Total number of bytes computed as negative");
+
+  return bytes;
+}
+
 bool
 Image::invert()
 {
-  return (fip_img->invert() == TRUE);
+  if (impl)
+  {
+#if THEA_ENABLE_FREEIMAGE
+    return !impl->isValid() || impl->invert() == TRUE;
+#else
+    THEA_ERROR << "Image: Cannot invert stb image";
+    return false;
+#endif
+  }
+  else
+  {
+    THEA_ERROR << "Image: Cannot invert internally managed pixel buffer";
+    return false;
+  }
 }
 
 bool
@@ -959,88 +868,92 @@ Image::convert(Type dst_type, Image & dst) const
   bool status = false;
   if (type == dst_type)
   {
-    if (&dst != this) dst = *this;
+    if (&dst != this) { dst = *this; }
     status = true;
   }
-  else if (depth != 1)
+  else if (!impl)
   {
     // TODO
-    THEA_ERROR << "Image: Format conversion of non-2D images currently not supported";
-    return false;
+    THEA_ERROR << "Image: Format conversion of internally managed buffers currently not supported";
   }
   else
   {
+#if THEA_ENABLE_FREEIMAGE
+
     FREE_IMAGE_TYPE src_fitype = ImageInternal::typeToFreeImageType(type);
     FREE_IMAGE_TYPE dst_fitype = ImageInternal::typeToFreeImageType(dst_type);
 
     if (dst_fitype == FIT_BITMAP)
     {
-      WORD dst_fibpp = ImageInternal::typeToFreeImageBPP(dst_type);
+      auto dst_fibpp = ImageInternal::typeToBpp(dst_type);
       switch (dst_fibpp)
       {
         case 4:
         {
-          if (&dst != this) dst = *this;
-          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+          if (&dst != this) { dst = *this; }
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) { return false; }
 
-          if (src_fitype != FIT_BITMAP) status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
-          if (status)                   status = (dst.fip_img->convertTo4Bits() == TRUE);
+          if (src_fitype != FIT_BITMAP) { status = (dst.impl->convertToType(FIT_BITMAP) == TRUE); }
+          if (status)                   { status = (dst.impl->convertTo4Bits() == TRUE);          }
 
           break;
         }
 
         case 8:
         {
-          if (&dst != this) dst = *this;
-          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+          if (&dst != this) { dst = *this; }
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) { return false; }
 
-          if (src_fitype != FIT_BITMAP)
-            status = (dst.fip_img->convertToType(FIT_BITMAP) == TRUE);
-          else
-            status = true;
+          if (src_fitype != FIT_BITMAP) { status = (dst.impl->convertToType(FIT_BITMAP) == TRUE); }
+          else                          { status = true;                                          }
 
           if (status)
-            status = (dst.fip_img->convertToGrayscale() == TRUE);  // convertTo8Bits() can palettize
+            status = (dst.impl->convertToGrayscale() == TRUE);  // convertTo8Bits() can palettize
 
           break;
         }
 
         case 24:
         {
-          if (&dst != this) dst = *this;
-          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+          if (&dst != this) { dst = *this; }
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) { return false; }
 
-          status = (dst.fip_img->convertTo24Bits() == TRUE);
+          status = (dst.impl->convertTo24Bits() == TRUE);
           break;
         }
 
         case 32:
         {
-          if (&dst != this) dst = *this;
-          if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+          if (&dst != this) { dst = *this; }
+          if (!ImageInternal::decanonicalizeChannelOrder(dst)) { return false; }
 
-          status = (dst.fip_img->convertTo32Bits() == TRUE);
+          status = (dst.impl->convertTo32Bits() == TRUE);
           break;
         }
       }
     }
     else
     {
-      if (&dst != this) dst = *this;
-      if (!ImageInternal::decanonicalizeChannelOrder(dst)) throw Error("Could not decanonicalize channel order");
+      if (&dst != this) { dst = *this; }
+      if (!ImageInternal::decanonicalizeChannelOrder(dst)) { return false; }
 
-      if (dst.fip_img->convertToType(dst_fitype) == TRUE)
+      if (dst.impl->convertToType(dst_fitype) == TRUE)
         status = true;
     }
 
     if (status)
     {
-      dst.type = dst_type;
-      dst.cacheTypeProperties();
+      dst.setAttribs(dst_type);
 
-      if (!ImageInternal::canonicalizeChannelOrder(dst)) throw Error("Could not canonicalize channel order");
+      if (!ImageInternal::canonicalizeChannelOrder(dst)) { return false; }
     }
 
+#else // THEA_ENABLE_FREEIMAGE
+
+    // TODO
+    THEA_ERROR << "Image: Format conversion of stb images currently not supported";
+
+#endif // THEA_ENABLE_FREEIMAGE
   }
 
   return status;
@@ -1106,10 +1019,11 @@ Image::reorderChannels(int const * order)
 
   switch (getBitsPerChannel())
   {
-    case 8:  return ImageInternal::reorderChannels< 8>(*this, order);
-    case 16: return ImageInternal::reorderChannels<16>(*this, order);
-    case 32: return ImageInternal::reorderChannels<32>(*this, order);
-    case 64: return ImageInternal::reorderChannels<64>(*this, order);
+    case   8: return ImageInternal::reorderChannels<  8>(*this, order);
+    case  16: return ImageInternal::reorderChannels< 16>(*this, order);
+    case  32: return ImageInternal::reorderChannels< 32>(*this, order);
+    case  64: return ImageInternal::reorderChannels< 64>(*this, order);
+    // No need to reorder 128-bit channels (Type::COMPLEX_64F) since this is a single-channel format
     default:
     {
       THEA_ERROR << "Image: Channel reordering not supported for " << getBitsPerChannel() << " bits per channel";
@@ -1117,6 +1031,8 @@ Image::reorderChannels(int const * order)
     }
   }
 }
+
+#if THEA_ENABLE_FREEIMAGE
 
 namespace ImageInternal {
 
@@ -1136,6 +1052,8 @@ filterToFreeImageFilter(Image::Filter filter)
 }
 
 } // namespace ImageInternal
+
+#endif // THEA_ENABLE_FREEIMAGE
 
 bool
 Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter)
@@ -1158,8 +1076,18 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
     return false;
   }
 
+#if THEA_ENABLE_FREEIMAGE
+
   FREE_IMAGE_FILTER fi_filter = ImageInternal::filterToFreeImageFilter(filter);
-  bool status = (fip_img->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
+  bool status = (impl->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
+
+#else
+
+  // TODO
+  bool status = false;
+
+#endif
+
   if (!status)
   {
     THEA_ERROR << "Could not rescale " << width << " x " << height << " image to " << new_width << " x " << new_height;
@@ -1176,32 +1104,198 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 void
 Image::read(BinaryInputStream & input, Codec const & codec, bool read_block_header)
 {
+  // Codecs with custom read functions
+  if (codec == Codec3bm())
+  {
+    read3bm(codec, input, read_block_header);
+    return;
+  }
+
+#if THEA_ENABLE_FREEIMAGE
+
+  // Get the size of the image block in bytes
+  auto len = (read_block_header ? (int64)Codec::BlockHeader(input).data_size : input.size());
+
+  // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
+  // stream?)
+  Array<uint8> img_block((size_t)len);
+  input.readBytes(len, img_block.data());
+
+  // Decode the image
+  clearData();
+  if (!impl)
+  {
+    impl = new fipImage;
+    if (!impl) { throw Error("Image: Could not create FreeImage object"); }
+  }
+
+  fipMemoryIO mem((BYTE *)img_block.data(), (DWORD)len);
   if (codec == CodecAuto())
-    readAuto(input, read_block_header);
+  {
+    if (impl->loadFromMemory(mem) != TRUE)
+      throw Error("Image: Could not decode image from memory stream");
+  }
   else
   {
     ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
-    if (!img_codec)
-      throw Error("Codec specified for image deserialization is not an image codec");
+    if (!img_codec) { Error("Image: Codec specified for image reading is not an image codec"); }
 
-    img_codec->readImage(*this, input, read_block_header);
+    if (impl->loadFromMemory(img_codec->getImplFormat(), mem, img_codec->getImplReadFlags()) != TRUE)
+      throw Error("Image: Could not deserialize image from memory stream");
   }
+
+  auto t = ImageInternal::typeFromFreeImageTypeAndBpp(impl->getImageType(), impl->getBitsPerPixel());
+  if (t == Type::UNKNOWN)
+  {
+    clear();
+    throw Error("Image: Image successfully deserialized but has unsupported format");
+  }
+
+  setAttribs(t, impl->getWidth(), impl->getHeight(), /* d = */ 1);
+
+  if (!ImageInternal::canonicalizeChannelOrder(*this))
+    throw Error("Image: Could not canonicalize channel order");
+
+#else // THEA_ENABLE_FREEIMAGE
+
+  // Decode via stb (codec is always auto-detected regardless of what was passed to this function)
+  clear();
+
+  // If a header is present, use it to create a new stream that wraps just the relevant part of the main input stream, to
+  // prevent reading past the end of the buffer
+  BinaryInputStream::Ptr tmp_in;
+  BinaryInputStream * img_in = nullptr;
+  if (read_block_header)
+  {
+    auto len = (int64)Codec::BlockHeader(input).data_size;
+    tmp_in = std::make_shared<BinaryInputStream>(input, len);
+    img_in = tmp_in.get();
+  }
+  else
+    img_in = &input;
+
+  stbi_set_flip_vertically_on_load(true);  // origin at bottom-left
+
+  auto bpc = getBitsPerChannel();  // try to respect existing bit depth setting, fall back on 8 bits per channel
+  int w, h, c;
+  switch (bpc)
+  {
+    case 16: impl = stbi_load_16_from_callbacks(&ImageInternal::STB_CALLBACKS, img_in, &w, &h, &c, 0); break;
+    case 32: impl = stbi_loadf_from_callbacks  (&ImageInternal::STB_CALLBACKS, img_in, &w, &h, &c, 0); break;
+    default: impl = stbi_load_from_callbacks   (&ImageInternal::STB_CALLBACKS, img_in, &w, &h, &c, 0);
+  }
+
+  if (!impl)
+    throw Error("Image: Could not read image");
+
+  auto t = ImageInternal::typeFromStbChannelsAndBpc(c, bpc);
+  if (t == Type::UNKNOWN)
+  {
+    clear();
+    throw Error("Image: Deserialized image has unsupported type");
+  }
+
+  setAttribs(t, w, h, /* d = */ 1);
+
+  if (!isValid())  // check dimensions
+    throw Error("Image: Deserialized image has invalid dimensions");
+
+#endif // THEA_ENABLE_FREEIMAGE
 }
 
 void
 Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_header) const
 {
-  if (!isValid())
-    throw Error("Can't write an invalid image");
+  // Codecs with custom write functions
+  if (codec == Codec3bm())
+  {
+    write3bm(codec, output, write_block_header);
+    return;
+  }
+
+  if (!impl || !isValid())
+    throw Error("Image: Can't write an invalid or empty image");
 
   if (codec == CodecAuto())
-    throw Error("You must explicitly choose a codec for serializing images");
+    throw Error("Image: You must explicitly choose a codec for writing images");
+
+#if THEA_ENABLE_FREEIMAGE
 
   ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
   if (!img_codec)
-    throw Error("Codec specified for image serialization is not an image codec");
+    throw Error("Image: Codec specified for image writing is not an image codec");
 
-  img_codec->writeImage(*this, output, write_block_header);
+  if (!ImageInternal::decanonicalizeChannelOrder(const_cast<Image &>(*this)))
+    throw Error("Image: Could not decanonicalize channel order");
+
+  fipMemoryIO mem;
+  if (const_cast<Impl *>(impl)->saveToMemory(img_codec->getImplFormat(), mem, img_codec->getImplWriteFlags()) != TRUE)
+    throw Error(toString(codec.getName()) + ": Could not save image to memory stream");
+
+  if (!ImageInternal::canonicalizeChannelOrder(const_cast<Image &>(*this)))
+    throw Error("Image: Could not canonicalize channel order");
+
+  BYTE * buf;
+  DWORD size_in_bytes;
+  if (!mem.acquire(&buf, &size_in_bytes))
+    throw Error(toString(codec.getName()) + ": Error accessing the FreeImage memory stream");
+
+  if (write_block_header)
+  {
+    Codec::BlockHeader header(codec.getMagic(), (uint64)size_in_bytes);
+    header.write(output);
+  }
+
+  output.writeBytes(size_in_bytes, buf);
+
+#else // THEA_ENABLE_FREEIMAGE
+
+  stbi_flip_vertically_on_write(true);  // had flipped when loading
+
+  int nc = (int)numChannels();
+  int status = 0;
+  if (codec == CodecBmp())
+  {
+    if (getBitsPerChannel() != 8) { throw Error(toString(codec.getName()) + ": Writing BMP requires 8-bit channels"); }
+
+    status = stbi_write_bmp_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl);
+  }
+  else if (codec == CodecHdr())
+  {
+    if (getBitsPerChannel() != 32 || !isFloatingPoint())
+    { throw Error(toString(codec.getName()) + ": Writing HDR requires 32-bit float channels"); }
+
+    status = stbi_write_hdr_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, (float *)(void *)impl);
+  }
+  else if (codec == CodecJpg())
+  {
+    if (getBitsPerChannel() != 8) { throw Error(toString(codec.getName()) + ": Writing JPEG requires 8-bit channels"); }
+
+    int q = (int)dynamic_cast<CodecJpg const &>(codec).getOptions().quality;
+    if (q < 0) { q = 90; }
+    else { alwaysAssertM(q >= 1 && q <= 100, toString(codec.getName()) + ": JPEG quality should be in the range [1, 100]"); }
+
+    status = stbi_write_jpg_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl, q);
+  }
+  else if (codec == CodecPng())
+  {
+    if (getBitsPerChannel() != 8) { throw Error(toString(codec.getName()) + ": Writing PNG requires 8-bit channels"); }
+
+    status = stbi_write_png_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl, getScanWidth());
+  }
+  else if (codec == CodecTga())
+  {
+    if (getBitsPerChannel() != 8) { throw Error(toString(codec.getName()) + ": Writing TGA requires 8-bit channels"); }
+
+    status = stbi_write_tga_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl);
+  }
+  else
+    throw Error("Image: Codec '" + toString(codec.getName()) + "' not supported for writing images");
+
+  if (!status)
+    throw Error(toString(codec.getName()) + ": Could not write image");
+
+#endif // THEA_ENABLE_FREEIMAGE
 }
 
 void
@@ -1210,7 +1304,7 @@ Image::load(std::string const & path, Codec const & codec)
   BinaryInputStream in(path, Endianness::LITTLE);
   int64 file_size = in.size();
   if (file_size <= 0)
-    throw Error("Image file does not exist or is empty");
+    throw Error("Image: File does not exist or is empty");
 
   read(in, codec, false);
 }
@@ -1219,70 +1313,255 @@ void
 Image::save(std::string const & path, Codec const & codec) const
 {
   if (!isValid())
-    throw Error("Can't save an invalid image");
+    throw Error("Image: Can't save an invalid image");
 
   Codec const * c = nullptr;
   if (codec == CodecAuto())
   {
     c = ImageInternal::codecFromPath(path);
     if (!c)
-      throw Error("Could not detect codec from path");
+      throw Error("Image: Could not detect codec from path");
   }
   else
     c = &codec;
 
   BinaryOutputStream out(path, Endianness::LITTLE);
   if (!out.ok())
-    throw Error("Could not open image file for writing");
+    throw Error("Image: Could not open image file for writing");
 
   write(out, *c, false);
 }
 
 void
-Image::readAuto(BinaryInputStream & input, bool read_block_header)
+Image::read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_header)
 {
-  // Read the block header, if present. We will only use the size info and autodetect the codec from the image block itself.
-  int64 size = (read_block_header ? (int64)Codec::BlockHeader(input).data_size : input.size());
-  if (size <= 0)
-    throw Error("No image data found");
+  // Get the size of the image block in bytes
+  uint64 prefixed_len = (read_block_header ? Codec::BlockHeader(input).data_size : 0);
 
-  // Read the image block into a memory buffer (optimization possible when the data has already been buffered within the input
-  // stream?)
-  Array<uint8> img_block((size_t)size);
-  input.readBytes((int64)size, &img_block[0]);
+  BinaryInputStream::EndiannessScope scope(input, Endianness::LITTLE);
 
-  ImageCodec const * detected_codec = ImageInternal::codecFromMagic((int64)size, &img_block[0]);
-  if (detected_codec)
+  int64 start_position = input.getPosition();
+
+  // Read file header (32 bytes):
+  //   4 bytes: Magic string "3BM\0"
+  //   4 bytes: Version
+  //   8 bytes: Size of the whole file in bytes
+  //   8 bytes: Reserved
+  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
+
+  uint8 magic[4];
+  input.readBytes(4, &magic);
+  if (magic[0] != (uint8)'3' || magic[1] != (uint8)'B' || magic[2] != (uint8)'M' || magic[3] != (uint8)'\0')
+    throw Error(toString(codec.getName()) + ": Image is not in 3BM format");
+
+  input.skip(4);
+  uint64 len = input.readUInt64();
+  if (prefixed_len > 0 && len != prefixed_len)
+    throw Error(toString(codec.getName()) + ": Prefixed size does not match image size from header");
+
+  input.skip(8);
+  uint64 bitmap_offset = input.readUInt64();
+
+  // Read info header (72 bytes):
+  //   8 bytes: Size of this header (72 bytes)
+  //   8 bytes: Width of the bitmap in voxels
+  //   8 bytes: Height of the bitmap in voxels
+  //   8 bytes: Depth of the bitmap in voxels
+  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 16, 24 and 32 are supported
+  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
+  //   8 bytes: Size of raw image data
+  //   8 bytes: Width resolution in voxels/meter
+  //   8 bytes: Height resolution in voxels/meter
+  //   8 bytes: Depth resolution in voxels/meter
+
+  input.skip(8);
+  int64 w  =  (int64)input.readUInt64();
+  int64 h  =  (int64)input.readUInt64();
+  int64 d  =  (int64)input.readUInt64();
+
+  int bpp = (int)input.readUInt32();
+  if (bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32)
+    throw Error(toString(codec.getName()) + ": Only 8, 16, 24 and 32-bit bitmaps currently supported");
+
+  uint32 compression = input.readUInt32();
+  if (compression != 0)
+    throw Error(toString(codec.getName()) + ": Unsupported compression method");
+
+  int64 stream_scan_width = ImageInternal::scanWidth(w, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  uint64 data_len = input.readUInt64();
+  if (data_len != (uint64)stream_scan_width * (uint64)h * (uint64)d)
+    throw Error(toString(codec.getName()) + ": Pixel data block size does not match image dimensions");
+
+  // Read image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
+  input.setPosition(start_position + (int64)bitmap_offset);
+
+  Type t = Type::UNKNOWN;
+  switch (bpp)
   {
-    BinaryInputStream mem_stream(&img_block[0], (int64)size, Endianness::LITTLE, /* copy_memory = */ false);
-    detected_codec->readImage(*this, mem_stream, false);
+    case 8   :  t = Type::LUMINANCE_8U; break;
+    case 16  :  t = Type::LA_8U; break;
+    case 24  :  t = Type::RGB_8U; break;
+    case 32  :  t = Type::RGBA_8U; break;
+    default  :  throw Error(format("%s: Bit d %d not supported", codec.getName(), bpp));
   }
-  else
+
+  resizeData(t, w, h, d, /* data_alignment = */ ROW_ALIGNMENT);
+  if (w > 0 && h > 0 && d > 0 && bpp > 0)
   {
-    // Decode via FreeImage
-    if (!fip_img)
-      fip_img = new fipImage;
+    int bytes_pp = bpp / 8;
+    Array<uint8> row_buf((size_t)stream_scan_width);
+    for (intx i = 0; i < d; ++i)
+      for (intx j = 0; j < h; ++j)
+      {
+        input.readBytes(stream_scan_width, row_buf.data());
 
-    fipMemoryIO mem((BYTE *)&img_block[0], (DWORD)size);
-    if (!fip_img->loadFromMemory(mem))
-      throw Error("Could not load image from memory stream");
+        uint8 const * in_pixel = row_buf.data();
+        uint8 * out_pixel = (uint8 *)getScanLine(j, i);
 
-    type = ImageInternal::typeFromFreeImageTypeAndBPP(fip_img->getImageType(), fip_img->getBitsPerPixel());
-    if (type == Type::UNKNOWN)
+        switch (bytes_pp)
+        {
+          case 1:  // no channel..,
+          case 2:  // ... reordering
+          {
+            std::copy(in_pixel, in_pixel + w * bytes_pp, out_pixel);
+            break;
+          }
+          case 3:
+          {
+            for (intx k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[0] = in_pixel[2];
+              out_pixel[1] = in_pixel[1];
+              out_pixel[2] = in_pixel[0];
+            }
+            break;
+          }
+          default: // 4
+          {
+            for (intx k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            {
+              out_pixel[0] = in_pixel[2];
+              out_pixel[1] = in_pixel[1];
+              out_pixel[2] = in_pixel[0];
+              out_pixel[3] = in_pixel[3];
+            }
+            break;
+          }
+        }
+      }
+  }
+}
+
+void
+Image::write3bm(Codec const & codec, BinaryOutputStream & output, bool write_block_header) const
+{
+  if (!isValid())
+    throw Error(toString(codec.getName()) + ": Cannot write an invalid image");
+
+  if (type != Type::LUMINANCE_8U
+   && type != Type::LA_8U
+   && type != Type::RGB_8U
+   && type != Type::RGBA_8U)
+    throw Error(toString(codec.getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
+
+  auto bpp = getBitsPerPixel();
+  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+
+  static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
+  static uint64 const INFO_HEADER_SIZE = 72;
+  uint64 data_len = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
+  uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_len;
+
+  if (write_block_header)
+    Codec::BlockHeader(codec.getMagic(), size_in_bytes).write(output);
+
+  BinaryOutputStream::EndiannessScope scope(output, Endianness::LITTLE);
+
+  // Write file header (32 bytes):
+  //   4 bytes: Magic string "3BM\0"
+  //   4 bytes: Version
+  //   8 bytes: Size of the whole file in bytes
+  //   8 bytes: Reserved
+  //   8 bytes: Starting offset (from the beginning of the file) of the bitmap image data
+
+  static uint8 const MAGIC[4] = { (uint8)'3', (uint8)'B', (uint8)'M', (uint8)'\0' };
+  output.writeBytes(4, MAGIC);
+  output.writeUInt32(0x0001);
+  output.writeUInt64(size_in_bytes);
+  output.writeUInt64(0);
+  output.writeUInt64(FILE_HEADER_SIZE + INFO_HEADER_SIZE);
+
+  // Write info header (72 bytes):
+  //   8 bytes: Size of this header (72 bytes)
+  //   8 bytes: Width of the bitmap in voxels
+  //   8 bytes: Height of the bitmap in voxels
+  //   8 bytes: Depth of the bitmap in voxels
+  //   4 bytes: Number of bits per pixel (1, 4, 8, 16, 24, 32), currently only 8, 16, 24 and 32 are supported
+  //   4 bytes: Compression method (0 for no compression, currently this is the only one supported)
+  //   8 bytes: Size of raw image data
+  //   8 bytes: Width resolution in voxels/meter
+  //   8 bytes: Height resolution in voxels/meter
+  //   8 bytes: Depth resolution in voxels/meter
+
+  output.writeUInt64(INFO_HEADER_SIZE);
+  output.writeUInt64((uint64)width);
+  output.writeUInt64((uint64)height);
+  output.writeUInt64((uint64)depth);
+  output.writeUInt32((uint32)bpp);
+  output.writeUInt32(0);
+  output.writeUInt64(data_len);
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+  output.writeUInt64(3937);  // 100dpi
+
+  // Write image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
+  if (width <= 0 || height <= 0 || depth <= 0 || bpp <= 0)
+    return;
+
+  int bytes_pp = bpp / 8;
+  Array<uint8> row_buf((bytes_pp > 2 ? (size_t)stream_scan_width : 0), 0);
+  auto row_padding = stream_scan_width - (width * bytes_pp);
+  for (intx i = 0; i < depth; ++i)
+    for (intx j = 0; j < height; ++j)
     {
-      clear();
-      throw Error("Image was successfully decoded but it has a format for which this library does not provide an interface");
+      uint8 const * in_pixel = (uint8 const *)getScanLine(j, i);
+
+      switch (bytes_pp)
+      {
+        case 1:  // no channel...
+        case 2:  // ... reordering
+        {
+          output.writeBytes(width * bytes_pp, in_pixel);
+          output.skip(row_padding);  // writes undefined values
+          break;
+        }
+        case 3:
+        {
+          uint8 * out_pixel = row_buf.data();
+          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          {
+            out_pixel[0] = in_pixel[2];
+            out_pixel[1] = in_pixel[1];
+            out_pixel[2] = in_pixel[0];
+          }
+          output.writeBytes((int64)stream_scan_width, row_buf.data());
+          break;
+        }
+        default: // 4
+        {
+          uint8 * out_pixel = row_buf.data();
+          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          {
+            out_pixel[0] = in_pixel[2];
+            out_pixel[1] = in_pixel[1];
+            out_pixel[2] = in_pixel[0];
+            out_pixel[3] = in_pixel[3];
+          }
+          output.writeBytes((int64)stream_scan_width, row_buf.data());
+          break;
+        }
+      }
     }
-
-    cacheTypeProperties();
-
-    width = fip_img->getWidth();
-    height = fip_img->getHeight();
-    depth = 1;
-
-    if (!ImageInternal::canonicalizeChannelOrder(*this))
-      throw Error("Could not canonicalize channel order");
-  }
 }
 
 } // namespace Thea

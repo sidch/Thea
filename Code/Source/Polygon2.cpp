@@ -21,7 +21,7 @@
 #  define REAL double
 #endif
 
-#include "Triangle/triangle.h"
+#include "ThirdParty/Triangle/triangle.h"
 
 #include <cmath>
 #include <cstring>

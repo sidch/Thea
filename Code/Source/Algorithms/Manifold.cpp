@@ -14,8 +14,8 @@
 
 #include "Manifold.hpp"
 #include "../Polygon3.hpp"
-#include "dx/simplesurf.h"
-#include "dx/memory.h"
+#include "../ThirdParty/dx/simplesurf.h"
+#include "../ThirdParty/dx/memory.h"
 #include <cstring>
 
 namespace Thea {

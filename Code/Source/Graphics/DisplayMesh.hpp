@@ -19,6 +19,7 @@
 #include "../Array.hpp"
 #include "../AxisAlignedBox3.hpp"
 #include "../Colors.hpp"
+#include "../Hash.hpp"
 #include "../MatrixWrapper.hpp"
 #include "../UnorderedMap.hpp"
 #include "IMesh.hpp"
@@ -265,7 +266,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     typedef DisplayMeshFace Face;  ///< A convenience wrapper for accessing a face's properties.
 
     typedef std::pair<uint32, uint32> Edge;  ///< A pair of vertex indices defining an edge.
-    typedef UnorderedSet<Edge> EdgeSet;      ///< A set of edges.
+    typedef UnorderedSet< Edge, Hasher<Edge> > EdgeSet;  ///< A set of edges.
 
     typedef std::array<intx, 3> IndexTriple;  ///< Vertex indices of a single triangle.
 

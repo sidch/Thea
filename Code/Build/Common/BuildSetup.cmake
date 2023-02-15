@@ -60,7 +60,10 @@ GET_FILENAME_COMPONENT(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ABSOLUTE)
 # Path to root folder for source code
 SET(SourceRoot ${ProjectRoot}/Source)
 
-# Path to folder with installations of the dependencies
+# Path to folder for third-party packages that will be directly built/included as part of the source tree
+SET(ThirdPartyRoot ${SourceRoot}/ThirdParty)
+
+# Path to folder with installations of external dependencies
 IF(NOT THEA_DEPS_ROOT)
   SET(THEA_DEPS_ROOT ${CMAKE_INSTALL_PREFIX})
 ENDIF()
@@ -68,6 +71,11 @@ SET(THEA_DEPS_ROOT ${THEA_DEPS_ROOT} CACHE PATH "Path to folder with installatio
 
 # Add some additional system search paths which may be omitted by default
 SET(CMAKE_SYSTEM_PREFIX_PATH ${CMAKE_SYSTEM_PREFIX_PATH} /usr/local /opt/local)
+
+# Make sure the LITE flag has a non-empty value since it will be cached in BuildFlags
+IF(NOT DEFINED LITE)
+  SET(LITE FALSE)
+ENDIF()
 
 # Locate dependencies
 INCLUDE(${ProjectRoot}/Build/Common/FindTheaDependencies.cmake)
@@ -85,47 +93,11 @@ SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} ${EXTRA_RELEAS
 INCLUDE(CheckCXXCompilerFlag)
 
 IF(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-
-  IF(FORCE_CXX11)
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" THEA_COMPILER_SUPPORTS_CXX11)
-    IF(THEA_COMPILER_SUPPORTS_CXX11)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    ENDIF()
+  CHECK_CXX_COMPILER_FLAG("-std=c++17" THEA_COMPILER_SUPPORTS_CXX17)
+  IF(THEA_COMPILER_SUPPORTS_CXX17)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
   ELSE()
-    CHECK_CXX_COMPILER_FLAG("-std=c++17" THEA_COMPILER_SUPPORTS_CXX17)
-    IF(THEA_COMPILER_SUPPORTS_CXX17)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-      SET(THEA_COMPILER_SUPPORTS_CXX14 TRUE)
-      SET(THEA_COMPILER_SUPPORTS_CXX11 TRUE)
-    ELSE()
-      CHECK_CXX_COMPILER_FLAG("-std=c++1z" THEA_COMPILER_SUPPORTS_CXX1Z)
-      IF(THEA_COMPILER_SUPPORTS_CXX1Z)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
-        SET(THEA_COMPILER_SUPPORTS_CXX14 TRUE)
-        SET(THEA_COMPILER_SUPPORTS_CXX11 TRUE)
-      ELSE()
-        CHECK_CXX_COMPILER_FLAG("-std=c++14" THEA_COMPILER_SUPPORTS_CXX14)
-        IF(THEA_COMPILER_SUPPORTS_CXX14)
-          SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-          SET(THEA_COMPILER_SUPPORTS_CXX11 TRUE)
-        ELSE()
-          CHECK_CXX_COMPILER_FLAG("-std=c++1y" THEA_COMPILER_SUPPORTS_CXX1Y)
-          IF(THEA_COMPILER_SUPPORTS_CXX1Y)
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
-            SET(THEA_COMPILER_SUPPORTS_CXX11 TRUE)
-          ELSE()
-            CHECK_CXX_COMPILER_FLAG("-std=c++11" THEA_COMPILER_SUPPORTS_CXX11)
-            IF(THEA_COMPILER_SUPPORTS_CXX11)
-              SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-            ENDIF()
-          ENDIF()
-        ENDIF()
-      ENDIF()
-    ENDIF()
-  ENDIF()
-
-  IF(NOT THEA_COMPILER_SUPPORTS_CXX11)
-    MESSAGE(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER} has no C++11 support")
+    MESSAGE(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER} has no C++17 support")
   ENDIF()
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Thea_DEPS_CFLAGS} -Wall -fno-strict-aliasing -fPIC")
@@ -150,15 +122,14 @@ ENDIF()
 # Specify that Triangle should be built as a library, use ANSI function declarations and not use a timer
 ADD_DEFINITIONS(-DTRILIBRARY -DANSI_DECLARATORS -DNO_TIMER)
 
-# "extern template" support
-IF(NOT DEFINED THEA_EXTERN_TEMPLATES)
-  SET(THEA_EXTERN_TEMPLATES FALSE)
+# Use extern templates?
+IF(NOT DEFINED EXTERN_TEMPLATES)
+  SET(EXTERN_TEMPLATES FALSE)
 ENDIF()
-SET(THEA_EXTERN_TEMPLATES ${THEA_EXTERN_TEMPLATES} CACHE BOOL "Use extern templates?")
+SET(EXTERN_TEMPLATES ${EXTERN_TEMPLATES} CACHE BOOL "Use extern templates?")
 
-IF(THEA_EXTERN_TEMPLATES)
-  MESSAGE(STATUS "Compiler support for 'extern template' required")
-  ADD_DEFINITIONS(-DTHEA_EXTERN_TEMPLATES)
+IF(EXTERN_TEMPLATES)
+  ADD_DEFINITIONS(-DTHEA_EXTERN_TEMPLATES=1)
 ENDIF()
 
 # Include directories

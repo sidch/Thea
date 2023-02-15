@@ -10,9 +10,10 @@ Author: [Siddhartha Chaudhuri](https://www.cse.iitb.ac.in/~sidch). Released unde
 If you find a bug, please let me know promptly. Thank you!
 
 ***
-!!! **IMPORTANT 1** !!! If you last cloned this repository before **Sep 19, 2021**, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged (Git will hopefully warn you about this).
-
-!!! **IMPORTANT 2** !!! The default branch is now called `main` instead of `master`, to be more inclusive (https://github.com/github/renaming/). To update your local copy, run the following commands:
+!!! **Important Notes** !!!
+* Thea now *requires* C++17 compiler and standard library support. Benefits include no dependence on Boost (and hence a *new Lite mode* whose only external dependency is Eigen), no deprecated cruft for cross-platform timing functions, etc. If your compiler [doesn't support C++17](https://en.cppreference.com/w/cpp/compiler_support/17), the last commit you can use is [f945b01](https://github.com/sidch/Thea/commit/f945b010e5127419ed13f4af6f54c85ddc13cfd0).
+* If you last cloned this repository before **Sep 19, 2021**, please **delete your local copy and re-clone a fresh copy**. Some history was rewritten during a cleanup and commit refs have changed. If you just do a `git pull` without deleting and re-cloning, bad things can happen when the old and new histories get merged (Git will hopefully warn you about this).
+* The default branch is now called `main` instead of `master`, to be more inclusive (https://github.com/github/renaming/). To update your local copy, run the following commands:
 ```
 git branch -m master main
 git fetch origin
@@ -29,15 +30,16 @@ git remote set-head origin -a
 * General **linear algebra** via [Eigen](http://eigen.tuxfamily.org), **geometric transformations** (e.g. rigid transforms), several additional convenience functions and classes (e.g. to wrap raw buffers as matrices), and easy-to-use interfaces to various **solver packages** (Eigen, NNLS, CSPARSE, ARPACK).
 * 2, 3 and N-dimensional **geometric primitives**, including lines, line segments, rays, (hyper)planes, triangles (+ ray-triangle and triangle-triangle intersections), balls, axis-aligned boxes, oriented boxes, polygons and spline curves (+ fast spline-fitting to points).
 * An eclectic **collection of algorithms**, including fast N-dimensional bounding volume hierarchies (on points or mesh triangles), shortest paths in graphs, best-fit boxes and ellipsoids, singular value decomposition and PCA, iterative closest point (ICP), symmetry detection, convex hulls, connected components, surface parametrization (global and local), discrete Laplace-Beltrami operators, sampling points from meshes, mesh features (curvature, distance histogram, shape diameter, spin image), and some machine learning models.
-* Basic **image processing** (wrapper for [FreeImage](http://freeimage.sourceforge.net/)).
+* Basic **image processing** (wrapper for [FreeImage](http://freeimage.sourceforge.net/), or [stb](https://github.com/nothings/stb/) in the Lite mode).
 * A **plugin architecture** and included plugins providing easy interfaces to [OpenGL](https://www.opengl.org/), [ARPACK](http://www.caam.rice.edu/software/ARPACK/) and [CSPARSE](http://people.sc.fsu.edu/~jburkardt/c_src/csparse/csparse.html). The OpenGL plugin optionally (and easily) compiles with an [OSMesa](https://www.mesa3d.org/osmesa.html) driver to automatically create a headless CPU-only context.
 * **Pure virtual wrappers** for several common classes (e.g. dense and sparse matrices, images) that allow safely passing such objects across shared library boundaries.
 * A variety of **utility classes** for filesystem navigation, I/O, serialization, timing, synchronization, hashing, logging, string manipulation/searching, memory allocation, bounded/sorted arrays, pseudo-random numbers, mathematics (including algebraic roots of polynomials upto degree 4) etc.
 * Several **bundled tools** written using the library, for 3D file viewing and annotation (*Browse3D*); offline rendering (*RenderShape*); mesh sampling (*MeshSample*), repair (*MeshFix*, different from [this one](https://sourceforge.net/p/meshfix/wiki/Home/)), features (*MeshLocalFeatures*, *MeshGlobalFeatures*) and format conversion (*MeshConv*); rigid (*ShapeAlign*) and non-rigid (*Register*) shape registration; k-NN graphs of surface samples (*SampleGraph*) etc.
+* A stripped-down "Lite" mode whose only external dependency is Eigen. In this mode, you lose some extra image formats from FreeImage (a bundled [stb](https://github.com/nothings/stb/) backend is used instead), and a couple of features that depend on CGAL (but there are alternatives). The plugins (which may have their own external dependencies) are omitted by default in this mode, but can be optionally included.
 
 **Thea is constantly under development and a few parts are incomplete. Use at your own risk!** I do not provide any support (unless you have bugs to report), and I make no correctness or robustness guarantees for any part of the code. Parts of the library are reasonably battle-tested (e.g. in Fuse), and parts are one-off inclusions rarely used in anger or tested thoroughly.
 
-*Thea* is heavily influenced by Morgan McGuire's [G3D](https://casual-effects.com/g3d) library. It started out as an extension of G3D and still has significant chunks of code adapted from it (e.g. for binary/text I/O, plugin management, the rendersystem interface and OpenGL plugin, color handling, timers, quaternions, CRC32, atomic integers, and random numbers).
+*Thea* is heavily influenced by Morgan McGuire's [G3D](https://casual-effects.com/g3d) library. It started out as an extension of G3D and still has significant chunks of code adapted from it (e.g. for binary/text I/O, plugin management, the rendersystem interface and OpenGL plugin, color handling, quaternions, CRC32, atomic integers, and random numbers).
 
 The *Thea* library is not related to the independently and contemporaneously developed [Thea Render](http://www.thearender.com) photorealistic rendering engine.
 
@@ -45,7 +47,7 @@ The *Thea* library is not related to the independently and contemporaneously dev
 
 ### Design principles
 
-*Thea* has a particular focus on being a foundation layer for interactive 3D modeling applications. It is written in standards-compliant C++11 for speed, and is designed with the following objectives in mind:
+*Thea* has a particular focus on being a foundation layer for interactive 3D modeling applications. It is written in standards-compliant C++17 for speed, and is designed with the following objectives in mind:
 * Optimize for ease of use
   * Clean, simple APIs are essential
   * Everything should be well-documented
@@ -176,7 +178,7 @@ timer.tick();
 
 timer.tock();
 THEA_CONSOLE << sd.numCalls() << " BVH NN queries in "
-             << 1000000 * timer.elapsedTime() / sd.numCalls() << "ns each";
+             << 1000 * timer.elapsedTime() / sd.numCalls() << "ms each";
 ```
 `Stopwatch` is one of many utility classes. `ImplicitSurfaceMesher` also optionally wraps CGAL's Boissonnat-Oudot polygonizer. `THEA_CONSOLE` is an object that behaves exactly like `std::cout` but automatically adds a newline at the end. `THEA_WARNING` and `THEA_ERROR` also prefix the line with the current time, source filename, line number, and a warning/error flag.
 
@@ -198,11 +200,11 @@ For some real-world samples, see the applications in the `Thea/Code/Source/Tools
 
 ## Installation
 
-*Thea* is written in standards-compliant C++11, and should compile with any recent compiler on Mac, Linux and Windows. It uses [CMake](https:///cmake.org) as a cross-platform buildsystem. However, I do not normally work on Windows, and do not currently provide build instructions for this platform. I have successfully done Windows builds in the past and there is no reason why it should not work with a bit of effort getting the dependencies installed. I will try to add full Windows instructions in the future, time permitting.
+*Thea* is written in standards-compliant C++17, and should compile with any recent compiler on Mac, Linux and Windows. It uses [CMake](https:///cmake.org) as a cross-platform buildsystem. However, I do not normally work on Windows, and do not currently provide build instructions for this platform. I have successfully done Windows builds in the past and there is no reason why it should not work with a bit of effort getting the dependencies installed. I will try to add full Windows instructions in the future, time permitting. Until then, building in Lite mode (and optionally enabling the OpenGL plugin) is probably the surest bet for quickly getting it working.
 
 ### Installing the dependencies
 
-*Thea* relies on [Boost](https://www.boost.org), [Eigen](https://eigen.tuxfamily.org) (3.4 or later), [lib3ds](https://code.google.com/archive/p/lib3ds), [FreeImage](http://freeimage.sourceforge.net) and [ARPACK](http://www.caam.rice.edu/software/ARPACK). (A couple of classes also depend on [CGAL](https://www.cgal.org), but these are optional -- if CGAL is not found on the system, these classes will be omitted from the build.) A convenient script installs all of these on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported.
+*Thea* relies on [Eigen](https://eigen.tuxfamily.org) (3.4 or later), and optionally on [FreeImage](http://freeimage.sourceforge.net), [lib3ds](https://code.google.com/archive/p/lib3ds), [CGAL](https://www.cgal.org) and [CLUTO](http://glaros.dtc.umn.edu/gkhome/cluto/cluto/overview). The OpenGL plugin links to an OpenGL or [OSMesa](https://docs.mesa3d.org/osmesa.html) installation, and the ARPACK plugin to an [ARPACK](http://www.caam.rice.edu/software/ARPACK) installation. A convenient script installs all of these (except OpenGL) on Unix-like systems (Mac and Linux), as follows. Both local (no root) and system-wide (needs root) installs are supported. *You can omit all of these except Eigen if you're building Thea in the stripped-down Lite mode.*
 
 Assume `$basedir` is some directory where you're going to check out the source code, and `$prefix` is some directory where you'll install stuff (e.g. `$basedir/Installations` or `/usr/local`).
 ```shell
@@ -220,7 +222,7 @@ sudo ./install-defaults.sh --with-wxwidgets --use-root --prefix "$prefix" -j4
 ```
 `--use-root` will try to use `apt-get` on Ubuntu/Debian, omit it if you want to build everything from scratch regardless. `--with-wxwidgets` is needed to build *Browse3D*, a bundled GUI application for viewing 3D files: it can be omitted if so desired. Add `--with-osmesa` to install OSMesa for headless CPU-only rendering (good for remote servers). Replace 4 with the actual number of hardware threads on your system, typically 2, 4, or 8.
 
-(**Note for macOS:** Ideally, `install-defaults.sh --use-root` should use Homebrew/MacPorts on Mac. However, I have not added this yet because I'm swamped with other stuff. Until then, `brew install boost eigen lib3ds freeimage wxwidgets` will do the job and you don't need to run `install-defaults.sh`.)
+(**Note for macOS:** Ideally, `install-defaults.sh --use-root` should use Homebrew/MacPorts on Mac. However, I have not added this yet because I'm swamped with other stuff. Until then, `brew install eigen lib3ds freeimage arpack cgal wxwidgets` will do the job and you don't need to run `install-defaults.sh`.)
 
 The above step will install the necessary libraries by compiling them from source (if not `apt-get`able) and placing the result in `$prefix`. To install an individual library, call `install.sh --with-<package> ...` with the same `--use-root`, `--prefix` etc arguments as above. Carefully check for errors (warnings are generally ok). If there are errors, you probably need to explicitly install some third-party libraries/tools -- see the error messages -- and rerun the command. E.g. I have found some barebones server installs without the [zlib](https://www.zlib.net) or [Expat](https://libexpat.github.io) development packages, required by Mesa: in this particular case, the source packages are included and you can use `./install.sh --with-expat --with-zlib ...`. *Make sure there are no errors in the output before proceeding further.*
 
@@ -235,7 +237,9 @@ cmake -DCMAKE_INSTALL_PREFIX="$prefix" -DCMAKE_BUILD_TYPE=RelWithDebInfo .
 make -j4
 make install    # add sudo if necessary
 ```
-By default, CMake looks for the dependencies in the `CMAKE_INSTALL_PREFIX` directory. If for some reason the dependencies are located somewhere else, e.g. in `$deps`, you can point CMake to it by adding `-DTHEA_DEPS_ROOT="$deps"`. The bundled tools are installed to `$prefix/bin/Thea`: add this to your executable search path (e.g. the system `PATH` variable) as needed. A quick way to check if everything has installed correctly is to run
+To build in the Lite mode with no external dependencies except Eigen, add `-DLITE=1` to the `cmake` command above. This will omit all external dependencies except Eigen. It will also omit building all the bundled plugins and tools. You can selectively re-include the latter with `-DWITH_<MODULE>=1`, where `<MODULE>` is any of `TOOLS`, `PLUGIN_ARPACK`, `PLUGIN_CSPARSE` and `PLUGIN_GL`. (The CSparse plugin doesn't actually have any external dependencies but is omitted by default in Lite mode for consistency.)
+
+By default, CMake looks for the dependencies in the `CMAKE_INSTALL_PREFIX` directory. If for some reason the dependencies are located somewhere else, e.g. in `$deps`, you can point CMake to it by adding `-DTHEA_DEPS_ROOT="$deps"`. The bundled tools are installed to `$prefix/bin/Thea`: add this to your executable search path (e.g. the system `PATH` variable) as needed. A quick way to check if everything has installed correctly (assuming OpenGL and wxWidgets are available) is to run
 ```shell
 $prefix/bin/Thea/Browse3D ../../Data/Models/teapot.obj
 ```
@@ -246,10 +250,6 @@ $prefix/bin/Thea/RenderShape ../../Data/Models/teapot.obj teapot.png 800 600
 to render the teapot to an image file.
 
 To build with OSMesa instead of the system OpenGL driver, add `-DWITH_OSMESA=true` to the CMake line above. The *RenderShape* tool will then use OSMesa. To run some test scripts (several probably out of date), run `make test` after building. To omit building the tests altogether, pass `-DWITH_TESTS=false` to CMake. To change the build type (by default `Release`), set `-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo`.
-
-***
-**C++ versions**: Thea itself follows the C++11 standard. However, other packages it depends on may enforce more recent standards: e.g. CGAL has recently moved to C++14 by default. Hence, the build script detects the latest standard (upto C++17) supported by the compiler and uses that to build. To force the compiler to operate in strict C++11 mode, pass `-DFORCE_CXX11=true` to CMake.
-***
 
 ## Documentation
 
@@ -267,14 +267,13 @@ Note that many convenience types, such as `Vector3` and `Matrix4`, are typedefs 
 
 The usual command line to link your program with the library is:
 ```
-c++ -std=c++11 -Wall -g2 -O2 -fno-strict-aliasing \
+c++ -std=c++17 -Wall -g2 -O2 -fno-strict-aliasing \
     -I"$prefix/include" -I"$prefix/include/eigen3" \
     <source-files> \
     -L"$prefix/lib" -lThea \
-    -lfreeimageplus -lfreeimage -l3ds \
-    -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt \
-    -lm \
+    -lfreeimageplus -lfreeimage -l3ds -lm \
     [-ldl] [-framework Carbon]
 ```
+(In Lite mode, you can omit all the dependencies except Eigen.)
 
-If you're using CMake for your own code, a convenient `FindThea.cmake` module in `Thea/Code/Build/Common/CMake/Modules` (or directly from <https://github.com/sidch/CMake>) allows you to do `FIND_PACKAGE(Thea)`, including locating all the necessary dependencies.
+If you're using CMake for your own code, a convenient `FindThea.cmake` module in `Thea/Code/Build/Common/CMake/Modules` (or directly from <https://github.com/sidch/CMake>) allows you to do `FIND_PACKAGE(Thea)`, including locating all the necessary dependencies. See the header of that file for additional instructions.

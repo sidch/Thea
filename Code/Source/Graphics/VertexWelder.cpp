@@ -13,8 +13,8 @@
 //============================================================================
 
 #include "VertexWelder.hpp"
+#include "../Hash.hpp"
 #include "../UnorderedMap.hpp"
-#include <boost/functional/hash.hpp>
 #include <cmath>
 
 namespace Thea {
@@ -42,11 +42,11 @@ class VertexWelderImpl
 
     struct Long3Hasher
     {
-      std::size_t operator()(Long3 const & a) const
+      size_t operator()(Long3 const & a) const
       {
-        std::size_t s = boost::hash_value(a.x);
-        boost::hash_combine(s, a.y);
-        boost::hash_combine(s, a.z);
+        size_t s = hashValue(a.x);
+        hashCombine(s, a.y);
+        hashCombine(s, a.z);
         return s;
       }
     };

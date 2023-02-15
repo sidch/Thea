@@ -15,7 +15,7 @@
 #include "StdLinearSolver.hpp"
 #include "../IDenseMatrix.hpp"
 #include "../ICompressedSparseMatrix.hpp"
-#include "NNLS/nnls.h"
+#include "../ThirdParty/NNLS/nnls.h"
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/QR>
 #include <Eigen/SparseCholesky>

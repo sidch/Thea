@@ -17,12 +17,12 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Hash.hpp"
 #include "../Map.hpp"
 #include "../UnorderedMap.hpp"
 #include "MeshGroup.hpp"
 #include "MeshCodec.hpp"
 #include "MeshType.hpp"
-#include <boost/functional/hash.hpp>
 #include <functional>
 #include <sstream>
 #include <type_traits>
@@ -52,7 +52,7 @@ class VTN
              && elems[2] < rhs.elems[2])));
     }
 
-    size_t hash() const { return boost::hash_range(elems, elems + 3); }
+    size_t hash() const { return hashRange(elems, elems + 3); }
 
   private:
     intx elems[3];
@@ -67,23 +67,11 @@ struct VertexIndexMap
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef UnorderedMap<std::pair<MeshT const *, intx>, intx> type;
+  typedef std::pair<MeshT const *, intx> VertexRef;
+  typedef UnorderedMap< VertexRef, intx, Hasher<VertexRef> > type;
 };
 
 } // namespace CodecObjInternal
-
-} // namespace Thea
-
-namespace std {
-
-template <> struct hash<Thea::CodecObjInternal::VTN>
-{
-  size_t operator()(Thea::CodecObjInternal::VTN const & v) const { return v.hash(); }
-};
-
-} // namespace std
-
-namespace Thea {
 
 /** %Codec for reading and writing OBJ files. */
 template <typename MeshT, typename BuilderT>

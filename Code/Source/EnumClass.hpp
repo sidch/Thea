@@ -55,10 +55,6 @@ namespace Thea {
         output.writeInt32(static_cast<int>(value));                                                                           \
       }
 
-// Put quotes around the result of a macro expansion.
-#define THEA_ENUM_CLASS_STRINGIFY_(x) #x
-#define THEA_ENUM_CLASS_STRINGIFY(x) THEA_ENUM_CLASS_STRINGIFY_(x)
-
 // Begin sequence of mappings of enum values to strings. There can be more than one string registered for the same value. When
 // serializing, the first registered string is used.
 #define THEA_ENUM_CLASS_STRINGS_BEGIN(name)                                                                                   \
@@ -68,7 +64,7 @@ namespace Thea {
         static std::pair<Value, std::string> const STRS[] = {
 
 // Register an enum value with the string representation of its name.
-#define THEA_ENUM_CLASS_STRING_SELF(value) std::pair<Value, std::string>(value, THEA_ENUM_CLASS_STRINGIFY(value)),
+#define THEA_ENUM_CLASS_STRING_SELF(value) std::pair<Value, std::string>(value, THEA_STRINGIFY(value)),
 
 // Register an enum value to an arbitrary string.
 #define THEA_ENUM_CLASS_STRING(value, str) std::pair<Value, std::string>(value, str),
@@ -91,13 +87,13 @@ namespace Thea {
           mapping = THEA_ENUM_CLASS_stringMapping(++i);                                                                       \
         }                                                                                                                     \
                                                                                                                               \
-        throw THEA_ENUM_CLASS_STRINGIFY(name) ": Enum value has no string representation";                                    \
+        throw THEA_STRINGIFY(name) ": Enum value has no string representation";                                               \
       }                                                                                                                       \
                                                                                                                               \
       explicit name(std::string const & str, bool ignore_case = false)                                                        \
       {                                                                                                                       \
         if (!fromString(str, ignore_case))                                                                                    \
-          throw THEA_ENUM_CLASS_STRINGIFY(name) ": Could not convert string to enum value";                                   \
+          throw THEA_STRINGIFY(name) ": Could not convert string to enum value";                                              \
       }                                                                                                                       \
                                                                                                                               \
       bool fromString(std::string str, bool ignore_case = false)                                                              \

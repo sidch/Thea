@@ -13,9 +13,6 @@
 //============================================================================
 
 #include "Zernike2.hpp"
-
-#ifndef THEA_NO_ZERNIKE
-
 #include "../Math.hpp"
 
 namespace Thea {
@@ -34,7 +31,7 @@ Zernike2::generateBasisLUT() const
   if (lut_generated) return;
 
   int lut_size = 2 * opts.lut_radius + 1;
-  lut.resize(boost::extents[opts.angular_steps][opts.radial_steps][lut_size + 1][lut_size + 1]);  // one row/column of padding
+  lut.resize(opts.angular_steps, opts.radial_steps, lut_size + 1, lut_size + 1);  // one row/column of padding
 
   int max_radius = opts.lut_radius;
   double angle, temp, radius;
@@ -52,14 +49,14 @@ Zernike2::generateBasisLUT() const
           for (int r = 0; r < opts.radial_steps; ++r)
           {
             temp = std::cos(radius * Math::pi() * r / max_radius);
-            lut[p][r][x][y] = temp * std::complex<double>(std::cos(angle * p), std::sin(angle * p));
+            lut(p, r, x, y) = temp * std::complex<double>(std::cos(angle * p), std::sin(angle * p));
           }
       }
       else
       {
         for (int p = 0; p < opts.angular_steps; ++p)
           for (int r = 0; r < opts.radial_steps; ++r)
-            lut[p][r][x][y] = std::complex<double>(0.0, 0.0);
+            lut(p, r, x, y) = std::complex<double>(0.0, 0.0);
       }
     }
 
@@ -67,12 +64,10 @@ Zernike2::generateBasisLUT() const
   for (int p = 0; p < opts.angular_steps; ++p)
     for (int r = 0; r < opts.radial_steps; ++r)
       for (int i = 0; i <= lut_size; ++i)
-        lut[p][r][i][lut_size] = lut[p][r][lut_size][i] = std::complex<double>(0.0, 0.0);
+        lut(p, r, i, lut_size) = lut(p, r, lut_size, i) = std::complex<double>(0.0, 0.0);
 
   lut_generated = true;
 }
 
 } // namespace Algorithms
 } // namespace Thea
-
-#endif // !defined(THEA_NO_ZERNIKE)

@@ -16,7 +16,7 @@
 #include "../../Array.hpp"
 
 #ifdef THEA_HAVE_SUPERLU
-#  include "arpackpp/arlsnsym.h"
+#  include "../../ThirdParty/arpackpp/arlsnsym.h"
 #endif
 
 namespace Thea {

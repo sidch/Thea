@@ -14,7 +14,7 @@
 
 #include "Serializable.hpp"
 
-#ifdef THEA_EXTERN_TEMPLATES
+#if THEA_EXTERN_TEMPLATES
 
 THEA_INSTANTIATE_SMART_POINTERS(Thea::Serializable)
 THEA_INSTANTIATE_SMART_POINTERS(Thea::SerializableFactory)

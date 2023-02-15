@@ -39,11 +39,11 @@ namespace Thea {
  * Threadsafe random number generator. Useful for generating consistent random numbers across platforms and when multiple
  * threads are involved.
  *
- * Uses the Fast Mersenne Twister (FMT-19937) algorithm.
- *
- * Derived from the G3D library: http://g3d.sourceforge.net
+ * Uses the Fast Mersenne Twister (FMT-19937) algorithm. Derived from the G3D library: http://g3d.sourceforge.net.
  *
  * @see http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/index.html
+ *
+ * @todo Switch to <random> for the core generator?
  */
 class THEA_API Random
 {

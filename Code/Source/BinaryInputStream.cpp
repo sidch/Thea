@@ -386,7 +386,7 @@ BinaryInputStream::~BinaryInputStream()
 void
 BinaryInputStream::readBytes(int64 n, void * bytes)
 {
-  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (intx)n));
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (long)n));
 
   if (n > 0)
   {
@@ -394,6 +394,25 @@ BinaryInputStream::readBytes(int64 n, void * bytes)
     std::memcpy(bytes, m_buffer + m_pos, n);
     m_pos += n;
   }
+}
+
+void
+BinaryInputStream::readBytes(int64 n, void * bytes, int64 & num_bytes_read)
+{
+  alwaysAssertM(n >= 0, format("BinaryInputStream: Cannot read a negative number of bytes (%ld)", (long)n));
+
+  if (n > 0)
+  {
+    auto rem = numMoreBytes();
+    alwaysAssertM(rem >= 0,
+                  "BinaryInputStream: The current implementation should never fail to estimate the number of remaining bytes");
+
+    n = std::min(n, rem);
+    std::memcpy(bytes, m_buffer + m_pos, n);
+    m_pos += n;
+  }
+
+  num_bytes_read = n;
 }
 
 uint64

@@ -17,6 +17,8 @@
 
 #include "../Common.hpp"
 #include "../Array.hpp"
+#include "../Hash.hpp"
+#include "../UnorderedMap.hpp"
 #include "MeshGroup.hpp"
 #include "MeshCodec.hpp"
 #include <algorithm>
@@ -34,7 +36,8 @@ struct VertexIndexMap
 template <typename MeshT>
 struct VertexIndexMap<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<MeshT>::value >::type>
 {
-  typedef UnorderedMap<std::pair<MeshT const *, intx>, intx> type;
+  typedef std::pair<MeshT const *, intx> VertexRef;
+  typedef UnorderedMap< VertexRef, intx, Hasher<VertexRef> > type;
 };
 
 } // namespace CodecPlyInternal

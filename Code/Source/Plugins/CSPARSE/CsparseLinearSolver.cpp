@@ -15,7 +15,7 @@
 #include "CsparseLinearSolver.hpp"
 #include "../../ICompressedSparseMatrix.hpp"
 #include "../../Array.hpp"
-#include "csparse.h"
+#include "../../ThirdParty/CSPARSE/csparse.h"
 #include <algorithm>
 #include <cmath>
 

@@ -19,7 +19,7 @@
 #include "../Array.hpp"
 #include "../GraphType.hpp"
 #include "../UnorderedMap.hpp"
-#include "fibheap/fibheap.hpp"
+#include "../ThirdParty/fibheap/fibheap.hpp"
 #include <limits>
 
 // #define THEA_SHORTEST_PATHS_DO_STATS

@@ -17,6 +17,7 @@
 
 #include "Common.hpp"
 #include "../../AffineTransform3.hpp"
+#include "../../Array.hpp"
 #include "../../CoordinateFrame3.hpp"
 #include "../../Line3.hpp"
 #include "../../Math.hpp"
@@ -198,7 +199,7 @@ Real closestPtRayTriangle(Ray3 const & ray, Vector3 const & v0, Vector3 const & 
                           Vector3 & c1, Vector3 & c2);
 
 /** Get the rigid transform that best maps one set of coordinate frames to another. */
-RigidTransform3 closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<CoordinateFrame3> const & dst);
+RigidTransform3 closestRigidTransform(Array<CoordinateFrame3> const & src, Array<CoordinateFrame3> const & dst);
 
 /** Get the barycentric coordinates of a point (qx, qy) with respect to a triangle [(x0, y0), (x1, y1), (x2, y2)], in 2D */
 void getBarycentricCoordinates2(Real qx, Real qy, Real x0, Real y0, Real x1, Real y1, Real x2, Real y2,

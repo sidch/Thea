@@ -277,7 +277,7 @@ draw()
    {
       static double t0 = -1;
       static int frames = 0;
-      double t = System::time();
+      auto t = System::time();
 
       if (t0 < 0)
          t0 = t;
@@ -286,8 +286,8 @@ draw()
 
       if (t - t0 >= 5.0)
       {
-         double seconds = t - t0;
-         double fps = frames / seconds;
+         auto seconds = t - t0;
+         auto fps = frames / seconds;
          printf("%d frames in %3.1lf seconds = %6.3lf FPS\n", frames, seconds, fps);
          t0 = t;
          frames = 0;

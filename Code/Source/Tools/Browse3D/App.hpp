@@ -17,6 +17,7 @@
 
 #include "Common.hpp"
 #include "../../AffineTransform3.hpp"
+#include "../../Array.hpp"
 #include "../../MatVec.hpp"
 #include <wx/app.h>
 #include <atomic>
@@ -125,7 +126,7 @@ class App : public wxApp
      *
      * @return True on success, false on failure.
      */
-    bool parseOptions(std::vector<std::string> const & args);
+    bool parseOptions(Array<std::string> const & args);
 
     /** Create the application's main window. */
     void createMainWindow();

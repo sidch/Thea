@@ -26,7 +26,7 @@ Spinlock lock;
 std::string
 stripPathFromFilename(std::string const & full_path)
 {
-  std::size_t last_slash;
+  size_t last_slash;
   last_slash = full_path.find_last_of("/\\");
   return (last_slash >= full_path.length()) ? full_path : full_path.substr(last_slash + 1);
 }

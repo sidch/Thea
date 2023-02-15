@@ -172,7 +172,7 @@ class THEA_API KMeans : public Serializable
       // Select initial centers
       //=======================================================================================================================
 
-      double start_time = System::time();
+      auto start_time = System::time();
       Stopwatch timer;
       if (options.verbose)
         timer.tick();
@@ -223,13 +223,13 @@ class THEA_API KMeans : public Serializable
 
       bool converged = false;
       intx num_iterations = 0;
-      double last_time = System::time();
+      auto last_time = System::time();
       while (!converged)
       {
         if (max_iters >= 0 && num_iterations >= max_iters)
           break;
 
-        double curr_time = System::time();
+        auto curr_time = System::time();
         if (max_time >= 0 && curr_time - start_time > max_time)
           break;
 
@@ -339,7 +339,7 @@ class THEA_API KMeans : public Serializable
 
         // Subsequent centers by k-means++
         Array<double> sqdist((size_t)num_points);
-        double start_time = System::time();
+        auto start_time = System::time();
         for (intx i = 1; i < num_clusters; ++i)
         {
           mapToClusters(i, points, nullptr, &sqdist[0]);
@@ -364,7 +364,7 @@ class THEA_API KMeans : public Serializable
 
           addPointToCenter(points, index, i);
 
-          double curr_time = System::time();
+          auto curr_time = System::time();
           if (curr_time - start_time > 3)  // print an update every 3 seconds or every iteration, whichever is longer
           {
             THEA_CONSOLE << "KMeans: -- selected " << i + 1 << " center(s)";

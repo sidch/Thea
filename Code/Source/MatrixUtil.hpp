@@ -580,9 +580,12 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
   // Note that Microsoft (http://msdn.microsoft.com/library/default.asp?url=/library/en-us/opengl/glfunc03_8qnj.asp) and
   // Linux (http://www.xfree86.org/current/glOrtho.3.html) have different matrices shown in their documentation.
 
-  alwaysAssertM(left < right,     "Math::orthogonalProjection: Left must be less than right");
-  alwaysAssertM(bottom < top,     "Math::orthogonalProjection: Bottom must be less than top");
-  alwaysAssertM(nearval < farval, "Math::orthogonalProjection: Near must be less than far");
+  alwaysAssertM(left < right,     format("Math::orthogonalProjection: Left (%lf) must be less than right (%lf)",
+                                         (double)left, (double)right));
+  alwaysAssertM(bottom < top,     format("Math::orthogonalProjection: Bottom (%lf) must be less than top (%lf)",
+                                         (double)bottom, (double)top));
+  alwaysAssertM(nearval < farval, format("Math::orthogonalProjection: Near (%lf) must be less than far (%lf)",
+                                         (double)nearval, (double)farval));
 
   T x =  2 / (right - left);
   T y =  2 / (top - bottom);
@@ -682,10 +685,13 @@ Matrix<4, 4, T>
 perspectiveProjection(T const & left, T const & right, T const & bottom, T const & top, T const & nearval, T const & farval,
                       bool y_increases_upwards = true)
 {
-  alwaysAssertM(left < right,     "Math::perspectiveProjection: Left must be less than right");
-  alwaysAssertM(bottom < top,     "Math::perspectiveProjection: Bottom must be less than top");
-  alwaysAssertM(nearval < farval, "Math::perspectiveProjection: Near must be less than far");
-  alwaysAssertM(nearval > 0,      "Math::perspectiveProjection: Near must be positive");
+  alwaysAssertM(left < right,     format("Math::perspectiveProjection: Left (%lf) must be less than right (%lf)",
+                                         (double)left, (double)right));
+  alwaysAssertM(bottom < top,     format("Math::perspectiveProjection: Bottom (%lf) must be less than top (%lf)",
+                                         (double)bottom, (double)top));
+  alwaysAssertM(nearval < farval, format("Math::perspectiveProjection: Near (%lf) must be less than far (%lf)",
+                                         (double)nearval, (double)farval));
+  alwaysAssertM(nearval > 0,      format("Math::perspectiveProjection: Near (%lf) must be positive", (double)nearval));
 
   T x = (2 * nearval) / (right - left);
   T y = (2 * nearval) / (top - bottom);

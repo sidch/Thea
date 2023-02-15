@@ -13,7 +13,7 @@
 //============================================================================
 
 #include "ArpackEigenSolver.hpp"
-#include "arpackpp/ardsnsym.h"
+#include "../../ThirdParty/arpackpp/ardsnsym.h"
 
 namespace Thea {
 namespace Algorithms {

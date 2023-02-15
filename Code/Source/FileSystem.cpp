@@ -14,37 +14,40 @@
 
 #include "FileSystem.hpp"
 #include "StringAlg.hpp"
-#include <boost/cstdint.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/version.hpp>
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <filesystem>
 
 namespace Thea {
 
 bool
 FileSystem::exists(std::string const & path)
 {
-  return boost::filesystem::exists(path);
+  std::error_code err;
+  return std::filesystem::exists(path, err);
 }
 
 bool
 FileSystem::fileExists(std::string const & path)
 {
-  return boost::filesystem::is_regular_file(path);
+  std::error_code err;
+  return std::filesystem::is_regular_file(path, err);
 }
 
 bool
 FileSystem::directoryExists(std::string const & path)
 {
-  return boost::filesystem::is_directory(path);
+  std::error_code err;
+  return std::filesystem::is_directory(path, err);
 }
 
 int64
 FileSystem::fileSize(std::string const & path)
 {
-  boost::uintmax_t size = boost::filesystem::file_size(path);
-  if (size == static_cast<boost::uintmax_t>(-1))
+  std::error_code err;
+  std::uintmax_t size = std::filesystem::file_size(path, err);
+  if (size == static_cast<std::uintmax_t>(-1))
     return -1;
   else
     return static_cast<int64>(size);
@@ -53,7 +56,9 @@ FileSystem::fileSize(std::string const & path)
 std::string
 FileSystem::resolve(std::string const & path)
 {
-  return boost::filesystem::system_complete(path).string();
+  std::error_code err;
+  auto a = std::filesystem::absolute(path, err);
+  return err ? std::string() : a.string();
 }
 
 bool
@@ -62,7 +67,8 @@ FileSystem::createDirectory(std::string const & path)
   if (directoryExists(path))
     return true;
 
-  return boost::filesystem::create_directories(path);
+  std::error_code err;
+  return std::filesystem::create_directories(path, err);
 }
 
 bool
@@ -113,24 +119,24 @@ FileSystem::readWholeFile(std::string const & path, std::string & ret)
 namespace FileSystemInternal {
 
 bool
-objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, int types,
+objectSatisfiesConstraints(std::filesystem::directory_entry const & object, int types,
                            Array<std::string> const & patterns, bool ignore_case)
 {
   if (types > 0 && types != FileSystem::ObjectType::ALL)
   {
-    boost::filesystem::file_status status = object.symlink_status();
-    if (!boost::filesystem::is_symlink(status))
+    std::filesystem::file_status status = object.symlink_status();
+    if (!std::filesystem::is_symlink(status))
       status = object.status();
 
     bool ok = false;
 
-    if (!ok && (types & FileSystem::ObjectType::FILE) && boost::filesystem::is_regular_file(status))
+    if (!ok && (types & FileSystem::ObjectType::FILE) && std::filesystem::is_regular_file(status))
       ok = true;
 
-    if (!ok && (types & FileSystem::ObjectType::DIRECTORY) && boost::filesystem::is_directory(status))
+    if (!ok && (types & FileSystem::ObjectType::DIRECTORY) && std::filesystem::is_directory(status))
       ok = true;
 
-    if (!ok && (types & FileSystem::ObjectType::SYMLINK) && boost::filesystem::is_symlink(status))
+    if (!ok && (types & FileSystem::ObjectType::SYMLINK) && std::filesystem::is_symlink(status))
       ok = true;
 
     if (!ok)
@@ -139,12 +145,7 @@ objectSatisfiesConstraints(boost::filesystem::directory_entry const & object, in
 
   if (!patterns.empty())
   {
-#if BOOST_VERSION / 100000 > 1 || (BOOST_VERSION / 100000 == 1 && BOOST_VERSION / 100 % 1000 > 45)
     std::string name = object.path().filename().string();
-#else
-    std::string name = object.path().filename();
-#endif
-
     if (ignore_case)
       name = toLower(name);
 
@@ -189,15 +190,15 @@ FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & o
 
   if (recursive)
   {
-    boost::filesystem::recursive_directory_iterator objects_end;
-    for (boost::filesystem::recursive_directory_iterator iter(dir); iter != objects_end; ++iter)
+    std::filesystem::recursive_directory_iterator objects_end;
+    for (std::filesystem::recursive_directory_iterator iter(dir); iter != objects_end; ++iter)
       if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist, ignore_case))
         objects.push_back(iter->path().string());
   }
   else
   {
-    boost::filesystem::directory_iterator objects_end;
-    for (boost::filesystem::directory_iterator iter(dir); iter != objects_end; ++iter)
+    std::filesystem::directory_iterator objects_end;
+    for (std::filesystem::directory_iterator iter(dir); iter != objects_end; ++iter)
       if (FileSystemInternal::objectSatisfiesConstraints(*iter, types, patlist, ignore_case))
         objects.push_back(iter->path().string());
   }
@@ -211,34 +212,18 @@ FileSystem::getDirectoryContents(std::string const & dir, Array<std::string> & o
 bool
 FileSystem::remove(std::string const & path, bool recursive)
 {
-  try
-  {
-    if (recursive)
-      boost::filesystem::remove_all(path);
-    else
-      boost::filesystem::remove(path);
-  }
-  catch (...)
-  {
-    return false;
-  }
-
-  return true;
+  std::error_code err;
+  if (recursive)
+    return std::filesystem::remove_all(path, err) != static_cast<std::uintmax_t>(-1);
+  else
+    return std::filesystem::remove(path, err);
 }
 
 bool
 FileSystem::copyFile(std::string const & from, std::string const & to)
 {
-  try
-  {
-    boost::filesystem::copy_file(from, to);
-  }
-  catch (...)
-  {
-    return false;
-  }
-
-  return true;
+  std::error_code err;
+  return std::filesystem::copy_file(from, to, err);
 }
 
 } // namespace Thea

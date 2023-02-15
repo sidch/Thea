@@ -15,17 +15,9 @@
 #ifndef __Thea_Algorithms_Zernike2_hpp__
 #define __Thea_Algorithms_Zernike2_hpp__
 
-// Currently Visual Studio 2010 fails to compile Boost multi_array in Debug mode: https://svn.boost.org/trac/boost/ticket/4874
-#if defined(_MSC_VER) && _MSC_VER >= 1600
-#  define THEA_NO_ZERNIKE
-#endif
-
-#ifndef THEA_NO_ZERNIKE
-
 #include "../Common.hpp"
 #include "../IAddressableMatrix.hpp"
 #include "../MatVec.hpp"
-#include <boost/multi_array.hpp>
 #include <complex>
 
 namespace Thea {
@@ -124,7 +116,42 @@ class THEA_API Zernike2
       }
     };
 
-    typedef boost::multi_array< std::complex<double>, 4 > LUT;  ///< Lookup table class.
+    /** Lookup table class (4D grid). */
+    class LUT
+    {
+      public:
+        typedef std::complex<double> value_type;  ///< Type of values in the grid.
+
+        /** Default constructor. */
+        LUT() : extents{0, 0, 0, 0} {}
+
+        /** Resize the grid to given dimensions. */
+        void resize(intx d0, intx d1, intx d2, intx d3)
+        {
+          values.resize((size_t)(d0 * d1 * d2 * d3));
+          extents[0] = d0;
+          extents[1] = d1;
+          extents[2] = d2;
+          extents[3] = d3;
+        }
+
+        /** Access a read-only element. */
+        value_type const & operator()(intx i0, intx i1, intx i2, intx i3) const
+        {
+          return const_cast<LUT &>(*this)(i0, i1, i2, i3);
+        }
+
+        /** Access a read-write element. */
+        value_type & operator()(intx i0, intx i1, intx i2, intx i3)
+        {
+          return values[(size_t)(((i0 * extents[0] + i1) * extents[1] + i2) * extents[2] + i3)];
+        }
+
+      private:
+        Array<value_type> values;
+        intx extents[4];
+
+    }; // class LUT
 
     Options opts;                ///< Set of options.
     mutable LUT lut;             ///< Coefficient lookup table.
@@ -202,8 +229,8 @@ Zernike2::compute(IAddressableMatrix<T> const & distrib, double center_x, double
         {
           for (intx r = 0; r < opts.radial_steps; ++r)
           {
-            x1 = lut[p][r][ix][iy    ] + (lut[p][r][ix + 1][iy    ] - lut[p][r][ix][iy    ]) * dx;
-            x2 = lut[p][r][ix][iy + 1] + (lut[p][r][ix + 1][iy + 1] - lut[p][r][ix][iy + 1]) * dx;
+            x1 = lut(p, r, ix, iy    ) + (lut(p, r, ix + 1, iy    ) - lut(p, r, ix, iy    )) * dx;
+            x2 = lut(p, r, ix, iy + 1) + (lut(p, r, ix + 1, iy + 1) - lut(p, r, ix, iy + 1)) * dx;
             x3 = x1 + (x2 - x1) * dy;
 
             Accum<N, ScalarT>::add(density, x3, moments.col(p * opts.radial_steps + r));
@@ -223,7 +250,5 @@ Zernike2::compute(IAddressableMatrix<T> const & distrib, double center_x, double
 
 } // namespace Algorithms
 } // namespace Thea
-
-#endif // !defined(THEA_NO_ZERNIKE)
 
 #endif

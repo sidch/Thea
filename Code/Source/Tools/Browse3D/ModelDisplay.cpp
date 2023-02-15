@@ -70,7 +70,8 @@ ModelDisplay::ModelDisplay(wxWindow * parent, Model * model_)
 : wxGLCanvas(parent, wxID_ANY, getGlAttributes()),
 #endif
   model(model_),
-  camera(CoordinateFrame3(), Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 0, 1, Camera::ProjectedYDirection::UP),
+  camera(CoordinateFrame3::identity(),
+         Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 1, 3, Camera::ProjectedYDirection::UP),
   camera_look_at(0, 0, -1),
   render_opts(*RenderOptions::defaults()),
   mode(Mode::DEFAULT),
@@ -153,7 +154,7 @@ ModelDisplay::fitViewToModel(wxEvent & event)
 void
 ModelDisplay::updateCameraFromModel()
 {
-  if (!model) return;
+  if (!model || model->empty()) return;
 
   model->updateBounds();
   updateCameraFrameFromModel();
@@ -163,7 +164,11 @@ ModelDisplay::updateCameraFromModel()
 void
 ModelDisplay::updateCameraFrameFromModel()
 {
-  if (!model) return;
+  if (!model || model->empty())
+  {
+    camera.setFrame(CoordinateFrame3::identity());
+    return;
+  }
 
   camera_look_at = model->getTransformedBounds().getCenter();
   Real model_scale = model->getTransformedBounds().getExtent().norm();
@@ -180,6 +185,12 @@ ModelDisplay::updateCameraFrameFromModel()
 void
 ModelDisplay::updateCameraProjection()
 {
+  if (!model || model->empty())
+  {
+    camera.setProjection(Camera::ProjectionType::PERSPECTIVE, -1, 1, -1, 1, 1, 3, Camera::ProjectedYDirection::UP);
+    return;
+  }
+
   static Real const HALF_WIDTH = 0.5;
   int w = width(), h = height();
   Real hw = 0, hh = 0;

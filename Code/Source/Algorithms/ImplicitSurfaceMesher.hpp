@@ -22,13 +22,17 @@
 #include "../UnorderedMap.hpp"
 #include "../Graphics/IncrementalMeshBuilder.hpp"
 #include "../Graphics/MeshType.hpp"
-#include "BloomenthalPolygonizer/polygonizer.h"
+#include "../ThirdParty/BloomenthalPolygonizer/polygonizer.h"
 
-#ifdef THEA_ENABLE_CGAL
-#  include <CGAL/Surface_mesh_default_triangulation_3.h>
-#  include <CGAL/Complex_2_in_triangulation_3.h>
-#  include <CGAL/Implicit_surface_3.h>
-#  include <CGAL/make_surface_mesh.h>
+#if THEA_ENABLE_CGAL
+// sprintf in boost::lexical_cast triggers a deprecation warning
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#    include <CGAL/Surface_mesh_default_triangulation_3.h>
+#    include <CGAL/Complex_2_in_triangulation_3.h>
+#    include <CGAL/Implicit_surface_3.h>
+#    include <CGAL/make_surface_mesh.h>
+#  pragma clang diagnostic pop
 #endif
 
 namespace Thea {
@@ -66,7 +70,7 @@ class THEA_API ImplicitSurfaceMesher
 
     }; // BloomenthalEval
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
 
     /** Evaluates function as required by CGAL implicit surface wrapper. */
     template <typename FunctorT> struct CgalEval
@@ -89,7 +93,7 @@ class THEA_API ImplicitSurfaceMesher
     typedef CGAL::Surface_mesh_default_triangulation_3  Tr;
     typedef CGAL::Complex_2_in_triangulation_3<Tr>      C2t3;
 
-#endif  // THEA_ENABLE_CGAL
+#endif // THEA_ENABLE_CGAL
 
   public:
     /** %Options controlling mesh generation by polygonizing the implicit surface. */
@@ -112,7 +116,7 @@ class THEA_API ImplicitSurfaceMesher
         static Bloomenthal const & defaults() { static Bloomenthal const options; return options; }
       };
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
 
       /**
        * %Options for meshing the implicit surface via the method of Boissonnat and Oudot [2005].
@@ -141,14 +145,14 @@ class THEA_API ImplicitSurfaceMesher
       /** Constructor. */
       Options(Bloomenthal const & bloomenthal_ = Bloomenthal::defaults()
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
               , BoissonnatOudot const & boissonnat_oudot_ = BoissonnatOudot::defaults()
 #endif // THEA_ENABLE_CGAL
 
       )
       : bloomenthal(bloomenthal_)
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
       , boissonnat_oudot(boissonnat_oudot_)
 #endif // THEA_ENABLE_CGAL
 
@@ -159,7 +163,7 @@ class THEA_API ImplicitSurfaceMesher
 
       Bloomenthal bloomenthal;           ///< %Options for meshing via Bloomenthal [1994].
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
       BoissonnatOudot boissonnat_oudot;  ///< %Options for meshing via Boissonnat and Oudot [2005].
 #endif // THEA_ENABLE_CGAL
 
@@ -193,7 +197,7 @@ class THEA_API ImplicitSurfaceMesher
       exportMesh(polygonizer, result);
     }
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
 
     /**
      * Polygonize the zero level set of a 3D function to a mesh, using the method of Boissonnat and Oudot [2005] as implemented
@@ -284,7 +288,7 @@ class THEA_API ImplicitSurfaceMesher
       builder.end();
     }
 
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
 
     /** Export C2t3 to another mesh type. */
     template <typename MeshT> static void exportMesh(C2t3 & src, MeshT & dst)

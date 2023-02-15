@@ -21,8 +21,8 @@ ENDIF()
 
 # Source file lists
 FILE(GLOB TheaPluginCSPARSESources
-     ${SourceRoot}/Plugins/CSPARSE/*.cpp
-     ${SourceRoot}/Plugins/CSPARSE/*.c)
+     ${ThirdPartyRoot}/CSPARSE/*.c
+     ${SourceRoot}/Plugins/CSPARSE/*.cpp)
 
 # Libraries to link to
 SET(TheaPluginCSPARSELibraries

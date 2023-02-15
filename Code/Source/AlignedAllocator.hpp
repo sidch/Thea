@@ -64,7 +64,7 @@ class AlignedAllocator
     /** Get the address of a referenced object. */
     inline const_pointer address(const_reference r) const { return &r; }
 
-    /** Allocate an aligned block of \a n bytes. */
+    /** Allocate an aligned block of \a n objects. */
     inline pointer allocate(size_type n)
     {
 #ifdef THEA_WINDOWS

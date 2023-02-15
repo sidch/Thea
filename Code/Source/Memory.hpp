@@ -28,7 +28,7 @@ namespace Thea {
     typedef std::weak_ptr< type const > ConstWeakPtr;
 
 /** Macro that declares the standard smart pointer types as 'extern'. */
-#ifdef THEA_EXTERN_TEMPLATES
+#if THEA_EXTERN_TEMPLATES
 #  define THEA_DECL_EXTERN_SMART_POINTERS(class_name)                                                                         \
      namespace std {                                                                                                          \
        extern template class shared_ptr<class_name>;                                                                          \
@@ -41,7 +41,7 @@ namespace Thea {
 #endif // THEA_EXTERN_TEMPLATES
 
 /** Macro that explicitly instantiates the standard smart pointer types */
-#ifdef THEA_EXTERN_TEMPLATES
+#if THEA_EXTERN_TEMPLATES
 #  define THEA_INSTANTIATE_SMART_POINTERS(class_name)                                                                         \
      namespace std {                                                                                                          \
        template class shared_ptr<class_name>;                                                                                 \

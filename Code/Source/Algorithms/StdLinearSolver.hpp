@@ -20,7 +20,6 @@
 #include "../MatVec.hpp"
 #include "../SparseMatVec.hpp"
 #include "ILinearSolver.hpp"
-#include "NNLS/nnls.h"
 #include <Eigen/QR>
 #include <Eigen/SVD>
 

@@ -44,6 +44,7 @@
 #include "NamedObject.hpp"
 #include "Noncopyable.hpp"
 #include "Plane3.hpp"
+#include <algorithm>
 
 namespace Thea {
 
@@ -199,6 +200,16 @@ class THEA_API BinaryInputStream : public NamedObject, private Noncopyable
     bool hasMore() const
     {
       return m_pos + m_alreadyRead < m_length;
+    }
+
+    /**
+     * Get the number of bytes left to read, starting from the current position. Returns 0 if the current position is at the end
+     * of the stream, or a negative value if the number of remaining bytes cannot be estimated for any reason.
+     */
+    int64 numMoreBytes() const
+    {
+      // The current implementation should never fail to estimate the number of remaining bytes
+      return std::max(m_length - (m_pos + m_alreadyRead), (int64)0);
     }
 
     /** Get the current byte position in the stream, where 0 is the beginning and size() - 1 is the end. */
@@ -360,8 +371,19 @@ class THEA_API BinaryInputStream : public NamedObject, private Noncopyable
       return b;
     }
 
-    /** Read a sequence of \a n bytes. */
+    /**
+     * Read a sequence of \a n bytes. This version of the function throws an error if all \a n bytes could not be extracted. Use
+     * the other version, which takes an additional parameter to return the number of bytes actually read, to avoid throwing an
+     * error if the function fails. (Note: Checking numMoreBytes() before calling this function is not equivalent, since
+     * numMoreBytes() is allowed to fail in estimating the number of remaining bytes.)
+     */
     void readBytes(int64 n, void * bytes);
+
+    /**
+     * Try to read a sequence of \a n bytes, and return the number of bytes actually read in \a num_bytes_read. To throw an
+     * error instead if all \a n bytes could not be read, use the other version of this function.
+     */
+    void readBytes(int64 n, void * bytes, int64 & num_bytes_read);
 
     /**
      * Reads until any newline character (\\r, \\r\\n, \\n\\r, \\n) or the end of the file is encountered. Consumes the newline.

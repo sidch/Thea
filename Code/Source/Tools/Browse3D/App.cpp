@@ -19,9 +19,9 @@
 #include "../../FileSystem.hpp"
 #include "../../IPlugin.hpp"
 #include "../../Graphics/IRenderSystem.hpp"
+#include "../../ThirdParty/CLI11/CLI11.hpp"
 #include <wx/cmdline.h>
 #include <wx/image.h>
-#include <boost/program_options.hpp>
 #include <fstream>
 #include <sstream>
 #include <cstdio>
@@ -162,7 +162,7 @@ parseVector(std::string const & str, Vector4 & v)
 bool
 App::parseOptions(int argc, char * argv[])
 {
-  std::vector<std::string> args;
+  Array<std::string> args;
   for (int i = 1; i < argc; ++i)  // omit the program path
     args.push_back(argv[i]);
 
@@ -170,17 +170,8 @@ App::parseOptions(int argc, char * argv[])
 }
 
 bool
-App::parseOptions(std::vector<std::string> const & args)
+App::parseOptions(Array<std::string> const & args)
 {
-  namespace po = boost::program_options;
-
-  static std::string const usage("Usage: Browse3D [options] [model]");
-
-  std::string conf_file;
-
-  // po::options_description hidden;
-  // hidden.add_options()("hidden-option", po::value<std::string>(&hidden_option), "");
-
   std::string app_dir(FilePath::parent(Application::programPath()));
   std::string def_resource_dir = FilePath::concat(app_dir, "../../../Resources");
 #ifdef _MSC_VER
@@ -189,102 +180,54 @@ App::parseOptions(std::vector<std::string> const & args)
     def_resource_dir = FilePath::concat(app_dir, "../../../../Resources");
 #endif
 
+  CLI::App app{"Browse3D"};
+
   std::string s_model;
-  std::vector<std::string> s_overlays;
+  Array<std::string> s_overlays;
   std::string s_color;
   std::string s_bg_color;
   std::string s_material;
 
-  po::options_description visible("Allowed options");
-  visible.add_options()
-          ("help,h",               "Print this help message")
-          ("version,v",            "Print the program version")
-          ("conf",                 po::value<std::string>(&conf_file)->default_value("Browse3D.conf"),
-                                   "Configuration file (overridden by duplicate cmdline options)")
-          ("plugin-dir",           po::value<std::string>(&opts.plugin_dir), "Plugins directory")
-          ("resource-dir",         po::value<std::string>(&opts.resource_dir)->default_value(def_resource_dir),
-                                   "Resources directory")
-          ("working-dir",          po::value<std::string>(&opts.working_dir)->default_value("."), "Working directory")
-          ("model",                po::value<std::string>(&s_model), "Model to load on startup, with optional transform")
-          ("overlay",              po::value< std::vector<std::string> >(&s_overlays), "Overlay model(s) to load on startup")
-          ("features,f",           po::value<std::string>(&opts.features), "Directory/file containing features to load")
-          ("elem-labels,l",        po::value<std::string>(&opts.elem_labels),
-                                   "Directory/file containing face/point labels to load")
-          ("emph-features,e",      "Make feature distributions easier to view")
-          ("color-cube,3",         "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features")
-          ("normals,n",            "Draw normals as arrows")
-          ("graph,g",              "Show point adjacency graph")
-          ("color,c",              po::value<std::string>(&s_color), "Model color")
-          ("bg-color,b",           po::value<std::string>(&s_bg_color), "Background color")
-          ("two-sided",            po::value<bool>(&opts.two_sided)->default_value(true), "Use two-sided lighting?")
-          ("flat,0",               "Flat shade meshes")
-          ("edges,j",              "Show mesh edges")
-          ("material,k",           po::value<std::string>(&s_material),
-                                   "Surface material coefficients (ka, kd, ks, ksp), or path to a matcap image")
-          ("fancy-points",         "Draw points as shaded spheres")
-          ("fancy-colors",         "Color points by a function of position")
-          ("point-scale,p",        po::value<Real>(&opts.point_scale)->default_value(1), "Scale point sizes by this factor")
-          ("no-axes",              "Hide the coordinate axes")
-          ("no-shading",           "No shading, just render raw colors")
-  ;
+  app.set_config("--conf", "Browse3D.conf", "Configuration file (overridden by duplicate cmdline options)");
+  app.add_option("--plugin-dir", opts.plugin_dir, "Plugins directory");
+  app.add_option("--resource-dir", opts.resource_dir, "Resources directory")->default_val(def_resource_dir);
+  app.add_option("--working-dir", opts.working_dir, "Working directory")->default_val(".");
+  app.add_option("model", s_model, "Model to load on startup, with optional transform");
+  app.add_option("overlay", s_overlays, "Overlay model(s) to load on startup");
+  app.add_option("-f,--features", opts.features, "Directory/file containing features to load");
+  app.add_option("-l,--labels", opts.elem_labels, "Directory/file containing face/point labels to load");
+  app.add_flag("-e,--emph-features", "Make feature distributions easier to view");
+  app.add_flag("-3,--color-cube", "Map 0-centered 3D feature sets to RGB color-cube, if --emph-features");
+  app.add_flag("-n,--normals", "Draw normals as arrows");
+  app.add_flag("-g,--graph", "Show point adjacency graph");
+  app.add_option("-c,--color", s_color, "Model color");
+  app.add_option("-b,--bg-color", s_bg_color, "Background color");
+  app.add_option("--two-sided", opts.two_sided, "Use two-sided lighting?")->default_val(true);
+  app.add_flag("-0,--flat", "Flat shade meshes");
+  app.add_flag("-j,--edges", "Show mesh edges");
+  app.add_option("-k,--material", s_material, "Surface material coefficients (ka, kd, ks, ksp), or path to a matcap image");
+  app.add_flag("--fancy-points", "Draw points as shaded spheres");
+  app.add_flag("--fancy-colors", "Color points by a function of position");
+  app.add_option("-p,--point-scale", opts.point_scale, "Scale point sizes by this factor")->default_val(1);
+  app.add_flag("--no-axes", "Hide the coordinate axes");
+  app.add_flag("--no-shading", "No shading, just render raw colors");
 
-  po::options_description desc;
-  desc.add(visible) /* .add(hidden) */ ;
-
-  if (argc < 1)
+  try
   {
-    THEA_CONSOLE << usage << "\n\n" << visible;
-    return 0;
+    app.parse(argc, argv);
   }
-
-  po::positional_options_description pdesc;
-  pdesc.add("model", 1);
-  pdesc.add("overlay", -1);
-
-  // Read cmdline options first (overrides conflicting config file values)
-  po::parsed_options cmdline_parsed = po::basic_command_line_parser<char>(args).options(desc).positional(pdesc).run();
-  po::variables_map vm;
-  po::store(cmdline_parsed, vm);
-
-  // Now read the config file, if it is found
-  if (vm.count("conf") > 0 && FileSystem::fileExists(conf_file))
+  catch (CLI::ParseError const & e)
   {
-    THEA_CONSOLE << "Reading options from config file:" << conf_file;
-
-    std::ifstream conf_in(conf_file.c_str());
-    po::parsed_options conf_file_parsed = po::parse_config_file(conf_in, desc);
-    po::store(conf_file_parsed, vm);
-  }
-
-  po::notify(vm);
-
-  bool quit = false;
-
-  if (vm.count("version") > 0)
-  {
-    THEA_CONSOLE << "Browse3D version 2.0\n"
-                 << "Siddhartha Chaudhuri, 2016";
-    quit = true;
-  }
-
-  if (vm.count("help") > 0)
-  {
-    THEA_CONSOLE << '\n' << usage << "\n\n" << visible;
-    quit = true;
-  }
-
-  if (quit)
+    app.exit(e);
     return false;
+  }
 
   opts.plugin_dir    =  FileSystem::resolve(opts.plugin_dir);
   opts.resource_dir  =  FileSystem::resolve(opts.resource_dir);
   opts.working_dir   =  FileSystem::resolve(opts.working_dir);
 
-  if (!s_model.empty())
-  {
-    if (!parseModel(s_model, opts.model, opts.model_transform))
-      return false;
-  }
+  if (!s_model.empty() && !parseModel(s_model, opts.model, opts.model_transform))
+    return false;
 
   opts.overlays.clear();
   opts.overlay_transforms.clear();
@@ -301,16 +244,17 @@ App::parseOptions(std::vector<std::string> const & args)
 
   opts.features             =  FileSystem::resolve(opts.features);
   opts.elem_labels          =  FileSystem::resolve(opts.elem_labels);
-  opts.accentuate_features  =  (vm.count("emph-features") > 0);
-  opts.color_cube_features  =  (vm.count("color-cube") > 0);
-  opts.show_normals         =  (vm.count("normals") > 0);
-  opts.show_graph           =  (vm.count("graph") > 0);
-  opts.flat                 =  (vm.count("flat") > 0);
-  opts.edges                =  (vm.count("edges") > 0);
-  opts.fancy_points         =  (vm.count("fancy-points") > 0);
-  opts.fancy_colors         =  (vm.count("fancy-colors") > 0);
-  opts.no_axes              =  (vm.count("no-axes") > 0);
-  opts.no_shading           =  (vm.count("no-shading") > 0);
+
+  opts.accentuate_features  =  (app.count("--emph-features") > 0);
+  opts.color_cube_features  =  (app.count("--color-cube") > 0);
+  opts.show_normals         =  (app.count("--normals") > 0);
+  opts.show_graph           =  (app.count("--graph") > 0);
+  opts.flat                 =  (app.count("--flat") > 0);
+  opts.edges                =  (app.count("--edges") > 0);
+  opts.fancy_points         =  (app.count("--fancy-points") > 0);
+  opts.fancy_colors         =  (app.count("--fancy-colors") > 0);
+  opts.no_axes              =  (app.count("--no-axes") > 0);
+  opts.no_shading           =  (app.count("--no-shading") > 0);
 
   if (!s_color.empty())
   {

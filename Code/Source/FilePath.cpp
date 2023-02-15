@@ -13,7 +13,7 @@
 //============================================================================
 
 #include "FilePath.hpp"
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 namespace Thea {
 
@@ -52,8 +52,8 @@ FilePath::completeExtension(std::string const & path)
 std::string
 FilePath::objectName(std::string const & path)
 {
-  boost::filesystem::path p(path);
-  boost::filesystem::path n = p.filename();
+  std::filesystem::path p(path);
+  std::filesystem::path n = p.filename();
 
   while (n.string() == "." && p.string() != ".")
   {
@@ -67,8 +67,8 @@ FilePath::objectName(std::string const & path)
 std::string
 FilePath::parent(std::string const & path)
 {
-  boost::filesystem::path p(path);
-  boost::filesystem::path n = p.filename();
+  std::filesystem::path p(path);
+  std::filesystem::path n = p.filename();
 
   while (n.string() == "." && p.string() != ".")
   {
@@ -82,7 +82,7 @@ FilePath::parent(std::string const & path)
 std::string
 FilePath::concat(std::string const & parent_name, std::string const & child_name)
 {
-  boost::filesystem::path p(parent_name);
+  std::filesystem::path p(parent_name);
   p /= child_name;
   return p.string();
 }
@@ -108,13 +108,13 @@ FilePath::changeCompleteExtension(std::string const & path, std::string const & 
 bool
 FilePath::isAbsolute(std::string const & path)
 {
-  return boost::filesystem::path(path).is_absolute();
+  return std::filesystem::path(path).is_absolute();
 }
 
 bool
 FilePath::isRelative(std::string const & path)
 {
-  return boost::filesystem::path(path).is_relative();
+  return std::filesystem::path(path).is_relative();
 }
 
 std::string
@@ -122,7 +122,7 @@ FilePath::getRelative(std::string const & path, std::string const & ref_dir)
 {
   // Copied verbatim from https://stackoverflow.com/a/29221546
 
-  boost::filesystem::path from(ref_dir), to(path);
+  std::filesystem::path from(ref_dir), to(path);
 
   // Start at the root path and while they are the same then do nothing then when they first diverge take the entire from path,
   // swap it with '..' segments, and then append the remainder of the to path.
@@ -137,7 +137,7 @@ FilePath::getRelative(std::string const & path, std::string const & ref_dir)
   }
 
   // Replace from path segments with '..' (from => nearest common directory)
-  auto final_path = boost::filesystem::path{};
+  auto final_path = std::filesystem::path{};
   while (from_iter != from.end())
   {
     final_path /= "..";

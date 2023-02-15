@@ -75,8 +75,8 @@ LINK_DIRECTORIES(${OPENGL_LIBRARY_DIRS})
 
 # Source file lists
 FILE(GLOB TheaPluginGLSources
-     ${SourceRoot}/Plugins/GL/*.cpp
-     ${SourceRoot}/Plugins/GL/glew.c)
+     ${ThirdPartyRoot}/GLEW/glew.c
+     ${SourceRoot}/Plugins/GL/*.cpp)
 
 # Libraries to link to
 SET(TheaPluginGLLibraries

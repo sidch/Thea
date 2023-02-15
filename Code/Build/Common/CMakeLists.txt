@@ -40,18 +40,18 @@ ENDIF()
 
 # Source file lists
 FILE(GLOB TheaSources
+     ${ThirdPartyRoot}/BloomenthalPolygonizer/*.cpp
+     ${ThirdPartyRoot}/dx/*.c
+     ${ThirdPartyRoot}/fibheap/*.cpp
+     ${ThirdPartyRoot}/miniball/*.cpp
+     ${ThirdPartyRoot}/NNLS/*.c
+     ${ThirdPartyRoot}/StanHull/*.cpp
+     ${ThirdPartyRoot}/Triangle/*.c
      ${SourceRoot}/*.cpp
-     ${SourceRoot}/Triangle/*.c
      ${SourceRoot}/Algorithms/*.cpp
      ${SourceRoot}/Algorithms/ImageFeatures/*.cpp
      ${SourceRoot}/Algorithms/SurfaceFeatures/Global/*.cpp
      ${SourceRoot}/Algorithms/SurfaceFeatures/Local/*.cpp
-     ${SourceRoot}/Algorithms/BloomenthalPolygonizer/*.cpp
-     ${SourceRoot}/Algorithms/dx/*.c
-     ${SourceRoot}/Algorithms/fibheap/*.cpp
-     ${SourceRoot}/Algorithms/miniball/*.cpp
-     ${SourceRoot}/Algorithms/NNLS/*.c
-     ${SourceRoot}/Algorithms/StanHull/*.cpp
      ${SourceRoot}/Graphics/*.cpp)
 
 # Libraries to link to
@@ -71,10 +71,14 @@ IF(THEA_DLL AND APPLE)
 ENDIF()
 
 # Write a file containing build flags to be used by a calling application
-SET(Thea_BUILD_FLAGS )
-IF(THEA_EXTERN_TEMPLATES)
-  SET(Thea_BUILD_FLAGS "${Thea_BUILD_FLAGS} -DTHEA_EXTERN_TEMPLATES")
-ENDIF(THEA_EXTERN_TEMPLATES)
+SET(Thea_BUILD_FLAGS
+    "EXTERN_TEMPLATES=${EXTERN_TEMPLATES}"
+    "LITE=${LITE}"
+    "WITH_CGAL=${WITH_CGAL}"
+    "WITH_CLUTO=${WITH_CLUTO}"
+    "WITH_FREEIMAGE=${WITH_FREEIMAGE}"
+    "WITH_LIB3DS=${WITH_LIB3DS}")
+STRING(REPLACE ";" "\n" Thea_BUILD_FLAGS "${Thea_BUILD_FLAGS}")
 FILE(WRITE "${SourceRoot}/BuildFlags.txt" "${Thea_BUILD_FLAGS}\n")
 
 # Install rules

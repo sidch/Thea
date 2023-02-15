@@ -25,11 +25,45 @@
 namespace Thea {
 namespace Algorithms {
 
+namespace JointBoostInternal {
+
+void
+write(SharingSet const & s, std::ostream & out)
+{
+  for (auto b : s)
+    out << (b ? 1 : 0);
+}
+
+bool
+read(SharingSet & s, std::istream & in)
+{
+  for (size_t i = 0; i < s.size(); ++i)
+  {
+    auto c = in.get();
+    if (c == in.widen('0'))
+      s[i] = false;
+    else if (c == in.widen('1'))
+      s[i] = true;
+    else
+    {
+      THEA_ERROR << "JointBoost: Could not read bitfield with " << s.size() << " expected elements";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+} // namespace JointBoostInternal
+
 std::string
 JointBoost::SharedStump::toString() const
 {
   std::ostringstream oss;
-  oss << "Stump[f: " << f << ", n: " << n << ']';
+  oss << "Stump[f: " << f << ", n: ";
+  JointBoostInternal::write(n, oss);
+  oss << ']';
+
   return oss.str();
 }
 
@@ -165,10 +199,9 @@ JointBoost::train(TrainingData const & training_data_, TrainingData const * vali
     if (options.verbose) THEA_CONSOLE << "JointBoost: Training round " << round;
 
     // Create the stump for this round
-    SharedStump::Ptr stump(new SharedStump);
+    auto stump = std::make_shared<SharedStump>(num_classes);
 
     // Compute the k values for the stump
-    stump->k.resize((size_t)num_classes, 0);
     for (intx c = 0; c < num_classes; ++c)
     {
       double k_numer = 0, k_denom = 0;
@@ -333,13 +366,15 @@ JointBoost::optimizeStumpExhaustive(SharedStump & stump, Array<double> const & s
                                     Array<intx> const & stump_classes)
 {
   // Loop over all possible subsets of classes
+  alwaysAssertM((size_t)num_classes < sizeof(uintx), "JointBoost: Class count exceeds bitcount of largest unsigned integer");
+  uintx num_subsets = ((uintx)1 << num_classes);
   SharedStump test = stump;
-  uintx num_subsets = ((uintx)1 << num_classes);  // assume no more classes than an uintx can hold
   double min_err = -1;
   double cum_num_thresholds = 0;
   for (uintx subset = 1; subset + 1 < num_subsets; ++subset)
   {
-    test.n = SharingSet((SharingSet::size_type)num_classes, subset);
+    for (intx b = 0; b < num_classes; ++b)
+      test.n[(size_t)b] = (bool)((subset >> b) & 1);
 
     // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
 
@@ -370,7 +405,7 @@ JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump
   Array<double> candidate_errors;
 
   SharedStump test = stump;
-  SharingSet current_n((SharingSet::size_type)num_classes, 0);  // initially empty
+  SharingSet current_n((size_t)num_classes, false);  // initially empty
   double cum_num_thresholds = 0;
   intx num_fitted_stumps = 0;
   for (intx c = 0; c < num_classes - 1; ++c)
@@ -381,11 +416,11 @@ JointBoost::optimizeStumpGreedy(SharedStump & stump, Array<double> const & stump
     bool min_found = false;
     for (intx c = 0; c < num_classes - 1; ++c)
     {
-      if (current_n[(SharingSet::size_type)c])
+      if (current_n[(size_t)c])
         continue;
 
       test.n = current_n;
-      test.n[(SharingSet::size_type)c] = true;
+      test.n[(size_t)c] = true;
 
       // THEA_CONSOLE << "JointBoost:         Testing stump " << test.toString();
 
@@ -463,7 +498,7 @@ getClassificationAccuracy(double split_value, SharingSet const & pos_classes, Ar
 
     intx c = classes[index];
     double f = features[index];
-    bool is_positive = pos_classes[(SharingSet::size_type)c];
+    bool is_positive = pos_classes[(size_t)c];
     bool correct = ((is_positive && f > split_value) || (!is_positive && f <= split_value));
     accuracy[index] = (correct ? +1 : -1);
   }
@@ -630,7 +665,7 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
   double err_k = 0;
   for (intx c = 0; c < num_classes; ++c)
   {
-    if (!stump.n[(SharingSet::size_type)c])
+    if (!stump.n[(size_t)c])
     {
       for (size_t i = 0; i < stump_classes.size(); ++i)
       {
@@ -653,7 +688,7 @@ JointBoost::fitStump(SharedStump & stump, Array<double> const & stump_features, 
     double a_numer = 0, a_denom = 0, b_numer = 0, b_denom = 0;
     for (intx c = 0; c < num_classes; ++c)
     {
-      if (stump.n[(SharingSet::size_type)c])
+      if (stump.n[(size_t)c])
       {
         for (size_t i = 0; i < stump_classes.size(); ++i)
         {
@@ -955,35 +990,23 @@ JointBoost::Options::write(TextOutputStream & output) const
 bool
 JointBoost::SharedStump::read(std::istream & in)
 {
-  if (!(in >> f >> n >> a >> b >> theta))
-    return false;
+  if (!(in >> f)) { return false; }
+  if (!JointBoostInternal::read(n, in)) { return false; }
+  if (!(in >> a >> b >> theta)) { return false; }
+  for (auto & kv : k) { if (!(in >> kv)) return false; }
 
-  intx num_k = 0;
-  in >> num_k;
-  if (!in || num_k < 0)
-    return false;
-
-  k.resize((std::size_t)num_k);
-  for (std::size_t i = 0; i < k.size(); ++i)
-    in >> k[i];
-
-  return !in.fail();
+  return true;
 }
 
 bool
 JointBoost::SharedStump::write(std::ostream & out) const
 {
-  out << f << '\n'
-      << n << '\n'
-      << a << '\n'
+  out << f << '\n';
+  JointBoostInternal::write(n, out); out << '\n';
+  out << a << '\n'
       << b << '\n'
-      << theta << '\n';
-
-  out << k.size();
-  for (std::size_t i = 0; i < k.size(); ++i)
-    out << ' ' << k[i];
-
-  out << std::endl;
+      << theta << '\n'
+      << stringJoin(k.begin(), k.end(), ' ') << std::endl;
 
   return !out.fail();
 }
@@ -1039,10 +1062,10 @@ JointBoost::read(std::istream & in)
     return false;
   }
 
-  stumps.resize((std::size_t)num_stumps);
-  for (std::size_t i = 0; i < stumps.size(); ++i)
+  stumps.resize((size_t)num_stumps);
+  for (size_t i = 0; i < stumps.size(); ++i)
   {
-    stumps[i] = SharedStump::Ptr(new SharedStump);
+    stumps[i] = std::make_shared<SharedStump>(num_classes);
     if (!stumps[i]->read(in))
     {
       THEA_ERROR << "JointBoost: Could not read stump " << i;
@@ -1073,7 +1096,7 @@ JointBoost::write(std::ostream & out) const
   out << std::endl;
 
   out << stumps.size() << std::endl;
-  for (std::size_t i = 0; i < stumps.size(); ++i)
+  for (size_t i = 0; i < stumps.size(); ++i)
     if (!stumps[i]->write(out))
       return false;
 
@@ -1091,20 +1114,14 @@ JointBoost::dumpToConsole() const
 
     THEA_CONSOLE << "JointBoost:     -- Stump " << m << ':';
     THEA_CONSOLE << "JointBoost:         -- f      =  " << stump.f;
-    THEA_CONSOLE << "JointBoost:         -- n      =  " << stump.n;
+
+    std::ostringstream oss; JointBoostInternal::write(stump.n, oss);
+    THEA_CONSOLE << "JointBoost:         -- n      =  " << oss.str();
+
     THEA_CONSOLE << "JointBoost:         -- a      =  " << stump.a;
     THEA_CONSOLE << "JointBoost:         -- b      =  " << stump.b;
     THEA_CONSOLE << "JointBoost:         -- theta  =  " << stump.theta;
-
-    std::ostringstream oss; oss << "[ ";
-    for (size_t i = 0; i < stump.k.size(); ++i)
-    {
-      if (i > 0) oss << ", ";
-      oss << stump.k[i];
-    }
-    oss << " ]";
-
-    THEA_CONSOLE << "JointBoost:         -- k      =  " << oss.str();
+    THEA_CONSOLE << "JointBoost:         -- k      =  [" << stringJoin(stump.k.begin(), stump.k.end(), ',') << ']';
   }
 }
 

@@ -14,11 +14,15 @@
 
 #include "BestFitEllipsoid3.hpp"
 
-#ifdef THEA_ENABLE_CGAL
-#  include <CGAL/Cartesian.h>
-#  include <CGAL/MP_Float.h>
-#  include <CGAL/Approximate_min_ellipsoid_d.h>
-#  include <CGAL/Approximate_min_ellipsoid_d_traits_3.h>
+#if THEA_ENABLE_CGAL
+// sprintf in boost::lexical_cast triggers a deprecation warning
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#    include <CGAL/Cartesian.h>
+#    include <CGAL/MP_Float.h>
+#    include <CGAL/Approximate_min_ellipsoid_d.h>
+#    include <CGAL/Approximate_min_ellipsoid_d_traits_3.h>
+#  pragma clang diagnostic pop
 #  include <algorithm>
 #endif
 
@@ -84,7 +88,7 @@ BestFitEllipsoid3::update() const
   }
   else
   {
-#ifdef THEA_ENABLE_CGAL
+#if THEA_ENABLE_CGAL
 
     typedef CGAL::Cartesian<double>                                 Kernel;
     typedef CGAL::MP_Float                                          ET;
@@ -160,11 +164,11 @@ BestFitEllipsoid3::update() const
         axis[2] = -axis[2];
     }
 
-#else
+#else  // THEA_ENABLE_CGAL
 
-    throw FatalError("BestFitEllipsoid3: Requires CGAL for 2 or more points");
+    throw Error("BestFitEllipsoid3: Requires CGAL for 2 or more points");
 
-#endif
+#endif // THEA_ENABLE_CGAL
   }
 
   updated = true;

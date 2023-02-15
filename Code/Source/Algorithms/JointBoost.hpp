@@ -19,15 +19,15 @@
 #include "../Array.hpp"
 #include "../Iostream.hpp"
 #include "../MatVec.hpp"
-#include <boost/dynamic_bitset.hpp>
 #include <iostream>
+#include <vector>
 
 namespace Thea {
 namespace Algorithms {
 
 namespace JointBoostInternal {
 
-typedef boost::dynamic_bitset<> SharingSet;
+typedef std::vector<bool> SharingSet;  // use std::vector<bool> instead of Array<bool> to be absolutely sure of compression
 
 } // namespace JointBoostInternal
 
@@ -237,10 +237,19 @@ class THEA_API JointBoost
       double theta;         ///< Cut threshold.
       Array<double> k;      ///< Constants for classes not in the sharing set.
 
+      /** Default constructor. */
+      SharedStump() {}
+
+      /** Constructor. */
+      SharedStump(intx num_classes) : n((size_t)num_classes, false), k((size_t)num_classes, 0.0) {}
+
+      /** Check if the stump is valid, that is, it has been initialized for a non-zero number of classes. */
+      bool isValid() const { return !n.empty() && n.size() == k.size(); }
+
       /** Evaluate the stump for a given feature and class. */
       double operator()(double feature_value, intx class_index) const
       {
-        if (n[(SharingSet::size_type)class_index])
+        if (n[(size_t)class_index])
           return feature_value > theta ? a : b;
         else
           return k[(size_t)class_index];

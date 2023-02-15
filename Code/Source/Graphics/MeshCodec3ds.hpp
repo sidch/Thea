@@ -21,13 +21,15 @@
 #include "MeshCodec.hpp"
 #include <algorithm>
 
-#if THEA_LIB3DS_VERSION_MAJOR >= 2
-#  include <lib3ds.h>
-#else
-#  include <lib3ds/file.h>
-#  include <lib3ds/io.h>
-#  include <lib3ds/mesh.h>
-#  include <lib3ds/node.h>
+#if THEA_ENABLE_LIB3DS
+#  if THEA_LIB3DS_VERSION_MAJOR >= 2
+#    include <lib3ds.h>
+#  else
+#    include <lib3ds/file.h>
+#    include <lib3ds/io.h>
+#    include <lib3ds/mesh.h>
+#    include <lib3ds/node.h>
+#  endif
 #endif
 
 namespace Thea {
@@ -144,6 +146,8 @@ class Codec3ds : public Codec3dsBase<MeshT>
     void readMeshGroup(MeshGroup & mesh_group, BinaryInputStream & input, Codec::BlockHeader const * block_header,
                        ReadCallback * callback) const
     {
+#if THEA_ENABLE_LIB3DS
+
       mesh_group.clear();
 
       BinaryInputStream * in = &input;
@@ -213,6 +217,12 @@ class Codec3ds : public Codec3dsBase<MeshT>
       }
 
       lib3ds_file_free(file3ds);
+
+#else  // THEA_ENABLE_LIB3DS
+
+      throw Error(toString(getName()) + ": This version of the library was built without Lib3ds and doesn't support 3DS files");
+
+#endif // THEA_ENABLE_LIB3DS
     }
 
     void writeMeshGroup(MeshGroup const & mesh_group, BinaryOutputStream & output, bool write_block_header,
@@ -222,6 +232,8 @@ class Codec3ds : public Codec3dsBase<MeshT>
     }
 
   private:
+
+#if THEA_ENABLE_LIB3DS
     /**
      * Convert a subtree of the 3DS scene graph to a hierarchical mesh group. Exactly one of \a mesh_group and \a flat_builder
      * must be null.
@@ -486,13 +498,15 @@ class Codec3ds : public Codec3dsBase<MeshT>
     }
 #endif
 
-    ReadOptions read_opts;
-    WriteOptions write_opts;
+    friend struct ::Lib3dsIo;
 
     mutable intx vertex_count;
     mutable intx face_count;
 
-    friend struct ::Lib3dsIo;
+#endif // THEA_ENABLE_LIB3DS
+
+    ReadOptions read_opts;
+    WriteOptions write_opts;
 
 }; // class Codec3ds
 

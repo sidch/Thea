@@ -292,7 +292,7 @@ closestPtRayTriangle(Ray3 const & ray, Vector3 const & v0, Vector3 const & edge0
 }
 
 RigidTransform3
-closestRigidTransform(std::vector<CoordinateFrame3> const & src, std::vector<CoordinateFrame3> const & dst)
+closestRigidTransform(Array<CoordinateFrame3> const & src, Array<CoordinateFrame3> const & dst)
 {
   alwaysAssertM(src.size() == dst.size(), "Source and destination sets must have same number of frames");
 

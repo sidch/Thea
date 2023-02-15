@@ -22,7 +22,8 @@ namespace Thea {
 /**
  * Interface for 2D and 3D images, useful for passing images across shared library boundaries. The image is assumed to be
  * depth-major, i.e. the depth dimension is the most significant, followed by height, followed by width. A 3D image is therefore
- * a set of 2D images stacked along the depth dimension.
+ * a set of 2D images stacked along the depth dimension. Images are stored <b>bottom-up</b>: scanline 0 is the visually lowest
+ * one.
  */
 class THEA_API IImage
 {
@@ -48,6 +49,9 @@ class THEA_API IImage
         LUMINANCE_32U,  ///< 32-bit unsigned luminance image.
         LUMINANCE_32F,  ///< 32-bit floating-point luminance image.
         LUMINANCE_64F,  ///< 64-bit floating-point luminance image.
+        LA_8U,          ///< Luminance + alpha image, 8 bits per channel.
+        LA_16U,         ///< Luminance + alpha image, 16 bits per channel.
+        LA_32F,         ///< Floating-point luminance + alpha image, 32 bits per channel.
         RGB_8U,         ///< RGB image, 8 bits per channel.
         RGBA_8U,        ///< RGBA image, 8 bits per channel.
         RGB_16U,        ///< RGB image, 16 bits per channel.
@@ -155,10 +159,16 @@ class THEA_API IImage
     /** Get a pointer to the image data. */
     virtual void * THEA_ICALL getData() = 0;
 
-    /** Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. */
+    /**
+     * Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. Scanline 0 is the
+     * <b>bottom/lowest</b> one.
+     */
     virtual void const * THEA_ICALL getScanLine(int64 row, int64 z = 0) const = 0;
 
-    /** Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. */
+    /**
+     * Get a pointer to the beginning of a specified row of pixels, optionally for a specific depth slice. Scanline 0 is the
+     * <b>bottom/lowest</b> one.
+     */
     virtual void * THEA_ICALL getScanLine(int64 row, int64 z = 0) = 0;
 
     /**

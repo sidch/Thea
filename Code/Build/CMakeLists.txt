@@ -33,15 +33,68 @@ MACRO(install_symlink filepath sympath)
   INSTALL(CODE "MESSAGE(STATUS \"Created symlink: ${sympath} -> ${filepath}\")")
 ENDMACRO(install_symlink)
 
+# Are we building the library in a stripped-down more? (no
+IF(LITE)
+  MESSAGE(STATUS "")
+  MESSAGE(STATUS "NOTE: The library is being built in LITE mode, with a minimal set of")
+  MESSAGE(STATUS "dependencies and no additional tools unless explicitly included.")
+  MESSAGE(STATUS "")
+ENDIF()
+
+# Enable plugins by default, unless explicitly omitted or in LITE mode
+IF(NOT DEFINED WITH_PLUGINS)
+  IF(LITE)
+    SET(WITH_PLUGINS FALSE)
+  ELSE()
+    SET(WITH_PLUGINS TRUE)
+  ENDIF()
+ENDIF()
+
+IF(NOT DEFINED WITH_PLUGIN_ARPACK)
+  SET(WITH_PLUGIN_ARPACK ${WITH_PLUGINS})
+ENDIF()
+
+IF(NOT DEFINED WITH_PLUGIN_CSPARSE)
+  SET(WITH_PLUGIN_CSPARSE ${WITH_PLUGINS})
+ENDIF()
+
+IF(NOT DEFINED WITH_PLUGIN_GL)
+  SET(WITH_PLUGIN_GL ${WITH_PLUGINS})
+ENDIF()
+
+# Enable tests by default, unless explicitly omitted or in LITE mode
+IF(NOT DEFINED WITH_TESTS)
+  IF(LITE)
+    SET(WITH_TESTS FALSE)
+  ELSE()
+    SET(WITH_TESTS TRUE)
+  ENDIF()
+ENDIF()
+
+# Enable tools by default, unless explicitly omitted or in LITE mode
+IF(NOT DEFINED WITH_TOOLS)
+  IF(LITE)
+    SET(WITH_TOOLS FALSE)
+  ELSE()
+    SET(WITH_TOOLS TRUE)
+  ENDIF()
+ENDIF()
+
 # Subdirectories containing individual build targets
 ADD_SUBDIRECTORY(Common)
-ADD_SUBDIRECTORY(Plugins/ARPACK)
-ADD_SUBDIRECTORY(Plugins/CSPARSE)
-ADD_SUBDIRECTORY(Plugins/GL)
 
-IF(NOT DEFINED WITH_TESTS)
-  SET(WITH_TESTS true)
+IF(WITH_PLUGIN_ARPACK)
+  ADD_SUBDIRECTORY(Plugins/ARPACK)
 ENDIF()
+
+IF(WITH_PLUGIN_CSPARSE)
+  ADD_SUBDIRECTORY(Plugins/CSPARSE)
+ENDIF()
+
+IF(WITH_PLUGIN_GL)
+  ADD_SUBDIRECTORY(Plugins/GL)
+ENDIF()
+
 IF(WITH_TESTS)
   MESSAGE(STATUS "")
   MESSAGE(STATUS "NOTE: Test programs run when you execute 'make test'.")
@@ -51,4 +104,6 @@ IF(WITH_TESTS)
   ADD_SUBDIRECTORY(Test)
 ENDIF()
 
-ADD_SUBDIRECTORY(Tools)
+IF(WITH_TOOLS)
+  ADD_SUBDIRECTORY(Tools)
+ENDIF()

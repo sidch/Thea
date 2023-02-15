@@ -46,16 +46,15 @@
 
 #include "Common.hpp"
 #include "List.hpp"
-#include <boost/thread/lock_guard.hpp>
-#include <boost/thread/locks.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <algorithm>
+#include <mutex>
+#include <shared_mutex>
 #include <thread>
 
 namespace Thea {
 
 /**
- * Manages a group of threads and allows waiting for all of them to finish. Exists because <code>boost::thread_group</code> did
+ * Manages a group of threads and allows waiting for all of them to finish. Exists because <code>std::thread_group</code> did
  * not make it to C++11. Lifted straight from the Boost source code (1.67.0).
  */
 class THEA_API ThreadGroup
@@ -82,7 +81,7 @@ class THEA_API ThreadGroup
     bool containsThisThread() const
     {
       std::thread::id id = std::this_thread::get_id();
-      boost::shared_lock<boost::shared_mutex> guard(m);
+      std::shared_lock<std::shared_mutex> guard(m);
 
       for (List<std::thread *>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
       {
@@ -99,7 +98,7 @@ class THEA_API ThreadGroup
       if (thrd)
       {
         std::thread::id id = thrd->get_id();
-        boost::shared_lock<boost::shared_mutex> guard(m);
+        std::shared_lock<std::shared_mutex> guard(m);
 
         for (List<std::thread*>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
         {
@@ -114,7 +113,7 @@ class THEA_API ThreadGroup
     /** Create a thread wrapping a functor and add it to the group. */
     template <typename F> std::thread * createThread(F thread_func)
     {
-      boost::lock_guard<boost::shared_mutex> guard(m);
+      std::lock_guard<std::shared_mutex> guard(m);
       std::unique_ptr<std::thread> new_thread(new std::thread(thread_func));
       threads.push_back(new_thread.get());
       return new_thread.release();
@@ -127,7 +126,7 @@ class THEA_API ThreadGroup
       {
         alwaysAssertM(!containsThread(thrd), "ThreadGroup: Thread is already in group");
 
-        boost::lock_guard<boost::shared_mutex> guard(m);
+        std::lock_guard<std::shared_mutex> guard(m);
         threads.push_back(thrd);
       }
     }
@@ -135,7 +134,7 @@ class THEA_API ThreadGroup
     /** Remove a thread from the group. */
     void removeThread(std::thread * thrd)
     {
-      boost::lock_guard<boost::shared_mutex> guard(m);
+      std::lock_guard<std::shared_mutex> guard(m);
 
       List<std::thread *>::iterator const it = std::find(threads.begin(), threads.end(), thrd);
       if (it != threads.end())
@@ -146,7 +145,7 @@ class THEA_API ThreadGroup
     void joinAll()
     {
       alwaysAssertM(!containsThisThread(), "ThreadGroup: Can't join the executing thread");
-      boost::shared_lock<boost::shared_mutex> guard(m);
+      std::shared_lock<std::shared_mutex> guard(m);
 
       for (List<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
       {
@@ -157,13 +156,13 @@ class THEA_API ThreadGroup
 
     size_t numThreads() const
     {
-      boost::shared_lock<boost::shared_mutex> guard(m);
+      std::shared_lock<std::shared_mutex> guard(m);
       return threads.size();
     }
 
   private:
     List<std::thread *> threads;  // Holds the set of threads.
-    mutable boost::shared_mutex m;    // Mutex allowing multiple-reader/single-writer access to the thread list.
+    mutable std::shared_mutex m;    // Mutex allowing multiple-reader/single-writer access to the thread list.
 
 }; // class ThreadGroup
 

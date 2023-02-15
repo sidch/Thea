@@ -14,7 +14,7 @@
 
 #include "ConvexHull3.hpp"
 #include "../Polygon3.hpp"
-#include "StanHull/hull.h"
+#include "../ThirdParty/StanHull/hull.h"
 
 namespace Thea {
 namespace Algorithms {

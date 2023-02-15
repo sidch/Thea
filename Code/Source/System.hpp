@@ -16,10 +16,7 @@
 #define __Thea_System_hpp__
 
 #include "Common.hpp"
-
-#ifndef THEA_WINDOWS
-#  include <sys/time.h>
-#endif
+#include <chrono>
 
 namespace Thea {
 
@@ -31,71 +28,25 @@ class THEA_API System
     static intx concurrency();
 
     /** Get the machine endianness. */
-    static Endianness endianness()
-    {
-      return Endianness::machine();
-    }
+    static Endianness endianness() { return Endianness::machine(); }
 
     /** Pause the current thread for a given number of milliseconds. */
     static void sleep(intx ms);
 
-    /**
-     * The actual time (measured in seconds since Jan 1 1970 midnight). Adjusted for local timezone and daylight savings time.
-     * This is as accurate and fast as getCycleCount().
-     */
-    static double time();
+    /** The time in seconds since Jan 1 1970 midnight. Adjusted for local timezone and daylight savings time. */
+    static double time()
+    {
+      typedef std::chrono::duration<double> DSecs;
 
-    /**
-     * Begin a timing operation. To count the number of cycles a given operation takes:
-     *
-     * <pre>
-     *   uint64 count;
-     *   System::beginCycleCount(count);
-     *   ...
-     *   System::endCycleCount(count);
-     *   // count now contains the cycle count for the intervening operation.
-     * </pre>
-     *
-     * @see endCycleCount()
-     */
-    static void beginCycleCount(uint64 & cycle_count);
-
-    /**
-     * End a timing operation.
-     *
-     * @see beginCycleCount()
-     */
-    static void endCycleCount(uint64 & cycle_count);
+      return std::chrono::duration_cast<DSecs>(std::chrono::system_clock::now().time_since_epoch()).count();
+    }
 
   private:
     /** Constructor. */
     System();
 
-    /** Called to initialize timing operations when the object is constructed. */
-    void initTime();
-
-    /** Get the current cycle count. */
-    static uint64 getCycleCount();
-
     /** Singleton instance. */
-    static System & instance()
-    {
-      static System s; return s;
-    }
-
-#ifdef THEA_WINDOWS
-    int64          m_start;
-    int64          m_counterFrequency;
-#else
-    struct timeval m_start;
-#endif
-
-#ifdef THEA_MAC
-    int32          m_OSXCPUSpeed;
-    double         m_secondsPerNS;
-#endif
-
-    double         m_realWorldGetTickTime0;
+    static System & instance() { static System s; return s; }
 
 }; // class System
 

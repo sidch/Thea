@@ -31,6 +31,10 @@
 #include <cstdarg>
 #include <string>
 
+// Put quotes around the result of a macro expansion.
+#define THEA_STRINGIFY_(x) #x
+#define THEA_STRINGIFY(x) THEA_STRINGIFY_(x)
+
 namespace Thea {
 
 /** The newline character sequence for the current platform. LF for Unix (Linux, Mac OS X), CR-LF for Windows. */

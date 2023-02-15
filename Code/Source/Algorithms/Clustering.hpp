@@ -25,7 +25,7 @@
 #include "../MatVec.hpp"
 #include "Metrics.hpp"
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
 #  include "cluto.h"
 #endif
 
@@ -36,7 +36,7 @@ namespace Algorithms {
 class THEA_API Clustering
 {
   private:
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
     typedef CompressedRowMatrix<float, int, int> ClutoMatrix;
 #endif
 
@@ -51,11 +51,11 @@ class THEA_API Clustering
       {
         AUTO,                   ///< Automatically choose an appropriate method.
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         CLUTO_CLUSTER_DIRECT,   ///< CLUTO direct clustering.
         CLUTO_CLUSTER_RB,       ///< CLUTO clustering via repeated bisection.
         CLUTO_GRAPH_CLUSTER_RB  ///< CLUTO graph-partitioning-based clustering via repeated min-cut bisection.
-#endif
+#endif // THEA_ENABLE_CLUTO
       };
 
       THEA_ENUM_CLASS_BODY(FlatMethod)
@@ -69,10 +69,10 @@ class THEA_API Clustering
       {
         AUTO,                 ///< Automatically choose an appropriate method.
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         CLUTO_CLUSTER,        ///< CLUTO agglomerative clustering.
         CLUTO_CLUSTER_BIASED  ///< CLUTO biased agglomerative clustering.
-#endif
+#endif // THEA_ENABLE_CLUTO
       };
 
       THEA_ENUM_CLASS_BODY(HierarchicalMethod)
@@ -86,9 +86,9 @@ class THEA_API Clustering
       {
         AUTO,  ///< Automatically choose an appropriate method.
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         CLUTO  ///< Use CLUTO.
-#endif
+#endif // THEA_ENABLE_CLUTO
       };
 
       THEA_ENUM_CLASS_BODY(HierarchyOverlayMethod)
@@ -154,7 +154,7 @@ class THEA_API Clustering
       {
         AUTO,           ///< Automatically choose an appropriate clustering criterion.
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         CLUTO_I1,       ///< The I1 from the CLUTO paper.
         CLUTO_I2,       ///< The I2 from the CLUTO paper.
         CLUTO_E1,       ///< The E1 from the CLUTO paper.
@@ -171,7 +171,7 @@ class THEA_API Clustering
         CLUTO_RCUT,     ///< <em>[Graph clustering only]</em> Ratio cut.
         CLUTO_NCUT,     ///< <em>[Graph clustering only]</em> Normalized cut.
         CLUTO_MMCUT     ///< <em>[Graph clustering only]</em> Min-Max cut.
-#endif
+#endif // THEA_ENABLE_CLUTO
       };
 
       THEA_ENUM_CLASS_BODY(ClusteringCriterion)
@@ -242,14 +242,14 @@ class THEA_API Clustering
 
       int num_clusters_found = 0;
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
       if (options.method == FlatMethod::AUTO)
         options.method = FlatMethod::CLUTO_GRAPH_CLUSTER_RB;
-#endif
+#endif // THEA_ENABLE_CLUTO
 
       switch (options.method)
       {
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         case FlatMethod::CLUTO_CLUSTER_DIRECT:
         case FlatMethod::CLUTO_CLUSTER_RB:
         case FlatMethod::CLUTO_GRAPH_CLUSTER_RB:
@@ -342,7 +342,7 @@ class THEA_API Clustering
           }
           break;
         }
-#endif
+#endif // THEA_ENABLE_CLUTO
 
         default: throw Error("Clustering: Clustering method is not supported");
       }
@@ -368,14 +368,14 @@ class THEA_API Clustering
     {
       int num_clusters_found = 0;
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
       if (options.method == FlatMethod::AUTO)
         options.method = FlatMethod::CLUTO_GRAPH_CLUSTER_RB;
-#endif
+#endif // THEA_ENABLE_CLUTO
 
       switch (options.method)
       {
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
         case FlatMethod::CLUTO_CLUSTER_DIRECT:
         case FlatMethod::CLUTO_CLUSTER_RB:
         case FlatMethod::CLUTO_GRAPH_CLUSTER_RB:
@@ -463,7 +463,7 @@ class THEA_API Clustering
           }
           break;
         }
-#endif
+#endif // THEA_ENABLE_CLUTO
 
         default: throw Error("Clustering method is not supported");
       }
@@ -502,7 +502,7 @@ class THEA_API Clustering
 
   private:
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
     /** Get the number of dimensions of a vector. The dummy argument is needed for template resolution. */
     template <typename T>         static size_t numElems (T const & t);
     template <int N, typename T>  static size_t numElems (Vector<N, T> const & v);
@@ -545,11 +545,11 @@ class THEA_API Clustering
 
     /** Convert a standard splitting priority to its CLUTO equivalent. */
     static int toClutoEnum(SplitPriority sim);
-#endif
+#endif // THEA_ENABLE_CLUTO
 
 }; // class Clustering
 
-#ifdef THEA_ENABLE_CLUTO
+#if THEA_ENABLE_CLUTO
 
 //=============================================================================================================================
 // Get the number of dimensions of a vector. The dummy argument is needed for template resolution.
@@ -776,11 +776,11 @@ Clustering::toClutoOptions(FlatOptions const & options, int & simfun, int & grmo
                                                           : toClutoEnum(options.split_priority));
 }
 
-#endif
+#endif // THEA_ENABLE_CLUTO
 
 } // namespace Algorithms
 } // namespace Thea
 
-#endif  // if 0
+#endif // if 0
 
 #endif

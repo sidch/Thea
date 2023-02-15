@@ -13,7 +13,10 @@
 //============================================================================
 
 /*
- ORIGINAL HEADER
+ ORIGINAL HEADER ([SC] Note: As of Feb 2023, this class has been completely
+ rewritten to use C++17 standard library functions and remove unused
+ functionality. Apart from some function signatures, it has no further
+ connection with G3D.)
 
  @file Stopwatch.h
 
@@ -30,133 +33,45 @@
 #define __Thea_Stopwatch_hpp__
 
 #include "Common.hpp"
+#include <chrono>
 
 namespace Thea {
 
-/**
- * Accurately measure durations and framerates.
- *
- * Example 1: For profiling code in the context of a rendering loop:
- * <pre>
- *   sw.tick();
- *   ...timed code...
- *   sw.tock();
- *
- *   printf("%f\n", sw.smoothFPS());
- * </pre>
- *
- * Example 2: For profiling pieces of a sequence:
- * <pre>
- *   Stopwatch sw;
- *   slowOperation();
- *   sw.after("slowOperation");
- *   kdTree.balance();
- *   sw.after("Balance tree");
- * </pre>
- *
- * Derived from the G3D library: http://g3d.sourceforge.net
- */
+/** Measure duration between calls to tick() and tock(). */
 class THEA_API Stopwatch
 {
   private:
-    std::string             m_name;
-    double                  startTime;
-    std::string             prevMark;
-    double                  prevTime;
+    using Clock = std::chrono::steady_clock;
 
-    /** True between tick and tock */
-    bool                    inBetween;
-
-    /** The initial cycle count. */
-    uint64                  cycleStart;
-
-    /** The time at which tick was called. */
-    double                  timeStart;
-
-    /** The time at which the previous tock was called, -1 if never. */
-    double                  lastTockTime;
-
-    double                  lastDuration;
-    int64                   lastCycleCount;
-
-    /** Frames per second. */
-    double                  m_fps;
-
-    /** Weighted fps */
-    double                  emwaFPS;
-    double                  m_smoothFPS;
-
-    /** Weighted duration */
-    double                  emwaDuration;
-
-    /** The overhead for calling into the class. */
-    int64                   cycleOverhead;
-
-    /** Called from the constructor. */
-    void computeOverhead();
+    Clock::time_point time_start;
+    double last_duration;
+    bool in_between;
 
   public:
     /** Constructor. */
-    Stopwatch(std::string const & name = "Stopwatch");
-
-    /** Amount of time, in seconds, between the most recent tick() and tock() calls. 0 if tick() has never been called. */
-    double elapsedTime() const
-    {
-      return lastDuration;
-    }
-
-    /**
-     * Time-smoothed value that is stable to the nearest 1%. This is useful if you are displaying elapsed time in real time and
-     * want a stable number.
-     *
-     * @see elapsedTime()
-     */
-    double smoothElapsedTime() const
-    {
-      return emwaDuration;
-    }
-
-    /**
-     * The elapsed cycle time between tick() and tock(). An attempt is made to factor out all tick/tock overhead, so that
-     * back-to-back calls should return zero. Unreliable on non-x86 platforms.
-     */
-    uint64 elapsedCycles() const
-    {
-      return lastCycleCount;
-    }
-
-    /**
-     * Get the number of times tick() was called per wall-clock second. If tick() is called once every frame, this measures
-     * frames-per-second.
-     */
-    double fps() const
-    {
-      return m_fps;
-    }
-
-    /**
-     * Time-smoothed value of fps that is stable to the nearest integer for fps > 10 and to the first decimal place for
-     * fps <= 10. This is useful if you are displaying the frame rate in real-time and want a stable (readable) number.
-     */
-    double smoothFPS() const
-    {
-      return m_smoothFPS;
-    }
+    Stopwatch() : last_duration(0), in_between(false) {}
 
     /** Begin a timing operation. */
-    void tick();
+    void tick()
+    {
+      if (in_between) { throw Error("Stopwatch: tick() called twice in a row"); }
+
+      in_between = true;
+      time_start = Clock::now();
+    }
 
     /** End a timing operation. */
-    void tock();
+    void tock()
+    {
+      std::chrono::duration<double> secs = Clock::now() - time_start;
+      last_duration = secs.count();
 
-    /** Reset the start time used by after() and the smoothed average measures.*/
-    void reset();
+      if (!in_between) { throw Error("Stopwatch: tock() called without matching tick()"); }
+      in_between = false;
+    }
 
-    /**
-     * Call after an operation has completed, with the name of the operation, to print a debug message listing the time since
-     * the previous after() call.
-     */
-    void after(std::string const & s = "");
+    /** Duration in seconds between the last tick() and tock() calls. Returns 0 if tick() has never been called. */
+    double elapsedTime() const { return last_duration; }
 
 }; // class Stopwatch
 
