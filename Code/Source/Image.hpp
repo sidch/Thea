@@ -281,10 +281,11 @@ class THEA_API Image : public virtual IImage, public Serializable
 class THEA_API ImageCodec : public Codec
 {
 #if THEA_ENABLE_FREEIMAGE
-  public:
+  private:
     virtual int getImplFormat() const = 0;
     virtual int getImplReadFlags() const = 0;
     virtual int getImplWriteFlags() const = 0;
+    friend class Image;
 #endif
 };
 
