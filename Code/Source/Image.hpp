@@ -290,9 +290,11 @@ class THEA_API ImageCodec : public Codec
 
 #if THEA_ENABLE_FREEIMAGE
 #  define THEA_DEF_IMAGE_CODEC_EXTERNAL                                                                                       \
-      int getImplFormat() const;                                                                                              \
-      int getImplReadFlags() const;                                                                                           \
-      int getImplWriteFlags() const;
+      private:                                                                                                                \
+        int getImplFormat() const;                                                                                            \
+        int getImplReadFlags() const;                                                                                         \
+        int getImplWriteFlags() const;                                                                                        \
+        friend class Image;
 #else
 #  define THEA_DEF_IMAGE_CODEC_EXTERNAL
 #endif
@@ -313,35 +315,35 @@ class THEA_API ImageCodec : public Codec
 // TODO: Add options to all the ones that support them
 
 // 2D formats
-THEA_DEF_IMAGE_CODEC(CodecBmp,    "BMP",  "Windows or OS/2 Bitmap (*.bmp)")
-THEA_DEF_IMAGE_CODEC(CodecGif,    "GIF",  "Graphics Interchange Format (*.gif)")
-THEA_DEF_IMAGE_CODEC(CodecHdr,    "HDR",  "High Dynamic Range (*.hdr)")
-THEA_DEF_IMAGE_CODEC(CodecPng,    "PNG",  "Portable Network Graphics (*.png)")
-THEA_DEF_IMAGE_CODEC(CodecPsd,    "PSD",  "Adobe Photoshop (*.psd)")
-THEA_DEF_IMAGE_CODEC(CodecTga,    "TGA",  "Truevision Targa (*.tga, *.targa)")
+THEA_DEF_IMAGE_CODEC(CodecBmp,    "BMP",    "Windows or OS/2 Bitmap (*.bmp)")
+THEA_DEF_IMAGE_CODEC(CodecGif,    "GIF",    "Graphics Interchange Format (*.gif)")
+THEA_DEF_IMAGE_CODEC(CodecHdr,    "HDR",    "High Dynamic Range (*.hdr)")
+THEA_DEF_IMAGE_CODEC(CodecPng,    "PNG",    "Portable Network Graphics (*.png)")
+THEA_DEF_IMAGE_CODEC(CodecPsd,    "PSD",    "Adobe Photoshop (*.psd)")
+THEA_DEF_IMAGE_CODEC(CodecTga,    "TGA",    "Truevision Targa (*.tga, *.targa)")
 
 #if THEA_ENABLE_FREEIMAGE
 
-THEA_DEF_IMAGE_CODEC(CodecCut,    "CUT",  "Dr. Halo (*.cut)")
-THEA_DEF_IMAGE_CODEC(CodecDds,    "DDS",  "DirectDraw Surface (*.dds)")
-THEA_DEF_IMAGE_CODEC(CodecExr,    "EXR",  "ILM OpenEXR (*.exr)")
+THEA_DEF_IMAGE_CODEC(CodecCut,    "CUT",    "Dr. Halo (*.cut)")
+THEA_DEF_IMAGE_CODEC(CodecDds,    "DDS",    "DirectDraw Surface (*.dds)")
+THEA_DEF_IMAGE_CODEC(CodecExr,    "EXR",    "ILM OpenEXR (*.exr)")
 THEA_DEF_IMAGE_CODEC(CodecFaxg3,  "FAXG3",  "Raw Fax Format CCITT G3 (*.g3)")
-THEA_DEF_IMAGE_CODEC(CodecIco,    "ICO",  "Windows Icon (*.ico)")
-THEA_DEF_IMAGE_CODEC(CodecIff,    "IFF",  "Amiga IFF (*.iff, *.lbm)")
-THEA_DEF_IMAGE_CODEC(CodecJ2k,    "J2K",  "JPEG-2000 Codestream (*.j2k, *.j2c)")
-THEA_DEF_IMAGE_CODEC(CodecJng,    "JNG",  "JPEG Network Graphics (*.jng)")
-THEA_DEF_IMAGE_CODEC(CodecJp2,    "JP2",  "JPEG-2000 (*.jp2)")
-THEA_DEF_IMAGE_CODEC(CodecKoa,    "KOA",  "Commodore 64 Koala (*.koa)")
-THEA_DEF_IMAGE_CODEC(CodecMng,    "MNG",  "Multiple Network Graphics (*.mng)")
-THEA_DEF_IMAGE_CODEC(CodecPcd,    "PCD",  "Kodak PhotoCD (*.pcd)")
-THEA_DEF_IMAGE_CODEC(CodecPcx,    "PCX",  "Zsoft Paintbrush (*.pcx)")
-THEA_DEF_IMAGE_CODEC(CodecPfm,    "PFM",  "Portable Floatmap (*.pfm)")
-THEA_DEF_IMAGE_CODEC(CodecRas,    "RAS",  "Sun Rasterfile (*.ras)")
-THEA_DEF_IMAGE_CODEC(CodecSgi,    "SGI",  "Silicon Graphics Image (*.sgi)")
-THEA_DEF_IMAGE_CODEC(CodecTif,    "TIF",  "Tagged Image File Format (*.tif, *.tiff)")
-THEA_DEF_IMAGE_CODEC(CodecWbmp,   "WBMP",  "Wireless Bitmap (*.wbmp)")
-THEA_DEF_IMAGE_CODEC(CodecXbm,    "XBM",  "X11 Bitmap (*.xbm)")
-THEA_DEF_IMAGE_CODEC(CodecXpm,    "XPM",  "X11 Pixmap (*.xpm)")
+THEA_DEF_IMAGE_CODEC(CodecIco,    "ICO",    "Windows Icon (*.ico)")
+THEA_DEF_IMAGE_CODEC(CodecIff,    "IFF",    "Amiga IFF (*.iff, *.lbm)")
+THEA_DEF_IMAGE_CODEC(CodecJ2k,    "J2K",    "JPEG-2000 Codestream (*.j2k, *.j2c)")
+THEA_DEF_IMAGE_CODEC(CodecJng,    "JNG",    "JPEG Network Graphics (*.jng)")
+THEA_DEF_IMAGE_CODEC(CodecJp2,    "JP2",    "JPEG-2000 (*.jp2)")
+THEA_DEF_IMAGE_CODEC(CodecKoa,    "KOA",    "Commodore 64 Koala (*.koa)")
+THEA_DEF_IMAGE_CODEC(CodecMng,    "MNG",    "Multiple Network Graphics (*.mng)")
+THEA_DEF_IMAGE_CODEC(CodecPcd,    "PCD",    "Kodak PhotoCD (*.pcd)")
+THEA_DEF_IMAGE_CODEC(CodecPcx,    "PCX",    "Zsoft Paintbrush (*.pcx)")
+THEA_DEF_IMAGE_CODEC(CodecPfm,    "PFM",    "Portable Floatmap (*.pfm)")
+THEA_DEF_IMAGE_CODEC(CodecRas,    "RAS",    "Sun Rasterfile (*.ras)")
+THEA_DEF_IMAGE_CODEC(CodecSgi,    "SGI",    "Silicon Graphics Image (*.sgi)")
+THEA_DEF_IMAGE_CODEC(CodecTif,    "TIF",    "Tagged Image File Format (*.tif, *.tiff)")
+THEA_DEF_IMAGE_CODEC(CodecWbmp,   "WBMP",   "Wireless Bitmap (*.wbmp)")
+THEA_DEF_IMAGE_CODEC(CodecXbm,    "XBM",    "X11 Bitmap (*.xbm)")
+THEA_DEF_IMAGE_CODEC(CodecXpm,    "XPM",    "X11 Pixmap (*.xpm)")
 
 /** PBM image codec. */
 class THEA_API CodecPbm : public ImageCodec
