@@ -30,7 +30,15 @@
 #include <cmath>
 #include <cstring>
 
-#if !THEA_ENABLE_FREEIMAGE
+#if THEA_ENABLE_FREEIMAGE
+#  include <FreeImagePlus.h>
+   // Work around a bug where FreeImage.h defines _WINDOWS_ and this messes with platform detection in other libs e.g. wxWindows
+#  if !THEA_WINDOWS
+#    ifdef _WINDOWS_
+#      undef _WINDOWS_
+#    endif
+#  endif
+#else
 #  pragma clang diagnostic push
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #    define STBI_NO_STDIO
@@ -45,6 +53,48 @@
 THEA_INSTANTIATE_SMART_POINTERS(Thea::Image)
 
 namespace Thea {
+
+#if THEA_ENABLE_FREEIMAGE
+
+#  define THEA_DEF_IMAGE_CODEC_FREEIMAGE(name, fif, read_flags, write_flags)                                                  \
+      int name::getImplFormat() const { return (fif); }                                                                       \
+      int name::getImplReadFlags() const { return (read_flags); }                                                             \
+      int name::getImplWriteFlags() const { return (write_flags); }
+
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecBmp,    FIF_BMP,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecCut,    FIF_CUT,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecDds,    FIF_DDS,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecExr,    FIF_EXR,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecFaxg3,  FIF_FAXG3,    0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecGif,    FIF_GIF,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecHdr,    FIF_HDR,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecIco,    FIF_ICO,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecIff,    FIF_IFF,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecJ2k,    FIF_J2K,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecJng,    FIF_JNG,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecJp2,    FIF_JP2,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecJpg,    FIF_JPEG,     0, (options.quality | (options.progressive ? JPEG_PROGRESSIVE : 0)))
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecKoa,    FIF_KOALA,    0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecMng,    FIF_MNG,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPbm,    (binary ? FIF_PBMRAW : FIF_PBM), 0, 0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPcd,    FIF_PCD,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPcx,    FIF_PCX,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPfm,    FIF_PFM,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPgm,    (binary ? FIF_PGMRAW : FIF_PGM), 0, 0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPng,    FIF_PNG,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPpm,    (binary ? FIF_PPMRAW : FIF_PPM), 0, 0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecPsd,    FIF_PSD,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecRas,    FIF_RAS,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecSgi,    FIF_SGI,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecTga,    FIF_TARGA,    0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecTif,    FIF_TIFF,     0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecWbmp,   FIF_WBMP,     0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecXbm,    FIF_XBM,      0,  0)
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(CodecXpm,    FIF_XPM,      0,  0)
+
+THEA_DEF_IMAGE_CODEC_FREEIMAGE(Codec3bm,    FIF_UNKNOWN,  0,  0)
+
+#endif
 
 namespace ImageInternal {
 
@@ -1140,7 +1190,7 @@ Image::read(BinaryInputStream & input, Codec const & codec, bool read_block_head
     ImageCodec const * img_codec = dynamic_cast<ImageCodec const *>(&codec);
     if (!img_codec) { Error("Image: Codec specified for image reading is not an image codec"); }
 
-    if (impl->loadFromMemory(img_codec->getImplFormat(), mem, img_codec->getImplReadFlags()) != TRUE)
+    if (impl->loadFromMemory((FREE_IMAGE_FORMAT)img_codec->getImplFormat(), mem, img_codec->getImplReadFlags()) != TRUE)
       throw Error("Image: Could not deserialize image from memory stream");
   }
 
@@ -1229,7 +1279,8 @@ Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_
     throw Error("Image: Could not decanonicalize channel order");
 
   fipMemoryIO mem;
-  if (const_cast<Impl *>(impl)->saveToMemory(img_codec->getImplFormat(), mem, img_codec->getImplWriteFlags()) != TRUE)
+  if (const_cast<Impl *>(impl)->saveToMemory((FREE_IMAGE_FORMAT)img_codec->getImplFormat(), mem,
+                                             img_codec->getImplWriteFlags()) != TRUE)
     throw Error(toString(codec.getName()) + ": Could not save image to memory stream");
 
   if (!ImageInternal::canonicalizeChannelOrder(const_cast<Image &>(*this)))
