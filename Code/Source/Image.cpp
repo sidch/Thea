@@ -43,6 +43,7 @@
 #  pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #    define STBI_NO_STDIO
 #    define STB_IMAGE_IMPLEMENTATION
+#    define STB_IMAGE_RESIZE_IMPLEMENTATION
 #    define STB_IMAGE_WRITE_IMPLEMENTATION
 #    include "ThirdParty/stb/stb_image.h"
 #    include "ThirdParty/stb/stb_image_resize.h"
@@ -1082,12 +1083,12 @@ Image::reorderChannels(int const * order)
   }
 }
 
-#if THEA_ENABLE_FREEIMAGE
-
 namespace ImageInternal {
 
+#if THEA_ENABLE_FREEIMAGE
+
 FREE_IMAGE_FILTER
-filterToFreeImageFilter(Image::Filter filter)
+filterToImplFilter(Image::Filter filter)
 {
   switch (filter)
   {
@@ -1101,9 +1102,26 @@ filterToFreeImageFilter(Image::Filter filter)
   }
 }
 
-} // namespace ImageInternal
+#else // THEA_ENABLE_FREEIMAGE
+
+stbir_filter
+filterToImplFilter(Image::Filter filter)
+{
+  switch (filter)
+  {
+    case Image::Filter::AUTO:         return STBIR_FILTER_DEFAULT;
+    case Image::Filter::BOX:          return STBIR_FILTER_BOX;
+    case Image::Filter::BILINEAR:     return STBIR_FILTER_TRIANGLE;
+    case Image::Filter::BSPLINE:      return STBIR_FILTER_CUBICBSPLINE;
+    case Image::Filter::BICUBIC:      return STBIR_FILTER_MITCHELL;
+    case Image::Filter::CATMULL_ROM:  return STBIR_FILTER_CATMULLROM;
+    default: throw Error("Image: Unsupported rescaling filter");
+  }
+}
 
 #endif // THEA_ENABLE_FREEIMAGE
+
+} // namespace ImageInternal
 
 bool
 Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter)
@@ -1120,29 +1138,88 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
     return false;
   }
 
-  if (new_width <= 0 || new_height <= 0)
+  if (width <= 0 || height <= 0 || new_width <= 0 || new_height <= 0)
   {
-    THEA_ERROR << "Image: Attempting to rescale to invalid dimensions: " << new_width << " x " << new_height;
+    THEA_ERROR << "Image: Attempting to rescale between invalid dimensions: " << width << " x " << height << " to "
+                                                                              << new_width << " x " << new_height;
     return false;
   }
 
+  if (!impl)
+  {
+    THEA_ERROR << "Image: Rescaling wrapped buffers currently not supported";
+    return false;
+  }
+
+  auto impl_filter = ImageInternal::filterToImplFilter(filter);
+  bool status = false;
+
 #if THEA_ENABLE_FREEIMAGE
 
-  FREE_IMAGE_FILTER fi_filter = ImageInternal::filterToFreeImageFilter(filter);
-  bool status = (impl->rescale((unsigned int)new_width, (unsigned int)new_height, fi_filter) == TRUE);
+  status = (impl->rescale((unsigned int)new_width, (unsigned int)new_height, impl_filter) == TRUE);
 
 #else
 
-  // TODO
-  bool status = false;
+  size_t rescaled_bytes = (size_t)minTotalBytes(type, new_width, new_height, new_depth);
+  void * new_impl = STBI_MALLOC(rescaled_bytes);
+  if (!new_impl)
+  {
+    THEA_ERROR << "Image: Could not allocate memory for rescaled image";
+    return false;
+  }
+
+  auto bpc = getBitsPerChannel();
+  if (bpc == 8)
+  {
+    status = (bool)stbir_resize_uint8_generic((uint8 const *)impl, (int)width, (int)height, (int)getScanWidth(),
+                                              (uint8 *)new_impl, (int)new_width, (int)new_height,
+                                              ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+                                              numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
+                                              STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
+                                              /* alloc_context = */ nullptr);
+  }
+  else if (bpc == 16)
+  {
+    status = (bool)stbir_resize_uint16_generic((uint16 const *)impl, (int)width, (int)height, (int)getScanWidth(),
+                                               (uint16 *)new_impl, (int)new_width, (int)new_height,
+                                               ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+                                               numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
+                                               STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
+                                               /* alloc_context = */ nullptr);
+  }
+  else if (bpc == 32 && isFloatingPoint())
+  {
+    status = (bool)stbir_resize_float_generic((float const *)impl, (int)width, (int)height, (int)getScanWidth(),
+                                              (float *)new_impl, (int)new_width, (int)new_height,
+                                              ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+                                              numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
+                                              STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
+                                              /* alloc_context = */ nullptr);
+  }
+  else
+  {
+    THEA_ERROR << "Image: Unsupported format for rescaling (must be 8/16-bit integer or 32-bit float per channel)";
+    stbi_image_free(new_impl);
+    return false;
+  }
 
 #endif
 
   if (!status)
   {
-    THEA_ERROR << "Could not rescale " << width << " x " << height << " image to " << new_width << " x " << new_height;
+    THEA_ERROR << "Image: Could not rescale " << width << " x " << height << " image to " << new_width << " x " << new_height;
+
+#if !THEA_ENABLE_FREEIMAGE
+    stbi_image_free(new_impl);
+#endif
+
     return false;
   }
+
+#if !THEA_ENABLE_FREEIMAGE
+  stbi_image_free(impl);
+  impl = new_impl;
+#endif
 
   width = new_width;
   height = new_height;
