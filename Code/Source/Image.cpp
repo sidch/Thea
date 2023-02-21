@@ -99,12 +99,19 @@ THEA_DEF_IMAGE_CODEC_FREEIMAGE(Codec3bm,    FIF_UNKNOWN,  0,  0)
 
 namespace ImageInternal {
 
+// Bytes covered by one or more pixels (including partial bytes)
+int64
+pixelBytes(int bpp, int64 num_pixels = 1)
+{
+  auto bits = num_pixels * (int64)bpp;
+  return bits / 8 + (bits % 8 == 0 ? 0 : 1);
+}
+
 // Bytes consumed by an aligned row
 int64
-scanWidth(int64 width, int bpp, int32 alignment)
+strideBytes(int64 width, int bpp, int32 alignment)
 {
-  int64 width_bits = width * bpp;
-  int64 row_bytes = width_bits / 8 + (width_bits % 8 == 0 ? 0 : 1);
+  auto row_bytes = pixelBytes(width, bpp);
   return row_bytes + (alignment - (row_bytes % alignment)) % alignment;
 }
 
@@ -492,33 +499,42 @@ Image::Type::hasByteAlignedChannels() const
 }
 
 Image::Image()
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_size(0),
-  data_alignment(ROW_ALIGNMENT)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
   cacheTypeProperties();
 }
 
 Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_size(0),
-  data_alignment(ROW_ALIGNMENT)
 {
   resize(type_, width_, height_, depth_);
 }
 
+Image::Image(void * buf, Type type_, int64 width_, int64 height_, int64 depth_, int64 stride_bytes_)
+: type(type_), width(width_), height(height_), depth(depth_), impl(nullptr), data(buf), owns_data(false),
+  data_stride(stride_bytes_)
+{
+  alwaysAssertM(buf, "Image: Cannot wrap a null buffer");
+  alwaysAssertM(type_ != Type::UNKNOWN, "Image: Cannot wrap buffer of unknown pixel type");
+  alwaysAssertM(width_ >= 0 && height_ >= 0 && depth_ >= 0, "Image: Cannot wrap buffer with negative dimensions");
+
+  if (stride_bytes_ <= 0)
+    data_stride = ImageInternal::strideBytes(width_, type_.getBitsPerPixel(), /* row alignment = */ 1);
+}
+
 Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
   read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
   load(path, codec);
 }
 
 Image::Image(Image const & src)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_size(0), data_alignment(ROW_ALIGNMENT)
+: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
   *this = src;
 }
@@ -539,7 +555,7 @@ Image::operator=(Image const & src)
     auto src_bytes = src.minTotalBytes();
     alwaysAssertM(src_bytes == minTotalBytes(), "Image: Sizes of source and destination image buffers don't match");
 
-    std::memcpy(impl, src.impl, src_bytes);
+    std::memcpy(impl, src.impl, (size_t)src_bytes);
 #endif
   }
   else
@@ -547,13 +563,19 @@ Image::operator=(Image const & src)
 
   if (src.data)
   {
-    resizeData(src.type, src.width, src.height, src.depth, src.data_alignment);
-    std::memcpy(data, src.data, src.data_size);
+    resizeData(src.type, src.width, src.height, src.depth);
+
+    // Copy row by row since strides may not match
+    auto row_bytes = ImageInternal::pixelBytes(src.type.getBitsPerPixel(), src.width);
+    for (int64 i = 0; i < src.height; ++i)
+    {
+      auto src_scanline = src.getScanLine(i);
+      auto dst_scanline = getScanLine(i);
+      std::memcpy(dst_scanline, src_scanline, (size_t)row_bytes);
+    }
   }
   else
     clearData();
-
-  setAttribs(src.type, src.width, src.height, src.depth);
 
   return *this;
 }
@@ -575,7 +597,7 @@ Image::isValid() const
 #else
        || impl
 #endif
-       || (data && data_size >= minTotalBytes()));
+       || data);
 }
 
 void
@@ -590,6 +612,7 @@ Image::clearImpl()
 #endif
 
   impl = nullptr;
+  setAttribs(Type::UNKNOWN, 0, 0, 0, /* data_stride = */ 0);
 }
 
 void
@@ -600,20 +623,39 @@ Image::clearData()
   if (owns_data) { data_allocator.deallocate((unsigned char *)data); }
   data = nullptr;
   owns_data = true;
-  data_size = 0;
-  data_alignment = 1;
+
+  setAttribs(Type::UNKNOWN, 0, 0, 0, /* data_stride = */ 0);
 }
 
 int8
 Image::clear()
 {
-  type = Type::UNKNOWN;
-  width = height = depth = 0;
-
   clearImpl();
   clearData();
 
   return true;
+}
+
+int64
+Image::minTotalBytes() const
+{
+  return minTotalBytes(type, width, height, depth, getStrideBytes());
+}
+
+int64
+Image::minTotalBytes(Type t, int64 w, int64 h, int64 d, int64 stride_bytes_, bool last_row_occupies_stride)
+{
+  if (t == Type::UNKNOWN || w <= 0 || h <= 0 || d <= 0) return 0;
+
+  alwaysAssertM(stride_bytes_ > 0, "Image: Stride for non-empty image must be positive");
+
+  auto bytes_pp = ImageInternal::pixelBytes(t.getBitsPerPixel());
+  auto bytes = last_row_occupies_stride ? (int64)(stride_bytes_ * h * d)
+                                        : (int64)(stride_bytes_ * (h * d - 1) + w * bytes_pp);
+
+  debugAssertM(bytes >= 0, "Image: Total number of bytes computed as negative");
+
+  return bytes;
 }
 
 int8
@@ -633,7 +675,7 @@ Image::resize(int64 type_, int64 width_, int64 height_, int64 depth_)
       ))
     return resizeImpl(type_, width_, height_, depth_);
   else
-    return resizeData(type_, width_, height_, depth_, /* preserve */ getRowAlignment());
+    return resizeData(type_, width_, height_, depth_);
 }
 
 bool
@@ -665,7 +707,8 @@ Image::resizeImpl(int64 type_, int64 width_, int64 height_, int64 depth_)
 #else
 
   auto old_bytes = minTotalBytes();
-  auto new_bytes = minTotalBytes(t, width_, height_, depth_, /* stb row alignment = */ 1);
+  auto new_bytes = minTotalBytes(t, width_, height_, depth_,
+                                 ImageInternal::strideBytes(width_, t.getBitsPerPixel(), /* stb row alignment = */ 1));
   if (new_bytes > old_bytes)  // like std::vector, don't deallocate if new size is smaller
   {
     impl = STBI_REALLOC(impl, new_bytes);
@@ -686,7 +729,7 @@ Image::resizeImpl(int64 type_, int64 width_, int64 height_, int64 depth_)
 }
 
 bool
-Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int32 row_align_)
+Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int64 data_stride_)
 {
   Type t(type_);
   alwaysAssertM(t != Type::UNKNOWN && width_ >= 0 && height_ >= 0 && depth_ >= 0,
@@ -695,8 +738,13 @@ Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int32 
   // Impl and data cannot co-exist
   clearImpl();
 
-  auto new_bytes = minTotalBytes(t, width_, height_, depth_, row_align_);
-  if (new_bytes > data_size)  // like std::vector, don't deallocate if new size is smaller
+  // Compute a default stride if the supplied one is non-positive
+  if (data_stride_ <= 0)
+    data_stride_ = ImageInternal::strideBytes(width_, t.getBitsPerPixel(), ROW_ALIGNMENT);
+
+  auto old_bytes = minTotalBytes();
+  auto new_bytes = minTotalBytes(t, width_, height_, depth_, data_stride_);
+  if (new_bytes > old_bytes)  // like std::vector, don't deallocate if new size is smaller
   {
     if (!owns_data) { THEA_ERROR << "Image: Wrapped external buffer cannot be resized"; return false; }
 
@@ -704,10 +752,9 @@ Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int32 
     data = data_allocator.allocate(new_bytes);
     if (!data) { THEA_ERROR << "Image: Could not allocate memory for resizing image"; return false; }
     owns_data = true;
-    data_size = new_bytes;
   }
 
-  setAttribs(t, width_, height_, depth_, row_align_);
+  setAttribs(t, width_, height_, depth_, data_stride_);
 
   if (!isValid())
   {
@@ -759,40 +806,26 @@ Image::getScanLine(int64 row, int64 z)
 #if THEA_ENABLE_FREEIMAGE
     return impl->isValid() ? impl->getScanLine(row) : nullptr;
 #else
-    return (uint8 *)impl + (z * height + row) * getScanWidth();
+    return (uint8 *)impl + (z * height + row) * getStrideBytes();
 #endif
   }
   else
-    return (uint8 *)data + (z * height + row) * getScanWidth();
+    return (uint8 *)data + (z * height + row) * getStrideBytes();
 }
 
 int64
-Image::getScanWidth() const
+Image::getStrideBytes() const
 {
   if (impl)
   {
 #if THEA_ENABLE_FREEIMAGE
     return impl->getScanWidth();
 #else
-    return width * (getBitsPerPixel() / 8);  // stb always has zero padding and byte-aligned pixels
+    return ImageInternal::strideBytes(width, getBitsPerPixel(), 1);  // stb always has zero padding
 #endif
   }
   else
-  {
-    int64 row_bits = (int64)(width * getBitsPerPixel());
-    int64 row_bytes = (row_bits / 8) + (row_bits % 8 > 0 ? 1 : 0);
-    return row_bytes + ((int64)data_alignment - (row_bytes % (int64)data_alignment)) % (int64)data_alignment;
-  }
-}
-
-int32
-Image::getRowAlignment() const
-{
-#if THEA_ENABLE_FREEIMAGE
-  return impl ? 4 : data_alignment;  // the FreeImage default is 4
-#else
-  return impl ? 1 : data_alignment;  // the stb default is 1
-#endif
+    return data_stride;
 }
 
 double
@@ -843,7 +876,7 @@ Image::getNormalizedValue(void const * pixel, int channel) const
 }
 
 void
-Image::setAttribs(Type type_, int64 w, int64 h, int64 d, int32 data_align_)
+Image::setAttribs(Type type_, int64 w, int64 h, int64 d, int64 data_stride_)
 {
   type = type_;
   cacheTypeProperties();
@@ -851,7 +884,7 @@ Image::setAttribs(Type type_, int64 w, int64 h, int64 d, int32 data_align_)
   if (w >= 0) { width  = w; }
   if (h >= 0) { height = h; }
   if (d >= 0) { depth  = d; }
-  if (data_align_ >= 0) { data_alignment = data_align_; }
+  if (data_stride_ >= 0) { data_stride = data_stride_; }
 }
 
 void
@@ -864,28 +897,6 @@ Image::cacheTypeProperties()
   bits_per_channel           =  type.getBitsPerChannel();
   has_byte_aligned_pixels    =  type.hasByteAlignedPixels();
   has_byte_aligned_channels  =  type.hasByteAlignedChannels();
-}
-
-intx
-Image::minTotalBytes(Type t, int64 w, int64 h, int64 d, int32 row_align) const
-{
-  if (t == Type::UNKNOWN)
-  {
-    t = type;
-    if (t == Type::UNKNOWN) { return 0; }  // if still unknown, the image itself has unknown type
-  }
-
-  if (w < 0) { w = width;  }
-  if (h < 0) { h = height; }
-  if (d < 0) { d = depth;  }
-  if (row_align < 0) { row_align = getRowAlignment();  }
-
-  auto scan_width = ImageInternal::scanWidth(w, t.getBitsPerPixel(), row_align);
-  auto bytes = (intx)(scan_width * h * d);
-
-  debugAssertM(bytes >= 0, "Image: Total number of bytes computed as negative");
-
-  return bytes;
 }
 
 bool
@@ -1002,7 +1013,7 @@ Image::convert(Type dst_type, Image & dst) const
 #else // THEA_ENABLE_FREEIMAGE
 
     // TODO
-    THEA_ERROR << "Image: Format conversion of stb images currently not supported";
+    THEA_ERROR << "Image: Format conversion of STB images currently not supported";
 
 #endif // THEA_ENABLE_FREEIMAGE
   }
@@ -1147,7 +1158,7 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 
   if (!impl)
   {
-    THEA_ERROR << "Image: Rescaling wrapped buffers currently not supported";
+    THEA_ERROR << "Image: Rescaling wrapped buffers currently not supported";  // FIXME: Can use stb
     return false;
   }
 
@@ -1160,7 +1171,8 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 
 #else
 
-  size_t rescaled_bytes = (size_t)minTotalBytes(type, new_width, new_height, new_depth);
+  auto new_stride = ImageInternal::strideBytes(new_width, getBitsPerPixel(), /* stb row alignment = */ 1);
+  size_t rescaled_bytes = (size_t)minTotalBytes(type, new_width, new_height, new_depth, new_stride);
   void * new_impl = STBI_MALLOC(rescaled_bytes);
   if (!new_impl)
   {
@@ -1171,27 +1183,24 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
   auto bpc = getBitsPerChannel();
   if (bpc == 8)
   {
-    status = (bool)stbir_resize_uint8_generic((uint8 const *)impl, (int)width, (int)height, (int)getScanWidth(),
-                                              (uint8 *)new_impl, (int)new_width, (int)new_height,
-                                              ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+    status = (bool)stbir_resize_uint8_generic((uint8 const *)impl, (int)width, (int)height, (int)getStrideBytes(),
+                                              (uint8 *)new_impl, (int)new_width, (int)new_height, (int)new_stride,
                                               numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
                                               STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
                                               /* alloc_context = */ nullptr);
   }
   else if (bpc == 16)
   {
-    status = (bool)stbir_resize_uint16_generic((uint16 const *)impl, (int)width, (int)height, (int)getScanWidth(),
-                                               (uint16 *)new_impl, (int)new_width, (int)new_height,
-                                               ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+    status = (bool)stbir_resize_uint16_generic((uint16 const *)impl, (int)width, (int)height, (int)getStrideBytes(),
+                                               (uint16 *)new_impl, (int)new_width, (int)new_height, (int)new_stride,
                                                numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
                                                STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
                                                /* alloc_context = */ nullptr);
   }
   else if (bpc == 32 && isFloatingPoint())
   {
-    status = (bool)stbir_resize_float_generic((float const *)impl, (int)width, (int)height, (int)getScanWidth(),
-                                              (float *)new_impl, (int)new_width, (int)new_height,
-                                              ImageInternal::scanWidth(new_width, getBitsPerPixel(), getRowAlignment()),
+    status = (bool)stbir_resize_float_generic((float const *)impl, (int)width, (int)height, (int)getStrideBytes(),
+                                              (float *)new_impl, (int)new_width, (int)new_height, (int)new_stride,
                                               numChannels(), /* alpha_channel = */ numChannels() - 1, /* flags = */ 0,
                                               STBIR_EDGE_CLAMP, impl_filter, STBIR_COLORSPACE_LINEAR,
                                               /* alloc_context = */ nullptr);
@@ -1393,7 +1402,7 @@ Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_
     if (getBitsPerChannel() != 32 || !isFloatingPoint())
     { throw Error(toString(codec.getName()) + ": Writing HDR requires 32-bit float channels"); }
 
-    status = stbi_write_hdr_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, (float *)(void *)impl);
+    status = stbi_write_hdr_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, (float const *)impl);
   }
   else if (codec == CodecJpg())
   {
@@ -1409,7 +1418,8 @@ Image::write(BinaryOutputStream & output, Codec const & codec, bool write_block_
   {
     if (getBitsPerChannel() != 8) { throw Error(toString(codec.getName()) + ": Writing PNG requires 8-bit channels"); }
 
-    status = stbi_write_png_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl, getScanWidth());
+    status = stbi_write_png_to_func(ImageInternal::stbStreamWrite, &output, (int)width, (int)height, nc, impl,
+                                    (int)getStrideBytes());
   }
   else if (codec == CodecTga())
   {
@@ -1515,9 +1525,9 @@ Image::read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_h
   if (compression != 0)
     throw Error(toString(codec.getName()) + ": Unsupported compression method");
 
-  int64 stream_scan_width = ImageInternal::scanWidth(w, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  int64 stream_stride = ImageInternal::strideBytes(w, bpp, 16);  // 16-byte row alignment for SSE compatibility
   uint64 data_len = input.readUInt64();
-  if (data_len != (uint64)stream_scan_width * (uint64)h * (uint64)d)
+  if (data_len != (uint64)stream_stride * (uint64)h * (uint64)d)
     throw Error(toString(codec.getName()) + ": Pixel data block size does not match image dimensions");
 
   // Read image data as L, BGR or BGRA voxels, one 16-byte aligned scanline at a time
@@ -1533,15 +1543,15 @@ Image::read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_h
     default  :  throw Error(format("%s: Bit d %d not supported", codec.getName(), bpp));
   }
 
-  resizeData(t, w, h, d, /* data_alignment = */ ROW_ALIGNMENT);
+  resizeData(t, w, h, d);
   if (w > 0 && h > 0 && d > 0 && bpp > 0)
   {
     int bytes_pp = bpp / 8;
-    Array<uint8> row_buf((size_t)stream_scan_width);
-    for (intx i = 0; i < d; ++i)
-      for (intx j = 0; j < h; ++j)
+    Array<uint8> row_buf((size_t)stream_stride);
+    for (int64 i = 0; i < d; ++i)
+      for (int64 j = 0; j < h; ++j)
       {
-        input.readBytes(stream_scan_width, row_buf.data());
+        input.readBytes(stream_stride, row_buf.data());
 
         uint8 const * in_pixel = row_buf.data();
         uint8 * out_pixel = (uint8 *)getScanLine(j, i);
@@ -1556,7 +1566,7 @@ Image::read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_h
           }
           case 3:
           {
-            for (intx k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            for (int64 k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
             {
               out_pixel[0] = in_pixel[2];
               out_pixel[1] = in_pixel[1];
@@ -1566,7 +1576,7 @@ Image::read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_h
           }
           default: // 4
           {
-            for (intx k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+            for (int64 k = 0; k < w; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
             {
               out_pixel[0] = in_pixel[2];
               out_pixel[1] = in_pixel[1];
@@ -1593,11 +1603,11 @@ Image::write3bm(Codec const & codec, BinaryOutputStream & output, bool write_blo
     throw Error(toString(codec.getName()) + ": Can only write 8-bit luminance, RGB or RGBA images");
 
   auto bpp = getBitsPerPixel();
-  int64 stream_scan_width = ImageInternal::scanWidth(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
+  int64 stream_stride = ImageInternal::strideBytes(width, bpp, 16);  // 16-byte row alignment for SSE compatibility
 
   static uint64 const FILE_HEADER_SIZE = 32;  // Remember to change these if the format changes!
   static uint64 const INFO_HEADER_SIZE = 72;
-  uint64 data_len = (uint64)stream_scan_width * (uint64)height * (uint64)depth;
+  uint64 data_len = (uint64)stream_stride * (uint64)height * (uint64)depth;
   uint64 size_in_bytes = FILE_HEADER_SIZE + INFO_HEADER_SIZE + data_len;
 
   if (write_block_header)
@@ -1647,10 +1657,10 @@ Image::write3bm(Codec const & codec, BinaryOutputStream & output, bool write_blo
     return;
 
   int bytes_pp = bpp / 8;
-  Array<uint8> row_buf((bytes_pp > 2 ? (size_t)stream_scan_width : 0), 0);
-  auto row_padding = stream_scan_width - (width * bytes_pp);
-  for (intx i = 0; i < depth; ++i)
-    for (intx j = 0; j < height; ++j)
+  Array<uint8> row_buf((bytes_pp > 2 ? (size_t)stream_stride : 0), 0);
+  auto row_padding = stream_stride - (width * bytes_pp);
+  for (int64 i = 0; i < depth; ++i)
+    for (int64 j = 0; j < height; ++j)
     {
       uint8 const * in_pixel = (uint8 const *)getScanLine(j, i);
 
@@ -1666,26 +1676,26 @@ Image::write3bm(Codec const & codec, BinaryOutputStream & output, bool write_blo
         case 3:
         {
           uint8 * out_pixel = row_buf.data();
-          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          for (int64 k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
             out_pixel[0] = in_pixel[2];
             out_pixel[1] = in_pixel[1];
             out_pixel[2] = in_pixel[0];
           }
-          output.writeBytes((int64)stream_scan_width, row_buf.data());
+          output.writeBytes((int64)stream_stride, row_buf.data());
           break;
         }
         default: // 4
         {
           uint8 * out_pixel = row_buf.data();
-          for (intx k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
+          for (int64 k = 0; k < width; ++k, in_pixel += bytes_pp, out_pixel += bytes_pp)
           {
             out_pixel[0] = in_pixel[2];
             out_pixel[1] = in_pixel[1];
             out_pixel[2] = in_pixel[0];
             out_pixel[3] = in_pixel[3];
           }
-          output.writeBytes((int64)stream_scan_width, row_buf.data());
+          output.writeBytes((int64)stream_stride, row_buf.data());
           break;
         }
       }

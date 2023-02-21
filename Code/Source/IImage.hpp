@@ -172,16 +172,11 @@ class THEA_API IImage
     virtual void * THEA_ICALL getScanLine(int64 row, int64 z = 0) = 0;
 
     /**
-     * Get the number of bytes consumed by a row of pixels. Rows may be aligned to 32-bit (or other) boundaries for performance
-     * reasons, so this is <b>not</b> necessarily equal to the number of pixels in a row times the size of a pixel.
+     * Get the distance in bytes between the start of one row of pixels and the start of the next row. Rows may be aligned to
+     * 32-bit (or other) boundaries for performance reasons, so this is <b>not</b> necessarily equal to the number of pixels in
+     * a row times the size of a pixel. Also note that the last row of pixels may not occupy a full stride.
      */
-    virtual int64 THEA_ICALL getScanWidth() const = 0;
-
-    /**
-     * Get the byte alignment of a pixel row. Each row is padded to take up a number of bytes which is a multiple of the
-     * alignment value.
-     */
-    virtual int32 THEA_ICALL getRowAlignment() const = 0;
+    virtual int64 THEA_ICALL getStrideBytes() const = 0;
 
 }; // class IImage
 

@@ -24,34 +24,73 @@ namespace GlTextureInternal {
 
 #define THEA_GL_TEXTURE_ERROR { throw Error(toString(getName()) + ": GlTexture: Error constructing texture"); }
 
-static int8
-setDefaultUnpackingOptions(int64 row_alignment)
+static bool
+getRowLengthAndAlignment(IImage const & img, GLint & row_length, GLint & alignment)
 {
-  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return GlCaps::setError(); }
+  IImage::Type type(img.getType());
+  if (type == IImage::Type::UNKNOWN)
+  {
+    THEA_ERROR << "GlTexture: Could not derive row length and alignment of image of unknown type";
+    return false;
+  }
 
-  // GL's default values for everything except alignment
+  auto stride_bits = 8 * img.getStrideBytes();
+  auto bpp = type.getBitsPerPixel();
+  if (bpp > stride_bits)
+  {
+    row_length = 0;
+    alignment = 1;
+    return true;
+  }
+
+  // Division rounding down is the right thing here in both cases
+  row_length = (GLint)(stride_bits / bpp);   // max number of pixels that can fit in the stride
+  auto rem_bytes = (stride_bits % bpp) / 8;  // number of bytes remaining after bytes covered by max pixel count are removed
+
+  static GLint const ALIGNMENTS[] = { 1, 2, 4, 8 };  // must be in ascending order
+  static size_t NUM_ALIGNMENTS = sizeof(ALIGNMENTS) / sizeof(ALIGNMENTS[0]);
+
+  for (size_t i = 0; i < NUM_ALIGNMENTS; ++i)
+    if (rem_bytes < ALIGNMENTS[i])
+    {
+      alignment = ALIGNMENTS[i];
+      return true;
+    }
+
+  THEA_ERROR << "GlTexture: Could not derive image row length and alignment";
+  return false;
+}
+
+static bool
+setDefaultUnpackingOptions(IImage const & img)
+{
+  GLint row_length, alignment;
+  if (!getRowLengthAndAlignment(img, row_length, alignment)) { return GlCaps::setError(); }
+
+  // GL's default values for everything except stride
   glPixelStorei(GL_UNPACK_SWAP_BYTES, GL_FALSE);
   glPixelStorei(GL_UNPACK_LSB_FIRST, GL_FALSE);
-  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_UNPACK_ROW_LENGTH, row_length);
   glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
   glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_UNPACK_ALIGNMENT, row_alignment);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
 
   return true;
 }
 
-static int8
-setDefaultPackingOptions(int64 row_alignment)
+static bool
+setDefaultPackingOptions(IImage const & img)
 {
-  if (row_alignment < 1) { THEA_ERROR << "GlTexture: Row alignment must be positive"; return GlCaps::setError(); }
+  GLint row_length, alignment;
+  if (!getRowLengthAndAlignment(img, row_length, alignment)) { return GlCaps::setError(); }
 
-  // GL's default values for everything except alignment
+  // GL's default values for everything except stride
   glPixelStorei(GL_PACK_SWAP_BYTES, GL_FALSE);
   glPixelStorei(GL_PACK_LSB_FIRST, GL_FALSE);
-  glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+  glPixelStorei(GL_PACK_ROW_LENGTH, row_length);
   glPixelStorei(GL_PACK_SKIP_ROWS, 0);
   glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-  glPixelStorei(GL_PACK_ALIGNMENT, row_alignment);
+  glPixelStorei(GL_PACK_ALIGNMENT, alignment);
 
   return true;
 }
@@ -187,22 +226,22 @@ GlTexture::GlTexture(GlRenderSystem * render_system_, char const * name_, IImage
 
     if (!setOptions(options)) THEA_GL_TEXTURE_ERROR
 
-    if (!GlTextureInternal::setDefaultUnpackingOptions(images[0]->getRowAlignment())) THEA_GL_TEXTURE_ERROR
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[0])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[0]->getData(), bytes_format, Face::POS_X)) THEA_GL_TEXTURE_ERROR
 
-    glPixelStorei(GL_PACK_ALIGNMENT, images[1]->getRowAlignment());
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[1])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[1]->getData(), bytes_format, Face::NEG_X)) THEA_GL_TEXTURE_ERROR
 
-    glPixelStorei(GL_PACK_ALIGNMENT, images[2]->getRowAlignment());
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[2])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[2]->getData(), bytes_format, Face::POS_Y)) THEA_GL_TEXTURE_ERROR
 
-    glPixelStorei(GL_PACK_ALIGNMENT, images[3]->getRowAlignment());
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[3])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[3]->getData(), bytes_format, Face::NEG_Y)) THEA_GL_TEXTURE_ERROR
 
-    glPixelStorei(GL_PACK_ALIGNMENT, images[4]->getRowAlignment());
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[4])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[4]->getData(), bytes_format, Face::POS_Z)) THEA_GL_TEXTURE_ERROR
 
-    glPixelStorei(GL_PACK_ALIGNMENT, images[5]->getRowAlignment());
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*images[5])) THEA_GL_TEXTURE_ERROR
     if (!glTexImage(images[5]->getData(), bytes_format, Face::NEG_Z)) THEA_GL_TEXTURE_ERROR
   }
 }
@@ -461,7 +500,7 @@ GlTexture::_updateImage(IImage const * image, int32 face, bool update_options, O
     if (!doSanityChecks()) return GlCaps::setError();
 
     if (update_options && !setOptions(options)) return GlCaps::setError();
-    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return GlCaps::setError();
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*image)) return GlCaps::setError();
 
     return glTexImage(image->getData(), bytes_format, face);
   }
@@ -499,7 +538,7 @@ GlTexture::updateSubImage(IImage const * image, int64 src_x, int64 src_y, int64 
     glBindTexture(gl_target, gl_id);
     THEA_GL_OK_OR_RETURN(0)
 
-    if (!GlTextureInternal::setDefaultUnpackingOptions(image->getRowAlignment())) return GlCaps::setError();
+    if (!GlTextureInternal::setDefaultUnpackingOptions(*image)) return GlCaps::setError();
     glPixelStorei(GL_UNPACK_ROW_LENGTH, image->getWidth());
     glPixelStorei(GL_UNPACK_SKIP_ROWS, src_y);
     glPixelStorei(GL_UNPACK_SKIP_PIXELS, src_x);
@@ -554,7 +593,7 @@ GlTexture::getImage(IImage * image, int32 face) const
     if (!image->resize(image->getType(), width, height)) return GlCaps::setError();
 
     Format const * bytes_format = TextureFormat::fromImageType(IImage::Type(image->getType()), format->isDepth());
-    if (!GlTextureInternal::setDefaultPackingOptions(image->getRowAlignment())) return GlCaps::setError();
+    if (!GlTextureInternal::setDefaultPackingOptions(*image)) return GlCaps::setError();
 
     if (gl_target == GL_TEXTURE_CUBE_MAP_ARB)
     {

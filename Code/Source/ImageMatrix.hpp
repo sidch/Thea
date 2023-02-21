@@ -57,8 +57,8 @@ class /* THEA_API */ ImageMatrix : public virtual IAddressableMatrix<T>
 
     void THEA_ICALL setZero()
     {
-      // Assume all image channels are zero when they are bitwise zero. Scan width is in bytes.
-      std::memset(image->getData(), 0, image->getScanWidth() * image->getHeight());
+      // Assume all image channels are zero when they are bitwise zero
+      std::memset(image->getData(), 0, image->getStrideBytes() * image->getHeight());
     }
 
     Value const & THEA_ICALL at(int64 row, int64 col) const { return ((Value const *)image->getScanLine(row))[col]; }

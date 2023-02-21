@@ -32,7 +32,6 @@ namespace Thea {
  * A raster image, typically 2D but 3D images (depth > 1) are also supported.
  *
  * @todo Use an aligned allocator for stb images by defining STBI_MALLOC etc.
- * @todo Support wrapping an external pixel buffer.
  */
 class THEA_API Image : public virtual IImage, public Serializable
 {
@@ -52,6 +51,14 @@ class THEA_API Image : public virtual IImage, public Serializable
 
     /** Construct an uninitialized image of the specified type and pixel dimensions, which must have valid non-zero values. */
     Image(Type type_, int64 width_, int64 height_, int64 depth_ = 1);
+
+    /**
+     * Construct an image object that wraps an external data buffer which it does not own. The buffer must exist as long as this
+     * object does. The image can be resized, but only if this does not increase its memory footprint since the buffer memory
+     * will never be reallocated by this object. If \a stride_bytes_ is non-positive, the rows will be assumed to be aligned to
+     * byte boundaries, i.e. row alignment of 1 byte (this alignment may change after a resize).
+     */
+    Image(void * buf, Type type_, int64 width_, int64 height_, int64 depth_, int64 stride_bytes_ = 0);
 
     /**
      * Construct an image by deserializing it from an input stream.
@@ -153,8 +160,7 @@ class THEA_API Image : public virtual IImage, public Serializable
     void * THEA_ICALL getData();
     void const * THEA_ICALL getScanLine(int64 row, int64 z = 0) const;
     void * THEA_ICALL getScanLine(int64 row, int64 z = 0);
-    int64 THEA_ICALL getScanWidth() const;
-    int32 THEA_ICALL getRowAlignment() const;
+    int64 THEA_ICALL getStrideBytes() const;
 
     /**
      * Get the value of a channel of a particular pixel, normalized to the range [0, 1]. The following caveats should be
@@ -221,26 +227,30 @@ class THEA_API Image : public virtual IImage, public Serializable
     void save(std::string const & path, Codec const & codec = CodecAuto()) const;
 
   private:
-    /** Cache properties related to the image type. */
-    void cacheTypeProperties();
-
-    /** Compute the minimum number of bytes needed to store the uncompressed image. */
-    intx minTotalBytes(Type t = Type::UNKNOWN, int64 w = -1, int64 h = -1, int64 d = -1, int32 row_align = -1) const;
-
-    /** Clear the externally managed implementation, if any. */
+    /** Clear the externally managed implementation, if any, else a guaranteed no-op. */
     void clearImpl();
 
-    /** Clear the internally managed buffer, if any. */
+    /** Clear the internally managed buffer, if any, else a guaranteed no-op. */
     void clearData();
+
+    /** Compute the minimum number of bytes needed to store the uncompressed image. */
+    int64 minTotalBytes() const;
+
+    /** Compute the minimum number of bytes needed to store an uncompressed image. */
+    static int64 minTotalBytes(Type t, int64 w, int64 h, int64 d, int64 stride_bytes_,
+                               bool last_row_occupies_stride = false /* default value MUST be false */);
 
     /** Resize the externally managed implementation, if any. */
     bool resizeImpl(int64 type, int64 width_, int64 height_, int64 depth_);
 
     /** Resize the internally managed buffer, if any. */
-    bool resizeData(int64 type, int64 width_, int64 height_, int64 depth_, int32 row_align_);
+    bool resizeData(int64 type, int64 width_, int64 height_, int64 depth_, int64 stride_bytes_ = 0);
 
-    /** Set the type of the image, and optionally also its dimensions. */
-    void setAttribs(Type type_, int64 w = -1, int64 h = -1, int64 d = -1, int32 data_align_ = -1);
+    /** Cache properties related to the image type. */
+    void cacheTypeProperties();
+
+    /** Set the type of the image, and optionally also its dimensions. A negative argument leaves the field unchanged. */
+    void setAttribs(Type type_, int64 w = -1, int64 h = -1, int64 d = -1, int64 data_stride_ = -1);
 
     /** Read an image in the 3BM format. */
     void read3bm(Codec const & codec, BinaryInputStream & input, bool read_block_header);
@@ -263,8 +273,7 @@ class THEA_API Image : public virtual IImage, public Serializable
     // Image data managed by this object, allocated directly or wrapping an external buffer
     void * data;
     bool owns_data;
-    size_t data_size;
-    int data_alignment;
+    int64 data_stride;
     AlignedAllocator<uint8, ROW_ALIGNMENT> data_allocator;
 
     // Cached type properties for fast access
