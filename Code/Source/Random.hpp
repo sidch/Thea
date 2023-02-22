@@ -43,7 +43,7 @@ namespace Thea {
  *
  * @see http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/index.html
  *
- * @todo Switch to <random> for the core generator?
+ * @todo Switch to <tt>&lt;random&gt;</tt> for the core generator?
  */
 class THEA_API Random
 {
