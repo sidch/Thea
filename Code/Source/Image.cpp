@@ -505,7 +505,9 @@ Image::Image()
 }
 
 Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
+  cacheTypeProperties();
   resize(type_, width_, height_, depth_);
 }
 
@@ -517,25 +519,30 @@ Image::Image(void * buf, Type type_, int64 width_, int64 height_, int64 depth_, 
   alwaysAssertM(type_ != Type::UNKNOWN, "Image: Cannot wrap buffer of unknown pixel type");
   alwaysAssertM(width_ >= 0 && height_ >= 0 && depth_ >= 0, "Image: Cannot wrap buffer with negative dimensions");
 
+  cacheTypeProperties();
+
   if (stride_bytes_ <= 0)
     data_stride = ImageInternal::strideBytes(width_, type_.getBitsPerPixel(), /* row alignment = */ 1);
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
+  cacheTypeProperties();
   read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
+  cacheTypeProperties();
   load(path, codec);
 }
 
 Image::Image(Image const & src)
-: type(Type::UNKNOWN), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
 {
+  cacheTypeProperties();
   *this = src;
 }
 
