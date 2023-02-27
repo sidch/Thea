@@ -1,4 +1,4 @@
-![Thea header image](https://raw.githubusercontent.com/sidch/Thea/master/Code/Documentation/images/header.jpg)
+![Thea header image](https://raw.githubusercontent.com/sidch/Thea/main/Code/Documentation/images/header.jpg)
 
 # Thea
 A toolkit for visual computing with a focus on geometry processing, especially for interactive 3D modeling applications.
@@ -190,11 +190,11 @@ out.addMesh(remeshed);
 out.save("remeshed.obj");
 ```
 
-![Bunny mesh, before and after remeshing](https://raw.githubusercontent.com/sidch/Thea/master/Code/Documentation/images/remesh.jpg)
+![Bunny mesh, before and after remeshing](https://raw.githubusercontent.com/sidch/Thea/main/Code/Documentation/images/remesh.jpg)
 
 Figure: (Left) Input mesh. (Right) After remeshing. Artifacts are because of the specific (Bloomenthal) polygonizer used. Thea's bundled *RenderShape* utility was used to render these images.
 
-Here is a complete, compilable version of the above example: [remesh.cpp](https://github.com/sidch/Thea/blob/master/Code/Documentation/samples/remesh.cpp)
+Here is a complete, compilable version of the above example: [remesh.cpp](https://github.com/sidch/Thea/blob/main/Code/Documentation/samples/remesh.cpp)
 
 For some real-world samples, see the applications in the `Thea/Code/Source/Tools` folder.
 
