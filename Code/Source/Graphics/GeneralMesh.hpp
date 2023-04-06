@@ -796,8 +796,8 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
         return;
       }
 
-      debugAssertM(endpoint_to_preserve == 0 || endpoint_to_preserve == 1,
-                   getNameStr() + ": Endpoint to preserve during edge collapse must be indexed by 0 or 1");
+      theaAssertM(endpoint_to_preserve == 0 || endpoint_to_preserve == 1,
+                  getNameStr() + ": Endpoint to preserve during edge collapse must be indexed by 0 or 1");
 
       Vertex * vertex_to_preserve  =  edge->getEndpoint(endpoint_to_preserve);
       Vertex * vertex_to_remove    =  edge->getEndpoint(1 - endpoint_to_preserve);
@@ -1339,14 +1339,14 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     template <typename VertexInputIterator>
     Face * initFace(Face * face, VertexInputIterator vbegin, VertexInputIterator vend)
     {
-      debugAssertM(face, getNameStr() + ": Null face cannot be initialized");
+      theaAssertM(face, getNameStr() + ": Null face cannot be initialized");
 
       // Check for errors and compute normal
       size_t num_verts = 0;
       Vector3 v[3];
       for (auto vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
-        debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
+        theaAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
         if (num_verts < 3) v[num_verts] = (*vi)->getPosition();
       }
 
@@ -1623,7 +1623,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /** Remove all references to a face from its adjacent elements. */
     void unlinkFace(Face * face)
     {
-      debugAssertM(face, getNameStr() + ": Can't unlink null face");
+      theaAssertM(face, getNameStr() + ": Can't unlink null face");
 
       for (auto fvi = face->vertices.begin(); fvi != face->vertices.end(); ++fvi)
         (*fvi)->removeFace(face);
@@ -1637,7 +1637,7 @@ class /* THEA_API */ GeneralMesh : public NamedObject, public virtual IMesh
     /** Replace a higher-degree face with multiple triangular faces. */
     bool replaceFaceWithTriangulation(Face * face, Vertex ** face_vertices, intx num_tris, intx * tri_indices)
     {
-      debugAssertM(face, getNameStr() + ": Can't replace null face with triangulation");
+      theaAssertM(face, getNameStr() + ": Can't replace null face with triangulation");
 
       Vertex * tri_vertices[3];
       for (intx i = 0; i < num_tris; ++i)

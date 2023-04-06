@@ -80,7 +80,7 @@ class THEA_API DisplayMeshVertex
     /** Get the normal at the vertex. Call only if hasNormal() returns true. */
     Vector3 const & getNormal() const
     {
-      debugAssertM(hasNormal(), "DisplayMeshVertex: Vertex does not have a normal");
+      theaAssertM(hasNormal(), "DisplayMeshVertex: Vertex does not have a normal");
       return *normal;
     }
 
@@ -93,7 +93,7 @@ class THEA_API DisplayMeshVertex
     /** Get the color at the vertex. Call only if hasColor() returns true. */
     ColorRgba const & getColor() const
     {
-      debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
+      theaAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
       return *color;
     }
 
@@ -109,7 +109,7 @@ class THEA_API DisplayMeshVertex
      */
     Vector2 const & getTexCoord() const
     {
-      debugAssertM(hasTexCoord(), "DisplayMeshVertex: Vertex does not have texture coordinates");
+      theaAssertM(hasTexCoord(), "DisplayMeshVertex: Vertex does not have texture coordinates");
       return *texcoord;
     }
 
@@ -204,8 +204,8 @@ class THEA_API DisplayMeshFace
     DisplayMeshFace(DisplayMesh * mesh_, int num_vertices_, intx first_tri_, int num_triangles_)
     : mesh(mesh_), num_vertices(num_vertices_), first_tri(first_tri_), num_triangles(num_triangles_)
     {
-      debugAssertM(mesh_, "DisplayMeshFace: Parent mesh must exist");
-      debugAssertM(first_tri_ >= 0, "DisplayMeshFace: Index of first triangle must be non-negative");
+      theaAssertM(mesh_, "DisplayMeshFace: Parent mesh must exist");
+      theaAssertM(first_tri_ >= 0, "DisplayMeshFace: Index of first triangle must be non-negative");
     }
 
     /** Get the parent mesh. */
@@ -441,8 +441,8 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     /** Check if a particular face consists of a single triangle or not. */
     bool isTriangle(intx face_index) const
     {
-      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
-                   getNameStr() + ": Face index out of bounds");
+      theaAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
+                  getNameStr() + ": Face index out of bounds");
 
       return face_starting_tris[(size_t)face_index + 1] - face_starting_tris[(size_t)face_index] == 1;
     }
@@ -453,8 +453,8 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
      */
     bool isQuad(intx face_index) const
     {
-      debugAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
-                   getNameStr() + ": Face index out of bounds");
+      theaAssertM(face_index >= 0 && face_index + 1 < (intx)face_starting_tris.size(),
+                  getNameStr() + ": Face index out of bounds");
 
       auto begin = face_starting_tris[(size_t)face_index], end = face_starting_tris[(size_t)face_index + 1];
       return end - begin == 2 && large_poly_verts.find(begin) == large_poly_verts.end();
@@ -466,8 +466,8 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     /** Check if an edge exists between two vertices. */
     bool hasEdge(intx i, intx j) const
     {
-      debugAssertM(i >= 0 && i < (intx)vertices.size() && j >= 0 && j < (intx)vertices.size(),
-                   getNameStr() + ": Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < (intx)vertices.size() && j >= 0 && j < (intx)vertices.size(),
+                  getNameStr() + ": Vertex index out of bounds");
 
       return edges.find(i < j ? Edge((uint32)i, (uint32)j) : Edge((uint32)j, (uint32)i)) != edges.end();
     }
@@ -684,7 +684,7 @@ class THEA_API DisplayMesh : public NamedObject, public virtual IMesh
     /** Add a single edge between a pair of vertices. */
     void addEdge(uint32 i, uint32 j)
     {
-      debugAssertM(i < vertices.size() && j < vertices.size(), getNameStr() + ": Vertex index out of bounds");
+      theaAssertM(i < vertices.size() && j < vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
       // Smaller index first, for consistent searching
       edges.insert(i < j ? Edge(i, j) : Edge(j, i));
@@ -719,7 +719,7 @@ DisplayMeshVertex::setPosition(Vector3 const & point_)
 inline void
 DisplayMeshVertex::setNormal(Vector3 const & normal_)
 {
-  debugAssertM(hasNormal(), "DisplayMeshVertex: Vertex does not have a normal");
+  theaAssertM(hasNormal(), "DisplayMeshVertex: Vertex does not have a normal");
   *normal = normal_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_NORMAL);
 }
@@ -727,7 +727,7 @@ DisplayMeshVertex::setNormal(Vector3 const & normal_)
 inline void
 DisplayMeshVertex::setColor(ColorRgba const & color_)
 {
-  debugAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
+  theaAssertM(hasColor(), "DisplayMeshVertex: Vertex does not have a color");
   *color = color_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_COLOR);
 }
@@ -735,7 +735,7 @@ DisplayMeshVertex::setColor(ColorRgba const & color_)
 inline void
 DisplayMeshVertex::setTexCoord(Vector2 const & texcoord_)
 {
-  debugAssertM(hasTexCoord(), "DisplayMeshVertex: Vertex does not have texture coordinates");
+  theaAssertM(hasTexCoord(), "DisplayMeshVertex: Vertex does not have texture coordinates");
   *texcoord = texcoord_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_TEXCOORD);
 }
@@ -747,7 +747,7 @@ DisplayMeshVertex::setTexCoord(Vector2 const & texcoord_)
 inline DisplayMeshVertex
 DisplayMeshIndexedVertex::getVertex()
 {
-  debugAssertM(*this, "DisplayMeshIndexedVertex: Cannot get vertex from invalid reference");
+  theaAssertM(*this, "DisplayMeshIndexedVertex: Cannot get vertex from invalid reference");
   return mesh->getVertex(index);
 }
 
@@ -774,14 +774,14 @@ DisplayMeshIndexedVertex::hasNormal() const
 inline Vector3 const &
 DisplayMeshIndexedVertex::getNormal() const
 {
-  debugAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
+  theaAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
   return mesh->normals[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setNormal(Vector3 const & normal_)
 {
-  debugAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
+  theaAssertM(hasNormal(), "DisplayMeshIndexedVertex: Vertex does not have a normal");
   mesh->normals[(size_t)index] = normal_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_NORMAL);
 }
@@ -795,14 +795,14 @@ DisplayMeshIndexedVertex::hasColor() const
 inline ColorRgba const &
 DisplayMeshIndexedVertex::getColor() const
 {
-  debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
+  theaAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
   return mesh->colors[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setColor(ColorRgba const & color_)
 {
-  debugAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
+  theaAssertM(hasColor(), "DisplayMeshIndexedVertex: Vertex does not have a color");
   mesh->colors[(size_t)index] = color_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_COLOR);
 }
@@ -816,14 +816,14 @@ DisplayMeshIndexedVertex::hasTexCoord() const
 inline Vector2 const &
 DisplayMeshIndexedVertex::getTexCoord() const
 {
-  debugAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
+  theaAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
   return mesh->texcoords[(size_t)index];
 }
 
 inline void
 DisplayMeshIndexedVertex::setTexCoord(Vector2 const & texcoord_)
 {
-  debugAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
+  theaAssertM(hasTexCoord(), "DisplayMeshIndexedVertex: Vertex does not have texture coordinates");
   mesh->texcoords[(size_t)index] = texcoord_;
   mesh->invalidateGpuBuffers(DisplayMesh::BufferId::VERTEX_TEXCOORD);
 }
@@ -835,7 +835,7 @@ DisplayMeshIndexedVertex::setTexCoord(Vector2 const & texcoord_)
 inline uint32
 DisplayMeshFace::getVertexIndex(int i) const
 {
-  debugAssertM(i >= 0 && i < num_vertices, "DisplayMeshFace: Vertex index out of bounds");
+  theaAssertM(i >= 0 && i < num_vertices, "DisplayMeshFace: Vertex index out of bounds");
 
   switch (num_vertices)
   {
@@ -845,7 +845,7 @@ DisplayMeshFace::getVertexIndex(int i) const
     default:
     {
       auto loc = mesh->large_poly_verts.find(first_tri);
-      debugAssertM(loc != mesh->large_poly_verts.end(), "DisplayMeshFace: Vertices of high-degree polygon not found");
+      theaAssertM(loc != mesh->large_poly_verts.end(), "DisplayMeshFace: Vertices of high-degree polygon not found");
       return loc->second[(size_t)i];
     }
   }

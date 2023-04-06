@@ -322,7 +322,7 @@ ImlsSurface::computeUnweightedRec(TriangleBvh::Node const * start)
                                 + phi[tri.getVertices().getIndex(1)]
                                 + phi[tri.getVertices().getIndex(2)]) / 3) * tri.getArea();
 
-        debugAssertM(!Math::isNaN(my_attrib.unweighted), "ImlsSurface: Unweighted value is NaN");
+        theaAssertM(!Math::isNaN(my_attrib.unweighted), "ImlsSurface: Unweighted value is NaN");
       }
     }
   }
@@ -480,7 +480,7 @@ ImlsSurface::operator()(Vector3 const & p) const
   ++num_calls;
 #endif
 
-  debugAssertM(efunc.sum != 0, "ImlsSurface: Sum is zero");
+  theaAssertM(efunc.sum != 0, "ImlsSurface: Sum is zero");
 
   return efunc.sum_phi / efunc.sum - isolevel;
 }
@@ -496,7 +496,7 @@ ImlsSurface::deriv(Vector3 const & p, Vector3d & dp) const
   eval(p, dfunc);
 #endif
 
-  debugAssertM(dfunc.sums.I != 0, "ImlsSurface: Sum is zero");
+  theaAssertM(dfunc.sums.I != 0, "ImlsSurface: Sum is zero");
 
   dp = (-dfunc.sums.I_phi / (dfunc.sums.I * dfunc.sums.I)) * dfunc.sums.dI + dfunc.sums.dI_phi / dfunc.sums.I;
   return dfunc.sums.I_phi / dfunc.sums.I - isolevel;
@@ -518,7 +518,7 @@ ImlsSurface::EvalFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tri
                                             surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
                                             surf.phi[i2], surf.eps2);
 
-  debugAssertM(!Math::isNaN(I[0]) && !Math::isNaN(I[1]), "ImlsSurface: Integral is NaN");
+  theaAssertM(!Math::isNaN(I[0]) && !Math::isNaN(I[1]), "ImlsSurface: Integral is NaN");
 
   sum      +=  I[1];
   sum_phi  +=  (I[0] + tri.getNormal().dot(p - tri.getCentroid()) * I[1]);  // TriangleN has unit normal
@@ -559,7 +559,7 @@ ImlsSurface::DerivFunctor::evalTri(Vector3 const & p, IndexedTriangle const & tr
                                                      surf.verts[i2], (Real)2 * tri.getNormal(), surf.phi[i0], surf.phi[i1],
                                                      surf.phi[i2], surf.eps2);
 
-  /* debugAssertM */ alwaysAssertM(!Math::isNaN(Id.I) && !Math::isNaN(Id.I_phi), "ImlsSurface: Integral is NaN");
+  /* theaAssertM */ alwaysAssertM(!Math::isNaN(Id.I) && !Math::isNaN(Id.I_phi), "ImlsSurface: Integral is NaN");
 
   double plane_dist = tri.getNormal().dot(p - tri.getCentroid());
 
@@ -1090,7 +1090,7 @@ triangleQuadrature(F quad_func, Vector3 const & x, Vector3 const & p0, Vector3 c
            + quad_func(x, pi, p2, p0, vi, v2, v0, eps2_);
     }
 
-    default: debugAssertM(false, "ImlsSurface: Invalid flag");  // should never be reached
+    default: theaAssertM(false, "ImlsSurface: Invalid flag");  // should never be reached
   }
 
   return T();  // dummy, to avoid possible compiler warnings

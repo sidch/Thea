@@ -1005,9 +1005,9 @@ numLabel:
   }
 
   // Some unknown token
-  debugAssertM(false,
-               format("Unrecognized token type beginning with character '%c' (ASCII %d)",
-                      c, (int)c));
+  theaAssertM(false,
+              format("Unrecognized token type beginning with character '%c' (ASCII %d)",
+                     c, (int)c));
   return t;
 }
 
@@ -1375,7 +1375,7 @@ tokenTypeToString(Token::Type t)
       return "NEWLINE";
 
     default:
-      debugAssertM(false, "Fell through switch");
+      theaAssertM(false, "Fell through switch");
       return "?";
   }
 }

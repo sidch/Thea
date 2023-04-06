@@ -74,7 +74,7 @@ class THEA_API Manifold
       for (size_t i = 0; i < nf; ++i)
         for (typename FaceT::const_iterator vi = faces[i].begin(); vi != faces[i].end(); ++vi)
         {
-          debugAssertM(*vi >= 0 && (intx)*vi < num_vertices,
+          theaAssertM(*vi >= 0 && (intx)*vi < num_vertices,
                       format("Manifold: Vertex index %ld out of range [0, %ld)", (intx)*vi, num_vertices));
           v2f[(size_t)*vi].push_back(i);
         }

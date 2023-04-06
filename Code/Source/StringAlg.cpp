@@ -433,9 +433,9 @@ vformat(char const * fmt, va_list arg_ptr)
     // We didn't allocate a big enough string.
     char * heap_buffer = (char *)std::malloc(num_chars + 1);
 
-    debugAssertM(heap_buffer, "vformat: Heap buffer allocation failed");
+    theaAssertM(heap_buffer, "vformat: Heap buffer allocation failed");
     intx num_chars2 = vsnprintf(heap_buffer, num_chars + 1, fmt, arg_ptr);
-    debugAssertM(num_chars2 == num_chars, "vformat: Number of characters written does not match expected value");
+    theaAssertM(num_chars2 == num_chars, "vformat: Number of characters written does not match expected value");
     (void)num_chars2;  // avoid unused variable warnings
 
     std::string result(heap_buffer);

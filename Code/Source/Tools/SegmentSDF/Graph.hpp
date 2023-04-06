@@ -258,7 +258,7 @@ class Graph
 
     EdgeIterator addEdge(VertexIterator origin, VertexIterator end, EdgeAttribute const & attrib)
     {
-      debugAssertM(origin != verticesEnd() && end != verticesEnd(), "Graph: Cannot add edge with null endpoint");
+      theaAssertM(origin != verticesEnd() && end != verticesEnd(), "Graph: Cannot add edge with null endpoint");
 
       Edge * e = new Edge(&(*origin), &(*end), attrib);
       edges.push_front(*e);
@@ -279,7 +279,7 @@ class Graph
       for (typename Vertex::EdgeIterator ei = v->outgoingEdgesBegin(); ei != v->outgoingEdgesEnd(); )
         removeEdge(EdgeIterator(*(ei++)));
 
-      debugAssertM(v->numEdges() == 0, "Graph: Vertex has at least one edge, where it is expected to have zero");
+      theaAssertM(v->numEdges() == 0, "Graph: Vertex has at least one edge, where it is expected to have zero");
 
       vertices.erase(v);
       delete &(*v);

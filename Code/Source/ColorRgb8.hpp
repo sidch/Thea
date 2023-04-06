@@ -101,14 +101,14 @@ class THEA_API ColorRgb8
     /** Array-style channel access. */
     template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
     {
-      debugAssertM(channel >= 0 && channel <= 2, "ColorRgb8: Channel must be 0, 1 or 2");
+      theaAssertM(channel >= 0 && channel <= 2, "ColorRgb8: Channel must be 0, 1 or 2");
       return c[channel];
     }
 
     /** Array-style channel access. */
     template <typename IntegerT> uint8 & operator[](IntegerT channel)
     {
-      debugAssertM(channel >= 0 && channel <= 2, "ColorRgb8: Channel must be 0, 1 or 2");
+      theaAssertM(channel >= 0 && channel <= 2, "ColorRgb8: Channel must be 0, 1 or 2");
       return c[channel];
     }
 

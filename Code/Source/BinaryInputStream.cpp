@@ -179,7 +179,7 @@ void
 BinaryInputStream::loadIntoMemory(int64 start_position, int64 min_length)
 {
   // Load the next section of the file
-  debugAssertM(m_path != "<memory>", getNameStr() + ": Read past end of stream");
+  theaAssertM(m_path != "<memory>", getNameStr() + ": Read past end of stream");
   int64 absPos = m_alreadyRead + m_pos;
 
   if (m_bufferLength < min_length)
@@ -267,13 +267,13 @@ BinaryInputStream::BinaryInputStream(uint8 const * data, int64 data_len, Endiann
   if (!copy_memory)
   {
     alwaysAssertM(data_len <= 0 || data, "BinaryInputStream: Wrapped buffer of non-zero size must be non-null");
-    debugAssertM(!m_freeBuffer, "BinaryInputStream: Can't free buffer if it is not a copy");
+    theaAssertM(!m_freeBuffer, "BinaryInputStream: Can't free buffer if it is not a copy");
 
     m_buffer = const_cast<uint8 *>(data);
   }
   else
   {
-    debugAssertM(m_freeBuffer, "BinaryInputStream: Must free buffer if it is a copy");
+    theaAssertM(m_freeBuffer, "BinaryInputStream: Must free buffer if it is a copy");
 
     m_buffer = (uint8 *)std::malloc((size_t)m_length);
     if (!m_buffer)

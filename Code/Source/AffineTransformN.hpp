@@ -139,14 +139,14 @@ class /* THEA_DLL_LOCAL */ AffineTransformNBase
     /** Get an element of the N x (N + 1) matrix representing this transform. */
     T operator()(intx i, intx j) const
     {
-      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
+      theaAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);
     }
 
     /** Get an element of the N x (N + 1) matrix representing this transform. */
     T & operator()(intx i, intx j)
     {
-      debugAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
+      theaAssertM(i >= 0 && i < N && j >= 0 && j <= N, "AffineTransformN: Index out of bounds");
       return j == N ? trans[i] : linear(i, j);
     }
 

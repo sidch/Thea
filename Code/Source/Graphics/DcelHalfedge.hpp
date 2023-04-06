@@ -214,14 +214,14 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
     /** Get the vertex from which this halfedge originates. */
     Vertex const * getOrigin() const
     {
-      debugAssertM(origin, "DcelHalfedge: Halfedge has no origin");
+      theaAssertM(origin, "DcelHalfedge: Halfedge has no origin");
       return origin;
     }
 
     /** Get the vertex from which this halfedge originates. */
     Vertex * getOrigin()
     {
-      debugAssertM(origin, "DcelHalfedge: Halfedge has no origin");
+      theaAssertM(origin, "DcelHalfedge: Halfedge has no origin");
       return origin;
     }
 
@@ -234,14 +234,14 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
     /** Get an endpoint of the edge. \a i = 0 returns the origin and \a i = 1 the end. */
     Vertex const * getEndpoint(int i) const
     {
-      debugAssertM(i == 0 || i == 1, "DcelHalfedge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "DcelHalfedge: Invalid endpoint index");
       return i == 0 ? origin : getEnd();
     }
 
     /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */
     Vertex * getEndpoint(int i)
     {
-      debugAssertM(i == 0 || i == 1, "DcelHalfedge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "DcelHalfedge: Invalid endpoint index");
       return i == 0 ? origin : getEnd();
     }
 
@@ -251,7 +251,7 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
      */
     Vertex const * getOtherEndpoint(Vertex const * endpoint) const
     {
-      debugAssertM(hasEndpoint(endpoint), "DcelHalfedge: Vertex is not an endpoint of the edge");
+      theaAssertM(hasEndpoint(endpoint), "DcelHalfedge: Vertex is not an endpoint of the edge");
       return origin == endpoint ? getEnd() : origin;
     }
 
@@ -261,7 +261,7 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
      */
     Vertex * getOtherEndpoint(Vertex const * endpoint)
     {
-      debugAssertM(hasEndpoint(endpoint), "DcelHalfedge: Vertex is not an endpoint of the edge");
+      theaAssertM(hasEndpoint(endpoint), "DcelHalfedge: Vertex is not an endpoint of the edge");
       return origin == endpoint ? getEnd() : origin;
     }
 
@@ -283,28 +283,28 @@ class /* THEA_API */ DcelHalfedge : public AttributedObject<HalfedgeAttribute>
     /** Get the next halfedge around the face. */
     DcelHalfedge const * next() const
     {
-      debugAssertM(next_he, "DcelHalfedge: Halfedge has no successor");
+      theaAssertM(next_he, "DcelHalfedge: Halfedge has no successor");
       return next_he;
     }
 
     /** Get the next halfedge around the face. */
     DcelHalfedge * next()
     {
-      debugAssertM(next_he, "DcelHalfedge: Halfedge has no successor");
+      theaAssertM(next_he, "DcelHalfedge: Halfedge has no successor");
       return next_he;
     }
 
     /** Get the halfedge between the same two vertices, but in the opposite direction. */
     DcelHalfedge const * twin() const
     {
-      debugAssertM(twin_he, "DcelHalfedge: Halfedge has no twin_he");
+      theaAssertM(twin_he, "DcelHalfedge: Halfedge has no twin_he");
       return twin_he;
     }
 
     /** Get the next halfedge around the face. */
     DcelHalfedge * twin()
     {
-      debugAssertM(twin_he, "DcelHalfedge: Halfedge has no twin_he");
+      theaAssertM(twin_he, "DcelHalfedge: Halfedge has no twin_he");
       return twin_he;
     }
 

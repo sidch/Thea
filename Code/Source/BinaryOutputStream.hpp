@@ -115,7 +115,7 @@ class THEA_API BinaryOutputStream : public NamedObject, private Noncopyable
     /** Make sure at least \a num_bytes bytes can be written, resizing if necessary. */
     void reserveBytes(int64 num_bytes)
     {
-      debugAssertM(num_bytes > 0, getNameStr() + ": Can't reserve less than one byte");
+      theaAssertM(num_bytes > 0, getNameStr() + ": Can't reserve less than one byte");
       size_t oldBufferLen = (size_t)m_bufferLen;
       m_bufferLen = std::max(m_bufferLen, (m_pos + num_bytes));
 
@@ -292,8 +292,8 @@ class THEA_API BinaryOutputStream : public NamedObject, private Noncopyable
     {
       reserveBytes(n);
 
-      debugAssertM(m_pos >= 0, getNameStr() + ": Invalid write position");
-      debugAssertM(m_bufferLen >= n, getNameStr() + format(": Could not reserve space to write %ld bytes", (intx)n));
+      theaAssertM(m_pos >= 0, getNameStr() + ": Invalid write position");
+      theaAssertM(m_bufferLen >= n, getNameStr() + format(": Could not reserve space to write %ld bytes", (intx)n));
 
       std::memcpy(m_buffer + m_pos, b, n);
       m_pos += n;
@@ -351,7 +351,7 @@ class THEA_API BinaryOutputStream : public NamedObject, private Noncopyable
     /** Write a 32-bit floating point number. */
     void writeFloat32(float32 f)
     {
-      debugAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
+      theaAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
 
       union
       {
@@ -365,7 +365,7 @@ class THEA_API BinaryOutputStream : public NamedObject, private Noncopyable
     /** Write a 64-bit floating point number. */
     void writeFloat64(float64 f)
     {
-      debugAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
+      theaAssertM(m_beginEndBits == 0, getNameStr() + ": Byte-level writes not allowed in a beginBits/endBits block");
       union
       {
         float64 a;

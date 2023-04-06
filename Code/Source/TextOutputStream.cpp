@@ -394,8 +394,8 @@ TextOutputStream::wordWrapIndentAppend(std::string const & str)
 
     if (currentColumn >= cols)
     {
-      debugAssertM(str[i] != '\n' && str[i] != '\r',
-                   "Should never enter word-wrapping on a newline character");
+      theaAssertM(str[i] != '\n' && str[i] != '\r', "Should never enter word-wrapping on a newline character");
+
       // True when we're allowed to treat a space as a space.
       bool unquotedSpace = options.allowWordWrapInsideDoubleQuotes || ! inDQuote;
       // Cases:

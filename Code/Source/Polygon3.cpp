@@ -101,7 +101,7 @@ Polygon3::numVertices() const
 Polygon3::IndexedVertex const &
 Polygon3::getVertex(intx poly_index) const
 {
-  debugAssertM(poly_index >= 0 && poly_index < numVertices(), "Polygon3: Vertex index out of bounds");
+  theaAssertM(poly_index >= 0 && poly_index < numVertices(), "Polygon3: Vertex index out of bounds");
 
   return vertices[(size_t)poly_index];
 }

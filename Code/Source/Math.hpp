@@ -81,7 +81,7 @@ ceilLog2(uint32 i)
 inline float32
 fastLog2(float32 f)
 {
-  debugAssertM(f > 0.0f, "Math::fastLog2: Cannot compute logarithm of negative number");
+  theaAssertM(f > 0.0f, "Math::fastLog2: Cannot compute logarithm of negative number");
 
   int32 i = (*reinterpret_cast<int32 *>(&f));
   return (((i & 0x7f800000) >> 23) - 0x7f) + (i & 0x007fffff) / (float32)0x800000;

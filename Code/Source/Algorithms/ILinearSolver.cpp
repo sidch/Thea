@@ -30,7 +30,7 @@ LinearSolverManager::getFactory(std::string const & type)
 bool
 LinearSolverManager::installFactory(std::string const & type, ILinearSolverFactory * factory)
 {
-  debugAssertM(factory, "LinearSolverManager: Null factory cannot be installed");
+  theaAssertM(factory, "LinearSolverManager: Null factory cannot be installed");
 
   std::string type_lc = toLower(type);
   FactoryMap::const_iterator installed = installed_factories.find(type_lc);

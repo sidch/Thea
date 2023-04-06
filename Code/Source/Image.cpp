@@ -595,7 +595,7 @@ Image::~Image()
 int8
 Image::isValid() const
 {
-  debugAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
+  theaAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
 
   return type != Type::UNKNOWN && width >= 0 && height >= 0 && depth >= 0
       && ((width <= 0 || height <= 0 || depth <= 0)
@@ -660,7 +660,7 @@ Image::minTotalBytes(Type t, int64 w, int64 h, int64 d, int64 stride_bytes_, boo
   auto bytes = last_row_occupies_stride ? (int64)(stride_bytes_ * h * d)
                                         : (int64)(stride_bytes_ * (h * d - 1) + w * bytes_pp);
 
-  debugAssertM(bytes >= 0, "Image: Total number of bytes computed as negative");
+  theaAssertM(bytes >= 0, "Image: Total number of bytes computed as negative");
 
   return bytes;
 }
@@ -781,7 +781,7 @@ Image::getData() const
 void *
 Image::getData()
 {
-  debugAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
+  theaAssertM(!impl || !data, "Image: Image has both externally and internally managed implementations");
 
   if (impl)
   {
@@ -804,9 +804,9 @@ Image::getScanLine(int64 row, int64 z) const
 void *
 Image::getScanLine(int64 row, int64 z)
 {
-  debugAssertM(row >= 0 && row < height, "Image: Scanline row index out of bounds");
-  debugAssertM(z   >= 0 && z   < depth,  "Image: Scanline Z index out of bounds");
-  debugAssertM(isValid(),                "Image: Can't get scanline of an invalid image");
+  theaAssertM(row >= 0 && row < height, "Image: Scanline row index out of bounds");
+  theaAssertM(z   >= 0 && z   < depth,  "Image: Scanline Z index out of bounds");
+  theaAssertM(isValid(),                "Image: Can't get scanline of an invalid image");
 
   if (impl)
   {

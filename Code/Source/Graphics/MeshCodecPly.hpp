@@ -561,7 +561,7 @@ class CodecPly : public CodecPlyBase<MeshT>
     /** Return a binary-encoded list of elements of a specified type. */
     template <typename T> void readBinaryList(BinaryInputStream & in, Property const & prop, Array<T> & items) const
     {
-      debugAssertM(prop.type == PropertyType::LIST, toString(getName()) + ": Can't read non-list property as list");
+      theaAssertM(prop.type == PropertyType::LIST, toString(getName()) + ": Can't read non-list property as list");
 
       intx num_items = readBinaryNumber<intx>(in, prop.count_type);
       if (num_items < 0)

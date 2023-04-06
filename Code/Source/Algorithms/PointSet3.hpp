@@ -175,7 +175,7 @@ class PointSet3
     /** Get a sample by its index. */
     Sample const & getSample(intx index) const
     {
-      debugAssertM(index >= 0 && index < (intx)samples.size(), "PointSet3: Sample index out of bounds");
+      theaAssertM(index >= 0 && index < (intx)samples.size(), "PointSet3: Sample index out of bounds");
       return samples[(size_t)index];
     }
 
@@ -590,7 +590,7 @@ class PointSet3
         NeighborFunctor(Sample * sample_, bool has_normals_, RayQueryStructureT const * surface_)
         : sample(sample_), has_normals(has_normals_), surface(surface_)
         {
-          debugAssertM(sample, "PointSet3: Can't create neighbor functor without valid source sample");
+          theaAssertM(sample, "PointSet3: Can't create neighbor functor without valid source sample");
         }
 
         /** Called for every candidate neighbor. */

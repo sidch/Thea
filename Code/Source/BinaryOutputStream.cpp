@@ -192,15 +192,15 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
       bytesToWrite = m_bufferLen;
     }
 
-    debugAssertM(bytesToWrite > 0, getNameStr() + ": No bytes to write");
+    theaAssertM(bytesToWrite > 0, getNameStr() + ": No bytes to write");
 
     // Write to the file
     char const * mode = (m_alreadyWritten > 0) ? "ab" : "wb";
     FILE * file = fopen(m_path.c_str(), mode);
-    debugAssertM(file, getNameStr() + ": Could not open file for writing");
+    theaAssertM(file, getNameStr() + ": Could not open file for writing");
 
     size_t count = fwrite(m_buffer, 1, (size_t)bytesToWrite, file);
-    debugAssertM((int64)count == bytesToWrite, getNameStr() + ": All bytes were not written");
+    theaAssertM((int64)count == bytesToWrite, getNameStr() + ": All bytes were not written");
     (void)count;  // avoid unused variable warning
 
     fclose(file);
@@ -211,10 +211,10 @@ BinaryOutputStream::reserveBytesWhenOutOfMemory(size_t bytes)
     m_bufferLen -= bytesToWrite;
     m_pos -= bytesToWrite;
 
-    debugAssertM(m_bufferLen < m_bufferCapacity, getNameStr() + ": Buffer exceeds maximum size");
-    debugAssertM(m_bufferLen >= 0, getNameStr() + ": Buffer has negative size");
-    debugAssertM(m_pos >= 0, getNameStr() + ": Write position is negative");
-    debugAssertM(m_pos <= m_bufferLen, getNameStr() + ": Write position is beyond end of buffer");
+    theaAssertM(m_bufferLen < m_bufferCapacity, getNameStr() + ": Buffer exceeds maximum size");
+    theaAssertM(m_bufferLen >= 0, getNameStr() + ": Buffer has negative size");
+    theaAssertM(m_pos >= 0, getNameStr() + ": Write position is negative");
+    theaAssertM(m_pos <= m_bufferLen, getNameStr() + ": Write position is beyond end of buffer");
 
     // Shift the unwritten data back appropriately in the buffer.
     std::memmove(m_buffer, m_buffer + bytesToWrite, m_bufferLen);
@@ -264,7 +264,7 @@ BinaryOutputStream::BinaryOutputStream(std::string const & path, Endianness file
 void
 BinaryOutputStream::reset()
 {
-  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't reset in beginBits/endBits block");
+  theaAssertM(m_beginEndBits == 0, getNameStr() + ": Can't reset in beginBits/endBits block");
   alwaysAssertM(m_path == "<memory>", getNameStr() + ": Can only reset a BinaryOutputStream that writes to memory");
 
   // Do not reallocate, just clear the size of the buffer.
@@ -318,7 +318,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
   if (!force && m_bufferLen <= 0)
     return true;
 
-  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Missing endBits before commit");
+  theaAssertM(m_beginEndBits == 0, getNameStr() + ": Missing endBits before commit");
 
   // Make sure the directory exists
   std::string dir = FilePath::parent(m_path);
@@ -346,7 +346,7 @@ BinaryOutputStream::_commit(bool flush, bool force)
     if (m_buffer != nullptr && m_bufferLen > 0)
     {
       size_t success = fwrite(m_buffer, m_bufferLen, 1, file);
-      debugAssertM(success == 1, getNameStr() + ": Could not write buffer contents to disk");
+      theaAssertM(success == 1, getNameStr() + ": Could not write buffer contents to disk");
       (void)success;
 
       m_alreadyWritten += m_bufferLen;
@@ -400,7 +400,7 @@ BinaryOutputStream::writeUInt32(uint32 u)
 {
   reserveBytes(4);
   uint8 * convert = (uint8 *)&u;
-  debugAssertM(m_beginEndBits == 0, getNameStr() + ": Can't write non-bit data within beginBits/endBits block");
+  theaAssertM(m_beginEndBits == 0, getNameStr() + ": Can't write non-bit data within beginBits/endBits block");
 
   if (m_swapBytes)
   {
@@ -494,7 +494,7 @@ BinaryOutputStream::writeAlignedString(std::string const & s, int alignment)
 void
 BinaryOutputStream::beginBits()
 {
-  debugAssertM(m_beginEndBits == 0, getNameStr() + ": beginBits/endBits mismatch");
+  theaAssertM(m_beginEndBits == 0, getNameStr() + ": beginBits/endBits mismatch");
 
   m_bitString = 0x00;
   m_bitPos = 0;
@@ -504,7 +504,7 @@ BinaryOutputStream::beginBits()
 void
 BinaryOutputStream::writeBits(int num_bits, uint32 value)
 {
-  debugAssertM(m_beginEndBits == 1, getNameStr() + ": Can't call writeBits outside beginBits/endBits block");
+  theaAssertM(m_beginEndBits == 1, getNameStr() + ": Can't call writeBits outside beginBits/endBits block");
 
   while (num_bits > 0)
   {
@@ -527,7 +527,7 @@ BinaryOutputStream::writeBits(int num_bits, uint32 value)
 void
 BinaryOutputStream::endBits()
 {
-  debugAssertM(m_beginEndBits == 1, getNameStr() + ": beginBits/endBits mismatch");
+  theaAssertM(m_beginEndBits == 1, getNameStr() + ": beginBits/endBits mismatch");
 
   if (m_bitPos > 0)
   {

@@ -129,7 +129,7 @@ DisplayMesh::getTriangleMatrix()
 DisplayMesh::Vertex
 DisplayMesh::getVertex(intx i)
 {
-  debugAssertM(i >= 0 && i < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
+  theaAssertM(i >= 0 && i < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
   size_t si = (size_t)i;
   return Vertex(this, vertices[si],
@@ -141,7 +141,7 @@ DisplayMesh::getVertex(intx i)
 DisplayMesh::IndexTriple
 DisplayMesh::getTriangle(intx tri_index) const
 {
-  debugAssertM(tri_index >= 0 && 3 * tri_index < (intx)tris.size(), getNameStr() + ": Triangle index out of bounds");
+  theaAssertM(tri_index >= 0 && 3 * tri_index < (intx)tris.size(), getNameStr() + ": Triangle index out of bounds");
 
   size_t base_index = (size_t)(3 * tri_index);
   IndexTriple tri;
@@ -215,16 +215,16 @@ DisplayMesh::addVertex(Vector3 const & point, intx src_index, Vector3 const * no
 intx
 DisplayMesh::addTriangle(intx vi0, intx vi1, intx vi2, intx src_face_index)
 {
-  debugAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0
-            && vi0 < (intx)vertices.size()
-            && vi1 < (intx)vertices.size()
-            && vi2 < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
+  theaAssertM(vi0 >= 0 && vi1 >= 0 && vi2 >= 0
+           && vi0 < (intx)vertices.size()
+           && vi1 < (intx)vertices.size()
+           && vi2 < (intx)vertices.size(), getNameStr() + ": Vertex index out of bounds");
 
   alwaysAssertM((src_face_index >= 0 && 3 * tri_src_face_indices.size() == tris.size())
              || (src_face_index < 0 && tri_src_face_indices.empty()),
                 getNameStr() + ": Mesh must have all or no triangle face source indices");
 
-  debugAssertM(face_starting_tris.back() == numTriangles(), getNameStr() + ": Last entry of face_starting_tris is invalid");
+  theaAssertM(face_starting_tris.back() == numTriangles(), getNameStr() + ": Last entry of face_starting_tris is invalid");
 
   tris.push_back((uint32)vi0);
   tris.push_back((uint32)vi1);
@@ -261,7 +261,7 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
   for (int i = 0; i < num_vertices; ++i)
   {
     intx vi = vertex_indices[i];
-    debugAssertM(vi >= 0 && vi < (intx)vertices.size(), getName() + format(": Vertex index %ld out of bounds", vi));
+    theaAssertM(vi >= 0 && vi < (intx)vertices.size(), getName() + format(": Vertex index %ld out of bounds", vi));
   }
 #endif
 
@@ -291,9 +291,9 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
     return -1;
   }
 
-  // debugAssertM(num_tris == 3 * (num_vertices - 2),
-  //              getName() + format(": Triangulation of polygonal face yielded %l triangles, whereas %l were expected",
-  //                                 num_tris, num_vertices - 2));
+  // theaAssertM(num_tris == 3 * (num_vertices - 2),
+ //              getName() + format(": Triangulation of polygonal face yielded %l triangles, whereas %l were expected",
+ //                                 num_tris, num_vertices - 2));
 
   alwaysAssertM((src_face_index >= 0 && 3 * tri_src_face_indices.size() == tris.size())
              || (src_face_index < 0 && tri_src_face_indices.empty()),
@@ -302,7 +302,7 @@ DisplayMesh::addFace(int num_vertices, intx const * vertex_indices, intx src_fac
   intx first_tri = numTriangles();
 
 #ifdef THEA_DEBUG_BUILD
-  debugAssertM(face_starting_tris.back() == first_tri, getNameStr() + ": Last entry of face_starting_tris is invalid");
+  theaAssertM(face_starting_tris.back() == first_tri, getNameStr() + ": Last entry of face_starting_tris is invalid");
 #endif
 
   size_t num_tri_verts = (size_t)(3 * num_tris);
@@ -360,7 +360,7 @@ DisplayMesh::getFace(intx face_index)
     default:  // higher-degree polygon
     {
       auto loc = large_poly_verts.find(begin);
-      debugAssertM(loc != large_poly_verts.end(), getNameStr() + format(": Vertices of face %ld not found", (long)face_index));
+      theaAssertM(loc != large_poly_verts.end(), getNameStr() + format(": Vertices of face %ld not found", (long)face_index));
       return Face(this, (int)loc->second.size(), begin, num_tris);
     }
   }

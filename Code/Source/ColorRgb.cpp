@@ -193,9 +193,9 @@ ColorRgb::random()
 ColorRgb
 ColorRgb::fromHSV(Vector3 const & hsv)
 {
-  debugAssertM((hsv[0] <= 1.0f && hsv[0] >= 0.0f)
-            && (hsv[1] <= 1.0f && hsv[1] >= 0.0f)
-            && (hsv[2] <= 1.0f && hsv[2] >= 0.0f), "ColorRgb: H, S, V must be in [0, 1]");
+  theaAssertM((hsv[0] <= 1.0f && hsv[0] >= 0.0f)
+           && (hsv[1] <= 1.0f && hsv[1] >= 0.0f)
+           && (hsv[2] <= 1.0f && hsv[2] >= 0.0f), "ColorRgb: H, S, V must be in [0, 1]");
 
   int const i = std::min(5, (int)std::floor(6.0 * hsv[0]));
   Real const f = 6.0f * hsv[0] - i;
@@ -212,7 +212,7 @@ ColorRgb::fromHSV(Vector3 const & hsv)
     case 4: return ColorRgb(k, m, hsv[2]);
     case 5: return ColorRgb(hsv[2], m, n);
 
-    default: debugAssertM(false, "ColorRgb: Fell through switch when attempting conversion from HSV");
+    default: theaAssertM(false, "ColorRgb: Fell through switch when attempting conversion from HSV");
   }
 
   return ColorRgb::black();
@@ -221,9 +221,9 @@ ColorRgb::fromHSV(Vector3 const & hsv)
 Vector3
 ColorRgb::toHSV() const
 {
-  debugAssertM((c[0] <= 1.0f && c[0] >= 0.0f)
-            && (c[1] <= 1.0f && c[1] >= 0.0f)
-            && (c[2] <= 1.0f && c[2] >= 0.0f), "ColorRgb: R, G, B must be in [0, 1]");
+  theaAssertM((c[0] <= 1.0f && c[0] >= 0.0f)
+           && (c[1] <= 1.0f && c[1] >= 0.0f)
+           && (c[2] <= 1.0f && c[2] >= 0.0f), "ColorRgb: R, G, B must be in [0, 1]");
 
   Vector3 hsv = Vector3::Zero();
   hsv[2] = std::max(std::max(c[0], c[1]), c[2]);

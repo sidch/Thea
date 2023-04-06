@@ -750,9 +750,9 @@ Clustering::toClutoEnum(SplitPriority sp)
 inline void
 Clustering::toClutoOptions(FlatOptions const & options, int & simfun, int & grmodel, int & nnbrs, int & crfun, int & cstype)
 {
-  debugAssertM(options.method == FlatMethod::CLUTO_CLUSTER_DIRECT
-            || options.method == FlatMethod::CLUTO_CLUSTER_RB
-            || options.method == FlatMethod::CLUTO_GRAPH_CLUSTER_RB, "Clustering: Options do not specify CLUTO clustering");
+  theaAssertM(options.method == FlatMethod::CLUTO_CLUSTER_DIRECT
+           || options.method == FlatMethod::CLUTO_CLUSTER_RB
+           || options.method == FlatMethod::CLUTO_GRAPH_CLUSTER_RB, "Clustering: Options do not specify CLUTO clustering");
 
   if (options.method != FlatMethod::CLUTO_GRAPH_CLUSTER_RB
    && (options.clustering_criterion == ClusteringCriterion::CLUTO_CUT

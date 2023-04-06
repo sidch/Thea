@@ -162,7 +162,7 @@ void
 oneHot(int coord, Eigen::MatrixBase<Derived> & v)
 {
   static_assert(Derived::IsVectorAtCompileTime != 0, "Math::oneHot: Output must be compile-time vector");
-  debugAssertM(coord >= 0 && coord < v.size(), "Math::oneHot: Coordinate index out of bounds");
+  theaAssertM(coord >= 0 && coord < v.size(), "Math::oneHot: Coordinate index out of bounds");
 
   v.fill(0); v[coord] = 1;
 }
@@ -175,7 +175,7 @@ template <int N, typename T = Real>
 Vector<N, T>
 oneCold(int coord)
 {
-  debugAssertM(coord >= 0 && coord < N, "Math::oneCold: Coordinate index out of bounds");
+  theaAssertM(coord >= 0 && coord < N, "Math::oneCold: Coordinate index out of bounds");
 
   Vector<N, T> v;
   v.fill(1); v[coord] = 0;
@@ -191,7 +191,7 @@ void
 oneCold(int coord, Eigen::MatrixBase<Derived> & v)
 {
   static_assert(Derived::IsVectorAtCompileTime != 0, "Math::oneCold: Output must be compile-time vector");
-  debugAssertM(coord >= 0 && coord < v.size(), "Math::oneCold: Coordinate index out of bounds");
+  theaAssertM(coord >= 0 && coord < v.size(), "Math::oneCold: Coordinate index out of bounds");
 
   v.fill(1); v[coord] = 0;
 }

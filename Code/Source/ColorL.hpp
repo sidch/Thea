@@ -78,14 +78,14 @@ class THEA_API ColorL
     /** Array-style channel access. */
     template <typename IntegerT> Real const & operator[](IntegerT channel) const
     {
-      debugAssertM(channel == 0, "ColorL: Channel must be 0");
+      theaAssertM(channel == 0, "ColorL: Channel must be 0");
       return val;
     }
 
     /** Array-style channel access. */
     template <typename IntegerT> Real & operator[](IntegerT channel)
     {
-      debugAssertM(channel == 0, "ColorL: Channel must be 0");
+      theaAssertM(channel == 0, "ColorL: Channel must be 0");
       return val;
     }
 

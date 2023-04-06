@@ -50,13 +50,13 @@ class MeshVertexTriple
     MeshVertexTriple(MeshVertexHandle v0, MeshVertexHandle v1, MeshVertexHandle v2, MeshFaceHandle face_, Mesh * mesh_)
     : mesh(mesh_), vertices{ v0, v1, v2 }, face(face_)
     {
-      debugAssertM(v0 && v1 && v2, "Mesh triangle: Null vertex provided");
+      theaAssertM(v0 && v1 && v2, "Mesh triangle: Null vertex provided");
     }
 
     /** Get the position of any one of the three vertices. */
     Vector3 const & getVertex(int i) const
     {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
       return vertices[i]->getPosition();
     }
 
@@ -69,14 +69,14 @@ class MeshVertexTriple
     /** Get a pointer to any one of the three mesh vertices. */
     MeshVertexConstHandle getMeshVertex(int i) const
     {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
       return vertices[i];
     }
 
     /** Get a pointer to any one of the three mesh vertices. */
     MeshVertexHandle getMeshVertex(int i)
     {
-      debugAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < 3, "Mesh triangle: Vertex index out of bounds");
       return vertices[i];
     }
 
@@ -119,15 +119,15 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     : mesh(mesh_), mesh_vertices(mesh->getVertices().data()), vertex_indices{ (intx)vi0, (intx)vi1, (intx)vi2 },
       tri_index(tri_index_)
     {
-      debugAssertM(vi0 >= 0 && vi0 < mesh->numVertices()
-                && vi1 >= 0 && vi1 < mesh->numVertices()
-                && vi2 >= 0 && vi2 < mesh->numVertices(), "Display mesh triangle: Mesh vertex index out of bounds");
+      theaAssertM(vi0 >= 0 && vi0 < mesh->numVertices()
+               && vi1 >= 0 && vi1 < mesh->numVertices()
+               && vi2 >= 0 && vi2 < mesh->numVertices(), "Display mesh triangle: Mesh vertex index out of bounds");
     }
 
     /** Get the position of any one of the three vertices. */
     Vector3 const & getVertex(int i) const
     {
-      debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index must be 0, 1 or 2");
+      theaAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index must be 0, 1 or 2");
 
       return mesh_vertices[(size_t)vertex_indices[i]];
     }
@@ -150,7 +150,7 @@ class MeshVertexTriple<MeshT, typename std::enable_if< Graphics::IsDisplayMesh<M
     /** Get index in the mesh of any one of the three vertices. */
     intx getMeshVertexIndex(int i) const
     {
-      debugAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < 3, "Display mesh triangle: Vertex index out of bounds");
       return vertex_indices[i];
     }
 

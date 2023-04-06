@@ -96,28 +96,28 @@ class BoundedArrayN
     /** Get the first element in the array. */
     T const & front() const
     {
-      debugAssertM(num_elems > 0, "BoundedArrayN: Can't get first element of empty array");
+      theaAssertM(num_elems > 0, "BoundedArrayN: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the array. */
     T const & back() const
     {
-      debugAssertM(num_elems > 0, "BoundedArrayN: Can't get last element of empty array");
+      theaAssertM(num_elems > 0, "BoundedArrayN: Can't get last element of empty array");
       return values[num_elems - 1];
     }
 
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
     T const & operator[](size_t i) const
     {
-      debugAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
+      theaAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 
     /** Get the element at a given position in the array. Bounds checks are only performed in debug mode. */
     T & operator[](size_t i)
     {
-      debugAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
+      theaAssertM(i < num_elems, format("BoundedArrayN: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 
@@ -144,8 +144,8 @@ class BoundedArrayN
      */
     void insert(size_t i, T const & t)
     {
-      debugAssertM(i <= std::min(num_elems, N - 1),
-                   format("BoundedArrayN: Index %ld out of bounds [0, %ld]", (long)i, (long)std::min(num_elems, N - 1)));
+      theaAssertM(i <= std::min(num_elems, N - 1),
+                  format("BoundedArrayN: Index %ld out of bounds [0, %ld]", (long)i, (long)std::min(num_elems, N - 1)));
 
       if (isFull())
         std::copy_backward(values + i, values + N - 1, values + N);

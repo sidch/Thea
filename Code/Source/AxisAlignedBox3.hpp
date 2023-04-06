@@ -121,7 +121,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
         { 0b110, 0b010 }
       };
 
-      debugAssertM(i >= 0 && i < 12, "AxisAlignedBox3: Edge index out of bounds");
+      theaAssertM(i >= 0 && i < 12, "AxisAlignedBox3: Edge index out of bounds");
 
       return EDGES[i];
     }
@@ -149,7 +149,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
         { 4, 5, 7, 6 }   // +Z
       };
 
-      debugAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
+      theaAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
 
       return FACES[i];
     }
@@ -175,7 +175,7 @@ class /* THEA_API */ AxisAlignedBoxN<3, T> : public Internal::AxisAlignedBoxNBas
          VectorT::UnitZ()
       };
 
-      debugAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
+      theaAssertM(i >= 0 && i < 6, "AxisAlignedBox3: Face index out of bounds");
 
       return NORMALS[i];
     }

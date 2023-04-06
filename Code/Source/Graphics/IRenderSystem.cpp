@@ -30,7 +30,7 @@ RenderSystemManager::getFactory(std::string const & type)
 bool
 RenderSystemManager::installFactory(std::string const & type, IRenderSystemFactory * factory)
 {
-  debugAssertM(factory, "RenderSystemManager: Null factory cannot be installed");
+  theaAssertM(factory, "RenderSystemManager: Null factory cannot be installed");
 
   std::string type_lc = toLower(type);
   FactoryMap::const_iterator installed = installed_factories.find(type_lc);

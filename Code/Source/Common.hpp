@@ -41,15 +41,16 @@
 #  define THEA_EXPORT_INSTANTIATION
 #endif
 
-/** Root namespace for the %Thea library. */
-namespace Thea {
-
-/** Check if a test condition is true, and immediately abort the program with an error code if not, in debug mode only. */
+/**
+ * In debug mode, check if a test condition is true, and print an error message and abort the program with an error code if not.
+ * This is equivalent to <tt>assert</tt> except that it accepts a message that will be printed on failure. In release builds,
+ * the function is truly a no-op (implemented as a macro) whose operands will not be evaluated at all.
+ */
 #ifdef THEA_DEBUG_BUILD
 
 template <typename CondT, typename MessageT>
 inline void
-debugAssertM(CondT const & test, MessageT const & msg)
+theaAssertM(CondT const & test, MessageT const & msg)
 {
   if (!test)
   {
@@ -59,10 +60,13 @@ debugAssertM(CondT const & test, MessageT const & msg)
 }
 
 #else
-#  define debugAssertM(test, msg) (void)0
+#  define theaAssertM(test, msg) (void)0
 #endif
 
-/** Check if a test condition is true, and immediately abort the program with an error code if not. */
+/** Root namespace for the %Thea library. */
+namespace Thea {
+
+/** Check if a test condition is true, and print an error message and abort the program with an error code if not. */
 template <typename CondT, typename MessageT>
 inline void
 alwaysAssertM(CondT const & test, MessageT const & msg)

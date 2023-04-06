@@ -266,14 +266,14 @@ class /* THEA_API */ GeneralMeshFace : public NormalAttribute<Vector3>, public A
     /** Get the number of vertices of the face. */
     intx numVertices() const
     {
-      debugAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
+      theaAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
       return (intx)vertices.size();
     }
 
     /** Get the number of edges bordering the face. */
     intx numEdges() const
     {
-      debugAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
+      theaAssertM(vertices.size() == edges.size(), "GeneralMeshFace: Numbers of edges != number of vertices");
       return (intx)edges.size();
     }
 

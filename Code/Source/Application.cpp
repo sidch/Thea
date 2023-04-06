@@ -89,7 +89,7 @@ Application::programPath()
     if (ret == -1)
       return "";
 
-    debugAssertM((int)sizeof(path) > ret, "Application: String too short to store current program path");
+    theaAssertM((int)sizeof(path) > ret, "Application: String too short to store current program path");
     // Ensure proper nullptr termination
     path[ret] = 0;
   }

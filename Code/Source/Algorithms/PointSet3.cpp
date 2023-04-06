@@ -40,7 +40,7 @@ updateNeighborPointers(PointSet3::SampleArray & samples, PointSet3::SampleArray 
     for (int j = 0; j < nbrs.size(); ++j)
     {
       size_t index = nbrs[j].getSample() - &src_samples[0];  // take advantage of array storage (this is NOT getIndex())
-      debugAssertM(index >= 0 && index < samples.size(), "PointSet3: Can't get array index of neighboring sample");
+      theaAssertM(index >= 0 && index < samples.size(), "PointSet3: Can't get array index of neighboring sample");
 
       // Again, because of array storage, this should not break the relative ordering of neighbors with equal separation, since
       // pointer less-than is preserved

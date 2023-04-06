@@ -274,14 +274,14 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     /** Get an iterator pointing to the position beyond the last edge. */
     EdgeConstIterator edgesEnd() const
     {
-      debugAssertM(numHalfedges() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
+      theaAssertM(numHalfedges() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
       return halfedgesEnd();
     }
 
     /** Get an iterator pointing to the position beyond the last edge. */
     EdgeIterator edgesEnd()
     {
-      debugAssertM(numHalfedges() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
+      theaAssertM(numHalfedges() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
       return halfedgesEnd();
     }
 
@@ -368,7 +368,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
     /** Get the number of edges. */
     intx numEdges() const
     {
-      debugAssertM(halfedges.size() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
+      theaAssertM(halfedges.size() % 2 == 0, getNameStr() + ": Number of halfedges is odd");
       return (intx)(halfedges.size() / 2);
     }
 
@@ -479,7 +479,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
       size_t num_verts = 0;
       for (auto vi = vbegin; vi != vend; ++vi, ++num_verts)
       {
-        debugAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
+        theaAssertM(*vi, getNameStr() + ": Null vertex pointer specified for new face");
 
         if (num_verts >= face_vertices.size())
           face_vertices.resize(2 * face_vertices.size() + 1);
@@ -898,11 +898,11 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
           if (prev)
           {
             // Just to be sure, check that prev->next() is a boundary edge
-            debugAssertM(prev->isBoundaryHalfedge(),
-                         getNameStr() + ": Previous halfedge of new face is not currently on the mesh boundary");
-            debugAssertM(prev->next() && prev->next()->isBoundaryHalfedge(),
-                         getNameStr()
-                       + ": Mesh has internal inconsistency (boundary halfedge not followed by boundary halfedge)");
+            theaAssertM(prev->isBoundaryHalfedge(),
+                        getNameStr() + ": Previous halfedge of new face is not currently on the mesh boundary");
+            theaAssertM(prev->next() && prev->next()->isBoundaryHalfedge(),
+                        getNameStr()
+                      + ": Mesh has internal inconsistency (boundary halfedge not followed by boundary halfedge)");
 
             // Twin of prev is predecessor of (i, next) around vertex i.
             edges[i] = prev;
@@ -963,16 +963,16 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
           this_exists = true;
 #endif
 
-          debugAssertM(e->getOrigin() == vi && e->getEnd() == vnext, getNameStr() + ": Edge has wrong endpoints");
-          debugAssertM(e->isBoundaryHalfedge(),
-                       getNameStr() + ": Can't stitch a face to a halfedge that already adjoins a face");
+          theaAssertM(e->getOrigin() == vi && e->getEnd() == vnext, getNameStr() + ": Edge has wrong endpoints");
+          theaAssertM(e->isBoundaryHalfedge(),
+                      getNameStr() + ": Can't stitch a face to a halfedge that already adjoins a face");
           new_e = e;
 
           // This edge is necessarily the predecessor of the edge we will add at the next vertex
           next_e = edges[next];
 
-          debugAssertM(next_e, getNameStr()
-                             + ": Vertex has an existing edge, yet it was not found in search for predecessor");
+          theaAssertM(next_e, getNameStr()
+                            + ": Vertex has an existing edge, yet it was not found in search for predecessor");
 
           if (next_e->origin != vnext)  // no existing next edge
             edges[next] = e;
@@ -1054,7 +1054,7 @@ class /* THEA_API */ DcelMesh : public NamedObject, public virtual IMesh
           added_canonical_edge_to_face = true;
         }
 
-        debugAssertM(!last || last->next_he == new_e, getNameStr() + ": Next pointers on face boundary not consistent");
+        theaAssertM(!last || last->next_he == new_e, getNameStr() + ": Next pointers on face boundary not consistent");
         last = new_e;
 
 #ifdef THEA_DCELMESH_VERBOSE

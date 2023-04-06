@@ -107,14 +107,14 @@ class THEA_API ColorRgba8
     /** Array-style channel access. */
     template <typename IntegerT> uint8 const & operator[](IntegerT channel) const
     {
-      debugAssertM(channel >= 0 && channel <= 3, "ColorRgba8: Channel must be 0, 1, 2 or 3");
+      theaAssertM(channel >= 0 && channel <= 3, "ColorRgba8: Channel must be 0, 1, 2 or 3");
       return c[channel];
     }
 
     /** Array-style channel access. */
     template <typename IntegerT> uint8 & operator[](IntegerT channel)
     {
-      debugAssertM(channel >= 0 && channel <= 3, "ColorRgba8: Channel must be 0, 1, 2 or 3");
+      theaAssertM(channel >= 0 && channel <= 3, "ColorRgba8: Channel must be 0, 1, 2 or 3");
       return c[channel];
     }
 

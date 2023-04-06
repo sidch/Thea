@@ -45,7 +45,7 @@ class /* THEA_API */ TriangleLocalVertexTripleN
     /** Set the i'th vertex. */
     void setVertex(int i, VectorT const & v)
     {
-      debugAssertM(i >= 0 && i < 3, "TriangleLocalVertexTripleN: Vertex index out of bounds");
+      theaAssertM(i >= 0 && i < 3, "TriangleLocalVertexTripleN: Vertex index out of bounds");
 
       vertices[i] = v;
     }

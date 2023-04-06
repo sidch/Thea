@@ -425,8 +425,7 @@ ImlsSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris)
 
 #ifdef THEA_DEBUG_BUILD
       intx num_tris = poly.triangulate(tri_indices);
-      debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris),
-                   "ImlsSurface: MeshT face triangulation error");
+      theaAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris), "ImlsSurface: MeshT face triangulation error");
 #else
       poly.triangulate(tri_indices);
 #endif
@@ -500,7 +499,7 @@ ImlsSurface::addMesh(MeshT const & mesh, Array<IndexedTriangle> & tris)
 
 #ifdef THEA_DEBUG_BUILD
       intx num_tris = poly.triangulate(tri_indices);
-      debugAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris), "ImlsSurface: Mesh face triangulation error");
+      theaAssertM(tri_indices.size() == static_cast<size_t>(3 * num_tris), "ImlsSurface: Mesh face triangulation error");
 #else
       poly.triangulate(tri_indices);
 #endif

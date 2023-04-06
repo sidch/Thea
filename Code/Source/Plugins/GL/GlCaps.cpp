@@ -174,7 +174,7 @@ GlCaps::getDriverVersion()
 
     // Interpret the VS_VERSIONINFO header pseudo-struct
     VS_VERSIONINFO * pVS = (VS_VERSIONINFO *)buffer;
-    debugAssertM(!wcscmp(pVS->szKey, L"VS_VERSION_INFO"), "GlCaps: Version info not found");
+    theaAssertM(!wcscmp(pVS->szKey, L"VS_VERSION_INFO"), "GlCaps: Version info not found");
 
     uint8 * pVt = (uint8 *) &pVS->szKey[wcslen(pVS->szKey) + 1];
 
@@ -1083,7 +1083,7 @@ registryKeyExists(std::string const & key)
 
   HKEY openKey;
   int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
-  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+  theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
 
   if (result == ERROR_SUCCESS)
   {
@@ -1107,13 +1107,13 @@ registryValueExists(std::string const & key, std::string const & value)
 
   HKEY openKey;
   int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
-  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+  theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
 
   if (result == ERROR_SUCCESS)
   {
     uint32 dataSize = 0;
     result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, nullptr, reinterpret_cast<LPDWORD>(&dataSize));
-    debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
+    theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
     RegCloseKey(openKey);
   }
 
@@ -1133,13 +1133,13 @@ registryReadString(std::string const & key, std::string const & value, std::stri
 
   HKEY openKey;
   int32 result = RegOpenKeyExA(hkey, (key.c_str() + pos + 1), 0, KEY_READ, &openKey);
-  debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
+  theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't open registry key");
 
   if (result == ERROR_SUCCESS)
   {
     uint32 dataSize = 0;
     result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, nullptr, reinterpret_cast<LPDWORD>(&dataSize));
-    debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
+    theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 
     if (result == ERROR_SUCCESS)
     {
@@ -1150,7 +1150,7 @@ registryReadString(std::string const & key, std::string const & value, std::stri
       std::memset(tmpStr, 0, (size_t)dataSize);
       result = RegQueryValueExA(openKey, value.c_str(), nullptr, nullptr, reinterpret_cast<LPBYTE>(tmpStr),
                                 reinterpret_cast<LPDWORD>(&dataSize));
-      debugAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
+      theaAssertM(result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND, "Couldn't query registry value");
 
       if (result == ERROR_SUCCESS)
         data = tmpStr;

@@ -30,7 +30,7 @@ NumericalOptimizerManager::getFactory(std::string const & type)
 bool
 NumericalOptimizerManager::installFactory(std::string const & type, INumericalOptimizerFactory * factory)
 {
-  debugAssertM(factory, "NumericalOptimizerManager: Null factory cannot be installed");
+  theaAssertM(factory, "NumericalOptimizerManager: Null factory cannot be installed");
 
   std::string type_lc = toLower(type);
   FactoryMap::const_iterator installed = installed_factories.find(type_lc);

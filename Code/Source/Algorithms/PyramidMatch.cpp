@@ -739,7 +739,7 @@ PyramidMatch::similarity(Pyramid1d const & pyramid1, Pyramid1d const & pyramid2,
     Array<Real> const & level_data1 = pyramid1.levels[i];
     Array<Real> const & level_data2 = pyramid2.levels[i];
 
-    debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
+    theaAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
     for(size_t j = 0; j < level_data1.size(); ++ j)
@@ -769,7 +769,7 @@ PyramidMatch::similarity(Pyramid2d const & pyramid1, Pyramid2d const & pyramid2,
     Array<Real> const & level_data1 = pyramid1.levels[i].data;
     Array<Real> const & level_data2 = pyramid2.levels[i].data;
 
-    debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
+    theaAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
     for(size_t j = 0; j < level_data1.size(); ++ j)
@@ -799,7 +799,7 @@ PyramidMatch::similarity(Pyramid3d const & pyramid1, Pyramid3d const & pyramid2,
     Array<Real> const & level_data1 = pyramid1.levels[i].data;
     Array<Real> const & level_data2 = pyramid2.levels[i].data;
 
-    debugAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
+    theaAssertM(level_data1.size() == level_data2.size(), "PyramidMatch: Levels of comparable pyramids should have same size");
 
     Real level_ans = 0;
     for(size_t j = 0; j < level_data1.size(); ++ j)

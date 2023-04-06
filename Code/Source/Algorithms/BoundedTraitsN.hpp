@@ -131,25 +131,25 @@ struct /* THEA_API */ BoundedTraitsN<T *, N, ScalarT>
 {
   template <typename RangeT> static void getBounds(T const * t, RangeT & bounds)
   {
-    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    theaAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
     BoundedTraitsN<T, N, ScalarT>::getBounds(*t, bounds);
   }
 
   static Vector<N, ScalarT> getCenter(T const * t)
   {
-    debugAssertM(t, "BoundedTraitsN: Can't get center of null object");
+    theaAssertM(t, "BoundedTraitsN: Can't get center of null object");
     return BoundedTraitsN<T, N, ScalarT>::getCenter(*t);
   }
 
   static ScalarT getHigh(T const * t, intx coord)
   {
-    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    theaAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
     return BoundedTraitsN<T, N, ScalarT>::getHigh(*t, coord);
   }
 
   static ScalarT getLow(T const * t, intx coord)
   {
-    debugAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
+    theaAssertM(t, "BoundedTraitsN: Can't get bounds of null object");
     return BoundedTraitsN<T, N, ScalarT>::getLow(*t, coord);
   }
 };

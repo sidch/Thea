@@ -80,14 +80,14 @@ class /* THEA_API */ DcelFace : public NormalAttribute<Vector3>, public Attribut
     /** Get a canonical halfedge on the boundary of the face. */
     Halfedge const * getHalfedge() const
     {
-      debugAssertM(halfedge, "DcelFace: Face has a null boundary");
+      theaAssertM(halfedge, "DcelFace: Face has a null boundary");
       return halfedge;
     }
 
     /** Get a canonical halfedge on the boundary of the face. */
     Halfedge * getHalfedge()
     {
-      debugAssertM(halfedge, "DcelFace: Face has a null boundary");
+      theaAssertM(halfedge, "DcelFace: Face has a null boundary");
       return halfedge;
     }
 

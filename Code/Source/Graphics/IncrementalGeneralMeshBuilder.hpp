@@ -75,7 +75,7 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsGeneralMesh<MeshT
     VertexHandle addVertex(Vector3 const & pos, intx index = -1, Vector3 const * normal = nullptr,
                            ColorRgba const * color = nullptr, Vector2 const * texcoord = nullptr)
     {
-      debugAssertM(building, "IncrementalMeshBuilder: A vertex cannot be added outside a begin/end block");
+      theaAssertM(building, "IncrementalMeshBuilder: A vertex cannot be added outside a begin/end block");
 
       VertexHandle ref = mesh->addVertex(pos, index, normal, color, texcoord);
       if (ref) { num_vertices++; }
@@ -87,7 +87,7 @@ class IncrementalMeshBuilder<MeshT, typename std::enable_if< IsGeneralMesh<MeshT
     template <typename VertexInputIterator>
     FaceHandle addFace(VertexInputIterator begin, VertexInputIterator end, intx index = -1)
     {
-      debugAssertM(building, "IncrementalMeshBuilder: A face cannot be added outside a begin/end block");
+      theaAssertM(building, "IncrementalMeshBuilder: A face cannot be added outside a begin/end block");
 
       FaceHandle ref = mesh->addFace(begin, end, index);
       if (ref) { num_faces++; }

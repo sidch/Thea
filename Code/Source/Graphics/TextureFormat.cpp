@@ -79,7 +79,7 @@ TextureFormat::TextureFormat(
   gl_bits_per_pixel(gl_bits_per_pixel_),
   gl_data_format(gl_data_format_)
 {
-  debugAssertM(cpu_bits_per_pixel_ <= gl_bits_per_pixel_, "TextureFormat: Too many packed bits");
+  theaAssertM(cpu_bits_per_pixel_ <= gl_bits_per_pixel_, "TextureFormat: Too many packed bits");
 }
 
 namespace TextureFormatInternal {
@@ -192,7 +192,7 @@ static std::string const nameArray[] =
 char const *
 TextureFormat::getName() const
 {
-  debugAssertM(code_val < Code::NUM, "TextureFormat: Invalid code");
+  theaAssertM(code_val < Code::NUM, "TextureFormat: Invalid code");
   return TextureFormatInternal::nameArray[code_val].c_str();
 }
 

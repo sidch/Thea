@@ -58,14 +58,14 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */
     Vertex const * getEndpoint(int i) const
     {
-      debugAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
       return endpoints[i];
     }
 
     /** Get an endpoint of the edge. \a i = 0 returns the first endpoint and \a i = 1 the second. */
     Vertex * getEndpoint(int i)
     {
-      debugAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
       return endpoints[i];
     }
 
@@ -75,7 +75,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
      */
     Vertex const * getOtherEndpoint(Vertex const * endpoint) const
     {
-      debugAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
+      theaAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
       return endpoints[0] == endpoint ? endpoints[1] : endpoints[0];
     }
 
@@ -85,7 +85,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
      */
     Vertex * getOtherEndpoint(Vertex const * endpoint)
     {
-      debugAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
+      theaAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
       return endpoints[0] == endpoint ? endpoints[1] : endpoints[0];
     }
 
@@ -149,7 +149,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
      */
     GeneralMeshEdge * nextAroundEndpoint(int i)
     {
-      debugAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
 
       if (numFaces() > 2)  // non-manifold
         return nullptr;
@@ -182,7 +182,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
      */
     GeneralMeshEdge * nextAroundEndpoint(Vertex const * endpoint)
     {
-      debugAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
+      theaAssertM(hasEndpoint(endpoint), "GeneralMeshEdge: Vertex is not an endpoint of the edge");
       return nextAroundEndpoint(getEndpointIndex(endpoint));
     }
 
@@ -243,7 +243,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
     /** Set an endpoint of the edge. */
     void setEndpoint(int i, Vertex * vertex)
     {
-      debugAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
+      theaAssertM(i == 0 || i == 1, "GeneralMeshEdge: Invalid endpoint index");
       endpoints[i] = vertex;
     }
 
@@ -318,8 +318,7 @@ class /* THEA_API */ GeneralMeshEdge : public AttributedObject<EdgeAttributeT>
 
       auto e0 = vertex_map.find(endpoints[0]);
       auto e1 = vertex_map.find(endpoints[1]);
-      debugAssertM(e0 != vertex_map.end() && e1 != vertex_map.end(),
-                   "GeneralMeshEdge: Edge endpoint not mapped to target mesh");
+      theaAssertM(e0 != vertex_map.end() && e1 != vertex_map.end(), "GeneralMeshEdge: Edge endpoint not mapped to target mesh");
 
       dst.endpoints[0] = e0->second;
       dst.endpoints[1] = e1->second;

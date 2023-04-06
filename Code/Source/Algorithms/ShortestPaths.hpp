@@ -296,7 +296,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
       double nbr_dist = graph.distance(data->vertex, ni);
 
       typename Scratch::iterator nbr_loc = scratch.find(nbr);
-      debugAssertM(nbr_loc != scratch.end(), "ShortestPaths: No scratch entry found for neighboring vertex");
+      theaAssertM(nbr_loc != scratch.end(), "ShortestPaths: No scratch entry found for neighboring vertex");
 
       ScratchElement * nbr_data = &nbr_loc->second;
       if (nbr_data->flag == BLACK)  // this should not be necessary, but let's do it just to be safe

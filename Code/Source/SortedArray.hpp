@@ -48,21 +48,21 @@ class SortedArray
     /** Get the first element in the sorted sequence. */
     T const & front() const
     {
-      debugAssertM(!values.empty(), "SortedArray: Can't get first element of empty array");
+      theaAssertM(!values.empty(), "SortedArray: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the sorted sequence. */
     T const & back() const
     {
-      debugAssertM(!values.empty(), "SortedArray: Can't get last element of empty array");
+      theaAssertM(!values.empty(), "SortedArray: Can't get last element of empty array");
       return values[size() - 1];
     }
 
     /** Get the element at a given position in the sorted sequence. */
     T const & operator[](intx i) const
     {
-      debugAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
+      theaAssertM(i >= 0 && i < size(), format("SortedArray: Index %d out of bounds [0, %ld)", i, size()));
       return values[(size_t)i];
     }
 

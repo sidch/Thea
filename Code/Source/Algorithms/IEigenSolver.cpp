@@ -30,7 +30,7 @@ EigenSolverManager::getFactory(std::string const & type)
 bool
 EigenSolverManager::installFactory(std::string const & type, IEigenSolverFactory * factory)
 {
-  debugAssertM(factory, "EigenSolverManager: Null factory cannot be installed");
+  theaAssertM(factory, "EigenSolverManager: Null factory cannot be installed");
 
   std::string type_lc = toLower(type);
   FactoryMap::const_iterator installed = installed_factories.find(type_lc);

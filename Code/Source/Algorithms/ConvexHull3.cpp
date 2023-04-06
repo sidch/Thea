@@ -117,7 +117,7 @@ ConvexHull3::updateApprox() const
           for (int j = 1; j <= 3; ++j)
           {
             index = (size_t)result.mIndices[i + j];
-            debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
+            theaAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
             approx_indices.push_back(index);
           }
         }
@@ -127,7 +127,7 @@ ConvexHull3::updateApprox() const
           for (size_t j = 1; j <= num_face_vertices; ++j)
           {
             index = (size_t)result.mIndices[i + j];
-            debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
+            theaAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
             poly.addVertex(approx_vertices[index], (intx)index);
           }
 
@@ -146,7 +146,7 @@ ConvexHull3::updateApprox() const
       for (size_t i = 0; i < approx_indices.size(); ++i)
       {
         index = (size_t)result.mIndices[i];
-        debugAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
+        theaAssertM(index >= 0 && index < approx_vertices.size(), "ConvexHull3: Vertex index out of bounds");
         approx_indices[i] = index;
       }
     }

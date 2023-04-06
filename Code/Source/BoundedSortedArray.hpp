@@ -134,21 +134,21 @@ class BoundedSortedArray
     /** Get the first element in the sorted sequence. */
     T const & front() const
     {
-      debugAssertM(num_elems > 0, "BoundedSortedArray: Can't get first element of empty array");
+      theaAssertM(num_elems > 0, "BoundedSortedArray: Can't get first element of empty array");
       return values[0];
     }
 
     /** Get the last element in the sorted sequence. */
     T const & back() const
     {
-      debugAssertM(num_elems > 0, "BoundedSortedArray: Can't get last element of empty array");
+      theaAssertM(num_elems > 0, "BoundedSortedArray: Can't get last element of empty array");
       return values[num_elems - 1];
     }
 
     /** Get the element at a given position in the sorted sequence. */
     T const & operator[](size_t i) const
     {
-      debugAssertM(i < num_elems, format("BoundedSortedArray: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
+      theaAssertM(i < num_elems, format("BoundedSortedArray: Index %ld out of bounds [0, %ld)", (long)i, (long)num_elems));
       return values[i];
     }
 

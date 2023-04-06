@@ -189,7 +189,7 @@ class THEA_API SurfaceParametrization
           else
           {
             auto p = fixed_vertex_params.find(v1);
-            debugAssertM(p != fixed_vertex_params.end(), "SurfaceParametrization: Boundary vertex lacks fixed parameters");
+            theaAssertM(p != fixed_vertex_params.end(), "SurfaceParametrization: Boundary vertex lacks fixed parameters");
             u_consts[v.second] += w_ij * p->second[0];
             v_consts[v.second] += w_ij * p->second[1];
           }
