@@ -32,6 +32,7 @@
 #include "Common.hpp"
 #include "ColorL.hpp"
 #include "Math.hpp"
+#include "MatVec.hpp"
 
 namespace Thea {
 
@@ -219,6 +220,12 @@ class THEA_API ColorRgb8
     uint32 asUInt32() const
     {
       return (0xFF << 24) | ((uint32)c[0] << 16) | ((uint32)c[1] << 8) | (uint32)c[2];
+    }
+
+    /** Get the color as a 3-vector. */
+    Vector<3, uint8> toVector() const
+    {
+      return Vector<3, uint8>(c[0], c[1], c[2]);
     }
 
     /** Get a string representation of the color. */

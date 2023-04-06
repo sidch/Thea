@@ -260,6 +260,12 @@ class THEA_API ColorRgba
       return ColorRgba(c[2], c[1], c[0], c[3]);
     }
 
+    /** Get the color as a 4-vector. */
+    Vector4 toVector() const
+    {
+      return Vector4(c[0], c[1], c[2], c[3]);
+    }
+
     /** Get a string representation of the color. */
     std::string toString() const;
 

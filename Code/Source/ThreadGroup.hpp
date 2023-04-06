@@ -73,7 +73,7 @@ class THEA_API ThreadGroup
     /** Destructor. */
     ~ThreadGroup()
     {
-      for (List<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (auto it = threads.begin(), end = threads.end(); it != end; ++it)
         delete *it;
     }
 
@@ -83,7 +83,7 @@ class THEA_API ThreadGroup
       std::thread::id id = std::this_thread::get_id();
       std::shared_lock<std::shared_mutex> guard(m);
 
-      for (List<std::thread *>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (auto it = threads.begin(), end = threads.end(); it != end; ++it)
       {
         if ((*it)->get_id() == id)
           return true;
@@ -100,7 +100,7 @@ class THEA_API ThreadGroup
         std::thread::id id = thrd->get_id();
         std::shared_lock<std::shared_mutex> guard(m);
 
-        for (List<std::thread*>::const_iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+        for (auto it = threads.begin(), end = threads.end(); it != end; ++it)
         {
           if ((*it)->get_id() == id)
             return true;
@@ -136,7 +136,7 @@ class THEA_API ThreadGroup
     {
       std::lock_guard<std::shared_mutex> guard(m);
 
-      List<std::thread *>::iterator const it = std::find(threads.begin(), threads.end(), thrd);
+      auto it = std::find(threads.begin(), threads.end(), thrd);
       if (it != threads.end())
         threads.erase(it);
     }
@@ -147,7 +147,7 @@ class THEA_API ThreadGroup
       alwaysAssertM(!containsThisThread(), "ThreadGroup: Can't join the executing thread");
       std::shared_lock<std::shared_mutex> guard(m);
 
-      for (List<std::thread *>::iterator it = threads.begin(), end = threads.end(); it != end; ++it)
+      for (auto it = threads.begin(), end = threads.end(); it != end; ++it)
       {
         if ((*it)->joinable())
           (*it)->join();
@@ -162,7 +162,7 @@ class THEA_API ThreadGroup
 
   private:
     List<std::thread *> threads;  // Holds the set of threads.
-    mutable std::shared_mutex m;    // Mutex allowing multiple-reader/single-writer access to the thread list.
+    mutable std::shared_mutex m;  // Mutex allowing multiple-reader/single-writer access to the thread list.
 
 }; // class ThreadGroup
 
