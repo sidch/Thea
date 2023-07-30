@@ -556,6 +556,8 @@ Image::operator=(Image const & src)
 #if THEA_ENABLE_FREEIMAGE
     if (!impl) { impl = new fipImage(*src.impl); }
     else       { *impl = *src.impl;              }
+
+    setAttribs(src.type, src.width, src.height, src.depth);
 #else
     resizeImpl(src.type, src.width, src.height, src.depth);
 
@@ -1146,7 +1148,8 @@ Image::rescale(int64 new_width, int64 new_height, int64 new_depth, Filter filter
 {
   if (depth != 1 || new_depth != 1)
   {
-    THEA_ERROR << "Image: Rescaling non-2D images currently not supported";
+    THEA_ERROR << "Image: Rescaling non-2D images currently not supported (old depth = " << depth << ", new depth = "
+               << new_depth << ')';
     return false;
   }
 
