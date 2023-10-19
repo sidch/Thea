@@ -13,7 +13,7 @@
 #===============================================================================================================================
 
 # Set the minimum required CMake version
-CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0...3.27.7)
 
 # See cmake --help-policy CMP0003 for details
 IF(POLICY CMP0003)
