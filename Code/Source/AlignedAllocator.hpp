@@ -16,23 +16,14 @@
 #define __Thea_AlignedAllocator_hpp__
 
 #include "Platform.hpp"
-
-#ifdef THEA_WINDOWS
-#  include <malloc.h>
-#else
-#  include <stdlib.h>
-#endif
+#include <cstdlib>
 
 namespace Thea {
 
 /**
  * Allocates aligned memory blocks.
  *
- * @note Currently only supports N = a power-of-two multiple of sizeof(void *) on Linux/macOS because of limitations of
- * <tt>posix_memalign</tt>. Hence, N must be a minimum of 4 (32-bit) or 8 (64-bit) on such systems. On Windows, any power-of-two
- * is supported.
- *
- * From http://stackoverflow.com/a/8545389
+ * Originally from http://stackoverflow.com/a/8545389 but now updated to use C++17 std::aligned_alloc.
  */
 template <typename T, size_t N = 16>
 class AlignedAllocator
@@ -50,52 +41,34 @@ class AlignedAllocator
 
   public:
     /** Default Constructor. */
-    inline AlignedAllocator() throw () {}
+    AlignedAllocator() throw () {}
 
     /** Copy constructor. */
-    template <typename T2> inline AlignedAllocator(AlignedAllocator<T2, N> const &) throw () {}
+    template <typename T2> AlignedAllocator(AlignedAllocator<T2, N> const &) throw () {}
 
     /** Destructor. */
-    inline ~AlignedAllocator() throw () {}
+    ~AlignedAllocator() throw () {}
 
     /** Get the address of a referenced object. */
-    inline pointer address(reference r) { return &r; }
+    pointer address(reference r) { return &r; }
 
     /** Get the address of a referenced object. */
-    inline const_pointer address(const_reference r) const { return &r; }
+    const_pointer address(const_reference r) const { return &r; }
 
-    /** Allocate an aligned block of \a n objects. */
-    inline pointer allocate(size_type n)
-    {
-#ifdef THEA_WINDOWS
-      return (pointer)_aligned_malloc(n * sizeof(value_type), N);
-#else
-      pointer p;
-      if (posix_memalign((void **)(&p), N, n * sizeof(value_type)) == 0)
-        return p;
-      else
-        return nullptr;
-#endif
-    }
+    /** Allocate an aligned block of \a count objects. */
+    pointer allocate(size_type count) { return (pointer)std::aligned_alloc(N, count * sizeof(value_type)); }
 
     /** Deallocate an aligned block. */
-    inline void deallocate(pointer p, size_type n = 0)
-    {
-#ifdef THEA_WINDOWS
-      _aligned_free(p);
-#else
-      free(p);
-#endif
-    }
+    void deallocate(pointer p) { std::free(p); }
 
     /** Construct an object at a memory location. */
-    inline void construct(pointer p, const value_type & wert) { new (p) value_type(wert); }
+    void construct(pointer p, const value_type & val) { new (p) value_type(val); }
 
     /** Destroy an object at a memory location. */
-    inline void destroy(pointer p) { p->~value_type (); }
+    void destroy(pointer p) { p->~value_type (); }
 
     /** Get the maximum number of elements that can theoretically be allocated. */
-    inline size_type max_size() const throw () { return size_type (-1) / sizeof(value_type); }
+    size_type max_size() const throw () { return size_type(-1) / sizeof(value_type); }
 
     /** A structure that enables this allocator to allocate storage for objects of another type. */
     template <typename T2>
@@ -105,7 +78,7 @@ class AlignedAllocator
     };
 
     /** Check if two allocators are different. */
-    bool operator!=(const AlignedAllocator<T, N> & other) const  { return !(*this == other); }
+    bool operator!=(const AlignedAllocator<T, N> & other) const { return !(*this == other); }
 
     /**
      * Check if two allocators are the same. Returns true if and only if storage allocated from *this can be deallocated from
