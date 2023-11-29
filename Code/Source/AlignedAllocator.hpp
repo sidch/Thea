@@ -21,11 +21,11 @@
 namespace Thea {
 
 /**
- * Allocates aligned memory blocks.
+ * Allocates aligned memory blocks. `Alignment` should be the desired alignment in bytes, e.g. 4, 8 or 16.
  *
  * Originally from http://stackoverflow.com/a/8545389 but now updated to use C++17 std::aligned_alloc.
  */
-template <typename T, size_t N = 16>
+template <typename T, size_t Alignment = 16>
 class AlignedAllocator
 {
   public:
@@ -44,7 +44,7 @@ class AlignedAllocator
     AlignedAllocator() throw () {}
 
     /** Copy constructor. */
-    template <typename T2> AlignedAllocator(AlignedAllocator<T2, N> const &) throw () {}
+    template <typename T2> AlignedAllocator(AlignedAllocator<T2, Alignment> const &) throw () {}
 
     /** Destructor. */
     ~AlignedAllocator() throw () {}
@@ -56,7 +56,7 @@ class AlignedAllocator
     const_pointer address(const_reference r) const { return &r; }
 
     /** Allocate an aligned block of \a count objects. */
-    pointer allocate(size_type count) { return (pointer)std::aligned_alloc(N, count * sizeof(value_type)); }
+    pointer allocate(size_type count) { return (pointer)std::aligned_alloc(Alignment, count * sizeof(value_type)); }
 
     /** Deallocate an aligned block. */
     void deallocate(pointer p) { std::free(p); }
@@ -74,17 +74,17 @@ class AlignedAllocator
     template <typename T2>
     struct rebind
     {
-      typedef AlignedAllocator<T2, N> other;
+      typedef AlignedAllocator<T2, Alignment> other;
     };
 
     /** Check if two allocators are different. */
-    bool operator!=(const AlignedAllocator<T, N> & other) const { return !(*this == other); }
+    bool operator!=(const AlignedAllocator<T, Alignment> & other) const { return !(*this == other); }
 
     /**
      * Check if two allocators are the same. Returns true if and only if storage allocated from *this can be deallocated from
      * \a other, and vice versa. Always returns true for stateless allocators like this one.
      */
-    bool operator==(const AlignedAllocator<T, N> & other) const { return true; }
+    bool operator==(const AlignedAllocator<T, Alignment> & other) const { return true; }
 
 }; // class AlignedAllocator
 
