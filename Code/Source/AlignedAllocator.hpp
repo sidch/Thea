@@ -21,13 +21,17 @@
 namespace Thea {
 
 /**
- * Allocates aligned memory blocks. `Alignment` should be the desired alignment in bytes, e.g. 4, 8 or 16.
+ * Allocates aligned memory blocks for one or more objects of type `T`. `Alignment` should be the desired alignment in bytes,
+ * e.g. 1, 4, 8 or 16.
  *
  * Originally from http://stackoverflow.com/a/8545389 but now updated to use C++17 std::aligned_alloc.
  */
 template <typename T, size_t Alignment = 16>
 class AlignedAllocator
 {
+  private:
+    static_assert(Alignment >= 1, "AlignedAllocator: Alignment must be non-negative");
+
   public:
     typedef T value_type;                    ///< Type of allocated objects.
     typedef std::size_t size_type;           ///< Type of block sizes.
