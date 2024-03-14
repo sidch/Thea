@@ -63,7 +63,7 @@ class AlignedAllocator
     pointer allocate(size_type count) { return (pointer)std::aligned_alloc(Alignment, count * sizeof(value_type)); }
 
     /** Deallocate an aligned block. */
-    void deallocate(pointer p) { std::free(p); }
+    void deallocate(pointer p, size_type count) { (void)count; std::free(p); }
 
     /** Construct an object at a memory location. */
     void construct(pointer p, const value_type & val) { new (p) value_type(val); }
