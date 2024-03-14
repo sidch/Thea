@@ -499,13 +499,15 @@ Image::Type::hasByteAlignedChannels() const
 }
 
 Image::Image()
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0),
+  data_bytes(0)
 {
   cacheTypeProperties();
 }
 
 Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0),
+  data_bytes(0)
 {
   cacheTypeProperties();
   resize(type_, width_, height_, depth_);
@@ -513,7 +515,7 @@ Image::Image(Type type_, int64 width_, int64 height_, int64 depth_)
 
 Image::Image(void * buf, Type type_, int64 width_, int64 height_, int64 depth_, int64 stride_bytes_)
 : type(type_), width(width_), height(height_), depth(depth_), impl(nullptr), data(buf), owns_data(false),
-  data_stride(stride_bytes_)
+  data_stride(stride_bytes_), data_bytes(0 /* <-- not needed since we won't deallocate */)
 {
   alwaysAssertM(buf, "Image: Cannot wrap a null buffer");
   alwaysAssertM(type_ != Type::UNKNOWN, "Image: Cannot wrap buffer of unknown pixel type");
@@ -526,21 +528,24 @@ Image::Image(void * buf, Type type_, int64 width_, int64 height_, int64 depth_, 
 }
 
 Image::Image(BinaryInputStream & input, Codec const & codec, bool read_block_header)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0),
+  data_bytes(0)
 {
   cacheTypeProperties();
   read(input, codec, read_block_header);
 }
 
 Image::Image(std::string const & path, Codec const & codec)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0),
+  data_bytes(0)
 {
   cacheTypeProperties();
   load(path, codec);
 }
 
 Image::Image(Image const & src)
-: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0)
+: type(Type::UNKNOWN), width(0), height(0), depth(0), impl(nullptr), data(nullptr), owns_data(true), data_stride(0),
+  data_bytes(0)
 {
   cacheTypeProperties();
   *this = src;
@@ -629,9 +634,10 @@ Image::clearData()
 {
   if (!data) { return; }
 
-  if (owns_data) { data_allocator.deallocate((unsigned char *)data); }
+  if (owns_data) { data_allocator.deallocate((unsigned char *)data, (size_t)data_bytes); }
   data = nullptr;
   owns_data = true;
+  data_bytes = 0;
 
   setAttribs(Type::UNKNOWN, 0, 0, 0, /* data_stride = */ 0);
 }
@@ -751,14 +757,14 @@ Image::resizeData(int64 type_, int64 width_, int64 height_, int64 depth_, int64 
   if (data_stride_ <= 0)
     data_stride_ = ImageInternal::strideBytes(width_, t.getBitsPerPixel(), ROW_ALIGNMENT);
 
-  auto old_bytes = minTotalBytes();
+  auto old_bytes = data_bytes;
   auto new_bytes = minTotalBytes(t, width_, height_, depth_, data_stride_);
   if (new_bytes > old_bytes)  // like std::vector, don't deallocate if new size is smaller
   {
     if (!owns_data) { THEA_ERROR << "Image: Wrapped external buffer cannot be resized"; return false; }
 
-    data_allocator.deallocate((unsigned char *)data);
-    data = data_allocator.allocate(new_bytes);
+    data_allocator.deallocate((unsigned char *)data, (size_t)old_bytes);
+    data = data_allocator.allocate((size_t)new_bytes);
     if (!data) { THEA_ERROR << "Image: Could not allocate memory for resizing image"; return false; }
     owns_data = true;
   }

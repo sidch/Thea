@@ -274,6 +274,7 @@ class THEA_API Image : public virtual IImage, public Serializable
     void * data;
     bool owns_data;
     int64 data_stride;
+    int64 data_bytes;
     AlignedAllocator<uint8, ROW_ALIGNMENT> data_allocator;
 
     // Cached type properties for fast access
