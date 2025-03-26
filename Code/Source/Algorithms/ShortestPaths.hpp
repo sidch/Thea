@@ -165,7 +165,7 @@ class /* THEA_API */ ShortestPaths
 
   private:
     /** Status of vertex during Dijkstra traversal. */
-    enum VisitStatus
+    enum VisitStatus : uint8
     {
       BLACK,
       GREY,
@@ -176,12 +176,13 @@ class /* THEA_API */ ShortestPaths
     /** Holds information about a vertex during Dijkstra traversal. */
     struct ScratchElement
     {
-      VertexHandle vertex;
-      double dist;
-      bool has_pred;
-      VertexHandle pred;
-      VisitStatus flag;
+      // The ordering of fields tries to encourage them to be tightly packed
       fibheap_el * heap_elem;
+      VertexHandle vertex;
+      VertexHandle pred;
+      double dist;
+      uint8 has_pred;
+      VisitStatus flag;
 
     }; // struct ScratchElement
 
@@ -342,7 +343,7 @@ ShortestPaths<GraphT>::dijkstraWithCallback(Graph & graph, VertexHandle src, Cal
     if (limit >= 0 && data->dist > limit)  // all remaining distances will be greater than this
       break;
 
-    if (callback(data->vertex, data->dist, data->has_pred, data->pred))
+    if (callback(data->vertex, data->dist, (bool)data->has_pred, data->pred))
       break;
   }
 
