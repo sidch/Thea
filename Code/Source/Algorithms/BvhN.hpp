@@ -450,7 +450,10 @@ class /* THEA_API */ BvhN
 
         bool allows(NeighborPair const & pair) const
         {
-          return true;  // do distance-based pruning in operator() -- not sure if we also want to do that here or not
+          auto pair_mad = pair.getMonotoneApproxDistance();
+          auto best_mad = result.getMonotoneApproxDistance();
+
+          return /* incomplete */ pair_mad < 0 || /* better distance */ (best_mad < 0 || pair_mad < best_mad);
         }
 
         bool operator()(NeighborPair const & pair)
@@ -478,8 +481,8 @@ class /* THEA_API */ BvhN
 
         bool allows(NeighborPair const & pair) const
         {
-          return (!pair.isValid()  // invalid indices implies distance-based check, which we will ignore here
-               || !result.contains(pair, std::equal_to<NeighborPair>()));  // avoid duplicates
+          return (pair.getMonotoneApproxDistance() < 0 || result.isInsertable(pair))  // distance check if distance is valid
+              && (!pair.isValid() || !result.contains(pair, std::equal_to<NeighborPair>()));  // avoid duplicates
         }
 
         bool operator()(NeighborPair const & pair)
