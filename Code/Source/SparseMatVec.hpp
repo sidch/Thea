@@ -17,7 +17,11 @@
 
 #include "Common.hpp"
 #include "MatrixFormat.hpp"
-#include <Eigen/SparseCore>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#  include <Eigen/SparseCore>
+#pragma clang diagnostic pop
 
 namespace Thea {
 

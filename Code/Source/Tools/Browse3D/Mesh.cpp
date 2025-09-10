@@ -89,14 +89,32 @@ Mesh::updateFeatures() const
   double bin_size = dmax / NUM_BINS;
   for (size_t i = 0; i < all_dists.size(); ++i)
   {
-    int bin = Math::clamp((int)std::floor(all_dists[i] / bin_size), 0, (int)NUM_BINS - 1);
-    double bin_max = (bin + 1) * bin_size;
-    features[(size_t)bin] += (all_dists[i] / bin_max);  // make it more discriminative by not binning 1
+    double d = all_dists[i] / bin_size;
+    int bin = Math::clamp((int)std::floor(d), 0, (int)NUM_BINS - 1);
+
+    // The middle of the bin is at bin + 0.5. We split the contribution of the value to both this bin and its neighbor.
+    double d_curr = 1.0, d_prev = 0.0, d_next = 0.0;
+    if (d < bin + 0.5 && bin > 0)
+    {
+      double w = (bin + 0.5) - d;
+      d_curr = 1 - w;
+      d_prev = w;
+    }
+    else if (d > bin + 0.5 && bin < (int)NUM_BINS - 1)
+    {
+      double w = d - (bin + 0.5);
+      d_curr = 1 - w;
+      d_next = w;
+    }
+
+    features[(size_t)bin] += d_curr;
+    if (bin > 0)                 { features[(size_t)bin - 1] += d_prev; }
+    if (bin < (int)NUM_BINS - 1) { features[(size_t)bin + 1] += d_next; }
   }
 
   features.back() = dmax;  // keep track of the overall scale of the mesh
 
-  // THEA_CONSOLE << getName() << ": Features: [" << seqStr(features.begin(), features.end()) << ']';
+  THEA_DEBUG << getName() << ": Features: [" << stringJoin(features, ", ") << ']';
 }
 
 namespace MeshInternal {

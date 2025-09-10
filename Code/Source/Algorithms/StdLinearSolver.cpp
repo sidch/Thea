@@ -16,12 +16,17 @@
 #include "../IDenseMatrix.hpp"
 #include "../ICompressedSparseMatrix.hpp"
 #include "../ThirdParty/NNLS/nnls.h"
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/QR>
-#include <Eigen/SparseCholesky>
-#include <Eigen/SparseLU>
-#include <Eigen/SparseQR>
-#include <Eigen/SVD>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#  include <Eigen/IterativeLinearSolvers>
+#  include <Eigen/QR>
+#  include <Eigen/SparseCholesky>
+#  include <Eigen/SparseLU>
+#  include <Eigen/SparseQR>
+#  include <Eigen/SVD>
+#pragma clang diagnostic pop
+
 #include <type_traits>
 
 namespace Thea {

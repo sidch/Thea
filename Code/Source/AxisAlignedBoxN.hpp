@@ -576,7 +576,7 @@ class /* THEA_DLL_LOCAL */ AxisAlignedBoxNBase : public RayIntersectableN<N, T>
     bool rayIntersects(RayN<N, T> const & ray, T max_time = -1) const
     {
       // TODO: Speed this up: see G3D::Intersect::rayAABox
-      return (rayIntersectionTime(ray) > -0.5);
+      return (rayIntersectionTime(ray, max_time) > -0.5);
     }
 
     T rayIntersectionTime(RayN<N, T> const & ray, T max_time = -1) const

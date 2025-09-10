@@ -465,7 +465,7 @@ cspline(T const & a, T const & da, T const & b, T const & db, S const & s)
  *
  * @param num_elems The number of elements in the tree.
  * @param max_elems_in_leaf The maximum number of elements allowed in each leaf.
- * @param  max_child_fraction The maximum fraction of the elements of a parent node assigned to any one of its children. Must
+ * @param max_child_fraction The maximum fraction of the elements of a parent node assigned to any one of its children. Must
  *   be in the range (0, 1).
  */
 THEA_API intx treeDepth(intx num_elems, int max_elems_in_leaf, Real max_child_fraction = 0.5);

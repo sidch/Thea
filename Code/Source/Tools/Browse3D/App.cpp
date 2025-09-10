@@ -106,7 +106,7 @@ parseModel(std::string const & str, std::string & path, AffineTransform3 & trans
   if (fields.size() >= 2)
   {
     float m[3][4];
-    if (std::sscanf(fields[1].c_str(), " [ L : [ %f , %f , %f ; %f , %f , %f ; %f , %f , %f ] , T : ( %f , %f , %f ) ]",
+    if (std::sscanf(fields[1].c_str(), " [ L : [ %f %f %f ; %f %f %f ; %f %f %f ] , T : [ %f ; %f ; %f ] ]",
                     &m[0][0], &m[0][1], &m[0][2],
                     &m[1][0], &m[1][1], &m[1][2],
                     &m[2][0], &m[2][1], &m[2][2],
