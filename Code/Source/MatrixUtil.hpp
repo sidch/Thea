@@ -596,8 +596,8 @@ orthogonalProjection(T const & left, T const & right, T const & bottom, T const 
 
   if (!y_increases_upwards)
   {
-    y  *= -1;
-    ty *= -1;
+    y  = -y;
+    ty = -ty;
   }
 
   return (Matrix<4, 4, T>() << x, 0, 0, tx,
@@ -713,8 +713,8 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
 
   if (!y_increases_upwards)
   {
-    y *= -1;
-    b *= -1;
+    y = -y;
+    b = -b;
   }
 
   return (Matrix<4, 4, T>() << x,  0,  a,  0,
