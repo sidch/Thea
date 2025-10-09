@@ -708,7 +708,7 @@ perspectiveProjection(T const & left, T const & right, T const & bottom, T const
   else
   {
     c = -(farval + nearval) / (farval - nearval);
-    d = -(2 * farval * nearval) / (farval - nearval);
+    d = (-2 * farval * nearval) / (farval - nearval);
   }
 
   if (!y_increases_upwards)
