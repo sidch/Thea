@@ -116,7 +116,7 @@ Ray3
 Camera::computePickRay(Vector2 const & screen_pos) const
 {
   Vector2 p = 0.5f * (screen_pos + Vector2(1, 1));
-  if (proj_y_dir == ProjectedYDirection::DOWN) { p.y() = -p.y(); }
+  if (proj_y_dir == ProjectedYDirection::DOWN) { p.y() = 1 - p.y(); }
 
   Ray3 view_ray(Vector3::Zero(),
                 Vector3(Math::lerp(left, right, p.x()), Math::lerp(bottom, top, p.y()), -near_dist).normalized());
