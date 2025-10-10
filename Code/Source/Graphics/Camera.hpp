@@ -270,7 +270,7 @@ class THEA_API Camera : public Serializable
      * The normalized coordinates correspond to the X and Y coordinates of the camera's projection space. In particular, the
      * screen Y coordinate is assumed to increase in the same direction as the projected Y coordinate of the camera.
      */
-    Ray3 computePickRay(Vector2 const & screen_pos) const;
+    Ray3 computePickRay(Vector2 const & projection_plane_point) const;
 
     /** Set the camera as the current viewing camera on a rendersystem. */
     void makeCurrent(IRenderSystem * render_system) const;

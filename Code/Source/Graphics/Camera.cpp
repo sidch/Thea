@@ -113,14 +113,18 @@ Camera::updateCachedProjectionTransform() const
 }
 
 Ray3
-Camera::computePickRay(Vector2 const & screen_pos) const
+Camera::computePickRay(Vector2 const & projection_plane_point) const
 {
-  Vector2 p = 0.5f * (screen_pos + Vector2(1, 1));
+  Vector2 p = 0.5f * (projection_plane_point + Vector2(1, 1));
   if (proj_y_dir == ProjectedYDirection::DOWN) { p.y() = 1 - p.y(); }
 
-  Ray3 view_ray(Vector3::Zero(),
-                Vector3(Math::lerp(left, right, p.x()), Math::lerp(bottom, top, p.y()), -near_dist).normalized());
-  return view_ray.toWorldSpace(frame);
+  auto view_pos_x = Math::lerp(left, right, p.x());
+  auto view_pos_y = Math::lerp(bottom, top, p.y());
+
+  if (isPerspective())
+	return Ray3(Vector3::Zero(), Vector3(view_pos_x, view_pos_y, -near_dist).normalized()).toWorldSpace(frame);
+  else
+	return Ray3(Vector3(view_pos_x, view_pos_y, (Real)0), Vector3((Real)0, (Real)0, (Real)-1)).toWorldSpace(frame);
 }
 
 void
