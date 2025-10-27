@@ -127,6 +127,8 @@ class ShapeRendererImpl
     bool flat;
     bool two_sided;
     Vector3 light_dir;
+    bool toon_shading;
+    bool out_normals;
     bool save_color;
     bool save_depth;
     bool save_hitcounts;
@@ -251,6 +253,8 @@ ShapeRendererImpl::resetArgs()
   flat = false;
   two_sided = true;
   light_dir = Vector3(-1, -1, -2).stableNormalized();
+  toon_shading = false;
+  out_normals = false;
   save_color = true;
   save_depth = false;
   save_hitcounts = false;
@@ -634,8 +638,10 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -1                    (one-sided lighting)";
   THEA_CONSOLE << "  -g <dir>              (light direction, as 'x y z')";
+  THEA_CONSOLE << "  --toon                (render with toon/cel shading)";
+  THEA_CONSOLE << "  -n                    (output a normal map instead of colors)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
-  THEA_CONSOLE << "  -n                    (also save a text file with extension '.hitcount'";
+  THEA_CONSOLE << "  -#                    (also save a text file with extension '.hitcount'";
   THEA_CONSOLE << "                         containing the number of pixels rendered per";
   THEA_CONSOLE << "                         face/point)";
   THEA_CONSOLE << "  -x                    (suppress color image output)";
@@ -1125,7 +1131,6 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       else if (arg == "-e")
       {
         accentuate_features = true;
-
       }
       else if (arg == "-2")
       {
@@ -1211,12 +1216,10 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       else if (arg == "-0")
       {
         flat = true;
-
       }
       else if (arg == "-1")
       {
         two_sided = false;
-
       }
       else if (arg == "-g")
       {
@@ -1226,20 +1229,25 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
         argv++; argc--;
       }
+      else if (arg == "-n")
+      {
+        out_normals = true;
+      }
+      else if (arg == "--toon")
+      {
+        toon_shading = true;
+      }
       else if (arg == "-d")
       {
         save_depth = true;
-
       }
-      else if (arg == "-n")
+      else if (arg == "-#")
       {
         save_hitcounts = true;
-
       }
       else if (arg == "-x")
       {
         save_color = false;
-
       }
       else if (arg == "-w")
       {
@@ -2366,9 +2374,9 @@ initPointShader(IShader & shader)
 }
 
 bool
-initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true,
-               ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr, ITexture * tex3d = nullptr,
-               AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true, bool out_normals = false,
+               bool toon_shading = false, ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr,
+               ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2388,17 +2396,22 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "}\n";
 
   static string const FRAGMENT_SHADER_HEADER_1 =
-"uniform float two_sided;\n"
 "varying vec3 src_pos;  // position in mesh coordinates\n"
 "varying vec3 normal;  // normal in camera space\n";
 
   static string const FRAGMENT_SHADER_HEADER_PHONG =
+"uniform float two_sided;\n"
 "uniform vec3 ambient_color;\n"
 "uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n"
 "uniform vec3 light_color;\n"
 "uniform vec4 material;  // [ka, kl, <ignored>, <ignored>]\n";
 
+  static string const FRAGMENT_SHADER_HEADER_TOON =
+"uniform float two_sided;\n"
+"uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n";
+
   static string const FRAGMENT_SHADER_HEADER_MATCAP =
+"uniform float two_sided;\n"
 "uniform sampler2D matcap_tex;\n"
 "\n"
 "float lightness(vec3 color)\n"
@@ -2437,6 +2450,25 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "  gl_FragColor = vec4(ambt_color + lamb_color, color.a);\n"
 "}\n";
 
+  static string const FRAGMENT_SHADER_BODY_TOON =
+"  vec3 L = normalize(light_dir);\n"
+"  float NdL = -dot(N, L);\n"
+"  if (NdL >= -two_sided)\n"
+"  {\n"
+"    float intensity = abs(NdL);\n"
+"    if (intensity > 0.95)\n"
+"      gl_FragColor = vec4(color.rgb, 1.0);\n"
+"    else if (intensity > 0.5)\n"
+"      gl_FragColor = vec4(0.6 * color.rgb, 1.0);\n"
+"    else if (intensity > 0.25)\n"
+"      gl_FragColor = vec4(0.4 * color.rgb, 1.0);\n"
+"    else\n"
+"      gl_FragColor = vec4(0.2 * color.rgb, 1.0);\n"
+"  }\n"
+"  else\n"
+"    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
+"}\n";
+
   static string const FRAGMENT_SHADER_BODY_MATCAP =
 "  vec2 matcap_uv = (two_sided < 0.5 && N.z < 0.0 ? normalize(N.xy) : N.xy);\n"
 "  vec4 matcap_color = texture2D(matcap_tex, 0.495 * matcap_uv + 0.5);\n"
@@ -2445,10 +2477,16 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "  gl_FragColor = vec4(mix(color.rgb, vec3(1.0, 1.0, 1.0), highlight_blend) * matcap_color.rgb, color.a);\n"
 "}\n";
 
+  static string const FRAGMENT_SHADER_BODY_NORMAL =
+"  gl_FragColor = vec4(0.5 * N + 0.5, 1.0);\n"
+"}\n";
+
   string fragment_shader = FRAGMENT_SHADER_HEADER_1;
   if (matcap_tex)
     fragment_shader += FRAGMENT_SHADER_HEADER_MATCAP;
-  else
+  else if (toon_shading)
+    fragment_shader += FRAGMENT_SHADER_HEADER_TOON;
+  else if (!out_normals)
     fragment_shader += FRAGMENT_SHADER_HEADER_PHONG;
 
   if (tex2d) fragment_shader += FRAGMENT_SHADER_HEADER_TEX2D;
@@ -2459,6 +2497,10 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
   if (tex3d) fragment_shader += FRAGMENT_SHADER_BODY_TEX3D;
   if (matcap_tex)
     fragment_shader += FRAGMENT_SHADER_BODY_MATCAP;
+  else if (out_normals)
+    fragment_shader += FRAGMENT_SHADER_BODY_NORMAL;
+  else if (toon_shading)
+    fragment_shader += FRAGMENT_SHADER_BODY_TOON;
   else
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
@@ -2466,11 +2508,14 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
    || !shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, fragment_shader.c_str()))
     return false;
 
-  shader.setUniform("two_sided", (two_sided ? 1.0f : 0.0f));
+  if (!out_normals)
+    shader.setUniform("two_sided", (two_sided ? 1.0f : 0.0f));
 
   if (matcap_tex)
     shader.setUniform("matcap_tex", matcap_tex);
-  else
+  else if (toon_shading)
+    shader.setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
+  else if (!out_normals)
   {
     Vector3 light_color(1, 1, 1);
     Vector3 ambient_color(1, 1, 1);
@@ -2630,7 +2675,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, matcap_tex, tex2d, tex3d,
+        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, out_normals, toon_shading, matcap_tex, tex2d, tex3d,
                             model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
