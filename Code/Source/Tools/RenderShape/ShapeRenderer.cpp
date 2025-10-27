@@ -559,7 +559,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
             return -1;
           }
 
-          string suffix = (views.size() > 1 ? format("_%06ld.tif", (intx)v) : ".tif");
+          string suffix = (views.size() > 1 ? format("_%06ld.png", (intx)v) : ".png");
           string depth_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_depth" + suffix);
 
           depth_image.save(depth_path);
