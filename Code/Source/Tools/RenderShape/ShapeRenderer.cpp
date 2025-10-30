@@ -128,6 +128,7 @@ class ShapeRendererImpl
     bool two_sided;
     Vector3 light_dir;
     bool toon_shading;
+    float toon_gamma;
     bool out_normals;
     bool save_color;
     bool save_depth;
@@ -254,6 +255,7 @@ ShapeRendererImpl::resetArgs()
   two_sided = true;
   light_dir = Vector3(-1, -1, -2).stableNormalized();
   toon_shading = false;
+  toon_gamma = 1.0f;
   out_normals = false;
   save_color = true;
   save_depth = false;
@@ -466,7 +468,9 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           render_system->setDepthWrite(true);
           render_system->setColorWrite(true, true, true, true);
 
-          render_system->setClearColor(background_color.data());
+          static ColorRgba NORMAL_CLEAR_COLOR(0.5f, 0.5f, 0.5f, 1.0f);
+
+          render_system->setClearColor(out_normals ? NORMAL_CLEAR_COLOR.data() : background_color.data());
           render_system->clear();
 
           // Draw primary model
@@ -638,7 +642,7 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "  -0                    (flat shading)";
   THEA_CONSOLE << "  -1                    (one-sided lighting)";
   THEA_CONSOLE << "  -g <dir>              (light direction, as 'x y z')";
-  THEA_CONSOLE << "  --toon                (render with toon/cel shading)";
+  THEA_CONSOLE << "  --toon <gamma>        (render with toon/cel shading)";
   THEA_CONSOLE << "  -n                    (output a normal map instead of colors)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
   THEA_CONSOLE << "  -#                    (also save a text file with extension '.hitcount'";
@@ -1071,7 +1075,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
           THEA_ERROR << "Could not parse point size '" << *argv << '\'';
           return false;
         }
-        if (zoom <= 0)
+        if (point_size <= 0)
         {
           THEA_ERROR << "Invalid point size " << point_size;
           return false;
@@ -1236,6 +1240,13 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       else if (arg == "--toon")
       {
         toon_shading = true;
+
+        if (sscanf(*argv, " %f", &toon_gamma) != 1)
+        {
+          THEA_ERROR << "Could not parse toon-shading gamma '" << *argv << '\'';
+          return false;
+        }
+        argv++; argc--;
       }
       else if (arg == "-d")
       {
@@ -1425,7 +1436,7 @@ struct FaceColorizer
 
     ColorRgba8 color;
     if (parent->color_by_leaf)
-      color = parent->getPaletteColor(Random::common().integer());
+      color = ColorRgba(ColorRgb::random());
     else if (parent->color_by_leafname)
     {
       string const & name = mesh.getName();
@@ -2318,8 +2329,8 @@ Model::fitCamera(Matrix4 const & transform, View const & view, Real zoom, int wi
     Vector3 eye = cframe.getTranslation();
     Vector3 dir = cframe.lookVector();
     Real center_distance = std::max((center - eye).dot(dir), (Real)0);
-    Real near_dist = std::max(center_distance - 1.1f * diameter, 0.01f * diameter);
-    Real far_dist  = center_distance + 2 * diameter;
+    Real near_dist = std::max(center_distance - 0.6f * diameter, 0.01f * diameter);
+    Real far_dist  = center_distance + 0.6f * diameter;
 
     static Real const HALF_WIDTH = 0.5;
     Real hw = 0, hh = 0;
@@ -2375,7 +2386,7 @@ initPointShader(IShader & shader)
 
 bool
 initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true, bool out_normals = false,
-               bool toon_shading = false, ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr,
+               bool toon_shading = false, float toon_gamma = 1.0f, ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr,
                ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
@@ -2408,7 +2419,8 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 
   static string const FRAGMENT_SHADER_HEADER_TOON =
 "uniform float two_sided;\n"
-"uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n";
+"uniform vec3 light_dir;  // must be specified in camera space, pointing towards object\n"
+"uniform float toon_gamma;\n";
 
   static string const FRAGMENT_SHADER_HEADER_MATCAP =
 "uniform float two_sided;\n"
@@ -2450,7 +2462,7 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "  gl_FragColor = vec4(ambt_color + lamb_color, color.a);\n"
 "}\n";
 
-  static string const FRAGMENT_SHADER_BODY_TOON =
+  string const FRAGMENT_SHADER_BODY_TOON =
 "  vec3 L = normalize(light_dir);\n"
 "  float NdL = -dot(N, L);\n"
 "  if (NdL >= -two_sided)\n"
@@ -2459,11 +2471,11 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "    if (intensity > 0.95)\n"
 "      gl_FragColor = vec4(color.rgb, 1.0);\n"
 "    else if (intensity > 0.5)\n"
-"      gl_FragColor = vec4(0.6 * color.rgb, 1.0);\n"
+"      gl_FragColor = vec4(pow(0.6, toon_gamma) * color.rgb, 1.0);\n"
 "    else if (intensity > 0.25)\n"
-"      gl_FragColor = vec4(0.4 * color.rgb, 1.0);\n"
+"      gl_FragColor = vec4(pow(0.4, toon_gamma) * color.rgb, 1.0);\n"
 "    else\n"
-"      gl_FragColor = vec4(0.2 * color.rgb, 1.0);\n"
+"      gl_FragColor = vec4(pow(0.2, toon_gamma) * color.rgb, 1.0);\n"
 "  }\n"
 "  else\n"
 "    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
@@ -2514,7 +2526,10 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
   if (matcap_tex)
     shader.setUniform("matcap_tex", matcap_tex);
   else if (toon_shading)
+  {
     shader.setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
+    shader.setUniform("toon_gamma", toon_gamma);
+  }
   else if (!out_normals)
   {
     Vector3 light_color(1, 1, 1);
@@ -2675,8 +2690,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, out_normals, toon_shading, matcap_tex, tex2d, tex3d,
-                            model.mesh_group.getBounds()))
+        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, out_normals, toon_shading, toon_gamma, matcap_tex,
+                            tex2d, tex3d, model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
