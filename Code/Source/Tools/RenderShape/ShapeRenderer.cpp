@@ -1,3 +1,6 @@
+// TODO: This class has become far too byzantine to support various feature requests over the years, and should be completely
+// rewritten from scratch in a cleaner, more structured way.
+
 #include "ShapeRenderer.hpp"
 #include "../../Algorithms/BvhN.hpp"
 #include "../../Algorithms/MeshSampler.hpp"
@@ -78,6 +81,34 @@ enum PointUsage
   POINTS_ALL      = 0xFFFF,
 };
 
+struct ColorType
+{
+  enum Value
+  {
+    DEFAULT,
+    ID,
+    LEAF,
+    LEAF_NAME,
+    LABEL,
+    FEATURE,
+    TEX_2D,
+    TEX_3D,
+  };
+
+  THEA_ENUM_CLASS_BODY(ColorType)
+
+  THEA_ENUM_CLASS_STRINGS_BEGIN(ColorType)
+    THEA_ENUM_CLASS_STRING(DEFAULT,    "default")
+    THEA_ENUM_CLASS_STRING(ID,         "id")
+    THEA_ENUM_CLASS_STRING(LEAF,       "leaf")
+    THEA_ENUM_CLASS_STRING(LEAF_NAME,  "leafname")
+    THEA_ENUM_CLASS_STRING(LABEL,      "label")
+    THEA_ENUM_CLASS_STRING(FEATURE,    "feature")
+    THEA_ENUM_CLASS_STRING(FEATURE,    "tex2d")
+    THEA_ENUM_CLASS_STRING(FEATURE,    "tex3d")
+  THEA_ENUM_CLASS_STRINGS_END(ColorType)
+};
+
 class ShapeRendererImpl
 {
   private:
@@ -100,20 +131,14 @@ class ShapeRendererImpl
     bool has_up;
     Vector3 view_up;
     float point_size;
-    bool color_by_id;
-    bool color_by_leaf;
-    bool color_by_leafname;
-    bool color_by_label;
-    bool color_by_features;
     bool show_edges;
     ColorRgba edge_color;
+    ColorType color_type;
     string labels_path;
     Array<int> labels;
     string features_path;
     bool accentuate_features;
-    bool color_by_tex2d;
     string tex2d_path;
-    bool color_by_tex3d;
     string tex3d_path;
     string selected_mesh;
     ColorRgba selected_color;
@@ -129,9 +154,11 @@ class ShapeRendererImpl
     Vector3 light_dir;
     bool toon_shading;
     float toon_gamma;
-    bool out_normals;
+    bool save_normal;
     bool save_color;
     bool save_depth;
+    bool save_id;
+    ColorType id_type;
     bool save_hitcounts;
     bool print_camera;
     int palette_shift;
@@ -156,7 +183,7 @@ class ShapeRendererImpl
     ColorRgba getPaletteColor(intx n) const;
     ColorRgba getLabelColor(intx label) const;
 
-    friend struct FaceColorizer;
+    friend class FaceColorizer;
 
   public:
     ShapeRendererImpl(int argc, char * argv[]);  // just loads plugins and initializes variables
@@ -227,20 +254,14 @@ ShapeRendererImpl::resetArgs()
   has_up = false;
   view_up = Vector3(0, 1, 0);
   point_size = 1.0f;
-  color_by_id = false;
-  color_by_leaf = false;
-  color_by_leafname = false;
-  color_by_label = false;
-  color_by_features = false;
   show_edges = false;
   edge_color = ColorRgba(0.15f, 0.25f, 0.5f, 1.0f);
+  color_type = ColorType::DEFAULT;
   labels_path = "";
   labels.clear();
   features_path = "";
   accentuate_features = false;
-  color_by_tex2d = false;
   tex2d_path = "";
-  color_by_tex3d = false;
   tex3d_path = "";
   selected_mesh = "";
   selected_color = ColorRgba(1, 1, 1, 1);
@@ -256,9 +277,11 @@ ShapeRendererImpl::resetArgs()
   light_dir = Vector3(-1, -1, -2).stableNormalized();
   toon_shading = false;
   toon_gamma = 1.0f;
-  out_normals = false;
+  save_normal = false;
   save_color = true;
   save_depth = false;
+  save_id = false;
+  id_type = ColorType::DEFAULT;
   save_hitcounts = false;
   print_camera = false;
   palette_shift = 0;
@@ -361,6 +384,8 @@ ShapeRendererImpl::exec(int argc, char ** argv)
   int buffer_height  =  antialiasing_level * out_height;
   ITexture * color_tex = nullptr;
   ITexture * depth_tex = nullptr;
+  ITexture * normal_tex = nullptr;
+  ITexture * id_tex = nullptr;
   IFramebuffer * fb = nullptr;
 
   TextureOptions tex_opts;
@@ -381,6 +406,28 @@ ShapeRendererImpl::exec(int argc, char ** argv)
     return -1;
   }
 
+  if (save_normal)
+  {
+    normal_tex = render_system->createTexture("Normal", buffer_width, buffer_height, 1, TextureFormat::RGBA8(),
+                                              ITexture::Dimension::DIM_2D, &tex_opts);
+    if (!normal_tex)
+    {
+      THEA_ERROR << "Could not create normal buffer";
+      return -1;
+    }
+  }
+
+  if (save_id)
+  {
+    id_tex = render_system->createTexture("ID", buffer_width, buffer_height, 1, TextureFormat::RGBA8(),
+                                          ITexture::Dimension::DIM_2D, &tex_opts);
+    if (!id_tex)
+    {
+      THEA_ERROR << "Could not create ID buffer";
+      return -1;
+    }
+  }
+
   fb = render_system->createFramebuffer("Framebuffer");
   if (!fb)
   {
@@ -390,6 +437,13 @@ ShapeRendererImpl::exec(int argc, char ** argv)
 
   if (!fb->attach(IFramebuffer::AttachmentPoint::COLOR_0, color_tex)) return -1;
   if (!fb->attach(IFramebuffer::AttachmentPoint::DEPTH,   depth_tex)) return -1;
+
+  if (save_normal && !fb->attach(IFramebuffer::AttachmentPoint::COLOR_1, normal_tex)) return -1;
+  if (save_id)
+  {
+    auto ap = (save_normal ? IFramebuffer::AttachmentPoint::COLOR_2 : IFramebuffer::AttachmentPoint::COLOR_1);
+    if (!fb->attach(ap, id_tex)) return -1;
+  }
 
   // Load matcap material, if any
   matcap_tex = nullptr;
@@ -468,9 +522,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           render_system->setDepthWrite(true);
           render_system->setColorWrite(true, true, true, true);
 
-          static ColorRgba NORMAL_CLEAR_COLOR(0.5f, 0.5f, 0.5f, 1.0f);
-
-          render_system->setClearColor(out_normals ? NORMAL_CLEAR_COLOR.data() : background_color.data());
+          render_system->setClearColor(background_color.data());
           render_system->clear();
 
           // Draw primary model
@@ -486,7 +538,7 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           {
             Model const & overlay = *overlay_models[i];
             ColorRgba overlay_color = getPaletteColor((intx)i - 1);
-            overlay_color.a() = (!color_by_id && !overlay.is_point_cloud ? 0.5f : 1.0f);
+            overlay_color.a() = (color_type != ColorType::ID && !overlay.is_point_cloud ? 0.5f : 1.0f);
 
             render_system->setPolygonOffset(true, -1.0f);  // make sure overlays appear on top of primary shape
 
@@ -509,33 +561,18 @@ ShapeRendererImpl::exec(int argc, char ** argv)
         //
         // We have to explicitly pick a 24-bit (instead of 32-bit) buffer when no background transparency is used, else the
         // FreeImage JPEG codec (and who knows what other codecs) can't save it.
-        Image image((background_color.a() <= 0.9999f ? Image::Type::RGBA_8U : Image::Type::RGB_8U),
-                    buffer_width, buffer_height);
-        color_tex->getImage(&image);
-
-        if (save_hitcounts)
+        Image color_image, depth_image, normal_image, id_image;
+        if (save_color || (save_hitcounts && !save_id))
         {
-          // We know image type is RGBA_8U because background alpha is set to zero when saving hitcounts
-
-          for (intx r = 0; r < image.getHeight(); ++r)
-          {
-            uint8 const * pixel = (uint8 const *)image.getScanLine(r);
-            for (intx c = 0; c < image.getWidth(); ++c, pixel += 4)
-            {
-              if (pixel[3] != 0xFF) continue;  // background
-
-              size_t index = (size_t)((((uint32)pixel[2] << 16) | ((uint32)pixel[1] << 8) |  (uint32)pixel[0]) & 0x7FFFFF);
-              alwaysAssertM(index < hitcounts.size(), "Rendered face index out of bounds");
-
-              hitcounts[index]++;
-            }
-          }
+          color_image.resize((background_color.a() <= 0.9999f ? Image::Type::RGBA_8U : Image::Type::RGB_8U),
+                             buffer_width, buffer_height);
+          color_tex->getImage(&color_image);
         }
 
-        // Grab and save the color image
+        // Save the color image
         if (save_color)
         {
-          if (antialiasing_level > 1 && !image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
+          if (antialiasing_level > 1 && !color_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
           {
             THEA_ERROR << "Could not rescale image to output dimensions";
             return -1;
@@ -548,13 +585,13 @@ ShapeRendererImpl::exec(int argc, char ** argv)
                                     FilePath::baseName(path) + format("_%06ld.", (intx)v) + FilePath::completeExtension(path));
           }
 
-          image.save(path);
+          color_image.save(path);
         }
 
         // Grab and save the depth image
         if (save_depth)
         {
-          Image depth_image(Image::Type::LUMINANCE_16U, buffer_width, buffer_height);
+          depth_image.resize(Image::Type::LUMINANCE_16U, buffer_width, buffer_height);
           depth_tex->getImage(&depth_image);
 
           if (antialiasing_level > 1 && !depth_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
@@ -567,6 +604,62 @@ ShapeRendererImpl::exec(int argc, char ** argv)
           string depth_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_depth" + suffix);
 
           depth_image.save(depth_path);
+        }
+
+        // Grab and save the normal image
+        if (save_normal)
+        {
+          normal_image.resize(Image::Type::RGBA_8U, buffer_width, buffer_height);
+          normal_tex->getImage(&normal_image);
+
+          if (antialiasing_level > 1 && !normal_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
+          {
+            THEA_ERROR << "Could not rescale normal image to output dimensions";
+            return -1;
+          }
+
+          string suffix = (views.size() > 1 ? format("_%06ld.png", (intx)v) : ".png");
+          string normal_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_normal" + suffix);
+
+          normal_image.save(normal_path);
+        }
+
+        // Grab and save the ID image
+        if (save_id)
+        {
+          id_image.resize(Image::Type::RGBA_8U, buffer_width, buffer_height);
+          id_tex->getImage(&id_image);
+
+          // Note: an antialiased ID map might be difficult to decode...
+          if (antialiasing_level > 1 && !id_image.rescale(out_width, out_height, 1, Image::Filter::BICUBIC))
+          {
+            THEA_ERROR << "Could not rescale ID image to output dimensions";
+            return -1;
+          }
+
+          string suffix = (views.size() > 1 ? format("_%06ld.png", (intx)v) : ".png");
+          string id_path = FilePath::concat(FilePath::parent(out_path), FilePath::baseName(out_path) + "_id" + suffix);
+
+          id_image.save(id_path);
+        }
+
+        if (save_hitcounts)
+        {
+          // We know image type is RGBA_8U because background alpha is set to zero when saving hitcounts
+          auto * img = (save_id ? &id_image : &color_image);
+          for (intx r = 0; r < img->getHeight(); ++r)
+          {
+            uint8 const * pixel = (uint8 const *)img->getScanLine(r);
+            for (intx c = 0; c < img->getWidth(); ++c, pixel += 4)
+            {
+              if (pixel[3] != 0xFF) continue;  // background
+
+              size_t index = (size_t)((((uint32)pixel[2] << 16) | ((uint32)pixel[1] << 8) |  (uint32)pixel[0]) & 0x7FFFFF);
+              alwaysAssertM(index < hitcounts.size(), "Rendered face index out of bounds");
+
+              hitcounts[index]++;
+            }
+          }
         }
 
       render_system->popFramebuffer();
@@ -623,7 +716,6 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "                         the leaf submesh color from its name, searching for";
   THEA_CONSOLE << "                         'RGB(r,g,b)' if it exists, else hashing the entire";
   THEA_CONSOLE << "                         name to a color)";
-  THEA_CONSOLE << "  -i <shift>            (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "  -j <argb>             (draw mesh edges in the given color)";
   THEA_CONSOLE << "  -l <path>             (color faces/points by labels from <path>)";
   THEA_CONSOLE << "  -f <path>             (color vertices/points by features from <path>)";
@@ -643,8 +735,15 @@ ShapeRendererImpl::usage(int argc, char ** argv)
   THEA_CONSOLE << "  -1                    (one-sided lighting)";
   THEA_CONSOLE << "  -g <dir>              (light direction, as 'x y z')";
   THEA_CONSOLE << "  --toon <gamma>        (render with toon/cel shading)";
-  THEA_CONSOLE << "  -n                    (output a normal map instead of colors)";
+  THEA_CONSOLE << "  -n                    (also save a normal map)";
   THEA_CONSOLE << "  -d                    (also save the depth image)";
+  THEA_CONSOLE << "  -i <type>             (also save an ID map: <type> can be 'id' to color";
+  THEA_CONSOLE << "                         faces by face ID and points by point ID; or 'leaf'";
+  THEA_CONSOLE << "                         to assign a random color to each leaf submesh; or";
+  THEA_CONSOLE << "                         'leafname' to derive the leaf submesh color from";
+  THEA_CONSOLE << "                         its name";
+  THEA_CONSOLE << "                         else hashing the entire name to a color)";
+  THEA_CONSOLE << "  --shift <shift>       (add a shift to how indices are mapped to colors)";
   THEA_CONSOLE << "  -#                    (also save a text file with extension '.hitcount'";
   THEA_CONSOLE << "                         containing the number of pixels rendered per";
   THEA_CONSOLE << "                         face/point)";
@@ -1086,24 +1185,20 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         if (argc < 1) { THEA_ERROR << "-c: Color not specified"; return false; }
 
-        color_by_id = false;
-        color_by_leaf = false;
-        color_by_leafname = false;
-
-        string arg_lc = toLower(trimWhitespace(*argv));
-        if (arg_lc == "id")
-          color_by_id = true;
-        else if (arg_lc == "leaf")
-          color_by_leaf = true;
-        else if (arg_lc == "leafname")
-          color_by_leafname = true;
+        explicit_primary_color = true;
+        if (color_type.fromString(trimWhitespace(*argv), /* ignore_case = */ true))
+        {
+          if (color_type == ColorType::DEFAULT)  // no explicit color specified
+            explicit_primary_color = false;
+          else if (color_type == ColorType::LABEL || color_type == ColorType::FEATURE
+                || color_type == ColorType::TEX_2D || color_type == ColorType::TEX_3D)
+            return false;  // these cannot be specified on the cmdline
+        }
         else
         {
-          if (!parseColor(*argv, primary_color))
-            return false;
+          color_type = ColorType::DEFAULT;
+          if (!parseColor(*argv, primary_color)) return false;
         }
-
-        explicit_primary_color = true;
 
         argv++; argc--;
       }
@@ -1118,7 +1213,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         if (argc < 1) { THEA_ERROR << "-l: Labels not specified"; return false; }
 
-        color_by_label = true;
+        color_type = ColorType::LABEL;
         labels_path = *argv;
 
         argv++; argc--;
@@ -1127,7 +1222,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         if (argc < 1) { THEA_ERROR << "-f: Features not specified"; return false; }
 
-        color_by_features = true;
+        color_type = ColorType::FEATURE;
         features_path = *argv;
 
         argv++; argc--;
@@ -1140,7 +1235,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         if (argc < 1) { THEA_ERROR << "-2: 2D texture image not specified"; return false; }
 
-        color_by_tex2d = true;
+        color_type = ColorType::TEX_2D;
         tex2d_path = *argv;
 
         argv++; argc--;
@@ -1149,7 +1244,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       {
         if (argc < 1) { THEA_ERROR << "-3: 3D texture image not specified"; return false; }
 
-        color_by_tex3d = true;
+        color_type = ColorType::TEX_3D;
         tex3d_path = *argv;
 
         argv++; argc--;
@@ -1235,7 +1330,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       }
       else if (arg == "-n")
       {
-        out_normals = true;
+        save_normal = true;
       }
       else if (arg == "--toon")
       {
@@ -1251,6 +1346,30 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
       else if (arg == "-d")
       {
         save_depth = true;
+      }
+      else if (arg == "-i")
+      {
+        if (argc < 1) { THEA_ERROR << "-i: ID type not specified"; return false; }
+        if (!id_type.fromString(trimWhitespace(*argv), /* ignore_case = */ true)) return false;
+
+        if (id_type != ColorType::ID && id_type != ColorType::LEAF && id_type != ColorType::LEAF_NAME)
+        {
+          THEA_ERROR << "Unsupported ID type";
+          return false;
+        }
+
+        save_id = true;
+        argv++; argc--;
+      }
+      else if (arg == "--shift")
+      {
+        if (argc < 1) { THEA_ERROR << "--shift: Palette shift not specified"; return false; }
+        if (sscanf(*argv, " %d", &palette_shift) != 1)
+        {
+          THEA_ERROR << "Could not parse palette shift: '" << *argv << '\'';
+          return false;
+        }
+        argv++; argc--;
       }
       else if (arg == "-#")
       {
@@ -1268,16 +1387,6 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
         else
         {
           THEA_ERROR << "Unknown field to write: '" << *argv << '\'';
-          return false;
-        }
-        argv++; argc--;
-      }
-      else if (arg == "-i")
-      {
-        if (argc < 1) { THEA_ERROR << "-i: Palette shift not specified"; return false; }
-        if (sscanf(*argv, " %d", &palette_shift) != 1)
-        {
-          THEA_ERROR << "Could not parse palette shift: '" << *argv << '\'';
           return false;
         }
         argv++; argc--;
@@ -1340,7 +1449,7 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
   // If no primary color was explicitly specified, set it to white by default if we're also going to multiply it by the matcap
   // or 2D/3D texture color. The assumption is that the latter colors should be presented accurately unless the user explicitly
   // modulates them by an additional color.
-  if (!explicit_primary_color && (!matcap_path.empty() || color_by_tex2d || color_by_tex3d))
+  if (!explicit_primary_color && (!matcap_path.empty() || color_type == ColorType::TEX_2D || color_type == ColorType::TEX_3D))
     primary_color = ColorRgba(1, 1, 1, 1);
 
   if (views.empty())
@@ -1368,12 +1477,17 @@ ShapeRendererImpl::parseArgs(int argc, char ** argv)
 
   if (save_hitcounts)
   {
-    if (!color_by_id) { THEA_ERROR << "Saving hitcounts requires coloring elements by id"; return false; }
+    if (color_type != ColorType::ID && (!save_id || id_type != ColorType::ID))
+    { THEA_ERROR << "Saving hitcounts requires coloring elements by id"; return false; }
+
     if (antialiasing_level > 1) { THEA_ERROR << "Saving hitcounts requires no antialiasing"; return false; }
     if (model_paths.size() > 1) { THEA_ERROR << "Saving hitcounts requires no overlay models"; return false; }
 
-    THEA_WARNING << "Background alpha overridden to zero to accurately measure hitcounts";
-    background_color.a() = 0;
+    if (!save_id)
+    {
+      THEA_WARNING << "Background alpha overridden to zero to accurately measure hitcounts";
+      background_color.a() = 0;
+    }
   }
 
   return true;
@@ -1415,63 +1529,116 @@ indexToColor(uint32 index, bool is_point)
   return color;
 }
 
-struct FaceColorizer
+class FaceColorizer
 {
-  ShapeRendererImpl const * parent;
-  Array<int> const * labels;
+  public:
+    FaceColorizer(ShapeRendererImpl const * parent_, Array<int> const * labels_ = nullptr)
+    : parent(parent_), labels(labels_)
+    {}
 
-  FaceColorizer(ShapeRendererImpl const * parent_, Array<int> const * labels_ = nullptr)
-  : parent(parent_), labels(labels_)
-  {}
-
-  bool operator()(Mesh & mesh)
-  {
-    if (parent->flat || !(parent->color_by_leaf || parent->color_by_leafname))
-      mesh.isolateTriangles();
-
-    if (parent->flat || labels || parent->color_by_leaf || parent->color_by_leafname)
-      mesh.computeAveragedVertexNormals();
-
-    mesh.addColors();
-
-    ColorRgba8 color;
-    if (parent->color_by_leaf)
-      color = ColorRgba(ColorRgb::random());
-    else if (parent->color_by_leafname)
+    bool operator()(Mesh & mesh)
     {
-      string const & name = mesh.getName();
-      auto loc = name.find("RGB(");
-      float r, g, b;
-      if (loc != string::npos && sscanf(name.substr(loc).c_str(), "RGB( %f , %f , %f )", &r, &g, &b) == 3)
-        color = ColorRgba8(ColorRgba(r, g, b, 1.0));
-      else
-        color = parent->getLabelColor((intx)labelHash(mesh.getName()));
+      if (parent->flat || parent->save_id
+       || !(parent->color_type == ColorType::LEAF || parent->color_type == ColorType::LEAF_NAME))
+        mesh.isolateTriangles();
+
+      if (parent->flat || labels || parent->color_type == ColorType::LEAF || parent->color_type == ColorType::LEAF_NAME)
+        mesh.computeAveragedVertexNormals();
+
+      if (parent->color_type != ColorType::DEFAULT) mesh.addColors();
+      if (parent->save_id)                          mesh.addTexCoords();
+
+      ColorRgba color;
+      if (parent->color_type != ColorType::DEFAULT) getMeshColor(mesh, parent->color_type, color);
+
+      Vector2 texcoord;
+      if (parent->save_id) getMeshIdAsTexCoord(mesh, parent->id_type, texcoord);
+
+      Mesh::IndexArray const & tris = mesh.getTriangleIndices();
+      for (size_t i = 0; i < tris.size(); i += 3)
+      {
+        if (parent->color_type != ColorType::DEFAULT)
+        {
+          getFaceColor(mesh, (intx)i, parent->color_type, color);
+
+          mesh.setColor((intx)tris[i    ], color);
+          mesh.setColor((intx)tris[i + 1], color);
+          mesh.setColor((intx)tris[i + 2], color);
+        }
+
+        if (parent->save_id)
+        {
+          getFaceIdAsTexCoord(mesh, (intx)i, parent->id_type, texcoord);
+          mesh.setTexCoord((intx)tris[i    ], texcoord);
+          mesh.setTexCoord((intx)tris[i + 1], texcoord);
+          mesh.setTexCoord((intx)tris[i + 2], texcoord);
+        }
+      }
+
+      return false;
     }
 
-    Mesh::IndexArray const & tris = mesh.getTriangleIndices();
-    for (size_t i = 0; i < tris.size(); i += 3)
+  private:
+    void getMeshColor(Mesh const & mesh, ColorType type, ColorRgba & color) const
     {
-      if (!parent->color_by_leaf && !parent->color_by_leafname)
+      if (type == ColorType::LEAF)
+        color = ColorRgba(ColorRgb::random());
+      else if (type == ColorType::LEAF_NAME)
       {
-        auto id = mesh.getTriangleSourceFaceIndex((intx)i / 3);
+        string const & name = mesh.getName();
+        auto loc = name.find("RGB(");
+        float r, g, b;
+        if (loc != string::npos && sscanf(name.substr(loc).c_str(), "RGB( %f , %f , %f )", &r, &g, &b) == 3)
+          color = ColorRgba(r, g, b, 1.0);
+        else
+          color = parent->getLabelColor((intx)labelHash(name));
+      }
+      // else do nothing
+    }
+
+    void getFaceColor(Mesh const & mesh, intx tri_index, ColorType type, ColorRgba & color) const
+    {
+      if (type == ColorType::ID || type == ColorType::LABEL)
+      {
+        auto id = mesh.getTriangleSourceFaceIndex(tri_index / 3);
         if (labels)
         {
           if ((size_t)id >= labels->size())
-            color = ColorRgba8(255, 0, 0, 255);
+            color = ColorRgba(1.0f, 0.0f, 0.0f, 1.0f);
           else
             color = parent->getLabelColor((*labels)[(size_t)id]);
         }
         else
           color = indexToColor((uint32)id, false);
       }
-
-      mesh.setColor((intx)tris[i    ], color);
-      mesh.setColor((intx)tris[i + 1], color);
-      mesh.setColor((intx)tris[i + 2], color);
+      // else do nothing
     }
 
-    return false;
-  }
+    void getMeshIdAsTexCoord(Mesh const & mesh, ColorType type, Vector2 & id_as_texcoord) const
+    {
+      if (type == ColorType::LEAF)
+        id_as_texcoord = Vector2(Random::common().uniform01(), Random::common().uniform01());
+      else if (type == ColorType::LEAF_NAME)
+      {
+        Random rnd((uint32)labelHash(mesh.getName()), /* threadsafe = */ false);
+        id_as_texcoord = Vector2(rnd.uniform01(), rnd.uniform01());
+      }
+      // else do nothing
+    }
+
+    void getFaceIdAsTexCoord(Mesh const & mesh, intx tri_index, ColorType type, Vector2 & id_as_texcoord) const
+    {
+      if (type == ColorType::ID)
+      {
+        auto id = mesh.getTriangleSourceFaceIndex(tri_index / 3);
+        Random rnd((uint32)id, /* threadsafe = */ false);
+        id_as_texcoord = Vector2(rnd.uniform01(), rnd.uniform01());
+      }
+      // else do nothing
+    }
+
+    ShapeRendererImpl const * parent;
+    Array<int> const * labels;
 };
 
 struct FaceCounter
@@ -2056,6 +2223,12 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
   if (endsWith(toLower(path), ".pts"))
   {
+    if (save_id)  // FIXME: Support this eventually
+    {
+      THEA_ERROR << "Cannot output an ID map for a point cloud";
+      return false;
+    }
+
     ifstream in(path.c_str());
     if (!in)
     {
@@ -2083,17 +2256,17 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     model.is_point_cloud = true;
     model.max_id = (intx)model.points.size() - 1;
 
-    if (color_by_label)
+    if (color_type == ColorType::LABEL)
     {
       if (!loadLabels(model))
         return false;
     }
-    else if (color_by_features)
+    else if (color_type == ColorType::FEATURE)
     {
       if (!loadFeatures(model))
         return false;
     }
-    else if (color_by_id)
+    else if (color_type == ColorType::ID)
     {
       model.point_colors.resize(model.points.size());
       for (size_t i = 0; i < model.points.size(); ++i)
@@ -2114,20 +2287,27 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
 
     if (model.convert_to_points)
     {
+      if (save_id)  // FIXME: Support this eventually
+      {
+        THEA_ERROR << "Cannot output an ID map for a point cloud";
+        return false;
+      }
+
       typedef MeshSampler<Mesh>::Triangle MeshTriangle;
       MeshSampler<Mesh> sampler(model.mesh_group);
       Array<MeshTriangle const *> sampled_tris;
 
       double out_scale = min(out_width, out_height);
       intx max_samples = (intx)ceil(10 * out_scale);
-      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points, nullptr, (color_by_id ? &sampled_tris : nullptr));
+      intx npoints = sampler.sampleEvenlyByArea(max_samples, model.points, nullptr,
+                                                (color_type == ColorType::ID ? &sampled_tris : nullptr));
 
       THEA_CONSOLE << "Sampled " << npoints << " points from '" << path << '\'';
 
       model.mesh_group.clear();
       model.is_point_cloud = true;
 
-      if (color_by_id)
+      if (color_type == ColorType::ID)
       {
         alwaysAssertM(sampled_tris.size() == model.points.size(), "Number of source triangles != number of sampled points");
 
@@ -2142,22 +2322,30 @@ ShapeRendererImpl::loadModel(Model & model, string const & path)
     }
     else
     {
+      // Currently, using texture coordinates for color output is not compatible with also outputting an ID buffer
+      if (save_id && (color_type == ColorType::TEX_2D || color_type == ColorType::FEATURE))
+      {
+        THEA_ERROR << "Cannot combine ID map output with 2D texturing or vertex features for a mesh";
+        return false;
+      }
+
       bool needs_normals = true;
 
-      if (color_by_id || color_by_leaf || color_by_leafname)
+      if (color_type == ColorType::ID || color_type == ColorType::LEAF || color_type == ColorType::LEAF_NAME
+       || (save_id && color_type == ColorType::DEFAULT))
       {
         FaceColorizer colorizer(this);
         model.mesh_group.forEachMeshUntil(colorizer);
         needs_normals = false;  // FaceColorizer has already computed as needed
       }
-      else if (color_by_label)
+      else if (color_type == ColorType::LABEL)
       {
         if (!loadLabels(model))
           return false;
 
         needs_normals = false;
       }
-      else if (color_by_features)
+      else if (color_type == ColorType::FEATURE)
       {
         if (!loadFeatures(model))
           return false;
@@ -2385,9 +2573,9 @@ initPointShader(IShader & shader)
 }
 
 bool
-initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true, bool out_normals = false,
-               bool toon_shading = false, float toon_gamma = 1.0f, ITexture * matcap_tex = nullptr, ITexture * tex2d = nullptr,
-               ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
+initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bool two_sided = true, bool save_normal = false,
+               bool save_id = false, bool toon_shading = false, float toon_gamma = 1.0f, ITexture * matcap_tex = nullptr,
+               ITexture * tex2d = nullptr, ITexture * tex3d = nullptr, AxisAlignedBox3 const & bbox = AxisAlignedBox3())
 {
   static string const VERTEX_SHADER =
 "varying vec3 src_pos;  // position in mesh coordinates\n"
@@ -2459,8 +2647,7 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "  vec3 L = normalize(light_dir);\n"
 "  float NdL = -dot(N, L);\n"
 "  vec3 lamb_color = (NdL >= -two_sided) ? material[1] * abs(NdL) * color.rgb * light_color : vec3(0.0, 0.0, 0.0);\n"
-"  gl_FragColor = vec4(ambt_color + lamb_color, color.a);\n"
-"}\n";
+"  gl_FragData[0] = vec4(ambt_color + lamb_color, color.a);\n";
 
   string const FRAGMENT_SHADER_BODY_TOON =
 "  vec3 L = normalize(light_dir);\n"
@@ -2469,36 +2656,37 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
 "  {\n"
 "    float intensity = abs(NdL);\n"
 "    if (intensity > 0.95)\n"
-"      gl_FragColor = vec4(color.rgb, 1.0);\n"
+"      gl_FragData[0] = vec4(color.rgb, 1.0);\n"
 "    else if (intensity > 0.5)\n"
-"      gl_FragColor = vec4(pow(0.6, toon_gamma) * color.rgb, 1.0);\n"
+"      gl_FragData[0] = vec4(pow(0.6, toon_gamma) * color.rgb, 1.0);\n"
 "    else if (intensity > 0.25)\n"
-"      gl_FragColor = vec4(pow(0.4, toon_gamma) * color.rgb, 1.0);\n"
+"      gl_FragData[0] = vec4(pow(0.4, toon_gamma) * color.rgb, 1.0);\n"
 "    else\n"
-"      gl_FragColor = vec4(pow(0.2, toon_gamma) * color.rgb, 1.0);\n"
+"      gl_FragData[0] = vec4(pow(0.2, toon_gamma) * color.rgb, 1.0);\n"
 "  }\n"
 "  else\n"
-"    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);\n"
-"}\n";
+"    gl_FragData[0] = vec4(0.0, 0.0, 0.0, 1.0);\n";
 
   static string const FRAGMENT_SHADER_BODY_MATCAP =
 "  vec2 matcap_uv = (two_sided < 0.5 && N.z < 0.0 ? normalize(N.xy) : N.xy);\n"
 "  vec4 matcap_color = texture2D(matcap_tex, 0.495 * matcap_uv + 0.5);\n"
 "  float lite = lightness(matcap_color.rgb);\n"
 "  float highlight_blend = lite * lite * lite * lite;\n"
-"  gl_FragColor = vec4(mix(color.rgb, vec3(1.0, 1.0, 1.0), highlight_blend) * matcap_color.rgb, color.a);\n"
-"}\n";
+"  gl_FragData[0] = vec4(mix(color.rgb, vec3(1.0, 1.0, 1.0), highlight_blend) * matcap_color.rgb, color.a);\n";
 
   static string const FRAGMENT_SHADER_BODY_NORMAL =
-"  gl_FragColor = vec4(0.5 * N + 0.5, 1.0);\n"
-"}\n";
+"  gl_FragData[1] = vec4(0.5 * N + 0.5, 1.0);\n";
+
+  string const ID_OUT_BUF = format("%d", save_normal ? 2 : 1);
+  string const FRAGMENT_SHADER_BODY_ID =
+"  gl_FragData[" + ID_OUT_BUF + "] = vec4(gl_TexCoord[0].st, 0.5, 1.0);\n";
 
   string fragment_shader = FRAGMENT_SHADER_HEADER_1;
   if (matcap_tex)
     fragment_shader += FRAGMENT_SHADER_HEADER_MATCAP;
   else if (toon_shading)
     fragment_shader += FRAGMENT_SHADER_HEADER_TOON;
-  else if (!out_normals)
+  else
     fragment_shader += FRAGMENT_SHADER_HEADER_PHONG;
 
   if (tex2d) fragment_shader += FRAGMENT_SHADER_HEADER_TEX2D;
@@ -2509,18 +2697,21 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
   if (tex3d) fragment_shader += FRAGMENT_SHADER_BODY_TEX3D;
   if (matcap_tex)
     fragment_shader += FRAGMENT_SHADER_BODY_MATCAP;
-  else if (out_normals)
-    fragment_shader += FRAGMENT_SHADER_BODY_NORMAL;
   else if (toon_shading)
     fragment_shader += FRAGMENT_SHADER_BODY_TOON;
   else
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
+  if (save_normal) fragment_shader += FRAGMENT_SHADER_BODY_NORMAL;
+  if (save_id)      fragment_shader += FRAGMENT_SHADER_BODY_ID;
+
+  fragment_shader += "}\n";
+
   if (!shader.attachModuleFromString(IShader::ModuleType::VERTEX, VERTEX_SHADER.c_str())
    || !shader.attachModuleFromString(IShader::ModuleType::FRAGMENT, fragment_shader.c_str()))
     return false;
 
-  if (!out_normals)
+  if (!tex2d && !tex3d)
     shader.setUniform("two_sided", (two_sided ? 1.0f : 0.0f));
 
   if (matcap_tex)
@@ -2530,7 +2721,7 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
     shader.setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
     shader.setUniform("toon_gamma", toon_gamma);
   }
-  else if (!out_normals)
+  else if (!save_normal)
   {
     Vector3 light_color(1, 1, 1);
     Vector3 ambient_color(1, 1, 1);
@@ -2605,10 +2796,10 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
 
   render_system->setPolygonSmooth(false);  // smoothing causes blending halos around primitives with OSMesa
   render_system->setLineSmooth(false);
-  render_system->setPointSmooth(!color_by_id);  // this also can cause blending halos, but no other way to get circular points
+  render_system->setPointSmooth(color_type != ColorType::ID);  // can cause blending halos, but no other way for circular points
 
-  bool has_transparency = (color.a() <= 0.9999f || background_color.a() <= 0.9999f || color_by_tex2d);
-  if (has_transparency && !color_by_id)
+  bool has_transparency = (color.a() <= 0.9999f || background_color.a() <= 0.9999f || color_type == ColorType::TEX_2D);
+  if (has_transparency && color_type != ColorType::ID)
   {
     // Enable alpha-blending
     glEnable(GL_BLEND);
@@ -2643,12 +2834,12 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
 
       for (size_t i = 0; i < model.points.size(); ++i)
       {
-        if (color_by_id)
+        if (color_type == ColorType::ID)
         {
           ColorRgba c = indexToColor((uint32)i, true);
           render_system->setColor(c.data());
         }
-        else if (color_by_label || color_by_features)
+        else if (color_type == ColorType::LABEL || color_type == ColorType::FEATURE)
           render_system->setColor(model.point_colors[i].data());
 
         render_system->sendVertex(3, model.points[i].data());
@@ -2659,7 +2850,7 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
   else
   {
     // Initialize the shader
-    if (color_by_id || (selected_binary_mask && !selected_mesh.empty()))
+    if (color_type == ColorType::ID || (selected_binary_mask && !selected_mesh.empty()))
     {
       if (!face_id_shader)
       {
@@ -2690,8 +2881,8 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
           return false;
         }
 
-        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, out_normals, toon_shading, toon_gamma, matcap_tex,
-                            tex2d, tex3d, model.mesh_group.getBounds()))
+        if (!initMeshShader(*mesh_shader, material, light_dir, two_sided, save_normal, save_id, toon_shading, toon_gamma,
+                            matcap_tex, tex2d, tex3d, model.mesh_group.getBounds()))
         {
           THEA_ERROR << "Could not initialize mesh shader";
           return false;
@@ -2704,14 +2895,14 @@ ShapeRendererImpl::renderModel(Model const & model, ColorRgba const & color)
     RenderOptions opts;
     opts.setSendNormals(true);
     opts.setSendColors(true);
-    opts.setSendTexCoords((bool)tex2d);
+    opts.setSendTexCoords((bool)tex2d || save_id);
 
     if (show_edges)
       opts.setDrawEdges(true).setEdgeColor(edge_color.data());
     else
       opts.setDrawEdges(false);
 
-    if (has_transparency && !color_by_id)
+    if (has_transparency && color_type != ColorType::ID)
     {
       // First back faces...
       render_system->setCullFace(IRenderSystem::CullFace::FRONT);
