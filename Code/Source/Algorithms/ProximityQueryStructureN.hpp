@@ -119,7 +119,7 @@ class /* THEA_API */ ProximityQueryStructureN
           return mon_approx_dist < other.mon_approx_dist
               || (mon_approx_dist == other.mon_approx_dist
                && (query_index < other.query_index
-                || (query_index == other.query_index && target_index == other.target_index)));
+                || (query_index == other.query_index && target_index < other.target_index)));
         }
 
         /** Equality comparator. Only compares indices. */
