@@ -117,7 +117,7 @@ Random::generate()
   }
 
   // Remaining bits
-  for (unsigned int i = N - M + 1; i < N - 1; ++i)
+  for (unsigned int i = N - M; i < N - 1; ++i)
   {
     uint32 x = (state[i] & UPPER_MASK) | (state[i + 1] & LOWER_MASK);
     state[i] = state[i + (M - N)] ^ (x >> 1) ^ mag01[x & 1];

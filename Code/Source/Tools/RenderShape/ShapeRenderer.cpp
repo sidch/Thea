@@ -2703,7 +2703,7 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
     fragment_shader += FRAGMENT_SHADER_BODY_PHONG;
 
   if (save_normal) fragment_shader += FRAGMENT_SHADER_BODY_NORMAL;
-  if (save_id)      fragment_shader += FRAGMENT_SHADER_BODY_ID;
+  if (save_id)     fragment_shader += FRAGMENT_SHADER_BODY_ID;
 
   fragment_shader += "}\n";
 
@@ -2721,7 +2721,7 @@ initMeshShader(IShader & shader, Vector4 const & material, Vector3 light_dir, bo
     shader.setUniform("light_dir", &asLvalue(Math::wrapMatrix(light_dir)));
     shader.setUniform("toon_gamma", toon_gamma);
   }
-  else if (!save_normal)
+  else
   {
     Vector3 light_color(1, 1, 1);
     Vector3 ambient_color(1, 1, 1);

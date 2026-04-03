@@ -70,7 +70,7 @@ class /* THEA_API */ BallN : public RayIntersectableN<N, T>
     /** Check if the ball intersects another ball. */
     bool intersects(BallN const & other) const
     {
-      return (center - other.center).norm() < radius + other.radius;
+      return (center - other.center).norm() <= radius + other.radius;
     }
 
     /** Check if the ball intersects an axis-aligned box. */

@@ -534,12 +534,10 @@ rotationArcQuat(Vector<3, T> const & start_dir, Vector<3, T> const & end_dir, bo
   if (d < -0.9999)
   {
     Vector<3, T> perp;
-    switch (maxAbsAxis(u))
-    {
-      case 0:           perp = Vector<3, T>(u.y(),  -u.x(),       0).normalized(); break;
-      case 1:           perp = Vector<3, T>(u.y(),  -u.x(),       0).normalized(); break;
-      default /* 2 */:  perp = Vector<3, T>(u.z(),       0,  -u.x()).normalized();
-    }
+    if (maxAbsAxis(u) == 2)
+      perp = Vector<3, T>(u.z(),       0,  -u.x()).normalized();
+    else
+      perp = Vector<3, T>(u.y(),  -u.x(),       0).normalized();
 
     return Quaternion<T>(Eigen::AngleAxis<T>(static_cast<T>(Math::pi()), perp));
   }

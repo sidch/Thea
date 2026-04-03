@@ -426,7 +426,7 @@ class /* THEA_API */ BvhN
           intx n = (intx)num_elems;
           while (n > 0 && current_buffer >= 0)
           {
-            size_t num_freed = getCurrentBuffer().free(num_elems);
+            size_t num_freed = getCurrentBuffer().free((size_t)n);
             n -= (intx)num_freed;
 
             if (n > 0)
@@ -719,9 +719,12 @@ class /* THEA_API */ BvhN
 
       if (deallocate_previous_memory)
       {
-        for (InputIterator ii = begin; ii != end; ++ii, ++num_elems)
+        for (InputIterator ii = begin; ii != end; ++ii)
           if (elementPassesFilters(*ii))
+          {
             elems.push_back(*ii);
+            ++num_elems;
+          }
       }
       else
       {
@@ -1265,7 +1268,7 @@ class /* THEA_API */ BvhN
 
     template <typename RayIntersectionTesterT> bool rayIntersects(RayT const & ray, ScalarT max_time = -1) const
     {
-      return rayIntersectionTime<RayIntersectionTesterT>(ray, max_time) >= 0;
+      return rayIntersectionTime<RayIntersectionTesterT>(ray, max_time) >= -std::numeric_limits<ScalarT>::min();
     }
 
     template <typename RayIntersectionTesterT> ScalarT rayIntersectionTime(RayT const & ray, ScalarT max_time = -1) const
@@ -2201,7 +2204,7 @@ class /* THEA_API */ BvhN
             continue;
 
           ScalarT time = RayIntersectionTesterT::template rayIntersectionTime<N, ScalarT>(ray, elem, best_time);
-          if (BvhNInternal::distanceLessThan(time, best_time))
+          if (time >= -std::numeric_limits<ScalarT>::min())
           {
             best_time = time;
             found = true;
@@ -2215,7 +2218,12 @@ class /* THEA_API */ BvhN
         // Sort the children by increasing hit times to their bounding volumes
         ChildDistanceArray c;
         for (auto n : start->children)
-          if (n) { c.insert(NodeDistance(n, n->bounds.rayIntersectionTime(ray, max_time))); }
+          if (n)
+          {
+            auto time = n->bounds.rayIntersectionTime(ray, max_time);
+            if (max_time < 0 || time >= -std::numeric_limits<ScalarT>::min())  // ignore child nodes too far away
+              c.insert(NodeDistance(n, time));
+          }
 
         ScalarT best_time = max_time;
         bool found = false;
@@ -2224,7 +2232,7 @@ class /* THEA_API */ BvhN
           if (BvhNInternal::distanceLessThan(c[i].distance, best_time))
           {
             ScalarT time = rayIntersectionTime<RayIntersectionTesterT>(c[i].node, ray, best_time);
-            if (BvhNInternal::distanceLessThan(time, best_time))
+            if (time >= -std::numeric_limits<ScalarT>::min())
             {
               best_time = time;
               found = true;
